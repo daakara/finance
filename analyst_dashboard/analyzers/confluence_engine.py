@@ -139,45 +139,91 @@ class ConfluenceEngine:
             smart_detail = "Foreign ADR (FPI): Executive transactions governed by local regulatory filings (e.g., BaFin Directors' Dealings, FCA DTR, TSE) rather than US SEC Form 4."
             smart_plain = "Foreign regulatory filings apply (FPI): Non-US corporate governance disclosures monitored via local stock exchanges."
         elif smart_money_data:
-            has_insider_buy = bool(smart_money_data.get("has_insider_buy", False))
-            insider_val = float(smart_money_data.get("insider_value_usd", 0.0))
-            insider_name = smart_money_data.get("insider_name", "")
-            has_congress_buy = bool(smart_money_data.get("has_congress_buy", False))
-            has_options = bool(smart_money_data.get("has_options_flow", False))
-            net_institutional = float(smart_money_data.get("net_institutional_flow_mil", 0.0))
-            insider_buys = int(smart_money_data.get("insider_buy_count_90d", 0))
-            insider_sells = int(smart_money_data.get("insider_sell_count_90d", 0))
+            # Check canonical assessment contract first
+            is_canonical_ineligible = (
+                smart_money_data.get("pillar_eligibility") is False
+                or smart_money_data.get("pillar_status") == "unavailable"
+                or smart_money_data.get("overall_status") in ("UNAVAILABLE", "PIPELINE_HELD", "INAPPLICABLE")
+            )
+            is_canonical_verified_empty = (
+                smart_money_data.get("overall_status") == "VERIFIED_NO_ACTIVITY"
+                or smart_money_data.get("is_verified_empty") is True
+            )
 
-            if has_insider_buy and insider_val > 0:
-                smart_score = 90.0
-                smart_status = "positive"
-                smart_detail = f"{insider_name or 'C-Suite Executive'} purchased ${(insider_val / 1e6):.1f}M USD on open market."
-                smart_plain = f"Insider skin in the game: ${(insider_val / 1e6):.1f}M bought directly by corporate executives."
-            elif has_insider_buy or has_congress_buy or has_options or net_institutional > 10.0 or insider_buys >= 2:
-                smart_score = 85.0 if (has_insider_buy or has_congress_buy) else 82.0
-                smart_status = "positive"
-                if has_congress_buy:
-                    smart_detail = "Congressional STOCK Act filing: Capitol Hill committee member buy disclosure active."
-                    smart_plain = "Congress buy reported: Lawmaker disclosed an open-market purchase in this stock/sector."
-                elif has_options:
-                    smart_detail = "Unusual institutional order flow: High-volume call sweeps detected in options tape."
-                    smart_plain = "Big money call options detected: Institutional traders positioning for upside."
-                elif has_insider_buy:
-                    smart_detail = "Verified SEC Form 4 insider open-market purchases recorded."
-                    smart_plain = "Corporate insiders actively purchasing company stock."
-                else:
-                    smart_detail = f"Institutional accumulation (+${net_institutional:.1f}M net flow, {insider_buys} Form 4 insider buys)."
-                    smart_plain = f"Smart money accumulating: Net +${net_institutional:.1f}M institutional inflow and insider buying recorded."
-            elif net_institutional < -20.0 or (insider_sells > 4 and insider_buys == 0):
-                smart_score = 35.0
-                smart_status = "warning"
-                smart_detail = f"Institutional distribution (-${abs(net_institutional):.1f}M net flow, {insider_sells} Form 4 sales)."
-                smart_plain = f"Heavy insider selling: Net -${abs(net_institutional):.1f}M institutional outflow recorded."
-            else:
-                smart_score = 55.0
+            if is_canonical_ineligible:
+                smart_score = 0.0
+                smart_status = "unavailable"
+                smart_detail = (
+                    smart_money_data.get("coverage_summary")
+                    or smart_money_data.get("disclosure")
+                    or "Smart Money regulatory feeds unavailable or held under operational governance."
+                )
+                smart_plain = "Smart money feeds unavailable under current operational posture."
+            elif is_canonical_verified_empty:
+                smart_score = 50.0
                 smart_status = "neutral"
-                smart_detail = "Neutral smart money flow. No significant directional cluster."
-                smart_plain = "No recent big boss insider purchases filed with the SEC this month."
+                smart_detail = "Verified complete search: 0 insider or congressional transactions filed in trailing window."
+                smart_plain = "No insider or congressional activity verified for this asset."
+            elif smart_money_data.get("pillar_score") is not None:
+                smart_score = float(smart_money_data.get("pillar_score", 50.0))
+                smart_status = str(smart_money_data.get("pillar_status") or "neutral")
+                smart_detail = (
+                    smart_money_data.get("coverage_summary")
+                    or f"Smart Money composite score {smart_score:.1f} ({smart_status})."
+                )
+                smart_plain = f"Smart money flow assessment: {smart_status} ({smart_score:.1f})."
+            elif smart_money_data.get("score") is not None and not is_canonical_ineligible:
+                smart_score = float(smart_money_data.get("score", 50.0))
+                smart_status = str(smart_money_data.get("status") or "neutral")
+                smart_detail = smart_money_data.get("detail", f"Smart Money score: {smart_score:.1f}")
+                smart_plain = smart_money_data.get("plain", "Smart money telemetry evaluated.")
+            else:
+                has_insider_buy = bool(smart_money_data.get("has_insider_buy", False))
+                insider_val = float(smart_money_data.get("insider_value_usd", 0.0))
+                insider_name = smart_money_data.get("insider_name", "")
+                has_congress_buy = bool(smart_money_data.get("has_congress_buy", False))
+                has_options = bool(smart_money_data.get("has_options_flow", False))
+                net_institutional = float(smart_money_data.get("net_institutional_flow_mil", 0.0))
+                insider_buys = int(smart_money_data.get("insider_buy_count_90d", 0))
+                insider_sells = int(smart_money_data.get("insider_sell_count_90d", 0))
+
+                if has_insider_buy and insider_val > 0:
+                    smart_score = 90.0
+                    smart_status = "positive"
+                    smart_detail = f"{insider_name or 'C-Suite Executive'} purchased ${(insider_val / 1e6):.1f}M USD on open market."
+                    smart_plain = f"Insider skin in the game: ${(insider_val / 1e6):.1f}M bought directly by corporate executives."
+                elif has_insider_buy or has_congress_buy or has_options or net_institutional > 10.0 or insider_buys >= 2:
+                    smart_score = 85.0 if (has_insider_buy or has_congress_buy) else 82.0
+                    smart_status = "positive"
+                    if has_congress_buy:
+                        smart_detail = "Congressional STOCK Act filing: Capitol Hill committee member buy disclosure active."
+                        smart_plain = "Congress buy reported: Lawmaker disclosed an open-market purchase in this stock/sector."
+                    elif has_options:
+                        smart_detail = "Unusual institutional order flow: High-volume call sweeps detected in options tape."
+                        smart_plain = "Big money call options detected: Institutional traders positioning for upside."
+                    elif has_insider_buy:
+                        smart_detail = "Verified SEC Form 4 insider open-market purchases recorded."
+                        smart_plain = "Corporate insiders actively purchasing company stock."
+                    else:
+                        smart_detail = f"Institutional accumulation (+${net_institutional:.1f}M net flow, {insider_buys} Form 4 insider buys)."
+                        smart_plain = f"Smart money accumulating: Net +${net_institutional:.1f}M institutional inflow and insider buying recorded."
+                elif net_institutional < -20.0 or (insider_sells > 4 and insider_buys == 0):
+                    smart_score = 35.0
+                    smart_status = "warning"
+                    smart_detail = f"Institutional distribution (-${abs(net_institutional):.1f}M net flow, {insider_sells} Form 4 sales)."
+                    smart_plain = f"Heavy insider selling: Net -${abs(net_institutional):.1f}M institutional outflow recorded."
+                elif smart_money_data.get("status") == "neutral":
+                    smart_score = 50.0
+                    smart_status = "neutral"
+                    smart_detail = "Neutral smart money flow. No significant directional cluster."
+                    smart_plain = "No recent big boss insider purchases filed with the SEC this month."
+                else:
+                    # Epistemic Honesty: Empty / unobserved dictionary must NEVER synthesize 55.0 neutral!
+                    # Must fail closed to unavailable so confluence engine cleanly reweights.
+                    smart_score = 0.0
+                    smart_status = "unavailable"
+                    smart_detail = "Smart money flow unassessed or unavailable; reweighting active pillars."
+                    smart_plain = "Smart money telemetry unavailable for this asset."
 
         # ── 4. MACRO REGIME & DOWNSIDE SAFETY FLOOR (Weight: 25%) ────────────
         has_macro = bool(macro_data and (macro_data.get("yield_curve_10y2y") is not None or macro_data.get("credit_spread") is not None))
@@ -255,31 +301,35 @@ class ConfluenceEngine:
         # Note: If fundamentals are missing/unverified, standard 4-pillar weighting applies (with unavailable pillars at 0)
         # to strictly preserve mathematical compression below 50.0 (defensive posture for unverified assets).
         if smart_status == "unavailable" and macro_status == "unavailable" and has_fundamentals:
+            w_tech, w_fund, w_smart, w_macro = 0.50, 0.50, 0.0, 0.0
             raw_composite = (
-                0.50 * tech_score +
-                0.50 * fund_score +
+                w_tech * tech_score +
+                w_fund * fund_score +
                 catalyst_mod
             )
         elif smart_status == "unavailable" and has_fundamentals:
+            w_tech, w_fund, w_smart, w_macro = 0.35, 0.35, 0.0, 0.30
             raw_composite = (
-                0.35 * tech_score +
-                0.35 * fund_score +
-                0.30 * macro_score +
+                w_tech * tech_score +
+                w_fund * fund_score +
+                w_macro * macro_score +
                 catalyst_mod
             )
         elif macro_status == "unavailable" and has_fundamentals:
+            w_tech, w_fund, w_smart, w_macro = 0.35, 0.35, 0.30, 0.0
             raw_composite = (
-                0.35 * tech_score +
-                0.35 * fund_score +
-                0.30 * smart_score +
+                w_tech * tech_score +
+                w_fund * fund_score +
+                w_smart * smart_score +
                 catalyst_mod
             )
         else:
+            w_tech, w_fund, w_smart, w_macro = 0.25, 0.25, 0.25, 0.25
             raw_composite = (
-                0.25 * tech_score +
-                0.25 * fund_score +
-                0.25 * smart_score +
-                0.25 * macro_score +
+                w_tech * tech_score +
+                w_fund * fund_score +
+                w_smart * smart_score +
+                w_macro * macro_score +
                 catalyst_mod
             )
 
@@ -291,6 +341,7 @@ class ConfluenceEngine:
                 "label": "Technical Structure",
                 "plainLabel": "Chart Structure",
                 "score": round(tech_score, 1),
+                "weight": w_tech,
                 "status": tech_status,
                 "detail": tech_detail,
                 "plainDetail": tech_plain,
@@ -301,6 +352,7 @@ class ConfluenceEngine:
                 "label": "Fundamental Solvency",
                 "plainLabel": "Company Health",
                 "score": round(fund_score, 1),
+                "weight": w_fund,
                 "status": fund_status,
                 "detail": fund_detail,
                 "plainDetail": fund_plain,
@@ -311,6 +363,7 @@ class ConfluenceEngine:
                 "label": "Corporate Insiders & Flow",
                 "plainLabel": "Smart Money Flow",
                 "score": round(smart_score, 1),
+                "weight": w_smart,
                 "status": smart_status,
                 "detail": smart_detail,
                 "plainDetail": smart_plain,
@@ -321,6 +374,7 @@ class ConfluenceEngine:
                 "label": "Macro Regime & Safety Floor",
                 "plainLabel": "Market Tailwinds & Stop",
                 "score": round(macro_score, 1),
+                "weight": w_macro,
                 "status": macro_status,
                 "detail": macro_detail,
                 "plainDetail": macro_plain,

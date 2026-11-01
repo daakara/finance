@@ -4,7 +4,8 @@ import os
 import sqlite3
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -2021,11 +2022,833 @@ def compute_filing_staleness(days_to_filing: int, base_strength: int = 90) -> Di
         }
 
 
+class SmartMoneyDomainStatus(str, Enum):
+    VERIFIED_SIGNAL = "VERIFIED_SIGNAL"
+    VERIFIED_NO_ACTIVITY = "VERIFIED_NO_ACTIVITY"
+    PARTIAL_COVERAGE = "PARTIAL_COVERAGE"
+    STALE = "STALE"
+    UNAVAILABLE = "UNAVAILABLE"
+    PIPELINE_HELD = "PIPELINE_HELD"
+    CURATED_RESEARCH = "CURATED_RESEARCH"
+    INAPPLICABLE = "INAPPLICABLE"
+
+
+class SmartMoneyDirection(str, Enum):
+    BULLISH = "BULLISH"
+    BEARISH = "BEARISH"
+    NEUTRAL = "NEUTRAL"
+    MIXED = "MIXED"
+    UNASSESSED = "UNASSESSED"
+
+
+def _parse_money(val: Any) -> float:
+    """Robustly parse dollar strings like '$3,450,000' or ranges like '$250,000 - $500,000' into float."""
+    if val is None:
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str):
+        cleaned = val.replace("$", "").replace(",", "").replace("USD", "").strip()
+        if "-" in cleaned:
+            parts = cleaned.split("-")
+            try:
+                p0 = float(parts[0].replace("$", "").replace(",", "").strip())
+                p1 = float(parts[1].replace("$", "").replace(",", "").strip())
+                return (p0 + p1) / 2.0
+            except Exception:
+                return 0.0
+        try:
+            return float(cleaned)
+        except Exception:
+            return 0.0
+    return 0.0
+
+
 class SmartMoneyEngine:
     """Quantitative engine for tracking Capitol Hill disclosures, SEC Form 4 & institutional options flow."""
 
-    @staticmethod
+    LOOKBACK_DAYS_OPTIONS = 90
+    LOOKBACK_DAYS_INSIDER = 90
+    LOOKBACK_DAYS_CONGRESS = 180
+
+    @classmethod
+    def assess_options_flow(
+        cls,
+        symbol: str,
+        asset_class: str = "EQUITY",
+        security_type: str = "COMMON_STOCK",
+        live_options: Optional[List[Dict[str, Any]]] = None,
+        include_curated: bool = False,
+        is_verified_empty: bool = False,
+    ) -> Dict[str, Any]:
+        """Authoritatively evaluate Options Flow and Unusual Activity sub-domain."""
+        clean_sym = symbol.upper().strip()
+
+        is_crypto = (
+            asset_class.upper() == "CRYPTO"
+            or security_type.upper() == "CRYPTO"
+            or clean_sym.endswith("-USD")
+            or clean_sym in ("BTC", "ETH", "SOL", "DOGE", "BTC-USD", "ETH-USD")
+        )
+        if is_crypto:
+            return {
+                "domain_id": "options_flow",
+                "status": SmartMoneyDomainStatus.INAPPLICABLE.value,
+                "status_label": "Exempt / Inapplicable",
+                "available": False,
+                "is_live": False,
+                "observation_count": 0,
+                "lookback_days": cls.LOOKBACK_DAYS_OPTIONS,
+                "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                "net_value_usd": 0.0,
+                "provenance": "OPRA / Exempt",
+                "disclosure": "Equity options flow sweeps inapplicable to digital assets.",
+                "records": [],
+            }
+
+        if is_verified_empty:
+            return {
+                "domain_id": "options_flow",
+                "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                "status_label": "Verified No Unusual Activity",
+                "available": True,
+                "is_live": True,
+                "observation_count": 0,
+                "lookback_days": cls.LOOKBACK_DAYS_OPTIONS,
+                "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                "net_value_usd": 0.0,
+                "provenance": "OPRA / Consolidated Options Tape",
+                "disclosure": "Verified complete scan: 0 unusual options sweeps detected in evaluation window.",
+                "records": [],
+            }
+
+        if live_options is not None:
+            if len(live_options) > 0:
+                bullish_count = 0
+                bearish_count = 0
+                total_premium = 0.0
+
+                for sweep in live_options:
+                    flow_type = (sweep.get("type") or sweep.get("put_call") or "").upper()
+                    side = (sweep.get("side") or sweep.get("trade_side") or "").upper()
+                    premium = float(sweep.get("premium") or sweep.get("value") or sweep.get("total_premium") or 0.0)
+                    total_premium += premium
+
+                    is_call = "CALL" in flow_type
+                    is_put = "PUT" in flow_type
+
+                    if side == "ASK":
+                        if is_call:
+                            bullish_count += 1
+                        elif is_put:
+                            bearish_count += 1
+                    elif side == "BID":
+                        if is_call:
+                            bearish_count += 1
+                        elif is_put:
+                            bullish_count += 1
+                    else:
+                        if is_call:
+                            bullish_count += 1
+                        elif is_put:
+                            bearish_count += 1
+
+                if bullish_count > bearish_count:
+                    direction = SmartMoneyDirection.BULLISH.value
+                elif bearish_count > bullish_count:
+                    direction = SmartMoneyDirection.BEARISH.value
+                else:
+                    direction = SmartMoneyDirection.MIXED.value
+
+                return {
+                    "domain_id": "options_flow",
+                    "status": SmartMoneyDomainStatus.VERIFIED_SIGNAL.value,
+                    "status_label": "Verified Sweeps",
+                    "available": True,
+                    "is_live": True,
+                    "observation_count": len(live_options),
+                    "lookback_days": cls.LOOKBACK_DAYS_OPTIONS,
+                    "directional_bias": direction,
+                    "net_value_usd": total_premium,
+                    "provenance": "OPRA / Consolidated Options Tape",
+                    "disclosure": f"{len(live_options)} institutional options sweeps evaluated.",
+                    "records": live_options,
+                }
+            elif is_verified_empty:
+                return {
+                    "domain_id": "options_flow",
+                    "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                    "status_label": "Verified No Unusual Activity",
+                    "available": True,
+                    "is_live": True,
+                    "observation_count": 0,
+                    "lookback_days": cls.LOOKBACK_DAYS_OPTIONS,
+                    "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                    "net_value_usd": 0.0,
+                    "provenance": "OPRA / Consolidated Options Tape",
+                    "disclosure": "Verified complete scan: 0 unusual options sweeps detected in evaluation window.",
+                    "records": [],
+                }
+            else:
+                return {
+                    "domain_id": "options_flow",
+                    "status": SmartMoneyDomainStatus.UNAVAILABLE.value,
+                    "status_label": "Unavailable (No Tape Stream)",
+                    "available": False,
+                    "is_live": False,
+                    "observation_count": 0,
+                    "lookback_days": cls.LOOKBACK_DAYS_OPTIONS,
+                    "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                    "net_value_usd": 0.0,
+                    "provenance": "None",
+                    "disclosure": "Live options tape unavailable (no active stream connection).",
+                    "records": [],
+                }
+
+        if include_curated:
+            records = cls.get_options_flow(clean_sym, include_curated=True)
+            if len(records) > 0:
+                return {
+                    "domain_id": "options_flow",
+                    "status": SmartMoneyDomainStatus.CURATED_RESEARCH.value,
+                    "status_label": "Curated Research Sample",
+                    "available": True,
+                    "is_live": False,
+                    "observation_count": len(records),
+                    "lookback_days": cls.LOOKBACK_DAYS_OPTIONS,
+                    "directional_bias": SmartMoneyDirection.BULLISH.value,
+                    "net_value_usd": sum(_parse_money(r.get("premium", 0.0)) for r in records),
+                    "provenance": "Curated Institutional Flow Archive",
+                    "disclosure": "Curated historical options sweeps archive loaded (not a live feed).",
+                    "records": records,
+                }
+            return {
+                "domain_id": "options_flow",
+                "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                "status_label": "No Curated Sweeps",
+                "available": True,
+                "is_live": False,
+                "observation_count": 0,
+                "lookback_days": cls.LOOKBACK_DAYS_OPTIONS,
+                "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                "net_value_usd": 0.0,
+                "provenance": "Curated Institutional Flow Archive",
+                "disclosure": "0 curated options sweeps on record for this symbol.",
+                "records": [],
+            }
+
+        return {
+            "domain_id": "options_flow",
+            "status": SmartMoneyDomainStatus.UNAVAILABLE.value,
+            "status_label": "Unavailable / Stream Disconnected",
+            "available": False,
+            "is_live": False,
+            "observation_count": 0,
+            "lookback_days": cls.LOOKBACK_DAYS_OPTIONS,
+            "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+            "net_value_usd": 0.0,
+            "provenance": "None",
+            "disclosure": "Live options tape unavailable (no active stream connection).",
+            "records": [],
+        }
+
+    @classmethod
+    def assess_sec_form_4(
+        cls,
+        symbol: str,
+        asset_class: str = "EQUITY",
+        security_type: str = "COMMON_STOCK",
+        live_sec: Optional[Dict[str, Any]] = None,
+        include_curated: bool = False,
+        is_verified_empty: bool = False,
+        evaluation_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Authoritatively evaluate SEC Form 4 Insider Transactions sub-domain."""
+        clean_sym = symbol.upper().strip()
+
+        # Inapplicable check: Funds, Digital Assets, and Foreign Private Issuers (FPI) do not file Form 4
+        known_foreign_adrs = {
+            "DHLGY", "NVO", "ASML", "TSM", "BABA", "AZN", "BP", "SHEL", "SAP", "SNY",
+            "TM", "HMC", "VALE", "BTI", "RIO", "UL", "LVMUY", "TCEHY", "NPSNY", "ADDYY",
+            "BAYRY", "DDAIF", "VWAGY", "BMWYY", "RHHBY", "SAN", "BBVA", "ING", "BNPQY", "CRH",
+        }
+        is_foreign_adr = (
+            (len(clean_sym) == 5 and clean_sym.endswith(("Y", "F")))
+            or clean_sym in known_foreign_adrs
+        )
+        is_inapplicable = (
+            asset_class.upper() in ("ETF", "CRYPTO")
+            or security_type.upper() in ("ETF", "CRYPTO")
+            or clean_sym.endswith("-USD")
+            or clean_sym in ("SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "VTI", "VOO", "BTC-USD", "ETH-USD", "BTC", "ETH", "SOL", "DOGE")
+            or is_foreign_adr
+        )
+        if is_inapplicable:
+            return {
+                "domain_id": "sec_form_4",
+                "status": SmartMoneyDomainStatus.INAPPLICABLE.value,
+                "status_label": "Exempt / Inapplicable" if not is_foreign_adr else "Exempt (Foreign Issuer)",
+                "available": False,
+                "is_live": False,
+                "observation_count": 0,
+                "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                "net_value_usd": 0.0,
+                "provenance": "SEC EDGAR / Exempt" if not is_foreign_adr else "Home Country Regulatory Authorities",
+                "disclosure": "Corporate insider Form 4 transactions are inapplicable to fund structures and digital assets." if not is_foreign_adr else "Foreign Private Issuer (FPI) exempt from US SEC Form 4 filings; local regulatory disclosures apply.",
+                "records": [],
+            }
+
+        if is_verified_empty or (live_sec is not None and live_sec.get("status") == "AVAILABLE_NO_RESULTS"):
+            return {
+                "domain_id": "sec_form_4",
+                "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                "status_label": "Verified No Activity",
+                "available": True,
+                "is_live": True,
+                "observation_count": 0,
+                "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                "net_value_usd": 0.0,
+                "provenance": "SEC EDGAR Form 4 Feed",
+                "disclosure": "Verified complete search: 0 open-market Form 4 transactions filed in trailing 90 days.",
+                "records": [],
+            }
+
+        if live_sec is not None:
+            sec_status = live_sec.get("status", "")
+            items = live_sec.get("items") or live_sec.get("filings") or []
+
+            # Check timestamp admissibility against evaluation_date if supplied
+            if evaluation_date:
+                eval_date_str = str(evaluation_date)[:10]
+                items = [f for f in items if str(f.get("filing_date") or "")[:10] <= eval_date_str]
+
+            if sec_status == "AVAILABLE_WITH_RESULTS" or len(items) > 0:
+                buys = 0
+                sells = 0
+                buy_val = 0.0
+                sell_val = 0.0
+                late_filers = 0
+
+                for f in items:
+                    txn_type = (f.get("transaction_type") or f.get("type") or "").upper()
+                    val = _parse_money(f.get("total_value") or f.get("value") or 0.0)
+                    is_buy = "PURCHASE" in txn_type or "BUY" in txn_type or f.get("transaction_code") == "P"
+                    is_sell = "SALE" in txn_type or "SELL" in txn_type or f.get("transaction_code") == "S"
+
+                    # Latency check: Statutory requirement generally 2 business days
+                    days_lag = f.get("days_to_filing") or f.get("filing_lag_days")
+                    if days_lag is not None and days_lag > 4:  # >2 business days ~ >4 calendar days
+                        late_filers += 1
+
+                    if is_buy:
+                        buys += 1
+                        buy_val += val
+                    elif is_sell:
+                        sells += 1
+                        sell_val += val
+
+                net_val = buy_val - sell_val
+                if buys > sells:
+                    direction = SmartMoneyDirection.BULLISH.value
+                elif sells > buys:
+                    direction = SmartMoneyDirection.BEARISH.value
+                else:
+                    direction = SmartMoneyDirection.MIXED.value if (buys + sells) > 0 else SmartMoneyDirection.NEUTRAL.value
+
+                return {
+                    "domain_id": "sec_form_4",
+                    "status": SmartMoneyDomainStatus.VERIFIED_SIGNAL.value,
+                    "status_label": "Verified Form 4 Transactions",
+                    "available": True,
+                    "is_live": True,
+                    "observation_count": len(items),
+                    "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                    "directional_bias": direction,
+                    "net_value_usd": net_val,
+                    "provenance": "SEC EDGAR Form 4 Feed",
+                    "disclosure": f"{len(items)} Form 4 insider transactions evaluated (Buys: {buys}, Sells: {sells}).",
+                    "records": items,
+                    "late_filers_count": late_filers,
+                }
+            elif sec_status == "AVAILABLE_NO_RESULTS" or is_verified_empty:
+                return {
+                    "domain_id": "sec_form_4",
+                    "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                    "status_label": "Verified No Activity",
+                    "available": True,
+                    "is_live": True,
+                    "observation_count": 0,
+                    "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                    "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                    "net_value_usd": 0.0,
+                    "provenance": "SEC EDGAR Form 4 Feed",
+                    "disclosure": "Verified complete search: 0 open-market Form 4 transactions filed in trailing 90 days.",
+                    "records": [],
+                }
+            elif sec_status in ("UPSTREAM_RATE_LIMITED", "UPSTREAM_TIMEOUT", "UPSTREAM_SERVER_ERROR", "TRANSPORT_INCOMPLETE", "STRUCTURALLY_INVALID", "UNAVAILABLE"):
+                return {
+                    "domain_id": "sec_form_4",
+                    "status": SmartMoneyDomainStatus.UNAVAILABLE.value,
+                    "status_label": "Provider Unavailable",
+                    "available": False,
+                    "is_live": False,
+                    "observation_count": 0,
+                    "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                    "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                    "net_value_usd": 0.0,
+                    "provenance": "SEC EDGAR API",
+                    "disclosure": f"SEC EDGAR Form 4 feed unavailable ({sec_status}).",
+                    "records": [],
+                }
+            else:
+                return {
+                    "domain_id": "sec_form_4",
+                    "status": SmartMoneyDomainStatus.PIPELINE_HELD.value,
+                    "status_label": "Pipeline Pending (HOLD_SEC_001)",
+                    "available": False,
+                    "is_live": False,
+                    "observation_count": 0,
+                    "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                    "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                    "net_value_usd": 0.0,
+                    "provenance": "SEC EDGAR System",
+                    "disclosure": "SEC Form 4 continuous ingestion paused under governed operational hold (HOLD_SEC_001).",
+                    "records": [],
+                }
+
+        if include_curated:
+            records = cls.get_sec_insider_trades(clean_sym, include_curated=True)
+            if len(records) > 0:
+                buys = sum(1 for r in records if "Purchase" in r.get("transaction_type", ""))
+                sells = sum(1 for r in records if "Sale" in r.get("transaction_type", ""))
+                direction = SmartMoneyDirection.BULLISH.value if buys >= sells else SmartMoneyDirection.BEARISH.value
+                return {
+                    "domain_id": "sec_form_4",
+                    "status": SmartMoneyDomainStatus.CURATED_RESEARCH.value,
+                    "status_label": "Curated Research Sample",
+                    "available": True,
+                    "is_live": False,
+                    "observation_count": len(records),
+                    "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                    "directional_bias": direction,
+                    "net_value_usd": sum(_parse_money(r.get("total_value", 0.0)) for r in records),
+                    "provenance": "Curated SEC Form 4 Archive",
+                    "disclosure": "Curated historical SEC Form 4 insider research dataset (not a live feed).",
+                    "records": records,
+                }
+            return {
+                "domain_id": "sec_form_4",
+                "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                "status_label": "No Curated Filings",
+                "available": True,
+                "is_live": False,
+                "observation_count": 0,
+                "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                "net_value_usd": 0.0,
+                "provenance": "Curated SEC Form 4 Archive",
+                "disclosure": "0 curated SEC Form 4 transactions on record for this symbol.",
+                "records": [],
+            }
+
+        return {
+            "domain_id": "sec_form_4",
+            "status": SmartMoneyDomainStatus.PIPELINE_HELD.value,
+            "status_label": "Pipeline Pending (HOLD_SEC_001)",
+            "available": False,
+            "is_live": False,
+            "observation_count": 0,
+            "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+            "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+            "net_value_usd": 0.0,
+            "provenance": "SEC EDGAR System",
+            "disclosure": "SEC Form 4 continuous sync paused under governed operational hold (HOLD_SEC_001).",
+            "records": [],
+        }
+
+    @classmethod
+    def assess_congressional_trades(
+        cls,
+        symbol: str,
+        asset_class: str = "EQUITY",
+        security_type: str = "COMMON_STOCK",
+        live_congress: Optional[List[Dict[str, Any]]] = None,
+        include_curated: bool = False,
+        is_verified_empty: bool = False,
+        evaluation_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Authoritatively evaluate Congressional STOCK Act Disclosures sub-domain."""
+        clean_sym = symbol.upper().strip()
+
+        # Inapplicable check: Funds and Digital Assets do not have single-stock congressional disclosures
+        is_inapplicable = (
+            asset_class.upper() in ("ETF", "CRYPTO")
+            or security_type.upper() in ("ETF", "CRYPTO")
+            or clean_sym.endswith("-USD")
+            or clean_sym in ("SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "VTI", "VOO", "BTC-USD", "ETH-USD", "BTC", "ETH", "SOL", "DOGE")
+        )
+        if is_inapplicable:
+            return {
+                "domain_id": "congressional_stock_act",
+                "status": SmartMoneyDomainStatus.INAPPLICABLE.value,
+                "status_label": "Exempt / Inapplicable",
+                "available": False,
+                "is_live": False,
+                "observation_count": 0,
+                "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                "net_value_usd": 0.0,
+                "provenance": "House & Senate Official STOCK Act Portals",
+                "disclosure": "Congressional STOCK Act single-asset disclosures inapplicable to funds and digital assets.",
+                "records": [],
+            }
+
+        if is_verified_empty:
+            return {
+                "domain_id": "congressional_stock_act",
+                "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                "status_label": "Verified No Activity",
+                "available": True,
+                "is_live": True,
+                "observation_count": 0,
+                "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                "net_value_usd": 0.0,
+                "provenance": "House & Senate Official STOCK Act Portals",
+                "disclosure": "Verified complete search: 0 congressional disclosures filed in trailing window.",
+                "records": [],
+            }
+
+        if live_congress is not None:
+            # Check timestamp admissibility against evaluation_date if supplied
+            items = live_congress
+            if evaluation_date:
+                eval_date_str = str(evaluation_date)[:10]
+                items = [t for t in items if str(t.get("filing_date") or "")[:10] <= eval_date_str]
+
+            if len(items) > 0:
+                enriched = [cls.enrich_trade(t) for t in items]
+                buys = sum(1 for t in enriched if "Purchase" in t.get("transaction_type", ""))
+                sells = sum(1 for t in enriched if "Sale" in t.get("transaction_type", ""))
+                late_filers = sum(1 for t in enriched if t.get("staleness_status") == "LATE_FILER")
+
+                if buys > sells:
+                    direction = SmartMoneyDirection.BULLISH.value
+                elif sells > buys:
+                    direction = SmartMoneyDirection.BEARISH.value
+                else:
+                    direction = SmartMoneyDirection.MIXED.value
+
+                return {
+                    "domain_id": "congressional_stock_act",
+                    "status": SmartMoneyDomainStatus.VERIFIED_SIGNAL.value,
+                    "status_label": "Verified Congressional Disclosures",
+                    "available": True,
+                    "is_live": True,
+                    "observation_count": len(enriched),
+                    "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                    "directional_bias": direction,
+                    "net_value_usd": 0.0,
+                    "provenance": "House & Senate Official STOCK Act Portals",
+                    "disclosure": f"{len(enriched)} congressional disclosures evaluated (Buys: {buys}, Sales: {sells}, Late filers: {late_filers}).",
+                    "records": enriched,
+                    "late_filers_count": late_filers,
+                }
+            elif is_verified_empty:
+                return {
+                    "domain_id": "congressional_stock_act",
+                    "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                    "status_label": "Verified No Activity",
+                    "available": True,
+                    "is_live": True,
+                    "observation_count": 0,
+                    "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                    "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                    "net_value_usd": 0.0,
+                    "provenance": "House & Senate Official STOCK Act Portals",
+                    "disclosure": "Verified complete search: 0 congressional disclosures filed in trailing window.",
+                    "records": [],
+                }
+            else:
+                return {
+                    "domain_id": "congressional_stock_act",
+                    "status": SmartMoneyDomainStatus.UNAVAILABLE.value,
+                    "status_label": "Unavailable (Disconnected)",
+                    "available": False,
+                    "is_live": False,
+                    "observation_count": 0,
+                    "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                    "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                    "net_value_usd": 0.0,
+                    "provenance": "None",
+                    "disclosure": "Congressional sync feed disconnected.",
+                    "records": [],
+                }
+
+        if include_curated:
+            records = cls.get_congressional_trades(clean_sym, include_curated=True)
+            if len(records) > 0:
+                buys = sum(1 for t in records if "Purchase" in t.get("transaction_type", ""))
+                sells = sum(1 for t in records if "Sale" in t.get("transaction_type", ""))
+                direction = SmartMoneyDirection.BULLISH.value if buys >= sells else SmartMoneyDirection.BEARISH.value
+                return {
+                    "domain_id": "congressional_stock_act",
+                    "status": SmartMoneyDomainStatus.CURATED_RESEARCH.value,
+                    "status_label": "Curated Research Sample",
+                    "available": True,
+                    "is_live": False,
+                    "observation_count": len(records),
+                    "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                    "directional_bias": direction,
+                    "net_value_usd": 0.0,
+                    "provenance": "Curated STOCK Act Research Archive",
+                    "disclosure": "Curated historical STOCK Act research dataset (August 2026). Not a real-time live trading feed.",
+                    "records": records,
+                    "late_filers_count": sum(1 for t in records if t.get("staleness_status") == "LATE_FILER"),
+                }
+            return {
+                "domain_id": "congressional_stock_act",
+                "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                "status_label": "No Curated Disclosures",
+                "available": True,
+                "is_live": False,
+                "observation_count": 0,
+                "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                "net_value_usd": 0.0,
+                "provenance": "Curated STOCK Act Research Archive",
+                "disclosure": "0 curated congressional disclosures on record for this symbol.",
+                "records": [],
+            }
+
+        return {
+            "domain_id": "congressional_stock_act",
+            "status": SmartMoneyDomainStatus.PIPELINE_HELD.value,
+            "status_label": "Pipeline Pending (HOLD_SEC_001)",
+            "available": False,
+            "is_live": False,
+            "observation_count": 0,
+            "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+            "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+            "net_value_usd": 0.0,
+            "provenance": "House & Senate Official STOCK Act Portals",
+            "disclosure": "Congressional STOCK Act continuous sync paused under governed operational hold (HOLD_SEC_001).",
+            "records": [],
+        }
+
+    @classmethod
+    def assess_symbol(
+        cls,
+        symbol: str,
+        asset_class: str = "EQUITY",
+        security_type: str = "COMMON_STOCK",
+        include_curated: bool = False,
+        live_options: Optional[List[Dict[str, Any]]] = None,
+        live_sec: Optional[Dict[str, Any]] = None,
+        live_congress: Optional[List[Dict[str, Any]]] = None,
+        options_verified_empty: bool = False,
+        sec_verified_empty: bool = False,
+        congress_verified_empty: bool = False,
+        evaluation_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Build the unified, canonical Single-Asset Smart Money Assessment.
+        Enforces epistemic honesty:
+        - Never converts missing data into bullish, bearish, or verified-neutral signals.
+        - Only emits VERIFIED_NO_ACTIVITY when search confirms completed zero records.
+        - Emits PIPELINE_HELD / UNAVAILABLE when continuous feeds are offline under HOLD_SEC_001.
+        """
+        clean_sym = symbol.upper().strip()
+
+        options_sub = cls.assess_options_flow(
+            symbol=clean_sym,
+            asset_class=asset_class,
+            security_type=security_type,
+            live_options=live_options,
+            include_curated=include_curated,
+            is_verified_empty=options_verified_empty,
+        )
+
+        sec_sub = cls.assess_sec_form_4(
+            symbol=clean_sym,
+            asset_class=asset_class,
+            security_type=security_type,
+            live_sec=live_sec,
+            include_curated=include_curated,
+            is_verified_empty=sec_verified_empty,
+            evaluation_date=evaluation_date,
+        )
+
+        cong_sub = cls.assess_congressional_trades(
+            symbol=clean_sym,
+            asset_class=asset_class,
+            security_type=security_type,
+            live_congress=live_congress,
+            include_curated=include_curated,
+            is_verified_empty=congress_verified_empty,
+            evaluation_date=evaluation_date,
+        )
+
+        subdomains = {
+            "options_flow": options_sub,
+            "sec_form_4": sec_sub,
+            "congressional_stock_act": cong_sub,
+        }
+
+        # Determine composite overall status
+        statuses = [s["status"] for s in subdomains.values()]
+        active_holds = []
+        if SmartMoneyDomainStatus.PIPELINE_HELD.value in statuses:
+            active_holds.append("HOLD_SEC_001")
+
+        # Resolve overall_status
+        if include_curated:
+            overall_status = SmartMoneyDomainStatus.CURATED_RESEARCH.value
+            overall_label = "Curated Research Dataset"
+        elif all(s == SmartMoneyDomainStatus.INAPPLICABLE.value for s in statuses):
+            overall_status = SmartMoneyDomainStatus.INAPPLICABLE.value
+            overall_label = "Exempt / Inapplicable"
+        elif any(s == SmartMoneyDomainStatus.VERIFIED_SIGNAL.value for s in statuses):
+            if any(s in (SmartMoneyDomainStatus.UNAVAILABLE.value, SmartMoneyDomainStatus.PIPELINE_HELD.value) for s in statuses):
+                overall_status = SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
+                overall_label = "Partial Coverage (Signal Active)"
+            else:
+                overall_status = SmartMoneyDomainStatus.VERIFIED_SIGNAL.value
+                overall_label = "Verified Smart Money Signals"
+        elif all(s in (SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value, SmartMoneyDomainStatus.INAPPLICABLE.value) for s in statuses):
+            overall_status = SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
+            overall_label = "Verified No Activity (Comprehensive Search)"
+        elif all(s in (SmartMoneyDomainStatus.PIPELINE_HELD.value, SmartMoneyDomainStatus.UNAVAILABLE.value, SmartMoneyDomainStatus.INAPPLICABLE.value) for s in statuses):
+            if SmartMoneyDomainStatus.PIPELINE_HELD.value in statuses:
+                overall_status = SmartMoneyDomainStatus.PIPELINE_HELD.value
+                overall_label = "Pipeline Pending (HOLD_SEC_001 Active)"
+            else:
+                overall_status = SmartMoneyDomainStatus.UNAVAILABLE.value
+                overall_label = "Feeds Unavailable"
+        else:
+            overall_status = SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
+            overall_label = "Partial Coverage"
+
+        # Pillar eligibility: Only scoreable if verified signals, verified zero, or curated research
+        pillar_eligibility = overall_status in (
+            SmartMoneyDomainStatus.VERIFIED_SIGNAL.value,
+            SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+            SmartMoneyDomainStatus.CURATED_RESEARCH.value,
+            SmartMoneyDomainStatus.PARTIAL_COVERAGE.value,
+        )
+
+        # Compute composite directional score and pillar contribution
+        if not pillar_eligibility:
+            pillar_score = None
+            pillar_status = "unavailable"
+            reweight_required = True
+            directional_bias = SmartMoneyDirection.UNASSESSED.value
+        elif overall_status == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value:
+            pillar_score = 50.0
+            pillar_status = "neutral"
+            reweight_required = False
+            directional_bias = SmartMoneyDirection.NEUTRAL.value
+        else:
+            # Active signal computation
+            base_score = 50.0
+            score_delta = 0.0
+
+            # 1. Options Flow contribution (+/- 15 pts)
+            opt_dir = options_sub["directional_bias"]
+            if opt_dir == SmartMoneyDirection.BULLISH.value:
+                score_delta += 15.0
+            elif opt_dir == SmartMoneyDirection.BEARISH.value:
+                score_delta -= 15.0
+
+            # 2. Form 4 Insider contribution (+/- 25 pts)
+            sec_dir = sec_sub["directional_bias"]
+            if sec_dir == SmartMoneyDirection.BULLISH.value:
+                score_delta += 25.0
+            elif sec_dir == SmartMoneyDirection.BEARISH.value:
+                score_delta -= 20.0
+
+            # 3. Congressional contribution (+/- 20 pts, penalized for staleness)
+            cong_dir = cong_sub["directional_bias"]
+            late_cong = cong_sub.get("late_filers_count", 0)
+            if cong_dir == SmartMoneyDirection.BULLISH.value:
+                boost = 20.0 if late_cong == 0 else 8.0  # Staleness decay
+                score_delta += boost
+            elif cong_dir == SmartMoneyDirection.BEARISH.value:
+                score_delta -= 15.0
+
+            composite_score = min(95.0, max(15.0, base_score + score_delta))
+            pillar_score = round(composite_score, 1)
+
+            if pillar_score >= 65.0:
+                pillar_status = "positive"
+                directional_bias = SmartMoneyDirection.BULLISH.value
+            elif pillar_score <= 40.0:
+                pillar_status = "warning"
+                directional_bias = SmartMoneyDirection.BEARISH.value
+            else:
+                pillar_status = "neutral"
+                directional_bias = SmartMoneyDirection.MIXED.value if score_delta != 0 else SmartMoneyDirection.NEUTRAL.value
+
+            reweight_required = False
+
+        # Extract backward-compatible flags and lists
+        opt_records = options_sub.get("records", [])
+        sec_records = sec_sub.get("records", [])
+        cong_records = cong_sub.get("records", [])
+
+        has_insider_buy = any("PURCHASE" in (r.get("transaction_type") or "").upper() or r.get("transaction_code") == "P" for r in sec_records)
+        has_insider_sell = any("SALE" in (r.get("transaction_type") or "").upper() or r.get("transaction_code") == "S" for r in sec_records)
+        has_congress_buy = any("Purchase" in r.get("transaction_type", "") for r in cong_records)
+        has_congress_sell = any("Sale" in r.get("transaction_type", "") for r in cong_records)
+        has_options_flow = len(opt_records) > 0
+
+        insider_val = sum(_parse_money(r.get("total_value", 0.0)) for r in sec_records if "PURCHASE" in (r.get("transaction_type") or "").upper() or r.get("transaction_code") == "P")
+
+        coverage_summary = (
+            f"Smart Money Overall: {overall_label}. "
+            f"Options: {options_sub['status_label']} ({options_sub['observation_count']}). "
+            f"SEC Form 4: {sec_sub['status_label']} ({sec_sub['observation_count']}). "
+            f"Congress: {cong_sub['status_label']} ({cong_sub['observation_count']})."
+        )
+
+        return {
+            "symbol": clean_sym,
+            "overall_status": overall_status,
+            "overall_status_label": overall_label,
+            "pillar_eligibility": pillar_eligibility,
+            "pillar_status": pillar_status,
+            "pillar_score": pillar_score,
+            "reweight_required": reweight_required,
+            "directional_bias": directional_bias,
+            "active_holds": active_holds,
+            "coverage_summary": coverage_summary,
+            "coverage_window_days": {
+                "options_flow": cls.LOOKBACK_DAYS_OPTIONS,
+                "sec_form_4": cls.LOOKBACK_DAYS_INSIDER,
+                "congressional_stock_act": cls.LOOKBACK_DAYS_CONGRESS,
+            },
+            "subdomains": subdomains,
+            # Backward-compatible fields for confluence_engine & decision_trace
+            "has_insider_buy": has_insider_buy,
+            "has_insider_sell": has_insider_sell,
+            "insider_value_usd": insider_val,
+            "has_congress_buy": has_congress_buy,
+            "has_congress_sell": has_congress_sell,
+            "has_options_flow": has_options_flow,
+            "options_flow": opt_records,
+            "optionsFlow": opt_records,
+            "sec_insider_trades": sec_records,
+            "secInsiderTrades": sec_records,
+            "congress_trades": cong_records,
+            "congressTrades": cong_records,
+            "as_of": datetime.now(timezone.utc).isoformat(),
+        }
+
+    @classmethod
     def evaluate_smart_money_feeds(
+        cls,
         symbol: str,
         window_days: int = 90,
         include_curated: bool = False,
@@ -2131,9 +2954,9 @@ class SmartMoneyEngine:
                            transaction_date, shares, price_per_share, total_value_usd, acquired_disposed,
                            is_positive_buying_conviction, is_open_market_purchase_evidence, acceptance_datetime
                     FROM form4_parsed_transactions
-                    WHERE issuer_symbol = ? AND (filing_date >= ? OR transaction_date >= ?)
+                    WHERE issuer_symbol = ? AND filing_date >= ? AND filing_date <= ?
                     ORDER BY filing_date DESC
-                """, (clean_sym, cutoff_str, cutoff_str))
+                """, (clean_sym, cutoff_str, eval_date.isoformat()))
                 sec_rows = cur.fetchall()
 
                 cur.execute("SELECT issuer_cik FROM form4_parsed_transactions WHERE issuer_symbol = ? LIMIT 1", (clean_sym,))
@@ -2155,7 +2978,12 @@ class SmartMoneyEngine:
                     sec_cik = None
 
             if sec_rows:
+                eval_date_str = eval_date.isoformat()
                 for r in sec_rows:
+                    # Look-ahead bias prevention: strictly exclude filings after eval_date
+                    r_filing = str(r["filing_date"] or "")[:10]
+                    if r_filing > eval_date_str:
+                        continue
                     is_buy = r["acquired_disposed"] == "A" or bool(r["is_positive_buying_conviction"])
                     sec_observations.append({
                         "id": r["accession_number"],
@@ -2378,8 +3206,24 @@ class SmartMoneyEngine:
             overall_direction = "UNVERIFIED"
             overall_confidence = "NONE"
 
+        canonical_assessment = cls.assess_symbol(
+            symbol=clean_sym,
+            asset_class=asset_class or "EQUITY",
+            security_type=security_type or "COMMON_STOCK",
+            include_curated=include_curated,
+            evaluation_date=evaluation_date,
+        )
+
         payload = {
             "status": overall_status,
+            "overallStatus": canonical_assessment.get("overall_status") if not has_any_verified else "AVAILABLE",
+            "pillarEligibility": has_any_verified or canonical_assessment.get("pillar_eligibility", False),
+            "pillarScore": canonical_assessment.get("pillar_score"),
+            "reweighted": not has_any_verified and canonical_assessment.get("reweight_required", True),
+            "directionalBias": canonical_assessment.get("directional_bias", overall_direction),
+            "coverageSummary": canonical_assessment.get("coverage_summary"),
+            "coverageWindowDays": canonical_assessment.get("coverage_window_days"),
+            "subdomains": canonical_assessment.get("subdomains"),
             "window_days": window_days,
             "overall_direction": overall_direction,
             "overall_confidence": overall_confidence,
@@ -2391,10 +3235,19 @@ class SmartMoneyEngine:
             "congressTrades": cong_feed["observations"],
             "optionsFlow": options_feed["observations"],
             "secForm4Trades": sec_feed["observations"],
+            "secInsiderTrades": sec_feed["observations"],
         }
 
         return {
-            "overall_status": overall_status,
+            "overall_status": payload["overallStatus"],
+            "overallStatus": payload["overallStatus"],
+            "pillar_eligibility": payload["pillarEligibility"],
+            "pillar_score": payload["pillarScore"],
+            "reweight_required": payload["reweighted"],
+            "directional_bias": payload["directionalBias"],
+            "coverage_summary": payload["coverageSummary"],
+            "coverage_window_days": payload["coverageWindowDays"],
+            "subdomains": payload["subdomains"],
             "overall_direction": overall_direction,
             "overall_confidence": overall_confidence,
             "window_days": window_days,
@@ -2403,6 +3256,7 @@ class SmartMoneyEngine:
             "congressTrades": payload["congressTrades"],
             "optionsFlow": payload["optionsFlow"],
             "secForm4Trades": payload["secForm4Trades"],
+            "secInsiderTrades": payload["secInsiderTrades"],
             "payload": payload,
         }
 
