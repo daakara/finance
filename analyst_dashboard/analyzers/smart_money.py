@@ -3028,8 +3028,8 @@ class SmartMoneyEngine:
                     "records": [],
                 }
 
+        records = cls.get_congressional_trades(clean_sym, include_curated=include_curated)
         if include_curated:
-            records = cls.get_congressional_trades(clean_sym, include_curated=True)
             if len(records) > 0:
                 buys = sum(1 for t in records if "Purchase" in t.get("transaction_type", ""))
                 sells = sum(1 for t in records if "Sale" in t.get("transaction_type", ""))
