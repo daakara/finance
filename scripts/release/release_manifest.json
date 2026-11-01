@@ -1,48 +1,95 @@
 {
-  "release_candidate_commit": "dc4dfa8bcdbf3ef35710710db5f24d6a33c021d9",
-  "base_anchor_commit": "fb9dadeeeed7d0e134799e9d68af4ac4c359e63a",
+  "release_candidate_commit": "854734de4feecef34218544112330c20df0bc128",
+  "base_anchor_commit": "e08d420d835dd52948352d7198926a4331c46ed9",
   "mainline_source_anchor": "dc4dfa8bcdbf3ef35710710db5f24d6a33c021d9",
-  "total_files": 4,
+  "total_files": 10,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-PROD-RELEASE-044R8-RADAR-ORDERING",
-  "description": "Promote Directive 044R.8 Radar deterministic ordering corrections (PR #151) to production.",
+  "directive": "ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009",
+  "description": "Promote Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009 Smart Money canonical authority, feed parity and adversarial verification (PR #156) to release/production.",
   "approved_prs": [
-    151,
-    155
+    156
   ],
   "production_pr": 155,
   "files": {
+    "analyst_dashboard/analyzers/decision_trace.py": {
+      "operation": "M",
+      "originating_pr_number": 156,
+      "originating_commit": "854734d",
+      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: DecisionTrace subdomains and feeds envelope synchronization",
+      "sha256": "055d717122f4f6ed1029f5f4c4dc84692e9e4b665916bc056123e390f981de4b",
+      "size_bytes": 13956
+    },
+    "analyst_dashboard/analyzers/smart_money.py": {
+      "operation": "M",
+      "originating_pr_number": 156,
+      "originating_commit": "854734d",
+      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Smart Money canonical analytical authority, Form 4 local store queries and statutory exemptions",
+      "sha256": "05eb569b72e19c6885ea146880bfc5466bb4e8bfab5d09013fe145451f117aec",
+      "size_bytes": 147756
+    },
     "api/routes/analytics.py": {
       "operation": "M",
-      "originating_pr_number": 151,
-      "originating_commit": "dc4dfa8",
-      "governing_requirement": "Directive 044R.8: Deterministic Trade Plan actionable-first ordering with confluenceScore sort and delisted suppression",
-      "sha256": "62dccacbcb5a9bc735c5f4e761356d8f293313ac46c69032fdeeef8f0fe99bcd",
-      "size_bytes": 72209
+      "originating_pr_number": 156,
+      "originating_commit": "854734d",
+      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Epistemic honesty inputs, dynamic Confluence reweighting and dual envelope support",
+      "sha256": "cf65c928c457a78b7afc2e66702158d2bbd53300f8c56e0a834c7fc7d7111c9d",
+      "size_bytes": 75456
     },
-    "api/routes/screener.py": {
+    "frontend/lib/api.ts": {
       "operation": "M",
-      "originating_pr_number": 151,
-      "originating_commit": "dc4dfa8",
-      "governing_requirement": "Directive 044R.8: Deterministic Radar ordering (delisted-sink, confluenceScore desc, gemScore desc, symbol asc) with permutation-invariant sort guarantee",
-      "sha256": "dede0f13d41afff1f292dcf05820193187bc5a5002531a849a7d9b9c44f50bfd",
-      "size_bytes": 73182
+      "originating_pr_number": 156,
+      "originating_commit": "854734d",
+      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Frontend client typing and dual envelope adaptation for Smart Money",
+      "sha256": "b4cdf39f24a8e464dfd3dbd05fd229fce06235ab42d9e3e5a21851a2bfcd1eaa",
+      "size_bytes": 182092
     },
-    "frontend/app/radar/page.tsx": {
+    "frontend/lib/evidenceDomains.ts": {
       "operation": "M",
-      "originating_pr_number": 151,
-      "originating_commit": "dc4dfa8",
-      "governing_requirement": "Directive 044R.8: Frontend filteredAssets deterministic tie-breakers (ticker.localeCompare) for SCORE, RVOL, PRICE sort modes; backend-parity alignment",
-      "sha256": "415d288557e6e46d24a602c7ab2978de50b8b9f054764fbdd1726cf7daaa22a4",
-      "size_bytes": 96317
+      "originating_pr_number": 156,
+      "originating_commit": "854734d",
+      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: 9-domain evidence resolution with advisory domain decoupling and FPI/ETF/crypto exemptions",
+      "sha256": "40c0679a68d90e31ab86460ae498eb085152eae79e1b200fe9901567e6e77650",
+      "size_bytes": 25096
     },
-    "tests/test_directive_044r8_authority_closure.py": {
+    "frontend/tests/smartMoneyBoundedRemediation.test.ts": {
       "operation": "A",
-      "originating_pr_number": 151,
-      "originating_commit": "dc4dfa8",
-      "governing_requirement": "Directive 044R.8: 12-test adversarial authority closure suite covering ranking semantics, product contract decoupling, and frontend-backend parity",
-      "sha256": "67db88817efcd38405ae212ae0c3efa5bd728f8907bac441e8d69924bf1e3bee",
-      "size_bytes": 14204
+      "originating_pr_number": 156,
+      "originating_commit": "854734d",
+      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Frontend bounded remediation tests for Smart Money evidence resolution",
+      "sha256": "7fb7a6178d77eea6df73710adb61073fa0154795d773f6cfe9b45d0a3eb75c83",
+      "size_bytes": 12844
+    },
+    "frontend/tests/smartMoneyE2EParity.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 156,
+      "originating_commit": "854734d",
+      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Frontend end-to-end parity and statutory exemption tests",
+      "sha256": "b5c401ca3d5187911c281658c66ec3dfb7ce1cbd99d89b06f7498e6a087b771b",
+      "size_bytes": 14915
+    },
+    "frontend/types/insight.ts": {
+      "operation": "M",
+      "originating_pr_number": 156,
+      "originating_commit": "854734d",
+      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Insight and evidence domain types extension",
+      "sha256": "e67b8b3563982ab682fb0a765aa2b67d3f3b6542f80fbb1fe2502224d3cfa905",
+      "size_bytes": 7413
+    },
+    "tests/test_directive_smart_money_bounded_remediation.py": {
+      "operation": "A",
+      "originating_pr_number": 156,
+      "originating_commit": "854734d",
+      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Backend bounded remediation test suite for SQLite Form 4 queries",
+      "sha256": "cf9a8c1d9388d94dda06851a9305852f178fa0127ea272276005c01281ab4457",
+      "size_bytes": 12832
+    },
+    "tests/test_smart_money_e2e_parity.py": {
+      "operation": "A",
+      "originating_pr_number": 156,
+      "originating_commit": "854734d",
+      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Backend end-to-end adversarial parity test suite across 14 scenarios",
+      "sha256": "90cc2ffc888b8046cf2e315005260824497c28e8b3a37468bf08b0ee250d5795",
+      "size_bytes": 21994
     }
   },
   "qualification_framework_files": {
@@ -52,9 +99,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "f306426e15d1a28b9bca04d248aa6321b8ef59df0968c3957de3bfa50bd986e3",
-      "bytes": 57671,
-      "size_bytes": 57671
+      "sha256": "111d73a4928d2643cbe400c6ad85071bf938dde6e8a1cbaec4aaa9c8365bb273",
+      "bytes": 57676,
+      "size_bytes": 57676
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",

@@ -53,9 +53,28 @@ export interface EvidenceResolutionContext {
   optimalExecution?: OptimalExecutionPlan;
   smartMoney?: {
     status?: string;
+    overallStatus?: string;
+    overall_direction?: string;
+    overall_confidence?: string;
+    window_days?: number;
+    pillarEligibility?: boolean;
+    congressStatus?: string;
+    secStatus?: string;
+    optionsStatus?: string;
     congressTrades?: any[];
     optionsFlow?: any[];
     secForm4Trades?: any[];
+    secInsiderTrades?: any[];
+    feeds?: {
+      options_flow?: any;
+      sec_form4?: any;
+      congressional_disclosures?: any;
+    };
+    subdomains?: {
+      options_flow?: any;
+      sec_form_4?: any;
+      congressional_stock_act?: any;
+    };
     notice?: string;
   };
   macroData?: any;
@@ -104,6 +123,15 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     assetClass?.toUpperCase() === "ETF" ||
     securityType?.toUpperCase() === "ETF" ||
     ["SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "VTI", "VOO"].includes(upperSymbol);
+
+  const KNOWN_FOREIGN_ADRS = new Set([
+    "DHLGY", "NVO", "ASML", "TSM", "BABA", "AZN", "BP", "SHEL", "SAP", "SNY",
+    "TM", "HMC", "VALE", "BTI", "RIO", "UL", "LVMUY", "TCEHY", "NPSNY", "ADDYY",
+    "BAYRY", "DDAIF", "VWAGY", "BMWYY", "RHHBY", "SAN", "BBVA", "ING", "BNPQY", "CRH"
+  ]);
+  const isForeignAdr =
+    (upperSymbol.length === 5 && (upperSymbol.endsWith("Y") || upperSymbol.endsWith("F"))) ||
+    KNOWN_FOREIGN_ADRS.has(upperSymbol);
 
   const candleCount = candles.length;
   const isStaleTape =
@@ -302,22 +330,59 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
 
   // ── 5. Options Flow Sweeps & Unusual Activity ─────────────────────────────
   (() => {
+    const feed = smartMoney?.feeds?.options_flow;
     const sweeps = smartMoney?.optionsFlow || [];
-    const isPending = smartMoney?.status === "PIPELINE_PENDING";
+    const sub = smartMoney?.subdomains?.options_flow;
+    const subStatus = sub?.status || smartMoney?.optionsStatus;
+    const isPending = smartMoney?.status === "PIPELINE_PENDING" || subStatus === "PIPELINE_HELD" || smartMoney?.overallStatus === "PIPELINE_HELD";
+    const isUnavailable = subStatus === "UNAVAILABLE" || smartMoney?.status === "UNAVAILABLE";
+    const isVerifiedEmpty = subStatus === "VERIFIED_NO_ACTIVITY";
     const hasSweeps = sweeps.length > 0;
 
     let status: DomainStatus = "NO_OBSERVATIONS";
     let statusLabel = "No Observations";
     let explanation = "0 unusual options sweeps detected in evaluation window (normal retail/institutional balance).";
+    let provenance = sub?.provenance || "OPRA Consolidated Feed";
 
-    if (hasSweeps) {
+    if (isCrypto) {
+      status = "INAPPLICABLE";
+      statusLabel = "Inapplicable";
+      explanation = "Equity options flow sweeps inapplicable to digital assets.";
+    } else if (feed) {
+      if (feed.status === "VERIFIED") {
+        status = "VERIFIED";
+        statusLabel = "Verified";
+        explanation = feed.explanation || `${feed.observation_count || sweeps.length} institutional options sweeps evaluated.`;
+      } else if (feed.status === "PIPELINE_PENDING") {
+        status = "UNAVAILABLE";
+        statusLabel = "Pipeline Pending";
+        explanation = feed.explanation || "Options sweep ingestion pipeline pending under governed deployment.";
+      } else if (feed.status === "INAPPLICABLE") {
+        status = "INAPPLICABLE";
+        statusLabel = feed.status_label || "Inapplicable";
+        explanation = feed.explanation || "Options flow inapplicable to this asset class.";
+      } else if (feed.status === "NO_OBSERVATIONS") {
+        status = "NO_OBSERVATIONS";
+        statusLabel = "No Observations";
+        explanation = feed.explanation || "0 unusual options sweeps detected in evaluation window.";
+      }
+      if (feed.provenance) provenance = feed.provenance;
+    } else if (hasSweeps) {
       status = "VERIFIED";
       statusLabel = "Verified";
       explanation = `${sweeps.length} institutional options sweeps evaluated.`;
+    } else if (isVerifiedEmpty) {
+      status = "NO_OBSERVATIONS";
+      statusLabel = "No Observations";
+      explanation = "Verified complete scan: 0 unusual options sweeps detected in evaluation window.";
     } else if (isPending) {
       status = "UNAVAILABLE";
       statusLabel = "Pipeline Pending";
-      explanation = "Options sweep ingestion pipeline pending under governed deployment.";
+      explanation = sub?.disclosure || "Options sweep ingestion pipeline pending under governed deployment.";
+    } else if (isUnavailable) {
+      status = "UNAVAILABLE";
+      statusLabel = "Unavailable";
+      explanation = sub?.disclosure || "Live options tape unavailable (no active stream connection).";
     }
 
     domains.push({
@@ -325,85 +390,162 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       name: "Options Flow Sweeps",
       category: "Sentiment & Positioning",
       authority: "OPRA / Options Analytics Feed",
-      applicability: "OPTIONAL",
+      applicability: (isCrypto || status === "INAPPLICABLE") ? "INAPPLICABLE" : "OPTIONAL",
       status,
       statusLabel,
       impact: "NON_BLOCKING",
       observationTime: "Intraday Rolling Window",
-      provenance: "OPRA Consolidated Feed",
+      provenance,
       explanation,
     });
   })();
 
   // ── 6. Insider Transactions (SEC Form 4) ──────────────────────────────────
   (() => {
+    const feed = smartMoney?.feeds?.sec_form4;
+    const trades = (smartMoney?.secInsiderTrades && smartMoney?.secInsiderTrades.length > 0)
+      ? smartMoney.secInsiderTrades
+      : (smartMoney?.secForm4Trades || []);
+    const sub = smartMoney?.subdomains?.sec_form_4;
+    const subStatus = sub?.status || smartMoney?.secStatus;
+    const isHeld = smartMoney?.status === "PIPELINE_PENDING" || subStatus === "PIPELINE_HELD" || smartMoney?.overallStatus === "PIPELINE_HELD";
+    const isUnavailable = subStatus === "UNAVAILABLE" || smartMoney?.status === "UNAVAILABLE";
+    const isVerifiedEmpty = subStatus === "VERIFIED_NO_ACTIVITY";
+    const hasTrades = trades.length > 0;
+
+    let status: DomainStatus = "NO_OBSERVATIONS";
+    let statusLabel = "No Observations";
+    let explanation = "0 insider open-market transactions in trailing 90 days (routine corporate cadence).";
+    let provenance = sub?.provenance || "SEC EDGAR Disclosures";
+    let applicability: "MANDATORY" | "OPTIONAL" | "INAPPLICABLE" = "OPTIONAL";
+
     if (isEtf || isCrypto) {
-      domains.push({
-        id: "insider_transactions",
-        name: "Insider Transactions (Form 4)",
-        category: "Sentiment & Positioning",
-        authority: "SEC EDGAR Form 4 Feed",
-        applicability: "INAPPLICABLE",
-        status: "INAPPLICABLE",
-        statusLabel: "Inapplicable",
-        impact: "NON_BLOCKING",
-        provenance: "SEC EDGAR",
-        explanation: "Corporate insider transactions inapplicable to funds and digital assets.",
-      });
-    } else {
-      const trades = smartMoney?.secForm4Trades || [];
-      const isHeld = smartMoney?.status === "PIPELINE_PENDING";
-      const hasTrades = trades.length > 0;
-
-      let status: DomainStatus = "NO_OBSERVATIONS";
-      let statusLabel = "No Observations";
-      let explanation = "0 insider open-market transactions in trailing 90 days (routine corporate cadence).";
-
-      if (hasTrades) {
+      status = "INAPPLICABLE";
+      statusLabel = "Inapplicable";
+      applicability = "INAPPLICABLE";
+      explanation = "Corporate insider transactions inapplicable to funds and digital assets.";
+      provenance = "SEC EDGAR";
+    } else if (isForeignAdr || feed?.coverage === "FOREIGN_FPI_EXEMPT" || feed?.status === "INAPPLICABLE") {
+      status = "INAPPLICABLE";
+      statusLabel = feed?.status_label || "Exempt (Foreign Issuer)";
+      applicability = "INAPPLICABLE";
+      explanation = feed?.explanation || "Foreign Private Issuer (FPI) exempt from US SEC Form 4 filings; local regulatory disclosures apply.";
+      provenance = feed?.provenance || "Home Country Regulatory Authorities";
+    } else if (feed) {
+      if (feed.status === "VERIFIED") {
         status = "VERIFIED";
         statusLabel = "Verified";
-        explanation = `${trades.length} Form 4 insider transactions evaluated.`;
-      } else if (isHeld) {
+        explanation = feed.explanation || `${feed.observation_count || trades.length} Form 4 insider transactions evaluated.`;
+      } else if (feed.status === "PIPELINE_PENDING") {
         status = "UNAVAILABLE";
         statusLabel = "Pipeline Pending";
-        explanation = "SEC Form 4 continuous ingestion paused under governed operational hold.";
+        explanation = feed.explanation || "SEC Form 4 continuous ingestion paused under governed operational hold.";
+      } else if (feed.status === "NO_OBSERVATIONS") {
+        status = "NO_OBSERVATIONS";
+        statusLabel = "No Observations";
+        explanation = feed.explanation || "0 insider open-market transactions in trailing 90 days (routine corporate cadence).";
       }
-
-      domains.push({
-        id: "insider_transactions",
-        name: "Insider Transactions (Form 4)",
-        category: "Sentiment & Positioning",
-        authority: "SEC EDGAR Form 4 Feed",
-        applicability: "OPTIONAL",
-        status,
-        statusLabel,
-        impact: "NON_BLOCKING",
-        observationTime: "Trailing 90 Days",
-        provenance: "SEC EDGAR Disclosures",
-        explanation,
-      });
+      if (feed.provenance) provenance = feed.provenance;
+    } else if (hasTrades) {
+      status = "VERIFIED";
+      statusLabel = "Verified";
+      explanation = `${trades.length} Form 4 insider transactions evaluated.`;
+    } else if (isVerifiedEmpty) {
+      status = "NO_OBSERVATIONS";
+      statusLabel = "No Observations";
+      explanation = "Verified complete search: 0 open-market Form 4 transactions filed in trailing 90 days.";
+    } else if (isHeld) {
+      status = "UNAVAILABLE";
+      statusLabel = "Pipeline Pending";
+      explanation = sub?.disclosure || "SEC Form 4 continuous ingestion paused under governed operational hold.";
+    } else if (isUnavailable) {
+      status = "UNAVAILABLE";
+      statusLabel = "Unavailable";
+      explanation = sub?.disclosure || "SEC EDGAR Form 4 feed unavailable.";
     }
+
+    domains.push({
+      id: "insider_transactions",
+      name: "Insider Transactions (Form 4)",
+      category: "Sentiment & Positioning",
+      authority: "SEC EDGAR Form 4 Feed",
+      applicability,
+      status,
+      statusLabel,
+      impact: "NON_BLOCKING",
+      observationTime: "Trailing 90 Days",
+      provenance,
+      explanation,
+    });
   })();
 
   // ── 7. Congressional Disclosures (STOCK Act) ──────────────────────────────
   (() => {
+    const feed = smartMoney?.feeds?.congressional_disclosures;
     const trades = smartMoney?.congressTrades || [];
+    const sub = smartMoney?.subdomains?.congressional_stock_act;
+    const subStatus = sub?.status || smartMoney?.congressStatus;
+    const isHeld = subStatus === "PIPELINE_HELD" || smartMoney?.congressStatus === "PIPELINE_PENDING";
+    const isUnavailable = subStatus === "UNAVAILABLE" || smartMoney?.congressStatus === "UNAVAILABLE";
+    const isVerifiedEmpty = subStatus === "VERIFIED_NO_ACTIVITY";
     const hasTrades = trades.length > 0;
+
+    let status: DomainStatus = "NO_OBSERVATIONS";
+    let statusLabel = "No Observations";
+    let explanation = "0 congressional transactions reported in trailing window.";
+    let provenance = sub?.provenance || "House & Senate Ethics Disclosures";
+    let applicability: "MANDATORY" | "OPTIONAL" | "INAPPLICABLE" = "OPTIONAL";
+
+    if (isCrypto || feed?.status === "INAPPLICABLE" || subStatus === "INAPPLICABLE") {
+      status = "INAPPLICABLE";
+      statusLabel = "Inapplicable";
+      applicability = "INAPPLICABLE";
+      explanation = feed?.explanation || "Congressional STOCK Act single-asset disclosures inapplicable to crypto tokens.";
+    } else if (feed) {
+      if (feed.status === "VERIFIED") {
+        status = "VERIFIED";
+        statusLabel = "Verified";
+        explanation = feed.explanation || `${feed.observation_count || trades.length} congressional disclosures evaluated.`;
+      } else if (feed.status === "PIPELINE_PENDING") {
+        status = "UNAVAILABLE";
+        statusLabel = "Pipeline Pending";
+        explanation = feed.explanation || "Congressional disclosure live sync disconnected; legislative updates pending.";
+      } else if (feed.status === "NO_OBSERVATIONS") {
+        status = "NO_OBSERVATIONS";
+        statusLabel = "No Observations";
+        explanation = feed.explanation || "0 congressional transactions reported in trailing window.";
+      }
+      if (feed.provenance) provenance = feed.provenance;
+    } else if (hasTrades) {
+      status = "VERIFIED";
+      statusLabel = "Verified";
+      explanation = `${trades.length} congressional disclosures evaluated.`;
+    } else if (isVerifiedEmpty) {
+      status = "NO_OBSERVATIONS";
+      statusLabel = "No Observations";
+      explanation = "Verified complete search: 0 congressional disclosures filed in trailing window.";
+    } else if (isHeld) {
+      status = "UNAVAILABLE";
+      statusLabel = "Pipeline Pending";
+      explanation = sub?.disclosure || "Congressional STOCK Act continuous sync paused under governed operational hold.";
+    } else if (isUnavailable) {
+      status = "UNAVAILABLE";
+      statusLabel = "Unavailable";
+      explanation = sub?.disclosure || "Congressional STOCK Act sync feed disconnected.";
+    }
 
     domains.push({
       id: "congressional_disclosures",
       name: "Congressional Disclosures",
       category: "Public Sector Disclosures",
       authority: "STOCK Act Financial Disclosures",
-      applicability: "OPTIONAL",
-      status: hasTrades ? "VERIFIED" : "NO_OBSERVATIONS",
-      statusLabel: hasTrades ? "Verified" : "No Observations",
+      applicability,
+      status,
+      statusLabel,
       impact: "NON_BLOCKING",
       observationTime: "Trailing 180 Days",
-      provenance: "House & Senate Ethics Disclosures",
-      explanation: hasTrades
-        ? `${trades.length} congressional disclosures evaluated.`
-        : "0 congressional transactions reported in trailing window.",
+      provenance,
+      explanation,
     });
   })();
 
