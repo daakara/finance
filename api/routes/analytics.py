@@ -534,6 +534,20 @@ def get_tactical_setups(
             logger.warning(f"Error computing setup for {sym}: {e}")
             continue
 
+    # Deterministic sorting for Tactical Setups per ARX Governance & Directive 044R.8:
+    # 1. Delisted securities sink to bottom
+    # 2. Actionable setups first (isActionable == True)
+    # 3. confluenceScore descending
+    # 4. symbol ascending (lexicographical tie-breaker)
+    def _setup_sort_key(s: dict):
+        is_delisted = 1 if s.get("executionStatus") == "DELISTED_SECURITY" else 0
+        is_act = 1 if s.get("isActionable") else 0
+        confl = float(s.get("confluenceScore") or 0.0)
+        sym = str(s.get("symbol") or "")
+        return (is_delisted, -is_act, -confl, sym)
+
+    setups.sort(key=_setup_sort_key)
+
     result_payload = {
         "userRole": clean_role,
         "totalSetups": len(setups),
