@@ -331,7 +331,7 @@ export default function StandardTerminalView({
               decisionState={insight.decisionTrace?.decisionState}
               dataSource={(insight as any).dataSource || (insight as any)._dataSource}
               isHistorical={(insight as any).dataSource === 'historical' || (insight as any)._dataSource === 'historical'}
-              isSynthetic={Boolean(isDemo || (insight as any).isSynthetic)}
+              isSynthetic={Boolean((insight as any).isSynthetic || (insight as any).dataSource === 'synthetic' || (insight as any)._dataSource === 'synthetic')}
             />
           )}</section>
         </div>
