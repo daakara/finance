@@ -1,161 +1,48 @@
 {
-  "release_candidate_commit": "57e344306ea334facb0cc27edfdd75a03d2df648",
-  "base_anchor_commit": "a033ca07de62a2a286f8c1edf44be678816bda06",
-  "total_files": 19,
+  "release_candidate_commit": "dc4dfa8bcdbf3ef35710710db5f24d6a33c021d9",
+  "base_anchor_commit": "fb9dadeeeed7d0e134799e9d68af4ac4c359e63a",
+  "mainline_source_anchor": "dc4dfa8bcdbf3ef35710710db5f24d6a33c021d9",
+  "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-PROD-RELEASE-149-150-COORDINATED",
+  "directive": "ARX-PROD-RELEASE-044R8-RADAR-ORDERING",
+  "description": "Promote Directive 044R.8 Radar deterministic ordering corrections (PR #151) to production.",
+  "approved_prs": [
+    151,
+    155
+  ],
+  "production_pr": 155,
   "files": {
-    "api/observability/sentry_adapter.py": {
-      "operation": "M",
-      "originating_pr_number": 149,
-      "originating_commit": "cd1df01",
-      "governing_requirement": "Directive 044R.7: Deduplicate yfinance Sentry errors & version-safe scope tagging",
-      "sha256": "fa0b0442f6e8f0bbaa53365825f6a8aced81af83f6d4bd5fba9e90086653058a",
-      "size_bytes": 14303
-    },
     "api/routes/analytics.py": {
       "operation": "M",
-      "originating_pr_number": 149,
-      "originating_commit": "cd1df01",
-      "governing_requirement": "Directive 044R.7: Early corporate action evaluation bypassing provider fetches on delisted CPRX",
-      "sha256": "a6fb78137da690125c72a8db73bc7956ff5fd20b58f5bfd032784852eb04cdae",
-      "size_bytes": 71563
+      "originating_pr_number": 151,
+      "originating_commit": "dc4dfa8",
+      "governing_requirement": "Directive 044R.8: Deterministic Trade Plan actionable-first ordering with confluenceScore sort and delisted suppression",
+      "sha256": "62dccacbcb5a9bc735c5f4e761356d8f293313ac46c69032fdeeef8f0fe99bcd",
+      "size_bytes": 72209
     },
-    "tests/test_cross_route_semantic_parity.py": {
+    "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 149,
-      "originating_commit": "cd1df01",
-      "governing_requirement": "Directive 044R.7: Align cross-route semantic parity test with delisted CPRX 404 suppression",
-      "sha256": "a4ab065c8c49e4ba2a869d73fd87bb530ad8aa73c708dad7d8eb53dc10b26b9d",
-      "size_bytes": 5219
+      "originating_pr_number": 151,
+      "originating_commit": "dc4dfa8",
+      "governing_requirement": "Directive 044R.8: Deterministic Radar ordering (delisted-sink, confluenceScore desc, gemScore desc, symbol asc) with permutation-invariant sort guarantee",
+      "sha256": "dede0f13d41afff1f292dcf05820193187bc5a5002531a849a7d9b9c44f50bfd",
+      "size_bytes": 73182
     },
-    "tests/test_directive_044r7_sentry_provider_remediation.py": {
+    "frontend/app/radar/page.tsx": {
+      "operation": "M",
+      "originating_pr_number": 151,
+      "originating_commit": "dc4dfa8",
+      "governing_requirement": "Directive 044R.8: Frontend filteredAssets deterministic tie-breakers (ticker.localeCompare) for SCORE, RVOL, PRICE sort modes; backend-parity alignment",
+      "sha256": "415d288557e6e46d24a602c7ab2978de50b8b9f054764fbdd1726cf7daaa22a4",
+      "size_bytes": 96317
+    },
+    "tests/test_directive_044r8_authority_closure.py": {
       "operation": "A",
-      "originating_pr_number": 149,
-      "originating_commit": "cd1df01",
-      "governing_requirement": "Directive 044R.7: 10-invariant adversarial verification suite for Sentry provider remediation",
-      "sha256": "d2b044557f4bc4dd8d49cd3830f9608ab421ea0fcdd27a352ed4d1bbf78d307a",
-      "size_bytes": 12177
-    },
-    "frontend/app/page.tsx": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Decouple advisory evidence domains from primary assessment",
-      "sha256": "ba7551041b86d39c18b1be51331937cc44a938110259733cfb76e972b65d2c7f",
-      "size_bytes": 42959
-    },
-    "frontend/components/AdaptiveTerminal.tsx": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Render EvidenceDomainStatusCard in terminal views",
-      "sha256": "419b09b8ea27e72e7d1ba5bdb66156afdbabdb4e5a39faeb6d9f829839a64084",
-      "size_bytes": 14423
-    },
-    "frontend/components/__tests__/AnalysisDecisionHierarchy.test.tsx": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Align analysis decision hierarchy tests with 9-domain model",
-      "sha256": "a68606fe6f70991d24cdbeff3580290e27fdaf5f3357ac2a4b8d87bf3817bad6",
-      "size_bytes": 29164
-    },
-    "frontend/components/terminal/AdvancedTerminalView.tsx": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Integrate evidence status bar in AdvancedTerminalView",
-      "sha256": "02bf25ae398fa29582aaf5cc54562c7687e3c61ec01413d5e03689841c80145f",
-      "size_bytes": 16293
-    },
-    "frontend/components/terminal/EvidenceDomainStatusCard.tsx": {
-      "operation": "A",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Implement 9-domain evidence status summary card",
-      "sha256": "61bafd34ddc40cc523777d47fe29eb8cd950f495aaed564e0e23aea3f211773f",
-      "size_bytes": 9151
-    },
-    "frontend/components/terminal/GuidedTerminalView.tsx": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Evidence domain display in GuidedTerminalView",
-      "sha256": "9cfe467f00f7e477552983178f4f0a09fc0ddf3f2c103aac205307588fd0f091",
-      "size_bytes": 17672
-    },
-    "frontend/components/terminal/StandardTerminalView.tsx": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Evidence domain display in StandardTerminalView",
-      "sha256": "3af857d0d4498ac44671a098b78c65cdd396a1de6ff140572d64a07e2c04fbb5",
-      "size_bytes": 25716
-    },
-    "frontend/lib/assessmentEngine.ts": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Eliminate demo asset override and decouple advisory domains",
-      "sha256": "0e7bcdd171d90ec0c912669939b49cfaa0919ba7205bc6b39793c8cee1e74c15",
-      "size_bytes": 21215
-    },
-    "frontend/lib/evidenceDomains.ts": {
-      "operation": "A",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Authoritative 9-domain evidence taxonomy",
-      "sha256": "c24a2bd0b551459c8f5597827b4b353ec50d5316accb223d51e795037bab23f9",
-      "size_bytes": 17580
-    },
-    "frontend/lib/insightGenerator.ts": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Generate domain-grounded insight descriptions",
-      "sha256": "93597a5e3fed9cfe7cfbf27e2b8dfbac5daaa0856881f7cae429f9a9490b87fd",
-      "size_bytes": 34219
-    },
-    "frontend/package.json": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Add verify:evidence-domains test script",
-      "sha256": "23490c01e72b6317c223a9e3ca31f60515b3999f26a77a6353c16cd0d06cea28",
-      "size_bytes": 3394
-    },
-    "frontend/scripts/verify-a3-clarity.ts": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Validate clarity and lack of mock leaks in UI",
-      "sha256": "66e9c553352a4cd5a7ea07c8ed0c0da630dfc8118811c5a8bca3d12ceea21326",
-      "size_bytes": 16064
-    },
-    "frontend/tests/decisionPrecedenceMatrix.test.ts": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Validate 9-domain decision precedence matrix",
-      "sha256": "4d9e053f2cc6b054f45155a9c2aea94c93faf462d82383c958464dbcf07ba13f",
-      "size_bytes": 52886
-    },
-    "frontend/tests/evidenceDomainAuthority.test.ts": {
-      "operation": "A",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: Comprehensive domain authority unit tests",
-      "sha256": "232fa7fb145bfd66b6a6511832a754590a1aef12b3089e2d15492494f4e9ea4b",
-      "size_bytes": 13653
-    },
-    "frontend/types/insight.ts": {
-      "operation": "M",
-      "originating_pr_number": 153,
-      "originating_commit": "57e3443",
-      "governing_requirement": "Directive ARX-UX-EVIDENCE-001: 9-domain types and assessment state definitions",
-      "sha256": "a72bcafa9a607315332992b17578980535bd2549d87ac2f8e3e0363ddd080051",
-      "size_bytes": 7382
+      "originating_pr_number": 151,
+      "originating_commit": "dc4dfa8",
+      "governing_requirement": "Directive 044R.8: 12-test adversarial authority closure suite covering ranking semantics, product contract decoupling, and frontend-backend parity",
+      "sha256": "67db88817efcd38405ae212ae0c3efa5bd728f8907bac441e8d69924bf1e3bee",
+      "size_bytes": 14204
     }
   },
   "qualification_framework_files": {
@@ -165,9 +52,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "44ae9eed2f3a999beff15860ad443cd8c87ccb7b381e5c5bbd8f56a6749dd6f4",
-      "bytes": 57661,
-      "size_bytes": 57661
+      "sha256": "f306426e15d1a28b9bca04d248aa6321b8ef59df0968c3957de3bfa50bd986e3",
+      "bytes": 57671,
+      "size_bytes": 57671
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
