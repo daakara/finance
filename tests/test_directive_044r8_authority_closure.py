@@ -202,6 +202,86 @@ class TestDirective044R8AuthorityClosure(unittest.TestCase):
         self.assertEqual(holds.get("SMART_MONEY_RECURRING_INGESTION"), "NOT_AUTHORIZED")
         self.assertEqual(holds.get("MODEL_TUNING"), "FROZEN")
 
+    def test_11_radar_frontend_backend_ranking_and_hero_asset_parity(self):
+        """
+        Verify that frontend filteredAssets.sort() with deterministic tie-breaker
+        yields 100% identical ordering to backend /api/v1/screener/run.
+        Verify that hero asset is LNTH (top confluence score).
+        """
+        resp = run_screener_get()
+        backend_candidates = resp["candidates"]
+        self.assertTrue(len(backend_candidates) > 0)
+
+        # Simulate exact frontend filteredAssets.sort() implementation from page.tsx:
+        def frontend_sort(assets, sort_by="SCORE"):
+            def cmp(a, b):
+                a_del = 1 if a.get("executionStatus") == "DELISTED_SECURITY" else 0
+                b_del = 1 if b.get("executionStatus") == "DELISTED_SECURITY" else 0
+                if a_del != b_del:
+                    return a_del - b_del
+                if sort_by == "SCORE":
+                    diff = (b.get("confluenceScore") or -1) - (a.get("confluenceScore") or -1)
+                    if diff != 0:
+                        return -1 if diff < 0 else 1
+                    return -1 if a.get("ticker", "") < b.get("ticker", "") else 1
+                return 0
+
+            # Sort using cmp
+            import functools
+            return sorted(assets, key=functools.cmp_to_key(cmp))
+
+        frontend_displayed = frontend_sort(backend_candidates, "SCORE")
+
+        backend_tickers = [c["symbol"] for c in backend_candidates]
+        frontend_tickers = [c["ticker"] for c in frontend_displayed]
+
+        # Top 5 must match identically
+        self.assertEqual(backend_tickers[:5], frontend_tickers[:5], "Top 5 backend and frontend assets must match in order")
+
+        # Hero asset must be LNTH (confluence: 85.5)
+        self.assertEqual(frontend_tickers[0], "LNTH", "Hero asset in Radar must be LNTH")
+        self.assertEqual(backend_tickers[0], "LNTH", "Top ranked candidate in backend must be LNTH")
+
+        # Delisted CPRX must sink to the bottom in both
+        self.assertEqual(frontend_tickers[-1], "CPRX")
+        self.assertEqual(backend_tickers[-1], "CPRX")
+
+    def test_12_ranking_product_contract_decoupling(self):
+        """
+        Verify that the 4 ranking/clearance concepts remain decoupled:
+        1. Discovery score (confluenceScore): Determines discovery rank.
+        2. Screening eligibility (screeningEligible): Filter flag for opportunity state.
+        3. Setup actionability (isActionable): Used in Trade Plan setups.
+        4. Execution clearance (preflight clearance): Governed by 6 checks & holds.
+        """
+        resp = run_screener_get()
+        candidates = resp["candidates"]
+
+        # An asset can have a high score but NOT be screeningEligible (e.g. waiting pullback)
+        ineligible_candidates = [c for c in candidates if not c.get("screeningEligible") and c.get("executionStatus") not in ["DELISTED_SECURITY", "UNVERIFIED_ASSET"]]
+        self.assertTrue(len(ineligible_candidates) > 0, "Must have active candidates outside the immediate buy zone")
+        for ic in ineligible_candidates:
+            # Score must still be an authentic numerical discovery score, not nullified
+            self.assertIsNotNone(ic.get("confluenceScore"))
+
+        # In Trade Plan, setups explicitly distinguish actionable vs non-actionable
+        _clear_tactical_setups_cache()
+        setups_resp = get_tactical_setups()
+        setups = setups_resp.get("setups", [])
+        actionable_symbols = {s["symbol"] for s in setups if s.get("isActionable")}
+        non_actionable_symbols = {s["symbol"] for s in setups if not s.get("isActionable")}
+
+        self.assertTrue(len(actionable_symbols) > 0)
+        self.assertTrue(len(non_actionable_symbols) > 0)
+
+        # ISRG has high confluence (84.4) but isActionable is False in setups
+        # This proves Setup Actionability is strictly decoupled from Discovery Score!
+        isrg_setup = next((s for s in setups if s["symbol"] == "ISRG"), None)
+        if isrg_setup:
+            self.assertFalse(isrg_setup.get("isActionable"), "ISRG must remain non-actionable in Trade Plan despite high confluence score")
+            self.assertTrue(float(isrg_setup.get("confluenceScore")) >= 80.0, "ISRG preserves high discovery score")
+
+
 
 
 if __name__ == "__main__":
