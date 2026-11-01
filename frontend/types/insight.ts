@@ -262,5 +262,6 @@ export interface DecisionTrace {
   explanation?: string;
   confluenceScore?: number;
   instrumentProfile?: Record<string, any>;
+  trace?: Record<string, any>;
 }
 
