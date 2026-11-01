@@ -1,57 +1,104 @@
 {
-  "release_candidate_commit": "2beb1b02513aad44abbec70d19d8f36e2677e7a1",
-  "base_anchor_commit": "9f9cdb9eb7d724c8ea22573826e76cabd1d2944f",
-  "total_files": 6,
+  "release_candidate_commit": "21c694a8f6797a9f255c63434956446c44793895",
+  "base_anchor_commit": "a033ca07de62a2a286f8c1edf44be678816bda06",
+  "directive": "ARX-PROD-RELEASE-149-150",
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-044R4-CANDIDATE",
+  "total_files": 19,
   "files": {
+    "api/observability/sentry_adapter.py": {
+      "sha256": "fa0b0442f6e8f0bbaa53365825f6a8aced81af83f6d4bd5fba9e90086653058a",
+      "size_bytes": 14303,
+      "originating_pr_number": 149
+    },
     "api/routes/analytics.py": {
-      "operation": "M",
-      "sha256": "a9f7c87d62564a63c00bc98a3fe9725e4d61761964a687a9c8b931bd45bae119",
-      "size_bytes": 70153,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: RFC 8259 serialization, crypto fallback suppression, 252-bar lookback"
+      "sha256": "a6fb78137da690125c72a8db73bc7956ff5fd20b58f5bfd032784852eb04cdae",
+      "size_bytes": 71563,
+      "originating_pr_number": 149
     },
-    "api/routes/macro.py": {
-      "operation": "M",
-      "sha256": "a47110d9197bf1682bc3a1a042cfdf0f82d84a8d6735e2261366e4b412bb0c56",
-      "size_bytes": 15049,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: RFC 8259 serialization consolidation"
+    "tests/test_cross_route_semantic_parity.py": {
+      "sha256": "a4ab065c8c49e4ba2a869d73fd87bb530ad8aa73c708dad7d8eb53dc10b26b9d",
+      "size_bytes": 5219,
+      "originating_pr_number": 149
     },
-    "api/routes/screener.py": {
-      "operation": "M",
-      "sha256": "54d74607cec2ecfc085f0d8d0b2d9be8ff7beaa7e6fde5ede71151e24c02d789",
-      "size_bytes": 72358,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: RFC 8259 serialization, 252-bar lookback, intraday execution guidance"
+    "tests/test_directive_044r7_sentry_provider_remediation.py": {
+      "sha256": "d2b044557f4bc4dd8d49cd3830f9608ab421ea0fcdd27a352ed4d1bbf78d307a",
+      "size_bytes": 12177,
+      "originating_pr_number": 149
     },
-    "api/serialization.py": {
-      "operation": "A",
-      "sha256": "a5093fb97aafe7a55790e2380aa066b9172a3449ebb90a4197492d5fbe20daa8",
-      "size_bytes": 2198,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: Centralized RFC 8259 JSON serialization"
+    "frontend/app/page.tsx": {
+      "sha256": "ba7551041b86d39c18b1be51331937cc44a938110259733cfb76e972b65d2c7f",
+      "size_bytes": 42959,
+      "originating_pr_number": 150
     },
-    "tests/test_directive_044r2_data_integrity.py": {
-      "operation": "A",
-      "sha256": "8010265722b7632be6b152552fff1b572dd0486078b991fcf9b2870a47933a4b",
-      "size_bytes": 8273,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: Data integrity and serialization test suite"
+    "frontend/components/AdaptiveTerminal.tsx": {
+      "sha256": "419b09b8ea27e72e7d1ba5bdb66156afdbabdb4e5a39faeb6d9f829839a64084",
+      "size_bytes": 14423,
+      "originating_pr_number": 150
     },
-    "tests/test_radar_cross_engine_parity_003.py": {
-      "operation": "M",
-      "sha256": "1ae4bd89918e2bee0e1d088f6789147ececda68180a62104b841da13ae4a1615",
-      "size_bytes": 15928,
-      "originating_pr_number": 147,
-      "originating_commit": "2beb1b0",
-      "governing_requirement": "Directive 044R.2/044R.3: Cross-engine parity reference fixture tests"
+    "frontend/components/__tests__/AnalysisDecisionHierarchy.test.tsx": {
+      "sha256": "a68606fe6f70991d24cdbeff3580290e27fdaf5f3357ac2a4b8d87bf3817bad6",
+      "size_bytes": 29164,
+      "originating_pr_number": 150
+    },
+    "frontend/components/terminal/AdvancedTerminalView.tsx": {
+      "sha256": "02bf25ae398fa29582aaf5cc54562c7687e3c61ec01413d5e03689841c80145f",
+      "size_bytes": 16293,
+      "originating_pr_number": 150
+    },
+    "frontend/components/terminal/EvidenceDomainStatusCard.tsx": {
+      "sha256": "61bafd34ddc40cc523777d47fe29eb8cd950f495aaed564e0e23aea3f211773f",
+      "size_bytes": 9151,
+      "originating_pr_number": 150
+    },
+    "frontend/components/terminal/GuidedTerminalView.tsx": {
+      "sha256": "9cfe467f00f7e477552983178f4f0a09fc0ddf3f2c103aac205307588fd0f091",
+      "size_bytes": 17672,
+      "originating_pr_number": 150
+    },
+    "frontend/components/terminal/StandardTerminalView.tsx": {
+      "sha256": "3af857d0d4498ac44671a098b78c65cdd396a1de6ff140572d64a07e2c04fbb5",
+      "size_bytes": 25716,
+      "originating_pr_number": 150
+    },
+    "frontend/lib/assessmentEngine.ts": {
+      "sha256": "0e7bcdd171d90ec0c912669939b49cfaa0919ba7205bc6b39793c8cee1e74c15",
+      "size_bytes": 21215,
+      "originating_pr_number": 150
+    },
+    "frontend/lib/evidenceDomains.ts": {
+      "sha256": "c24a2bd0b551459c8f5597827b4b353ec50d5316accb223d51e795037bab23f9",
+      "size_bytes": 17580,
+      "originating_pr_number": 150
+    },
+    "frontend/lib/insightGenerator.ts": {
+      "sha256": "93597a5e3fed9cfe7cfbf27e2b8dfbac5daaa0856881f7cae429f9a9490b87fd",
+      "size_bytes": 34219,
+      "originating_pr_number": 150
+    },
+    "frontend/package.json": {
+      "sha256": "23490c01e72b6317c223a9e3ca31f60515b3999f26a77a6353c16cd0d06cea28",
+      "size_bytes": 3394,
+      "originating_pr_number": 150
+    },
+    "frontend/scripts/verify-a3-clarity.ts": {
+      "sha256": "66e9c553352a4cd5a7ea07c8ed0c0da630dfc8118811c5a8bca3d12ceea21326",
+      "size_bytes": 16064,
+      "originating_pr_number": 150
+    },
+    "frontend/tests/decisionPrecedenceMatrix.test.ts": {
+      "sha256": "4d9e053f2cc6b054f45155a9c2aea94c93faf462d82383c958464dbcf07ba13f",
+      "size_bytes": 52886,
+      "originating_pr_number": 150
+    },
+    "frontend/tests/evidenceDomainAuthority.test.ts": {
+      "sha256": "232fa7fb145bfd66b6a6511832a754590a1aef12b3089e2d15492494f4e9ea4b",
+      "size_bytes": 13653,
+      "originating_pr_number": 150
+    },
+    "frontend/types/insight.ts": {
+      "sha256": "a72bcafa9a607315332992b17578980535bd2549d87ac2f8e3e0363ddd080051",
+      "size_bytes": 7382,
+      "originating_pr_number": 150
     }
   },
   "qualification_framework_files": {

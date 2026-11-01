@@ -300,6 +300,7 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
           executionPlan={mockPlan}
           isActionable={true}
           decisionState="ACTIONABLE_SETUP"
+          preflightCleared={true}
         />
       );
 

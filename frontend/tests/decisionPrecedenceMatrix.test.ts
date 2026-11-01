@@ -804,8 +804,8 @@ console.log("Scenario DP23: Downstream consumer generateQuantitativeInsight does
   console.log("  ✓ DP23 PASS: Downstream insightGenerator strictly blocks sizing and actionability on insufficient evidence.\n");
 }
 
-// ── DP24: Contradiction: LIMITED Eligibility + Rogue Upstream Actionable Trace ──
-console.log("Scenario DP24: LIMITED eligibility strictly blocks sizing and actionability despite rogue upstream claim...");
+// ── DP24: Contradiction: LIMITED Eligibility on Missing Core Evidence + Rogue Upstream Actionable Trace ──
+console.log("Scenario DP24: Missing required core evidence strictly blocks sizing and actionability despite rogue upstream claim...");
 {
   const rogueTrace: DecisionTrace = {
     symbol: "NVDA",
@@ -817,8 +817,9 @@ console.log("Scenario DP24: LIMITED eligibility strictly blocks sizing and actio
     allowedActions: ["SIZE_TRADE", "SET_ALERT"],
   };
 
+  // Required core domain 'health' is UNAVAILABLE
   const limitedDomains: DomainAssessment[] = baseDomainAssessments.map(d =>
-    d.domainId === "smart_money" ? { ...d, status: "UNAVAILABLE", availability: "UNAVAILABLE" } : d
+    d.domainId === "health" ? { ...d, status: "UNAVAILABLE", availability: "UNAVAILABLE" } : d
   );
 
   const state = deriveAssessmentState({
@@ -844,6 +845,48 @@ console.log("Scenario DP24: LIMITED eligibility strictly blocks sizing and actio
   const sizeAction = state.availableActions.find(a => a.id === "size_trade");
   assert.strictEqual(sizeAction?.enabled, false, "size_trade action must be disabled");
   console.log("  ✓ DP24 PASS: LIMITED eligibility strictly blocks sizing and actionability despite rogue upstream claim.\n");
+}
+
+// ── DP24B: Missing Optional Enrichment Does Not Invalidate Actionable Setup (Directive ARX-UX-EVIDENCE-001) ──
+console.log("Scenario DP24B: Missing optional enrichment does not block actionable setup when core evidence is verified...");
+{
+  const actionableTrace: DecisionTrace = {
+    symbol: "NVDA",
+    decisionState: "ACTIONABLE_SETUP",
+    decisionStateLabel: "Actionable Setup — Buy Zone Confirmed",
+    canSizeTrade: true,
+    isActionable: true,
+    disqualificationReason: null,
+    allowedActions: ["SIZE_TRADE", "SET_ALERT"],
+  };
+
+  // Optional smart_money is UNAVAILABLE (e.g. held under HOLD_SEC_001)
+  const optionalUnavailableDomains: DomainAssessment[] = baseDomainAssessments.map(d =>
+    d.domainId === "smart_money" ? { ...d, status: "UNAVAILABLE", availability: "UNAVAILABLE", isOptional: true } : d
+  );
+
+  const state = deriveAssessmentState({
+    symbol: "NVDA",
+    companyName: "NVIDIA Corp",
+    currentPrice: 184.2,
+    changePct: 1.5,
+    horizon: "SWING",
+    ownershipState: "NOT_OWNED",
+    ownershipSource: "USER_DECLARED",
+    domains: optionalUnavailableDomains,
+    decisionTrace: actionableTrace,
+    freshness: { status: "LIVE", stalenessDays: 0 },
+  });
+
+  assert.strictEqual(state.overallEligibility, "ELIGIBLE", "Overall eligibility remains ELIGIBLE when only optional enrichment is unavailable");
+  assert.strictEqual(state.posture, "ACQUIRE", "Verified core evidence allows ACQUIRE posture");
+  assert.strictEqual(state.decisionState, "ACTIONABLE_SETUP", "Authentic ACTIONABLE_SETUP preserved");
+  assert.strictEqual(state.canSizeTrade, true, "canSizeTrade must be true when core evidence is satisfied");
+  assert.strictEqual(state.isActionable, true, "isActionable must be true when core evidence is satisfied");
+  assert.strictEqual(state.uiStateLabel, "Actionable Setup — Buy Zone Confirmed", "uiStateLabel reflects earned actionable setup");
+  const sizeAction = state.availableActions.find(a => a.id === "size_trade");
+  assert.strictEqual(sizeAction?.enabled, true, "size_trade action must be enabled");
+  console.log("  ✓ DP24B PASS: Missing optional enrichment preserves ELIGIBLE status and actionable sizing.\n");
 }
 
 // ── DP25: Contradiction: Missing Core Evidence + Rogue Upstream Actionable Trace ──
