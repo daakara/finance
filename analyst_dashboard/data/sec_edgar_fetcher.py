@@ -388,7 +388,7 @@ class SecEdgarFetcher:
         results = []
 
         try:
-            conn = connect_smart_money_db(DEFAULT_SMART_MONEY_DB)
+            conn = connect_smart_money_db()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             query = """

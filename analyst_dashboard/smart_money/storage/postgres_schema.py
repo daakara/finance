@@ -76,6 +76,11 @@ CREATE TABLE IF NOT EXISTS form4_parsed_transactions (
     is_ten_percent BOOLEAN NOT NULL DEFAULT FALSE,
     officer_title TEXT,
     ownership_type VARCHAR(1) NOT NULL,
+    is_derivative BOOLEAN NOT NULL DEFAULT FALSE,
+    signal_type VARCHAR(64),
+    acquired_disposed VARCHAR(4),
+    is_positive_buying_conviction BOOLEAN NOT NULL DEFAULT FALSE,
+    is_open_market_purchase_evidence BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -272,6 +277,13 @@ ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS max_attempts INTEGER NOT NU
 ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS last_failure_code VARCHAR(64);
 ALTER TABLE sm_run_requests ADD COLUMN IF NOT EXISTS last_failure_at TIMESTAMPTZ;
+
+-- Form 4 Parsed Transactions Classification & Derivative Metadata
+ALTER TABLE form4_parsed_transactions ADD COLUMN IF NOT EXISTS is_derivative BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE form4_parsed_transactions ADD COLUMN IF NOT EXISTS signal_type VARCHAR(64);
+ALTER TABLE form4_parsed_transactions ADD COLUMN IF NOT EXISTS acquired_disposed VARCHAR(4);
+ALTER TABLE form4_parsed_transactions ADD COLUMN IF NOT EXISTS is_positive_buying_conviction BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE form4_parsed_transactions ADD COLUMN IF NOT EXISTS is_open_market_purchase_evidence BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_run_requests_eligible ON sm_run_requests(status, next_attempt_at, requested_at);
 CREATE INDEX IF NOT EXISTS idx_run_requests_stale_running ON sm_run_requests(status, lease_expires_at) WHERE status = 'RUNNING';

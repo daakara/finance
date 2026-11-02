@@ -111,6 +111,15 @@ DAY_TRADER_CANDIDATES = [
 
 LONG_TERM_CANDIDATES = CANONICAL_VCP_UNIVERSE
 
+# Master Catalog Universe (43 Curated Quality Assets across ARX Terminal)
+MASTER_CATALOG_CANDIDATES = [
+    "AAPL", "ACLS", "ALC", "AMD", "ANET", "ARM", "AXP", "CELH", "COIN", "CPRX",
+    "CRWD", "DECK", "DHLGY", "DUOL", "ELF", "FIX", "GOOGL", "IBM", "IREN", "ISRG",
+    "KLAC", "LLY", "LNTH", "LRCX", "LULU", "MEDP", "MPWR", "MSFT", "MSTR", "NVDA",
+    "NVO", "ON", "PLTR", "POWI", "QQQ", "SMCI", "SMH", "SPY", "TMDX", "TSLA",
+    "ULTA", "VRT", "VRTX",
+]
+
 DEFAULT_CANDIDATES = LONG_TERM_CANDIDATES
 
 # ── Canonical Corporate Actions & Listing Lifecycle Registry ───────────────
@@ -515,6 +524,7 @@ def run_screener_get(
     filter_type: str = "all",
     user_role: str = "LONG_TERM",
     custom_tickers: Optional[str] = None,
+    universe: Optional[str] = None,
 ):
     """GET endpoint supporting live screener execution, archetype filtering, and on-demand custom ticker scanning."""
     if response is not None and hasattr(response, "headers"):
@@ -528,6 +538,8 @@ def run_screener_get(
     if custom_tickers and custom_tickers.strip():
         parsed = [t.strip().upper() for t in custom_tickers.replace(",", " ").split() if t.strip()]
         active_universe = parsed if parsed else (DAY_TRADER_CANDIDATES if is_day_trader else LONG_TERM_CANDIDATES)
+    elif universe and universe.strip().upper() in ("ALL_CATALOG", "MASTER_CATALOG", "CATALOG"):
+        active_universe = MASTER_CATALOG_CANDIDATES
     else:
         active_universe = DAY_TRADER_CANDIDATES if is_day_trader else LONG_TERM_CANDIDATES
 
@@ -1051,6 +1063,7 @@ def run_screener_get(
             "currentOpportunityCount": len(opportunity_candidates),
             "delistedRecordCount": len(delisted_candidates),
             "unverifiedRecordCount": len(unverified_candidates),
+            "universeScope": "ALL_CATALOG" if universe and universe.strip().upper() in ("ALL_CATALOG", "MASTER_CATALOG", "CATALOG") else ("DAY_TRADER" if is_day_trader else "LONG_TERM"),
         }
     
         capabilities_dict = get_radar_capabilities(vcp_snapshot=vcp_snapshot, sm_snapshot=sm_snapshot)

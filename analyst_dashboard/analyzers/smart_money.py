@@ -2178,31 +2178,179 @@ class SmartMoneyEngine:
         else:
             sec_rows = []
             has_older_in_db = False
+            backend = "sqlite"
             try:
-                from analyst_dashboard.smart_money.form4_ingestion import DEFAULT_SMART_MONEY_DB, connect_smart_money_db
-                conn = connect_smart_money_db(DEFAULT_SMART_MONEY_DB)
-                conn.row_factory = sqlite3.Row
-                cur = conn.cursor()
-                cur.execute("""
-                    SELECT record_key, accession_number, issuer_cik, issuer_symbol, reporting_owner_name,
-                           officer_title, is_director, is_officer, is_ten_percent_owner, filing_date,
-                           transaction_date, shares, price_per_share, total_value_usd, acquired_disposed,
-                           is_positive_buying_conviction, is_open_market_purchase_evidence, acceptance_datetime
-                    FROM form4_parsed_transactions
-                    WHERE issuer_symbol = ? AND (filing_date >= ? OR transaction_date >= ?)
-                    ORDER BY filing_date DESC
-                """, (clean_sym, cutoff_str, cutoff_str))
-                sec_rows = cur.fetchall()
+                from analyst_dashboard.smart_money.storage.config import get_storage_backend
+                backend = get_storage_backend()
+            except Exception:
+                backend = "sqlite"
 
-                cur.execute("SELECT issuer_cik FROM form4_parsed_transactions WHERE issuer_symbol = ? LIMIT 1", (clean_sym,))
-                cik_row = cur.fetchone()
-                if cik_row:
-                    sec_cik = str(cik_row["issuer_cik"]).zfill(10)
-                    has_older_in_db = True
-                conn.close()
-            except Exception as e:
-                logger.debug(f"Smart money local DB query for {clean_sym} Form 4 failed: {e}")
-                sec_rows = []
+            if backend == "postgres":
+                try:
+                    from analyst_dashboard.smart_money.storage.postgres_connection import get_connection
+                    from psycopg2.extras import RealDictCursor
+                    with get_connection() as pg_conn:
+                        with pg_conn.cursor(cursor_factory=RealDictCursor) as pg_cur:
+                            pg_cur.execute("""
+                                SELECT column_name
+                                FROM information_schema.columns
+                                WHERE table_name = 'form4_parsed_transactions' AND column_name = 'is_derivative';
+                            """)
+                            has_deriv_col = bool(pg_cur.fetchone())
+
+                            if has_deriv_col:
+                                deriv_cols = """
+                                    CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' THEN COALESCE(tx.is_derivative, FALSE)
+                                        ELSE TRUE
+                                    END AS is_derivative,
+                                    COALESCE(tx.signal_type, CASE
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'DERIVATIVE_PURCHASE'
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'DERIVATIVE_SALE'
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND COALESCE(tx.acquired_disposed, 'A') = 'A' THEN 'OPEN_MARKET_PURCHASE'
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND (tx.transaction_code = 'S' OR COALESCE(tx.acquired_disposed, 'D') = 'D') THEN 'OPEN_MARKET_SALE'
+                                        ELSE 'OTHER_TRANSACTION'
+                                    END) AS signal_type,
+                                    COALESCE(tx.acquired_disposed, CASE WHEN tx.transaction_code = 'S' THEN 'D' ELSE 'A' END) AS acquired_disposed,
+                                    COALESCE(tx.is_positive_buying_conviction, CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND COALESCE(tx.acquired_disposed, 'A') = 'A' AND tx.shares > 0 AND tx.price_per_share > 0 THEN TRUE
+                                        ELSE FALSE
+                                    END) AS is_positive_buying_conviction,
+                                    COALESCE(tx.is_open_market_purchase_evidence, CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND COALESCE(tx.acquired_disposed, 'A') = 'A' AND tx.shares > 0 AND tx.price_per_share > 0 THEN TRUE
+                                        ELSE FALSE
+                                    END) AS is_open_market_purchase_evidence
+                                """
+                            else:
+                                deriv_cols = """
+                                    CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' THEN FALSE
+                                        ELSE TRUE
+                                    END AS is_derivative,
+                                    CASE
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'DERIVATIVE_PURCHASE'
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'DERIVATIVE_SALE'
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'OPEN_MARKET_PURCHASE'
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'OPEN_MARKET_SALE'
+                                        ELSE 'OTHER_TRANSACTION'
+                                    END AS signal_type,
+                                    CASE WHEN tx.transaction_code = 'S' THEN 'D' ELSE 'A' END AS acquired_disposed,
+                                    CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND tx.shares > 0 AND tx.price_per_share > 0 THEN TRUE
+                                        ELSE FALSE
+                                    END AS is_positive_buying_conviction,
+                                    CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND tx.shares > 0 AND tx.price_per_share > 0 THEN TRUE
+                                        ELSE FALSE
+                                    END AS is_open_market_purchase_evidence
+                                """
+
+                            pg_query = f"""
+                                SELECT tx.transaction_id AS record_key, tx.accession_number, f.cik AS issuer_cik,
+                                       f.ticker AS issuer_symbol, tx.reporting_owner_name,
+                                       tx.officer_title, tx.is_director, tx.is_officer, tx.is_ten_percent AS is_ten_percent_owner,
+                                       f.filing_date, tx.transaction_date, tx.transaction_code,
+                                       tx.shares, tx.price_per_share, tx.total_value_usd,
+                                       av.public_availability_at AS acceptance_datetime,
+                                       {deriv_cols}
+                                FROM form4_parsed_transactions tx
+                                JOIN form4_raw_filings f ON tx.accession_number = f.accession_number
+                                JOIN sm_source_availability_ledger av ON tx.accession_number = av.accession_number
+                                WHERE f.ticker = %s AND (f.filing_date >= %s OR tx.transaction_date >= %s)
+                                  -- 1. Exclude unresolved or ambiguous amendments
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments ambig
+                                      WHERE ambig.amendment_accession = tx.accession_number
+                                        AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
+                                  )
+                                  -- 2. Exclude transactions superseded by full filing amendments
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments am
+                                      WHERE am.base_accession = tx.accession_number
+                                        AND am.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
+                                  )
+                                  -- 3. Transaction-level reconciliation for partial corrections
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments part_am
+                                      JOIN form4_parsed_transactions amend_tx ON part_am.amendment_accession = amend_tx.accession_number
+                                      WHERE part_am.base_accession = tx.accession_number
+                                        AND part_am.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                                        AND amend_tx.reporting_owner_name = tx.reporting_owner_name
+                                        AND amend_tx.transaction_date = tx.transaction_date
+                                        AND amend_tx.transaction_code = tx.transaction_code
+                                  )
+                                  -- 4. Exclude amendments that were themselves superseded
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments re_am
+                                      WHERE re_am.base_accession = tx.accession_number
+                                        AND re_am.resolution_status NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'ADDITIONAL_TRANSACTION', 'PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                                  )
+                                ORDER BY f.filing_date DESC
+                            """
+                            pg_cur.execute(pg_query, (clean_sym, cutoff_str, cutoff_str))
+                            sec_rows = pg_cur.fetchall()
+                            if sec_rows:
+                                sec_cik = str(sec_rows[0]["issuer_cik"]).zfill(10)
+                                has_older_in_db = True
+                except Exception as pg_err:
+                    logger.debug(f"Smart money PostgreSQL query for {clean_sym} Form 4 failed: {pg_err}")
+                    sec_rows = []
+
+            if not sec_rows and backend != "postgres":
+                try:
+                    from analyst_dashboard.smart_money.form4_ingestion import connect_smart_money_db
+                    conn = connect_smart_money_db()
+                    conn.row_factory = sqlite3.Row
+                    cur = conn.cursor()
+
+                    has_amendments = False
+                    try:
+                        cur.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sm_amendments'")
+                        has_amendments = bool(cur.fetchone())
+                    except Exception:
+                        has_amendments = False
+
+                    has_deriv_col = False
+                    try:
+                        cur.execute("PRAGMA table_info(form4_parsed_transactions)")
+                        cols = [r["name"] for r in cur.fetchall()]
+                        has_deriv_col = "is_derivative" in cols
+                    except Exception:
+                        has_deriv_col = False
+
+                    deriv_select = "is_derivative" if has_deriv_col else "0 AS is_derivative"
+
+                    query = f"""
+                        SELECT record_key, accession_number, issuer_cik, issuer_symbol, reporting_owner_name,
+                               officer_title, is_director, is_officer, is_ten_percent_owner, filing_date,
+                               transaction_date, transaction_code, signal_type, shares, price_per_share, total_value_usd, acquired_disposed,
+                               is_positive_buying_conviction, is_open_market_purchase_evidence, acceptance_datetime,
+                               {deriv_select}
+                        FROM form4_parsed_transactions
+                        WHERE issuer_symbol = ? AND (filing_date >= ? OR transaction_date >= ?)
+                    """
+                    if has_amendments:
+                        query += """
+                          AND NOT EXISTS (
+                              SELECT 1 FROM sm_amendments a
+                              WHERE (a.accession_number = form4_parsed_transactions.accession_number AND a.relationship = 'SUPERSEDED_OR_CORRECTED')
+                                 OR (a.amended_accession_number = form4_parsed_transactions.accession_number AND a.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT', 'SUPERSEDED_OR_CORRECTED'))
+                          )
+                        """
+                    query += " ORDER BY filing_date DESC"
+
+                    cur.execute(query, (clean_sym, cutoff_str, cutoff_str))
+                    sec_rows = cur.fetchall()
+
+                    cur.execute("SELECT issuer_cik FROM form4_parsed_transactions WHERE issuer_symbol = ? LIMIT 1", (clean_sym,))
+                    cik_row = cur.fetchone()
+                    if cik_row:
+                        sec_cik = str(cik_row["issuer_cik"]).zfill(10)
+                        has_older_in_db = True
+                    conn.close()
+                except Exception as e:
+                    logger.debug(f"Smart money local DB query for {clean_sym} Form 4 failed: {e}")
+                    sec_rows = []
 
             if not sec_cik:
                 try:
@@ -2214,13 +2362,57 @@ class SmartMoneyEngine:
 
             if sec_rows:
                 for r in sec_rows:
-                    is_buy = r["acquired_disposed"] == "A" or bool(r["is_positive_buying_conviction"])
+                    t_code = (r["transaction_code"] or "").upper().strip() if "transaction_code" in r.keys() else ""
+                    sig_type = (r["signal_type"] or "").upper().strip() if "signal_type" in r.keys() else ""
+                    acq_disp = (r["acquired_disposed"] or "").upper().strip() if "acquired_disposed" in r.keys() else ""
+                    is_pos_conviction = bool(r["is_positive_buying_conviction"]) or bool(r["is_open_market_purchase_evidence"])
+
+                    is_deriv = False
+                    if "is_derivative" in r.keys():
+                        is_deriv = bool(r["is_derivative"])
+                    elif "DERIVATIVE" in sig_type or "OPTION" in sig_type:
+                        is_deriv = True
+
+                    shares_val = float(r["shares"] or 0) if "shares" in r.keys() else 0.0
+                    price_val = float(r["price_per_share"] or 0) if "price_per_share" in r.keys() else 0.0
+
+                    is_buy = not is_deriv and (is_pos_conviction or (sig_type == "OPEN_MARKET_PURCHASE" and acq_disp == "A" and shares_val > 0 and price_val > 0))
+                    is_sell = not is_deriv and (t_code == "S" or sig_type == "OPEN_MARKET_SALE" or (acq_disp == "D" and not is_buy))
+
+                    if is_deriv:
+                        if t_code == "P" or "PURCHASE" in sig_type:
+                            tx_type = "Derivative Purchase"
+                        elif t_code == "S" or "SALE" in sig_type:
+                            tx_type = "Derivative Sale"
+                        elif t_code == "M" or sig_type == "OPTION_EXERCISE":
+                            tx_type = "Option Exercise"
+                        else:
+                            tx_type = f"Derivative Transaction ({t_code})" if t_code else "Derivative Transaction"
+                    elif is_buy:
+                        tx_type = "Purchase (Direct Open Market)"
+                    elif is_sell:
+                        tx_type = "Sale (Direct)"
+                    elif t_code == "M" or sig_type == "OPTION_EXERCISE":
+                        tx_type = "Option Exercise"
+                    elif t_code == "A" or sig_type == "EQUITY_GRANT":
+                        tx_type = "Equity Grant / Award"
+                    elif t_code == "G" or sig_type == "GIFT":
+                        tx_type = "Gift"
+                    elif t_code == "F" or sig_type == "TAX_WITHHOLDING":
+                        tx_type = "Tax Withholding"
+                    elif t_code == "D" or sig_type == "ISSUER_DISPOSITION":
+                        tx_type = "Disposition to Issuer"
+                    else:
+                        tx_type = f"Transaction ({t_code})" if t_code else "Other Insider Transaction"
+
                     sec_observations.append({
                         "id": r["accession_number"],
                         "insider_name": r["reporting_owner_name"],
                         "ticker": clean_sym,
                         "role": r["officer_title"] or ("Director" if r["is_director"] else "Officer"),
-                        "transaction_type": "Purchase (Direct Open Market)" if is_buy else "Sale (Direct)",
+                        "transaction_type": tx_type,
+                        "transaction_code": t_code,
+                        "signal_type": sig_type,
                         "shares_traded": r["shares"] or 0,
                         "price_per_share": r["price_per_share"] or 0.0,
                         "total_value_usd": r["total_value_usd"] or 0.0,
@@ -2228,13 +2420,17 @@ class SmartMoneyEngine:
                         "transaction_date": r["transaction_date"] or r["filing_date"],
                         "acceptance_datetime": r["acceptance_datetime"],
                         "ingestion_timestamp": r["acceptance_datetime"],
-                        "acquired_disposed": r["acquired_disposed"],
-                        "is_positive_buying_conviction": bool(r["is_positive_buying_conviction"]),
+                        "acquired_disposed": acq_disp,
+                        "is_positive_buying_conviction": is_pos_conviction,
+                        "is_open_market_purchase_evidence": is_pos_conviction,
+                        "is_buy": is_buy,
+                        "is_sell": is_sell,
+                        "is_derivative": is_deriv,
                         "sec_url": f"https://www.sec.gov/Archives/edgar/data/{sec_cik}/{r['accession_number'].replace('-', '')}/{r['accession_number']}.txt" if sec_cik else "",
                     })
 
-                buys = [t for t in sec_observations if t["acquired_disposed"] == "A" or t["is_positive_buying_conviction"]]
-                sells = [t for t in sec_observations if t["acquired_disposed"] == "D"]
+                buys = [t for t in sec_observations if t.get("is_buy")]
+                sells = [t for t in sec_observations if t.get("is_sell")]
                 buy_val = sum(t["total_value_usd"] for t in buys)
                 sell_val = sum(t["total_value_usd"] for t in sells)
 
