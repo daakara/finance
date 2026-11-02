@@ -286,18 +286,16 @@ class SmartMoneyIngestionWorker:
         """
         Validates environment prerequisites before attempting lock or network operations:
         1. ARX_SEC_EGRESS_ROLE must equal 'OWNER' for active live egress.
-           If DISABLED/REVOKED, enters healthy STANDBY mode without raising FATAL exception.
+           Fails closed with UNAUTHORIZED_WORKER_ROLE if not OWNER.
         2. Database configuration must be valid PostgreSQL.
         3. Containment policy configuration authorization in production.
         """
         role = get_sec_egress_role()
         if role != "OWNER":
-            self.state = WorkerHealthState.STANDBY
-            logger.info(
-                f"Worker {self.worker_id} operating in STANDBY mode: "
-                f"ARX_SEC_EGRESS_ROLE is '{role}' (OWNER required for active live egress)."
+            self.state = WorkerHealthState.FATAL
+            raise RuntimeError(
+                f"UNAUTHORIZED_WORKER_ROLE: Worker requires ARX_SEC_EGRESS_ROLE=OWNER. Active role is '{role}'."
             )
-            return False
 
         validate_storage_configuration()
         if not self.dsn:
@@ -505,8 +503,19 @@ class SmartMoneyIngestionWorker:
 
     def start(self, single_cycle: bool = False, poll_interval_sec: float = 5.0) -> None:
         """Starts worker event loop."""
-        is_owner = self.validate_preflight()
         self._setup_signals()
+        is_owner = False
+        try:
+            is_owner = self.validate_preflight()
+        except RuntimeError as e:
+            if "UNAUTHORIZED_WORKER_ROLE" in str(e):
+                self.state = WorkerHealthState.STANDBY
+                logger.info(
+                    f"Worker {self.worker_id} operating in STANDBY mode: "
+                    f"ARX_SEC_EGRESS_ROLE is not OWNER ({e})."
+                )
+            else:
+                raise
 
         if not is_owner:
             self._running = True
@@ -518,9 +527,12 @@ class SmartMoneyIngestionWorker:
                     time.sleep(poll_interval_sec)
                     if get_sec_egress_role() == "OWNER":
                         logger.info("ARX_SEC_EGRESS_ROLE transitioned to OWNER. Attempting activation...")
-                        if self.validate_preflight():
-                            is_owner = True
-                            break
+                        try:
+                            if self.validate_preflight():
+                                is_owner = True
+                                break
+                        except RuntimeError:
+                            pass
             except (KeyboardInterrupt, SystemExit):
                 self._running = False
 

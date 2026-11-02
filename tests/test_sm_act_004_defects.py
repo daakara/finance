@@ -6,13 +6,19 @@ Validates:
 2. Table II derivative purchase exclusion (Code P derivatives do not trigger bullish conviction)
 3. Form 4/A amendment deduplication (superseded filings excluded from feed observations)
 4. Dual-backend storage resolution parity (PostgreSQL query path and SQLite fallback)
+5. Directive SM-ACT-004R PostgreSQL classification & amendment reconciliation
 """
 
 import os
 import sqlite3
+import tempfile
+import uuid
 import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import MagicMock, patch
+
+psycopg2 = pytest.importorskip("psycopg2")
+pgserver = pytest.importorskip("pgserver")
 
 from analyst_dashboard.smart_money.worker import (
     SmartMoneyIngestionWorker,
@@ -20,6 +26,7 @@ from analyst_dashboard.smart_money.worker import (
     get_sec_egress_role,
 )
 from analyst_dashboard.smart_money.storage.config import get_storage_backend
+from analyst_dashboard.smart_money.storage.postgres_schema import initialize_postgres_schema
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 
 
@@ -27,13 +34,17 @@ class TestWorkerStandbyMode:
     """Verifies Worker avoids crashing in rehearsal or non-production environments."""
 
     @pytest.mark.parametrize("role", ["DISABLED", "REVOKED", "ANALYSIS_ONLY", "STANDBY", ""])
-    def test_worker_standby_preflight_does_not_raise(self, role, monkeypatch):
+    def test_worker_standby_preflight_and_start(self, role, monkeypatch):
         monkeypatch.setenv("ARX_SEC_EGRESS_ROLE", role)
         worker = SmartMoneyIngestionWorker()
 
-        # Must return False rather than raising RuntimeError("UNAUTHORIZED_WORKER_ROLE")
-        is_owner = worker.validate_preflight()
-        assert is_owner is False
+        # Direct preflight must fail closed with UNAUTHORIZED_WORKER_ROLE per contract
+        with pytest.raises(RuntimeError, match="UNAUTHORIZED_WORKER_ROLE"):
+            worker.validate_preflight()
+        assert worker.state == WorkerHealthState.FATAL
+
+        # But start(single_cycle=True) must enter healthy STANDBY without raising or crashing
+        worker.start(single_cycle=True)
         assert worker.state == WorkerHealthState.STANDBY
 
         # Health envelope must report healthy subsystem in STANDBY
@@ -312,3 +323,318 @@ class TestDualBackendStorageParity:
 
         monkeypatch.setenv("SMART_MONEY_DATABASE_URL", "postgresql://user:pass@localhost:5432/arx")
         assert get_storage_backend() == "postgres"
+
+
+@pytest.fixture
+def pg_db():
+    """Isolated Postgres server for defect reproduction & closure verification."""
+    pgdata = tempfile.mkdtemp(prefix="arx_sm_act_004r_pg_")
+    server = pgserver.get_server(pgdata)
+    uri = server.get_uri()
+    conn = psycopg2.connect(uri)
+    initialize_postgres_schema(conn)
+    conn.close()
+
+    yield {"uri": uri, "server": server}
+    server.cleanup()
+
+
+class TestPostgreSqlDerivativeClassificationDefectAndClosure:
+    """
+    Directive SM-ACT-004R: Verifies that Table II derivative transactions (even with Code 'P')
+    do not masquerade as common-stock purchases, and missing derivative metadata fails closed.
+    """
+
+    def test_postgres_table_ii_derivative_not_classified_as_buy(self, pg_db, monkeypatch):
+        uri = pg_db["uri"]
+        monkeypatch.setenv("SMART_MONEY_DATABASE_URL", uri)
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        conn = psycopg2.connect(uri)
+        with conn.cursor() as cur:
+            # 1. Raw filing
+            acc = "0000000001-26-000001"
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (acc, "0001045810", "NVDA", "NVIDIA CORP", today, now_iso, "<xml/>", "h1", "https://sec.gov/1"))
+
+            # 2. Availability ledger
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (
+                    accession_number, public_availability_at, source, source_reference
+                ) VALUES (%s, %s, %s, %s);
+            """, (acc, now_iso, "SEC_INDEX", "ref1"))
+
+            # 3. Table I Common Stock Purchase: $100,000 (Jensen Huang, 1000 shs @ $100)
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (
+                f"{acc}:0001045810:NON_DERIVATIVE:1", acc, today, "P",
+                1000.0, 100.0, 100000.0, "Jensen Huang",
+                "CEO", True, True, False,
+                "CEO", "D", False, "OPEN_MARKET_PURCHASE",
+                "A", True, True
+            ))
+
+            # 4. Table II Derivative Call Option Purchase: $500,000 (Colette Kress, 5000 shs @ $100, code P)
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (
+                f"{acc}:0001045810:DERIVATIVE:1", acc, today, "P",
+                5000.0, 100.0, 500000.0, "Colette Kress",
+                "CFO", False, True, False,
+                "CFO", "D", True, "DERIVATIVE_PURCHASE",
+                "A", False, False
+            ))
+
+            # 5. Row with unverified/missing derivative metadata and non-matching ID
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (
+                f"{acc}:0001045810:UNKNOWN_TYPE:1", acc, today, "P",
+                2000.0, 100.0, 200000.0, "Jay Puri",
+                "EVP", False, True, False,
+                "EVP", "D", False, None,
+                None, False, False
+            ))
+        conn.commit()
+        conn.close()
+
+        engine = SmartMoneyEngine()
+        result = engine.evaluate_smart_money_feeds("NVDA", window_days=90)
+        sec_feed = result["feeds"]["sec_form4"]
+        txs = sec_feed["observations"]
+
+        assert len(txs) == 3
+        huang = next(t for t in txs if t["insider_name"] == "Jensen Huang")
+        kress = next(t for t in txs if t["insider_name"] == "Colette Kress")
+        puri = next(t for t in txs if t["insider_name"] == "Jay Puri")
+
+        # Table I verified common stock purchase
+        assert huang["is_buy"] is True
+        assert huang["is_derivative"] is False
+        assert huang["transaction_type"] == "Purchase (Direct Open Market)"
+
+        # Table II derivative purchase (Code P) must NOT be a buy
+        assert kress["is_buy"] is False
+        assert kress["is_derivative"] is True
+        assert kress["transaction_type"] == "Derivative Purchase"
+
+        # Missing metadata row must fail closed and NOT be treated as a buy
+        assert puri["is_buy"] is False
+
+        # Only Jensen Huang ($100k) counted in buys, NOT $600k or $800k!
+        buys = [t for t in txs if t.get("is_buy")]
+        assert len(buys) == 1
+        assert sum(t["total_value_usd"] for t in buys) == 100000.0
+
+
+class TestPostgreSqlAmendmentReconciliationAcrossScenarios:
+    """
+    Directive SM-ACT-004R: Verifies PostgreSQL amendment reconciliation:
+    - Full supersession excludes original filing
+    - Partial correction preserves valid unchanged transactions
+    - Additional transactions are merged
+    - Unresolved/ambiguous amendments are excluded
+    - Repeated ingestion is idempotent
+    """
+
+    def test_postgres_amendment_reconciliation(self, pg_db, monkeypatch):
+        uri = pg_db["uri"]
+        monkeypatch.setenv("SMART_MONEY_DATABASE_URL", uri)
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        conn = psycopg2.connect(uri)
+        with conn.cursor() as cur:
+            # 1. Base Filing ACC-01 with 2 transactions:
+            # Tx 1: Huang $1,000,000 (10,000 shs)
+            # Tx 2: Kress $50,000 (500 shs)
+            acc_base = "0000000002-26-000001"
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (acc_base, "0001045810", "NVDA", "NVIDIA CORP", today, now_iso, "<xml/>", "hb", "https://sec.gov/b"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source)
+                VALUES (%s, %s, %s);
+            """, (acc_base, now_iso, "SEC_INDEX"))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES
+                (%s, %s, %s, 'P', 10000, 100, 1000000, 'Jensen Huang', 'CEO', true, true, false, 'CEO', 'D', false, 'OPEN_MARKET_PURCHASE', 'A', true, true),
+                (%s, %s, %s, 'P', 500, 100, 50000, 'Colette Kress', 'CFO', false, true, false, 'CFO', 'D', false, 'OPEN_MARKET_PURCHASE', 'A', true, true);
+            """, (f"{acc_base}:0001045810:NON_DERIVATIVE:1", acc_base, today, f"{acc_base}:0001045810:NON_DERIVATIVE:2", acc_base, today))
+
+            # 2. Partial Correction Amendment ACC-02:
+            # Only corrects Huang to $100,000 (1,000 shs). Does not include Kress.
+            acc_amend = "0000000002-26-000002"
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (acc_amend, "0001045810", "NVDA", "NVIDIA CORP", today, now_iso, "<xml/>", "ha", "https://sec.gov/a"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source)
+                VALUES (%s, %s, %s);
+            """, (acc_amend, now_iso, "SEC_INDEX"))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES
+                (%s, %s, %s, 'P', 1000, 100, 100000, 'Jensen Huang', 'CEO', true, true, false, 'CEO', 'D', false, 'OPEN_MARKET_PURCHASE', 'A', true, true);
+            """, (f"{acc_amend}:0001045810:NON_DERIVATIVE:1", acc_amend, today))
+
+            # Partial amendment linkage:
+            cur.execute("""
+                INSERT INTO sm_amendments (amendment_accession, base_accession, amendment_number, resolution_status, resolved_at)
+                VALUES (%s, %s, 1, 'PARTIAL_CORRECTION', %s);
+            """, (acc_amend, acc_base, now_iso))
+
+            # 3. Unresolved/Ambiguous Amendment ACC-03:
+            # Must be excluded from observations without suppressing base filing.
+            acc_ambig = "0000000002-26-000003"
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (acc_ambig, "0001045810", "NVDA", "NVIDIA CORP", today, now_iso, "<xml/>", "hamb", "https://sec.gov/amb"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source)
+                VALUES (%s, %s, %s);
+            """, (acc_ambig, now_iso, "SEC_INDEX"))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES
+                (%s, %s, %s, 'P', 9999, 100, 999900, 'Unknown Insider', 'Director', true, false, false, 'Director', 'D', false, 'OPEN_MARKET_PURCHASE', 'A', true, true);
+            """, (f"{acc_ambig}:0001045810:NON_DERIVATIVE:1", acc_ambig, today))
+            cur.execute("""
+                INSERT INTO sm_amendments (amendment_accession, base_accession, amendment_number, resolution_status, resolved_at)
+                VALUES (%s, NULL, 1, 'AMENDMENT_TARGET_AMBIGUOUS', %s);
+            """, (acc_ambig, now_iso))
+        conn.commit()
+        conn.close()
+
+        engine = SmartMoneyEngine()
+        result = engine.evaluate_smart_money_feeds("NVDA", window_days=90)
+        sec_feed = result["feeds"]["sec_form4"]
+        txs = sec_feed["observations"]
+
+        # Expected:
+        # - Ambiguous amendment ACC-03 is EXCLUDED
+        # - Base Huang ($1M) is superseded by Amendment Huang ($100k)
+        # - Base Kress ($50k) is NOT suppressed and remains valid!
+        assert len(txs) == 2
+        insider_names = [t["insider_name"] for t in txs]
+        assert "Jensen Huang" in insider_names
+        assert "Colette Kress" in insider_names
+        assert "Unknown Insider" not in insider_names
+
+        buys = [t for t in txs if t.get("is_buy")]
+        assert len(buys) == 2
+        huang_tx = next(t for t in buys if t["insider_name"] == "Jensen Huang")
+        kress_tx = next(t for t in buys if t["insider_name"] == "Colette Kress")
+
+        assert huang_tx["total_value_usd"] == 100000.0
+        assert kress_tx["total_value_usd"] == 50000.0
+        assert sum(t["total_value_usd"] for t in buys) == 150000.0
+
+
+class TestBoundedCanaryObservationCycle:
+    """
+    Directive SM-ACT-004R Section 5: Prove bounded canary controls:
+    Verify worker can execute exactly one authorized NVDA observation cycle
+    with defined limits and stop conditions in synthetic/cache-only mode without SEC egress.
+    """
+
+    def test_bounded_nvda_observation_cycle_without_sec_egress(self, pg_db, monkeypatch):
+        uri = pg_db["uri"]
+        monkeypatch.setenv("SMART_MONEY_DATABASE_URL", uri)
+        monkeypatch.setenv("ARX_SEC_EGRESS_ROLE", "DISABLED")
+        monkeypatch.setenv("ARX_ENVIRONMENT", "rehearsal")
+
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        # Seed synthetic NVDA data
+        conn = psycopg2.connect(uri)
+        with conn.cursor() as cur:
+            acc = "0000000003-26-000001"
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (acc, "0001045810", "NVDA", "NVIDIA CORP", today, now_iso, "<xml/>", "hcanary", "https://sec.gov/canary"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source)
+                VALUES (%s, %s, %s);
+            """, (acc, now_iso, "SEC_INDEX"))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, 'P', 2500, 120, 300000, 'Jensen Huang', 'CEO', true, true, false, 'CEO', 'D', false, 'OPEN_MARKET_PURCHASE', 'A', true, true);
+            """, (f"{acc}:0001045810:NON_DERIVATIVE:1", acc, today))
+        conn.commit()
+        conn.close()
+
+        # 1. Verify worker stays safely in STANDBY without live egress
+        worker = SmartMoneyIngestionWorker(dsn=uri)
+        worker.start(single_cycle=True)
+        assert worker.state == WorkerHealthState.STANDBY
+
+        # 2. Evaluate bounded NVDA feed in synthetic/cache-only mode
+        engine = SmartMoneyEngine()
+        res = engine.evaluate_smart_money_feeds("NVDA", window_days=90)
+
+        assert "feeds" in res
+        sec_feed = res["feeds"]["sec_form4"]
+        assert sec_feed["status"] == "VERIFIED"
+        assert sec_feed["observation_count"] == 1
+        assert sec_feed["observations"][0]["insider_name"] == "Jensen Huang"
+        assert sec_feed["observations"][0]["total_value_usd"] == 300000.0
+        assert sec_feed["direction"] == "BULLISH"

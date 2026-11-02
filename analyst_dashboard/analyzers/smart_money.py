@@ -2188,30 +2188,106 @@ class SmartMoneyEngine:
             if backend == "postgres":
                 try:
                     from analyst_dashboard.smart_money.storage.postgres_connection import get_connection
+                    from psycopg2.extras import RealDictCursor
                     with get_connection() as pg_conn:
-                        with pg_conn.cursor() as pg_cur:
+                        with pg_conn.cursor(cursor_factory=RealDictCursor) as pg_cur:
                             pg_cur.execute("""
+                                SELECT column_name
+                                FROM information_schema.columns
+                                WHERE table_name = 'form4_parsed_transactions' AND column_name = 'is_derivative';
+                            """)
+                            has_deriv_col = bool(pg_cur.fetchone())
+
+                            if has_deriv_col:
+                                deriv_cols = """
+                                    CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' THEN COALESCE(tx.is_derivative, FALSE)
+                                        ELSE TRUE
+                                    END AS is_derivative,
+                                    COALESCE(tx.signal_type, CASE
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'DERIVATIVE_PURCHASE'
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'DERIVATIVE_SALE'
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND COALESCE(tx.acquired_disposed, 'A') = 'A' THEN 'OPEN_MARKET_PURCHASE'
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND (tx.transaction_code = 'S' OR COALESCE(tx.acquired_disposed, 'D') = 'D') THEN 'OPEN_MARKET_SALE'
+                                        ELSE 'OTHER_TRANSACTION'
+                                    END) AS signal_type,
+                                    COALESCE(tx.acquired_disposed, CASE WHEN tx.transaction_code = 'S' THEN 'D' ELSE 'A' END) AS acquired_disposed,
+                                    COALESCE(tx.is_positive_buying_conviction, CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND COALESCE(tx.acquired_disposed, 'A') = 'A' AND tx.shares > 0 AND tx.price_per_share > 0 THEN TRUE
+                                        ELSE FALSE
+                                    END) AS is_positive_buying_conviction,
+                                    COALESCE(tx.is_open_market_purchase_evidence, CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND COALESCE(tx.acquired_disposed, 'A') = 'A' AND tx.shares > 0 AND tx.price_per_share > 0 THEN TRUE
+                                        ELSE FALSE
+                                    END) AS is_open_market_purchase_evidence
+                                """
+                            else:
+                                deriv_cols = """
+                                    CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' THEN FALSE
+                                        ELSE TRUE
+                                    END AS is_derivative,
+                                    CASE
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'DERIVATIVE_PURCHASE'
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'DERIVATIVE_SALE'
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'OPEN_MARKET_PURCHASE'
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'OPEN_MARKET_SALE'
+                                        ELSE 'OTHER_TRANSACTION'
+                                    END AS signal_type,
+                                    CASE WHEN tx.transaction_code = 'S' THEN 'D' ELSE 'A' END AS acquired_disposed,
+                                    CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND tx.shares > 0 AND tx.price_per_share > 0 THEN TRUE
+                                        ELSE FALSE
+                                    END AS is_positive_buying_conviction,
+                                    CASE
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND tx.shares > 0 AND tx.price_per_share > 0 THEN TRUE
+                                        ELSE FALSE
+                                    END AS is_open_market_purchase_evidence
+                                """
+
+                            pg_query = f"""
                                 SELECT tx.transaction_id AS record_key, tx.accession_number, f.cik AS issuer_cik,
                                        f.ticker AS issuer_symbol, tx.reporting_owner_name,
                                        tx.officer_title, tx.is_director, tx.is_officer, tx.is_ten_percent AS is_ten_percent_owner,
                                        f.filing_date, tx.transaction_date, tx.transaction_code,
-                                       'OPEN_MARKET_PURCHASE' AS signal_type, tx.shares, tx.price_per_share, tx.total_value_usd,
-                                       CASE WHEN tx.transaction_code = 'S' THEN 'D' ELSE 'A' END AS acquired_disposed,
-                                       CASE WHEN tx.transaction_code = 'P' THEN 1 ELSE 0 END AS is_positive_buying_conviction,
-                                       CASE WHEN tx.transaction_code = 'P' THEN 1 ELSE 0 END AS is_open_market_purchase_evidence,
+                                       tx.shares, tx.price_per_share, tx.total_value_usd,
                                        av.public_availability_at AS acceptance_datetime,
-                                       0 AS is_derivative
+                                       {deriv_cols}
                                 FROM form4_parsed_transactions tx
                                 JOIN form4_raw_filings f ON tx.accession_number = f.accession_number
                                 JOIN sm_source_availability_ledger av ON tx.accession_number = av.accession_number
                                 WHERE f.ticker = %s AND (f.filing_date >= %s OR tx.transaction_date >= %s)
+                                  -- 1. Exclude unresolved or ambiguous amendments
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments ambig
+                                      WHERE ambig.amendment_accession = tx.accession_number
+                                        AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
+                                  )
+                                  -- 2. Exclude transactions superseded by full filing amendments
                                   AND NOT EXISTS (
                                       SELECT 1 FROM sm_amendments am
-                                      WHERE (am.base_accession = tx.accession_number AND am.resolution_status NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED'))
-                                         OR (am.amendment_accession = tx.accession_number AND am.resolution_status = 'SUPERSEDED_OR_CORRECTED')
+                                      WHERE am.base_accession = tx.accession_number
+                                        AND am.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
+                                  )
+                                  -- 3. Transaction-level reconciliation for partial corrections
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments part_am
+                                      JOIN form4_parsed_transactions amend_tx ON part_am.amendment_accession = amend_tx.accession_number
+                                      WHERE part_am.base_accession = tx.accession_number
+                                        AND part_am.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                                        AND amend_tx.reporting_owner_name = tx.reporting_owner_name
+                                        AND amend_tx.transaction_date = tx.transaction_date
+                                        AND amend_tx.transaction_code = tx.transaction_code
+                                  )
+                                  -- 4. Exclude amendments that were themselves superseded
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments re_am
+                                      WHERE re_am.base_accession = tx.accession_number
+                                        AND re_am.resolution_status NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'ADDITIONAL_TRANSACTION', 'PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
                                   )
                                 ORDER BY f.filing_date DESC
-                            """, (clean_sym, cutoff_str, cutoff_str))
+                            """
+                            pg_cur.execute(pg_query, (clean_sym, cutoff_str, cutoff_str))
                             sec_rows = pg_cur.fetchall()
                             if sec_rows:
                                 sec_cik = str(sec_rows[0]["issuer_cik"]).zfill(10)
@@ -2297,8 +2373,11 @@ class SmartMoneyEngine:
                     elif "DERIVATIVE" in sig_type or "OPTION" in sig_type:
                         is_deriv = True
 
-                    is_buy = (is_pos_conviction or (t_code == "P" and not is_deriv and acq_disp == "A") or sig_type == "OPEN_MARKET_PURCHASE") and not is_deriv
-                    is_sell = (t_code == "S" or sig_type == "OPEN_MARKET_SALE" or (acq_disp == "D" and not is_buy)) and not is_deriv
+                    shares_val = float(r["shares"] or 0) if "shares" in r.keys() else 0.0
+                    price_val = float(r["price_per_share"] or 0) if "price_per_share" in r.keys() else 0.0
+
+                    is_buy = not is_deriv and (is_pos_conviction or (sig_type == "OPEN_MARKET_PURCHASE" and acq_disp == "A" and shares_val > 0 and price_val > 0))
+                    is_sell = not is_deriv and (t_code == "S" or sig_type == "OPEN_MARKET_SALE" or (acq_disp == "D" and not is_buy))
 
                     if is_deriv:
                         if t_code == "P" or "PURCHASE" in sig_type:

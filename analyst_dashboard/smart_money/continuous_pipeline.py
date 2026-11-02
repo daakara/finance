@@ -851,8 +851,29 @@ class SmartMoneyContinuousPipeline:
                         "is_ten_percent": tx.is_ten_percent_owner,
                         "officer_title": tx.officer_title,
                         "ownership_type": tx.ownership_nature.value if hasattr(tx.ownership_nature, "value") else str(tx.ownership_nature),
+                        "is_derivative": bool(tx.is_derivative),
+                        "signal_type": tx.signal_type.value if hasattr(tx.signal_type, "value") else (str(tx.signal_type) if tx.signal_type else None),
+                        "acquired_disposed": tx.acquired_disposed,
+                        "is_positive_buying_conviction": bool(tx.is_positive_buying_conviction),
+                        "is_open_market_purchase_evidence": bool(tx.is_open_market_purchase_evidence),
                     }
                     raw_tx_dicts.append(tx_dict)
+
+            # Record amendment relationship in repository if Form 4/A
+            is_amend = getattr(parsed_filing, "is_amendment", False) or f.get("document_type") in ("4/A", "4A")
+            if is_amend and self.repository:
+                base_acc = getattr(parsed_filing, "amended_accession_number", None)
+                res_status = "RESOLVED" if base_acc else "UNRESOLVED"
+                try:
+                    self.repository.save_amendment(
+                        amendment_accession=accession,
+                        base_accession=base_acc,
+                        amendment_number=1,
+                        resolution_status=res_status,
+                        resolved_at=now_iso if base_acc else None,
+                    )
+                except Exception as e_am:
+                    logger.warning(f"Error saving amendment lineage for {accession}: {e_am}")
 
         if self.repository and raw_tx_dicts:
             self.repository.save_parsed_transactions(raw_tx_dicts)
