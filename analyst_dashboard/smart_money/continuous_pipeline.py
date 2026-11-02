@@ -102,9 +102,12 @@ def _normalize_to_transaction_obj(tx: Any) -> SmartMoneyTransaction:
     if isinstance(tx, SmartMoneyTransaction):
         return tx
     if isinstance(tx, dict):
-        is_buy = tx.get("is_open_market_purchase_evidence", False) or tx.get("transaction_code") == "P"
-        sig_type = SmartMoneySignalType.OPEN_MARKET_PURCHASE if is_buy else (
-            SmartMoneySignalType.OPEN_MARKET_SALE if tx.get("transaction_code") == "S" else SmartMoneySignalType.OTHER
+        is_deriv = bool(tx.get("is_derivative", False))
+        is_buy = (tx.get("is_open_market_purchase_evidence", False) or (tx.get("transaction_code") == "P" and not is_deriv and tx.get("acquired_disposed", "A") == "A")) and not is_deriv
+        sig_type = SmartMoneySignalType.OTHER if is_deriv else (
+            SmartMoneySignalType.OPEN_MARKET_PURCHASE if is_buy else (
+                SmartMoneySignalType.OPEN_MARKET_SALE if tx.get("transaction_code") == "S" else SmartMoneySignalType.OTHER
+            )
         )
         return SmartMoneyTransaction(
             record_key=tx.get("transaction_id", tx.get("record_key", str(uuid.uuid4()))),
@@ -127,9 +130,9 @@ def _normalize_to_transaction_obj(tx: Any) -> SmartMoneyTransaction:
             total_value_usd=float(tx.get("total_value_usd", 0.0)),
             acquired_disposed=tx.get("acquired_disposed", "A" if is_buy else "D"),
             ownership_nature=OwnershipNature.DIRECT if tx.get("ownership_type", "D") in ("D", "DIRECT", OwnershipNature.DIRECT) else OwnershipNature.INDIRECT,
-            is_derivative=tx.get("is_derivative", False),
-            is_open_market_purchase_evidence=is_buy,
-            is_positive_buying_conviction=is_buy,
+            is_derivative=is_deriv,
+            is_open_market_purchase_evidence=is_buy and not is_deriv,
+            is_positive_buying_conviction=is_buy and not is_deriv,
         )
     raise TypeError(f"UNSUPPORTED_TRANSACTION_TYPE: Cannot convert {type(tx)} to SmartMoneyTransaction")
 
@@ -848,8 +851,29 @@ class SmartMoneyContinuousPipeline:
                         "is_ten_percent": tx.is_ten_percent_owner,
                         "officer_title": tx.officer_title,
                         "ownership_type": tx.ownership_nature.value if hasattr(tx.ownership_nature, "value") else str(tx.ownership_nature),
+                        "is_derivative": bool(tx.is_derivative),
+                        "signal_type": tx.signal_type.value if hasattr(tx.signal_type, "value") else (str(tx.signal_type) if tx.signal_type else None),
+                        "acquired_disposed": tx.acquired_disposed,
+                        "is_positive_buying_conviction": bool(tx.is_positive_buying_conviction),
+                        "is_open_market_purchase_evidence": bool(tx.is_open_market_purchase_evidence),
                     }
                     raw_tx_dicts.append(tx_dict)
+
+            # Record amendment relationship in repository if Form 4/A
+            is_amend = getattr(parsed_filing, "is_amendment", False) or f.get("document_type") in ("4/A", "4A")
+            if is_amend and self.repository:
+                base_acc = getattr(parsed_filing, "amended_accession_number", None)
+                res_status = "RESOLVED" if base_acc else "UNRESOLVED"
+                try:
+                    self.repository.save_amendment(
+                        amendment_accession=accession,
+                        base_accession=base_acc,
+                        amendment_number=1,
+                        resolution_status=res_status,
+                        resolved_at=now_iso if base_acc else None,
+                    )
+                except Exception as e_am:
+                    logger.warning(f"Error saving amendment lineage for {accession}: {e_am}")
 
         if self.repository and raw_tx_dicts:
             self.repository.save_parsed_transactions(raw_tx_dicts)
