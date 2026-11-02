@@ -102,9 +102,12 @@ def _normalize_to_transaction_obj(tx: Any) -> SmartMoneyTransaction:
     if isinstance(tx, SmartMoneyTransaction):
         return tx
     if isinstance(tx, dict):
-        is_buy = tx.get("is_open_market_purchase_evidence", False) or tx.get("transaction_code") == "P"
-        sig_type = SmartMoneySignalType.OPEN_MARKET_PURCHASE if is_buy else (
-            SmartMoneySignalType.OPEN_MARKET_SALE if tx.get("transaction_code") == "S" else SmartMoneySignalType.OTHER
+        is_deriv = bool(tx.get("is_derivative", False))
+        is_buy = (tx.get("is_open_market_purchase_evidence", False) or (tx.get("transaction_code") == "P" and not is_deriv and tx.get("acquired_disposed", "A") == "A")) and not is_deriv
+        sig_type = SmartMoneySignalType.OTHER if is_deriv else (
+            SmartMoneySignalType.OPEN_MARKET_PURCHASE if is_buy else (
+                SmartMoneySignalType.OPEN_MARKET_SALE if tx.get("transaction_code") == "S" else SmartMoneySignalType.OTHER
+            )
         )
         return SmartMoneyTransaction(
             record_key=tx.get("transaction_id", tx.get("record_key", str(uuid.uuid4()))),
@@ -127,9 +130,9 @@ def _normalize_to_transaction_obj(tx: Any) -> SmartMoneyTransaction:
             total_value_usd=float(tx.get("total_value_usd", 0.0)),
             acquired_disposed=tx.get("acquired_disposed", "A" if is_buy else "D"),
             ownership_nature=OwnershipNature.DIRECT if tx.get("ownership_type", "D") in ("D", "DIRECT", OwnershipNature.DIRECT) else OwnershipNature.INDIRECT,
-            is_derivative=tx.get("is_derivative", False),
-            is_open_market_purchase_evidence=is_buy,
-            is_positive_buying_conviction=is_buy,
+            is_derivative=is_deriv,
+            is_open_market_purchase_evidence=is_buy and not is_deriv,
+            is_positive_buying_conviction=is_buy and not is_deriv,
         )
     raise TypeError(f"UNSUPPORTED_TRANSACTION_TYPE: Cannot convert {type(tx)} to SmartMoneyTransaction")
 

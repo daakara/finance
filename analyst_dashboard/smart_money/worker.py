@@ -244,6 +244,7 @@ class WorkerHealthState(Enum):
     RECONCILIATION_PENDING = "RECONCILIATION_PENDING"
     BLOCKED_DATA_INTEGRITY = "BLOCKED_DATA_INTEGRITY"
     OWNER_LOCK_LOST = "OWNER_LOCK_LOST"
+    STANDBY = "STANDBY"
     FATAL = "FATAL"
 
 
@@ -281,20 +282,22 @@ class SmartMoneyIngestionWorker:
         self._is_executing_cycle = False
         self._shutdown_requested = False
 
-    def validate_preflight(self) -> None:
+    def validate_preflight(self) -> bool:
         """
         Validates environment prerequisites before attempting lock or network operations:
-        1. ARX_SEC_EGRESS_ROLE must equal 'OWNER'.
+        1. ARX_SEC_EGRESS_ROLE must equal 'OWNER' for active live egress.
+           If DISABLED/REVOKED, enters healthy STANDBY mode without raising FATAL exception.
         2. Database configuration must be valid PostgreSQL.
         3. Containment policy configuration authorization in production.
         """
         role = get_sec_egress_role()
         if role != "OWNER":
-            self.state = WorkerHealthState.FATAL
-            raise RuntimeError(
-                f"UNAUTHORIZED_WORKER_ROLE: Worker requires ARX_SEC_EGRESS_ROLE=OWNER. "
-                f"Active role is '{role}'."
+            self.state = WorkerHealthState.STANDBY
+            logger.info(
+                f"Worker {self.worker_id} operating in STANDBY mode: "
+                f"ARX_SEC_EGRESS_ROLE is '{role}' (OWNER required for active live egress)."
             )
+            return False
 
         validate_storage_configuration()
         if not self.dsn:
@@ -310,6 +313,7 @@ class SmartMoneyIngestionWorker:
                     "UNAUTHORIZED_PRODUCTION_BACKUP_CONTAINMENT: Policy A activation in production "
                     "requires explicit ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED=True ratification."
                 )
+        return True
 
     def acquire_egress_authority(self, max_attempts: int = 5, retry_interval_sec: float = 2.0) -> bool:
         """
@@ -501,8 +505,29 @@ class SmartMoneyIngestionWorker:
 
     def start(self, single_cycle: bool = False, poll_interval_sec: float = 5.0) -> None:
         """Starts worker event loop."""
-        self.validate_preflight()
+        is_owner = self.validate_preflight()
         self._setup_signals()
+
+        if not is_owner:
+            self._running = True
+            logger.info(f"Worker {self.worker_id} entered STANDBY loop (status={self.state.value}).")
+            try:
+                while self._running:
+                    if single_cycle:
+                        break
+                    time.sleep(poll_interval_sec)
+                    if get_sec_egress_role() == "OWNER":
+                        logger.info("ARX_SEC_EGRESS_ROLE transitioned to OWNER. Attempting activation...")
+                        if self.validate_preflight():
+                            is_owner = True
+                            break
+            except (KeyboardInterrupt, SystemExit):
+                self._running = False
+
+            if not self._running or not is_owner:
+                logger.info(f"Worker {self.worker_id} standby terminated cleanly.")
+                return
+
         if not self.acquire_egress_authority():
             sys.exit(1)
 
@@ -568,6 +593,7 @@ class SmartMoneyIngestionWorker:
         worker_subsystem_healthy = self.state in {
             WorkerHealthState.OWNER_LOCK_ACQUIRED,
             WorkerHealthState.HEALTHY,
+            WorkerHealthState.STANDBY,
         }
 
         degradation_reasons: List[str] = []
