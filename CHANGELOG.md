@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — documentation and governance follow-up (2026-11-02)
+
+- **SM-DATA-GOV-001 / PR #162:** Historical replay, amendment lifecycle and evidence retention candidate is open with six successful hosted CI checks; not merged or deployed. Pending targeted corrections for deletion authorization and SQLite ARX-observed cutoff semantics.
+- **Release operations:** A protected-branch, approval-gated continuous deployment proposal remains a recommendation, not an activated configuration change.
+- **Acceptance work:** Live Smart Money response validation, Radar browser checks and VCP startup boot-warmup containment are still pending.
+
+## [2026-11-02] — Smart Money and Radar production integration (PR #161)
+
+### Added
+- Canonical Smart Money per-symbol evidence endpoint and filings alias, supporting Form 4 transaction classification, derivative exclusion and amendment-aware evidence treatment through the merged Smart Money PR #159.
+- Radar neutral discovery CTA, selection-aware analysis navigation and discovery across the 35-symbol reference screening universe and 43-symbol Master Catalog through merged Radar PR #160.
+
+### Changed
+- Promoted consolidated PR #161 to `release/production`.
+- Verified Cloudflare Pages and Railway both serve release commit `7a513929bbcd74a3e568dcfe626bfac582ee68fb`.
+- Retained production SEC, scanner and execution holds; the bounded NVDA canary does not enable continuous SEC polling.
+
+### Known acceptance limitations
+- Deployment/health/selected screener checks passed; direct live Smart Money evidence payload validation and Radar browser-level acceptance are incomplete.
+- A VCP startup `BOOT_WARMUP` published an `ERROR` snapshot; verify `HOLD_SCAN_001` containment, authoritative-snapshot behavior and lease fencing before full functional closure.
+
+**Release note:** [2026-11-02 consolidated Smart Money and Radar release](docs/releases/2026-11-02_7a513929_smart-money-radar.md).
+
+---
+
 ## [2.12.0] - 2026-08-29
 
 ### Master Catalog Expansion, Crypto Proxy Intelligence & Pre-Rendered Route SSG Consolidation
