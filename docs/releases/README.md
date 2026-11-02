@@ -18,6 +18,8 @@ RELEASE_NOTES_COMMITTED
 
 ## Release Index
 
+| 2026-11-02 | [`7a513929`](2026-11-02_7a513929_smart-money-radar.md) | Smart Money Form 4 and Radar consolidated production release (PR #161) | DEPLOYED; FUNCTIONAL ACCEPTANCE PARTIAL |
+
 | Date | Release SHA | Summary | Status |
 | :--- | :--- | :--- | :--- |
 | 2026-10-08 | [`5dcfeb4`](2026-10-08_5dcfeb4_execution-ladder-passive-capture.md) | Execution Ladder Prospective Passive Capture | VERIFIED |
