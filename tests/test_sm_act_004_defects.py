@@ -638,3 +638,193 @@ class TestBoundedCanaryObservationCycle:
         assert sec_feed["observations"][0]["insider_name"] == "Jensen Huang"
         assert sec_feed["observations"][0]["total_value_usd"] == 300000.0
         assert sec_feed["direction"] == "BULLISH"
+
+
+class TestTaxWithholdingAndDispositionClassification:
+    """
+    Directive SM-ACT-016: Code F Tax-Withholding and Non-Discretionary Disposition Classification.
+    Validates:
+    1. Code F (TAX_WITHHOLDING) is preserved as verified filing evidence but excluded from discretionary insider-selling conviction.
+    2. Code G (GIFT) and Code D (ISSUER_DISPOSITION) are excluded from insider sales.
+    3. Code S (OPEN_MARKET_SALE) remains correctly classified as discretionary insider sales.
+    4. Standalone tax withholding does not produce false-positive BEARISH feed direction.
+    """
+
+    def test_nvda_tax_withholding_and_dispositions_postgres(self, pg_db, monkeypatch):
+        uri = pg_db["uri"]
+        monkeypatch.setenv("SMART_MONEY_DATABASE_URL", uri)
+        monkeypatch.setenv("ARX_ENVIRONMENT", "rehearsal")
+
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        conn = psycopg2.connect(uri)
+        with conn.cursor() as cur:
+            # 1. Filing 1: Scott Gawel (Code F - Tax Withholding)
+            acc_f = "0001243821-26-000007"
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (acc_f, "0001045810", "NVDA", "NVIDIA CORP", today, now_iso, "<xml/>", "h_gawel", "https://sec.gov/f"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source)
+                VALUES (%s, %s, %s);
+            """, (acc_f, now_iso, "SEC_INDEX"))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, 'F', 2932, 212.17, 622082.44, 'GAWEL SCOTT', 'Officer', false, true, false, 'Controller', 'D', false, 'TAX_WITHHOLDING', 'D', false, false);
+            """, (f"{acc_f}:0001243821:NON_DERIVATIVE:0", acc_f, today))
+
+            # 2. Filing 2: Tench Coxe (Code G - Gift)
+            acc_g = "0001197647-26-000011"
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (acc_g, "0001045810", "NVDA", "NVIDIA CORP", today, now_iso, "<xml/>", "h_coxe", "https://sec.gov/g"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source)
+                VALUES (%s, %s, %s);
+            """, (acc_g, now_iso, "SEC_INDEX"))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, 'G', 500000, 0, 0, 'COXE TENCH', 'Director', true, false, false, NULL, 'D', false, 'GIFT', 'D', false, false);
+            """, (f"{acc_g}:0001197647:NON_DERIVATIVE:0", acc_g, today))
+
+            # 3. Filing 3: Timothy Teter (Code S - Open Market Sale)
+            acc_s = "0001696841-26-000014"
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (acc_s, "0001045810", "NVDA", "NVIDIA CORP", today, now_iso, "<xml/>", "h_teter", "https://sec.gov/s"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source)
+                VALUES (%s, %s, %s);
+            """, (acc_s, now_iso, "SEC_INDEX"))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, 'S', 12483, 222.1932, 2773637.72, 'Teter Timothy S.', 'Officer', false, true, false, 'General Counsel', 'D', false, 'OPEN_MARKET_SALE', 'D', false, false);
+            """, (f"{acc_s}:0001696841:NON_DERIVATIVE:0", acc_s, today))
+
+        conn.commit()
+        conn.close()
+
+        engine = SmartMoneyEngine()
+        res = engine.evaluate_smart_money_feeds("NVDA", window_days=90)
+
+        assert "feeds" in res
+        sec_feed = res["feeds"]["sec_form4"]
+        assert sec_feed["status"] == "VERIFIED"
+        assert sec_feed["observation_count"] == 3
+
+        # Lookup observations by insider name
+        obs_by_name = {o["insider_name"]: o for o in sec_feed["observations"]}
+
+        # 1. Verify Scott Gawel (Tax Withholding)
+        gawel = obs_by_name["GAWEL SCOTT"]
+        assert gawel["transaction_type"] == "Tax Withholding", f"Expected Tax Withholding, got {gawel['transaction_type']}"
+        assert gawel["transaction_code"] == "F"
+        assert gawel["signal_type"] == "TAX_WITHHOLDING"
+        assert gawel["is_sell"] is False, "Code F tax withholding must not be marked is_sell=True"
+        assert gawel["is_buy"] is False
+        assert gawel["total_value_usd"] == 622082.44
+
+        # 2. Verify Tench Coxe (Gift)
+        coxe = obs_by_name["COXE TENCH"]
+        assert coxe["transaction_type"] == "Gift", f"Expected Gift, got {coxe['transaction_type']}"
+        assert coxe["transaction_code"] == "G"
+        assert coxe["signal_type"] == "GIFT"
+        assert coxe["is_sell"] is False, "Code G gift must not be marked is_sell=True"
+
+        # 3. Verify Timothy Teter (Open Market Sale)
+        teter = obs_by_name["Teter Timothy S."]
+        assert teter["transaction_type"] == "Sale (Direct)", f"Expected Sale (Direct), got {teter['transaction_type']}"
+        assert teter["transaction_code"] == "S"
+        assert teter["signal_type"] == "OPEN_MARKET_SALE"
+        assert teter["is_sell"] is True, "Code S open-market sale must be marked is_sell=True"
+        assert teter["total_value_usd"] == 2773637.72
+
+        # 4. Confluence Inputs Synthesis: Only 1 discretionary sell (Teter), strictly excluding Gawel & Coxe
+        conf_inputs = res.get("confluence_inputs")
+        assert conf_inputs is not None
+        assert conf_inputs["insider_sell_count_90d"] == 1, f"Expected 1 insider sell, got {conf_inputs['insider_sell_count_90d']}"
+        assert conf_inputs["insider_buy_count_90d"] == 0
+
+        # Direction remains BEARISH due to Teter's $2.77M open-market sale
+        assert sec_feed["direction"] == "BEARISH"
+
+    def test_standalone_tax_withholding_produces_neutral_direction(self, pg_db, monkeypatch):
+        """Verifies that an issuer with ONLY statutory tax withholding is NEUTRAL, not falsely BEARISH."""
+        uri = pg_db["uri"]
+        monkeypatch.setenv("SMART_MONEY_DATABASE_URL", uri)
+        monkeypatch.setenv("ARX_ENVIRONMENT", "rehearsal")
+
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        conn = psycopg2.connect(uri)
+        with conn.cursor() as cur:
+            acc = "0001243821-26-000099"
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (acc, "0001045810", "AAPL", "APPLE INC", today, now_iso, "<xml/>", "h_aapl", "https://sec.gov/aapl"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source)
+                VALUES (%s, %s, %s);
+            """, (acc, now_iso, "SEC_INDEX"))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, 'F', 5000, 230.0, 1150000.0, 'Tim Cook', 'Officer', false, true, false, 'CEO', 'D', false, 'TAX_WITHHOLDING', 'D', false, false);
+            """, (f"{acc}:0001243821:NON_DERIVATIVE:0", acc, today))
+        conn.commit()
+        conn.close()
+
+        engine = SmartMoneyEngine()
+        res = engine.evaluate_smart_money_feeds("AAPL", window_days=90)
+
+        assert "feeds" in res
+        sec_feed = res["feeds"]["sec_form4"]
+        assert sec_feed["status"] == "VERIFIED"
+        assert sec_feed["observation_count"] == 1
+
+        obs = sec_feed["observations"][0]
+        assert obs["transaction_type"] == "Tax Withholding"
+        assert obs["is_sell"] is False
+        assert obs["is_buy"] is False
+
+        # Direction MUST be NEUTRAL (no buys, and statutory tax withholding is not discretionary selling)
+        assert sec_feed["direction"] == "NEUTRAL", f"Expected NEUTRAL, got {sec_feed['direction']}"
+
+        conf_inputs = res.get("confluence_inputs")
+        assert conf_inputs is not None
+        assert conf_inputs["insider_sell_count_90d"] == 0
+        assert conf_inputs["insider_buy_count_90d"] == 0
+

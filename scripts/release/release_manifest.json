@@ -1,33 +1,33 @@
 {
-  "release_candidate_commit": "c40add95dc58784f3a5963eb557596e66160d6c1",
-  "base_anchor_commit": "fe44211921d65f678617834d5f64eeb03b039a81",
+  "release_candidate_commit": "ae314184b3e5833df152b4a5d6f5060c576ac0c9",
+  "base_anchor_commit": "16f999ae09572ee699c134057671948e7696c25a",
   "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "SM_ACT_015_CANARY_INTEGRATION",
+  "directive": "SM_ACT_017_CLASSIFICATION_INTEGRATION",
   "files": {
-    "analyst_dashboard/smart_money/canary_runner.py": {
-      "operation": "A",
-      "originating_pr_number": 167,
-      "originating_commit": "c40add9",
-      "governing_requirement": "SM-ACT-014R: Dedicated single-shot bounded SEC Form 4 canary runner",
-      "sha256": "c6d11486b8ac27963beabdc980ca9be4ef09f928515aef5a57e51938722062b4",
-      "size_bytes": 23077
-    },
-    "analyst_dashboard/smart_money/worker.py": {
+    "analyst_dashboard/analyzers/smart_money.py": {
       "operation": "M",
-      "originating_pr_number": 167,
-      "originating_commit": "c40add9",
-      "governing_requirement": "SM-ACT-014R: Worker CLI flags for bounded canary and single-cycle execution",
-      "sha256": "80ce9c54bce2372aee89c960abec27bf0ed4c3dc195124a8b0a01a5508efa07e",
-      "size_bytes": 30804
+      "originating_pr_number": 169,
+      "originating_commit": "ae31418",
+      "governing_requirement": "SM-ACT-017: Discretionary sale vs tax withholding / gift / disposition classification",
+      "sha256": "50b9fe713383eb59295dc46f3eb9f323dba2fdfbdf07b40222e4c15fb46c5b17",
+      "size_bytes": 179486
     },
-    "tests/test_smart_money_nvda_canary_runner.py": {
-      "operation": "A",
-      "originating_pr_number": 167,
-      "originating_commit": "c40add9",
-      "governing_requirement": "SM-ACT-014R: 12-case unit and adversarial preflight test suite",
-      "sha256": "89a1d72101c1e020ac972a5447c16e97abb076a01e28ddb7b4b8013f7c543166",
-      "size_bytes": 13547
+    "analyst_dashboard/smart_money/continuous_pipeline.py": {
+      "operation": "M",
+      "originating_pr_number": 169,
+      "originating_commit": "ae31418",
+      "governing_requirement": "SM-ACT-017: SQL classification mapping and non-discretionary is_sell = False",
+      "sha256": "10d1d3f3eb8f40f8a5b09f8e058b3afdd18c65d67a58fdb9748639f098064a9e",
+      "size_bytes": 58515
+    },
+    "tests/test_sm_act_004_defects.py": {
+      "operation": "M",
+      "originating_pr_number": 169,
+      "originating_commit": "ae31418",
+      "governing_requirement": "SM-ACT-017: 2-case adversarial test suite for classification and confluence",
+      "sha256": "6832f51e29aaf5cf7d088cdac6003c55771c524127c9ebfba8bf6ddff10db146",
+      "size_bytes": 41353
     }
   },
   "qualification_framework_files": {
@@ -37,9 +37,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "f20815570c472a8e557a55fb74643a76d16dadb20d41fe7fc91e4c50d079f112",
-      "bytes": 57721,
-      "size_bytes": 57721
+      "sha256": "8b854611938baabecb89a2026f3d12c3c2ebbbf3dd41705d2ef9c637f5f76e3f",
+      "bytes": 57731,
+      "size_bytes": 57731
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
