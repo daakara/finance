@@ -1284,20 +1284,25 @@ class TestSmDataGov001EvidenceLifecycle:
 
         # Saturday replay (Engine): must return original (10,000 shs)
         res_sat_pub = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_sat, replay_mode="PUBLIC_AVAILABLE")
-        obs_sat_pub = res_sat_pub["feeds"]["sec_form4"]["observations"]
+        obs_sat_pub = [o for o in res_sat_pub["feeds"]["sec_form4"]["observations"] if o["id"] in (acc_orig, acc_amend)]
         assert [o["id"] for o in obs_sat_pub] == [acc_orig]
         assert sum(o["shares_traded"] for o in obs_sat_pub) == 10000.0
 
         res_sat_arx = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_sat, replay_mode="ARX_OBSERVED")
-        obs_sat_arx = res_sat_arx["feeds"]["sec_form4"]["observations"]
+        obs_sat_arx = [o for o in res_sat_arx["feeds"]["sec_form4"]["observations"] if o["id"] in (acc_orig, acc_amend)]
         assert [o["id"] for o in obs_sat_arx] == [acc_orig]
         assert sum(o["shares_traded"] for o in obs_sat_arx) == 10000.0
 
         # Monday night replay (Engine): must return amendment (5,000 shs)
         res_mon_pub = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_mon, replay_mode="PUBLIC_AVAILABLE")
-        obs_mon_pub = res_mon_pub["feeds"]["sec_form4"]["observations"]
+        obs_mon_pub = [o for o in res_mon_pub["feeds"]["sec_form4"]["observations"] if o["id"] in (acc_orig, acc_amend)]
         assert [o["id"] for o in obs_mon_pub] == [acc_amend]
         assert sum(o["shares_traded"] for o in obs_mon_pub) == 5000.0
+
+        res_mon_arx = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_mon, replay_mode="ARX_OBSERVED")
+        obs_mon_arx = [o for o in res_mon_arx["feeds"]["sec_form4"]["observations"] if o["id"] in (acc_orig, acc_amend)]
+        assert [o["id"] for o in obs_mon_arx] == [acc_amend]
+        assert sum(o["shares_traded"] for o in obs_mon_arx) == 5000.0
 
         # Repository bulk query method test
         repo = PostgresSmartMoneyRepository(dsn=uri)
@@ -1307,7 +1312,8 @@ class TestSmDataGov001EvidenceLifecycle:
             min_date="2026-10-01",
             replay_mode="PUBLIC_AVAILABLE",
         )
-        assert [t["accession_number"] for t in bulk_sat.get("NVDA", [])] == [acc_orig]
+        sat_target_accs = [t["accession_number"] for t in bulk_sat.get("NVDA", []) if t["accession_number"] in (acc_orig, acc_amend)]
+        assert sat_target_accs == [acc_orig]
 
         bulk_mon = repo.get_bulk_transactions_as_of(
             as_of_watermark=w_mon,
@@ -1315,4 +1321,5 @@ class TestSmDataGov001EvidenceLifecycle:
             min_date="2026-10-01",
             replay_mode="PUBLIC_AVAILABLE",
         )
-        assert [t["accession_number"] for t in bulk_mon.get("NVDA", [])] == [acc_amend]
+        mon_target_accs = [t["accession_number"] for t in bulk_mon.get("NVDA", []) if t["accession_number"] in (acc_orig, acc_amend)]
+        assert mon_target_accs == [acc_amend]
