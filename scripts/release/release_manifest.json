@@ -1,49 +1,33 @@
 {
-  "release_candidate_commit": "25869d6a62fdd28039281d09362a1876dd6e4c07",
-  "base_anchor_commit": "7a513929bbcd74a3e568dcfe626bfac582ee68fb",
-  "total_files": 5,
+  "release_candidate_commit": "c40add95dc58784f3a5963eb557596e66160d6c1",
+  "base_anchor_commit": "fe44211921d65f678617834d5f64eeb03b039a81",
+  "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "SM_DATA_GOV_001_4_CONTROLLED_PRODUCTION_PROMOTION",
+  "directive": "SM_ACT_015_CANARY_INTEGRATION",
   "files": {
-    "analyst_dashboard/analyzers/smart_money.py": {
-      "operation": "M",
-      "originating_pr_number": 162,
-      "originating_commit": "25869d6",
-      "governing_requirement": "SM-DATA-GOV-001: Historical replay and point-in-time amendment handling",
-      "sha256": "784ac943bdab4d325e67133ed20e776623d33db0847b396c0fbf78b23880bab7",
-      "size_bytes": 177664
-    },
-    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
-      "operation": "M",
-      "originating_pr_number": 162,
-      "originating_commit": "25869d6",
-      "governing_requirement": "SM-DATA-GOV-001: Point-in-time amendment correction and supersession queries",
-      "sha256": "19aa011d3cae10e7d809a08d6638e14697a90b6ba27e7b5e570d14c42caf2611",
-      "size_bytes": 47175
-    },
-    "api/routes/smart_money.py": {
-      "operation": "M",
-      "originating_pr_number": 162,
-      "originating_commit": "25869d6",
-      "governing_requirement": "SM-DATA-GOV-001: Point-in-time Smart Money API parameters and validation",
-      "sha256": "44a24f193a5a26c1d370556990d8e1b069716918babce7ff9ae9087c4915a4fd",
-      "size_bytes": 11708
-    },
-    "docs/governance/SM_DATA_GOV_001_POLICY.md": {
+    "analyst_dashboard/smart_money/canary_runner.py": {
       "operation": "A",
-      "originating_pr_number": 162,
-      "originating_commit": "25869d6",
-      "governing_requirement": "SM-DATA-GOV-001: Smart Money Data Governance Policy",
-      "sha256": "f71ce3f1148dc61aaeb9113bf3980c786f7e6f01ca81591be0707e1e98a2fb78",
-      "size_bytes": 8681
+      "originating_pr_number": 167,
+      "originating_commit": "c40add9",
+      "governing_requirement": "SM-ACT-014R: Dedicated single-shot bounded SEC Form 4 canary runner",
+      "sha256": "c6d11486b8ac27963beabdc980ca9be4ef09f928515aef5a57e51938722062b4",
+      "size_bytes": 23077
     },
-    "tests/test_sm_data_gov_001_integrity.py": {
+    "analyst_dashboard/smart_money/worker.py": {
+      "operation": "M",
+      "originating_pr_number": 167,
+      "originating_commit": "c40add9",
+      "governing_requirement": "SM-ACT-014R: Worker CLI flags for bounded canary and single-cycle execution",
+      "sha256": "80ce9c54bce2372aee89c960abec27bf0ed4c3dc195124a8b0a01a5508efa07e",
+      "size_bytes": 30804
+    },
+    "tests/test_smart_money_nvda_canary_runner.py": {
       "operation": "A",
-      "originating_pr_number": 162,
-      "originating_commit": "25869d6",
-      "governing_requirement": "SM-DATA-GOV-001: Point-in-time amendment falsification & replay test suite",
-      "sha256": "4a123df6275339205e7da89f5548420bdf42b8c84bb49dcd4804ed9f0583e399",
-      "size_bytes": 65516
+      "originating_pr_number": 167,
+      "originating_commit": "c40add9",
+      "governing_requirement": "SM-ACT-014R: 12-case unit and adversarial preflight test suite",
+      "sha256": "89a1d72101c1e020ac972a5447c16e97abb076a01e28ddb7b4b8013f7c543166",
+      "size_bytes": 13547
     }
   },
   "qualification_framework_files": {
@@ -53,9 +37,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "867d515a14286c54eeafbaa8f8404385cd6a15bccf309dbeef7d764f1342c1b4",
-      "bytes": 57711,
-      "size_bytes": 57711
+      "sha256": "f20815570c472a8e557a55fb74643a76d16dadb20d41fe7fc91e4c50d079f112",
+      "bytes": 57721,
+      "size_bytes": 57721
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
