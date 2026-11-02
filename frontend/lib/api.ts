@@ -1947,10 +1947,11 @@ export function normalizeRadarEnvelopeState(data: any): {
   };
 }
 
-export async function fetchScreenerGems(model: string = "all"): Promise<ScreenerResponse> {
+export async function fetchScreenerGems(model: string = "all", universe?: string): Promise<ScreenerResponse> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/screener/run?filter_type=${encodeURIComponent(model)}`, {
+    const univParam = universe ? `&universe=${encodeURIComponent(universe)}` : "";
+    const res = await fetch(`${baseUrl}/screener/run?filter_type=${encodeURIComponent(model)}${univParam}`, {
       headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(6000),
     });
