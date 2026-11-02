@@ -64,6 +64,7 @@ from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.universe.store import UniverseStore
 from analyst_dashboard.universe.contracts import UNIVERSE_ID, UNIVERSE_VERSION
+from analyst_dashboard.universe.lifecycle import get_security_lifecycle_registry
 
 from analyst_dashboard.coordination import (
     DurableRunCoordinator,
@@ -298,8 +299,21 @@ class VCPScannerRunner:
             adjustment_state_counts: Dict[str, int] = {}
             qualified_candidates: List[Dict[str, Any]] = []
 
+            eff_obs_date = scheduled_for or time.strftime("%Y-%m-%d", time.gmtime())
+            lifecycle_reg = get_security_lifecycle_registry()
+
             for sym in universe:
                 clean_sym = sym.strip().upper()
+
+                # Authoritative lifecycle guard: Delisted / non-screening-eligible securities are excluded
+                lifecycle_eval = lifecycle_reg.evaluate_lifecycle(clean_sym, as_of_date=eff_obs_date)
+                if lifecycle_eval.is_delisted:
+                    unavailable_reasons["DELISTED_SECURITY"] = unavailable_reasons.get("DELISTED_SECURITY", 0) + 1
+                    continue
+                if not lifecycle_eval.is_screening_eligible:
+                    unavailable_reasons["SUSPENDED_SECURITY"] = unavailable_reasons.get("SUSPENDED_SECURITY", 0) + 1
+                    continue
+
                 try:
                     latest = self.market_db.get_latest_price(clean_sym)
                 except Exception as exc:

@@ -126,26 +126,8 @@ DEFAULT_CANDIDATES = LONG_TERM_CANDIDATES
 # Authoritative registry of confirmed corporate actions, mergers, and delistings
 # with primary SEC filing citations. Inactive securities are retained for audit
 # and historical valuation integrity, but strictly excluded from active discovery.
-CONFIRMED_CORPORATE_ACTIONS: Dict[str, Dict[str, Any]] = {
-    "CPRX": {
-        "status": "DELISTED",
-        "action_type": "CASH_MERGER_ACQUISITION",
-        "effective_date": "2026-07-21",
-        "acquirer": "Angelini Pharma S.p.A.",
-        "consideration": "$31.50 per share in cash",
-        "filings": [
-            {"form": "25-NSE", "filing_date": "2026-07-10", "description": "Notification of Removal from Listing on Nasdaq"},
-            {"form": "15-12B", "filing_date": "2026-07-20", "description": "Certification and Notice of Termination of Registration"},
-        ],
-        "execution_status": "DELISTED_SECURITY",
-        "status_label": "🛑 Delisted / Inactive",
-        "status_color": "rose",
-        "decision_state": "INELIGIBLE_INACTIVE",
-        "screening_eligible": False,
-        "is_investable": False,
-        "notes": "Acquired by Angelini Pharma for $31.50/share in July 2026. Common stock deregistered and delisted from Nasdaq.",
-    }
-}
+from analyst_dashboard.universe.lifecycle import get_security_lifecycle_registry
+CONFIRMED_CORPORATE_ACTIONS: Dict[str, Dict[str, Any]] = get_security_lifecycle_registry().get_confirmed_corporate_actions_map()
 
 # ── Attributable Lifecycle Evidence Registry ──────────────────────────────
 # Invariant: Static reference catalog membership does NOT constitute lifecycle evidence.

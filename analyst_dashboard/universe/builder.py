@@ -96,8 +96,30 @@ class DeterministicUniverseBuilder:
         # Temporal anchor for point-in-time evaluation against target session date
         obs_date = observed_at[:10] if observed_at else ""
 
+        # Authoritative security lifecycle evaluation (fail-closed against stale incoming feeds/catalogs)
+        from .lifecycle import get_security_lifecycle_registry
+        lifecycle_reg = get_security_lifecycle_registry()
+        lifecycle_eval = lifecycle_reg.evaluate_lifecycle(
+            symbol=normalized.symbol,
+            canonical_id=normalized.security_id,
+            as_of_date=obs_date,
+        )
+
+        if normalized.trading_suspension_date:
+            effective_susp_date = normalized.trading_suspension_date
+        elif normalized.delisting_date:
+            effective_susp_date = None
+        else:
+            effective_susp_date = lifecycle_eval.record.trading_suspension_date if lifecycle_eval.record else None
+
+        effective_delist_date = normalized.delisting_date or (
+            lifecycle_eval.record.delisting_date if lifecycle_eval.record else None
+        )
+
         # R03: Listing Status (Venue trading status must be ACTIVE at observed_at)
-        if normalized.trading_suspension_date and obs_date and obs_date >= normalized.trading_suspension_date:
+        if effective_susp_date and obs_date and obs_date >= effective_susp_date:
+            r03 = False
+        elif (not normalized.delisting_date) and (lifecycle_eval.is_suspended or lifecycle_eval.is_delisted):
             r03 = False
         else:
             r03 = (normalized.listing_status == CANONICAL_ELIGIBILITY_RULES["R03_LISTING_STATUS"]["expected"])
@@ -116,8 +138,11 @@ class DeterministicUniverseBuilder:
         rule_results["R06_PRIMARY_LISTING"] = r06
 
         # R07: Not Delisted (Point-in-time evaluation against session date)
-        if normalized.delisting_date:
-            if obs_date and obs_date < normalized.delisting_date:
+        if lifecycle_eval.is_delisted:
+            # Authoritative confirmed delisting status strictly excludes security (cannot be overridden)
+            r07 = False
+        elif effective_delist_date:
+            if obs_date and obs_date < effective_delist_date:
                 r07 = True
             else:
                 r07 = False
@@ -132,6 +157,9 @@ class DeterministicUniverseBuilder:
         elif not r02:
             decision = EligibilityDecision.INELIGIBLE
             reason_code = "INELIGIBLE_SECURITY_TYPE"
+        elif not r07:
+            decision = EligibilityDecision.INELIGIBLE
+            reason_code = "INELIGIBLE_DELISTED"
         elif not r03:
             decision = EligibilityDecision.INELIGIBLE
             reason_code = "INELIGIBLE_LISTING_STATUS"
@@ -144,9 +172,6 @@ class DeterministicUniverseBuilder:
         elif not r06:
             decision = EligibilityDecision.INELIGIBLE
             reason_code = "INELIGIBLE_SECONDARY_LISTING"
-        elif not r07:
-            decision = EligibilityDecision.INELIGIBLE
-            reason_code = "INELIGIBLE_DELISTED"
 
         # Check for unresolvable missing attributes
         if not normalized.symbol or not normalized.security_id:
