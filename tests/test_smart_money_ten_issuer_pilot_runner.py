@@ -30,6 +30,8 @@ from analyst_dashboard.smart_money.pilot_runner import (
     IssuerBudgetExceededError,
     PilotTimeoutError,
     PilotLockContentionError,
+    PilotContainmentError,
+    PilotSupervisoryWatchdog,
     PILOT_MAX_TOTAL_REQUESTS,
     PILOT_MAX_PER_ISSUER_REQUESTS,
     PILOT_MAX_DURATION_SEC,
@@ -207,7 +209,8 @@ def test_07_failure_isolation_across_issuers(mock_session):
         }
 
     with patch.object(runner, "_ingest_issuer", side_effect=mock_ingest), \
-         patch.object(runner, "validate_preflight", return_value=True):
+         patch.object(runner, "validate_preflight", return_value=True), \
+         patch.dict(os.environ, {"ARX_TEN_ISSUER_PILOT_AUTHORIZED": "true"}):
         telemetry = runner.execute()
 
     assert telemetry["total_issuers_planned"] == 3
@@ -232,7 +235,8 @@ def test_08_partial_coverage_preserves_active_snapshot(mock_session):
         receipts.append({"ticker": f"TICK{i}", "status": "FAILED", "error": "timeout", "requests_made": 1, "duration_sec": 0.1})
 
     with patch.object(runner, "validate_preflight", return_value=True), \
-         patch.object(runner, "_ingest_issuer", side_effect=receipts):
+         patch.object(runner, "_ingest_issuer", side_effect=receipts), \
+         patch.dict(os.environ, {"ARX_TEN_ISSUER_PILOT_AUTHORIZED": "true"}):
         telemetry = runner.execute()
 
     assert telemetry["issuers_succeeded"] == 8
@@ -289,7 +293,8 @@ def test_12_fail_closed_teardown_restores_standby():
     os.environ["ARX_SEC_EGRESS_ROLE"] = "STANDBY"
 
     with patch.object(runner, "validate_preflight", return_value=True), \
-         patch.object(runner, "_ingest_issuer", side_effect=RuntimeError("CatastrophicFailure")):
+         patch.object(runner, "_ingest_issuer", side_effect=RuntimeError("CatastrophicFailure")), \
+         patch.dict(os.environ, {"ARX_TEN_ISSUER_PILOT_AUTHORIZED": "true"}):
 
         try:
             runner.execute()
@@ -298,15 +303,126 @@ def test_12_fail_closed_teardown_restores_standby():
 
         assert os.environ.get("ARX_SEC_EGRESS_ROLE") in ("STANDBY", "DISABLED")
         assert os.environ.get("ARX_SEC_EGRESS_ROLE") != "OWNER"
+        assert os.environ.get("ARX_TEN_ISSUER_PILOT_AUTHORIZED") == "false"
 
 
 def test_13_worker_cli_ten_issuer_pilot_dispatch():
     """Verifies that worker.py CLI --ten-issuer-pilot flag correctly invokes pilot runner."""
     with patch("analyst_dashboard.smart_money.pilot_runner.run_ten_issuer_pilot", return_value={"verdict": "SUCCESS"}) as mock_run, \
-         patch("sys.argv", ["worker.py", "--ten-issuer-pilot"]), \
+         patch("sys.argv", ["worker.py", "--ten-issuer-pilot", "--authorize-pilot"]), \
          pytest.raises(SystemExit) as exc_info:
         from analyst_dashboard.smart_money.worker import main
         main()
 
     assert exc_info.value.code == 0
     mock_run.assert_called_once()
+    assert os.environ.get("ARX_TEN_ISSUER_PILOT_AUTHORIZED") == "true"
+
+
+def test_14_outbound_send_boundary_blocks_redirect_exceeding_budget():
+    """Verifies outbound send boundary intercepts and blocks any send exceeding per-issuer budget (<= 4)."""
+    runner = TenIssuerPilotRunner(max_per_issuer_requests=4)
+    runner.current_issuer_ticker = "NVDA"
+    runner.current_issuer_requests = 4
+
+    req = requests.Request("GET", "https://data.sec.gov/submissions/overflow.json").prepare()
+
+    with pytest.raises(IssuerBudgetExceededError) as exc_info:
+        runner.session.send(req)
+
+    assert "reached per-issuer ceiling (4). Outbound send blocked." in str(exc_info.value)
+    # Request count must NOT increment past 4
+    assert runner.current_issuer_requests == 4
+
+
+def test_15_outbound_send_boundary_blocks_cycle_ceiling():
+    """Verifies outbound send boundary intercepts and blocks any send exceeding cycle ceiling (<= 40)."""
+    runner = TenIssuerPilotRunner(max_total_requests=40)
+    runner.total_requests_made = 40
+    runner.current_issuer_ticker = "MSFT"
+    runner.current_issuer_requests = 0
+
+    req = requests.Request("GET", "https://data.sec.gov/submissions/overflow_cycle.json").prepare()
+
+    with pytest.raises(PilotBudgetExceededError) as exc_info:
+        runner.session.send(req)
+
+    assert "reached cycle ceiling (40). Outbound send blocked." in str(exc_info.value)
+    assert runner.total_requests_made == 40
+
+
+def test_16_missing_backup_containment_fails_closed():
+    """Verifies that missing or disabled backup containment fails closed immediately."""
+    runner = TenIssuerPilotRunner()
+
+    # Case A: Missing env var
+    with patch.dict(os.environ, {"ARX_BACKUP_CONTAINMENT_ENABLED": ""}, clear=True), \
+         patch("analyst_dashboard.smart_money.pilot_runner.get_sec_user_agent", return_value="TestBot test@domain.com"):
+        with pytest.raises(PilotContainmentError) as exc_info:
+            runner.validate_preflight()
+        assert "CONTAINMENT_DISABLED" in str(exc_info.value)
+
+    # Case B: Explicit FALSE
+    with patch.dict(os.environ, {"ARX_BACKUP_CONTAINMENT_ENABLED": "FALSE"}), \
+         patch("analyst_dashboard.smart_money.pilot_runner.get_sec_user_agent", return_value="TestBot test@domain.com"):
+        with pytest.raises(PilotContainmentError) as exc_info2:
+            runner.validate_preflight()
+        assert "CONTAINMENT_DISABLED" in str(exc_info2.value)
+
+
+def test_17_missing_or_failed_database_fails_closed():
+    """Verifies that missing DSN or database probe failure fails closed immediately."""
+    # Case A: Missing DSN
+    runner_no_dsn = TenIssuerPilotRunner(dsn=None)
+    with patch.dict(os.environ, {"ARX_BACKUP_CONTAINMENT_ENABLED": "TRUE"}), \
+         patch("analyst_dashboard.smart_money.pilot_runner.get_sec_user_agent", return_value="TestBot test@domain.com"), \
+         patch("analyst_dashboard.smart_money.pilot_runner.BackupAgeContainmentGate.enforce_ingestion_gate", return_value=None):
+        with pytest.raises(PilotSecurityError) as exc_info:
+            runner_no_dsn.validate_preflight()
+        assert "DATABASE_UNAVAILABLE: Mandatory production PostgreSQL DSN is missing." in str(exc_info.value)
+
+    # Case B: Database probe failure
+    runner_bad_db = TenIssuerPilotRunner(dsn="postgresql://invalid:5432/bad")
+    with patch.dict(os.environ, {"ARX_BACKUP_CONTAINMENT_ENABLED": "TRUE"}), \
+         patch("analyst_dashboard.smart_money.pilot_runner.get_sec_user_agent", return_value="TestBot test@domain.com"), \
+         patch("analyst_dashboard.smart_money.pilot_runner.BackupAgeContainmentGate.enforce_ingestion_gate", return_value=None), \
+         patch("analyst_dashboard.smart_money.pilot_runner.get_connection", side_effect=RuntimeError("Connection refused")):
+        with pytest.raises(PilotSecurityError) as exc_info2:
+            runner_bad_db.validate_preflight()
+        assert "DATABASE_UNAVAILABLE: Preflight database probe failed" in str(exc_info2.value)
+
+
+def test_18_unauthorized_pilot_elevation_fails_closed():
+    """Verifies that executing without explicit ARX_TEN_ISSUER_PILOT_AUTHORIZED fails closed and does not elevate."""
+    runner = TenIssuerPilotRunner(dsn=None)
+
+    with patch.dict(os.environ, {"ARX_TEN_ISSUER_PILOT_AUTHORIZED": "false", "ARX_SEC_EGRESS_ROLE": "DISABLED"}), \
+         patch.object(runner, "validate_preflight", return_value=True):
+        with pytest.raises(PilotSecurityError) as exc_info:
+            runner.execute()
+        assert "UNAUTHORIZED_PILOT_EXECUTION" in str(exc_info.value)
+        assert os.environ.get("ARX_SEC_EGRESS_ROLE") in ("STANDBY", "DISABLED")
+        assert os.environ.get("ARX_SEC_EGRESS_ROLE") != "OWNER"
+
+
+def test_19_supervisory_watchdog_terminates_and_releases_lock():
+    """Verifies that the supervisory watchdog thread terminates an overrun and triggers full cleanup."""
+    runner = TenIssuerPilotRunner(max_duration_sec=0.05, dsn=None)
+
+    # Ingest that sleeps longer than watchdog limit
+    def hanging_ingest(ticker, cik, company_name, conn):
+        time.sleep(0.15)
+        return {"status": "SUCCESS"}
+
+    with patch.object(runner, "validate_preflight", return_value=True), \
+         patch.object(runner, "_ingest_issuer", side_effect=hanging_ingest), \
+         patch.dict(os.environ, {"ARX_TEN_ISSUER_PILOT_AUTHORIZED": "true", "ARX_SEC_EGRESS_ROLE": "DISABLED"}):
+
+        with pytest.raises(PilotTimeoutError) as exc_info:
+            runner.execute()
+
+        assert "SUPERVISORY_WATCHDOG" in str(exc_info.value) or "deadline" in str(exc_info.value)
+        assert os.environ.get("ARX_SEC_EGRESS_ROLE") in ("STANDBY", "DISABLED")
+        assert os.environ.get("ARX_SEC_EGRESS_ROLE") != "OWNER"
+        assert os.environ.get("ARX_TEN_ISSUER_PILOT_AUTHORIZED") == "false"
+
