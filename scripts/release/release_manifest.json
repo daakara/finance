@@ -1,33 +1,33 @@
 {
-  "release_candidate_commit": "ae314184b3e5833df152b4a5d6f5060c576ac0c9",
-  "base_anchor_commit": "16f999ae09572ee699c134057671948e7696c25a",
+  "release_candidate_commit": "17b770b188149b73da45693dd2924306507e7ae6",
+  "base_anchor_commit": "9850dae57ab48b010b15930c61a96aec0d7875ad",
   "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "SM_ACT_017_CLASSIFICATION_INTEGRATION",
+  "directive": "SM_ACT_018_PILOT_RUNNER_INTEGRATION",
   "files": {
-    "analyst_dashboard/analyzers/smart_money.py": {
-      "operation": "M",
-      "originating_pr_number": 169,
-      "originating_commit": "ae31418",
-      "governing_requirement": "SM-ACT-017: Discretionary sale vs tax withholding / gift / disposition classification",
-      "sha256": "50b9fe713383eb59295dc46f3eb9f323dba2fdfbdf07b40222e4c15fb46c5b17",
-      "size_bytes": 179486
+    "analyst_dashboard/smart_money/pilot_runner.py": {
+      "operation": "A",
+      "originating_pr_number": 171,
+      "originating_commit": "17b770b",
+      "governing_requirement": "SM-ACT-018: Ten-issuer sequential SEC pilot runner (TenIssuerPilotRunner)",
+      "sha256": "8f12d322456dbef3f578b88be39b6c58b56bbb5d658ea063ab5edd4e3d12a239",
+      "size_bytes": 25586
     },
-    "analyst_dashboard/smart_money/continuous_pipeline.py": {
+    "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
-      "originating_pr_number": 169,
-      "originating_commit": "ae31418",
-      "governing_requirement": "SM-ACT-017: SQL classification mapping and non-discretionary is_sell = False",
-      "sha256": "10d1d3f3eb8f40f8a5b09f8e058b3afdd18c65d67a58fdb9748639f098064a9e",
-      "size_bytes": 58515
+      "originating_pr_number": 171,
+      "originating_commit": "17b770b",
+      "governing_requirement": "SM-ACT-018: Worker CLI flag --ten-issuer-pilot dispatch",
+      "sha256": "11c49c17d9e938e0db2bee70e2f86c5a8ab3c959d79e3a09da05ce7cf162e82e",
+      "size_bytes": 31280
     },
-    "tests/test_sm_act_004_defects.py": {
-      "operation": "M",
-      "originating_pr_number": 169,
-      "originating_commit": "ae31418",
-      "governing_requirement": "SM-ACT-017: 2-case adversarial test suite for classification and confluence",
-      "sha256": "6832f51e29aaf5cf7d088cdac6003c55771c524127c9ebfba8bf6ddff10db146",
-      "size_bytes": 41353
+    "tests/test_smart_money_ten_issuer_pilot_runner.py": {
+      "operation": "A",
+      "originating_pr_number": 171,
+      "originating_commit": "17b770b",
+      "governing_requirement": "SM-ACT-018: 13-case adversarial test suite for ten-issuer pilot",
+      "sha256": "cbb9e74e51c2c69192cb6dd7390cb754fb5ab5dcf42e4bebd3430225470c43d6",
+      "size_bytes": 13116
     }
   },
   "qualification_framework_files": {
@@ -37,9 +37,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "8b854611938baabecb89a2026f3d12c3c2ebbbf3dd41705d2ef9c637f5f76e3f",
-      "bytes": 57731,
-      "size_bytes": 57731
+      "sha256": "fbf2249d3828efd5e724c530ad05dde7bd76a674c2ef4921a609e5c7b11aedab",
+      "bytes": 58949,
+      "size_bytes": 58949
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
