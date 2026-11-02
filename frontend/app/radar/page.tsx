@@ -108,6 +108,10 @@ function RadarContent() {
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState(initialQ);
   const [sortBy, setSortBy] = useState<'SCORE' | 'RVOL' | 'PRICE'>('SCORE');
+  const [selectedUniverse, setSelectedUniverse] = useState<'PRE_SCREENED' | 'ALL_CATALOG'>(() => {
+    const u = searchParams?.get('universe')?.toUpperCase();
+    return u === 'ALL_CATALOG' ? 'ALL_CATALOG' : 'PRE_SCREENED';
+  });
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
   const [selectedAssetTicker, setSelectedAssetTicker] = useState<string | null>(() => {
     const sym = searchParams?.get('symbol') || searchParams?.get('ticker');
@@ -180,7 +184,8 @@ function RadarContent() {
     const reqId = ++latestRequestIdRef.current;
     setIsLoading(true);
 
-    fetchScreenerGems("all")
+    const universeArg = selectedUniverse === 'ALL_CATALOG' ? 'ALL_CATALOG' : undefined;
+    fetchScreenerGems("all", universeArg)
       .then((res) => {
         if (!isMounted || reqId !== latestRequestIdRef.current) return;
         setHasPartialResults(res.status === "PARTIAL");
@@ -279,7 +284,7 @@ function RadarContent() {
     return () => {
       isMounted = false;
     };
-  }, [refreshNonce]);
+  }, [refreshNonce, selectedUniverse]);
 
   // Category Counts & Invariant Enforcement
   // Zero Semantics Invariant: Numerical count (including 0) is permitted ONLY when
@@ -461,6 +466,21 @@ function RadarContent() {
     return null;
   }, [selectedAssetTicker, cleanQ, filteredAssets, searchParams, allAssets]);
 
+  // Discover matching entries from MASTER_ASSET_CATALOG that are not yet in allAssets
+  const catalogMatches = useMemo(() => {
+    if (!cleanQ || cleanQ.length === 0) return [];
+    const entries = Object.values(MASTER_ASSET_CATALOG);
+    return entries.filter((item) => {
+      const alreadyPresent = allAssets.some((a) => a.ticker === item.symbol);
+      if (alreadyPresent) return false;
+      return (
+        item.symbol.toUpperCase().includes(cleanQ) ||
+        item.name.toUpperCase().includes(cleanQ) ||
+        item.sector.toUpperCase().includes(cleanQ)
+      );
+    }).slice(0, 4);
+  }, [cleanQ, allAssets]);
+
   const handleOnDemandScan = async (tickerOverride?: string) => {
     const raw = tickerOverride || searchQuery;
     const clean = raw.trim().toUpperCase();
@@ -580,7 +600,14 @@ function RadarContent() {
     }
   };
 
-  const heroAsset = isSearching ? (filteredAssets[0] || null) : (filteredAssets[0] || allAssets[0]);
+  // Active selected candidate asset from user selection (table row click, search, or query param)
+  const selectedAsset = useMemo(() => {
+    if (!activeCanonicalAsset) return null;
+    return allAssets.find((a) => a.ticker === activeCanonicalAsset) || null;
+  }, [activeCanonicalAsset, allAssets]);
+
+  // The hero asset reflects the explicit user selection, or when an active search query matches a candidate
+  const heroAsset = selectedAsset || (isSearching && filteredAssets.length > 0 ? filteredAssets[0] : null);
 
   return (
     <TerminalShell
@@ -596,13 +623,13 @@ function RadarContent() {
           badge="Market Discovery"
           symbol={activeCanonicalAsset}
           primaryAction={{
-            label: heroAsset ? `Analyze ${heroAsset.ticker} →` : "Analyze Candidate →",
+            label: heroAsset ? `Analyze ${heroAsset.ticker} →` : "Explore Radar Assets →",
             href: heroAsset
               ? `/?symbol=${heroAsset.ticker}${heroAsset.decisionContextId ? `&contextId=${encodeURIComponent(heroAsset.decisionContextId)}` : ""}`
-              : "/",
+              : "#radar-candidates-table",
           }}
           secondaryAction={{
-            label: "Review Setups →",
+            label: heroAsset ? `Review ${heroAsset.ticker} Setup →` : "Review All Setups →",
             href: heroAsset ? `/setups?symbol=${heroAsset.ticker}` : "/setups",
           }}
         />
@@ -669,50 +696,116 @@ function RadarContent() {
 
         {/* Search Discovery / Empty Status Banner when filteredAssets is 0 */}
         {!isLoading && isSearching && !heroAsset && (
-          <div className="p-5 md:p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-2)] backdrop-blur-md space-y-3 font-mono text-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">🔍</span>
-                <div>
-                  <div className="text-[var(--text-1)] font-bold text-sm">
-                    Searching for &quot;{cleanQ}&quot; · 0 matching candidates in current pre-scanned batch
+          <div className="space-y-4">
+            {/* Master Catalog Suggestions when search matches catalog */}
+            {catalogMatches.length > 0 && (
+              <div className="p-4 sm:p-5 rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-cyan-950/30 via-slate-900 to-slate-950 shadow-xl space-y-3 font-mono text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-cyan-500/20">
+                  <div className="inline-flex items-center gap-2 text-cyan-300 font-bold uppercase tracking-wider text-[11px]">
+                    <span>🏛️</span>
+                    <span>Master Catalog Matches ({catalogMatches.length})</span>
                   </div>
-                  <div className="text-[var(--text-2)] text-[11px] mt-0.5 font-sans">
-                    {isTickerQuery
-                      ? `Asset "${cleanQ}" is not in today's ${allAssets.length > 0 ? `${allAssets.length}-candidate` : "active"} pre-screened confluence batch. You can evaluate it live across the exchange tape.`
-                      : `No radar candidates matched your keyword or catalyst filter.`}
-                  </div>
+                  {selectedUniverse !== 'ALL_CATALOG' && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedUniverse('ALL_CATALOG')}
+                      className="text-[11px] text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
+                    >
+                      Switch to Master Catalog (43) →
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {catalogMatches.map((catEntry) => (
+                    <div
+                      key={catEntry.symbol}
+                      className="p-3 rounded-xl bg-[var(--surface-1)] border border-[var(--border-subtle)] space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-black text-white">{catEntry.symbol}</span>
+                          <span className="text-xs text-[var(--text-2)]">{catEntry.name}</span>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--surface-2)] text-cyan-400 border border-cyan-800/60">
+                          {catEntry.sector}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[var(--text-2)] line-clamp-2 font-sans">
+                        {catEntry.thesis || catEntry.moatSummary}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOnDemandScan(catEntry.symbol)}
+                          disabled={isOnDemandLoading}
+                          className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black text-[11px] inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        >
+                          <span>⚡ Evaluate in Radar</span>
+                        </button>
+                        <Link
+                          href={`/?symbol=${catEntry.symbol}`}
+                          className="px-3 py-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-1)] text-[11px] font-bold border border-[var(--border-subtle)] inline-flex items-center gap-1"
+                        >
+                          <span>Analyze {catEntry.symbol} →</span>
+                        </Link>
+                        <Link
+                          href={`/setups?symbol=${catEntry.symbol}`}
+                          className="px-3 py-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] text-[11px] font-bold border border-[var(--border-subtle)] inline-flex items-center gap-1"
+                        >
+                          <span>Review Setup →</span>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {isTickerQuery && (
-                  <button
-                    onClick={() => handleOnDemandScan(cleanQ)}
-                    disabled={isOnDemandLoading}
-                    className="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cyan-950/50 disabled:opacity-50 cursor-pointer"
-                  >
-                    <span>{isOnDemandLoading ? "⏳ Scanning..." : "⚡ Run On-Demand Scan"}</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedAssetTicker(null);
-                    setOnDemandError(null);
-                  }}
-                  className="px-3 py-2 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] font-bold text-xs transition-all border border-[var(--border-subtle)] cursor-pointer"
-                >
-                  Clear Filter
-                </button>
-              </div>
-            </div>
-
-            {onDemandError && (
-              <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-800/80 text-rose-300 text-xs flex items-center gap-2">
-                <span>⚠️</span>
-                <span>{onDemandError}</span>
-              </div>
             )}
+
+            <div className="p-5 md:p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-2)] backdrop-blur-md space-y-3 font-mono text-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🔍</span>
+                  <div>
+                    <div className="text-[var(--text-1)] font-bold text-sm">
+                      Searching for &quot;{cleanQ}&quot; · {filteredAssets.length} matching candidates in current pre-scanned batch
+                    </div>
+                    <div className="text-[var(--text-2)] text-[11px] mt-0.5 font-sans">
+                      {isTickerQuery
+                        ? `Asset "${cleanQ}" is not in today's ${allAssets.length > 0 ? `${allAssets.length}-candidate` : "active"} pre-screened confluence batch. You can evaluate it live across the exchange tape.`
+                        : `No radar candidates matched your keyword or catalyst filter.`}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {isTickerQuery && (
+                    <button
+                      onClick={() => handleOnDemandScan(cleanQ)}
+                      disabled={isOnDemandLoading}
+                      className="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cyan-950/50 disabled:opacity-50 cursor-pointer"
+                    >
+                      <span>{isOnDemandLoading ? "⏳ Scanning..." : "⚡ Run On-Demand Scan"}</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedAssetTicker(null);
+                      setOnDemandError(null);
+                    }}
+                    className="px-3 py-2 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] font-bold text-xs transition-all border border-[var(--border-subtle)] cursor-pointer"
+                  >
+                    Clear Filter
+                  </button>
+                </div>
+              </div>
+
+              {onDemandError && (
+                <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-800/80 text-rose-300 text-xs flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span>{onDemandError}</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -723,7 +816,7 @@ function RadarContent() {
             <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-emerald-500/20">
               <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 text-[10px] sm:text-xs font-mono uppercase tracking-widest text-emerald-300 font-bold rounded-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Attention Candidate · Top Pre-Screened Confluence
+                {selectedAsset ? `Selected Candidate · ${heroAsset.ticker}` : `Active Candidate · ${heroAsset.ticker}`}
               </div>
               <div
                 className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-[var(--text-2)] bg-[var(--surface-1)] px-2 py-0.5 rounded border border-[var(--border-subtle)]"
@@ -732,7 +825,7 @@ function RadarContent() {
                 <span>📡</span>
                 <span>Screening Snapshot</span>
                 <span className="text-[var(--text-muted)]">|</span>
-                <span className="text-cyan-400">Batch Universe</span>
+                <span className="text-cyan-400">{selectedUniverse === 'ALL_CATALOG' ? 'Master Catalog' : 'Batch Universe'}</span>
               </div>
             </div>
 
@@ -926,6 +1019,72 @@ function RadarContent() {
 
         {/* Search & Filter Toolbar */}
         <div className="space-y-3 border-b border-[var(--border-subtle)] pb-4">
+          {/* Universe Selector & Quick Discovery Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Universe Scope Selector */}
+            <div className="flex items-center gap-1.5 p-1 bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-xl text-xs font-mono w-fit">
+              <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider px-2 font-bold">Universe:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedUniverse('PRE_SCREENED');
+                  setSelectedAssetTicker(null);
+                }}
+                className={`focus-ring px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  selectedUniverse === 'PRE_SCREENED'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm font-bold'
+                    : 'text-[var(--text-2)] hover:text-[var(--text-1)] border border-transparent'
+                }`}
+              >
+                Pre-Screened VCP (35)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedUniverse('ALL_CATALOG');
+                  setSelectedAssetTicker(null);
+                }}
+                className={`focus-ring px-3 py-1.5 min-h-[36px] rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  selectedUniverse === 'ALL_CATALOG'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm font-bold'
+                    : 'text-[var(--text-2)] hover:text-[var(--text-1)] border border-transparent'
+                }`}
+              >
+                Master Catalog (43)
+              </button>
+            </div>
+
+            {/* Quick Master Catalog Discovery Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
+              <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider hidden sm:inline">Curated Assets:</span>
+              {["NVDA", "AAPL", "MSFT", "TSLA", "COIN", "ONON", "MEDP"].map((chipSym) => {
+                const isSelected = activeCanonicalAsset === chipSym;
+                return (
+                  <button
+                    key={chipSym}
+                    type="button"
+                    onClick={() => {
+                      const inAll = allAssets.some((a) => a.ticker === chipSym);
+                      if (inAll) {
+                        setSearchQuery(chipSym);
+                        setSelectedAssetTicker(chipSym);
+                      } else {
+                        handleOnDemandScan(chipSym);
+                      }
+                    }}
+                    className={`focus-ring px-2.5 py-1 min-h-[32px] rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400 shadow-sm'
+                        : 'bg-[var(--surface-1)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] hover:text-[var(--text-1)] border-[var(--border-subtle)]'
+                    }`}
+                  >
+                    {chipSym}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             {/* Category Filter Tabs (WAI-ARIA Tablist) */}
             <div
