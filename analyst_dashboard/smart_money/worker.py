@@ -672,6 +672,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="ARX Terminal Smart Money Worker")
     parser.add_argument("--canary-nvda", action="store_true", help="Execute bounded single-shot NVDA SEC canary")
+    parser.add_argument("--ten-issuer-pilot", action="store_true", help="Execute bounded sequential 10-issuer SEC pilot")
     parser.add_argument("--single-cycle", action="store_true", help="Execute a single worker cycle and terminate")
     args, _ = parser.parse_known_args()
 
@@ -679,6 +680,13 @@ def main():
         from analyst_dashboard.smart_money.canary_runner import run_nvda_canary
         logger.info("Executing bounded NVDA SEC Form 4 canary via worker CLI...")
         res = run_nvda_canary()
+        print(json.dumps(res, indent=2, default=str))
+        sys.exit(0 if res.get("verdict") == "SUCCESS" else 1)
+
+    if args.ten_issuer_pilot:
+        from analyst_dashboard.smart_money.pilot_runner import run_ten_issuer_pilot
+        logger.info("Executing bounded 10-issuer SEC Form 4 pilot via worker CLI...")
+        res = run_ten_issuer_pilot()
         print(json.dumps(res, indent=2, default=str))
         sys.exit(0 if res.get("verdict") == "SUCCESS" else 1)
 
