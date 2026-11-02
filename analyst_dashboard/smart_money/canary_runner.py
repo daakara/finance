@@ -17,6 +17,7 @@ import os
 import sys
 import time
 import json
+import uuid
 import hashlib
 import logging
 from typing import Dict, Any, Optional, List
@@ -225,7 +226,6 @@ class NvdaCanaryRunner:
         conn = None
         if pg_ctx:
             conn = pg_ctx.__enter__()
-            conn.autocommit = False
             has_lock = acquire_sec_owner_lock(conn)
             if not has_lock:
                 pg_ctx.__exit__(None, None, None)
@@ -409,20 +409,24 @@ class NvdaCanaryRunner:
                         """, (acc_num, base_acc, 1, rel_status))
 
                     # 5. Audit event
+                    ev_payload = json.dumps({
+                        "ticker": CANARY_TICKER,
+                        "accession_number": acc_num,
+                        "form_type": form_type,
+                        "transactions_count": persisted_tx_count,
+                        "content_hash": content_hash,
+                    })
+                    ev_hash = hashlib.sha256(ev_payload.encode("utf-8")).hexdigest()
                     cur.execute("""
                         INSERT INTO sm_audit_events (
-                            event_type, subject_id, payload
-                        ) VALUES (%s, %s, %s);
+                            event_id, event_type, subject_id, payload, event_hash
+                        ) VALUES (%s, %s, %s, %s, %s);
                     """, (
+                        str(uuid.uuid4()),
                         "CANARY_INGESTION_COMPLETED",
                         acc_num,
-                        json.dumps({
-                            "ticker": CANARY_TICKER,
-                            "accession_number": acc_num,
-                            "form_type": form_type,
-                            "transactions_count": persisted_tx_count,
-                            "content_hash": content_hash,
-                        })
+                        ev_payload,
+                        ev_hash,
                     ))
 
                 conn.commit()
