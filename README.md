@@ -3,7 +3,9 @@
 A professional-grade quantitative intelligence platform featuring real-time market surveillance, Mark Minervini Volatility Contraction Pattern (VCP) setup detection, dual-horizon candlestick geometry, multi-pillar Confluence scoring, and Cornish-Fisher Modified Value-at-Risk modeling.
 
 **Live Deployment**: [https://www.arxterminal.com/](https://www.arxterminal.com/)  
-**Mainline Anchor SHA**: `e10de3b2714e7c7cba49c51e0e7a4eb13a7033f6`  
+**Current status (2026-11-02)**: [Current master status](docs/ARX_MASTER_PROJECT_STATUS_2026_11_02.md) · [Production release notes](docs/releases/2026-11-02_7a513929_smart-money-radar.md)  
+**Verified production release SHA**: `7a513929bbcd74a3e568dcfe626bfac582ee68fb` (Cloudflare Pages + Railway)  
+**Historical mainline anchor (2026-10-29)**: `e10de3b2714e7c7cba49c51e0e7a4eb13a7033f6`  
 **Governance Baseline**: Sprint 4 Administratively Closed | Sprint 5 `NOT_AUTHORIZED` | `HOLD_EXEC_001` Active
 
 ![Next.js](https://img.shields.io/badge/next.js-14.2-black.svg)
@@ -21,7 +23,8 @@ The ARX Terminal documentation estate is consolidated into a canonical hierarchy
 
 | Dimension | Canonical Documentation Portal | Primary Focus & Governance Scope |
 | :--- | :--- | :--- |
-| **Integrated Project Status** | [`ARX_MASTER_PROJECT_STATUS_2026_10_29.md`](docs/ARX_MASTER_PROJECT_STATUS_2026_10_29.md) | Single source of truth across research, UX, engines, engineering, and hosting status. |
+| **Current Integrated Project Status** | [`ARX_MASTER_PROJECT_STATUS_2026_11_02.md`](docs/ARX_MASTER_PROJECT_STATUS_2026_11_02.md) | Current release, governance, production holds and pending acceptance; October 29 status retained as a historical snapshot. |
+| **Production Release Notes** | [`2026-11-02_7a513929_smart-money-radar.md`](docs/releases/2026-11-02_7a513929_smart-money-radar.md) | PR #161 release scope, verified deployment parity and remaining live checks. |
 | **Documentation Master Inventory** | [`ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md`](docs/planning/ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md) | Comprehensive audit and 8-tier authority classification of all 1,478 repository documents. |
 | **Engine Architecture & Contracts** | [`ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md`](docs/architecture/ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md) | Full 12-engine contract reconciliation, input/output data boundaries, fallbacks, and sizing. |
 | **Market-Wide Discovery Research** | [`ARX_MARKET_WIDE_RESEARCH_DECISION_AND_EVIDENCE_REGISTER.md`](docs/research/ARX_MARKET_WIDE_RESEARCH_DECISION_AND_EVIDENCE_REGISTER.md) | MW-004 research reconciliation, Model E+ ratification, candidate freeze, and scoring repair. |
