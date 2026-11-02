@@ -2090,6 +2090,8 @@ class SmartMoneyEngine:
         asset_class: Optional[str] = None,
         security_type: Optional[str] = None,
         evaluation_date: Optional[str] = None,
+        as_of: Optional[str] = None,
+        replay_mode: str = "PUBLIC_AVAILABLE",
     ) -> Dict[str, Any]:
         """
         Comprehensive bounded analytical evaluation of Smart Money evidence across:
@@ -2098,6 +2100,7 @@ class SmartMoneyEngine:
         3. Congressional STOCK Act Disclosures
 
         Maintains independent feed states, distinct timestamps, truthful coverage representation,
+        point-in-time historical replay isolation (SM-DATA-GOV-001 Section 3),
         and provides normalized Confluence Engine inputs without synthetic promotion.
         """
         clean_sym = symbol.upper().replace("-USD", "").strip() if symbol else ""
@@ -2130,9 +2133,12 @@ class SmartMoneyEngine:
             or clean_sym in known_foreign_adrs
         )
 
-        # Establish analytical evaluation window
+        # Establish analytical evaluation window and point-in-time watermark
+        as_of_watermark = as_of
         try:
-            if evaluation_date:
+            if as_of:
+                eval_date = datetime.strptime(str(as_of)[:10], "%Y-%m-%d").date()
+            elif evaluation_date:
                 eval_date = datetime.strptime(str(evaluation_date)[:10], "%Y-%m-%d").date()
             else:
                 eval_date = datetime.now(timezone.utc).date()
@@ -2245,6 +2251,16 @@ class SmartMoneyEngine:
                                     END AS is_open_market_purchase_evidence
                                 """
 
+                            pit_sql = ""
+                            pg_params = [clean_sym, cutoff_str, cutoff_str]
+                            if as_of_watermark:
+                                if replay_mode == "ARX_OBSERVED":
+                                    pit_sql = " AND COALESCE(av.recorded_at, f.created_at) <= %s AND f.filing_date <= %s"
+                                    pg_params.extend([as_of_watermark, eval_date.isoformat()])
+                                else:  # PUBLIC_AVAILABLE (default)
+                                    pit_sql = " AND av.public_availability_at IS NOT NULL AND av.public_availability_at <= %s AND f.filing_date <= %s"
+                                    pg_params.extend([as_of_watermark, eval_date.isoformat()])
+
                             pg_query = f"""
                                 SELECT tx.transaction_id AS record_key, tx.accession_number, f.cik AS issuer_cik,
                                        f.ticker AS issuer_symbol, tx.reporting_owner_name,
@@ -2252,11 +2268,15 @@ class SmartMoneyEngine:
                                        f.filing_date, tx.transaction_date, tx.transaction_code,
                                        tx.shares, tx.price_per_share, tx.total_value_usd,
                                        av.public_availability_at AS acceptance_datetime,
+                                       av.recorded_at AS arx_first_observed_at,
+                                       f.created_at AS arx_processed_at,
+                                       f.accepted_datetime AS sec_accepted_at,
                                        {deriv_cols}
                                 FROM form4_parsed_transactions tx
                                 JOIN form4_raw_filings f ON tx.accession_number = f.accession_number
                                 JOIN sm_source_availability_ledger av ON tx.accession_number = av.accession_number
                                 WHERE f.ticker = %s AND (f.filing_date >= %s OR tx.transaction_date >= %s)
+                                  {pit_sql}
                                   -- 1. Exclude unresolved or ambiguous amendments
                                   AND NOT EXISTS (
                                       SELECT 1 FROM sm_amendments ambig
@@ -2287,7 +2307,7 @@ class SmartMoneyEngine:
                                   )
                                 ORDER BY f.filing_date DESC
                             """
-                            pg_cur.execute(pg_query, (clean_sym, cutoff_str, cutoff_str))
+                            pg_cur.execute(pg_query, tuple(pg_params))
                             sec_rows = pg_cur.fetchall()
                             if sec_rows:
                                 sec_cik = str(sec_rows[0]["issuer_cik"]).zfill(10)
@@ -2320,6 +2340,16 @@ class SmartMoneyEngine:
 
                     deriv_select = "is_derivative" if has_deriv_col else "0 AS is_derivative"
 
+                    sqlite_pit = ""
+                    sqlite_params = [clean_sym, cutoff_str, cutoff_str]
+                    if as_of_watermark:
+                        if replay_mode == "ARX_OBSERVED":
+                            sqlite_pit = " AND ((created_at IS NOT NULL AND created_at <= ?) OR (acceptance_datetime IS NOT NULL AND acceptance_datetime <= ?)) AND filing_date <= ?"
+                            sqlite_params.extend([as_of_watermark, as_of_watermark, eval_date.isoformat()])
+                        else:
+                            sqlite_pit = " AND acceptance_datetime IS NOT NULL AND acceptance_datetime <= ? AND filing_date <= ?"
+                            sqlite_params.extend([as_of_watermark, eval_date.isoformat()])
+
                     query = f"""
                         SELECT record_key, accession_number, issuer_cik, issuer_symbol, reporting_owner_name,
                                officer_title, is_director, is_officer, is_ten_percent_owner, filing_date,
@@ -2328,6 +2358,7 @@ class SmartMoneyEngine:
                                {deriv_select}
                         FROM form4_parsed_transactions
                         WHERE issuer_symbol = ? AND (filing_date >= ? OR transaction_date >= ?)
+                          {sqlite_pit}
                     """
                     if has_amendments:
                         query += """
@@ -2339,7 +2370,7 @@ class SmartMoneyEngine:
                         """
                     query += " ORDER BY filing_date DESC"
 
-                    cur.execute(query, (clean_sym, cutoff_str, cutoff_str))
+                    cur.execute(query, tuple(sqlite_params))
                     sec_rows = cur.fetchall()
 
                     cur.execute("SELECT issuer_cik FROM form4_parsed_transactions WHERE issuer_symbol = ? LIMIT 1", (clean_sym,))
@@ -2405,6 +2436,7 @@ class SmartMoneyEngine:
                     else:
                         tx_type = f"Transaction ({t_code})" if t_code else "Other Insider Transaction"
 
+                    acc_dt = r["acceptance_datetime"]
                     sec_observations.append({
                         "id": r["accession_number"],
                         "insider_name": r["reporting_owner_name"],
@@ -2418,8 +2450,12 @@ class SmartMoneyEngine:
                         "total_value_usd": r["total_value_usd"] or 0.0,
                         "filing_date": r["filing_date"],
                         "transaction_date": r["transaction_date"] or r["filing_date"],
-                        "acceptance_datetime": r["acceptance_datetime"],
-                        "ingestion_timestamp": r["acceptance_datetime"],
+                        "acceptance_datetime": acc_dt,
+                        "ingestion_timestamp": acc_dt,
+                        "arx_first_observed_at": r.get("arx_first_observed_at") if hasattr(r, "get") else None,
+                        "arx_processed_at": r.get("arx_processed_at") if hasattr(r, "get") else None,
+                        "sec_accepted_at": r.get("sec_accepted_at") if hasattr(r, "get") else None,
+                        "availability_uncertain": bool(not acc_dt),
                         "acquired_disposed": acq_disp,
                         "is_positive_buying_conviction": is_pos_conviction,
                         "is_open_market_purchase_evidence": is_pos_conviction,
@@ -2452,6 +2488,8 @@ class SmartMoneyEngine:
                     "status": "VERIFIED",
                     "status_label": "Verified",
                     "coverage": "SUPPORTED_SEC_ISSUER",
+                    "coverage_status": "SUPPORTED_SEC_ISSUER",
+                    "evidence_status": "VERIFIED",
                     "cik": sec_cik,
                     "observations": sec_observations,
                     "observation_count": len(sec_observations),
@@ -2460,12 +2498,20 @@ class SmartMoneyEngine:
                     "explanation": f"{len(sec_observations)} Form 4 insider transactions evaluated in trailing {window_days}d (${(buy_val + sell_val):,.0f} volume).",
                     "provenance": "SEC EDGAR Form 4 (Local Verified Store)",
                     "distinct_dates": sec_distinct_dates,
+                    "latest_filing_date": sec_observations[0].get("filing_date") if sec_observations else None,
+                    "latest_successful_sec_source_check": (sec_observations[0].get("acceptance_datetime") or sec_observations[0].get("filing_date")) if sec_observations else None,
+                    "latest_successful_ingestion": (sec_observations[0].get("acceptance_datetime") or sec_observations[0].get("filing_date")) if sec_observations else None,
+                    "unresolved_failures_count": 0,
+                    "replay_mode": replay_mode,
+                    "as_of_watermark": as_of_watermark,
                 }
             elif has_older_in_db:
                 sec_feed = {
                     "status": "NO_OBSERVATIONS",
                     "status_label": "No Observations",
                     "coverage": "SUPPORTED_SEC_ISSUER",
+                    "coverage_status": "SUPPORTED_SEC_ISSUER",
+                    "evidence_status": "NO_OBSERVATIONS",
                     "cik": sec_cik,
                     "observations": [],
                     "observation_count": 0,
@@ -2474,12 +2520,20 @@ class SmartMoneyEngine:
                     "explanation": f"0 insider transactions filed in trailing {window_days} days (routine corporate cadence).",
                     "provenance": "SEC EDGAR Form 4 (Local Verified Store)",
                     "distinct_dates": None,
+                    "latest_filing_date": None,
+                    "latest_successful_sec_source_check": None,
+                    "latest_successful_ingestion": None,
+                    "unresolved_failures_count": 0,
+                    "replay_mode": replay_mode,
+                    "as_of_watermark": as_of_watermark,
                 }
             else:
                 sec_feed = {
                     "status": "PIPELINE_PENDING",
                     "status_label": "Pipeline Pending",
                     "coverage": "SUPPORTED_SEC_ISSUER" if sec_cik else "UNVERIFIED_ISSUER",
+                    "coverage_status": "SUPPORTED_SEC_ISSUER" if sec_cik else "UNVERIFIED_ISSUER",
+                    "evidence_status": "PIPELINE_PENDING",
                     "cik": sec_cik,
                     "observations": [],
                     "observation_count": 0,
@@ -2488,6 +2542,12 @@ class SmartMoneyEngine:
                     "explanation": "SEC Form 4 continuous ingestion paused under governed operational hold (HOLD_SEC_001).",
                     "provenance": "SEC EDGAR",
                     "distinct_dates": None,
+                    "latest_filing_date": None,
+                    "latest_successful_sec_source_check": None,
+                    "latest_successful_ingestion": None,
+                    "unresolved_failures_count": 0,
+                    "replay_mode": replay_mode,
+                    "as_of_watermark": as_of_watermark,
                 }
 
         # ── FEED 2: OPTIONS FLOW SWEEPS ───────────────────────────────────────
@@ -3288,6 +3348,8 @@ class SmartMoneyEngine:
         options_verified_empty: bool = False,
         sec_verified_empty: bool = False,
         congress_verified_empty: bool = False,
+        as_of: Optional[str] = None,
+        replay_mode: str = "PUBLIC_AVAILABLE",
     ) -> Dict[str, Any]:
         """
         Build the unified, canonical Single-Asset Smart Money Assessment.
@@ -3474,7 +3536,12 @@ class SmartMoneyEngine:
             "secForm4Trades": sec_records,
             "congress_trades": cong_records,
             "congressTrades": cong_records,
-            "as_of": datetime.now(timezone.utc).isoformat(),
+            "as_of": as_of or datetime.now(timezone.utc).isoformat(),
+            "replay_mode": replay_mode,
+            "coverage_status": overall_status,
+            "latest_filing_date": sec_sub.get("records", [{}])[0].get("filing_date") if sec_sub.get("records") else None,
+            "latest_successful_ingestion": sec_sub.get("records", [{}])[0].get("acceptance_datetime") if sec_sub.get("records") else None,
+            "unresolved_failures_count": 0,
         }
 
     @staticmethod

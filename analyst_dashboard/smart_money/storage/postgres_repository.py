@@ -316,10 +316,13 @@ class PostgresSmartMoneyRepository:
         symbols: List[str],
         min_date: str,
         conn: Optional[PgConnection] = None,
+        replay_mode: str = "PUBLIC_AVAILABLE",
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Point-in-Time Bulk Transaction Retrieval.
-        Enforces public_availability_at <= as_of_watermark.
+        Point-in-Time Bulk Transaction Retrieval (SM-DATA-GOV-001 Section 3).
+        Supports two distinct replay modes:
+        - PUBLIC_AVAILABLE: Enforces av.public_availability_at <= as_of_watermark.
+        - ARX_OBSERVED: Enforces COALESCE(av.recorded_at, f.created_at) <= as_of_watermark.
         Resolves amendment supersession point-in-time:
         If an amendment supersedes an original transaction and was available before W,
         the superseding version is used.
@@ -327,7 +330,13 @@ class PostgresSmartMoneyRepository:
         if not symbols:
             return {}
 
-        query = """
+        time_predicate = (
+            "COALESCE(av.recorded_at, f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "av.public_availability_at IS NOT NULL AND av.public_availability_at <= %s"
+        )
+
+        query = f"""
             SELECT
                 tx.transaction_id,
                 tx.accession_number,
@@ -358,7 +367,7 @@ class PostgresSmartMoneyRepository:
             JOIN form4_raw_filings f ON tx.accession_number = f.accession_number
             JOIN sm_source_availability_ledger av ON tx.accession_number = av.accession_number
             LEFT JOIN sm_amendments am ON tx.accession_number = am.amendment_accession
-            WHERE av.public_availability_at <= %s
+            WHERE {time_predicate}
               AND tx.transaction_date >= %s
               AND f.ticker = ANY(%s)
             ORDER BY tx.transaction_date ASC, av.public_availability_at ASC;
@@ -955,4 +964,41 @@ class PostgresSmartMoneyRepository:
             with get_connection(dsn=self.dsn) as c:
                 with c.cursor(cursor_factory=RealDictCursor) as cur:
                     return _exec(cur)
+
+    # ── Destruction Protection & Deletion Governance (SM-DATA-GOV-001) ────────
+
+    def delete_canonical_evidence(
+        self,
+        accession_number: str,
+        authorization_token: Optional[str] = None,
+        conn: Optional[PgConnection] = None,
+    ) -> int:
+        """
+        Enforces SM-DATA-GOV-001 Section 2:
+        Destructive deletion of canonical Smart Money evidence requires an approved
+        retention schedule and verifiable authorization token.
+        Prohibits unauthorized or accidental deletions.
+        """
+        if not authorization_token or not authorization_token.startswith("AUTH_LEGAL_APPROVED_RETENTION_DELETION:"):
+            raise PermissionError(
+                "UNAUTHORIZED_CANONICAL_DELETION: Deletion of canonical Smart Money evidence "
+                "is prohibited under SM-DATA-GOV-001 without an approved legal retention schedule "
+                "and cryptographic authorization token."
+            )
+
+        def _exec(cur):
+            cur.execute("DELETE FROM form4_parsed_transactions WHERE accession_number = %s;", (accession_number,))
+            tx_deleted = cur.rowcount
+            cur.execute("DELETE FROM sm_source_availability_ledger WHERE accession_number = %s;", (accession_number,))
+            ledger_deleted = cur.rowcount
+            # Note: form4_raw_filings remains immutable under trigger trg_form4_raw_filings_immutable
+            return tx_deleted + ledger_deleted
+
+        if conn is not None:
+            with conn.cursor() as cur:
+                return _exec(cur)
+        else:
+            with transaction(dsn=self.dsn) as cur:
+                return _exec(cur)
+
 

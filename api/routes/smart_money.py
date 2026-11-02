@@ -180,6 +180,8 @@ def get_smart_money_evidence(
     include_curated: bool = Query(False, description="Include curated research archive records"),
     asset_class: str = Query("EQUITY", description="Asset class (EQUITY, ETF, CRYPTO)"),
     security_type: str = Query("COMMON_STOCK", description="Security type"),
+    as_of: Optional[str] = Query(None, description="Point-in-time evaluation date/time watermark (ISO format)"),
+    replay_mode: str = Query("PUBLIC_AVAILABLE", description="Replay mode: PUBLIC_AVAILABLE or ARX_OBSERVED"),
     response: Response = None,
 ):
     """
@@ -198,6 +200,8 @@ def get_smart_money_evidence(
         asset_class=asset_class,
         security_type=security_type,
         include_curated=include_curated,
+        as_of=as_of,
+        replay_mode=replay_mode,
     )
 
 
