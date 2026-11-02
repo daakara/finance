@@ -1,33 +1,33 @@
 {
-  "release_candidate_commit": "17b770b188149b73da45693dd2924306507e7ae6",
-  "base_anchor_commit": "9850dae57ab48b010b15930c61a96aec0d7875ad",
+  "release_candidate_commit": "b1d68f17cbf8e9e18804a55b04ee4b9820be7995",
+  "base_anchor_commit": "fad8beb157e8ae752bbbb27ae49789bf531ff8e0",
   "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "SM_ACT_018_PILOT_RUNNER_INTEGRATION",
+  "directive": "SM_ACT_018R_PILOT_SAFETY_GATE_CLOSURE",
   "files": {
     "analyst_dashboard/smart_money/pilot_runner.py": {
-      "operation": "A",
-      "originating_pr_number": 171,
-      "originating_commit": "17b770b",
-      "governing_requirement": "SM-ACT-018: Ten-issuer sequential SEC pilot runner (TenIssuerPilotRunner)",
-      "sha256": "8f12d322456dbef3f578b88be39b6c58b56bbb5d658ea063ab5edd4e3d12a239",
-      "size_bytes": 25586
+      "operation": "M",
+      "originating_pr_number": 173,
+      "originating_commit": "b1d68f1",
+      "governing_requirement": "SM-ACT-018R: Wire-level accounting, mandatory containment/DB, one-shot elevation, supervisory watchdog",
+      "sha256": "03a29881c64c4df5f33bcdd42935fd79a2ba2b365d52104ceea3e88b8375ccee",
+      "size_bytes": 31951
     },
     "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
-      "originating_pr_number": 171,
-      "originating_commit": "17b770b",
-      "governing_requirement": "SM-ACT-018: Worker CLI flag --ten-issuer-pilot dispatch",
-      "sha256": "11c49c17d9e938e0db2bee70e2f86c5a8ab3c959d79e3a09da05ce7cf162e82e",
-      "size_bytes": 31280
+      "originating_pr_number": 173,
+      "originating_commit": "b1d68f1",
+      "governing_requirement": "SM-ACT-018R: Worker CLI flag --authorize-pilot dispatch",
+      "sha256": "be886fe46aadf50e847fa5f0cffd0d303d675daa45b96a10f01dbad3b7241da8",
+      "size_bytes": 31515
     },
     "tests/test_smart_money_ten_issuer_pilot_runner.py": {
-      "operation": "A",
-      "originating_pr_number": 171,
-      "originating_commit": "17b770b",
-      "governing_requirement": "SM-ACT-018: 13-case adversarial test suite for ten-issuer pilot",
-      "sha256": "cbb9e74e51c2c69192cb6dd7390cb754fb5ab5dcf42e4bebd3430225470c43d6",
-      "size_bytes": 13116
+      "operation": "M",
+      "originating_pr_number": 173,
+      "originating_commit": "b1d68f1",
+      "governing_requirement": "SM-ACT-018R: 19-case adversarial test suite for ten-issuer pilot",
+      "sha256": "159c555d976dfa9e0c3f6a03eb887fcd23c001b744508791e2079ef8ec0f9035",
+      "size_bytes": 19280
     }
   },
   "qualification_framework_files": {
@@ -37,9 +37,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "fbf2249d3828efd5e724c530ad05dde7bd76a674c2ef4921a609e5c7b11aedab",
-      "bytes": 58949,
-      "size_bytes": 58949
+      "sha256": "0cf770d9b9bd9d4a2a675e99e7d0712b40dddb9510aba382c291013992a646f2",
+      "bytes": 58959,
+      "size_bytes": 58959
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",

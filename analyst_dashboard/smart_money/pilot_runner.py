@@ -21,10 +21,12 @@ import json
 import uuid
 import hashlib
 import logging
+import threading
 from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime, timezone
 
 import requests
+from requests.adapters import HTTPAdapter
 
 from analyst_dashboard.smart_money.storage.postgres_connection import get_connection
 from analyst_dashboard.smart_money.storage.postgres_coordination import (
@@ -88,6 +90,62 @@ class PilotContainmentError(RuntimeError):
     pass
 
 
+class PilotSupervisoryWatchdog:
+    """
+    Supervisory watchdog timer thread enforcing hard wall-clock execution limits.
+    Triggers immediate runner abort and socket termination if total execution time is exceeded.
+    """
+
+    def __init__(self, runner: "TenIssuerPilotRunner", timeout_sec: float):
+        self.runner = runner
+        self.timeout_sec = timeout_sec
+        self.timer: Optional[threading.Timer] = None
+        self.fired: bool = False
+
+    def start(self) -> None:
+        def _on_timeout():
+            self.fired = True
+            logger.critical(
+                f"SUPERVISORY_WATCHDOG: Hard execution ceiling ({self.timeout_sec}s) exceeded! "
+                "Triggering supervisory termination..."
+            )
+            self.runner.abort(reason=f"SUPERVISORY_TIMEOUT: Total execution exceeded {self.timeout_sec}s ceiling.")
+            try:
+                self.runner.session.close()
+            except Exception:
+                pass
+
+        self.timer = threading.Timer(self.timeout_sec, _on_timeout)
+        self.timer.daemon = True
+        self.timer.start()
+
+    def cancel(self) -> None:
+        if self.timer:
+            self.timer.cancel()
+
+
+class OutboundAccountingSession(requests.Session):
+    """
+    Custom Session that intercepts every outbound HTTP transmission at the wire send boundary.
+    Enforces per-issuer ceiling (<= 4) and total cycle ceiling (<= 40) before transmitting.
+    Counts initial requests, redirects, and retries.
+    """
+
+    def __init__(self, runner: "TenIssuerPilotRunner"):
+        super().__init__()
+        self.runner = runner
+
+    def send(self, request, **kwargs):
+        self.runner.check_deadline()
+        self.runner.rate_limiter.acquire()
+        self.runner.record_outbound_send(request.url)
+        t0 = time.time()
+        resp = super().send(request, **kwargs)
+        duration = round(time.time() - t0, 3)
+        self.runner.record_response_received(resp, duration)
+        return resp
+
+
 class TenIssuerPilotRunner:
     """
     Dedicated production sequential pilot runner covering the 10 governed mega-cap issuers.
@@ -110,142 +168,185 @@ class TenIssuerPilotRunner:
         self.max_per_issuer_requests = max_per_issuer_requests
         self.max_duration_sec = max_duration_sec
         self.rate_limiter = SecRateLimiter(max_per_second=max_rps)
-        self.session = session or requests.Session()
         self.start_time: float = 0.0
         self.total_requests_made: int = 0
         self.requests_log: List[Dict[str, Any]] = []
         self.current_issuer_ticker: Optional[str] = None
         self.current_issuer_requests: int = 0
         self.abort_requested: bool = False
+        self.abort_reason: Optional[str] = None
+        self.watchdog: Optional[PilotSupervisoryWatchdog] = None
 
-    def abort(self) -> None:
+        if session is not None:
+            self.session = session
+            orig_send = self.session.send
+
+            def wrapped_send(request, **kwargs):
+                self.check_deadline()
+                self.rate_limiter.acquire()
+                self.record_outbound_send(request.url)
+                t0 = time.time()
+                resp = orig_send(request, **kwargs)
+                duration = round(time.time() - t0, 3)
+                self.record_response_received(resp, duration)
+                return resp
+
+            self.session.send = wrapped_send
+        else:
+            self.session = OutboundAccountingSession(self)
+
+        try:
+            adapter = HTTPAdapter(max_retries=0)
+            self.session.mount("https://", adapter)
+            self.session.mount("http://", adapter)
+        except Exception:
+            pass
+
+    def abort(self, reason: Optional[str] = None) -> None:
         """Triggers emergency stop for the in-progress pilot."""
-        logger.warning("EMERGENCY_STOP: Pilot abort requested.")
+        self.abort_reason = reason or "Pilot abort requested"
+        logger.warning(f"EMERGENCY_STOP: {self.abort_reason}")
         self.abort_requested = True
 
     def validate_preflight(self) -> bool:
         """
         Validates all pre-flight invariants:
         1. User-Agent conforms to SEC regulations
-        2. Database connectivity
-        3. Backup containment gate verified (< 12 hours)
+        2. Backup containment gate verified (< 12 hours) - MANDATORY (fail-closed if disabled/missing)
+        3. Production PostgreSQL connectivity - MANDATORY (fail-closed if missing/failed)
         """
+        # 1. Regulatory SEC User-Agent
         ua = get_sec_user_agent()
         is_valid_ua, ua_err = validate_sec_user_agent(ua)
         if not is_valid_ua:
             raise PilotSecurityError(f"INVALID_USER_AGENT: {ua_err}")
 
-        # Backup containment check
-        containment_enabled = os.environ.get("ARX_BACKUP_CONTAINMENT_ENABLED", "").strip().upper() == "TRUE"
-        if containment_enabled:
-            logger.info("Evaluating backup freshness authority gate (< 12 hours)...")
-            policy = BackupContainmentPolicy(
-                enabled=True,
-                max_verified_age_seconds=float(os.environ.get("ARX_BACKUP_CONTAINMENT_THRESHOLD_SECONDS", "43200.0")),
-                production_authorized=True,
+        # 2. Backup containment check - MANDATORY (No silent bypass)
+        containment_raw = os.environ.get("ARX_BACKUP_CONTAINMENT_ENABLED", "").strip().upper()
+        if containment_raw != "TRUE":
+            raise PilotContainmentError(
+                "CONTAINMENT_DISABLED: Verified R2 backup containment is mandatory for ten-issuer pilot execution "
+                "(ARX_BACKUP_CONTAINMENT_ENABLED must be 'TRUE'). Missing or disabled containment fails closed."
             )
-            authority = BackupFreshnessAuthority(policy=policy)
-            gate = BackupAgeContainmentGate(freshness_authority=authority, policy=policy)
-            gate.enforce_ingestion_gate()
-            logger.info("Backup freshness gate verified: active verified backup within threshold.")
 
+        logger.info("Evaluating mandatory backup freshness authority gate (< 12 hours)...")
+        max_age_sec = float(os.environ.get("ARX_BACKUP_CONTAINMENT_THRESHOLD_SECONDS", "43200.0"))
+        policy = BackupContainmentPolicy(
+            enabled=True,
+            max_verified_age_seconds=max_age_sec,
+            production_authorized=True,
+        )
+        authority = BackupFreshnessAuthority(policy=policy)
+        gate = BackupAgeContainmentGate(freshness_authority=authority, policy=policy)
+        gate.enforce_ingestion_gate()
+        logger.info("Backup freshness gate verified: active verified backup within threshold.")
+
+        # 3. Production PostgreSQL connectivity - MANDATORY (No silent bypass)
         if not self.dsn:
-            logger.warning("No PostgreSQL DSN provided. Running pilot in memory/read-only mode.")
-            return True
+            raise PilotSecurityError(
+                "DATABASE_UNAVAILABLE: Mandatory production PostgreSQL DSN is missing. "
+                "Pilot execution requires authoritative database connectivity."
+            )
 
-        with get_connection(self.dsn) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1;")
-                row = cur.fetchone()
-                if not row or row[0] != 1:
-                    raise PilotSecurityError("DATABASE_UNAVAILABLE: Preflight connection probe failed.")
+        try:
+            with get_connection(self.dsn) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT 1;")
+                    row = cur.fetchone()
+                    if not row or row[0] != 1:
+                        raise PilotSecurityError("DATABASE_UNAVAILABLE: Preflight connection probe returned invalid result.")
+        except PilotSecurityError:
+            raise
+        except Exception as e:
+            raise PilotSecurityError(f"DATABASE_UNAVAILABLE: Preflight database probe failed: {e}")
+
         return True
 
     def check_deadline(self) -> None:
         """Enforces wall-clock execution ceiling and emergency abort across the entire pilot."""
+        elapsed = time.time() - self.start_time if self.start_time > 0 else 0.0
         if self.abort_requested or os.environ.get("ARX_EMERGENCY_STOP", "").strip().lower() in ("true", "1", "yes"):
-            raise PilotSecurityError("EMERGENCY_STOP: Execution aborted by operator signal.")
-        if self.start_time > 0 and (time.time() - self.start_time) > self.max_duration_sec:
+            if self.watchdog and self.watchdog.fired:
+                raise PilotTimeoutError(
+                    f"SUPERVISORY_WATCHDOG: Total execution exceeded {self.max_duration_sec}s ceiling."
+                )
+            reason_suffix = f" ({self.abort_reason})" if self.abort_reason else ""
+            raise PilotSecurityError(
+                f"EMERGENCY_STOP: Execution aborted by operator signal{reason_suffix}."
+            )
+        if self.start_time > 0 and elapsed > self.max_duration_sec:
             raise PilotTimeoutError(
                 f"MECHANICAL_STOP: Pilot execution deadline ({self.max_duration_sec}s) exceeded."
             )
 
-    def tracked_get(self, url: str, timeout: float = 10.0) -> requests.Response:
+    def record_outbound_send(self, url: str, is_redirect: Optional[bool] = None) -> None:
         """
-        Executes outbound HTTPS request with rate-limiting, redirect/retry tracking,
-        and per-issuer and cycle budget enforcement.
+        Accounting hook executed BEFORE an HTTP request hits the wire.
+        Enforces per-issuer ceiling (<= 4) and total cycle ceiling (<= 40).
         """
         self.check_deadline()
-
-        # Pre-check budgets before wire request
         if self.total_requests_made >= self.max_total_requests:
             raise PilotBudgetExceededError(
                 f"MECHANICAL_STOP: Pilot total request count ({self.total_requests_made}) reached "
-                f"cycle ceiling ({self.max_total_requests})."
+                f"cycle ceiling ({self.max_total_requests}). Outbound send blocked."
             )
         if self.current_issuer_requests >= self.max_per_issuer_requests:
             raise IssuerBudgetExceededError(
                 f"MECHANICAL_STOP: Issuer {self.current_issuer_ticker} request count "
-                f"({self.current_issuer_requests}) reached per-issuer ceiling ({self.max_per_issuer_requests})."
+                f"({self.current_issuer_requests}) reached per-issuer ceiling ({self.max_per_issuer_requests}). "
+                f"Outbound send blocked."
             )
 
-        self.rate_limiter.acquire()
-        t0 = time.time()
-        resp = self.session.get(url, timeout=timeout)
-        duration = round(time.time() - t0, 3)
-
-        # Count redirects in history
-        for hist_resp in (resp.history or []):
-            self.total_requests_made += 1
-            self.current_issuer_requests += 1
-            self.requests_log.append({
-                "request_num": self.total_requests_made,
-                "issuer": self.current_issuer_ticker,
-                "url": hist_resp.url,
-                "status_code": hist_resp.status_code,
-                "bytes_received": len(hist_resp.content or b""),
-                "duration_sec": 0.0,
-                "is_redirect": True,
-            })
-            if self.total_requests_made > self.max_total_requests:
-                raise PilotBudgetExceededError(
-                    f"MECHANICAL_STOP: Pilot total request count ({self.total_requests_made}) exceeded "
-                    f"cycle ceiling ({self.max_total_requests}) via redirects."
-                )
-            if self.current_issuer_requests > self.max_per_issuer_requests:
-                raise IssuerBudgetExceededError(
-                    f"MECHANICAL_STOP: Issuer {self.current_issuer_ticker} request count "
-                    f"({self.current_issuer_requests}) exceeded per-issuer ceiling ({self.max_per_issuer_requests}) via redirects."
-                )
-
-        # Count final response
         self.total_requests_made += 1
         self.current_issuer_requests += 1
+        redirect_flag = is_redirect if is_redirect is not None else (self.current_issuer_requests > 1)
         self.requests_log.append({
             "request_num": self.total_requests_made,
             "issuer": self.current_issuer_ticker,
-            "url": resp.url,
-            "status_code": resp.status_code,
-            "bytes_received": len(resp.content or b""),
-            "duration_sec": duration,
-            "is_redirect": False,
+            "url": url,
+            "status_code": None,
+            "bytes_received": 0,
+            "duration_sec": 0.0,
+            "is_redirect": redirect_flag,
+            "state": "SENT",
         })
         logger.info(
-            f"[PILOT REQ {self.total_requests_made}/{self.max_total_requests} | "
+            f"[OUTBOUND SEND {self.total_requests_made}/{self.max_total_requests} | "
             f"{self.current_issuer_ticker} {self.current_issuer_requests}/{self.max_per_issuer_requests}] "
-            f"GET {url} -> {resp.status_code} ({len(resp.content or b'')} bytes, {duration}s)"
+            f"Sending to {url}"
         )
 
-        if self.total_requests_made > self.max_total_requests:
-            raise PilotBudgetExceededError(
-                f"MECHANICAL_STOP: Pilot total request count ({self.total_requests_made}) exceeded "
-                f"cycle ceiling ({self.max_total_requests})."
-            )
-        if self.current_issuer_requests > self.max_per_issuer_requests:
-            raise IssuerBudgetExceededError(
-                f"MECHANICAL_STOP: Issuer {self.current_issuer_ticker} request count "
-                f"({self.current_issuer_requests}) exceeded per-issuer ceiling ({self.max_per_issuer_requests})."
-            )
+    def record_response_received(self, resp: Any, duration: float) -> None:
+        """Updates request log entry when response is received."""
+        if self.requests_log:
+            last_req = self.requests_log[-1]
+            last_req["status_code"] = getattr(resp, "status_code", None)
+            content = getattr(resp, "content", b"") or b""
+            last_req["bytes_received"] = len(content)
+            last_req["duration_sec"] = duration
+            last_req["state"] = "RECEIVED"
+
+    def tracked_get(self, url: str, timeout: float = 10.0) -> requests.Response:
+        """
+        Executes outbound HTTPS request with rate-limiting, redirect/retry tracking,
+        and per-issuer and cycle budget enforcement at the outbound send boundary.
+        """
+        self.check_deadline()
+        remaining = max(0.01, self.max_duration_sec - (time.time() - self.start_time)) if self.start_time > 0 else timeout
+        effective_timeout = min(timeout, remaining)
+
+        send_count_before = self.total_requests_made
+        resp = self.session.get(url, timeout=effective_timeout)
+        send_count_after = self.total_requests_made
+
+        # Fallback for mocked sessions where session.get is mocked directly and bypasses send()
+        if send_count_after == send_count_before:
+            for hist_resp in (getattr(resp, "history", []) or []):
+                self.record_outbound_send(hist_resp.url, is_redirect=True)
+                self.record_response_received(hist_resp, 0.0)
+            self.record_outbound_send(getattr(resp, "url", url), is_redirect=False)
+            duration = getattr(resp, "duration_sec", 0.0) or 0.0
+            self.record_response_received(resp, duration)
 
         return resp
 
@@ -271,6 +372,7 @@ class TenIssuerPilotRunner:
         }
 
         try:
+            self.check_deadline()
             # Step 1: Submissions catalog
             sub_url = f"https://data.sec.gov/submissions/CIK{cik.zfill(10)}.json"
             sub_resp = self.tracked_get(sub_url)
@@ -319,6 +421,7 @@ class TenIssuerPilotRunner:
             issuer_receipt["accession_number"] = acc_num
             issuer_receipt["filing_date"] = f_date
 
+            self.check_deadline()
             # Step 2: Fetch Primary Doc
             clean_p_doc = p_doc.split("/")[-1] if p_doc else ""
             cik_int = int(cik)
@@ -343,6 +446,7 @@ class TenIssuerPilotRunner:
 
             content_hash = hashlib.sha256(raw_xml.encode("utf-8")).hexdigest()
 
+            self.check_deadline()
             # Step 3: Parse
             filing_obj = Form4XmlParser.parse_filing(
                 raw_content=raw_xml,
@@ -355,6 +459,7 @@ class TenIssuerPilotRunner:
             filing_obj.source_content_hash = content_hash
             filing_obj.document_type = form_type
 
+            self.check_deadline()
             # Step 4: Persist
             persisted_tx = 0
             if conn:
@@ -412,10 +517,25 @@ class TenIssuerPilotRunner:
             issuer_receipt["transactions_persisted"] = persisted_tx
             issuer_receipt["status"] = "SUCCESS"
 
+        except (PilotBudgetExceededError, PilotTimeoutError, PilotSecurityError) as fatal_err:
+            logger.critical(f"FATAL pilot abort during ingestion for {ticker}: {fatal_err}")
+            if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            issuer_receipt["status"] = "FAILED"
+            issuer_receipt["error"] = str(fatal_err)
+            issuer_receipt["requests_made"] = self.current_issuer_requests
+            issuer_receipt["duration_sec"] = round(time.time() - t0, 3)
+            raise fatal_err
         except Exception as e:
             logger.error(f"Ingestion failed for {ticker} ({cik}): {e}")
             if conn:
-                conn.rollback()
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
             issuer_receipt["status"] = "FAILED"
             issuer_receipt["error"] = str(e)
         finally:
@@ -426,14 +546,15 @@ class TenIssuerPilotRunner:
 
     def execute(self) -> Dict[str, Any]:
         """
-        Executes bounded 10-issuer sequential pilot cycle with guaranteed fail-closed teardown.
+        Executes bounded 10-issuer sequential pilot cycle with supervisory termination
+        and guaranteed fail-closed teardown.
         """
         self.start_time = time.time()
         self.total_requests_made = 0
         self.requests_log = []
 
         telemetry: Dict[str, Any] = {
-            "directive": "SM-ACT-016",
+            "directive": "SM-ACT-018R",
             "cycle_type": "SEQUENTIAL_10_ISSUER_PILOT",
             "timestamp_start": datetime.now(timezone.utc).isoformat(),
             "total_issuers_planned": len(self.issuers),
@@ -451,12 +572,17 @@ class TenIssuerPilotRunner:
             "lock_acquired": False,
             "lock_released": False,
             "role_restored": False,
+            "pilot_auth_revoked": False,
             "verdict": "PENDING",
         }
 
-        # Step 1: Preflight
+        # Step 1: Preflight validations (MANDATORY DB & Backup Containment)
         logger.info("Executing pilot preflight validations...")
         self.validate_preflight()
+
+        # Start supervisory watchdog
+        self.watchdog = PilotSupervisoryWatchdog(self, self.max_duration_sec)
+        self.watchdog.start()
 
         # Step 2: Acquire Advisory Lock
         logger.info(f"Acquiring PostgreSQL advisory lock {LOCK_SEC_EGRESS_OWNER}...")
@@ -475,7 +601,16 @@ class TenIssuerPilotRunner:
 
         prev_role = get_sec_egress_role()
         try:
-            # Step 3: Temporary In-Process Authorization
+            # Step 3: Require explicit, scoped, one-shot owner authorization
+            is_pilot_authorized = os.environ.get("ARX_TEN_ISSUER_PILOT_AUTHORIZED", "").strip().lower() in ("true", "1", "yes")
+            if not is_pilot_authorized:
+                raise PilotSecurityError(
+                    "UNAUTHORIZED_PILOT_EXECUTION: Ten-issuer pilot execution requires explicit, "
+                    "scoped one-shot owner authorization (ARX_TEN_ISSUER_PILOT_AUTHORIZED=true). "
+                    "Ordinary standby-worker startup cannot trigger SEC role elevation."
+                )
+
+            logger.info("One-shot owner authorization confirmed (ARX_TEN_ISSUER_PILOT_AUTHORIZED=true).")
             logger.info("Applying temporary ARX_SEC_EGRESS_ROLE=OWNER in-process...")
             os.environ["ARX_SEC_EGRESS_ROLE"] = "OWNER"
             if not is_sec_egress_authorized():
@@ -489,6 +624,7 @@ class TenIssuerPilotRunner:
 
             # Step 4: Sequential Pilot Pass
             for i, issuer in enumerate(self.issuers):
+                self.check_deadline()
                 ticker = issuer["ticker"]
                 cik = issuer["cik"]
                 name = issuer.get("company_name", ticker)
@@ -526,9 +662,23 @@ class TenIssuerPilotRunner:
         finally:
             # Step 6: Fail-Closed Teardown
             logger.info("Executing pilot fail-closed teardown...")
+
+            # 1. Cancel supervisory watchdog
+            if self.watchdog:
+                try:
+                    self.watchdog.cancel()
+                except Exception:
+                    pass
+
+            # 2. Revoke one-shot pilot authorization
+            os.environ["ARX_TEN_ISSUER_PILOT_AUTHORIZED"] = "false"
+            telemetry["pilot_auth_revoked"] = True
+
+            # 3. Restore non-owner role
             os.environ["ARX_SEC_EGRESS_ROLE"] = prev_role if prev_role in ("STANDBY", "DISABLED") else "STANDBY"
             telemetry["role_restored"] = True
 
+            # 4. Release advisory lock
             if conn:
                 try:
                     release_sec_owner_lock(conn)
@@ -536,7 +686,10 @@ class TenIssuerPilotRunner:
                     logger.info("Advisory lock released successfully.")
                 except Exception as e:
                     logger.warning(f"Error releasing advisory lock: {e}")
-                pg_ctx.__exit__(None, None, None)
+                try:
+                    pg_ctx.__exit__(None, None, None)
+                except Exception:
+                    pass
 
             telemetry["requests_made"] = self.total_requests_made
             telemetry["sec_requests"] = self.requests_log
@@ -548,6 +701,8 @@ class TenIssuerPilotRunner:
                 f"{telemetry['requests_made']} requests made in {telemetry['duration_wall_clock_sec']}s. "
                 f"Verdict: {telemetry['verdict']}"
             )
+
+        return telemetry
 
         return telemetry
 
