@@ -174,6 +174,39 @@ def get_sec_filings(symbol: str, response: Response = None):
     }
 
 
+@router.get("/evidence/{symbol}")
+def get_smart_money_evidence(
+    symbol: str,
+    include_curated: bool = Query(False, description="Include curated research archive records"),
+    asset_class: str = Query("EQUITY", description="Asset class (EQUITY, ETF, CRYPTO)"),
+    security_type: str = Query("COMMON_STOCK", description="Security type"),
+    response: Response = None,
+):
+    """
+    Get authoritative single-asset Smart Money evidence assessment across:
+    - Options Flow Sweeps
+    - SEC Form 4 Insider Transactions
+    - Congressional STOCK Act Disclosures
+    """
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
+    valid_sym = _validate_symbol(symbol)
+    return smart_money_engine.assess_symbol(
+        symbol=valid_sym,
+        asset_class=asset_class,
+        security_type=security_type,
+        include_curated=include_curated,
+    )
+
+
+@router.get("/filings/{symbol}")
+def get_smart_money_filings(symbol: str, response: Response = None):
+    """Canonical alias for /sec-filings/{symbol}."""
+    return get_sec_filings(symbol=symbol, response=response)
+
+
 @router.get("/finra-darkpool/{symbol}")
 def get_finra_darkpool(symbol: str, response: Response = None):
     """Fetch official FINRA Alternative Trading System (ATS) dark pool shares & short volumes."""

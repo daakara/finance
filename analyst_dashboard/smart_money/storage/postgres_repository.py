@@ -127,9 +127,19 @@ class PostgresSmartMoneyRepository:
                         transaction_id, accession_number, transaction_date, transaction_code,
                         shares, price_per_share, total_value_usd, reporting_owner_name,
                         reporting_owner_role, is_director, is_officer, is_ten_percent,
-                        officer_title, ownership_type
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (transaction_id) DO NOTHING;
+                        officer_title, ownership_type,
+                        is_derivative, signal_type, acquired_disposed,
+                        is_positive_buying_conviction, is_open_market_purchase_evidence
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (transaction_id) DO UPDATE SET
+                        shares = EXCLUDED.shares,
+                        price_per_share = EXCLUDED.price_per_share,
+                        total_value_usd = EXCLUDED.total_value_usd,
+                        is_derivative = EXCLUDED.is_derivative,
+                        signal_type = EXCLUDED.signal_type,
+                        acquired_disposed = EXCLUDED.acquired_disposed,
+                        is_positive_buying_conviction = EXCLUDED.is_positive_buying_conviction,
+                        is_open_market_purchase_evidence = EXCLUDED.is_open_market_purchase_evidence;
                 """, (
                     tx["transaction_id"],
                     tx["accession_number"],
@@ -145,6 +155,11 @@ class PostgresSmartMoneyRepository:
                     tx.get("is_ten_percent", False),
                     tx.get("officer_title"),
                     tx.get("ownership_type", "D"),
+                    tx.get("is_derivative", False),
+                    tx.get("signal_type"),
+                    tx.get("acquired_disposed"),
+                    tx.get("is_positive_buying_conviction", False),
+                    tx.get("is_open_market_purchase_evidence", False),
                 ))
                 count += 1
             return count
@@ -328,6 +343,11 @@ class PostgresSmartMoneyRepository:
                 tx.is_ten_percent,
                 tx.officer_title,
                 tx.ownership_type,
+                tx.is_derivative,
+                tx.signal_type,
+                tx.acquired_disposed,
+                tx.is_positive_buying_conviction,
+                tx.is_open_market_purchase_evidence,
                 f.ticker AS symbol,
                 f.company_name,
                 av.public_availability_at,

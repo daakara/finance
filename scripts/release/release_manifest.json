@@ -1,95 +1,129 @@
 {
-  "release_candidate_commit": "854734de4feecef34218544112330c20df0bc128",
-  "base_anchor_commit": "e08d420d835dd52948352d7198926a4331c46ed9",
-  "mainline_source_anchor": "dc4dfa8bcdbf3ef35710710db5f24d6a33c021d9",
-  "total_files": 10,
+  "release_candidate_commit": "cef6a2deb1e33f3f9ff453218d667f7d3d97872f",
+  "base_anchor_commit": "f3f903d0b61f0b0b33f13f42a2f749f941070968",
+  "total_files": 15,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009",
-  "description": "Promote Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009 Smart Money canonical authority, feed parity and adversarial verification (PR #156) to release/production.",
-  "approved_prs": [
-    156
-  ],
-  "production_pr": 155,
+  "directive": "ARX_SM_RADAR_CONSOLIDATED_PRODUCTION_RELEASE",
   "files": {
-    "analyst_dashboard/analyzers/decision_trace.py": {
-      "operation": "M",
-      "originating_pr_number": 156,
-      "originating_commit": "854734d",
-      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: DecisionTrace subdomains and feeds envelope synchronization",
-      "sha256": "055d717122f4f6ed1029f5f4c4dc84692e9e4b665916bc056123e390f981de4b",
-      "size_bytes": 13956
-    },
     "analyst_dashboard/analyzers/smart_money.py": {
       "operation": "M",
-      "originating_pr_number": 156,
-      "originating_commit": "854734d",
-      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Smart Money canonical analytical authority, Form 4 local store queries and statutory exemptions",
-      "sha256": "05eb569b72e19c6885ea146880bfc5466bb4e8bfab5d09013fe145451f117aec",
-      "size_bytes": 147756
+      "originating_pr_number": 159,
+      "originating_commit": "4376134",
+      "governing_requirement": "SM-ACT-011: Live SEC Form 4 canary activation, Postgres classification, and dual envelope",
+      "sha256": "c41d5dfb297848fe5a41d010ffea045351e0d6908fbb5fcb764460eb98bb0e15",
+      "size_bytes": 161431
     },
-    "api/routes/analytics.py": {
+    "analyst_dashboard/data/sec_edgar_fetcher.py": {
       "operation": "M",
-      "originating_pr_number": 156,
-      "originating_commit": "854734d",
-      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Epistemic honesty inputs, dynamic Confluence reweighting and dual envelope support",
-      "sha256": "cf65c928c457a78b7afc2e66702158d2bbd53300f8c56e0a834c7fc7d7111c9d",
-      "size_bytes": 75456
+      "originating_pr_number": 159,
+      "originating_commit": "4376134",
+      "governing_requirement": "SM-ACT-011: Database connection routing for SEC Edgar fetcher",
+      "sha256": "62f66fb0539c2fc57ae22b1647e8b4940d2b7e890e2ac800d66d8b7fa14ca673",
+      "size_bytes": 23119
+    },
+    "analyst_dashboard/smart_money/continuous_pipeline.py": {
+      "operation": "M",
+      "originating_pr_number": 159,
+      "originating_commit": "4376134",
+      "governing_requirement": "SM-ACT-011: Continuous pipeline derivative & open market purchase classification",
+      "sha256": "ee2651ba6fc9da50b69ff0bee262e9267f23bd69d06c716d54d78c8b03416497",
+      "size_bytes": 57639
+    },
+    "analyst_dashboard/smart_money/form4_ingestion.py": {
+      "operation": "M",
+      "originating_pr_number": 159,
+      "originating_commit": "4376134",
+      "governing_requirement": "SM-ACT-011: Form 4 ingestion db path resolution & schema compatibility",
+      "sha256": "4993be447c56a4c7410061bcd988b1b1da6f6beb8597e9e7839e47138869f46b",
+      "size_bytes": 59806
+    },
+    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
+      "operation": "M",
+      "originating_pr_number": 159,
+      "originating_commit": "4376134",
+      "governing_requirement": "SM-ACT-011: Postgres Schema V2 columns & classification queries",
+      "sha256": "c6719ae8f1d3b0467da7c7d8a1728a127ba08e72f0f339bc65d108f85a92227f",
+      "size_bytes": 40612
+    },
+    "analyst_dashboard/smart_money/storage/postgres_schema.py": {
+      "operation": "M",
+      "originating_pr_number": 159,
+      "originating_commit": "4376134",
+      "governing_requirement": "SM-ACT-011: Postgres Schema V2 DDL classification columns",
+      "sha256": "931682a86fae73d86baa684ff4a2cc70d79b8ee644508d8f59d38fd9e8b9a396",
+      "size_bytes": 13162
+    },
+    "analyst_dashboard/smart_money/worker.py": {
+      "operation": "M",
+      "originating_pr_number": 159,
+      "originating_commit": "4376134",
+      "governing_requirement": "SM-ACT-011: Worker startup role check & fail-closed execution guards",
+      "sha256": "74cfcfb17a7799e6579e588491d634739aa8161c52dcf02419dbe34cff4c15c3",
+      "size_bytes": 30052
+    },
+    "api/routes/smart_money.py": {
+      "operation": "M",
+      "originating_pr_number": 159,
+      "originating_commit": "4376134",
+      "governing_requirement": "SM-ACT-011: /evidence/{symbol} and /filings/{symbol} endpoint exposure",
+      "sha256": "b3e19dfda8761b0f8891fe9cffdd57ef54e5401ac937efddcb7782edc76daead",
+      "size_bytes": 10495
+    },
+    "api/routes/screener.py": {
+      "operation": "M",
+      "originating_pr_number": 160,
+      "originating_commit": "cef6a2d",
+      "governing_requirement": "RADAR-PROD-005: 43-symbol Master Catalog universe & discovery endpoint",
+      "sha256": "321b8d50af1d0c8f1af020a4be14cf206496f7b748b12e9ca5f33d7f4400f200",
+      "size_bytes": 74024
+    },
+    "frontend/app/radar/page.tsx": {
+      "operation": "M",
+      "originating_pr_number": 160,
+      "originating_commit": "cef6a2d",
+      "governing_requirement": "RADAR-PROD-005: Selection-aware hero CTA and Master Catalog discovery",
+      "sha256": "eb33814d2748b30892f1cf4acd61dcf46938e240cf9747872fb51893f88a5d2a",
+      "size_bytes": 105367
     },
     "frontend/lib/api.ts": {
       "operation": "M",
-      "originating_pr_number": 156,
-      "originating_commit": "854734d",
-      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Frontend client typing and dual envelope adaptation for Smart Money",
-      "sha256": "b4cdf39f24a8e464dfd3dbd05fd229fce06235ab42d9e3e5a21851a2bfcd1eaa",
-      "size_bytes": 182092
+      "originating_pr_number": 160,
+      "originating_commit": "cef6a2d",
+      "governing_requirement": "RADAR-PROD-005: Frontend client universe parameter adaptation",
+      "sha256": "5d300bdc47bd67336e1fc57f7e2ad44a712e979c361c340cdfecc1801aa3709c",
+      "size_bytes": 182206
     },
-    "frontend/lib/evidenceDomains.ts": {
-      "operation": "M",
-      "originating_pr_number": 156,
-      "originating_commit": "854734d",
-      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: 9-domain evidence resolution with advisory domain decoupling and FPI/ETF/crypto exemptions",
-      "sha256": "40c0679a68d90e31ab86460ae498eb085152eae79e1b200fe9901567e6e77650",
-      "size_bytes": 25096
-    },
-    "frontend/tests/smartMoneyBoundedRemediation.test.ts": {
+    "frontend/tests/radarHeroCtaAndCatalogDiscovery.test.ts": {
       "operation": "A",
-      "originating_pr_number": 156,
-      "originating_commit": "854734d",
-      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Frontend bounded remediation tests for Smart Money evidence resolution",
-      "sha256": "7fb7a6178d77eea6df73710adb61073fa0154795d773f6cfe9b45d0a3eb75c83",
-      "size_bytes": 12844
+      "originating_pr_number": 160,
+      "originating_commit": "cef6a2d",
+      "governing_requirement": "RADAR-PROD-005: Radar hero CTA and discovery unit tests",
+      "sha256": "c0456bc9d165eea2f41e968b8f5d72a6ad159127307935a19d6370e4b6ba433f",
+      "size_bytes": 9341
     },
-    "frontend/tests/smartMoneyE2EParity.test.ts": {
+    "tests/test_directive_radar_prod_002.py": {
       "operation": "A",
-      "originating_pr_number": 156,
-      "originating_commit": "854734d",
-      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Frontend end-to-end parity and statutory exemption tests",
-      "sha256": "b5c401ca3d5187911c281658c66ec3dfb7ce1cbd99d89b06f7498e6a087b771b",
-      "size_bytes": 14915
+      "originating_pr_number": 160,
+      "originating_commit": "cef6a2d",
+      "governing_requirement": "RADAR-PROD-005: Backend Radar multi-asset catalog discovery suite",
+      "sha256": "007d9ac9634c0a2b1f8de4bb09ae8603ae4b85c5389d71904ad0b82257dca49f",
+      "size_bytes": 5736
     },
-    "frontend/types/insight.ts": {
-      "operation": "M",
-      "originating_pr_number": 156,
-      "originating_commit": "854734d",
-      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Insight and evidence domain types extension",
-      "sha256": "e67b8b3563982ab682fb0a765aa2b67d3f3b6542f80fbb1fe2502224d3cfa905",
-      "size_bytes": 7413
-    },
-    "tests/test_directive_smart_money_bounded_remediation.py": {
+    "tests/test_sm_act_001_falsification.py": {
       "operation": "A",
-      "originating_pr_number": 156,
-      "originating_commit": "854734d",
-      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Backend bounded remediation test suite for SQLite Form 4 queries",
-      "sha256": "cf9a8c1d9388d94dda06851a9305852f178fa0127ea272276005c01281ab4457",
-      "size_bytes": 12832
+      "originating_pr_number": 159,
+      "originating_commit": "4376134",
+      "governing_requirement": "SM-ACT-011: Smart Money truthfulness & falsification regression suite",
+      "sha256": "aa3cbfe1aaebd358ae164448187beef8a0bd34a0a1f5b42f3b9a9569c5680453",
+      "size_bytes": 29948
     },
-    "tests/test_smart_money_e2e_parity.py": {
+    "tests/test_sm_act_004_defects.py": {
       "operation": "A",
-      "originating_pr_number": 156,
-      "originating_commit": "854734d",
-      "governing_requirement": "Directive ARX_SMART_MONEY_PRODUCTION_CANDIDATE_009: Backend end-to-end adversarial parity test suite across 14 scenarios",
-      "sha256": "90cc2ffc888b8046cf2e315005260824497c28e8b3a37468bf08b0ee250d5795",
-      "size_bytes": 21994
+      "originating_pr_number": 159,
+      "originating_commit": "4376134",
+      "governing_requirement": "SM-ACT-011: Smart Money defect remediation & PostgreSQL test suite",
+      "sha256": "646aa80360c8cb71e2fd6d56c0f52e5e786f0ac15b013677ee1bd7416fd2e68c",
+      "size_bytes": 30580
     }
   },
   "qualification_framework_files": {
@@ -99,9 +133,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "111d73a4928d2643cbe400c6ad85071bf938dde6e8a1cbaec4aaa9c8365bb273",
-      "bytes": 57676,
-      "size_bytes": 57676
+      "sha256": "c881e63f309fb811559ddd47055728efea03277f21019c815735fddbc0ffb222",
+      "bytes": 57691,
+      "size_bytes": 57691
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
