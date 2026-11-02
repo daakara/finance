@@ -2221,8 +2221,14 @@ class SmartMoneyEngine:
                                     COALESCE(tx.signal_type, CASE
                                         WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'DERIVATIVE_PURCHASE'
                                         WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'DERIVATIVE_SALE'
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'M' THEN 'OPTION_EXERCISE'
                                         WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND COALESCE(tx.acquired_disposed, 'A') = 'A' THEN 'OPEN_MARKET_PURCHASE'
-                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND (tx.transaction_code = 'S' OR COALESCE(tx.acquired_disposed, 'D') = 'D') THEN 'OPEN_MARKET_SALE'
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'S' AND COALESCE(tx.acquired_disposed, 'D') = 'D' THEN 'OPEN_MARKET_SALE'
+                                        WHEN tx.transaction_code = 'F' THEN 'TAX_WITHHOLDING'
+                                        WHEN tx.transaction_code = 'G' THEN 'GIFT'
+                                        WHEN tx.transaction_code = 'A' THEN 'EQUITY_GRANT'
+                                        WHEN tx.transaction_code = 'M' THEN 'OPTION_EXERCISE'
+                                        WHEN tx.transaction_code = 'D' THEN 'ISSUER_DISPOSITION'
                                         ELSE 'OTHER_TRANSACTION'
                                     END) AS signal_type,
                                     COALESCE(tx.acquired_disposed, CASE WHEN tx.transaction_code = 'S' THEN 'D' ELSE 'A' END) AS acquired_disposed,
@@ -2244,8 +2250,14 @@ class SmartMoneyEngine:
                                     CASE
                                         WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'DERIVATIVE_PURCHASE'
                                         WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'DERIVATIVE_SALE'
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'M' THEN 'OPTION_EXERCISE'
                                         WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'OPEN_MARKET_PURCHASE'
                                         WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'OPEN_MARKET_SALE'
+                                        WHEN tx.transaction_code = 'F' THEN 'TAX_WITHHOLDING'
+                                        WHEN tx.transaction_code = 'G' THEN 'GIFT'
+                                        WHEN tx.transaction_code = 'A' THEN 'EQUITY_GRANT'
+                                        WHEN tx.transaction_code = 'M' THEN 'OPTION_EXERCISE'
+                                        WHEN tx.transaction_code = 'D' THEN 'ISSUER_DISPOSITION'
                                         ELSE 'OTHER_TRANSACTION'
                                     END AS signal_type,
                                     CASE WHEN tx.transaction_code = 'S' THEN 'D' ELSE 'A' END AS acquired_disposed,
@@ -2547,7 +2559,10 @@ class SmartMoneyEngine:
                     price_val = float(r["price_per_share"] or 0) if "price_per_share" in r.keys() else 0.0
 
                     is_buy = not is_deriv and (is_pos_conviction or (sig_type == "OPEN_MARKET_PURCHASE" and acq_disp == "A" and shares_val > 0 and price_val > 0))
-                    is_sell = not is_deriv and (t_code == "S" or sig_type == "OPEN_MARKET_SALE" or (acq_disp == "D" and not is_buy))
+                    # Discretionary insider selling conviction: Open market sale ('S' / OPEN_MARKET_SALE), non-derivative, disposed ('D').
+                    # Strictly excludes statutory tax withholding ('F' / TAX_WITHHOLDING), bona fide gifts ('G' / GIFT),
+                    # issuer dispositions ('D' / ISSUER_DISPOSITION), equity grants ('A'), and option exercises ('M').
+                    is_sell = not is_deriv and (t_code == "S" or sig_type == "OPEN_MARKET_SALE") and (acq_disp != "A")
 
                     if is_deriv:
                         if t_code == "P" or "PURCHASE" in sig_type:
@@ -2562,16 +2577,18 @@ class SmartMoneyEngine:
                         tx_type = "Purchase (Direct Open Market)"
                     elif is_sell:
                         tx_type = "Sale (Direct)"
+                    elif t_code == "F" or sig_type == "TAX_WITHHOLDING":
+                        tx_type = "Tax Withholding"
+                    elif t_code == "G" or sig_type == "GIFT":
+                        tx_type = "Gift"
+                    elif t_code == "D" or sig_type == "ISSUER_DISPOSITION":
+                        tx_type = "Disposition to Issuer"
                     elif t_code == "M" or sig_type == "OPTION_EXERCISE":
                         tx_type = "Option Exercise"
                     elif t_code == "A" or sig_type == "EQUITY_GRANT":
                         tx_type = "Equity Grant / Award"
-                    elif t_code == "G" or sig_type == "GIFT":
-                        tx_type = "Gift"
-                    elif t_code == "F" or sig_type == "TAX_WITHHOLDING":
-                        tx_type = "Tax Withholding"
-                    elif t_code == "D" or sig_type == "ISSUER_DISPOSITION":
-                        tx_type = "Disposition to Issuer"
+                    elif acq_disp == "D":
+                        tx_type = f"Disposition ({t_code})" if t_code else "Insider Disposition"
                     else:
                         tx_type = f"Transaction ({t_code})" if t_code else "Other Insider Transaction"
 
@@ -2584,9 +2601,9 @@ class SmartMoneyEngine:
                         "transaction_type": tx_type,
                         "transaction_code": t_code,
                         "signal_type": sig_type,
-                        "shares_traded": r["shares"] or 0,
-                        "price_per_share": r["price_per_share"] or 0.0,
-                        "total_value_usd": r["total_value_usd"] or 0.0,
+                        "shares_traded": float(r["shares"] or 0) if "shares" in r.keys() else 0.0,
+                        "price_per_share": float(r["price_per_share"] or 0.0) if "price_per_share" in r.keys() else 0.0,
+                        "total_value_usd": float(r["total_value_usd"] or 0.0) if "total_value_usd" in r.keys() else 0.0,
                         "filing_date": r["filing_date"],
                         "transaction_date": r["transaction_date"] or r["filing_date"],
                         "acceptance_datetime": acc_dt,
@@ -2792,7 +2809,7 @@ class SmartMoneyEngine:
         confluence_inputs = None
         if has_any_verified:
             insider_buys = len([t for t in sec_feed["observations"] if t.get("is_positive_buying_conviction") or t.get("is_open_market_purchase_evidence")])
-            insider_sells = len([t for t in sec_feed["observations"] if t.get("acquired_disposed") == "D"])
+            insider_sells = len([t for t in sec_feed["observations"] if t.get("is_sell")])
             has_insider_buy = insider_buys > 0
             insider_val = sum(t.get("total_value_usd", 0.0) for t in sec_feed["observations"] if t.get("is_positive_buying_conviction") or t.get("is_open_market_purchase_evidence"))
             insider_name = next((t.get("insider_name") for t in sec_feed["observations"] if t.get("is_positive_buying_conviction") or t.get("is_open_market_purchase_evidence")), "")
