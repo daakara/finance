@@ -344,6 +344,21 @@ class PostgresSmartMoneyRepository:
             if replay_mode == "ARX_OBSERVED"
             else "av.public_availability_at IS NOT NULL AND av.public_availability_at <= %s"
         )
+        am_time_predicate = (
+            "COALESCE(am_av.recorded_at, am_f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "am_av.public_availability_at IS NOT NULL AND am_av.public_availability_at <= %s"
+        )
+        part_time_predicate = (
+            "COALESCE(part_av.recorded_at, part_f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "part_av.public_availability_at IS NOT NULL AND part_av.public_availability_at <= %s"
+        )
+        re_time_predicate = (
+            "COALESCE(re_av.recorded_at, re_f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "re_av.public_availability_at IS NOT NULL AND re_av.public_availability_at <= %s"
+        )
 
         query = f"""
             SELECT
@@ -379,11 +394,64 @@ class PostgresSmartMoneyRepository:
             WHERE {time_predicate}
               AND tx.transaction_date >= %s
               AND f.ticker = ANY(%s)
+              -- 1. Exclude unresolved or ambiguous amendments
+              AND NOT EXISTS (
+                  SELECT 1 FROM sm_amendments ambig
+                  WHERE ambig.amendment_accession = tx.accession_number
+                    AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
+              )
+              -- 2. Exclude transactions superseded by full filing amendments available <= W
+              AND NOT EXISTS (
+                  SELECT 1 FROM sm_amendments am_full
+                  JOIN sm_source_availability_ledger am_av ON am_full.amendment_accession = am_av.accession_number
+                  JOIN form4_raw_filings am_f ON am_full.amendment_accession = am_f.accession_number
+                  WHERE am_full.base_accession = tx.accession_number
+                    AND am_full.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
+                    AND {am_time_predicate}
+              )
+              -- 3. Transaction-level reconciliation for partial corrections available <= W
+              AND NOT EXISTS (
+                  SELECT 1 FROM sm_amendments part_am
+                  JOIN form4_parsed_transactions amend_tx ON part_am.amendment_accession = amend_tx.accession_number
+                  JOIN sm_source_availability_ledger part_av ON part_am.amendment_accession = part_av.accession_number
+                  JOIN form4_raw_filings part_f ON part_am.amendment_accession = part_f.accession_number
+                  WHERE part_am.base_accession = tx.accession_number
+                    AND part_am.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                    AND amend_tx.reporting_owner_name = tx.reporting_owner_name
+                    AND amend_tx.transaction_date = tx.transaction_date
+                    AND amend_tx.transaction_code = tx.transaction_code
+                    AND {part_time_predicate}
+              )
+              -- 4. Exclude amendments that were themselves superseded by subsequent amendments available <= W
+              AND NOT EXISTS (
+                  SELECT 1 FROM sm_amendments re_am
+                  JOIN sm_source_availability_ledger re_av ON re_am.amendment_accession = re_av.accession_number
+                  JOIN form4_raw_filings re_f ON re_am.amendment_accession = re_f.accession_number
+                  WHERE (
+                      re_am.base_accession = tx.accession_number
+                      OR EXISTS (
+                          SELECT 1 FROM sm_amendments curr_am
+                          WHERE curr_am.amendment_accession = tx.accession_number
+                            AND re_am.base_accession = curr_am.base_accession
+                            AND re_am.amendment_number > curr_am.amendment_number
+                      )
+                  )
+                    AND re_am.resolution_status NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'ADDITIONAL_TRANSACTION', 'PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                    AND {re_time_predicate}
+              )
             ORDER BY tx.transaction_date ASC, av.public_availability_at ASC;
         """
 
         def _exec(cur):
-            cur.execute(query, (as_of_watermark, min_date, [s.upper().strip() for s in symbols]))
+            params = (
+                as_of_watermark,
+                min_date,
+                [s.upper().strip() for s in symbols],
+                as_of_watermark,
+                as_of_watermark,
+                as_of_watermark,
+            )
+            cur.execute(query, params)
             rows = cur.fetchall()
             out: Dict[str, List[Dict[str, Any]]] = {}
             for r in rows:

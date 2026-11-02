@@ -79,11 +79,15 @@ When an issuer is supported but continuous ingestion is offline or paused under 
 ## 5. Amendment, Supersession, and Restatement Integrity
 
 1. **Coexistence:** Original filings (Form 4) and amendments (Form 4/A) must coexist in `form4_raw_filings`. Neither is overwritten or purged.
-2. **Linkage:** All supersession relationships are tracked in `sm_amendments` (`amendment_accession`, `base_accession`, `resolution_status`).
-3. **Transaction-Level Reconciliation:**
-   - Amended transactions supersede corresponding original transactions.
-   - When querying transactions point-in-time, superseded transactions are excluded from volume aggregations, preventing double-counting.
-   - Unresolved or ambiguous amendments fail closed and are excluded until adjudicated.
+2. **Linkage:** All supersession relationships are tracked in `sm_amendments` (`amendment_accession`, `base_accession`, `resolution_status`, `amendment_number`).
+3. **Transaction-Level Reconciliation & Point-in-Time Supersession (SM-DATA-GOV-001.3):**
+   - **No Future Leakage:** An amendment only supersedes an original filing or transaction if the amendment itself was available/observed at or before the evaluation watermark $W$. A future amendment (e.g. filed Monday) MUST NOT suppress an original filing on an earlier historical evaluation date (e.g. Saturday replay).
+   - **Replay Mode Consistency:**
+     - In `PUBLIC_AVAILABLE` replay mode, amendments supersede only if `am_av.public_availability_at <= W`.
+     - In `ARX_OBSERVED` replay mode, amendments supersede only if `COALESCE(am_av.recorded_at, am_f.created_at) <= W`.
+   - **Partial Corrections:** Partial amendments (`PARTIAL_CORRECTION`) supersede only matching line items (by `reporting_owner_name`, `transaction_date`, `transaction_code`). Un-amended line items in the original filing remain active.
+   - **Amendment Chains:** In multi-stage amendment chains (e.g. Amendment 1 followed by Amendment 2), an earlier amendment is only superseded by a subsequent amendment if that subsequent amendment was available at or before $W$.
+   - **Ambiguous Amendments:** Unresolved or ambiguous amendments fail closed and are excluded from positive buying conviction until adjudicated.
 
 ---
 

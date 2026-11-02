@@ -2260,14 +2260,22 @@ class SmartMoneyEngine:
                                 """
 
                             pit_sql = ""
+                            am_pit_filter = ""
+                            part_pit_filter = ""
+                            re_pit_filter = ""
                             pg_params = [clean_sym, cutoff_str, cutoff_str]
                             if as_of_watermark:
                                 if replay_mode == "ARX_OBSERVED":
                                     pit_sql = " AND COALESCE(av.recorded_at, f.created_at) <= %s AND f.filing_date <= %s"
-                                    pg_params.extend([as_of_watermark, eval_date.isoformat()])
+                                    am_pit_filter = " AND COALESCE(am_av.recorded_at, am_f.created_at) <= %s"
+                                    part_pit_filter = " AND COALESCE(part_av.recorded_at, part_f.created_at) <= %s"
+                                    re_pit_filter = " AND COALESCE(re_av.recorded_at, re_f.created_at) <= %s"
                                 else:  # PUBLIC_AVAILABLE (default)
                                     pit_sql = " AND av.public_availability_at IS NOT NULL AND av.public_availability_at <= %s AND f.filing_date <= %s"
-                                    pg_params.extend([as_of_watermark, eval_date.isoformat()])
+                                    am_pit_filter = " AND am_av.public_availability_at IS NOT NULL AND am_av.public_availability_at <= %s"
+                                    part_pit_filter = " AND part_av.public_availability_at IS NOT NULL AND part_av.public_availability_at <= %s"
+                                    re_pit_filter = " AND re_av.public_availability_at IS NOT NULL AND re_av.public_availability_at <= %s"
+                                pg_params.extend([as_of_watermark, eval_date.isoformat(), as_of_watermark, as_of_watermark, as_of_watermark])
 
                             pg_query = f"""
                                 SELECT tx.transaction_id AS record_key, tx.accession_number, f.cik AS issuer_cik,
@@ -2291,27 +2299,44 @@ class SmartMoneyEngine:
                                       WHERE ambig.amendment_accession = tx.accession_number
                                         AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
                                   )
-                                  -- 2. Exclude transactions superseded by full filing amendments
+                                  -- 2. Exclude transactions superseded by full filing amendments available <= W
                                   AND NOT EXISTS (
                                       SELECT 1 FROM sm_amendments am
+                                      LEFT JOIN sm_source_availability_ledger am_av ON am.amendment_accession = am_av.accession_number
+                                      LEFT JOIN form4_raw_filings am_f ON am.amendment_accession = am_f.accession_number
                                       WHERE am.base_accession = tx.accession_number
                                         AND am.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
+                                        {am_pit_filter}
                                   )
-                                  -- 3. Transaction-level reconciliation for partial corrections
+                                  -- 3. Transaction-level reconciliation for partial corrections available <= W
                                   AND NOT EXISTS (
                                       SELECT 1 FROM sm_amendments part_am
                                       JOIN form4_parsed_transactions amend_tx ON part_am.amendment_accession = amend_tx.accession_number
+                                      LEFT JOIN sm_source_availability_ledger part_av ON part_am.amendment_accession = part_av.accession_number
+                                      LEFT JOIN form4_raw_filings part_f ON part_am.amendment_accession = part_f.accession_number
                                       WHERE part_am.base_accession = tx.accession_number
                                         AND part_am.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
                                         AND amend_tx.reporting_owner_name = tx.reporting_owner_name
                                         AND amend_tx.transaction_date = tx.transaction_date
                                         AND amend_tx.transaction_code = tx.transaction_code
+                                        {part_pit_filter}
                                   )
-                                  -- 4. Exclude amendments that were themselves superseded
+                                  -- 4. Exclude amendments that were themselves superseded (chains / re-amendments)
                                   AND NOT EXISTS (
                                       SELECT 1 FROM sm_amendments re_am
-                                      WHERE re_am.base_accession = tx.accession_number
+                                      LEFT JOIN sm_source_availability_ledger re_av ON re_am.amendment_accession = re_av.accession_number
+                                      LEFT JOIN form4_raw_filings re_f ON re_am.amendment_accession = re_f.accession_number
+                                      WHERE (
+                                          re_am.base_accession = tx.accession_number
+                                          OR EXISTS (
+                                              SELECT 1 FROM sm_amendments curr_am
+                                              WHERE curr_am.amendment_accession = tx.accession_number
+                                                AND re_am.base_accession = curr_am.base_accession
+                                                AND re_am.amendment_number > curr_am.amendment_number
+                                          )
+                                      )
                                         AND re_am.resolution_status NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'ADDITIONAL_TRANSACTION', 'PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                                        {re_pit_filter}
                                   )
                                 ORDER BY f.filing_date DESC
                             """
@@ -2384,21 +2409,104 @@ class SmartMoneyEngine:
                             amend_cols = []
 
                         if "amendment_accession" in amend_cols and "base_accession" in amend_cols:
-                            query += """
-                              AND NOT EXISTS (
-                                  SELECT 1 FROM sm_amendments a
-                                  WHERE (a.base_accession = form4_parsed_transactions.accession_number AND a.resolution_status = 'SUPERSEDED')
-                                     OR (a.amendment_accession = form4_parsed_transactions.accession_number AND a.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED'))
-                              )
-                            """
+                            has_amend_num = "amendment_number" in amend_cols
+                            chain_sql = ""
+                            if has_amend_num:
+                                chain_sql = """
+                                    OR EXISTS (
+                                        SELECT 1 FROM sm_amendments curr_am
+                                        WHERE curr_am.amendment_accession = form4_parsed_transactions.accession_number
+                                          AND a.base_accession = curr_am.base_accession
+                                          AND a.amendment_number > curr_am.amendment_number
+                                    )
+                                """
+                            if as_of_watermark:
+                                if replay_mode == "ARX_OBSERVED" and has_created_at_col:
+                                    sqlite_am_pit = " AND COALESCE(amend_tx.created_at, amend_tx.acceptance_datetime) IS NOT NULL AND COALESCE(amend_tx.created_at, amend_tx.acceptance_datetime) <= ?"
+                                else:
+                                    sqlite_am_pit = " AND amend_tx.acceptance_datetime IS NOT NULL AND amend_tx.acceptance_datetime <= ?"
+                                query += f"""
+                                  -- 1. Exclude unresolved or ambiguous amendments
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments ambig
+                                      WHERE ambig.amendment_accession = form4_parsed_transactions.accession_number
+                                        AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
+                                  )
+                                  -- 2. Exclude transactions superseded by full filing amendments available <= W
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      LEFT JOIN form4_parsed_transactions amend_tx ON a.amendment_accession = amend_tx.accession_number
+                                      WHERE (a.base_accession = form4_parsed_transactions.accession_number {chain_sql})
+                                        AND a.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
+                                        {sqlite_am_pit}
+                                  )
+                                  -- 3. Transaction-level reconciliation for partial corrections available <= W
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      JOIN form4_parsed_transactions amend_tx ON a.amendment_accession = amend_tx.accession_number
+                                      WHERE a.base_accession = form4_parsed_transactions.accession_number
+                                        AND a.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                                        AND amend_tx.reporting_owner_name = form4_parsed_transactions.reporting_owner_name
+                                        AND amend_tx.transaction_date = form4_parsed_transactions.transaction_date
+                                        AND amend_tx.transaction_code = form4_parsed_transactions.transaction_code
+                                        {sqlite_am_pit}
+                                  )
+                                """
+                                sqlite_params.extend([as_of_watermark, as_of_watermark])
+                            else:
+                                query += f"""
+                                  -- 1. Exclude unresolved or ambiguous amendments
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments ambig
+                                      WHERE ambig.amendment_accession = form4_parsed_transactions.accession_number
+                                        AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
+                                  )
+                                  -- 2. Exclude transactions superseded by full filing amendments
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      WHERE (a.base_accession = form4_parsed_transactions.accession_number {chain_sql})
+                                        AND a.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
+                                  )
+                                  -- 3. Transaction-level reconciliation for partial corrections
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      JOIN form4_parsed_transactions amend_tx ON a.amendment_accession = amend_tx.accession_number
+                                      WHERE a.base_accession = form4_parsed_transactions.accession_number
+                                        AND a.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                                        AND amend_tx.reporting_owner_name = form4_parsed_transactions.reporting_owner_name
+                                        AND amend_tx.transaction_date = form4_parsed_transactions.transaction_date
+                                        AND amend_tx.transaction_code = form4_parsed_transactions.transaction_code
+                                  )
+                                """
                         else:
-                            query += """
-                              AND NOT EXISTS (
-                                  SELECT 1 FROM sm_amendments a
-                                  WHERE (a.accession_number = form4_parsed_transactions.accession_number AND a.relationship = 'SUPERSEDED_OR_CORRECTED')
-                                     OR (a.amended_accession_number = form4_parsed_transactions.accession_number AND a.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT', 'SUPERSEDED_OR_CORRECTED'))
-                              )
-                            """
+                            if as_of_watermark:
+                                if replay_mode == "ARX_OBSERVED" and has_created_at_col:
+                                    sqlite_am_pit = " AND COALESCE(amend_tx.created_at, amend_tx.acceptance_datetime) IS NOT NULL AND COALESCE(amend_tx.created_at, amend_tx.acceptance_datetime) <= ?"
+                                else:
+                                    sqlite_am_pit = " AND amend_tx.acceptance_datetime IS NOT NULL AND amend_tx.acceptance_datetime <= ?"
+                                query += f"""
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      LEFT JOIN form4_parsed_transactions amend_tx ON a.accession_number = amend_tx.accession_number
+                                      WHERE a.amended_accession_number = form4_parsed_transactions.accession_number
+                                        AND a.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT')
+                                        {sqlite_am_pit}
+                                  )
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      WHERE a.accession_number = form4_parsed_transactions.accession_number
+                                        AND a.relationship = 'SUPERSEDED_OR_CORRECTED'
+                                  )
+                                """
+                                sqlite_params.append(as_of_watermark)
+                            else:
+                                query += """
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      WHERE (a.accession_number = form4_parsed_transactions.accession_number AND a.relationship = 'SUPERSEDED_OR_CORRECTED')
+                                         OR (a.amended_accession_number = form4_parsed_transactions.accession_number AND a.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT', 'SUPERSEDED_OR_CORRECTED'))
+                                  )
+                                """
                     query += " ORDER BY filing_date DESC"
 
                     cur.execute(query, tuple(sqlite_params))

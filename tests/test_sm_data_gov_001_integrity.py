@@ -876,3 +876,443 @@ class TestSmDataGov001EvidenceLifecycle:
         # 4. Total shares must be exactly 5000 (no double-counting with original 10000)
         total_shares = sum(o["shares_traded"] for o in observations)
         assert total_shares == 5000.0, f"Expected 5,000 shares, got {total_shares} (double-counting detected!)"
+
+    # 14. Point-in-Time Amendment Supersession: Friday-Original / Monday-Amendment / Saturday-Replay
+    def test_point_in_time_amendment_friday_monday_replay(self, tmp_path, monkeypatch):
+        """
+        Adversarial regression test for SM-DATA-GOV-001.3:
+        - Original filed Friday 2026-10-16 18:00 (10,000 shares)
+        - Amendment filed Monday 2026-10-19 18:00 (5,000 shares)
+        - Replay on Saturday 2026-10-17 12:00:
+          * PUBLIC_AVAILABLE: Must return Friday original (10,000 shs). Future Monday amendment MUST NOT leak backward.
+          * ARX_OBSERVED: Must return Friday original (10,000 shs).
+        - Replay on Monday night 2026-10-19 23:59:
+          * PUBLIC_AVAILABLE: Must return Monday amendment (5,000 shs). Original must be superseded.
+          * ARX_OBSERVED: Must return Monday amendment (5,000 shs).
+        """
+        db_path = str(tmp_path / "sqlite_amend_pit.db")
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+
+        cur.execute("""CREATE TABLE form4_parsed_transactions (
+            record_key TEXT PRIMARY KEY,
+            accession_number TEXT,
+            issuer_cik TEXT,
+            issuer_symbol TEXT,
+            reporting_owner_name TEXT,
+            officer_title TEXT,
+            is_director INTEGER,
+            is_officer INTEGER,
+            is_ten_percent_owner INTEGER,
+            filing_date TEXT,
+            transaction_date TEXT,
+            transaction_code TEXT,
+            signal_type TEXT,
+            shares REAL,
+            price_per_share REAL,
+            total_value_usd REAL,
+            acquired_disposed TEXT,
+            is_positive_buying_conviction INTEGER,
+            is_open_market_purchase_evidence INTEGER,
+            acceptance_datetime TEXT,
+            is_derivative INTEGER,
+            created_at TEXT
+        )""")
+
+        cur.execute("""CREATE TABLE sm_amendments (
+            amendment_accession TEXT,
+            base_accession TEXT,
+            amendment_number INTEGER DEFAULT 1,
+            resolution_status TEXT
+        )""")
+
+        acc_orig = "0001045810-26-900030O"
+        acc_amend = "0001045810-26-900030A"
+
+        # Friday original: 10,000 shares
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_ORIG_PIT', ?, '0001045810', 'NVDA', 'CEO Jensen', 'CEO', 1, 1, 0,
+            '2026-10-16', '2026-10-16', 'P', 'OPEN_MARKET_PURCHASE', 10000.0, 100.0, 1000000.0,
+            'A', 1, 1, '2026-10-16T18:00:00+00:00', 0, '2026-10-16T18:05:00+00:00'
+        )""", (acc_orig,))
+
+        # Monday amendment: 5,000 shares
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_AMEND_PIT', ?, '0001045810', 'NVDA', 'CEO Jensen', 'CEO', 1, 1, 0,
+            '2026-10-19', '2026-10-16', 'P', 'OPEN_MARKET_PURCHASE', 5000.0, 100.0, 500000.0,
+            'A', 1, 1, '2026-10-19T18:00:00+00:00', 0, '2026-10-19T18:05:00+00:00'
+        )""", (acc_amend,))
+
+        cur.execute("""INSERT INTO sm_amendments VALUES (?, ?, 1, 'SUPERSEDED')""", (acc_amend, acc_orig))
+        conn.commit()
+        conn.close()
+
+        monkeypatch.setenv("ARX_STORAGE_BACKEND", "sqlite")
+        monkeypatch.setenv("SMART_MONEY_DB_PATH", db_path)
+        monkeypatch.setattr(
+            "analyst_dashboard.smart_money.form4_ingestion.connect_smart_money_db",
+            lambda: sqlite3.connect(db_path)
+        )
+
+        engine = SmartMoneyEngine()
+        w_sat = "2026-10-17T12:00:00+00:00"
+        w_mon = "2026-10-19T23:59:59+00:00"
+
+        # 1. Saturday replay (PUBLIC_AVAILABLE): Original must be present, amendment absent
+        res_pub_sat = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_sat, replay_mode="PUBLIC_AVAILABLE")
+        obs_pub_sat = res_pub_sat["feeds"]["sec_form4"]["observations"]
+        assert [o["id"] for o in obs_pub_sat] == [acc_orig], "Saturday PUBLIC_AVAILABLE must include original filing"
+        assert sum(o["shares_traded"] for o in obs_pub_sat) == 10000.0
+
+        # 2. Saturday replay (ARX_OBSERVED): Original must be present, amendment absent
+        res_arx_sat = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_sat, replay_mode="ARX_OBSERVED")
+        obs_arx_sat = res_arx_sat["feeds"]["sec_form4"]["observations"]
+        assert [o["id"] for o in obs_arx_sat] == [acc_orig], "Saturday ARX_OBSERVED must include original filing"
+        assert sum(o["shares_traded"] for o in obs_arx_sat) == 10000.0
+
+        # 3. Monday night replay (PUBLIC_AVAILABLE): Amendment must be present, original superseded
+        res_pub_mon = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_mon, replay_mode="PUBLIC_AVAILABLE")
+        obs_pub_mon = res_pub_mon["feeds"]["sec_form4"]["observations"]
+        assert [o["id"] for o in obs_pub_mon] == [acc_amend], "Monday night PUBLIC_AVAILABLE must include amendment"
+        assert sum(o["shares_traded"] for o in obs_pub_mon) == 5000.0
+
+        # 4. Monday night replay (ARX_OBSERVED): Amendment must be present, original superseded
+        res_arx_mon = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_mon, replay_mode="ARX_OBSERVED")
+        obs_arx_mon = res_arx_mon["feeds"]["sec_form4"]["observations"]
+        assert [o["id"] for o in obs_arx_mon] == [acc_amend], "Monday night ARX_OBSERVED must include amendment"
+        assert sum(o["shares_traded"] for o in obs_arx_mon) == 5000.0
+
+    # 15. Point-in-Time Partial Correction Line-Item Supersession
+    def test_point_in_time_partial_correction(self, tmp_path, monkeypatch):
+        """
+        Adversarial test for partial corrections across time:
+        - Base filing has two transactions: Jensen (10,000 shs) and Colette (500 shs).
+        - Monday partial amendment only corrects Jensen to 1,000 shs; Colette is intact.
+        - On Saturday: Both original Jensen (10,000) + Colette (500) = 10,500 shs.
+        - On Monday night: Amended Jensen (1,000) + intact original Colette (500) = 1,500 shs.
+        """
+        db_path = str(tmp_path / "sqlite_part_amend.db")
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+
+        cur.execute("""CREATE TABLE form4_parsed_transactions (
+            record_key TEXT PRIMARY KEY,
+            accession_number TEXT,
+            issuer_cik TEXT,
+            issuer_symbol TEXT,
+            reporting_owner_name TEXT,
+            officer_title TEXT,
+            is_director INTEGER,
+            is_officer INTEGER,
+            is_ten_percent_owner INTEGER,
+            filing_date TEXT,
+            transaction_date TEXT,
+            transaction_code TEXT,
+            signal_type TEXT,
+            shares REAL,
+            price_per_share REAL,
+            total_value_usd REAL,
+            acquired_disposed TEXT,
+            is_positive_buying_conviction INTEGER,
+            is_open_market_purchase_evidence INTEGER,
+            acceptance_datetime TEXT,
+            is_derivative INTEGER,
+            created_at TEXT
+        )""")
+
+        cur.execute("""CREATE TABLE sm_amendments (
+            amendment_accession TEXT,
+            base_accession TEXT,
+            amendment_number INTEGER DEFAULT 1,
+            resolution_status TEXT
+        )""")
+
+        acc_base = "0001045810-26-900040B"
+        acc_amend = "0001045810-26-900040A"
+
+        # Base: Jensen 10,000 shares
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_BASE_JENSEN', ?, '0001045810', 'NVDA', 'Jensen Huang', 'CEO', 1, 1, 0,
+            '2026-10-16', '2026-10-16', 'P', 'OPEN_MARKET_PURCHASE', 10000.0, 100.0, 1000000.0,
+            'A', 1, 1, '2026-10-16T18:00:00+00:00', 0, '2026-10-16T18:05:00+00:00'
+        )""", (acc_base,))
+
+        # Base: Colette 500 shares
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_BASE_COLETTE', ?, '0001045810', 'NVDA', 'Colette Kress', 'CFO', 0, 1, 0,
+            '2026-10-16', '2026-10-16', 'P', 'OPEN_MARKET_PURCHASE', 500.0, 100.0, 50000.0,
+            'A', 1, 1, '2026-10-16T18:00:00+00:00', 0, '2026-10-16T18:05:00+00:00'
+        )""", (acc_base,))
+
+        # Monday partial amendment: corrects Jensen to 1,000 shares
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_AMEND_JENSEN', ?, '0001045810', 'NVDA', 'Jensen Huang', 'CEO', 1, 1, 0,
+            '2026-10-19', '2026-10-16', 'P', 'OPEN_MARKET_PURCHASE', 1000.0, 100.0, 100000.0,
+            'A', 1, 1, '2026-10-19T18:00:00+00:00', 0, '2026-10-19T18:05:00+00:00'
+        )""", (acc_amend,))
+
+        cur.execute("""INSERT INTO sm_amendments VALUES (?, ?, 1, 'PARTIAL_CORRECTION')""", (acc_amend, acc_base))
+        conn.commit()
+        conn.close()
+
+        monkeypatch.setenv("ARX_STORAGE_BACKEND", "sqlite")
+        monkeypatch.setenv("SMART_MONEY_DB_PATH", db_path)
+        monkeypatch.setattr(
+            "analyst_dashboard.smart_money.form4_ingestion.connect_smart_money_db",
+            lambda: sqlite3.connect(db_path)
+        )
+
+        engine = SmartMoneyEngine()
+        w_sat = "2026-10-17T12:00:00+00:00"
+        w_mon = "2026-10-19T23:59:59+00:00"
+
+        # Saturday: both original transactions active (10,500 total)
+        res_sat = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_sat)
+        obs_sat = res_sat["feeds"]["sec_form4"]["observations"]
+        assert len(obs_sat) == 2
+        assert sum(o["shares_traded"] for o in obs_sat) == 10500.0
+
+        # Monday night: amended Jensen (1,000) + intact original Colette (500) = 1,500 total
+        res_mon = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_mon)
+        obs_mon = res_mon["feeds"]["sec_form4"]["observations"]
+        assert len(obs_mon) == 2
+        names = {o["insider_name"]: o["shares_traded"] for o in obs_mon}
+        assert names["Jensen Huang"] == 1000.0
+        assert names["Colette Kress"] == 500.0
+        assert sum(o["shares_traded"] for o in obs_mon) == 1500.0
+
+    # 16. Point-in-Time Amendment Chain Integrity
+    def test_point_in_time_amendment_chain(self, tmp_path, monkeypatch):
+        """
+        Adversarial test for 3-stage amendment chain:
+        - Original: Friday Oct 16 (10,000 shs)
+        - Amendment 1: Monday Oct 19 (8,000 shs, amendment_number=1)
+        - Amendment 2: Wednesday Oct 21 (5,000 shs, amendment_number=2)
+        - Saturday replay: Original (10,000)
+        - Tuesday replay: Amendment 1 (8,000)
+        - Thursday replay: Amendment 2 (5,000)
+        """
+        db_path = str(tmp_path / "sqlite_amend_chain.db")
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+
+        cur.execute("""CREATE TABLE form4_parsed_transactions (
+            record_key TEXT PRIMARY KEY,
+            accession_number TEXT,
+            issuer_cik TEXT,
+            issuer_symbol TEXT,
+            reporting_owner_name TEXT,
+            officer_title TEXT,
+            is_director INTEGER,
+            is_officer INTEGER,
+            is_ten_percent_owner INTEGER,
+            filing_date TEXT,
+            transaction_date TEXT,
+            transaction_code TEXT,
+            signal_type TEXT,
+            shares REAL,
+            price_per_share REAL,
+            total_value_usd REAL,
+            acquired_disposed TEXT,
+            is_positive_buying_conviction INTEGER,
+            is_open_market_purchase_evidence INTEGER,
+            acceptance_datetime TEXT,
+            is_derivative INTEGER,
+            created_at TEXT
+        )""")
+
+        cur.execute("""CREATE TABLE sm_amendments (
+            amendment_accession TEXT,
+            base_accession TEXT,
+            amendment_number INTEGER DEFAULT 1,
+            resolution_status TEXT
+        )""")
+
+        acc_orig = "0001045810-26-900050O"
+        acc_am1 = "0001045810-26-900050A1"
+        acc_am2 = "0001045810-26-900050A2"
+
+        # Original: Oct 16, 10,000 shares
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_CHAIN_0', ?, '0001045810', 'NVDA', 'CEO Jensen', 'CEO', 1, 1, 0,
+            '2026-10-16', '2026-10-16', 'P', 'OPEN_MARKET_PURCHASE', 10000.0, 100.0, 1000000.0,
+            'A', 1, 1, '2026-10-16T18:00:00+00:00', 0, '2026-10-16T18:05:00+00:00'
+        )""", (acc_orig,))
+
+        # Amendment 1: Oct 19, 8,000 shares
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_CHAIN_1', ?, '0001045810', 'NVDA', 'CEO Jensen', 'CEO', 1, 1, 0,
+            '2026-10-19', '2026-10-16', 'P', 'OPEN_MARKET_PURCHASE', 8000.0, 100.0, 800000.0,
+            'A', 1, 1, '2026-10-19T18:00:00+00:00', 0, '2026-10-19T18:05:00+00:00'
+        )""", (acc_am1,))
+
+        # Amendment 2: Oct 21, 5,000 shares
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_CHAIN_2', ?, '0001045810', 'NVDA', 'CEO Jensen', 'CEO', 1, 1, 0,
+            '2026-10-21', '2026-10-16', 'P', 'OPEN_MARKET_PURCHASE', 5000.0, 100.0, 500000.0,
+            'A', 1, 1, '2026-10-21T18:00:00+00:00', 0, '2026-10-21T18:05:00+00:00'
+        )""", (acc_am2,))
+
+        cur.execute("""INSERT INTO sm_amendments VALUES (?, ?, 1, 'SUPERSEDED')""", (acc_am1, acc_orig))
+        cur.execute("""INSERT INTO sm_amendments VALUES (?, ?, 2, 'SUPERSEDED')""", (acc_am2, acc_orig))
+        conn.commit()
+        conn.close()
+
+        monkeypatch.setenv("ARX_STORAGE_BACKEND", "sqlite")
+        monkeypatch.setenv("SMART_MONEY_DB_PATH", db_path)
+        monkeypatch.setattr(
+            "analyst_dashboard.smart_money.form4_ingestion.connect_smart_money_db",
+            lambda: sqlite3.connect(db_path)
+        )
+
+        engine = SmartMoneyEngine()
+
+        # 1. Saturday Oct 17: Original active (10,000)
+        res_sat = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of="2026-10-17T12:00:00+00:00")
+        obs_sat = res_sat["feeds"]["sec_form4"]["observations"]
+        assert [o["id"] for o in obs_sat] == [acc_orig]
+        assert sum(o["shares_traded"] for o in obs_sat) == 10000.0
+
+        # 2. Tuesday Oct 20: Amendment 1 active (8,000)
+        res_tue = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of="2026-10-20T12:00:00+00:00")
+        obs_tue = res_tue["feeds"]["sec_form4"]["observations"]
+        assert [o["id"] for o in obs_tue] == [acc_am1]
+        assert sum(o["shares_traded"] for o in obs_tue) == 8000.0
+
+        # 3. Thursday Oct 22: Amendment 2 active (5,000)
+        res_thu = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of="2026-10-22T12:00:00+00:00")
+        obs_thu = res_thu["feeds"]["sec_form4"]["observations"]
+        assert [o["id"] for o in obs_thu] == [acc_am2]
+        assert sum(o["shares_traded"] for o in obs_thu) == 5000.0
+
+    # 17. PostgreSQL Point-in-Time Amendment Supersession (Full Lifecycle)
+    def test_postgres_point_in_time_amendment_supersession(self, pg_db, monkeypatch):
+        """
+        Validates point-in-time amendment supersession in PostgreSQL:
+        - Original filed Friday 2026-10-16 18:00 (10,000 shares)
+        - Amendment filed Monday 2026-10-19 18:00 (5,000 shares)
+        - Saturday replay: Original active (10,000 shs) under both PUBLIC_AVAILABLE and ARX_OBSERVED
+        - Monday night replay: Amendment active (5,000 shs), original superseded
+        - Repository get_bulk_transactions_as_of point-in-time consistency
+        """
+        uri = pg_db["uri"]
+        monkeypatch.setenv("SMART_MONEY_DATABASE_URL", uri)
+        monkeypatch.setenv("ARX_STORAGE_BACKEND", "postgres")
+
+        acc_orig = "0001045810-26-900060O"
+        acc_amend = "0001045810-26-900060A"
+
+        conn = psycopg2.connect(uri)
+        with conn.cursor() as cur:
+            # 1. Friday Original filing
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (accession_number) DO NOTHING;
+            """, (acc_orig, "0001045810", "NVDA", "NVIDIA CORP", "2026-10-16", "2026-10-16T18:00:00+00:00",
+                  "<xml/>", "hash_pg_orig", "https://sec.gov/o", "2026-10-16T18:05:00+00:00"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (
+                    accession_number, public_availability_at, source, recorded_at
+                ) VALUES (%s, %s, %s, %s)
+                ON CONFLICT (accession_number) DO NOTHING;
+            """, (acc_orig, "2026-10-16T18:00:00+00:00", "SEC_INDEX", "2026-10-16T18:05:00+00:00"))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (transaction_id) DO NOTHING;
+            """, (
+                f"{acc_orig}:0001045810:NON_DERIVATIVE:1", acc_orig, "2026-10-16", "P",
+                10000.0, 100.0, 1000000.0, "CEO Jensen",
+                "CEO", True, True, False,
+                "CEO", "D", False, "OPEN_MARKET_PURCHASE",
+                "A", True, True
+            ))
+
+            # 2. Monday Amendment filing
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (accession_number) DO NOTHING;
+            """, (acc_amend, "0001045810", "NVDA", "NVIDIA CORP", "2026-10-19", "2026-10-19T18:00:00+00:00",
+                  "<xml/>", "hash_pg_amend", "https://sec.gov/a", "2026-10-19T18:05:00+00:00"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (
+                    accession_number, public_availability_at, source, recorded_at
+                ) VALUES (%s, %s, %s, %s)
+                ON CONFLICT (accession_number) DO NOTHING;
+            """, (acc_amend, "2026-10-19T18:00:00+00:00", "SEC_INDEX", "2026-10-19T18:05:00+00:00"))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (transaction_id) DO NOTHING;
+            """, (
+                f"{acc_amend}:0001045810:NON_DERIVATIVE:1", acc_amend, "2026-10-16", "P",
+                5000.0, 100.0, 500000.0, "CEO Jensen",
+                "CEO", True, True, False,
+                "CEO", "D", False, "OPEN_MARKET_PURCHASE",
+                "A", True, True
+            ))
+
+            # 3. sm_amendments linkage
+            cur.execute("""
+                INSERT INTO sm_amendments (
+                    amendment_accession, base_accession, amendment_number, resolution_status, resolved_at
+                ) VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (amendment_accession) DO NOTHING;
+            """, (acc_amend, acc_orig, 1, "SUPERSEDED", "2026-10-19T18:05:00+00:00"))
+        conn.commit()
+        conn.close()
+
+        engine = SmartMoneyEngine()
+        w_sat = "2026-10-17T12:00:00+00:00"
+        w_mon = "2026-10-19T23:59:59+00:00"
+
+        # Saturday replay (Engine): must return original (10,000 shs)
+        res_sat_pub = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_sat, replay_mode="PUBLIC_AVAILABLE")
+        obs_sat_pub = res_sat_pub["feeds"]["sec_form4"]["observations"]
+        assert [o["id"] for o in obs_sat_pub] == [acc_orig]
+        assert sum(o["shares_traded"] for o in obs_sat_pub) == 10000.0
+
+        res_sat_arx = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_sat, replay_mode="ARX_OBSERVED")
+        obs_sat_arx = res_sat_arx["feeds"]["sec_form4"]["observations"]
+        assert [o["id"] for o in obs_sat_arx] == [acc_orig]
+        assert sum(o["shares_traded"] for o in obs_sat_arx) == 10000.0
+
+        # Monday night replay (Engine): must return amendment (5,000 shs)
+        res_mon_pub = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_mon, replay_mode="PUBLIC_AVAILABLE")
+        obs_mon_pub = res_mon_pub["feeds"]["sec_form4"]["observations"]
+        assert [o["id"] for o in obs_mon_pub] == [acc_amend]
+        assert sum(o["shares_traded"] for o in obs_mon_pub) == 5000.0
+
+        # Repository bulk query method test
+        repo = PostgresSmartMoneyRepository(dsn=uri)
+        bulk_sat = repo.get_bulk_transactions_as_of(
+            as_of_watermark=w_sat,
+            symbols=["NVDA"],
+            min_date="2026-10-01",
+            replay_mode="PUBLIC_AVAILABLE",
+        )
+        assert [t["accession_number"] for t in bulk_sat.get("NVDA", [])] == [acc_orig]
+
+        bulk_mon = repo.get_bulk_transactions_as_of(
+            as_of_watermark=w_mon,
+            symbols=["NVDA"],
+            min_date="2026-10-01",
+            replay_mode="PUBLIC_AVAILABLE",
+        )
+        assert [t["accession_number"] for t in bulk_mon.get("NVDA", [])] == [acc_amend]
