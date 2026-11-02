@@ -21,19 +21,33 @@ import sqlite3
 from datetime import datetime, timezone
 import pytest
 
-psycopg2 = pytest.importorskip("psycopg2")
-pgserver = pytest.importorskip("pgserver")
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
 
+try:
+    import pgserver
+except ImportError:
+    pgserver = None
+
+from fastapi import HTTPException
 from analyst_dashboard.smart_money.storage.postgres_schema import initialize_postgres_schema
 from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
 from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
 from analyst_dashboard.smart_money.form4_models import SmartMoneySignalType
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine, SmartMoneyDomainStatus, SmartMoneyDirection
+from api.routes.smart_money import get_smart_money_evidence
 
 
 @pytest.fixture(scope="module")
 def pg_db():
     """Module-scoped isolated Postgres server using pgserver."""
+    if psycopg2 is None:
+        pytest.skip("psycopg2 is not installed")
+    if pgserver is None:
+        pytest.skip("pgserver is not installed")
+
     pgdata = tempfile.mkdtemp(prefix="arx_sm_data_gov_pg_")
     server = pgserver.get_server(pgdata)
     uri = server.get_uri()
@@ -93,32 +107,38 @@ class TestSmDataGov001EvidenceLifecycle:
         conn.commit()
         conn.close()
 
-        # Prohibit deletion without authorization token
-        with pytest.raises(PermissionError, match="UNAUTHORIZED_CANONICAL_DELETION"):
+        # Prohibit deletion without authorization token - fails closed unconditionally
+        with pytest.raises(PermissionError, match="CANONICAL_DELETION_PROHIBITED"):
             repo.delete_canonical_evidence(accession_number=acc, authorization_token=None)
 
-        # Prohibit deletion with invalid authorization token
-        with pytest.raises(PermissionError, match="UNAUTHORIZED_CANONICAL_DELETION"):
+        # Prohibit deletion with arbitrary token
+        with pytest.raises(PermissionError, match="CANONICAL_DELETION_PROHIBITED"):
             repo.delete_canonical_evidence(accession_number=acc, authorization_token="INVALID_TOKEN_123")
 
-        # Authorized deletion with approved legal retention schedule succeeds on parsed transactions and ledger
-        deleted_count = repo.delete_canonical_evidence(
-            accession_number=acc,
-            authorization_token="AUTH_LEGAL_APPROVED_RETENTION_DELETION:2026-11-AUDIT-SCHEDULE",
-        )
-        assert deleted_count >= 1
+        # Prohibit deletion even with forged retention prefix - fails closed unconditionally
+        with pytest.raises(PermissionError, match="CANONICAL_DELETION_PROHIBITED"):
+            repo.delete_canonical_evidence(
+                accession_number=acc,
+                authorization_token="AUTH_LEGAL_APPROVED_RETENTION_DELETION:2026-11-AUDIT-SCHEDULE",
+            )
 
-        # Verify parsed transactions deleted
+        # Verify parsed transactions, availability ledger, and raw filings remain intact
         conn = psycopg2.connect(uri)
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM form4_parsed_transactions WHERE accession_number = %s;", (acc,))
-            tx_count = cur.fetchone()[0]
-            assert tx_count == 0
+            assert cur.fetchone()[0] == 1
+
+            cur.execute("SELECT COUNT(*) FROM sm_source_availability_ledger WHERE accession_number = %s;", (acc,))
+            assert cur.fetchone()[0] == 1
 
             # Raw filing remains permanently immutable under abort_immutable_record trigger
             cur.execute("SELECT COUNT(*) FROM form4_raw_filings WHERE accession_number = %s;", (acc,))
-            raw_count = cur.fetchone()[0]
-            assert raw_count == 1
+            assert cur.fetchone()[0] == 1
+
+            # Direct SQL deletion on raw filing is blocked by trigger
+            with pytest.raises(psycopg2.InternalError, match="abort_immutable_record"):
+                cur.execute("DELETE FROM form4_raw_filings WHERE accession_number = %s;", (acc,))
+        conn.rollback()
         conn.close()
 
     # 2. Idempotent Reprocessing
@@ -618,3 +638,241 @@ class TestSmDataGov001EvidenceLifecycle:
         with open(rehearsal_receipt_path, encoding="utf-8") as f:
             rehearsal_data = json.load(f)
         assert rehearsal_data["overall_verdict"] in ("PASS", "STAGE_2_BACKUP_RESTORE_ACCEPTANCE_REHEARSAL_VERIFIED")
+
+    # 11. SQLite Deterministic Friday/Monday Replay Isolation
+    def test_sqlite_friday_monday_replay(self, tmp_path, monkeypatch):
+        """
+        Validates SM-DATA-GOV-001 Section 3 in SQLite:
+        Filing published Friday evening (acceptance_datetime = 2026-10-16T21:00:00+00:00).
+        Filing ingested by ARX Monday morning (created_at = 2026-10-19T09:00:00+00:00).
+        Replay at Saturday 2026-10-17 12:00:
+        - PUBLIC_AVAILABLE: Includes filing (was public on Friday).
+        - ARX_OBSERVED: Excludes filing (ARX had not yet ingested it; no lookahead substitution).
+        Replay at Monday 2026-10-19 12:00:
+        - Both PUBLIC_AVAILABLE and ARX_OBSERVED include the filing.
+        """
+        db_path = str(tmp_path / "sqlite_replay.db")
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+
+        cur.execute("""CREATE TABLE form4_parsed_transactions (
+            record_key TEXT PRIMARY KEY,
+            accession_number TEXT,
+            issuer_cik TEXT,
+            issuer_symbol TEXT,
+            reporting_owner_name TEXT,
+            officer_title TEXT,
+            is_director INTEGER,
+            is_officer INTEGER,
+            is_ten_percent_owner INTEGER,
+            filing_date TEXT,
+            transaction_date TEXT,
+            transaction_code TEXT,
+            signal_type TEXT,
+            shares REAL,
+            price_per_share REAL,
+            total_value_usd REAL,
+            acquired_disposed TEXT,
+            is_positive_buying_conviction INTEGER,
+            is_open_market_purchase_evidence INTEGER,
+            acceptance_datetime TEXT,
+            is_derivative INTEGER,
+            created_at TEXT
+        )""")
+
+        cur.execute("""CREATE TABLE sm_amendments (
+            amendment_accession TEXT,
+            base_accession TEXT,
+            resolution_status TEXT
+        )""")
+
+        acc = "0001045810-26-900010W"
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_WEEKEND_1', ?, '0001045810', 'NVDA', 'Weekend Executive', 'Officer', 0, 1, 0,
+            '2026-10-16', '2026-10-16', 'P', 'OPEN_MARKET_PURCHASE', 5000.0, 120.0, 600000.0,
+            'A', 1, 1, '2026-10-16T21:00:00+00:00', 0, '2026-10-19T09:00:00+00:00'
+        )""", (acc,))
+        conn.commit()
+        conn.close()
+
+        monkeypatch.setenv("ARX_STORAGE_BACKEND", "sqlite")
+        monkeypatch.setenv("SMART_MONEY_DB_PATH", db_path)
+        monkeypatch.setattr(
+            "analyst_dashboard.smart_money.form4_ingestion.connect_smart_money_db",
+            lambda: sqlite3.connect(db_path)
+        )
+
+        engine = SmartMoneyEngine()
+
+        # Watermark W: Saturday 2026-10-17 12:00
+        w_sat = "2026-10-17T12:00:00+00:00"
+
+        # 1. PUBLIC_AVAILABLE on Saturday -> Includes filing
+        res_pub_sat = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_sat, replay_mode="PUBLIC_AVAILABLE")
+        obs_pub_sat = [t["id"] for t in res_pub_sat["feeds"]["sec_form4"]["observations"]]
+        assert acc in obs_pub_sat, "PUBLIC_AVAILABLE must include filing disseminated on Friday"
+
+        # 2. ARX_OBSERVED on Saturday -> Strictly EXCLUDES filing (not observed until Monday)
+        res_arx_sat = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_sat, replay_mode="ARX_OBSERVED")
+        obs_arx_sat = [t["id"] for t in res_arx_sat["feeds"]["sec_form4"]["observations"]]
+        assert acc not in obs_arx_sat, "ARX_OBSERVED must exclude filing not ingested by ARX until Monday"
+
+        # Watermark W: Monday 2026-10-19 12:00
+        w_mon = "2026-10-19T12:00:00+00:00"
+
+        # 3. ARX_OBSERVED on Monday afternoon -> Includes filing
+        res_arx_mon = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_mon, replay_mode="ARX_OBSERVED")
+        obs_arx_mon = [t["id"] for t in res_arx_mon["feeds"]["sec_form4"]["observations"]]
+        assert acc in obs_arx_mon, "ARX_OBSERVED must include filing after Monday ingestion"
+
+        # 4. PUBLIC_AVAILABLE on Monday afternoon -> Includes filing
+        res_pub_mon = engine.evaluate_smart_money_feeds("NVDA", window_days=90, as_of=w_mon, replay_mode="PUBLIC_AVAILABLE")
+        obs_pub_mon = [t["id"] for t in res_pub_mon["feeds"]["sec_form4"]["observations"]]
+        assert acc in obs_pub_mon
+
+    # 12. Replay Parameter Validation (Fail-Closed Robustness)
+    def test_replay_parameter_validation(self):
+        """
+        Validates fail-closed input validation on as_of and replay_mode
+        across Engine, API endpoint, and Repository.
+        """
+        engine = SmartMoneyEngine()
+
+        # Engine evaluate_smart_money_feeds validation
+        with pytest.raises(ValueError, match="Invalid replay_mode"):
+            engine.evaluate_smart_money_feeds("NVDA", replay_mode="FORGED_MODE")
+
+        with pytest.raises(ValueError, match="Invalid as_of timestamp"):
+            engine.evaluate_smart_money_feeds("NVDA", as_of="not-a-valid-iso-date")
+
+        # Engine assess_symbol validation
+        with pytest.raises(ValueError, match="Invalid replay_mode"):
+            engine.assess_symbol("NVDA", replay_mode="FUTURE_LEAK")
+
+        with pytest.raises(ValueError, match="Invalid as_of timestamp"):
+            engine.assess_symbol("NVDA", as_of="2026/13/45 99:99")
+
+        # API get_smart_money_evidence validation
+        with pytest.raises(HTTPException) as exc_info:
+            get_smart_money_evidence("NVDA", replay_mode="INVALID_REPLAY")
+        assert exc_info.value.status_code == 400
+        assert "Invalid replay_mode" in exc_info.value.detail
+
+        with pytest.raises(HTTPException) as exc_info:
+            get_smart_money_evidence("NVDA", as_of="bad-date-time")
+        assert exc_info.value.status_code == 400
+        assert "Invalid as_of timestamp" in exc_info.value.detail
+
+        # Repository parameter validation
+        repo = PostgresSmartMoneyRepository(dsn="postgresql://localhost:5432/dummy")
+        with pytest.raises(ValueError, match="Invalid replay_mode"):
+            repo.get_bulk_transactions_as_of("2026-10-15T00:00:00Z", ["NVDA"], "2026-01-01", replay_mode="BAD")
+
+        with pytest.raises(ValueError, match="Invalid as_of_watermark"):
+            repo.get_bulk_transactions_as_of("invalid-iso-watermark", ["NVDA"], "2026-01-01")
+
+        with pytest.raises(ValueError, match="Invalid replay_mode"):
+            repo.get_ambiguous_amendment_symbols_as_of("2026-10-15T00:00:00Z", ["NVDA"], replay_mode="BAD")
+
+        with pytest.raises(ValueError, match="Invalid as_of_watermark"):
+            repo.get_ambiguous_amendment_symbols_as_of("invalid-iso-watermark", ["NVDA"])
+
+    # 13. Amendment Supersession & Double-Counting Prevention
+    def test_amendment_supersession_adversarial(self, tmp_path, monkeypatch):
+        """
+        Validates Form 4/A supersession integrity in SQLite:
+        - When an amendment supersedes an original filing, only the amended transaction is counted.
+        - Original transaction is suppressed to prevent double-counting.
+        - Ambiguous amendments are excluded from positive conviction.
+        """
+        db_path = str(tmp_path / "sqlite_amend.db")
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+
+        cur.execute("""CREATE TABLE form4_parsed_transactions (
+            record_key TEXT PRIMARY KEY,
+            accession_number TEXT,
+            issuer_cik TEXT,
+            issuer_symbol TEXT,
+            reporting_owner_name TEXT,
+            officer_title TEXT,
+            is_director INTEGER,
+            is_officer INTEGER,
+            is_ten_percent_owner INTEGER,
+            filing_date TEXT,
+            transaction_date TEXT,
+            transaction_code TEXT,
+            signal_type TEXT,
+            shares REAL,
+            price_per_share REAL,
+            total_value_usd REAL,
+            acquired_disposed TEXT,
+            is_positive_buying_conviction INTEGER,
+            is_open_market_purchase_evidence INTEGER,
+            acceptance_datetime TEXT,
+            is_derivative INTEGER,
+            created_at TEXT
+        )""")
+
+        cur.execute("""CREATE TABLE sm_amendments (
+            amendment_accession TEXT,
+            base_accession TEXT,
+            resolution_status TEXT
+        )""")
+
+        acc_orig = "0001045810-26-900011O"
+        acc_amend = "0001045810-26-900011A"
+        acc_ambig = "0001045810-26-900012U"
+
+        # 1. Original filing (erroneous 10,000 shares)
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_ORIG_1', ?, '0001045810', 'NVDA', 'CEO Jensen', 'CEO', 1, 1, 0,
+            '2026-10-01', '2026-10-01', 'P', 'OPEN_MARKET_PURCHASE', 10000.0, 100.0, 1000000.0,
+            'A', 1, 1, '2026-10-01T18:00:00+00:00', 0, '2026-10-01T18:05:00+00:00'
+        )""", (acc_orig,))
+
+        # 2. Amended filing (corrected 5,000 shares)
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_AMEND_1', ?, '0001045810', 'NVDA', 'CEO Jensen', 'CEO', 1, 1, 0,
+            '2026-10-05', '2026-10-01', 'P', 'OPEN_MARKET_PURCHASE', 5000.0, 100.0, 500000.0,
+            'A', 1, 1, '2026-10-05T18:00:00+00:00', 0, '2026-10-05T18:05:00+00:00'
+        )""", (acc_amend,))
+
+        # 3. Ambiguous amendment filing
+        cur.execute("""INSERT INTO form4_parsed_transactions VALUES (
+            'TX_AMBIG_1', ?, '0001045810', 'NVDA', 'Ambiguous Insider', 'Officer', 0, 1, 0,
+            '2026-10-10', '2026-10-10', 'P', 'OPEN_MARKET_PURCHASE', 2000.0, 100.0, 200000.0,
+            'A', 1, 1, '2026-10-10T18:00:00+00:00', 0, '2026-10-10T18:05:00+00:00'
+        )""", (acc_ambig,))
+
+        # sm_amendments linkage: acc_orig is SUPERSEDED, acc_ambig is AMENDMENT_TARGET_AMBIGUOUS
+        cur.execute("""INSERT INTO sm_amendments VALUES (?, ?, 'SUPERSEDED')""", (acc_amend, acc_orig))
+        cur.execute("""INSERT INTO sm_amendments VALUES (?, '0000000000-00-000000', 'AMENDMENT_TARGET_AMBIGUOUS')""", (acc_ambig,))
+
+        conn.commit()
+        conn.close()
+
+        monkeypatch.setenv("ARX_STORAGE_BACKEND", "sqlite")
+        monkeypatch.setenv("SMART_MONEY_DB_PATH", db_path)
+        monkeypatch.setattr(
+            "analyst_dashboard.smart_money.form4_ingestion.connect_smart_money_db",
+            lambda: sqlite3.connect(db_path)
+        )
+
+        engine = SmartMoneyEngine()
+        result = engine.evaluate_smart_money_feeds("NVDA", window_days=90)
+        observations = result["feeds"]["sec_form4"]["observations"]
+        obs_ids = [o["id"] for o in observations]
+
+        # 1. Superseded original must be excluded
+        assert acc_orig not in obs_ids, f"Original {acc_orig} must be excluded because it was SUPERSEDED"
+
+        # 2. Corrected amendment must be included
+        assert acc_amend in obs_ids, f"Amended {acc_amend} must be included"
+
+        # 3. Ambiguous amendment must be excluded
+        assert acc_ambig not in obs_ids, f"Ambiguous {acc_ambig} must be excluded"
+
+        # 4. Total shares must be exactly 5000 (no double-counting with original 10000)
+        total_shares = sum(o["shares_traded"] for o in observations)
+        assert total_shares == 5000.0, f"Expected 5,000 shares, got {total_shares} (double-counting detected!)"

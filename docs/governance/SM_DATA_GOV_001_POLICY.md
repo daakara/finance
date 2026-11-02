@@ -27,12 +27,12 @@ All Smart Money evidence is categorized into three strict lifecycle tiers:
 
 | Class | Evidence Types | Retention Policy | Storage & Protection |
 |---|---|---|---|
-| **Class A: Canonical Filing Evidence** | Raw SEC Form 4/4/A XML, cryptographic SHA-256 hashes, source URLs, acceptance timestamps, normalized transactions | Preserve Indefinitely | PostgreSQL `form4_raw_filings` & `form4_parsed_transactions`. Protected by database trigger `abort_immutable_record()` (append-only) and application-level gate requiring `AUTH_LEGAL_APPROVED_RETENTION_DELETION:<token>`. |
+| **Class A: Canonical Filing Evidence** | Raw SEC Form 4/4/A XML, cryptographic SHA-256 hashes, source URLs, acceptance timestamps, normalized transactions | Preserve Indefinitely | PostgreSQL `form4_raw_filings` & `form4_parsed_transactions`. Protected by database trigger `abort_immutable_record()` (append-only) and fail-closed deletion prohibition (`PermissionError: CANONICAL_DELETION_PROHIBITED`). |
 | **Class B: Derived Analytical Features** | Directional convictions, buy/sell ratios, aggregated volume metrics, confluence inputs | Recreate deterministically or cache with parser version tag | Ephemeral / reconstructible from Class A canonical evidence. Cache entries tagged with `parser_version`. |
 | **Class C: Audit Trail & Proof Receipts** | Pre/post-ingestion backup receipts, restore drill receipts, advisory lock logs, ingestion run receipts | Preserve Indefinitely | Cryptographic JSON receipts in `.secrets/` and `sm_audit_events`. Append-only with SHA-256 manifests. |
 
 ### Destruction Protection Protocol
-Destructive deletion of canonical Smart Money evidence is prohibited. Any attempted deletion without an authorized cryptographic token starting with `AUTH_LEGAL_APPROVED_RETENTION_DELETION:` fails closed with `PermissionError: UNAUTHORIZED_CANONICAL_DELETION`. Table `form4_raw_filings` is permanently append-only via database trigger.
+Destructive deletion of canonical Smart Money evidence is strictly prohibited. Because no trusted legal retention or cryptographic deletion authority framework is currently configured in the repository, all deletion requests fail closed unconditionally with `PermissionError: CANONICAL_DELETION_PROHIBITED`. Neither null tokens, arbitrary strings, nor prefix-formatted tokens can authorize deletion. Table `form4_raw_filings` is permanently append-only via database trigger `abort_immutable_record()`.
 
 ---
 
@@ -45,9 +45,11 @@ To eliminate future lookahead bias and ensure rigorous quantitative backtesting,
    - Cutoff filter: `av.public_availability_at <= :as_of_watermark`
    - Represents information that was officially accessible to market participants at watermark $W$.
 2. **`ARX_OBSERVED` (Contemporaneous Knowledge Truth):**
-   - Cutoff filter: `COALESCE(av.recorded_at, f.created_at) <= :as_of_watermark`
+   - Cutoff filter:
+     * PostgreSQL: `COALESCE(av.recorded_at, f.created_at) <= :as_of_watermark`
+     * SQLite: `created_at IS NOT NULL AND created_at <= :as_of_watermark` (never substitutes `acceptance_datetime`)
    - Represents evidence that ARX's automated infrastructure had actually ingested, validated, and recorded by watermark $W$.
-   - Prevents lookahead where an SEC filing was published after-hours (e.g., Friday 21:00 UTC) but only observed by ARX on Monday 09:00 UTC.
+   - Eliminates lookahead bias where an SEC filing was published after-hours (e.g., Friday 21:00 UTC) but only ingested by ARX on Monday 09:00 UTC. Replaying at Saturday noon under `ARX_OBSERVED` strictly excludes the filing.
 
 ### Timestamp Integrity:
 Missing, ambiguous, or unverified acceptance timestamps shall NEVER be fabricated, assumed, or defaulted to midnight UTC. Such records are explicitly marked with `availability_uncertain: True` on the analytical observation.

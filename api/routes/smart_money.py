@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Response
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
@@ -195,13 +196,30 @@ def get_smart_money_evidence(
         response.headers["CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
+    mode_val = replay_mode.default if hasattr(replay_mode, "default") else replay_mode
+    as_of_val = as_of.default if hasattr(as_of, "default") else as_of
+
+    if mode_val not in ("PUBLIC_AVAILABLE", "ARX_OBSERVED"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid replay_mode '{mode_val}'. Allowed modes: PUBLIC_AVAILABLE, ARX_OBSERVED.",
+        )
+    if as_of_val is not None:
+        try:
+            datetime.fromisoformat(str(as_of_val).replace("Z", "+00:00"))
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid as_of timestamp '{as_of_val}': must be valid ISO 8601 format.",
+            )
+
     return smart_money_engine.assess_symbol(
         symbol=valid_sym,
-        asset_class=asset_class,
-        security_type=security_type,
-        include_curated=include_curated,
-        as_of=as_of,
-        replay_mode=replay_mode,
+        asset_class=asset_class.default if hasattr(asset_class, "default") else asset_class,
+        security_type=security_type.default if hasattr(security_type, "default") else security_type,
+        include_curated=include_curated.default if hasattr(include_curated, "default") else include_curated,
+        as_of=as_of_val,
+        replay_mode=mode_val,
     )
 
 

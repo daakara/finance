@@ -10,6 +10,7 @@ import json
 import uuid
 import hashlib
 import logging
+from datetime import datetime
 from typing import Dict, Any, List, Optional, Set
 
 try:
@@ -327,6 +328,14 @@ class PostgresSmartMoneyRepository:
         If an amendment supersedes an original transaction and was available before W,
         the superseding version is used.
         """
+        if replay_mode not in ("PUBLIC_AVAILABLE", "ARX_OBSERVED"):
+            raise ValueError(f"Invalid replay_mode '{replay_mode}'. Allowed modes: 'PUBLIC_AVAILABLE', 'ARX_OBSERVED'.")
+        if as_of_watermark is not None:
+            try:
+                datetime.fromisoformat(str(as_of_watermark).replace("Z", "+00:00"))
+            except Exception as e:
+                raise ValueError(f"Invalid as_of_watermark '{as_of_watermark}': must be valid ISO 8601 string.") from e
+
         if not symbols:
             return {}
 
@@ -397,19 +406,34 @@ class PostgresSmartMoneyRepository:
         as_of_watermark: str,
         symbols: List[str],
         conn: Optional[PgConnection] = None,
+        replay_mode: str = "PUBLIC_AVAILABLE",
     ) -> Set[str]:
         """
         Identifies symbols having ambiguous or unresolvable amendments available <= W.
         """
+        if replay_mode not in ("PUBLIC_AVAILABLE", "ARX_OBSERVED"):
+            raise ValueError(f"Invalid replay_mode '{replay_mode}'. Allowed modes: 'PUBLIC_AVAILABLE', 'ARX_OBSERVED'.")
+        if as_of_watermark is not None:
+            try:
+                datetime.fromisoformat(str(as_of_watermark).replace("Z", "+00:00"))
+            except Exception as e:
+                raise ValueError(f"Invalid as_of_watermark '{as_of_watermark}': must be valid ISO 8601 string.") from e
+
         if not symbols:
             return set()
 
-        query = """
+        time_predicate = (
+            "COALESCE(av.recorded_at, f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "av.public_availability_at IS NOT NULL AND av.public_availability_at <= %s"
+        )
+
+        query = f"""
             SELECT DISTINCT f.ticker
             FROM sm_amendments am
             JOIN form4_raw_filings f ON am.amendment_accession = f.accession_number
             JOIN sm_source_availability_ledger av ON am.amendment_accession = av.accession_number
-            WHERE av.public_availability_at <= %s
+            WHERE {time_predicate}
               AND am.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED')
               AND f.ticker = ANY(%s);
         """
@@ -975,30 +999,13 @@ class PostgresSmartMoneyRepository:
     ) -> int:
         """
         Enforces SM-DATA-GOV-001 Section 2:
-        Destructive deletion of canonical Smart Money evidence requires an approved
-        retention schedule and verifiable authorization token.
-        Prohibits unauthorized or accidental deletions.
+        Destructive deletion of canonical Smart Money evidence is prohibited.
+        Fails closed unconditionally because no trusted legal retention or cryptographic
+        deletion authority is configured.
         """
-        if not authorization_token or not authorization_token.startswith("AUTH_LEGAL_APPROVED_RETENTION_DELETION:"):
-            raise PermissionError(
-                "UNAUTHORIZED_CANONICAL_DELETION: Deletion of canonical Smart Money evidence "
-                "is prohibited under SM-DATA-GOV-001 without an approved legal retention schedule "
-                "and cryptographic authorization token."
-            )
-
-        def _exec(cur):
-            cur.execute("DELETE FROM form4_parsed_transactions WHERE accession_number = %s;", (accession_number,))
-            tx_deleted = cur.rowcount
-            cur.execute("DELETE FROM sm_source_availability_ledger WHERE accession_number = %s;", (accession_number,))
-            ledger_deleted = cur.rowcount
-            # Note: form4_raw_filings remains immutable under trigger trg_form4_raw_filings_immutable
-            return tx_deleted + ledger_deleted
-
-        if conn is not None:
-            with conn.cursor() as cur:
-                return _exec(cur)
-        else:
-            with transaction(dsn=self.dsn) as cur:
-                return _exec(cur)
+        raise PermissionError(
+            "CANONICAL_DELETION_PROHIBITED: Destructive deletion of canonical Smart Money evidence is prohibited. "
+            "No authorized legal retention authority is configured."
+        )
 
 

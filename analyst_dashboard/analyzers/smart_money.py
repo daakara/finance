@@ -2106,6 +2106,14 @@ class SmartMoneyEngine:
         clean_sym = symbol.upper().replace("-USD", "").strip() if symbol else ""
         raw_sym = symbol.upper().strip() if symbol else ""
 
+        if replay_mode not in ("PUBLIC_AVAILABLE", "ARX_OBSERVED"):
+            raise ValueError(f"Invalid replay_mode '{replay_mode}'. Allowed modes: 'PUBLIC_AVAILABLE', 'ARX_OBSERVED'.")
+        if as_of is not None:
+            try:
+                datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+            except Exception as e:
+                raise ValueError(f"Invalid as_of timestamp '{as_of}': must be valid ISO 8601 string.") from e
+
         is_crypto = (
             raw_sym.endswith("-USD")
             or raw_sym in {"BTC", "ETH", "SOL", "DOGE"}
@@ -2331,22 +2339,29 @@ class SmartMoneyEngine:
                         has_amendments = False
 
                     has_deriv_col = False
+                    has_created_at_col = False
                     try:
                         cur.execute("PRAGMA table_info(form4_parsed_transactions)")
                         cols = [r["name"] for r in cur.fetchall()]
                         has_deriv_col = "is_derivative" in cols
+                        has_created_at_col = "created_at" in cols
                     except Exception:
                         has_deriv_col = False
+                        has_created_at_col = False
 
                     deriv_select = "is_derivative" if has_deriv_col else "0 AS is_derivative"
+                    created_at_select = "created_at AS arx_first_observed_at" if has_created_at_col else "NULL AS arx_first_observed_at"
 
                     sqlite_pit = ""
                     sqlite_params = [clean_sym, cutoff_str, cutoff_str]
                     if as_of_watermark:
                         if replay_mode == "ARX_OBSERVED":
-                            sqlite_pit = " AND ((created_at IS NOT NULL AND created_at <= ?) OR (acceptance_datetime IS NOT NULL AND acceptance_datetime <= ?)) AND filing_date <= ?"
-                            sqlite_params.extend([as_of_watermark, as_of_watermark, eval_date.isoformat()])
-                        else:
+                            if has_created_at_col:
+                                sqlite_pit = " AND created_at IS NOT NULL AND created_at <= ? AND filing_date <= ?"
+                                sqlite_params.extend([as_of_watermark, eval_date.isoformat()])
+                            else:
+                                sqlite_pit = " AND 1 = 0"
+                        else:  # PUBLIC_AVAILABLE
                             sqlite_pit = " AND acceptance_datetime IS NOT NULL AND acceptance_datetime <= ? AND filing_date <= ?"
                             sqlite_params.extend([as_of_watermark, eval_date.isoformat()])
 
@@ -2355,19 +2370,35 @@ class SmartMoneyEngine:
                                officer_title, is_director, is_officer, is_ten_percent_owner, filing_date,
                                transaction_date, transaction_code, signal_type, shares, price_per_share, total_value_usd, acquired_disposed,
                                is_positive_buying_conviction, is_open_market_purchase_evidence, acceptance_datetime,
-                               {deriv_select}
+                               {deriv_select},
+                               {created_at_select}
                         FROM form4_parsed_transactions
                         WHERE issuer_symbol = ? AND (filing_date >= ? OR transaction_date >= ?)
                           {sqlite_pit}
                     """
                     if has_amendments:
-                        query += """
-                          AND NOT EXISTS (
-                              SELECT 1 FROM sm_amendments a
-                              WHERE (a.accession_number = form4_parsed_transactions.accession_number AND a.relationship = 'SUPERSEDED_OR_CORRECTED')
-                                 OR (a.amended_accession_number = form4_parsed_transactions.accession_number AND a.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT', 'SUPERSEDED_OR_CORRECTED'))
-                          )
-                        """
+                        try:
+                            cur.execute("PRAGMA table_info(sm_amendments)")
+                            amend_cols = [r["name"] for r in cur.fetchall()]
+                        except Exception:
+                            amend_cols = []
+
+                        if "amendment_accession" in amend_cols and "base_accession" in amend_cols:
+                            query += """
+                              AND NOT EXISTS (
+                                  SELECT 1 FROM sm_amendments a
+                                  WHERE (a.base_accession = form4_parsed_transactions.accession_number AND a.resolution_status = 'SUPERSEDED')
+                                     OR (a.amendment_accession = form4_parsed_transactions.accession_number AND a.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED'))
+                              )
+                            """
+                        else:
+                            query += """
+                              AND NOT EXISTS (
+                                  SELECT 1 FROM sm_amendments a
+                                  WHERE (a.accession_number = form4_parsed_transactions.accession_number AND a.relationship = 'SUPERSEDED_OR_CORRECTED')
+                                     OR (a.amended_accession_number = form4_parsed_transactions.accession_number AND a.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT', 'SUPERSEDED_OR_CORRECTED'))
+                              )
+                            """
                     query += " ORDER BY filing_date DESC"
 
                     cur.execute(query, tuple(sqlite_params))
@@ -3359,6 +3390,14 @@ class SmartMoneyEngine:
         - Emits PIPELINE_HELD / UNAVAILABLE when continuous feeds are offline under HOLD_SEC_001.
         """
         clean_sym = symbol.upper().strip()
+
+        if replay_mode not in ("PUBLIC_AVAILABLE", "ARX_OBSERVED"):
+            raise ValueError(f"Invalid replay_mode '{replay_mode}'. Allowed modes: 'PUBLIC_AVAILABLE', 'ARX_OBSERVED'.")
+        if as_of is not None:
+            try:
+                datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+            except Exception as e:
+                raise ValueError(f"Invalid as_of timestamp '{as_of}': must be valid ISO 8601 string.") from e
 
         options_sub = cls.assess_options_flow(
             symbol=clean_sym,
