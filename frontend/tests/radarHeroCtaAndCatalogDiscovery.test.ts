@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import fs from "node:fs";
 import path from "node:path";
-import { describe, it } from "vitest";
+import { describe, it } from "node:test";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 
 describe("Directive RADAR-PROD-002: Radar Hero CTA & Master Catalog Discovery Verification", () => {
