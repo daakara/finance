@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX Terminal — SM-ACT-018 Ten-Issuer Pilot Execution Receipt Template",
+  "description": "Canonical template for recording the one-shot 10-issuer SEC ingestion pilot execution receipt upon Owner GO authorization.",
+  "execution_receipt": {
+    "directive": "SM-ACT-018",
+    "cycle_type": "SEQUENTIAL_10_ISSUER_PILOT",
+    "timestamp_start": "YYYY-MM-DDTHH:MM:SS.fZ",
+    "timestamp_end": "YYYY-MM-DDTHH:MM:SS.fZ",
+    "duration_wall_clock_sec": 0.0,
+    "universe": [
+      {"ticker": "NVDA", "cik": "0001045810", "company_name": "NVIDIA CORP"},
+      {"ticker": "AAPL", "cik": "0000320193", "company_name": "APPLE INC"},
+      {"ticker": "MSFT", "cik": "0000789019", "company_name": "MICROSOFT CORP"},
+      {"ticker": "AMZN", "cik": "0001018724", "company_name": "AMAZON COM INC"},
+      {"ticker": "GOOGL", "cik": "0001652044", "company_name": "Alphabet Inc."},
+      {"ticker": "META", "cik": "0001326801", "company_name": "Meta Platforms, Inc."},
+      {"ticker": "TSLA", "cik": "0001318605", "company_name": "TESLA, INC."},
+      {"ticker": "BRK-B", "cik": "0001067983", "company_name": "BERKSHIRE HATHAWAY INC"},
+      {"ticker": "JPM", "cik": "0000019617", "company_name": "JPMORGAN CHASE & CO"},
+      {"ticker": "V", "cik": "0001403161", "company_name": "VISA INC."}
+    ],
+    "budgets_enforced": {
+      "max_requests_cap": 40,
+      "max_per_issuer_cap": 4,
+      "max_duration_sec": 180.0,
+      "max_rate_rps": 5.0,
+      "inter_issuer_delay_sec": 0.25
+    },
+    "budget_telemetry": {
+      "total_requests_made": 0,
+      "total_redirects_counted": 0,
+      "sec_requests": [
+        {
+          "request_num": 1,
+          "issuer": "NVDA",
+          "url": "https://data.sec.gov/submissions/CIK0001045810.json",
+          "status_code": 200,
+          "bytes_received": 0,
+          "duration_sec": 0.0,
+          "is_redirect": false
+        }
+      ]
+    },
+    "coverage_accounting": {
+      "total_issuers_planned": 10,
+      "issuers_evaluated": 10,
+      "issuers_succeeded": 10,
+      "issuers_failed": 0,
+      "coverage_ratio": 1.0,
+      "is_complete_coverage": true,
+      "active_snapshot_preserved": true
+    },
+    "issuer_receipts": [
+      {
+        "ticker": "NVDA",
+        "cik": "0001045810",
+        "company_name": "NVIDIA CORP",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 0.0,
+        "accession_number": "0001199039-26-000016",
+        "filing_date": "YYYY-MM-DD",
+        "acceptance_datetime": "YYYY-MM-DDTHH:MM:SS.000Z",
+        "content_hash": "SHA256_HASH",
+        "transactions_persisted": 0,
+        "transaction_classification_summary": {
+          "open_market_purchases": 0,
+          "discretionary_sales": 0,
+          "tax_withholdings_code_f": 0,
+          "gifts_code_g": 0,
+          "dispositions_code_d": 0,
+          "grants_code_a": 0,
+          "option_exercises_code_m": 0,
+          "non_discretionary_total": 0
+        },
+        "error": null
+      }
+    ],
+    "production_isolation_and_teardown": {
+      "advisory_lock_id": 401007311509093371,
+      "advisory_lock_acquired": true,
+      "advisory_lock_released": true,
+      "role_at_start": "STANDBY",
+      "temporary_role": "OWNER",
+      "role_at_exit": "STANDBY",
+      "role_restored": true,
+      "active_snapshot_retained": true,
+      "operator_queue_isolated": true
+    },
+    "verdict": "SUCCESS"
+  },
+  "pre_state": {
+    "raw_filings_count": 0,
+    "parsed_transactions_count": 0,
+    "active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+    "r2_backup_manifest": "production/manifest_sm-backup-20261102T182029Z-052cea3e.json",
+    "r2_backup_sha256": "8b721e36179ba27e00526d20bf4d65e067c2a8e8a44a784251731bd183475683",
+    "r2_backup_age_hours": 0.0
+  },
+  "post_state": {
+    "raw_filings_count": 0,
+    "parsed_transactions_count": 0,
+    "active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+    "active_snapshot_preserved": true
+  },
+  "api_verification": {
+    "url": "https://web-production-470560.up.railway.app/api/v1/smart-money/evidence/NVDA",
+    "status_code": 200,
+    "overall_status": "PIPELINE_HELD",
+    "active_holds": ["HOLD_SEC_001"]
+  }
+}
