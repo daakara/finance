@@ -10,6 +10,7 @@ import json
 import uuid
 import hashlib
 import logging
+from datetime import datetime
 from typing import Dict, Any, List, Optional, Set
 
 try:
@@ -316,18 +317,50 @@ class PostgresSmartMoneyRepository:
         symbols: List[str],
         min_date: str,
         conn: Optional[PgConnection] = None,
+        replay_mode: str = "PUBLIC_AVAILABLE",
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Point-in-Time Bulk Transaction Retrieval.
-        Enforces public_availability_at <= as_of_watermark.
+        Point-in-Time Bulk Transaction Retrieval (SM-DATA-GOV-001 Section 3).
+        Supports two distinct replay modes:
+        - PUBLIC_AVAILABLE: Enforces av.public_availability_at <= as_of_watermark.
+        - ARX_OBSERVED: Enforces COALESCE(av.recorded_at, f.created_at) <= as_of_watermark.
         Resolves amendment supersession point-in-time:
         If an amendment supersedes an original transaction and was available before W,
         the superseding version is used.
         """
+        if replay_mode not in ("PUBLIC_AVAILABLE", "ARX_OBSERVED"):
+            raise ValueError(f"Invalid replay_mode '{replay_mode}'. Allowed modes: 'PUBLIC_AVAILABLE', 'ARX_OBSERVED'.")
+        if as_of_watermark is not None:
+            try:
+                datetime.fromisoformat(str(as_of_watermark).replace("Z", "+00:00"))
+            except Exception as e:
+                raise ValueError(f"Invalid as_of_watermark '{as_of_watermark}': must be valid ISO 8601 string.") from e
+
         if not symbols:
             return {}
 
-        query = """
+        time_predicate = (
+            "COALESCE(av.recorded_at, f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "av.public_availability_at IS NOT NULL AND av.public_availability_at <= %s"
+        )
+        am_time_predicate = (
+            "COALESCE(am_av.recorded_at, am_f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "am_av.public_availability_at IS NOT NULL AND am_av.public_availability_at <= %s"
+        )
+        part_time_predicate = (
+            "COALESCE(part_av.recorded_at, part_f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "part_av.public_availability_at IS NOT NULL AND part_av.public_availability_at <= %s"
+        )
+        re_time_predicate = (
+            "COALESCE(re_av.recorded_at, re_f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "re_av.public_availability_at IS NOT NULL AND re_av.public_availability_at <= %s"
+        )
+
+        query = f"""
             SELECT
                 tx.transaction_id,
                 tx.accession_number,
@@ -358,14 +391,67 @@ class PostgresSmartMoneyRepository:
             JOIN form4_raw_filings f ON tx.accession_number = f.accession_number
             JOIN sm_source_availability_ledger av ON tx.accession_number = av.accession_number
             LEFT JOIN sm_amendments am ON tx.accession_number = am.amendment_accession
-            WHERE av.public_availability_at <= %s
+            WHERE {time_predicate}
               AND tx.transaction_date >= %s
               AND f.ticker = ANY(%s)
+              -- 1. Exclude unresolved or ambiguous amendments
+              AND NOT EXISTS (
+                  SELECT 1 FROM sm_amendments ambig
+                  WHERE ambig.amendment_accession = tx.accession_number
+                    AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
+              )
+              -- 2. Exclude transactions superseded by full filing amendments available <= W
+              AND NOT EXISTS (
+                  SELECT 1 FROM sm_amendments am_full
+                  JOIN sm_source_availability_ledger am_av ON am_full.amendment_accession = am_av.accession_number
+                  JOIN form4_raw_filings am_f ON am_full.amendment_accession = am_f.accession_number
+                  WHERE am_full.base_accession = tx.accession_number
+                    AND am_full.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
+                    AND {am_time_predicate}
+              )
+              -- 3. Transaction-level reconciliation for partial corrections available <= W
+              AND NOT EXISTS (
+                  SELECT 1 FROM sm_amendments part_am
+                  JOIN form4_parsed_transactions amend_tx ON part_am.amendment_accession = amend_tx.accession_number
+                  JOIN sm_source_availability_ledger part_av ON part_am.amendment_accession = part_av.accession_number
+                  JOIN form4_raw_filings part_f ON part_am.amendment_accession = part_f.accession_number
+                  WHERE part_am.base_accession = tx.accession_number
+                    AND part_am.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                    AND amend_tx.reporting_owner_name = tx.reporting_owner_name
+                    AND amend_tx.transaction_date = tx.transaction_date
+                    AND amend_tx.transaction_code = tx.transaction_code
+                    AND {part_time_predicate}
+              )
+              -- 4. Exclude amendments that were themselves superseded by subsequent amendments available <= W
+              AND NOT EXISTS (
+                  SELECT 1 FROM sm_amendments re_am
+                  JOIN sm_source_availability_ledger re_av ON re_am.amendment_accession = re_av.accession_number
+                  JOIN form4_raw_filings re_f ON re_am.amendment_accession = re_f.accession_number
+                  WHERE (
+                      re_am.base_accession = tx.accession_number
+                      OR EXISTS (
+                          SELECT 1 FROM sm_amendments curr_am
+                          WHERE curr_am.amendment_accession = tx.accession_number
+                            AND re_am.base_accession = curr_am.base_accession
+                            AND re_am.amendment_number > curr_am.amendment_number
+                      )
+                  )
+                    AND re_am.resolution_status NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'ADDITIONAL_TRANSACTION', 'PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                    AND {re_time_predicate}
+              )
             ORDER BY tx.transaction_date ASC, av.public_availability_at ASC;
         """
 
         def _exec(cur):
-            cur.execute(query, (as_of_watermark, min_date, [s.upper().strip() for s in symbols]))
+            params = (
+                as_of_watermark,
+                min_date,
+                [s.upper().strip() for s in symbols],
+                as_of_watermark,
+                as_of_watermark,
+                as_of_watermark,
+            )
+            cur.execute(query, params)
             rows = cur.fetchall()
             out: Dict[str, List[Dict[str, Any]]] = {}
             for r in rows:
@@ -388,19 +474,34 @@ class PostgresSmartMoneyRepository:
         as_of_watermark: str,
         symbols: List[str],
         conn: Optional[PgConnection] = None,
+        replay_mode: str = "PUBLIC_AVAILABLE",
     ) -> Set[str]:
         """
         Identifies symbols having ambiguous or unresolvable amendments available <= W.
         """
+        if replay_mode not in ("PUBLIC_AVAILABLE", "ARX_OBSERVED"):
+            raise ValueError(f"Invalid replay_mode '{replay_mode}'. Allowed modes: 'PUBLIC_AVAILABLE', 'ARX_OBSERVED'.")
+        if as_of_watermark is not None:
+            try:
+                datetime.fromisoformat(str(as_of_watermark).replace("Z", "+00:00"))
+            except Exception as e:
+                raise ValueError(f"Invalid as_of_watermark '{as_of_watermark}': must be valid ISO 8601 string.") from e
+
         if not symbols:
             return set()
 
-        query = """
+        time_predicate = (
+            "COALESCE(av.recorded_at, f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "av.public_availability_at IS NOT NULL AND av.public_availability_at <= %s"
+        )
+
+        query = f"""
             SELECT DISTINCT f.ticker
             FROM sm_amendments am
             JOIN form4_raw_filings f ON am.amendment_accession = f.accession_number
             JOIN sm_source_availability_ledger av ON am.amendment_accession = av.accession_number
-            WHERE av.public_availability_at <= %s
+            WHERE {time_predicate}
               AND am.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED')
               AND f.ticker = ANY(%s);
         """
@@ -955,4 +1056,24 @@ class PostgresSmartMoneyRepository:
             with get_connection(dsn=self.dsn) as c:
                 with c.cursor(cursor_factory=RealDictCursor) as cur:
                     return _exec(cur)
+
+    # ── Destruction Protection & Deletion Governance (SM-DATA-GOV-001) ────────
+
+    def delete_canonical_evidence(
+        self,
+        accession_number: str,
+        authorization_token: Optional[str] = None,
+        conn: Optional[PgConnection] = None,
+    ) -> int:
+        """
+        Enforces SM-DATA-GOV-001 Section 2:
+        Destructive deletion of canonical Smart Money evidence is prohibited.
+        Fails closed unconditionally because no trusted legal retention or cryptographic
+        deletion authority is configured.
+        """
+        raise PermissionError(
+            "CANONICAL_DELETION_PROHIBITED: Destructive deletion of canonical Smart Money evidence is prohibited. "
+            "No authorized legal retention authority is configured."
+        )
+
 
