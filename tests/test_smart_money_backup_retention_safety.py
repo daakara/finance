@@ -91,6 +91,7 @@ def test_corrupt_dump_blocks_all_deletion(tmp_path):
     assert BackupRetentionManager(adapter, 1, 1).prune_backups() == []
     assert adapter.deleted == []
 
+
 def test_invalid_later_timestamp_blocks_all_deletions(tmp_path):
     adapter = FakeAdapter(tmp_path)
     now = datetime.now(timezone.utc)
