@@ -108,18 +108,21 @@ class BackupRetentionManager:
         # verified recovery point, regardless of age.
         now = datetime.utcnow()
         cutoff_date = now - timedelta(days=max_days)
-        pruned_backup_ids = []
+        # Preflight *every* timestamp before the first irreversible deletion.
+        # A bad later entry must not allow partial pruning of earlier entries.
+        deletion_candidates = []
         for idx, (item, backup_id, has_globals) in enumerate(verified[1:], start=1):
-            exceeds_count = idx >= max_count
             try:
                 mod_date = datetime.fromisoformat(item["modified_at"].replace("Z", "+00:00"))
                 expired = mod_date.replace(tzinfo=None) < cutoff_date
-            except Exception:
-                # No deletion if retention-age metadata cannot be trusted.
+            except (KeyError, AttributeError, TypeError, ValueError):
                 logger.warning("Pruning disabled: unparseable backup timestamp")
-                return pruned_backup_ids
-            if not (exceeds_count or expired):
-                continue
+                return []
+            if idx >= max_count or expired:
+                deletion_candidates.append((backup_id, has_globals))
+
+        pruned_backup_ids = []
+        for backup_id, has_globals in deletion_candidates:
             self.storage_adapter.delete_backup(f"manifest_{backup_id}.json")
             self.storage_adapter.delete_backup(f"smart_money_{backup_id}.dump")
             if has_globals:
