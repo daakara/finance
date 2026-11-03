@@ -1,33 +1,57 @@
 {
-  "release_candidate_commit": "b1d68f17cbf8e9e18804a55b04ee4b9820be7995",
-  "base_anchor_commit": "fad8beb157e8ae752bbbb27ae49789bf531ff8e0",
-  "total_files": 3,
+  "release_candidate_commit": "54605df5074d35af4fd3cdd3e006df7040b80a56",
+  "base_anchor_commit": "87c5e939fb1434e7ee472a397a9ecb2252123dab",
+  "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "SM_ACT_018R_PILOT_SAFETY_GATE_CLOSURE",
+  "directive": "RADAR_ACT_007_DELISTED_SECURITY_EXCLUSION_PROMOTION",
   "files": {
-    "analyst_dashboard/smart_money/pilot_runner.py": {
+    "analyst_dashboard/analyzers/scanner_runner.py": {
       "operation": "M",
-      "originating_pr_number": 173,
-      "originating_commit": "b1d68f1",
-      "governing_requirement": "SM-ACT-018R: Wire-level accounting, mandatory containment/DB, one-shot elevation, supervisory watchdog",
-      "sha256": "03a29881c64c4df5f33bcdd42935fd79a2ba2b365d52104ceea3e88b8375ccee",
-      "size_bytes": 31951
+      "originating_pr_number": 175,
+      "originating_commit": "54605df",
+      "governing_requirement": "RADAR-ACT-007: Authoritative lifecycle guard filtering delisted/suspended securities during VCP scans",
+      "sha256": "54fbbb5ee59b756562b789ade6a32f01553eec12b21c7c03e72aa50f90758a83",
+      "size_bytes": 69976
     },
-    "analyst_dashboard/smart_money/worker.py": {
+    "analyst_dashboard/universe/__init__.py": {
       "operation": "M",
-      "originating_pr_number": 173,
-      "originating_commit": "b1d68f1",
-      "governing_requirement": "SM-ACT-018R: Worker CLI flag --authorize-pilot dispatch",
-      "sha256": "be886fe46aadf50e847fa5f0cffd0d303d675daa45b96a10f01dbad3b7241da8",
-      "size_bytes": 31515
+      "originating_pr_number": 175,
+      "originating_commit": "54605df",
+      "governing_requirement": "RADAR-ACT-007: Export security lifecycle registry and models",
+      "sha256": "35d4d50545239bf296784bb1379f6b1aaa5a8f2112e750524054434f32d806e9",
+      "size_bytes": 7546
     },
-    "tests/test_smart_money_ten_issuer_pilot_runner.py": {
+    "analyst_dashboard/universe/builder.py": {
       "operation": "M",
-      "originating_pr_number": 173,
-      "originating_commit": "b1d68f1",
-      "governing_requirement": "SM-ACT-018R: 19-case adversarial test suite for ten-issuer pilot",
-      "sha256": "159c555d976dfa9e0c3f6a03eb887fcd23c001b744508791e2079ef8ec0f9035",
-      "size_bytes": 19280
+      "originating_pr_number": 175,
+      "originating_commit": "54605df",
+      "governing_requirement": "RADAR-ACT-007: Canonical security-identity delisting exclusion at universe construction boundary",
+      "sha256": "a69c9a9b318706da632e5ea63d39e2dda57076aee735e44128a7766bdc4e16bc",
+      "size_bytes": 18299
+    },
+    "analyst_dashboard/universe/lifecycle.py": {
+      "operation": "M",
+      "originating_pr_number": 175,
+      "originating_commit": "54605df",
+      "governing_requirement": "RADAR-ACT-007: Effective-date-aware lifecycle classification engine (active, suspended, delisted, acquired, reinstated)",
+      "sha256": "e4b06da0c5a7f6879defff8d1c2db2f80eaf0eba523d0f8bf16ea0ad95efe7c8",
+      "size_bytes": 15022
+    },
+    "api/routes/screener.py": {
+      "operation": "M",
+      "originating_pr_number": 175,
+      "originating_commit": "54605df",
+      "governing_requirement": "RADAR-ACT-007: Radar API delisting filtering and non-actionable contract",
+      "sha256": "d93f001b811ad6780c0369087f4d9ed9ebe9e10e98c4d4d837a62ab4ab8eb860",
+      "size_bytes": 73241
+    },
+    "tests/test_delisted_security_exclusion.py": {
+      "operation": "M",
+      "originating_pr_number": 175,
+      "originating_commit": "54605df",
+      "governing_requirement": "RADAR-ACT-007: 10-condition test suite validating delisted exclusion across pipeline and UI contracts",
+      "sha256": "077b73578a773005dd3b09a1bdd041941609098939e6f41ea01fc671df13c0e4",
+      "size_bytes": 16997
     }
   },
   "qualification_framework_files": {
@@ -37,9 +61,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "0cf770d9b9bd9d4a2a675e99e7d0712b40dddb9510aba382c291013992a646f2",
-      "bytes": 58959,
-      "size_bytes": 58959
+      "sha256": "48b4b1fe7459fe42cb184a1d45a3cef96deee8a26d5e6323601d5f6c4d5ad249",
+      "bytes": 58969,
+      "size_bytes": 58969
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
