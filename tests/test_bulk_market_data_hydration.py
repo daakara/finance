@@ -137,6 +137,19 @@ class TestBulkHydrationEngine(unittest.TestCase):
         candles = self.market_engine.get_daily_candles("AAPL", limit=300)
         self.assertGreaterEqual(len(candles), 200)
 
+    def test_read_only_dry_run_engine_creates_no_local_database_or_checkpoint(self):
+        absent_db = Path(self.temp_dir.name) / "absent-market.db"
+        absent_checkpoint = Path(self.temp_dir.name) / "market_hydration_checkpoint.db"
+        before = absent_checkpoint.read_bytes()
+        ro = BulkMarketDataHydrationEngine(
+            target_db_path=absent_db, checkpoint_dir=Path(self.temp_dir.name),
+            fetcher=self.mock_fetcher, read_only=True,
+        )
+        self.assertFalse(absent_db.exists())
+        self.assertEqual(absent_checkpoint.read_bytes(), before)
+        with self.assertRaisesRegex(RuntimeError, "READ_ONLY_ENGINE"):
+            ro.hydrate_symbol("AAPL", dry_run=False)
+
     def test_dry_run_never_marks_checkpoint_completed_or_mutates_market_store(self):
         valid_bars = [
             {"t": f"{(datetime(2025, 1, 1) + timedelta(days=i)).strftime('%Y-%m-%d')}T04:00:00Z",
