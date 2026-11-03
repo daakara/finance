@@ -1,33 +1,25 @@
 {
-  "release_candidate_commit": "ef311f4e825d853de5aff4c0e7590f1f0d182673",
-  "base_anchor_commit": "cf256372d51f9b41dbde8094381ddd1a7d3e8b62",
-  "total_files": 3,
+  "release_candidate_commit": "f1ff5b0323209b8e1a46c9c01b7a2ec7ec6f66b7",
+  "base_anchor_commit": "74a6ae5d76dcbcc5afe6a67f4cb4b87777319cc6",
+  "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "SM_ACT_018R1_PILOT_CONTAINMENT",
+  "directive": "RADAR_ACT_007_VCP_CLASSIFICATION",
   "files": {
-    "analyst_dashboard/smart_money/pilot_runner.py": {
+    "analyst_dashboard/analyzers/scanner_runner.py": {
       "operation": "M",
-      "originating_pr_number": 177,
-      "originating_commit": "ef311f4",
-      "governing_requirement": "SM-ACT-018R.1: PilotProcessSupervisor 180s hard kill boundary & SecAdvisoryLockBoundary RAII context manager",
-      "sha256": "606033983c2efb1a8b3b2cb3668d54a9e65300a2637756014248db2c5c7197ca",
-      "size_bytes": 43140
+      "originating_pr_number": 179,
+      "originating_commit": "f1ff5b0",
+      "governing_requirement": "RADAR-ACT-007: Wire VCP domain classifier, 200-session trend template & evaluate non-qualifying setups as computed",
+      "sha256": "0e36e2a91a5071df95708bc2e5df9adf80112ecce297c282e7ebbd8cb814ebc8",
+      "size_bytes": 74157
     },
-    "analyst_dashboard/smart_money/worker.py": {
+    "analyst_dashboard/vcp/natural_trigger.py": {
       "operation": "M",
-      "originating_pr_number": 177,
-      "originating_commit": "ef311f4",
-      "governing_requirement": "SM-ACT-018R.1: Worker CLI flags --pilot-expires-at and --pilot-release-sha",
-      "sha256": "f6b059e8cfa14091079da1cd27a46a53974af0a0428095f69b190487feeb624a",
-      "size_bytes": 32008
-    },
-    "tests/test_smart_money_ten_issuer_pilot_runner.py": {
-      "operation": "M",
-      "originating_pr_number": 177,
-      "originating_commit": "ef311f4",
-      "governing_requirement": "SM-ACT-018R.1: 25-case adversarial test suite for ten-issuer pilot containment",
-      "sha256": "0e4ed0e5283bf330c7125015a61ccf5daf0aac6841a30e07041e30ed2867be39",
-      "size_bytes": 24563
+      "originating_pr_number": 179,
+      "originating_commit": "f1ff5b0",
+      "governing_requirement": "RADAR-ACT-007: Service-layer post-settlement session guard (evaluate_natural_session_eligibility)",
+      "sha256": "8ec8e0766fd398c62dd71392b2640648220c43bb90ce60a2a4b9da42864fff4a",
+      "size_bytes": 15675
     }
   },
   "qualification_framework_files": {
@@ -37,9 +29,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "9624b5b05465a1dac7ba6ea180e5a3d443897d18ed5cd90c3017df1485400f2f",
-      "bytes": 58979,
-      "size_bytes": 58979
+      "sha256": "a6e52363a6a2679809f8d0d024acfabc777e834d37f4b0a1651ea3aa80ca8aee",
+      "bytes": 58989,
+      "size_bytes": 58989
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
