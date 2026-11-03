@@ -90,3 +90,16 @@ def test_corrupt_dump_blocks_all_deletion(tmp_path):
     (tmp_path / f"smart_money_{new}.dump").write_bytes(b"wrong")
     assert BackupRetentionManager(adapter, 1, 1).prune_backups() == []
     assert adapter.deleted == []
+
+def test_invalid_later_timestamp_blocks_all_deletions(tmp_path):
+    adapter = FakeAdapter(tmp_path)
+    now = datetime.now(timezone.utc)
+    newest = "sm-backup-20261103T000000Z-protected"
+    middle = "sm-backup-20261021T000000Z-candidate"
+    oldest = "sm-backup-20261001T000000Z-malformed"
+    adapter.add(newest, now)
+    adapter.add(middle, now - timedelta(days=12))
+    adapter.add(oldest, now - timedelta(days=30))
+    adapter.entries[f"manifest_{oldest}.json"] = "0000-invalid-timestamp"
+    assert BackupRetentionManager(adapter, retention_count=1, retention_days=7).prune_backups() == []
+    assert adapter.deleted == []
