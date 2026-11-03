@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "86904d128c2198c50082f620a3ca95343d2369ad",
+  "release_candidate_commit": "f57a65ed48f6e5723115779ba9ea0190ea2b567b",
   "base_anchor_commit": "6bce74ca752e33370fb93f5a2780c0720014b4c2",
   "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -8,7 +8,7 @@
     "analyst_dashboard/smart_money/storage/backup/retention.py": {
       "operation": "M",
       "originating_pr_number": 184,
-      "originating_commit": "86904d128c2198c50082f620a3ca95343d2369ad",
+      "originating_commit": "f57a65ed48f6e5723115779ba9ea0190ea2b567b",
       "governing_requirement": "SM-ACT-020: bounded fail-closed retention protection; draft owner-approved staging, no production activation",
       "sha256": "b2276a05f10e3bf89ac9197a1d78d39c6d6aca2d4d974b423d3894a028c12a0a",
       "size_bytes": 6498
@@ -16,7 +16,7 @@
     "tests/test_smart_money_backup_retention_safety.py": {
       "operation": "A",
       "originating_pr_number": 184,
-      "originating_commit": "86904d128c2198c50082f620a3ca95343d2369ad",
+      "originating_commit": "f57a65ed48f6e5723115779ba9ea0190ea2b567b",
       "governing_requirement": "SM-ACT-020: bounded fail-closed retention protection; draft owner-approved staging, no production activation",
       "sha256": "6d6345f459b43c1d61975d913d785f754abfcdd00d0ebe7e8c4e0e2be6fa0a56",
       "size_bytes": 4197
@@ -29,14 +29,14 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "a6e52363a6a2679809f8d0d024acfabc777e834d37f4b0a1651ea3aa80ca8aee",
-      "bytes": 58989,
-      "size_bytes": 58989
+      "sha256": "8a4cf61cc0f9bcbbd2a146ad325d3bfbdef85c02bbf0d3f12a2dfed93e81dfbc",
+      "bytes": 58994,
+      "size_bytes": 58994
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
+      "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
       "description": "Release qualification module: rq03_backend_regression.py",
-      "size_bytes": 3269
+      "size_bytes": 3330
     },
     "scripts/release/rq04_frontend_regression.py": {
       "sha256": "0e46eff7498448b20491bb0b65cb5f3e85403cc5575642c6bd251b9a2e806a1e",
