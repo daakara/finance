@@ -59,7 +59,7 @@ class BackupRetentionManager:
         # displace the last recoverable backup as the protected recovery point.
         manifests = [
             item for item in all_items
-            if re.fullmatch(r"manifest_sm-backup-[^.]+\\.json", item["remote_filename"])
+            if re.fullmatch(r"manifest_sm-backup-[A-Za-z0-9_-]+\.json", item["remote_filename"])
         ]
         manifests.sort(key=lambda x: x.get("modified_at", ""), reverse=True)
         if len(manifests) <= 1:
