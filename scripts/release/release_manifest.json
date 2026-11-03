@@ -1,6 +1,6 @@
 {
-  "release_candidate_commit": "f57a65ed48f6e5723115779ba9ea0190ea2b567b",
-  "base_anchor_commit": "6bce74ca752e33370fb93f5a2780c0720014b4c2",
+  "release_candidate_commit": "7b47a2ba17062d750063de877af170b270fa2dc4",
+  "base_anchor_commit": "0d443808ffff9ad6ada3097ce4f9fd9652f319a5",
   "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "SM-ACT-020-BACKUP-RETENTION-SAFETY",
