@@ -24,6 +24,7 @@ GOVERNING CONTRACT & INVARIANTS:
 from __future__ import annotations
 
 import argparse
+import csv
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timezone
 import hashlib
@@ -233,9 +234,10 @@ class BulkMarketDataHydrationEngine:
                 status="EXCLUDED_DELISTED",
                 error_message=f"LIFECYCLE_EXCLUSION: {lifecycle.lifecycle_status.value} ({lifecycle.exclusion_reason})",
             )
-            self.checkpoint_store.record_progress(
-                upper_sym, "EXCLUDED_DELISTED", error_message=rec.error_message
-            )
+            if not dry_run:
+                self.checkpoint_store.record_progress(
+                    upper_sym, "EXCLUDED_DELISTED", error_message=rec.error_message
+                )
             return rec
 
         self._throttle()
@@ -253,17 +255,19 @@ class BulkMarketDataHydrationEngine:
 
         if not resp.get("success"):
             err = resp.get("error") or f"HTTP_{resp.get('status_code')}"
-            self.checkpoint_store.record_progress(
-                upper_sym, "FAILED", latency_ms=latency_ms, error_message=err
-            )
+            if not dry_run:
+                self.checkpoint_store.record_progress(
+                    upper_sym, "FAILED", latency_ms=latency_ms, error_message=err
+                )
             return CheckpointRecord(symbol=upper_sym, status="FAILED", latency_ms=latency_ms, error_message=err)
 
         bars = resp.get("bars", [])
         if not bars:
             err = "NO_BARS_RETURNED"
-            self.checkpoint_store.record_progress(
-                upper_sym, "FAILED", latency_ms=latency_ms, error_message=err
-            )
+            if not dry_run:
+                self.checkpoint_store.record_progress(
+                    upper_sym, "FAILED", latency_ms=latency_ms, error_message=err
+                )
             return CheckpointRecord(symbol=upper_sym, status="FAILED", latency_ms=latency_ms, error_message=err)
 
         # Validate numeric OHLCV integrity
@@ -287,9 +291,10 @@ class BulkMarketDataHydrationEngine:
 
         if len(valid_bars) < 50:
             err = f"INSUFFICIENT_BARS: {len(valid_bars)} < 50 minimum"
-            self.checkpoint_store.record_progress(
-                upper_sym, "FAILED", bars_saved=len(valid_bars), latency_ms=latency_ms, error_message=err
-            )
+            if not dry_run:
+                self.checkpoint_store.record_progress(
+                    upper_sym, "FAILED", bars_saved=len(valid_bars), latency_ms=latency_ms, error_message=err
+                )
             return CheckpointRecord(
                 symbol=upper_sym, status="FAILED", bars_saved=len(valid_bars), latency_ms=latency_ms, error_message=err
             )
@@ -320,18 +325,19 @@ class BulkMarketDataHydrationEngine:
                 scope_end_date=latest,
             )
 
-        self.checkpoint_store.record_progress(
-            upper_sym,
-            status="COMPLETED",
-            bars_saved=len(valid_bars),
-            earliest_date=earliest,
-            latest_date=latest,
-            latency_ms=latency_ms,
-        )
-
+        if not dry_run:
+            self.checkpoint_store.record_progress(
+                upper_sym,
+                status="COMPLETED",
+                bars_saved=len(valid_bars),
+                earliest_date=earliest,
+                latest_date=latest,
+                latency_ms=latency_ms,
+            )
+    
         return CheckpointRecord(
             symbol=upper_sym,
-            status="COMPLETED",
+            status="DRY_RUN_VALIDATED" if dry_run else "COMPLETED",
             bars_saved=len(valid_bars),
             earliest_date=earliest,
             latest_date=latest,
