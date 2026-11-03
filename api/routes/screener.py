@@ -135,8 +135,12 @@ CONFIRMED_CORPORATE_ACTIONS: Dict[str, Dict[str, Any]] = get_security_lifecycle_
 # evidence exists (e.g. verified exchange certificate, primary listing confirmation).
 # Without attributable lifecycle evidence, candidates report UNVERIFIED.
 ATTRIBUTABLE_LIFECYCLE_EVIDENCE: Dict[str, Dict[str, Any]] = {
-    # Populated when attributable primary listing / lifecycle verification is supplied.
-    # Candidates without verified lifecycle records report 'UNVERIFIED'.
+    "CPRX": {
+        "status": "DELISTED",
+        "action_type": "CASH_MERGER_ACQUISITION",
+        "effective_date": "2026-07-21",
+        "source": "SEC Form 25-NSE / 15-12B",
+    }
 }
 
 # ── Canonical Radar Discovery Taxonomy ──────────────────────────────────────
@@ -909,8 +913,13 @@ def run_screener_get(
                 "statusColor": status_color,
                 "screeningStatus": "DELISTED" if is_delisted else ("SCREENING_ZONE" if execution_status == "IN_BUY_ZONE" else execution_status),
                 "screeningGeometry": "INACTIVE" if is_delisted else ("WITHIN_TOLERANCE" if execution_status == "IN_BUY_ZONE" else "OUTSIDE_TOLERANCE"),
-                "screeningEligible": False if is_delisted else bool(execution_status == "IN_BUY_ZONE"),
+                "screeningEligible": False if is_delisted else bool(execution_status == "IN_BUY_ZONE" and (is_day_trader or execution.get("is_bullish_eligible", False))),
                 "corporateAction": corp_action,
+                "marketStage": "STAGE_UNRESOLVED" if is_delisted else execution.get("market_stage", "STAGE_UNRESOLVED"),
+                "marketStageLabel": "Delisted / Inactive" if is_delisted else execution.get("stage_phase", "Stage Unresolved"),
+                "isBullishEligible": False if is_delisted else bool(execution.get("is_bullish_eligible", False)),
+                "trendTemplatePassed": False if is_delisted else bool(execution.get("market_stage") == "STAGE_2" and execution.get("is_bullish_eligible")),
+                "stagePhase": "Delisted / Inactive" if is_delisted else execution.get("stage_phase", "Stage Unresolved"),
                 "fundamentalEvidence": {
                     "provenance": "STATIC_REFERENCE_CATALOG" if sym in screener.KNOWN_GEMS_DATA else "UNVERIFIED",
                     "isCatalogReference": bool(sym in screener.KNOWN_GEMS_DATA),
@@ -954,7 +963,7 @@ def run_screener_get(
         # Apply Selected Filter dynamically based on numerical thresholds
         non_tradable = ["UNVERIFIED_ASSET", "DELISTED_SECURITY"]
         if filter_type in ["in_buy_zone", "vwap_pullback"]:
-            filtered = [c for c in mapped_candidates if c["executionStatus"] == "IN_BUY_ZONE"]
+            filtered = [c for c in mapped_candidates if c["executionStatus"] == "IN_BUY_ZONE" and (is_day_trader or c.get("isBullishEligible", False))]
         elif filter_type in ["approaching_target", "orb_breakout"]:
             filtered = [c for c in mapped_candidates if c["executionStatus"] == "APPROACHING_TARGET"]
         elif filter_type == "high_rr":
