@@ -306,16 +306,8 @@ class DecisionHierarchyEngine:
             label = "Valid Setup — Liquidity Restricted"
         elif is_liq_unknown:
             label = "Valid Setup — Liquidity Unverified"
-        elif norm_stage == 4:
-            label = "Stage 4 Markdown — Base Building Required"
-        elif norm_stage == 1:
-            label = "Stage 1 Basing — Watchlist Only"
-        elif norm_stage == 3:
-            label = "Stage 3 Distribution — Capital Protection"
-        elif norm_stage is None and not is_day_trader:
-            label = "Stage Unresolved — Trend Evidence Incomplete"
 
-        is_restricted = (clean_exec == "STOPPED_OUT") or is_severe_hazard or is_liq_unknown or (norm_stage == 4)
+        is_restricted = (clean_exec == "STOPPED_OUT") or is_severe_hazard or is_liq_unknown
         allowed_actions = ["ADD_WATCHLIST", "RESEARCH_PROFILE"] if is_restricted else ["SET_ALERT", "ADD_WATCHLIST", "RESEARCH_PROFILE"]
 
         return {

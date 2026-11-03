@@ -22,7 +22,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
-from scripts.hydrate_market_data_bulk import (
+from analyst_dashboard.data.hydrate_market_data_bulk import (
     BulkHydrationCheckpointStore,
     BulkMarketDataHydrationEngine,
     CheckpointRecord,

@@ -306,12 +306,9 @@ class OptimalExecutionEngine:
                     dec,
                 )
 
-            from analyst_dashboard.vcp.stage_contract import evaluate_market_stage, MarketStage
-            stage_assessment = evaluate_market_stage(price_df, current_price)
-
-            if stage_assessment.stage == MarketStage.STAGE_4 or is_stage_4_downtrend:
+            if is_stage_4_downtrend:
                 setup_name = "Stage 4 Correction / Base Building Required"
-                thesis = "Asset is in a multi-period correction below moving averages. Require constructive base formation and volume dry-up before initiating entries."
+                thesis = "Asset is in a multi-period correction below 50-day moving average. Require constructive base formation and volume dry-up before initiating entries."
                 invalidation = "Breakdown below recent reaction lows or persistent selling below 50-day SMA."
                 stage = "Stage 4 Markdown (Awaiting New Base)"
                 vcp = "Base Consolidation in Progress"
@@ -321,30 +318,24 @@ class OptimalExecutionEngine:
                 take_profit_2 = round(min(current_price * 1.35, max(breakout_pivot * 1.16, current_price * 1.20)), dec)
                 if take_profit_2 - take_profit_1 < minimum_separation:
                     take_profit_2 = round(take_profit_1 + minimum_separation, dec)
-            elif stage_assessment.stage == MarketStage.STAGE_1:
+            elif sma_50 is None:
+                setup_name = "Trend Evidence Incomplete (< 50 Sessions)"
+                thesis = "Insufficient historical sessions to compute 50-day moving average. Maintain defensive risk control."
+                invalidation = "Breakdown below recent range support or -5.0% stop constraint."
+                stage = "Awaiting Historical Base (< 50 Sessions)"
+                vcp = "Consolidation Unverified"
+            elif len(close) >= 20 and float(close.max()) > current_price * 1.20:
                 setup_name = "Stage 1 Bottoming Base / Re-Accumulation"
                 thesis = "Post-correction consolidation channel. Accumulate near lower support boundary and avoid chasing upper range boundaries."
                 invalidation = "Break of lower basing support floor or -7.0% stop constraint."
                 stage = "Stage 1 Structural Basing Phase"
                 vcp = "Bottom Contraction in Progress"
-            elif stage_assessment.stage == MarketStage.STAGE_3:
-                setup_name = "Stage 3 Distribution / Capital Protection"
-                thesis = "Distribution and momentum exhaustion detected. Protect capital and avoid chasing extensions."
-                invalidation = "Breakdown below 50-day moving average or distribution volume expansion."
-                stage = "Stage 3 Distribution Phase"
-                vcp = "Distribution Churn Detected"
-            elif stage_assessment.stage == MarketStage.STAGE_2:
+            else:
                 setup_name = "Minervini VCP (Volatility Contraction Pattern)"
                 thesis = "Stage 2 advancing base with declining volume on pullbacks and breakout above 50-day pivot."
                 invalidation = "Weekly close below 50-day moving average or -7.0% stop constraint."
                 stage = "Stage 2 Advancing Growth Phase"
                 vcp = "VCP 3-Stage Compression Confirmed"
-            else:
-                setup_name = "Trend Evidence Incomplete (< 200 Sessions)"
-                thesis = "Insufficient historical sessions to verify Minervini Trend Template. Maintain defensive risk control."
-                invalidation = "Breakdown below recent range support or -5.0% stop constraint."
-                stage = stage_assessment.stage_label
-                vcp = "Consolidation Unverified"
 
         # Enforce strict mathematical ordering invariant across all scenarios:
         # stop_loss < entry_min <= entry_max < take_profit_1 < take_profit_2
@@ -440,8 +431,6 @@ class OptimalExecutionEngine:
 
             if eval_price < structural_invalidation:
                 exec_status = "STOPPED_OUT"
-            elif stage_assessment is not None and not stage_assessment.is_bullish_eligible:
-                exec_status = "WAITING_PULLBACK"
             elif entry_min <= eval_price <= entry_max:
                 exec_status = (
                     "IN_BUY_ZONE"
@@ -507,9 +496,7 @@ class OptimalExecutionEngine:
             "risk_reward_ratio": max(1.85, rr_ratio),
             "execution_status": exec_status,
             "market_location": market_location,
-            "is_in_buy_zone": exec_status in ACTIONABLE_EXECUTION_STATUSES and (stage_assessment is None or stage_assessment.is_bullish_eligible),
-            "is_bullish_eligible": stage_assessment.is_bullish_eligible if stage_assessment else (user_role == "DAY_TRADER"),
-            "market_stage": stage_assessment.stage.value if stage_assessment else ("STAGE_2" if user_role == "DAY_TRADER" else "STAGE_UNRESOLVED"),
+            "is_in_buy_zone": exec_status in ACTIONABLE_EXECUTION_STATUSES,
             "execution_stop_visible": execution_stop_visible,
             "setup_pattern": setup_name,
             "entry_thesis": thesis,
@@ -571,8 +558,6 @@ class OptimalExecutionEngine:
             "vcp_contraction_status": "VCP 3-Stage Compression Confirmed",
             "atr_14": round(atr, dec),
             "liquidity_defense": LiquidityGuard._generate_fallback(price),
-            "is_bullish_eligible": is_day,
-            "market_stage": "STAGE_2" if is_day else "STAGE_UNRESOLVED",
         }
         return cls._enforce_execution_invariants(raw_plan, user_role)
 
@@ -813,9 +798,7 @@ class OptimalExecutionEngine:
             elif plan.get("execution_status") == "APPROACHING_TARGET":
                 plan["execution_status"] = "WAITING_PULLBACK"
             elif "execution_status" not in plan or plan.get("execution_status") is None:
-                if not plan.get("is_bullish_eligible", True):
-                    plan["execution_status"] = "WAITING_PULLBACK"
-                elif plan["optimal_entry_min"] <= eval_p <= plan["optimal_entry_max"]:
+                if plan["optimal_entry_min"] <= eval_p <= plan["optimal_entry_max"]:
                     plan["execution_status"] = "IN_BUY_ZONE"
                 elif eval_p > plan["optimal_entry_max"] and eval_p <= ext_threshold:
                     plan["execution_status"] = "EXTENDED_ABOVE_BUY_ZONE"
@@ -862,27 +845,13 @@ class OptimalExecutionEngine:
             plan["target_2_pct_from_live"] = None
 
         # 7. Actionability, buy zone, and execution stop visibility flags
-        # Preserve market_stage and is_bullish_eligible
-        is_bullish = plan.get("is_bullish_eligible")
-        if is_bullish is None:
-            is_bullish = (user_role == "DAY_TRADER")
-        plan["is_bullish_eligible"] = is_bullish
-        plan["market_stage"] = plan.get("market_stage", "STAGE_2" if user_role == "DAY_TRADER" else "STAGE_UNRESOLVED")
-
-        if not plan["is_bullish_eligible"] and user_role != "DAY_TRADER":
-            plan["is_in_buy_zone"] = False
-            plan["execution_stop_visible"] = False
-            plan["is_actionable"] = False
-            if plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES:
-                plan["execution_status"] = "WAITING_PULLBACK"
-        else:
-            plan["is_in_buy_zone"] = plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
-            plan["execution_stop_visible"] = bool(plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES)
-            plan["is_actionable"] = bool(
-                plan.get("stop_loss") is not None
-                and plan.get("optimal_entry_max") is not None
-                and plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
-            )
+        plan["is_in_buy_zone"] = plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
+        plan["execution_stop_visible"] = bool(plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES)
+        plan["is_actionable"] = bool(
+            plan.get("stop_loss") is not None
+            and plan.get("optimal_entry_max") is not None
+            and plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
+        )
         plan["user_role"] = user_role
 
         return plan

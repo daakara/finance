@@ -12,13 +12,13 @@
   "engines": {
     "optimal_execution": {
       "filePath": "analyst_dashboard/analyzers/optimal_execution.py",
-      "sha256": "e4d9a79ce8ab099fff5bc1925ee1f0663a4050fc15504d0453d01edad4409ebc",
-      "candidateScope": "Sprint 4 input normalization & STOPPED_OUT price-floor semantics (RADAR-ACT-008R Stage 2 gating)"
+      "sha256": "26247e91e97b564601bd72bc759a40f831646b0232c9b8a9f6e289fd92dba209",
+      "candidateScope": "Sprint 4 input normalization & STOPPED_OUT price-floor semantics"
     },
     "decision_hierarchy": {
       "filePath": "analyst_dashboard/analyzers/decision_hierarchy.py",
-      "sha256": "f91c672dfbcca0426d05bc565aac4ba7d38c762a7e789123dad4e7d19e7249fe",
-      "candidateScope": "Synthesis E Wave 3 / Sprint 4 Liquidity Hazard Precedence & RADAR-ACT-008R Market Stage Hierarchy"
+      "sha256": "177840eec7dae88f6ae5957159cc4cdb3856933619b268859793d07622c6cc87",
+      "candidateScope": "Synthesis E Wave 3 / Sprint 4 Liquidity Hazard Precedence"
     },
     "confluence_engine": {
       "filePath": "analyst_dashboard/analyzers/confluence_engine.py",

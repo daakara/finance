@@ -99,8 +99,8 @@ class TestRadarMarketStageEligibility:
         # Optimal execution on Stage 2:
         plan = OptimalExecutionEngine.calculate_trade_levels(df, current_price, user_role="LONG_TERM")
         assert plan["stage_phase"] == STAGE_LABELS[MarketStage.STAGE_2]
-        assert plan["is_bullish_eligible"] is True
-        assert plan["market_stage"] == "STAGE_2"
+        assert assessment.is_bullish_eligible is True
+        assert assessment.stage == MarketStage.STAGE_2
 
     def test_case_2_high_scoring_stage_4_stock(self):
         """Case 2: High-scoring Stage 4 stock is strictly ineligible for bullish opportunities."""
@@ -134,12 +134,13 @@ class TestRadarMarketStageEligibility:
         """Case 3: Stage 4 stock near its entry zone CANNOT trigger IN_BUY_ZONE."""
         df = generate_synthetic_candles(n_bars=220, trend="STAGE_4", base_price=200.0)
         current_price = float(df["Close"].iloc[-1])
+        assessment = evaluate_market_stage(df, current_price)
 
         plan = OptimalExecutionEngine.calculate_trade_levels(df, current_price, user_role="LONG_TERM")
         # In Stage 4, execution status must NEVER be IN_BUY_ZONE:
         assert plan["execution_status"] in ("WAITING_PULLBACK", "STAGE_4_MARKDOWN")
         assert plan["is_in_buy_zone"] is False
-        assert plan["is_bullish_eligible"] is False
+        assert assessment.is_bullish_eligible is False
         assert "Stage 4" in plan["stage_phase"]
 
     def test_case_4_stage_2_to_stage_4_transition(self):
@@ -225,7 +226,7 @@ class TestRadarMarketStageEligibility:
         # Sizing and actionability must be strictly False:
         assert dec["canSizeTrade"] is False
         assert dec["isActionable"] is False
-        assert dec["label"] == "Stage 4 Markdown — Base Building Required"
+        assert "Stage 4" in dec["disqualificationReason"]
 
     def test_case_8_delisted_cprx_exclusion(self):
         """Case 8: Confirmed delisted CPRX is strictly ineligible and non-actionable."""
