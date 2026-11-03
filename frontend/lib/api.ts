@@ -1103,6 +1103,10 @@ export interface GemCandidate {
   screeningStatus?: string;
   screeningGeometry?: string;
   screeningEligible?: boolean;
+  marketStage?: string;
+  marketStageLabel?: string;
+  isBullishEligible?: boolean;
+  trendTemplatePassed?: boolean;
   decisionState?: string;
   decisionStateLabel?: string;
   isActionable?: boolean;
@@ -1808,6 +1812,20 @@ export function resolveCandidateEligibility(r: any): {
     };
   }
 
+  // Invariant 1b (RADAR-ACT-008R Market Stage Eligibility):
+  // Non-Stage-2 or non-bullish-eligible securities can NEVER be screeningEligible
+  const isNonBullishStage = (r.marketStage && r.marketStage !== "STAGE_2") || r.isBullishEligible === false;
+  if (isNonBullishStage) {
+    const rawSt = typeof r.executionStatus === "string" && r.executionStatus.trim().length > 0
+      ? r.executionStatus.trim()
+      : (typeof r.execution_status === "string" ? r.execution_status.trim() : "WAITING_PULLBACK");
+    return {
+      screeningEligible: false,
+      screeningStatus: r.marketStage === "STAGE_4" ? "STAGE_4_MARKDOWN" : (r.screeningStatus || rawSt),
+      screeningGeometry: "OUTSIDE_TOLERANCE",
+    };
+  }
+
   // Invariant 2 (ARX-036-D11R-CLOSE Gate B / F-01):
   // screeningEligible === true strictly requires executionStatus === "IN_BUY_ZONE"
   // AND explicit backend eligibility value of true. All other combinations are noneligible.
@@ -2009,6 +2027,10 @@ export async function fetchScreenerGems(model: string = "all", universe?: string
           screeningStatus: eligibility.screeningStatus,
           screeningGeometry: eligibility.screeningGeometry,
           screeningEligible: eligibility.screeningEligible,
+          marketStage: r.marketStage || (r.stagePhase && r.stagePhase.includes("Stage 2") ? "STAGE_2" : (r.stagePhase && r.stagePhase.includes("Stage 4") ? "STAGE_4" : (r.screeningEligible === true ? "STAGE_2" : undefined))),
+          marketStageLabel: r.marketStageLabel || r.stagePhase || (r.screeningEligible === true ? "Stage 2 Advancing" : undefined),
+          isBullishEligible: typeof r.isBullishEligible === "boolean" ? r.isBullishEligible : (r.marketStage === "STAGE_2" || r.screeningEligible === true),
+          trendTemplatePassed: typeof r.trendTemplatePassed === "boolean" ? r.trendTemplatePassed : (r.marketStage === "STAGE_2" || r.screeningEligible === true),
           rvol: typeof r.rvol === "string" ? r.rvol : null,
           riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
           decisionState: r.decisionState || "UNVERIFIED_SETUP",

@@ -51,6 +51,9 @@ interface RadarAsset {
   decisionContextId?: string;
   allowedActions: string[];
   screeningEligible?: boolean;
+  marketStage?: string;
+  marketStageLabel?: string;
+  isBullishEligible?: boolean;
 }
 
 type CategoryFilter = 'ALL' | CanonicalRadarCategory;
@@ -106,6 +109,7 @@ function RadarContent() {
   const initialQ = searchParams?.get('q') || searchParams?.get('symbol') || searchParams?.get('ticker') || '';
   const [activeFilter, setActiveFilter] = useState<CategoryFilter>('ALL');
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('ALL');
+  const [experienceMode, setExperienceMode] = useState<'QUALIFIED_OPPORTUNITIES' | 'ALL_RESEARCH'>('QUALIFIED_OPPORTUNITIES');
   const [searchQuery, setSearchQuery] = useState(initialQ);
   const [sortBy, setSortBy] = useState<'SCORE' | 'RVOL' | 'PRICE'>('SCORE');
   const [selectedUniverse, setSelectedUniverse] = useState<'PRE_SCREENED' | 'ALL_CATALOG'>(() => {
@@ -262,7 +266,10 @@ function RadarContent() {
             disqualificationReason: gem.disqualificationReason || null,
             decisionContextId: gem.decisionContextId,
             allowedActions: Array.isArray(gem.allowedActions) ? gem.allowedActions : [],
-            screeningEligible: executionStatus === 'IN_BUY_ZONE' && gem.screeningEligible === true,
+            marketStage: gem.marketStage || (stageStr.includes('Stage 2') ? 'STAGE_2' : (stageStr.includes('Stage 4') ? 'STAGE_4' : (gem.screeningEligible === true ? 'STAGE_2' : 'STAGE_UNRESOLVED'))),
+            marketStageLabel: gem.marketStageLabel || (stageStr || (gem.screeningEligible === true ? 'Stage 2 Advancing' : 'Stage Unresolved')),
+            isBullishEligible: gem.isBullishEligible ?? (gem.marketStage === 'STAGE_2' || gem.screeningEligible === true),
+            screeningEligible: executionStatus === 'IN_BUY_ZONE' && gem.screeningEligible === true && (gem.marketStage !== 'STAGE_4' && gem.marketStage !== 'STAGE_1' && gem.marketStage !== 'STAGE_3' && gem.isBullishEligible !== false),
           };
         });
         setAllAssets(mapped);
@@ -335,6 +342,8 @@ function RadarContent() {
     if (asset.executionStatus === 'DELISTED_SECURITY') return false;
     if (asset.executionStatus === 'UNVERIFIED_ASSET') return false;
     if (asset.executionStatus === 'UNKNOWN') return false;
+    if (asset.marketStage && asset.marketStage !== 'STAGE_2') return false;
+    if (asset.isBullishEligible === false) return false;
     return Boolean(asset.screeningEligible);
   };
 
@@ -397,7 +406,12 @@ function RadarContent() {
             ? ownState === 'HELD'
             : true;
 
-        return matchesCategory && matchesQuery && matchesOwnership;
+        const matchesExperience =
+          experienceMode === 'ALL_RESEARCH' || ownershipCounts.totalActive === 0
+            ? true
+            : (ownState === 'HELD' ? true : isCandidateEligibleOpportunity(asset));
+
+        return matchesCategory && matchesQuery && matchesOwnership && matchesExperience;
       })
       .sort((a, b) => {
         // Scenario 10 in Gate H: Sorting never promotes delisted assets into eligible opportunity rankings
@@ -425,7 +439,7 @@ function RadarContent() {
         }
         return a.ticker.localeCompare(b.ticker);
       });
-  }, [allAssets, activeFilter, searchQuery, sortBy, ownershipFilter, getOwnershipState]);
+  }, [allAssets, activeFilter, searchQuery, sortBy, ownershipFilter, experienceMode, getOwnershipState]);
 
   const cleanQ = searchQuery.trim().toUpperCase();
   const isSearching = searchQuery.trim().length > 0;
@@ -872,12 +886,21 @@ function RadarContent() {
                 </p>
 
                 {heroAsset && getOwnershipState(heroAsset.ticker) === 'HELD' && (
-                  <div className="p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-700/60 text-indigo-200 text-xs font-mono flex items-center gap-2">
-                    <span className="text-sm">💼</span>
-                    <span>
-                      <strong>Existing Portfolio Holding:</strong> {getHolding(heroAsset.ticker)?.shares ?? 0} shares held. Aligns with top scanner confluence.
-                    </span>
-                  </div>
+                  heroAsset.marketStage === 'STAGE_4' || heroAsset.vcpStage?.includes('Stage 4') ? (
+                    <div className="p-2.5 rounded-lg bg-amber-950/60 border border-amber-600/70 text-amber-200 text-xs font-mono flex items-center gap-2">
+                      <span className="text-sm">⚠️</span>
+                      <span>
+                        <strong>Stage 4 Portfolio Holding:</strong> {getHolding(heroAsset.ticker)?.shares ?? 0} shares held. Asset is in secular markdown below declining moving averages. Retained for risk monitoring; new bullish entries prohibited.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-700/60 text-indigo-200 text-xs font-mono flex items-center gap-2">
+                      <span className="text-sm">💼</span>
+                      <span>
+                        <strong>Existing Portfolio Holding:</strong> {getHolding(heroAsset.ticker)?.shares ?? 0} shares held. Aligns with top scanner confluence.
+                      </span>
+                    </div>
+                  )
                 )}
 
                 <div className="flex flex-wrap items-center gap-4 text-xs font-mono pt-1">
@@ -980,6 +1003,20 @@ function RadarContent() {
                       >
                         Unverified Asset
                       </span>
+                    );
+                  }
+
+                  if (heroAsset.marketStage === 'STAGE_4' || heroAsset.vcpStage?.includes('Stage 4')) {
+                    return (
+                      <Link
+                        href={`/?symbol=${heroAsset.ticker}${heroAsset.decisionContextId ? `&contextId=${encodeURIComponent(heroAsset.decisionContextId)}` : ""}`}
+                        onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
+                        className="px-5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl text-xs font-mono font-bold transition-all border bg-amber-950/70 hover:bg-amber-900/90 text-amber-200 border-amber-600 inline-flex items-center justify-center gap-2"
+                        title="Asset in Stage 4 markdown. Monitor risk and support levels in Analysis hub; new bullish entries prohibited."
+                      >
+                        <span>{isHeroHeld ? `Monitor ${heroAsset.ticker} Holding` : `Research ${heroAsset.ticker} Markdown`}</span>
+                        <span>→</span>
+                      </Link>
                     );
                   }
 
@@ -1290,8 +1327,49 @@ function RadarContent() {
               className="w-full min-w-0 max-w-full sm:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 sm:pb-0"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
-              <div className="flex items-center gap-1.5 min-w-max" role="group" aria-label="Portfolio Ownership Filter">
-                <span className="text-[10px] uppercase font-mono text-[var(--text-muted)] mr-1 shrink-0">Portfolio:</span>
+              <div className="flex items-center gap-2.5 min-w-max">
+                {/* Experience Mode Toggle */}
+                <div className="flex items-center gap-1.5" role="group" aria-label="Experience Mode">
+                  <span className="text-[10px] uppercase font-mono text-[var(--text-muted)] mr-1 shrink-0">Mode:</span>
+                  <button
+                    type="button"
+                    id="btn-mode-qualified"
+                    aria-pressed={experienceMode === 'QUALIFIED_OPPORTUNITIES'}
+                    onClick={() => setExperienceMode('QUALIFIED_OPPORTUNITIES')}
+                    className={`focus-ring px-2.5 py-1 min-h-[44px] shrink-0 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                      experienceMode === 'QUALIFIED_OPPORTUNITIES'
+                        ? 'bg-emerald-950/90 text-emerald-300 font-bold border border-emerald-600 shadow-sm'
+                        : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-hover)] border border-transparent'
+                    }`}
+                  >
+                    <span>🎯 Qualified Opportunities</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-900/50 text-emerald-200 font-mono">
+                      {ownershipCounts.totalActive}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    id="btn-mode-all-research"
+                    aria-pressed={experienceMode === 'ALL_RESEARCH'}
+                    onClick={() => setExperienceMode('ALL_RESEARCH')}
+                    className={`focus-ring px-2.5 py-1 min-h-[44px] shrink-0 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                      experienceMode === 'ALL_RESEARCH'
+                        ? 'bg-blue-950/90 text-blue-300 font-bold border border-blue-600 shadow-sm'
+                        : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-hover)] border border-transparent'
+                    }`}
+                  >
+                    <span>📚 All Research / Catalog</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-900/50 text-blue-200 font-mono">
+                      {ownershipCounts.total}
+                    </span>
+                  </button>
+                </div>
+
+                <span className="text-[var(--border-strong)]">|</span>
+
+                <div className="flex items-center gap-1.5" role="group" aria-label="Portfolio Ownership Filter">
+                  <span className="text-[10px] uppercase font-mono text-[var(--text-muted)] mr-1 shrink-0">Portfolio:</span>
                 <button
                   type="button"
                   id="btn-ownership-filter-all"
@@ -1356,6 +1434,7 @@ function RadarContent() {
                 )}
               </div>
             </div>
+          </div>
 
             {/* Degraded State Indicator */}
             {isPortfolioDegraded && (
@@ -1755,7 +1834,33 @@ function RadarContent() {
                         <td className="p-3 text-center font-bold text-cyan-300 whitespace-nowrap">
                           {asset.rvol ? asset.rvol : <span className="text-[var(--text-muted)] font-normal">—</span>}
                         </td>
-                        <td className="p-3 text-[var(--text-2)] text-[11px] whitespace-nowrap">{asset.vcpStage}</td>
+                        <td className="p-3 text-[11px] whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${
+                            asset.executionStatus === 'DELISTED_SECURITY'
+                              ? 'bg-rose-950/60 text-rose-300 border-rose-800/60'
+                              : asset.marketStage === 'STAGE_2'
+                              ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60'
+                              : asset.marketStage === 'STAGE_4' || asset.vcpStage?.includes('Stage 4')
+                              ? 'bg-amber-950/60 text-amber-300 border-amber-800/60'
+                              : asset.marketStage === 'STAGE_1' || asset.vcpStage?.includes('Stage 1')
+                              ? 'bg-blue-950/60 text-blue-300 border-blue-800/60'
+                              : asset.marketStage === 'STAGE_3' || asset.vcpStage?.includes('Stage 3')
+                              ? 'bg-purple-950/60 text-purple-300 border-purple-800/60'
+                              : 'bg-zinc-900 text-zinc-400 border-zinc-800'
+                          }`}>
+                            {asset.executionStatus === 'DELISTED_SECURITY'
+                              ? '🛑 Delisted'
+                              : asset.marketStage === 'STAGE_2'
+                              ? 'Stage 2 Advancing'
+                              : asset.marketStage === 'STAGE_4' || asset.vcpStage?.includes('Stage 4')
+                              ? 'Stage 4 Markdown'
+                              : asset.marketStage === 'STAGE_1' || asset.vcpStage?.includes('Stage 1')
+                              ? 'Stage 1 Basing'
+                              : asset.marketStage === 'STAGE_3' || asset.vcpStage?.includes('Stage 3')
+                              ? 'Stage 3 Topping'
+                              : 'Stage Unresolved'}
+                          </span>
+                        </td>
                         <td className="p-3 text-center font-bold text-emerald-400 whitespace-nowrap">
                           {asset.riskRewardRatio !== null && asset.riskRewardRatio !== undefined ? `${asset.riskRewardRatio.toFixed(1)}:1` : <span className="text-[var(--text-muted)] font-normal">—</span>}
                         </td>
@@ -1780,7 +1885,7 @@ function RadarContent() {
                                       : "Actionability unavailable: No authorized actions permitted for this security."
                                   }
                                 >
-                                  {isDelisted ? "Delisted" : "Unavailable"}
+                                  {isDelisted ? "Delisted / Inactive" : "Unavailable"}
                                 </span>
                               );
                             }

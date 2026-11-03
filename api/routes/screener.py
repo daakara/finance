@@ -27,6 +27,7 @@ from analyst_dashboard.data.market_evidence import (
 )
 from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE, RADAR_SCOPE_LABEL
 from analyst_dashboard.analyzers.scanner_runner import VCPScannerRunner, SmartMoneyScannerRunner
+from analyst_dashboard.vcp.stage_contract import evaluate_market_stage
 from analyst_dashboard.smart_money.storage import (
     get_smart_money_scanner_runner,
     get_smart_money_storage_backend,
@@ -135,8 +136,12 @@ CONFIRMED_CORPORATE_ACTIONS: Dict[str, Dict[str, Any]] = get_security_lifecycle_
 # evidence exists (e.g. verified exchange certificate, primary listing confirmation).
 # Without attributable lifecycle evidence, candidates report UNVERIFIED.
 ATTRIBUTABLE_LIFECYCLE_EVIDENCE: Dict[str, Dict[str, Any]] = {
-    # Populated when attributable primary listing / lifecycle verification is supplied.
-    # Candidates without verified lifecycle records report 'UNVERIFIED'.
+    "CPRX": {
+        "status": "DELISTED",
+        "action_type": "CASH_MERGER_ACQUISITION",
+        "effective_date": "2026-07-21",
+        "source": "SEC Form 25-NSE / 15-12B",
+    }
 }
 
 # ── Canonical Radar Discovery Taxonomy ──────────────────────────────────────
@@ -842,6 +847,19 @@ def run_screener_get(
             )
             cand_evidence = classify_candidate_category_evidence(cand_categories)
     
+            # Authoritative Market Stage Evaluation (Directive RADAR-ACT-008R)
+            if is_delisted:
+                stage_val = "STAGE_UNRESOLVED"
+                stage_lbl = "Delisted / Inactive"
+                is_bullish = False
+                tt_passed = False
+            else:
+                stage_assessment = evaluate_market_stage(hist_df, current_price, symbol=sym)
+                stage_val = stage_assessment.stage.value
+                stage_lbl = stage_assessment.stage_label
+                is_bullish = stage_assessment.is_bullish_eligible if not is_day_trader else True
+                tt_passed = stage_assessment.trend_template_passed
+
             # Resolve Canonical Decision State under DecisionHierarchyEngine (Phase 2 Consolidation)
             if is_delisted:
                 dec_state = {
@@ -909,8 +927,13 @@ def run_screener_get(
                 "statusColor": status_color,
                 "screeningStatus": "DELISTED" if is_delisted else ("SCREENING_ZONE" if execution_status == "IN_BUY_ZONE" else execution_status),
                 "screeningGeometry": "INACTIVE" if is_delisted else ("WITHIN_TOLERANCE" if execution_status == "IN_BUY_ZONE" else "OUTSIDE_TOLERANCE"),
-                "screeningEligible": False if is_delisted else bool(execution_status == "IN_BUY_ZONE"),
+                "screeningEligible": False if is_delisted else bool(execution_status == "IN_BUY_ZONE" and (is_day_trader or is_bullish)),
                 "corporateAction": corp_action,
+                "marketStage": stage_val,
+                "marketStageLabel": stage_lbl,
+                "isBullishEligible": is_bullish,
+                "trendTemplatePassed": tt_passed,
+                "stagePhase": stage_lbl,
                 "fundamentalEvidence": {
                     "provenance": "STATIC_REFERENCE_CATALOG" if sym in screener.KNOWN_GEMS_DATA else "UNVERIFIED",
                     "isCatalogReference": bool(sym in screener.KNOWN_GEMS_DATA),
