@@ -354,8 +354,8 @@ class BulkMarketDataHydrationEngine:
 
 def evaluate_gate_12_readiness_readonly(
     target_db_path: Path,
-        candidate_symbols: List[str],
-        min_required_bars: int = 200,
+    candidate_symbols: List[str],
+    min_required_bars: int = 200,
 ) -> Dict[str, Any]:
     """Calculates Gate 12 market-data readiness across candidate population."""
     total_eligible = len(candidate_symbols)
