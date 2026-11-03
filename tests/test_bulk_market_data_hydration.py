@@ -18,6 +18,9 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+import io
+import json
+from contextlib import redirect_stdout
 from unittest.mock import MagicMock, patch
 import pytest
 
@@ -27,6 +30,8 @@ from analyst_dashboard.data.hydrate_market_data_bulk import (
     BulkMarketDataHydrationEngine,
     CheckpointRecord,
     build_candidate_universe_hashes,
+    main,
+    read_universe_file,
 )
 
 
@@ -132,6 +137,29 @@ class TestBulkHydrationEngine(unittest.TestCase):
         candles = self.market_engine.get_daily_candles("AAPL", limit=300)
         self.assertGreaterEqual(len(candles), 200)
 
+    def test_dry_run_never_marks_checkpoint_completed_or_mutates_market_store(self):
+        valid_bars = [
+            {"t": f"{(datetime(2025, 1, 1) + timedelta(days=i)).strftime('%Y-%m-%d')}T04:00:00Z",
+             "o": 100.0, "h": 105.0, "l": 95.0, "c": 102.0, "v": 1000000}
+            for i in range(220)
+        ]
+        self.mock_fetcher.fetch_historical_bars.return_value = {"success": True, "bars": valid_bars}
+
+        rec = self.engine.hydrate_symbol("AAPL", dry_run=True)
+        self.assertEqual(rec.status, "DRY_RUN_VALIDATED")
+        self.assertEqual(rec.bars_saved, 220)
+        self.assertIsNone(self.engine.checkpoint_store.get_record("AAPL"))
+        self.assertEqual(self.market_engine.get_daily_candles("AAPL", limit=300), [])
+
+    def test_dry_run_failure_does_not_change_existing_checkpoint(self):
+        self.engine.checkpoint_store.record_progress("AAPL", "COMPLETED", bars_saved=220)
+        self.mock_fetcher.fetch_historical_bars.return_value = {"success": False, "error": "PROVIDER_UNAVAILABLE"}
+        rec = self.engine.hydrate_symbol("AAPL", dry_run=True)
+        self.assertEqual(rec.status, "FAILED")
+        saved = self.engine.checkpoint_store.get_record("AAPL")
+        self.assertEqual(saved.status, "COMPLETED")
+        self.assertEqual(saved.bars_saved, 220)
+
     def test_gate_12_readiness_evaluation(self):
         # Populate market DB: AAPL has 220 bars, MSFT has 220 bars, GLX has 30 bars, NOMKT has 0
         valid_bars = [
@@ -167,3 +195,42 @@ class TestCandidateUniverseHashGeneration(unittest.TestCase):
         self.assertEqual(m1["scannable_membership_hash"], m2["scannable_membership_hash"])
         self.assertFalse(m1["production_published"])
         self.assertEqual(m1["active_production_universe"], "UB-ARX-LAUNCH-133-20261102")
+
+
+class TestGate12ReadOnlyCLI(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = Path(self.temp_dir.name) / "market.db"
+        self.market_engine = MarketDatabaseEngine(db_path=str(self.db_path))
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def test_read_only_cli_with_explicit_universe_file(self):
+        symbols_file = Path(self.temp_dir.name) / "universe.txt"
+        symbols_file.write_text("AAPL\nMSFT\n", encoding="utf-8")
+        checkpoint_file = Path(self.temp_dir.name) / "market_hydration_checkpoint.db"
+        self.assertFalse(checkpoint_file.exists())
+        output = io.StringIO()
+        with patch("sys.argv", ["radar-hydrate", "--db-path", str(self.db_path),
+                                "--qualify-gate-12", "--universe-file", str(symbols_file)]):
+            with redirect_stdout(output):
+                main()
+        result = json.loads(output.getvalue())
+        self.assertEqual(result["assessment_scope"], "UNIVERSE_FILE")
+        self.assertEqual(result["eligible_population_count"], 2)
+        self.assertEqual(result["missing_data_count"], 2)
+        self.assertFalse(result["production_publication_authorized"])
+        self.assertFalse(checkpoint_file.exists())
+
+    def test_gate12_cli_requires_explicit_membership(self):
+        with patch("sys.argv", ["radar-hydrate", "--db-path", str(self.db_path), "--qualify-gate-12"]):
+            with self.assertRaises(SystemExit) as raised:
+                main()
+        self.assertEqual(raised.exception.code, 2)
+
+    def test_universe_file_rejects_duplicate_symbols(self):
+        symbols_file = Path(self.temp_dir.name) / "universe.txt"
+        symbols_file.write_text("AAPL\nAAPL\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            read_universe_file(symbols_file)
