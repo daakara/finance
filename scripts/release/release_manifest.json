@@ -10,16 +10,16 @@
       "originating_pr_number": 184,
       "originating_commit": "86904d128c2198c50082f620a3ca95343d2369ad",
       "governing_requirement": "SM-ACT-020: bounded fail-closed retention protection; draft owner-approved staging, no production activation",
-      "sha256": "8588cce192202613c218417c8653f9a6f134e217a79fa33e049be9dbd2a3d5df",
-      "size_bytes": 6302
+      "sha256": "b2276a05f10e3bf89ac9197a1d78d39c6d6aca2d4d974b423d3894a028c12a0a",
+      "size_bytes": 6498
     },
     "tests/test_smart_money_backup_retention_safety.py": {
       "operation": "A",
       "originating_pr_number": 184,
       "originating_commit": "86904d128c2198c50082f620a3ca95343d2369ad",
       "governing_requirement": "SM-ACT-020: bounded fail-closed retention protection; draft owner-approved staging, no production activation",
-      "sha256": "d97c4e8bfe271a9f40f654766e33ebbbda20c4f3653456516c1cdba125dd9abf",
-      "size_bytes": 3563
+      "sha256": "6d6345f459b43c1d61975d913d785f754abfcdd00d0ebe7e8c4e0e2be6fa0a56",
+      "size_bytes": 4197
     }
   },
   "qualification_framework_files": {
