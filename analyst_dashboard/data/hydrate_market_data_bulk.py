@@ -350,61 +350,70 @@ class BulkMarketDataHydrationEngine:
         min_required_bars: int = 200,
     ) -> Dict[str, Any]:
         """Calculates Gate 12 market-data readiness across candidate population."""
-        total_eligible = len(candidate_symbols)
-        scannable_count = 0
-        insufficient_count = 0
-        missing_count = 0
-        delisted_count = 0
+        return evaluate_gate_12_readiness_readonly(self.target_db_path, candidate_symbols, min_required_bars)
 
-        scannable_list = []
-        unavailable_list = []
+def evaluate_gate_12_readiness_readonly(
+    target_db_path: Path,
+        candidate_symbols: List[str],
+        min_required_bars: int = 200,
+) -> Dict[str, Any]:
+    """Calculates Gate 12 market-data readiness across candidate population."""
+    total_eligible = len(candidate_symbols)
+    scannable_count = 0
+    insufficient_count = 0
+    missing_count = 0
+    delisted_count = 0
 
-        conn = sqlite3.connect(f"file:{self.target_db_path}?mode=ro", uri=True)
-        cursor = conn.cursor()
+    scannable_list = []
+    unavailable_list = []
 
-        for sym in candidate_symbols:
-            upper = sym.upper().strip()
-            # Delisted check
-            lifecycle = get_security_lifecycle_registry().evaluate_lifecycle(upper)
-            if lifecycle.is_delisted or lifecycle.is_suspended or not lifecycle.is_screening_eligible:
-                delisted_count += 1
-                unavailable_list.append({"symbol": upper, "reason": f"DELISTED_{lifecycle.lifecycle_status.value}"})
-                continue
+    conn = sqlite3.connect(f"file:{Path(target_db_path).resolve()}?mode=ro", uri=True)
+    cursor = conn.cursor()
 
-            cursor.execute(
-                "SELECT count(*) FROM asset_ohlcv_daily WHERE symbol = ? AND close > 0",
-                (upper,)
-            )
-            row = cursor.fetchone()
-            bar_count = row[0] if row else 0
+    for sym in candidate_symbols:
+        upper = sym.upper().strip()
+        # Delisted check
+        lifecycle = get_security_lifecycle_registry().evaluate_lifecycle(upper)
+        if lifecycle.is_delisted or lifecycle.is_suspended or not lifecycle.is_screening_eligible:
+            delisted_count += 1
+            unavailable_list.append({"symbol": upper, "reason": f"DELISTED_{lifecycle.lifecycle_status.value}"})
+            continue
 
-            if bar_count >= min_required_bars:
-                scannable_count += 1
-                scannable_list.append(upper)
-            elif bar_count > 0:
-                insufficient_count += 1
-                unavailable_list.append({"symbol": upper, "reason": f"INSUFFICIENT_BARS_{bar_count}_LT_{min_required_bars}"})
-            else:
-                missing_count += 1
-                unavailable_list.append({"symbol": upper, "reason": "NO_MARKET_DATA"})
+        cursor.execute(
+            "SELECT count(*) FROM asset_ohlcv_daily WHERE symbol = ? AND close > 0",
+            (upper,)
+        )
+        row = cursor.fetchone()
+        bar_count = row[0] if row else 0
 
-        conn.close()
+        if bar_count >= min_required_bars:
+            scannable_count += 1
+            scannable_list.append(upper)
+        elif bar_count > 0:
+            insufficient_count += 1
+            unavailable_list.append({"symbol": upper, "reason": f"INSUFFICIENT_BARS_{bar_count}_LT_{min_required_bars}"})
+        else:
+            missing_count += 1
+            unavailable_list.append({"symbol": upper, "reason": "NO_MARKET_DATA"})
 
-        coverage_pct = round((scannable_count / total_eligible) * 100.0, 2) if total_eligible > 0 else 0.0
-        gate_12_passed = coverage_pct >= 95.0
+    conn.close()
 
-        return {
-            "eligible_population_count": total_eligible,
-            "scannable_count": scannable_count,
-            "insufficient_bars_count": insufficient_count,
-            "missing_data_count": missing_count,
-            "delisted_excluded_count": delisted_count,
-            "readiness_coverage_pct": coverage_pct,
-            "gate_12_passed": gate_12_passed,
-            "gate_12_threshold_pct": 95.0,
-            "scannable_symbols_sample": scannable_list[:10],
-            "unavailable_symbols_sample": unavailable_list[:10],
-        }
+    coverage_pct = round((scannable_count / total_eligible) * 100.0, 2) if total_eligible > 0 else 0.0
+    gate_12_passed = coverage_pct >= 95.0
+
+    return {
+        "eligible_population_count": total_eligible,
+        "scannable_count": scannable_count,
+        "insufficient_bars_count": insufficient_count,
+        "missing_data_count": missing_count,
+        "delisted_excluded_count": delisted_count,
+        "readiness_coverage_pct": coverage_pct,
+        "gate_12_passed": gate_12_passed,
+        "gate_12_threshold_pct": 95.0,
+        "scannable_symbols_sample": scannable_list[:10],
+        "unavailable_symbols_sample": unavailable_list[:10],
+    }
+
 
 
 def build_candidate_universe_hashes(
@@ -445,6 +454,25 @@ def build_candidate_universe_hashes(
     return manifest_payload
 
 
+def read_universe_file(path: Path) -> List[str]:
+    """Read an explicit CSV (symbol column) or one-symbol-per-line full-universe file."""
+    if not path.is_file():
+        raise ValueError(f"Universe file does not exist: {path}")
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        if path.suffix.lower() == ".csv":
+            rows = csv.DictReader(handle)
+            if not rows.fieldnames or "symbol" not in rows.fieldnames:
+                raise ValueError("CSV universe file must have a 'symbol' column")
+            symbols = [str(row["symbol"] or "").strip().upper() for row in rows]
+        else:
+            symbols = [line.strip().upper() for line in handle if line.strip() and not line.lstrip().startswith("#")]
+    if not symbols or any(not symbol for symbol in symbols):
+        raise ValueError("Universe membership is empty or contains blank symbols")
+    if len(set(symbols)) != len(symbols):
+        raise ValueError("Universe membership contains duplicate symbols")
+    return symbols
+
+
 def main():
     parser = argparse.ArgumentParser(description="ARX Terminal Bulk Market Data Hydration Engine")
     parser.add_argument("--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite market store database")
@@ -454,9 +482,30 @@ def main():
     parser.add_argument("--start-date", default="2025-11-01", help="Start session date (YYYY-MM-DD)")
     parser.add_argument("--end-date", default="2026-11-02", help="End session date (YYYY-MM-DD)")
     parser.add_argument("--qualify-gate-12", action="store_true", help="Run Gate 12 readiness evaluation")
+    parser.add_argument("--universe-file", type=Path, help="Explicit authoritative TXT/CSV universe membership for Gate 12")
     parser.add_argument("--candidate-manifest", action="store_true", help="Generate candidate universe manifest")
 
     args = parser.parse_args()
+
+    if args.qualify_gate_12:
+        if args.symbols and args.universe_file:
+            parser.error("Specify either --symbols (subset) or --universe-file, not both")
+        if not args.symbols and not args.universe_file:
+            parser.error("Gate 12 requires --universe-file for full population, or --symbols for explicit subset")
+        try:
+            symbols = read_universe_file(args.universe_file) if args.universe_file else sorted(set(s.upper().strip() for s in args.symbols))
+            if not symbols or any(not symbol for symbol in symbols):
+                raise ValueError("Empty or invalid universe membership")
+            # No engine constructor: no checkpoint or market-store initialization side effects.
+            assessment = evaluate_gate_12_readiness_readonly(Path(args.db_path), symbols)
+        except (ValueError, OSError, sqlite3.Error) as exc:
+            parser.error(f"Read-only Gate 12 assessment failed: {exc}")
+        assessment["assessment_scope"] = "UNIVERSE_FILE" if args.universe_file else "EXPLICIT_SUBSET"
+        assessment["production_publication_authorized"] = False
+        if args.universe_file:
+            assessment["membership_source"] = str(args.universe_file.resolve())
+        print(json.dumps(assessment, indent=2))
+        return
 
     engine = BulkMarketDataHydrationEngine(target_db_path=Path(args.db_path))
 
