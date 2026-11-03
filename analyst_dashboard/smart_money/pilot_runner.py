@@ -22,6 +22,8 @@ import uuid
 import hashlib
 import logging
 import threading
+import subprocess
+import argparse
 from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime, timezone
 
@@ -144,6 +146,192 @@ class OutboundAccountingSession(requests.Session):
         duration = round(time.time() - t0, 3)
         self.runner.record_response_received(resp, duration)
         return resp
+
+
+class SecAdvisoryLockBoundary:
+    """
+    Dedicated RAII / resource-management boundary for PostgreSQL connection
+    and SEC owner advisory lock acquisition.
+    Guarantees clean release of advisory lock and connection closure on exit,
+    handling exceptions before, during, and after acquisition.
+    """
+
+    def __init__(self, dsn: Optional[str], lock_id: int = LOCK_SEC_EGRESS_OWNER):
+        self.dsn = dsn
+        self.lock_id = lock_id
+        self.pg_ctx = None
+        self.conn = None
+        self.lock_acquired: bool = False
+        self.lock_released: bool = False
+
+    def __enter__(self) -> "SecAdvisoryLockBoundary":
+        if not self.dsn:
+            return self
+
+        try:
+            self.pg_ctx = get_connection(self.dsn)
+            self.conn = self.pg_ctx.__enter__()
+        except Exception as exc:
+            logger.error(f"Failed to establish database connection for advisory lock: {exc}")
+            self.close()
+            raise PilotSecurityError(f"DATABASE_CONNECTION_FAILED: {exc}") from exc
+
+        try:
+            has_lock = acquire_sec_owner_lock(self.conn)
+            if not has_lock:
+                self.close()
+                raise PilotLockContentionError(
+                    f"EXCLUSIVE_OWNERSHIP_UNAVAILABLE: Could not acquire lock {self.lock_id}."
+                )
+            self.lock_acquired = True
+            logger.info(f"Advisory lock {self.lock_id} acquired successfully.")
+            return self
+        except Exception:
+            self.close()
+            raise
+
+    def close(self) -> None:
+        """Explicitly and safely releases advisory lock and closes database connection."""
+        if self.conn and self.lock_acquired and not self.lock_released:
+            try:
+                release_sec_owner_lock(self.conn)
+                self.lock_released = True
+                logger.info(f"Advisory lock {self.lock_id} released successfully.")
+            except Exception as e:
+                logger.warning(f"Error releasing advisory lock {self.lock_id}: {e}")
+            finally:
+                self.lock_acquired = False
+
+        if self.pg_ctx:
+            try:
+                self.pg_ctx.__exit__(None, None, None)
+            except Exception as e:
+                logger.warning(f"Error closing PostgreSQL connection context: {e}")
+            finally:
+                self.pg_ctx = None
+                self.conn = None
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
+
+
+class PilotProcessSupervisor:
+    """
+    Supervises pilot execution in a separate, isolated operating system process.
+    Enforces a genuine 180-second wall-clock termination boundary: if the child
+    process blocks in uninterruptible network/database I/O, the supervisor forcibly
+    terminates the child process and frees all OS sockets and locks.
+    """
+
+    def __init__(
+        self,
+        dsn: Optional[str] = None,
+        timeout_sec: float = PILOT_MAX_DURATION_SEC,
+        python_exe: Optional[str] = None,
+    ):
+        self.dsn = dsn
+        self.timeout_sec = timeout_sec
+        self.python_exe = python_exe or sys.executable
+        self.child_proc: Optional[subprocess.Popen] = None
+        self.termination_forced: bool = False
+
+    def run(self, env_overrides: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        """
+        Executes the ten-issuer pilot in a dedicated child process, monitoring
+        elapsed wall-clock time and enforcing hard termination at timeout_sec.
+        """
+        cmd = [self.python_exe, "-m", "analyst_dashboard.smart_money.pilot_runner", "--child-worker"]
+        if self.dsn:
+            cmd.extend(["--dsn", self.dsn])
+
+        env = os.environ.copy()
+        if env_overrides:
+            env.update(env_overrides)
+
+        logger.info(
+            f"PilotProcessSupervisor: Spawning child pilot process (timeout={self.timeout_sec}s): "
+            f"{' '.join(cmd)}"
+        )
+        t0 = time.time()
+        self.child_proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+        )
+
+        stdout, stderr = "", ""
+        try:
+            stdout, stderr = self.child_proc.communicate(timeout=self.timeout_sec)
+        except subprocess.TimeoutExpired:
+            self.termination_forced = True
+            logger.critical(
+                f"PilotProcessSupervisor: Child process PID {self.child_proc.pid} exceeded "
+                f"hard wall-clock deadline ({self.timeout_sec}s). Executing force termination..."
+            )
+            try:
+                self.child_proc.terminate()
+                stdout, stderr = self.child_proc.communicate(timeout=3.0)
+            except subprocess.TimeoutExpired:
+                logger.critical(
+                    f"PilotProcessSupervisor: Child PID {self.child_proc.pid} did not exit on SIGTERM. "
+                    "Killing process..."
+                )
+                self.child_proc.kill()
+                stdout, stderr = self.child_proc.communicate()
+
+            raise PilotTimeoutError(
+                f"SUPERVISOR_HARD_TIMEOUT: Supervised pilot process exceeded {self.timeout_sec}s "
+                f"wall-clock limit. Force-killed by process supervisor."
+            )
+
+        elapsed = round(time.time() - t0, 3)
+        logger.info(
+            f"PilotProcessSupervisor: Child process PID {self.child_proc.pid} exited with code "
+            f"{self.child_proc.returncode} in {elapsed}s."
+        )
+
+        telemetry = self._extract_telemetry(stdout, stderr)
+        if self.child_proc.returncode != 0 and telemetry.get("verdict") != "SUCCESS":
+            err_msg = telemetry.get("error") or stderr.strip() or f"Child process exited with code {self.child_proc.returncode}"
+            logger.error(f"PilotProcessSupervisor: Child process reported failure: {err_msg}")
+            if "PilotSecurityError" in err_msg or "UNAUTHORIZED" in err_msg:
+                raise PilotSecurityError(err_msg)
+            elif "PilotLockContentionError" in err_msg or "EXCLUSIVE_OWNERSHIP_UNAVAILABLE" in err_msg:
+                raise PilotLockContentionError(err_msg)
+            elif "PilotContainmentError" in err_msg or "CONTAINMENT" in err_msg:
+                raise PilotContainmentError(err_msg)
+            elif "PilotTimeoutError" in err_msg or "SUPERVISOR_HARD_TIMEOUT" in err_msg:
+                raise PilotTimeoutError(err_msg)
+
+        return telemetry
+
+    def _extract_telemetry(self, stdout: str, stderr: str) -> Dict[str, Any]:
+        """Extracts JSON telemetry from child worker stdout."""
+        marker_start = "--- PILOT_TELEMETRY_JSON_START ---"
+        marker_end = "--- PILOT_TELEMETRY_JSON_END ---"
+        if marker_start in stdout and marker_end in stdout:
+            try:
+                json_part = stdout.split(marker_start)[1].split(marker_end)[0].strip()
+                return json.loads(json_part)
+            except Exception as e:
+                logger.warning(f"Failed to parse child JSON telemetry marker: {e}")
+
+        for line in reversed(stdout.splitlines()):
+            line = line.strip()
+            if line.startswith("{") and line.endswith("}"):
+                try:
+                    return json.loads(line)
+                except Exception:
+                    continue
+
+        return {
+            "verdict": "FAILED",
+            "error": stderr.strip() or stdout.strip() or "No telemetry captured from child process",
+            "stdout": stdout,
+            "stderr": stderr,
+        }
 
 
 class TenIssuerPilotRunner:
@@ -584,33 +772,68 @@ class TenIssuerPilotRunner:
         self.watchdog = PilotSupervisoryWatchdog(self, self.max_duration_sec)
         self.watchdog.start()
 
-        # Step 2: Acquire Advisory Lock
-        logger.info(f"Acquiring PostgreSQL advisory lock {LOCK_SEC_EGRESS_OWNER}...")
-        pg_ctx = get_connection(self.dsn) if self.dsn else None
-        conn = None
-        if pg_ctx:
-            conn = pg_ctx.__enter__()
-            has_lock = acquire_sec_owner_lock(conn)
-            if not has_lock:
-                pg_ctx.__exit__(None, None, None)
-                raise PilotLockContentionError(
-                    f"EXCLUSIVE_OWNERSHIP_UNAVAILABLE: Could not acquire lock {LOCK_SEC_EGRESS_OWNER}."
-                )
-            telemetry["lock_acquired"] = True
-            logger.info("Exclusive advisory lock claimed successfully.")
-
+        # Step 2: Acquire Advisory Lock via Resource Management Boundary
+        logger.info(f"Acquiring PostgreSQL advisory lock {LOCK_SEC_EGRESS_OWNER} via SecAdvisoryLockBoundary...")
         prev_role = get_sec_egress_role()
+        lock_boundary = SecAdvisoryLockBoundary(self.dsn)
+        conn = None
+
         try:
+            lock_boundary.__enter__()
+            conn = lock_boundary.conn
+            if lock_boundary.lock_acquired:
+                telemetry["lock_acquired"] = True
+                logger.info("Exclusive advisory lock claimed successfully.")
+
             # Step 3: Require explicit, scoped, one-shot owner authorization
-            is_pilot_authorized = os.environ.get("ARX_TEN_ISSUER_PILOT_AUTHORIZED", "").strip().lower() in ("true", "1", "yes")
-            if not is_pilot_authorized:
+            auth_val = os.environ.get("ARX_TEN_ISSUER_PILOT_AUTHORIZED", "").strip().lower()
+            if auth_val in ("consumed", "used"):
+                raise PilotSecurityError(
+                    "UNAUTHORIZED_PILOT_EXECUTION: Pilot authorization has already been consumed. "
+                    "One-shot authorization cannot be reused or become a recurring execution."
+                )
+            if auth_val not in ("true", "1", "yes"):
                 raise PilotSecurityError(
                     "UNAUTHORIZED_PILOT_EXECUTION: Ten-issuer pilot execution requires explicit, "
                     "scoped one-shot owner authorization (ARX_TEN_ISSUER_PILOT_AUTHORIZED=true). "
                     "Ordinary standby-worker startup cannot trigger SEC role elevation."
                 )
 
-            logger.info("One-shot owner authorization confirmed (ARX_TEN_ISSUER_PILOT_AUTHORIZED=true).")
+            # Check authorization expiry if provided
+            expires_at_str = os.environ.get("ARX_TEN_ISSUER_PILOT_EXPIRES_AT", "").strip()
+            if expires_at_str:
+                try:
+                    exp_dt = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+                    if datetime.now(timezone.utc) > exp_dt:
+                        raise PilotSecurityError(
+                            f"AUTHORIZATION_EXPIRED: Pilot authorization expired at {expires_at_str}."
+                        )
+                except ValueError as e:
+                    raise PilotSecurityError(f"INVALID_AUTHORIZATION_EXPIRY: {e}")
+
+            # Check production release anchor binding if provided
+            expected_release = os.environ.get("ARX_TEN_ISSUER_PILOT_RELEASE_SHA", "").strip()
+            if expected_release:
+                current_head = os.environ.get("RAILWAY_GIT_COMMIT_SHA", "").strip()
+                if current_head and expected_release != current_head:
+                    raise PilotSecurityError(
+                        f"RELEASE_ANCHOR_MISMATCH: Authorization bound to release {expected_release}, "
+                        f"but current runtime is {current_head}."
+                    )
+
+            # Consume authorization immediately so it cannot be reused
+            os.environ["ARX_TEN_ISSUER_PILOT_AUTHORIZED"] = "consumed"
+            telemetry["authorization_record"] = {
+                "scope": "10_GOVERNED_ISSUERS_SEQUENTIAL_PILOT",
+                "issuers": [iss["ticker"] for iss in self.issuers],
+                "production_release": expected_release or "87c5e939fb1434e7ee472a397a9ecb2252123dab",
+                "consumed_at": datetime.now(timezone.utc).isoformat(),
+                "expires_at": expires_at_str or None,
+                "is_recurring": False,
+                "single_use_consumed": True,
+            }
+
+            logger.info("One-shot owner authorization confirmed & consumed (single-use).")
             logger.info("Applying temporary ARX_SEC_EGRESS_ROLE=OWNER in-process...")
             os.environ["ARX_SEC_EGRESS_ROLE"] = "OWNER"
             if not is_sec_egress_authorized():
@@ -678,18 +901,13 @@ class TenIssuerPilotRunner:
             os.environ["ARX_SEC_EGRESS_ROLE"] = prev_role if prev_role in ("STANDBY", "DISABLED") else "STANDBY"
             telemetry["role_restored"] = True
 
-            # 4. Release advisory lock
-            if conn:
-                try:
-                    release_sec_owner_lock(conn)
-                    telemetry["lock_released"] = True
-                    logger.info("Advisory lock released successfully.")
-                except Exception as e:
-                    logger.warning(f"Error releasing advisory lock: {e}")
-                try:
-                    pg_ctx.__exit__(None, None, None)
-                except Exception:
-                    pass
+            # 4. Release advisory lock and close DB connection via boundary
+            try:
+                lock_boundary.close()
+                telemetry["lock_released"] = lock_boundary.lock_released or (not lock_boundary.lock_acquired)
+                logger.info("Advisory lock boundary closed.")
+            except Exception as e:
+                logger.warning(f"Error in lock boundary cleanup: {e}")
 
             telemetry["requests_made"] = self.total_requests_made
             telemetry["sec_requests"] = self.requests_log
@@ -704,26 +922,54 @@ class TenIssuerPilotRunner:
 
         return telemetry
 
-        return telemetry
 
-
-def run_ten_issuer_pilot(dsn: Optional[str] = None) -> Dict[str, Any]:
-    """Top-level entrypoint for executing bounded 10-issuer pilot."""
-    runner = TenIssuerPilotRunner(dsn=dsn)
-    return runner.execute()
+def run_ten_issuer_pilot(dsn: Optional[str] = None, supervised: bool = True) -> Dict[str, Any]:
+    """
+    Top-level entrypoint for executing bounded 10-issuer pilot.
+    By default, executes within a dedicated, supervised process enforcing
+    a hard 180-second wall-clock termination boundary.
+    """
+    if supervised:
+        supervisor = PilotProcessSupervisor(dsn=dsn, timeout_sec=PILOT_MAX_DURATION_SEC)
+        return supervisor.run()
+    else:
+        runner = TenIssuerPilotRunner(dsn=dsn)
+        return runner.execute()
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="ARX Ten-Issuer SEC Pilot Runner")
+    parser.add_argument("--child-worker", action="store_true", help="Run in-process pilot worker (invoked by supervisor)")
+    parser.add_argument("--unsupervised", action="store_true", help="Run without process supervisor wrapper")
+    parser.add_argument("--dsn", type=str, default=None, help="PostgreSQL DSN override")
+    args, _ = parser.parse_known_args()
+
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    print("=== EXECUTING ARX TEN-ISSUER SEC PILOT ===")
-    try:
-        receipt = run_ten_issuer_pilot()
-        print("\nPilot Execution Receipt:")
-        print(json.dumps(receipt, indent=2, default=str))
-        if receipt.get("verdict") == "SUCCESS":
-            sys.exit(0)
-        else:
+
+    if args.child_worker:
+        # In child worker process: execute runner in-process
+        runner = TenIssuerPilotRunner(dsn=args.dsn)
+        try:
+            receipt = runner.execute()
+            print("\n--- PILOT_TELEMETRY_JSON_START ---")
+            print(json.dumps(receipt, default=str))
+            print("--- PILOT_TELEMETRY_JSON_END ---")
+            sys.exit(0 if receipt.get("verdict") == "SUCCESS" else 1)
+        except Exception as exc:
+            logger.exception(f"Child pilot worker encountered exception: {exc}")
+            err_dict = {"verdict": "FAILED", "error": f"{type(exc).__name__}: {exc}"}
+            print("\n--- PILOT_TELEMETRY_JSON_START ---")
+            print(json.dumps(err_dict, default=str))
+            print("--- PILOT_TELEMETRY_JSON_END ---")
             sys.exit(1)
-    except Exception as exc:
-        print(f"\nFATAL: Ten-issuer pilot failed with exception: {exc}")
-        sys.exit(1)
+    else:
+        # Parent / operator CLI invocation: execute via supervisor
+        print("=== EXECUTING ARX TEN-ISSUER SEC PILOT (SUPERVISED PROCESS) ===")
+        try:
+            receipt = run_ten_issuer_pilot(dsn=args.dsn, supervised=not args.unsupervised)
+            print("\nPilot Execution Receipt:")
+            print(json.dumps(receipt, indent=2, default=str))
+            sys.exit(0 if receipt.get("verdict") == "SUCCESS" else 1)
+        except Exception as exc:
+            print(f"\nFATAL: Ten-issuer pilot failed with exception: {exc}")
+            sys.exit(1)

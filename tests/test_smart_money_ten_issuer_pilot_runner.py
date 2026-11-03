@@ -32,6 +32,8 @@ from analyst_dashboard.smart_money.pilot_runner import (
     PilotLockContentionError,
     PilotContainmentError,
     PilotSupervisoryWatchdog,
+    SecAdvisoryLockBoundary,
+    PilotProcessSupervisor,
     PILOT_MAX_TOTAL_REQUESTS,
     PILOT_MAX_PER_ISSUER_REQUESTS,
     PILOT_MAX_DURATION_SEC,
@@ -425,4 +427,122 @@ def test_19_supervisory_watchdog_terminates_and_releases_lock():
         assert os.environ.get("ARX_SEC_EGRESS_ROLE") in ("STANDBY", "DISABLED")
         assert os.environ.get("ARX_SEC_EGRESS_ROLE") != "OWNER"
         assert os.environ.get("ARX_TEN_ISSUER_PILOT_AUTHORIZED") == "false"
+
+
+def test_20_process_supervisor_kills_hung_process_on_timeout():
+    """Verifies that PilotProcessSupervisor forcibly terminates child process if wall-clock timeout is exceeded."""
+    import sys
+    supervisor = PilotProcessSupervisor(timeout_sec=0.3)
+
+    with patch.object(supervisor, "python_exe", sys.executable), \
+         patch("analyst_dashboard.smart_money.pilot_runner.subprocess.Popen") as mock_popen:
+        mock_proc = MagicMock()
+        mock_proc.pid = 99999
+        import subprocess
+        mock_proc.communicate.side_effect = [
+            subprocess.TimeoutExpired(cmd="test", timeout=0.3),
+            ("forced_exit", ""),
+        ]
+        mock_popen.return_value = mock_proc
+
+        with pytest.raises(PilotTimeoutError) as exc_info:
+            supervisor.run()
+
+        assert "SUPERVISOR_HARD_TIMEOUT" in str(exc_info.value)
+        assert supervisor.termination_forced is True
+        mock_proc.terminate.assert_called_once()
+
+
+def test_21_blocked_database_operation_aborts_and_releases_lock():
+    """Verifies that database failure during pilot pass closes lock boundary and releases lock cleanly."""
+    runner = TenIssuerPilotRunner(dsn="postgresql://fake:fake@localhost:5432/fake")
+
+    mock_conn = MagicMock()
+    mock_ctx = MagicMock()
+    mock_ctx.__enter__.return_value = mock_conn
+
+    with patch("analyst_dashboard.smart_money.pilot_runner.get_connection", return_value=mock_ctx), \
+         patch("analyst_dashboard.smart_money.pilot_runner.acquire_sec_owner_lock", return_value=True), \
+         patch("analyst_dashboard.smart_money.pilot_runner.release_sec_owner_lock") as mock_release, \
+         patch.object(runner, "validate_preflight", return_value=True), \
+         patch.object(runner, "_ingest_issuer", side_effect=RuntimeError("DatabaseConnectionLost")), \
+         patch.dict(os.environ, {"ARX_TEN_ISSUER_PILOT_AUTHORIZED": "true", "ARX_SEC_EGRESS_ROLE": "STANDBY"}):
+
+        try:
+            runner.execute()
+        except RuntimeError:
+            pass
+
+        mock_release.assert_called_once_with(mock_conn)
+        mock_ctx.__exit__.assert_called_once()
+        assert os.environ.get("ARX_SEC_EGRESS_ROLE") in ("STANDBY", "DISABLED")
+
+
+def test_22_lock_boundary_handles_connection_failure_pre_acquisition():
+    """Verifies that connection failure before lock acquisition fails closed without lock release calls."""
+    boundary = SecAdvisoryLockBoundary(dsn="postgresql://invalid:5432/db")
+
+    with patch("analyst_dashboard.smart_money.pilot_runner.get_connection", side_effect=RuntimeError("DB_UNREACHABLE")), \
+         patch("analyst_dashboard.smart_money.pilot_runner.release_sec_owner_lock") as mock_release:
+
+        with pytest.raises(PilotSecurityError) as exc_info:
+            boundary.__enter__()
+
+        assert "DATABASE_CONNECTION_FAILED" in str(exc_info.value)
+        assert boundary.lock_acquired is False
+        mock_release.assert_not_called()
+
+
+def test_23_lock_boundary_handles_error_during_lock_acquisition():
+    """Verifies that query error during acquire_sec_owner_lock closes connection and re-raises."""
+    mock_conn = MagicMock()
+    mock_ctx = MagicMock()
+    mock_ctx.__enter__.return_value = mock_conn
+
+    boundary = SecAdvisoryLockBoundary(dsn="postgresql://valid:5432/db")
+
+    with patch("analyst_dashboard.smart_money.pilot_runner.get_connection", return_value=mock_ctx), \
+         patch("analyst_dashboard.smart_money.pilot_runner.acquire_sec_owner_lock", side_effect=RuntimeError("DEADLOCK_DETECTED")):
+
+        with pytest.raises(RuntimeError) as exc_info:
+            boundary.__enter__()
+
+        assert "DEADLOCK_DETECTED" in str(exc_info.value)
+        assert boundary.lock_acquired is False
+        mock_ctx.__exit__.assert_called_once()
+
+
+def test_24_one_shot_authorization_expired_fails_closed():
+    """Verifies that expired authorization timestamp immediately fails closed without role elevation."""
+    runner = TenIssuerPilotRunner(dsn=None)
+
+    with patch.dict(os.environ, {
+        "ARX_TEN_ISSUER_PILOT_AUTHORIZED": "true",
+        "ARX_TEN_ISSUER_PILOT_EXPIRES_AT": "2026-11-01T00:00:00Z",
+        "ARX_SEC_EGRESS_ROLE": "DISABLED"
+    }), patch.object(runner, "validate_preflight", return_value=True):
+
+        with pytest.raises(PilotSecurityError) as exc_info:
+            runner.execute()
+
+        assert "AUTHORIZATION_EXPIRED" in str(exc_info.value)
+        assert os.environ.get("ARX_SEC_EGRESS_ROLE") in ("STANDBY", "DISABLED")
+        assert os.environ.get("ARX_SEC_EGRESS_ROLE") != "OWNER"
+
+
+def test_25_one_shot_authorization_consumed_cannot_be_reused():
+    """Verifies that once authorization is consumed, it cannot be reused in subsequent runs."""
+    runner = TenIssuerPilotRunner(dsn=None)
+
+    with patch.dict(os.environ, {
+        "ARX_TEN_ISSUER_PILOT_AUTHORIZED": "consumed",
+        "ARX_SEC_EGRESS_ROLE": "DISABLED"
+    }), patch.object(runner, "validate_preflight", return_value=True):
+
+        with pytest.raises(PilotSecurityError) as exc_info:
+            runner.execute()
+
+        assert "already been consumed" in str(exc_info.value)
+        assert os.environ.get("ARX_SEC_EGRESS_ROLE") in ("STANDBY", "DISABLED")
+        assert os.environ.get("ARX_SEC_EGRESS_ROLE") != "OWNER"
 
