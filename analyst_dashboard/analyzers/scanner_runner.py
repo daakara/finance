@@ -398,26 +398,93 @@ class VCPScannerRunner:
                     actual_sma_50 = round(float(close_s.rolling(50).mean().iloc[-1]), 4) if len(close_s) >= 50 else None
                     actual_ema_20 = round(float(close_s.ewm(span=20, adjust=False).mean().iloc[-1]), 4) if len(close_s) >= 20 else None
 
-                    # Truthfulness Invariant: OptimalExecutionEngine evaluates tactical execution corridors (entry/stop/target/ATR).
-                    # Its legacy strategy 2.0.0 heuristic strings ("Minervini VCP", "Stage 2") on 60-bar windows
-                    # do not constitute authoritative VCP domain classification or 200-session trend template qualification.
-                    # A 60-bar query window is epistemically incapable of evaluating a 200-session trend template.
-                    # Operational runner rejects the legacy false-certification fallback and enforces uncomputed status:
-                    vcp_authoritative_computed = bool(exec_res.get("vcp_authoritative_evaluated", False))
+                    # Authoritative VCP Domain Classification via VCPClassifier + 200-session Trend Template.
+                    # Requires a separate 200-bar fetch — the 60-bar tactical execution window is epistemically
+                    # incapable of evaluating the Minervini Trend Template (200-session SMA, stage qualification).
+                    vcp_authoritative_computed = False
+                    vcp_domain_assessment = None
+                    try:
+                        from analyst_dashboard.vcp.classifier import VCPClassifier
+                        from analyst_dashboard.vcp.case_compiler import VCPTemporalCaseCompiler
+                        from analyst_dashboard.vcp.temporal_contract import DailyOHLCVBar
 
-                    if vcp_authoritative_computed:
-                        vcp_status = exec_res.get("vcp_contraction_status")
-                        stage_status = exec_res.get("stage_phase")
-                        setup_pattern = exec_res.get("setup_pattern")
+                        # Fetch full 200-session window for VCP trend template evaluation
+                        today_str = eff_obs_date
+                        vcp_candles_200 = None
+                        if hasattr(self.market_db, "get_daily_candles_with_evidence"):
+                            ret200 = self.market_db.get_daily_candles_with_evidence(clean_sym, limit=200)
+                            if isinstance(ret200, tuple) and len(ret200) == 2 and isinstance(ret200[0], list):
+                                vcp_candles_200 = ret200[0]
+                        if vcp_candles_200 is None and hasattr(self.market_db, "get_daily_candles"):
+                            vcp_candles_200 = self.market_db.get_daily_candles(clean_sym, limit=200)
+
+                        if vcp_candles_200 and len(vcp_candles_200) >= 50:
+                            raw_bars = [
+                                DailyOHLCVBar(
+                                    symbol=clean_sym,
+                                    bar_date=c["time"][:10],
+                                    open=float(c["open"]),
+                                    high=float(c["high"]),
+                                    low=float(c["low"]),
+                                    close=float(c["close"]),
+                                    volume=int(c["volume"]),
+                                    valid_time=f"{c['time'][:10]}T21:00:00Z",
+                                    known_at=f"{c['time'][:10]}T21:30:00Z",
+                                    is_session_closed=True,
+                                )
+                                for c in vcp_candles_200
+                            ]
+                            compiler = VCPTemporalCaseCompiler()
+                            package = compiler.compile_case(
+                                case_id=f"CASE-{clean_sym}-{today_str}",
+                                security_id=clean_sym,
+                                symbol=clean_sym,
+                                evaluation_as_of=today_str,
+                                raw_bars=raw_bars,
+                                reference_data={},
+                                corporate_actions=[],
+                                run_id=logical_scan_run_id or run_id,
+                            )
+                            vcp_domain_assessment = VCPClassifier().classify_case(package)
+                            vcp_authoritative_computed = bool(
+                                vcp_domain_assessment is not None
+                                and vcp_domain_assessment.vcp_classification not in ("VCP_INSUFFICIENT_DATA", "VCP_UNRESOLVED")
+                            )
+                    except Exception as _vcp_exc:
+                        # VCP classifier failure is non-fatal: fall through to uncomputed status
+                        logger.warning(
+                            f"VCPClassifier evaluation failed for {clean_sym}: {_vcp_exc}. "
+                            f"Reporting as UNCOMPUTED."
+                        )
+                        vcp_authoritative_computed = False
+                        vcp_domain_assessment = None
+
+                    if vcp_authoritative_computed and vcp_domain_assessment is not None:
+                        vcp_status = (
+                            "VCP 3-Stage Compression Confirmed"
+                            if vcp_domain_assessment.vcp_classification == "VCP_QUALIFIED"
+                            else vcp_domain_assessment.vcp_classification
+                        )
+                        stage_status = (
+                            "Stage 2 Advancing Growth Phase"
+                            if getattr(vcp_domain_assessment, "stage_classification", None) == "STAGE_2"
+                            else getattr(vcp_domain_assessment, "stage_classification", "Stage Unverified")
+                        )
+                        setup_pattern = getattr(vcp_domain_assessment, "authorized_label", None) or (
+                            "VCP Setup" if vcp_domain_assessment.vcp_qualified else "Consolidation Setup (Non-VCP)"
+                        )
                         computed_evaluations_count += 1
                     else:
+                        # Truthfulness Invariant: OptimalExecutionEngine evaluates tactical execution corridors
+                        # (entry/stop/target/ATR) only. A 60-bar window cannot evaluate the 200-session trend
+                        # template. Uncomputed status is preserved until domain classifier succeeds.
                         vcp_status = "Consolidation Unverified"
                         stage_status = "Stage Unverified (Trend Template Uncomputed)"
                         setup_pattern = "Consolidation Setup (Pattern Unverified)"
                         uncomputed_evaluations_count += 1
 
                     # Qualification ruleset: Must be authoritatively confirmed VCP in Stage 2 Advancing Growth Phase
-                    is_vcp = vcp_authoritative_computed and (vcp_status == "VCP 3-Stage Compression Confirmed")
+                    is_vcp = vcp_authoritative_computed and (vcp_domain_assessment.vcp_qualified is True)
                     is_stage_2 = vcp_authoritative_computed and (stage_status == "Stage 2 Advancing Growth Phase")
 
                     if is_vcp and is_stage_2:

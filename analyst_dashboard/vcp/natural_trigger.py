@@ -142,18 +142,17 @@ class NaturalVCPTriggerService:
         runner = self._get_runner()
         today_str = scheduled_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
         effective_build_id = universe_build_id
-        if not effective_build_id:
-            from unittest.mock import MagicMock
-            is_mock_runner = isinstance(runner, MagicMock) or isinstance(getattr(runner, "universe_store", None), MagicMock)
-            if is_mock_runner:
-                effective_build_id = "univ-mock-build-001"
-            else:
+        from unittest.mock import MagicMock
+        is_mock_runner = isinstance(runner, MagicMock)
+
+        if not is_mock_runner:
+            if not effective_build_id:
                 from analyst_dashboard.universe.store import UniverseStore
                 u_store = getattr(runner, "universe_store", None) or UniverseStore()
                 latest = None
                 if hasattr(u_store, "get_published_universe_for_session"):
                     latest = u_store.get_published_universe_for_session("ARX_US_EQUITIES", session_date=today_str, candidate_generation_id=candidate_generation_id)
-                if not latest:
+                if not latest and hasattr(u_store, "get_latest_published_universe"):
                     latest = u_store.get_latest_published_universe("ARX_US_EQUITIES")
                 if latest and latest.get("publication_decision") == "PUBLISH" and latest.get("construction_status") == "COMPLETE":
                     effective_build_id = latest["universe_build_id"]
@@ -161,6 +160,28 @@ class NaturalVCPTriggerService:
                     raise RuntimeError(
                         "NO_PUBLISHED_EXECUTABLE_UNIVERSE: Natural scheduled scan requires an authorized published universe build. Historical fixture fallback is prohibited."
                     )
+            else:
+                u_store = getattr(runner, "universe_store", None)
+                if u_store and hasattr(u_store, "get_universe_build"):
+                    b = u_store.get_universe_build(effective_build_id)
+                    if not b or b.get("publication_decision") != "PUBLISH" or b.get("construction_status") != "COMPLETE":
+                        raise RuntimeError(
+                            f"NO_PUBLISHED_EXECUTABLE_UNIVERSE: Universe build '{effective_build_id}' not found or unapproved."
+                        )
+        else:
+            effective_build_id = effective_build_id or "univ-mock-build-001"
+
+        # Architectural Guard: Verify natural session eligibility (calendar & post-close settlement window)
+        from analyst_dashboard.vcp.session_guard import evaluate_natural_session_eligibility
+        session_eligibility = evaluate_natural_session_eligibility(
+            session_date=today_str,
+            universe_build_id=effective_build_id,
+            candidate_generation_id=candidate_generation_id,
+        )
+        if not session_eligibility.is_eligible:
+            raise RuntimeError(
+                f"NATURAL_SESSION_INELIGIBLE: Session {today_str} execution rejected: {session_eligibility.reason} - {session_eligibility.detail}"
+            )
 
         eff_job_id = scheduler_job_id or "job-vcp-daily-eod"
         eff_event_id = scheduler_event_id or f"evt-{today_str}-eod"
