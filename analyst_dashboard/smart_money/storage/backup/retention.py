@@ -12,6 +12,9 @@ import os
 import re
 import json
 import logging
+import hashlib
+import tempfile
+from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 
@@ -52,48 +55,74 @@ class BackupRetentionManager:
         if not all_items:
             return []
 
-        # Find all manifest files to identify valid backup sets
-        manifest_files = [
+        # Fail closed: an unverified/corrupt *newest* manifest must never
+        # displace the last recoverable backup as the protected recovery point.
+        manifests = [
             item for item in all_items
-            if item["remote_filename"].startswith("manifest_") and item["remote_filename"].endswith(".json")
+            if re.fullmatch(r"manifest_sm-backup-[^.]+\\.json", item["remote_filename"])
         ]
-
-        # If manifests exist, sort them chronologically (newest first)
-        manifest_files.sort(key=lambda x: x.get("modified_at", ""), reverse=True)
-
-        if len(manifest_files) <= 1:
-            logger.info("Retaining single available backup set. Pruning skipped.")
+        manifests.sort(key=lambda x: x.get("modified_at", ""), reverse=True)
+        if len(manifests) <= 1:
             return []
 
-        pruned_backup_ids = []
+        verified = []
+        try:
+            with tempfile.TemporaryDirectory(prefix="sm_retention_verify_") as directory:
+                for item in manifests:
+                    name = item["remote_filename"]
+                    backup_id = name[len("manifest_"):-len(".json")]
+                    manifest_path = os.path.join(directory, name)
+                    self.storage_adapter.download_file(name, manifest_path)
+                    with open(manifest_path, "r", encoding="utf-8") as handle:
+                        manifest = json.load(handle)
+                    if manifest.get("backup_id") != backup_id or manifest.get("upload_verified") is not True:
+                        raise ValueError("UNVERIFIED_BACKUP_MANIFEST")
+                    dump_name = manifest.get("database_artifact") or manifest.get("dump_filename")
+                    expected_hash = manifest.get("artifact_sha256") or manifest.get("database_sha256")
+                    if dump_name != f"smart_money_{backup_id}.dump" or not isinstance(expected_hash, str) or not re.fullmatch(r"[a-fA-F0-9]{64}", expected_hash):
+                        raise ValueError("INVALID_BACKUP_DUMP_REFERENCE")
+                    dump_path = os.path.join(directory, dump_name)
+                    self.storage_adapter.download_file(dump_name, dump_path)
+                    digest = hashlib.sha256()
+                    with open(dump_path, "rb") as stream:
+                        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                            digest.update(chunk)
+                    if digest.hexdigest().lower() != expected_hash.lower():
+                        raise ValueError("BACKUP_DUMP_CHECKSUM_MISMATCH")
+                    if manifest.get("include_globals"):
+                        globals_name = manifest.get("globals_artifact")
+                        globals_hash = manifest.get("globals_artifact_sha256") or manifest.get("globals_sha256")
+                        if globals_name != f"globals_{backup_id}.sql" or not isinstance(globals_hash, str):
+                            raise ValueError("INVALID_BACKUP_GLOBALS_REFERENCE")
+                        globals_path = os.path.join(directory, globals_name)
+                        self.storage_adapter.download_file(globals_name, globals_path)
+                        if hashlib.sha256(Path(globals_path).read_bytes()).hexdigest().lower() != globals_hash.lower():
+                            raise ValueError("BACKUP_GLOBALS_CHECKSUM_MISMATCH")
+                    verified.append((item, backup_id, bool(manifest.get("include_globals"))))
+        except Exception as exc:
+            logger.error("Pruning disabled: a recovery point cannot be verified (%s)", type(exc).__name__)
+            return []
+
+        # Only after *all* recovery points have passed independent content
+        # verification may count/age retention apply. Protect the newest
+        # verified recovery point, regardless of age.
         now = datetime.utcnow()
         cutoff_date = now - timedelta(days=max_days)
-
-        # Index 0 is strictly protected as the latest recovery point
-        candidates = manifest_files[1:]
-
-        for idx, manifest_item in enumerate(candidates, start=1):
-            fname = manifest_item["remote_filename"]
-            # Extract backup_id from manifest_<backup_id>.json
-            match = re.match(r"^manifest_(sm-backup-[^.]+)\.json$", fname)
-            if not match:
-                continue
-            backup_id = match.group(1)
-
-            # Check count threshold or age threshold
-            exceeds_count = (idx >= max_count)
+        pruned_backup_ids = []
+        for idx, (item, backup_id, has_globals) in enumerate(verified[1:], start=1):
+            exceeds_count = idx >= max_count
             try:
-                mod_date = datetime.fromisoformat(manifest_item["modified_at"].replace("Z", "+00:00"))
-                is_expired_age = mod_date.replace(tzinfo=None) < cutoff_date
+                mod_date = datetime.fromisoformat(item["modified_at"].replace("Z", "+00:00"))
+                expired = mod_date.replace(tzinfo=None) < cutoff_date
             except Exception:
-                is_expired_age = False
-
-            if exceeds_count or is_expired_age:
-                logger.info(f"Pruning expired backup {backup_id} (index={idx}, count_limit={max_count}).")
-                # Prune manifest, dump, and globals
-                self.storage_adapter.delete_backup(f"manifest_{backup_id}.json")
-                self.storage_adapter.delete_backup(f"smart_money_{backup_id}.dump")
+                # No deletion if retention-age metadata cannot be trusted.
+                logger.warning("Pruning disabled: unparseable backup timestamp")
+                return pruned_backup_ids
+            if not (exceeds_count or expired):
+                continue
+            self.storage_adapter.delete_backup(f"manifest_{backup_id}.json")
+            self.storage_adapter.delete_backup(f"smart_money_{backup_id}.dump")
+            if has_globals:
                 self.storage_adapter.delete_backup(f"globals_{backup_id}.sql")
-                pruned_backup_ids.append(backup_id)
-
+            pruned_backup_ids.append(backup_id)
         return pruned_backup_ids
