@@ -172,12 +172,15 @@ class BulkMarketDataHydrationEngine:
         checkpoint_dir: Optional[Path] = None,
         fetcher: Optional[AlpacaMarketFetcher] = None,
         rate_limit_per_min: int = 180,  # Bounded below provider 200 limit for headroom
+        read_only: bool = False,
     ):
         self.target_db_path = Path(target_db_path).resolve()
+        self.read_only = read_only
         chk_dir = checkpoint_dir or self.target_db_path.parent
-        self.checkpoint_store = BulkHydrationCheckpointStore(chk_dir / "market_hydration_checkpoint.db")
+        # Dry-run construction must not create a checkpoint or market database.
+        self.checkpoint_store = None if read_only else BulkHydrationCheckpointStore(chk_dir / "market_hydration_checkpoint.db")
         self.fetcher = fetcher or AlpacaMarketFetcher()
-        self.db_engine = MarketDatabaseEngine(db_path=str(self.target_db_path))
+        self.db_engine = None if read_only else MarketDatabaseEngine(db_path=str(self.target_db_path))
         self.rate_limit_per_min = rate_limit_per_min
         self.min_interval = 60.0 / rate_limit_per_min
         self.last_request_time = 0.0
@@ -224,6 +227,8 @@ class BulkMarketDataHydrationEngine:
         dry_run: bool = False,
     ) -> CheckpointRecord:
         """Hydrates a single symbol from Alpaca SIP, validates bars, and persists with evidence."""
+        if self.read_only and not dry_run:
+            raise RuntimeError("READ_ONLY_ENGINE_REQUIRES_DRY_RUN")
         upper_sym = symbol.upper().strip()
 
         # Check delisting exclusion
@@ -507,7 +512,7 @@ def main():
         print(json.dumps(assessment, indent=2))
         return
 
-    engine = BulkMarketDataHydrationEngine(target_db_path=Path(args.db_path))
+    engine = BulkMarketDataHydrationEngine(target_db_path=Path(args.db_path), read_only=args.dry_run)
 
     if args.status:
         summary = engine.checkpoint_store.get_summary()
