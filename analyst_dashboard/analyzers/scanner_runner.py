@@ -446,7 +446,10 @@ class VCPScannerRunner:
                                 run_id=logical_scan_run_id or run_id,
                             )
                             vcp_domain_assessment = VCPClassifier().classify_case(package)
-                            vcp_authoritative_computed = bool(vcp_domain_assessment is not None)
+                            vcp_authoritative_computed = bool(
+                                vcp_domain_assessment is not None
+                                and vcp_domain_assessment.vcp_classification not in ("VCP_INSUFFICIENT_DATA", "VCP_UNRESOLVED")
+                            )
                     except Exception as _vcp_exc:
                         # VCP classifier failure is non-fatal: fall through to uncomputed status
                         logger.warning(
