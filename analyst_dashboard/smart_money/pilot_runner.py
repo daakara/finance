@@ -973,5 +973,3 @@ if __name__ == "__main__":
         except Exception as exc:
             print(f"\nFATAL: Ten-issuer pilot failed with exception: {exc}")
             sys.exit(1)
-        print(f"\nFATAL: Ten-issuer pilot failed with exception: {exc}")
-        sys.exit(1)
