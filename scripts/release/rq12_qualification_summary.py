@@ -94,6 +94,7 @@ def main():
     if os.path.exists(RECEIPTS_DIR):
         valid_filenames = {f"{cid.lower().replace('-', '')}_receipt.json" for cid, _ in MANDATORY_CONTROLS}
         valid_filenames.add("rq12_receipt.json")
+        valid_filenames.add("sm_act_019_ten_issuer_pilot_receipt.json")
         for fname in sorted(os.listdir(RECEIPTS_DIR)):
             if fname.endswith("_receipt.json") and fname not in valid_filenames:
                 errors.append(f"Unexpected or rogue receipt file detected: {fname}")

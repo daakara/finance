@@ -1,0 +1,583 @@
+{
+  "directive": "SM-ACT-019",
+  "verdict": "SMART_MONEY_TEN_ISSUER_LIVE_PILOT_ACCEPTED",
+  "executed_at": "2026-11-03T04:21:15.449777+00:00",
+  "completed_at": "2026-11-03T04:21:44.697257+00:00",
+  "wall_clock_duration_sec": 22.223,
+  "preflight": {
+    "verified_at": "2026-11-03T04:21:08.927679+00:00",
+    "gates": {
+      "gate1_worker_deployment": {
+        "status": "PASS",
+        "deployment_id": "d3b944b2-4b55-4a43-9a47-9ca77f9868b9",
+        "commit_hash": "6bce74ca752e33370fb93f5a2780c0720014b4c2",
+        "deployment_status": "SUCCESS"
+      },
+      "gate2_backup_freshness": {
+        "status": "PASS",
+        "recovery_point_id": "sm-backup-20261102T182029Z-052cea3e",
+        "backup_completed_at": "2026-11-02T18:20:48.227370Z",
+        "backup_age_seconds": 36021.68,
+        "verification_status": "FRESH",
+        "reason_code": "VERIFIED_RECOVERY_POINT_WITHIN_THRESHOLD"
+      },
+      "gate3_db_connectivity_and_locks": {
+        "status": "PASS",
+        "user": "smart_money_ingestion",
+        "database": "finance_smart_money",
+        "advisory_lock_id": 401007311509093371,
+        "advisory_lock_available": true,
+        "total_active_advisory_locks": 0,
+        "pending_operator_run_requests": 0
+      },
+      "gate4_sec_user_agent_and_worker_standby": {
+        "status": "PASS",
+        "user_agent": "ARX-Terminal Regulatory Research (ops@arxterminal.com)",
+        "worker_standby_verified": true
+      },
+      "gate5_governance_holds": {
+        "status": "PASS",
+        "holds": {
+          "HOLD_SEC_001": "ACTIVE (Continuous SEC Ingestion Locked)",
+          "HOLD_SCAN_001": "ACTIVE (Radar Scanner Hold)",
+          "HOLD_EXEC_001": "ACTIVE (Execution Engine Hold)",
+          "sprint5_execution_authorized": "false (Sprint 5 Locked)"
+        },
+        "no_persistent_owner_env": true
+      },
+      "gate6_supervisor_entrypoint": {
+        "status": "PASS",
+        "timeout_sec": 180.0,
+        "child_worker_command": "C:\\Program Files\\Python311\\python.exe -m analyst_dashboard.smart_money.pilot_runner --child-worker"
+      }
+    },
+    "passed": true
+  },
+  "authorization": {
+    "granted_at": "2026-11-03T04:21:15.449777+00:00",
+    "expires_at": "2026-11-03T04:31:15.449777+00:00",
+    "bound_release_sha": "6bce74ca752e33370fb93f5a2780c0720014b4c2",
+    "scope": [
+      "NVDA",
+      "AAPL",
+      "MSFT",
+      "AMZN",
+      "GOOGL",
+      "META",
+      "TSLA",
+      "BRK-B",
+      "JPM",
+      "V"
+    ],
+    "single_use_consumed": true,
+    "revoked": true
+  },
+  "pilot_telemetry": {
+    "directive": "SM-ACT-018R",
+    "cycle_type": "SEQUENTIAL_10_ISSUER_PILOT",
+    "timestamp_start": "2026-11-03T04:21:18.788709+00:00",
+    "total_issuers_planned": 10,
+    "max_requests_cap": 40,
+    "max_duration_sec": 180.0,
+    "requests_made": 20,
+    "issuers_evaluated": 10,
+    "issuers_succeeded": 10,
+    "issuers_failed": 0,
+    "coverage_ratio": 1.0,
+    "is_complete_coverage": true,
+    "active_snapshot_preserved": true,
+    "issuer_receipts": [
+      {
+        "ticker": "NVDA",
+        "cik": "0001045810",
+        "company_name": "NVIDIA CORP",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 1.14,
+        "accession_number": "0001283854-26-000010",
+        "filing_date": "2026-09-18",
+        "transactions_persisted": 1,
+        "error": null
+      },
+      {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "company_name": "APPLE INC",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 1.283,
+        "accession_number": "0001140361-26-041201",
+        "filing_date": "2026-10-29",
+        "transactions_persisted": 1,
+        "error": null
+      },
+      {
+        "ticker": "MSFT",
+        "cik": "0000789019",
+        "company_name": "MICROSOFT CORP",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 1.544,
+        "accession_number": "0000789019-26-000226",
+        "filing_date": "2026-10-14",
+        "transactions_persisted": 3,
+        "error": null
+      },
+      {
+        "ticker": "AMZN",
+        "cik": "0001018724",
+        "company_name": "AMAZON COM INC",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 1.229,
+        "accession_number": "0001284323-26-000002",
+        "filing_date": "2026-09-09",
+        "transactions_persisted": 1,
+        "error": null
+      },
+      {
+        "ticker": "GOOGL",
+        "cik": "0001652044",
+        "company_name": "ALPHABET INC",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 1.277,
+        "accession_number": "0001193125-26-442116",
+        "filing_date": "2026-10-30",
+        "transactions_persisted": 1,
+        "error": null
+      },
+      {
+        "ticker": "META",
+        "cik": "0001326801",
+        "company_name": "META PLATFORMS INC",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 1.227,
+        "accession_number": "0000950103-26-016314",
+        "filing_date": "2026-10-28",
+        "transactions_persisted": 1,
+        "error": null
+      },
+      {
+        "ticker": "TSLA",
+        "cik": "0001318605",
+        "company_name": "TESLA INC",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 1.688,
+        "accession_number": "0001104659-26-075213",
+        "filing_date": "2026-06-17",
+        "transactions_persisted": 3,
+        "error": null
+      },
+      {
+        "ticker": "BRK-B",
+        "cik": "0001067983",
+        "company_name": "BERKSHIRE HATHAWAY INC",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 1.241,
+        "accession_number": "0001193125-26-438090",
+        "filing_date": "2026-10-29",
+        "transactions_persisted": 1,
+        "error": null
+      },
+      {
+        "ticker": "JPM",
+        "cik": "0000019617",
+        "company_name": "JPMORGAN CHASE & CO",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 1.541,
+        "accession_number": "0001225208-26-008428",
+        "filing_date": "2026-10-15",
+        "transactions_persisted": 1,
+        "error": null
+      },
+      {
+        "ticker": "V",
+        "cik": "0001403161",
+        "company_name": "VISA INC",
+        "status": "SUCCESS",
+        "requests_made": 2,
+        "duration_sec": 1.279,
+        "accession_number": "0001403161-26-000128",
+        "filing_date": "2026-11-02",
+        "transactions_persisted": 1,
+        "error": null
+      }
+    ],
+    "sec_requests": [
+      {
+        "request_num": 1,
+        "issuer": "NVDA",
+        "url": "https://data.sec.gov/submissions/CIK0001045810.json",
+        "status_code": 200,
+        "bytes_received": 159761,
+        "duration_sec": 0.13,
+        "is_redirect": false,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 2,
+        "issuer": "NVDA",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000128385426000010/wk-form4_1789766082.xml",
+        "status_code": 200,
+        "bytes_received": 4796,
+        "duration_sec": 0.087,
+        "is_redirect": true,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 3,
+        "issuer": "AAPL",
+        "url": "https://data.sec.gov/submissions/CIK0000320193.json",
+        "status_code": 200,
+        "bytes_received": 163755,
+        "duration_sec": 0.181,
+        "is_redirect": false,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 4,
+        "issuer": "AAPL",
+        "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126041201/form4.xml",
+        "status_code": 200,
+        "bytes_received": 3294,
+        "duration_sec": 0.031,
+        "is_redirect": true,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 5,
+        "issuer": "MSFT",
+        "url": "https://data.sec.gov/submissions/CIK0000789019.json",
+        "status_code": 200,
+        "bytes_received": 185425,
+        "duration_sec": 0.051,
+        "is_redirect": false,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 6,
+        "issuer": "MSFT",
+        "url": "https://www.sec.gov/Archives/edgar/data/789019/000078901926000226/form4.xml",
+        "status_code": 200,
+        "bytes_received": 7384,
+        "duration_sec": 0.029,
+        "is_redirect": true,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 7,
+        "issuer": "AMZN",
+        "url": "https://data.sec.gov/submissions/CIK0001018724.json",
+        "status_code": 200,
+        "bytes_received": 159780,
+        "duration_sec": 0.133,
+        "is_redirect": false,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 8,
+        "issuer": "AMZN",
+        "url": "https://www.sec.gov/Archives/edgar/data/1018724/000128432326000002/wk-form4_1788987268.xml",
+        "status_code": 200,
+        "bytes_received": 4253,
+        "duration_sec": 0.027,
+        "is_redirect": true,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 9,
+        "issuer": "GOOGL",
+        "url": "https://data.sec.gov/submissions/CIK0001652044.json",
+        "status_code": 200,
+        "bytes_received": 152730,
+        "duration_sec": 0.153,
+        "is_redirect": false,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 10,
+        "issuer": "GOOGL",
+        "url": "https://www.sec.gov/Archives/edgar/data/1652044/000119312526442116/ownership.xml",
+        "status_code": 200,
+        "bytes_received": 6943,
+        "duration_sec": 0.037,
+        "is_redirect": true,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 11,
+        "issuer": "META",
+        "url": "https://data.sec.gov/submissions/CIK0001326801.json",
+        "status_code": 200,
+        "bytes_received": 158041,
+        "duration_sec": 0.128,
+        "is_redirect": false,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 12,
+        "issuer": "META",
+        "url": "https://www.sec.gov/Archives/edgar/data/1326801/000095010326016314/ownership.xml",
+        "status_code": 200,
+        "bytes_received": 3835,
+        "duration_sec": 0.026,
+        "is_redirect": true,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 13,
+        "issuer": "TSLA",
+        "url": "https://data.sec.gov/submissions/CIK0001318605.json",
+        "status_code": 200,
+        "bytes_received": 162264,
+        "duration_sec": 0.175,
+        "is_redirect": false,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 14,
+        "issuer": "TSLA",
+        "url": "https://www.sec.gov/Archives/edgar/data/1318605/000110465926075213/tm2618092-2_4seq1.xml",
+        "status_code": 200,
+        "bytes_received": 10826,
+        "duration_sec": 0.026,
+        "is_redirect": true,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 15,
+        "issuer": "BRK-B",
+        "url": "https://data.sec.gov/submissions/CIK0001067983.json",
+        "status_code": 200,
+        "bytes_received": 161220,
+        "duration_sec": 0.132,
+        "is_redirect": false,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 16,
+        "issuer": "BRK-B",
+        "url": "https://www.sec.gov/Archives/edgar/data/1067983/000119312526438090/ownership.xml",
+        "status_code": 200,
+        "bytes_received": 5317,
+        "duration_sec": 0.03,
+        "is_redirect": true,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 17,
+        "issuer": "JPM",
+        "url": "https://data.sec.gov/submissions/CIK0000019617.json",
+        "status_code": 200,
+        "bytes_received": 4689903,
+        "duration_sec": 0.43,
+        "is_redirect": false,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 18,
+        "issuer": "JPM",
+        "url": "https://www.sec.gov/Archives/edgar/data/19617/000122520826008428/doc4.xml",
+        "status_code": 200,
+        "bytes_received": 3732,
+        "duration_sec": 0.03,
+        "is_redirect": true,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 19,
+        "issuer": "V",
+        "url": "https://data.sec.gov/submissions/CIK0001403161.json",
+        "status_code": 200,
+        "bytes_received": 159678,
+        "duration_sec": 0.188,
+        "is_redirect": false,
+        "state": "RECEIVED"
+      },
+      {
+        "request_num": 20,
+        "issuer": "V",
+        "url": "https://www.sec.gov/Archives/edgar/data/1403161/000140316126000128/form4.xml",
+        "status_code": 200,
+        "bytes_received": 3475,
+        "duration_sec": 0.028,
+        "is_redirect": true,
+        "state": "RECEIVED"
+      }
+    ],
+    "lock_acquired": true,
+    "lock_released": true,
+    "role_restored": true,
+    "pilot_auth_revoked": true,
+    "verdict": "SUCCESS",
+    "authorization_record": {
+      "scope": "10_GOVERNED_ISSUERS_SEQUENTIAL_PILOT",
+      "issuers": [
+        "NVDA",
+        "AAPL",
+        "MSFT",
+        "AMZN",
+        "GOOGL",
+        "META",
+        "TSLA",
+        "BRK-B",
+        "JPM",
+        "V"
+      ],
+      "production_release": "6bce74ca752e33370fb93f5a2780c0720014b4c2",
+      "consumed_at": "2026-11-03T04:21:22.670619+00:00",
+      "expires_at": "2026-11-03T04:31:15.449777+00:00",
+      "is_recurring": false,
+      "single_use_consumed": true
+    },
+    "timestamp_end": "2026-11-03T04:21:38.902591+00:00",
+    "duration_wall_clock_sec": 20.114
+  },
+  "coverage": {
+    "total_planned": 10,
+    "succeeded_count": 10,
+    "failed_count": 0,
+    "succeeded_issuers": [
+      "NVDA",
+      "AAPL",
+      "MSFT",
+      "AMZN",
+      "GOOGL",
+      "META",
+      "TSLA",
+      "BRK-B",
+      "JPM",
+      "V"
+    ],
+    "failed_issuers": [],
+    "coverage_ratio": 1.0,
+    "is_complete_coverage": true
+  },
+  "database_state": {
+    "pre": {
+      "raw_counts": {
+        "NVDA": 5,
+        "AAPL": 1,
+        "MSFT": 1,
+        "AMZN": 1,
+        "GOOGL": 1,
+        "META": 1,
+        "TSLA": 1,
+        "BRK-B": 0,
+        "JPM": 0,
+        "V": 0
+      },
+      "tx_counts": {
+        "NVDA": 8,
+        "AAPL": 1,
+        "MSFT": 1,
+        "AMZN": 1,
+        "GOOGL": 8,
+        "META": 5,
+        "TSLA": 3,
+        "BRK-B": 0,
+        "JPM": 0,
+        "V": 0
+      },
+      "active_snapshots": [
+        {
+          "scan_type": "SMART_MONEY",
+          "active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+          "published_at": "2026-10-25 14:53:08.944349+00:00"
+        }
+      ]
+    },
+    "post": {
+      "raw_counts": {
+        "NVDA": 6,
+        "AAPL": 2,
+        "MSFT": 2,
+        "AMZN": 2,
+        "GOOGL": 2,
+        "META": 2,
+        "TSLA": 2,
+        "BRK-B": 1,
+        "JPM": 1,
+        "V": 1
+      },
+      "tx_counts": {
+        "NVDA": 9,
+        "AAPL": 2,
+        "MSFT": 4,
+        "AMZN": 2,
+        "GOOGL": 9,
+        "META": 6,
+        "TSLA": 6,
+        "BRK-B": 1,
+        "JPM": 1,
+        "V": 1
+      },
+      "active_snapshots": [
+        {
+          "scan_type": "SMART_MONEY",
+          "active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+          "published_at": "2026-10-25 14:53:08.944349+00:00"
+        }
+      ]
+    },
+    "deltas": {
+      "AAPL": {
+        "raw_delta": 1,
+        "tx_delta": 1
+      },
+      "AMZN": {
+        "raw_delta": 1,
+        "tx_delta": 1
+      },
+      "BRK-B": {
+        "raw_delta": 1,
+        "tx_delta": 1
+      },
+      "GOOGL": {
+        "raw_delta": 1,
+        "tx_delta": 1
+      },
+      "JPM": {
+        "raw_delta": 1,
+        "tx_delta": 1
+      },
+      "META": {
+        "raw_delta": 1,
+        "tx_delta": 1
+      },
+      "MSFT": {
+        "raw_delta": 1,
+        "tx_delta": 3
+      },
+      "NVDA": {
+        "raw_delta": 1,
+        "tx_delta": 1
+      },
+      "TSLA": {
+        "raw_delta": 1,
+        "tx_delta": 3
+      },
+      "V": {
+        "raw_delta": 1,
+        "tx_delta": 1
+      }
+    }
+  },
+  "teardown_verification": {
+    "advisory_lock_freed": true,
+    "worker_standby_verified": true,
+    "active_snapshot_preserved": true,
+    "live_api_status": 200
+  },
+  "governance": {
+    "HOLD_SEC_001": "ACTIVE",
+    "HOLD_SCAN_001": "ACTIVE",
+    "HOLD_EXEC_001": "ACTIVE",
+    "sprint5_execution_authorized": false
+  }
+}
