@@ -1,25 +1,25 @@
 {
-  "release_candidate_commit": "f1ff5b0323209b8e1a46c9c01b7a2ec7ec6f66b7",
-  "base_anchor_commit": "74a6ae5d76dcbcc5afe6a67f4cb4b87777319cc6",
+  "release_candidate_commit": "86904d128c2198c50082f620a3ca95343d2369ad",
+  "base_anchor_commit": "6bce74ca752e33370fb93f5a2780c0720014b4c2",
   "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "RADAR_ACT_007_VCP_CLASSIFICATION",
+  "directive": "SM-ACT-020-BACKUP-RETENTION-SAFETY",
   "files": {
-    "analyst_dashboard/analyzers/scanner_runner.py": {
+    "analyst_dashboard/smart_money/storage/backup/retention.py": {
       "operation": "M",
-      "originating_pr_number": 179,
-      "originating_commit": "f1ff5b0",
-      "governing_requirement": "RADAR-ACT-007: Wire VCP domain classifier, 200-session trend template & evaluate non-qualifying setups as computed",
-      "sha256": "0e36e2a91a5071df95708bc2e5df9adf80112ecce297c282e7ebbd8cb814ebc8",
-      "size_bytes": 74157
+      "originating_pr_number": 184,
+      "originating_commit": "86904d128c2198c50082f620a3ca95343d2369ad",
+      "governing_requirement": "SM-ACT-020: bounded fail-closed retention protection; draft owner-approved staging, no production activation",
+      "sha256": "8588cce192202613c218417c8653f9a6f134e217a79fa33e049be9dbd2a3d5df",
+      "size_bytes": 6302
     },
-    "analyst_dashboard/vcp/natural_trigger.py": {
-      "operation": "M",
-      "originating_pr_number": 179,
-      "originating_commit": "f1ff5b0",
-      "governing_requirement": "RADAR-ACT-007: Service-layer post-settlement session guard (evaluate_natural_session_eligibility)",
-      "sha256": "8ec8e0766fd398c62dd71392b2640648220c43bb90ce60a2a4b9da42864fff4a",
-      "size_bytes": 15675
+    "tests/test_smart_money_backup_retention_safety.py": {
+      "operation": "A",
+      "originating_pr_number": 184,
+      "originating_commit": "86904d128c2198c50082f620a3ca95343d2369ad",
+      "governing_requirement": "SM-ACT-020: bounded fail-closed retention protection; draft owner-approved staging, no production activation",
+      "sha256": "d97c4e8bfe271a9f40f654766e33ebbbda20c4f3653456516c1cdba125dd9abf",
+      "size_bytes": 3563
     }
   },
   "qualification_framework_files": {
