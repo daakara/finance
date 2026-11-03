@@ -1,25 +1,25 @@
 {
-  "release_candidate_commit": "f1ff5b0323209b8e1a46c9c01b7a2ec7ec6f66b7",
-  "base_anchor_commit": "74a6ae5d76dcbcc5afe6a67f4cb4b87777319cc6",
+  "release_candidate_commit": "7b47a2ba17062d750063de877af170b270fa2dc4",
+  "base_anchor_commit": "0d443808ffff9ad6ada3097ce4f9fd9652f319a5",
   "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "RADAR_ACT_007_VCP_CLASSIFICATION",
+  "directive": "SM-ACT-020-BACKUP-RETENTION-SAFETY",
   "files": {
-    "analyst_dashboard/analyzers/scanner_runner.py": {
+    "analyst_dashboard/smart_money/storage/backup/retention.py": {
       "operation": "M",
-      "originating_pr_number": 179,
-      "originating_commit": "f1ff5b0",
-      "governing_requirement": "RADAR-ACT-007: Wire VCP domain classifier, 200-session trend template & evaluate non-qualifying setups as computed",
-      "sha256": "0e36e2a91a5071df95708bc2e5df9adf80112ecce297c282e7ebbd8cb814ebc8",
-      "size_bytes": 74157
+      "originating_pr_number": 184,
+      "originating_commit": "f57a65ed48f6e5723115779ba9ea0190ea2b567b",
+      "governing_requirement": "SM-ACT-020: bounded fail-closed retention protection; draft owner-approved staging, no production activation",
+      "sha256": "b2276a05f10e3bf89ac9197a1d78d39c6d6aca2d4d974b423d3894a028c12a0a",
+      "size_bytes": 6498
     },
-    "analyst_dashboard/vcp/natural_trigger.py": {
-      "operation": "M",
-      "originating_pr_number": 179,
-      "originating_commit": "f1ff5b0",
-      "governing_requirement": "RADAR-ACT-007: Service-layer post-settlement session guard (evaluate_natural_session_eligibility)",
-      "sha256": "8ec8e0766fd398c62dd71392b2640648220c43bb90ce60a2a4b9da42864fff4a",
-      "size_bytes": 15675
+    "tests/test_smart_money_backup_retention_safety.py": {
+      "operation": "A",
+      "originating_pr_number": 184,
+      "originating_commit": "f57a65ed48f6e5723115779ba9ea0190ea2b567b",
+      "governing_requirement": "SM-ACT-020: bounded fail-closed retention protection; draft owner-approved staging, no production activation",
+      "sha256": "6d6345f459b43c1d61975d913d785f754abfcdd00d0ebe7e8c4e0e2be6fa0a56",
+      "size_bytes": 4197
     }
   },
   "qualification_framework_files": {
@@ -29,14 +29,14 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "a6e52363a6a2679809f8d0d024acfabc777e834d37f4b0a1651ea3aa80ca8aee",
-      "bytes": 58989,
-      "size_bytes": 58989
+      "sha256": "8a4cf61cc0f9bcbbd2a146ad325d3bfbdef85c02bbf0d3f12a2dfed93e81dfbc",
+      "bytes": 58994,
+      "size_bytes": 58994
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "9778026dff4dd5967cfc180b28b4291649ad6bc4abf7862271158914f7b446d9",
+      "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
       "description": "Release qualification module: rq03_backend_regression.py",
-      "size_bytes": 3269
+      "size_bytes": 3330
     },
     "scripts/release/rq04_frontend_regression.py": {
       "sha256": "0e46eff7498448b20491bb0b65cb5f3e85403cc5575642c6bd251b9a2e806a1e",

@@ -25,7 +25,8 @@ def main():
     print("=== [RQ-03] BACKEND REGRESSION SUITE ===")
     test_files = [
         "tests/test_directive_057_remediation.py",
-        "tests/test_confluence_engine.py"
+        "tests/test_confluence_engine.py",
+        "tests/test_smart_money_backup_retention_safety.py"
     ]
 
     cmd = [sys.executable, "-m", "pytest"] + test_files + ["-v"]
@@ -50,13 +51,13 @@ def main():
     assertions.append({
         "assertion": "All backend regression tests pass",
         "observed": {"passed": passed_count, "failed": failed_count, "exit_code": res.returncode},
-        "passed": (res.returncode == 0 and failed_count == 0 and passed_count >= 25)
+        "passed": (res.returncode == 0 and failed_count == 0 and passed_count >= 30)
     })
 
     if res.returncode != 0 or failed_count > 0:
         errors.append(f"Pytest suite failed with returncode {res.returncode}, {failed_count} failures.")
-    elif passed_count < 25:
-        errors.append(f"Expected at least 25 tests, only observed {passed_count}.")
+    elif passed_count < 30:
+        errors.append(f"Expected at least 30 tests, only observed {passed_count}.")
 
     status = "PASS" if len(errors) == 0 else "FAIL"
     ok, identity, err = resolve_identity_contract()
