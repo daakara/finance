@@ -16,6 +16,14 @@ import threading
 import socket
 from typing import Dict, Any, List, Optional
 import pandas as pd
+import datetime
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
+
+US_EASTERN = ZoneInfo("America/New_York")
 
 from analyst_dashboard.data.market_evidence import AdjustmentState
 
@@ -408,38 +416,59 @@ class VCPScannerRunner:
                         from analyst_dashboard.vcp.case_compiler import VCPTemporalCaseCompiler
                         from analyst_dashboard.vcp.temporal_contract import DailyOHLCVBar
 
-                        # Fetch full 200-session window for VCP trend template evaluation
+                        # Fetch bounded 250-session window for VCP trend template evaluation (eliminates 200-bar fetch-boundary failure)
                         today_str = eff_obs_date
-                        vcp_candles_200 = None
+                        vcp_candles_250 = None
                         if hasattr(self.market_db, "get_daily_candles_with_evidence"):
-                            ret200 = self.market_db.get_daily_candles_with_evidence(clean_sym, limit=200)
-                            if isinstance(ret200, tuple) and len(ret200) == 2 and isinstance(ret200[0], list):
-                                vcp_candles_200 = ret200[0]
-                        if vcp_candles_200 is None and hasattr(self.market_db, "get_daily_candles"):
-                            vcp_candles_200 = self.market_db.get_daily_candles(clean_sym, limit=200)
+                            ret250 = self.market_db.get_daily_candles_with_evidence(clean_sym, limit=250)
+                            if isinstance(ret250, tuple) and len(ret250) == 2 and isinstance(ret250[0], list):
+                                vcp_candles_250 = ret250[0]
+                        if vcp_candles_250 is None and hasattr(self.market_db, "get_daily_candles"):
+                            vcp_candles_250 = self.market_db.get_daily_candles(clean_sym, limit=250)
 
-                        if vcp_candles_200 and len(vcp_candles_200) >= 50:
-                            raw_bars = [
-                                DailyOHLCVBar(
-                                    symbol=clean_sym,
-                                    bar_date=c["time"][:10],
-                                    open=float(c["open"]),
-                                    high=float(c["high"]),
-                                    low=float(c["low"]),
-                                    close=float(c["close"]),
-                                    volume=int(c["volume"]),
-                                    valid_time=f"{c['time'][:10]}T21:00:00Z",
-                                    known_at=f"{c['time'][:10]}T21:30:00Z",
-                                    is_session_closed=True,
+                        if vcp_candles_250 and len(vcp_candles_250) >= 50:
+                            raw_bars = []
+                            for c in vcp_candles_250:
+                                b_date_str = c["time"][:10]
+                                b_d = datetime.date.fromisoformat(b_date_str)
+                                # Derive authoritative session close (16:00 ET) and settlement consolidation (+30m) in America/New_York
+                                b_close_et = datetime.datetime(b_d.year, b_d.month, b_d.day, 16, 0, 0, tzinfo=US_EASTERN)
+                                b_close_utc = b_close_et.astimezone(datetime.timezone.utc)
+                                b_known_utc = b_close_utc + datetime.timedelta(minutes=30)
+                                raw_bars.append(
+                                    DailyOHLCVBar(
+                                        symbol=clean_sym,
+                                        bar_date=b_date_str,
+                                        open=float(c["open"]),
+                                        high=float(c["high"]),
+                                        low=float(c["low"]),
+                                        close=float(c["close"]),
+                                        volume=int(c["volume"]),
+                                        valid_time=b_close_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                        known_at=b_known_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                        is_session_closed=True,
+                                    )
                                 )
-                                for c in vcp_candles_200
-                            ]
+
+                            # Resolve authenticated post-settlement observation timestamp from session guard if date-only string provided
+                            eval_as_of = today_str
+                            if "T" not in eval_as_of:
+                                try:
+                                    from analyst_dashboard.vcp.session_guard import get_session_bounds, get_settlement_buffer_minutes
+                                    _, s_close_utc, _ = get_session_bounds(eval_as_of, allow_rulebook_fallback=True)
+                                    settlement_dt = s_close_utc + datetime.timedelta(minutes=get_settlement_buffer_minutes())
+                                    eval_as_of = settlement_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+                                except Exception:
+                                    d = datetime.date.fromisoformat(eval_as_of)
+                                    dt = datetime.datetime(d.year, d.month, d.day, 16, 45, 0, tzinfo=US_EASTERN)
+                                    eval_as_of = dt.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
                             compiler = VCPTemporalCaseCompiler()
                             package = compiler.compile_case(
                                 case_id=f"CASE-{clean_sym}-{today_str}",
                                 security_id=clean_sym,
                                 symbol=clean_sym,
-                                evaluation_as_of=today_str,
+                                evaluation_as_of=eval_as_of,
                                 raw_bars=raw_bars,
                                 reference_data={},
                                 corporate_actions=[],
