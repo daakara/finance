@@ -14,6 +14,13 @@ import json
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
+
+US_EASTERN = ZoneInfo("America/New_York")
+
 
 @dataclass(frozen=True)
 class DailyOHLCVBar:
@@ -43,16 +50,25 @@ class VCPTemporalContract:
 
     @staticmethod
     def parse_iso(ts_str: str) -> datetime.datetime:
-        """Parses ISO-8601 string or YYYY-MM-DD date."""
+        """Parses ISO-8601 string or YYYY-MM-DD date into UTC datetime.
+
+        US equity session dates without time component default to 16:00:00 America/New_York
+        (session close), properly accounting for EST (UTC-5) vs EDT (UTC-4).
+        Naive ISO timestamps are interpreted in America/New_York and converted to UTC.
+        """
         clean = ts_str.strip()
         if "T" in clean:
             # Handle possible Z or offset
             clean_iso = clean.replace("Z", "+00:00")
-            return datetime.datetime.fromisoformat(clean_iso)
+            dt = datetime.datetime.fromisoformat(clean_iso)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=US_EASTERN)
+            return dt.astimezone(datetime.timezone.utc)
         else:
-            # Date only - default to session close at 16:00:00 ET (21:00 UTC / 20:00 UTC depending on DST)
-            dt = datetime.date.fromisoformat(clean)
-            return datetime.datetime(dt.year, dt.month, dt.day, 16, 0, 0, tzinfo=datetime.timezone.utc)
+            # Date only - default to session close at 16:00:00 America/New_York (21:00 UTC EST / 20:00 UTC EDT)
+            d = datetime.date.fromisoformat(clean)
+            dt = datetime.datetime(d.year, d.month, d.day, 16, 0, 0, tzinfo=US_EASTERN)
+            return dt.astimezone(datetime.timezone.utc)
 
     @classmethod
     def is_bar_admissible(
