@@ -1,25 +1,33 @@
 {
-  "release_candidate_commit": "7b47a2ba17062d750063de877af170b270fa2dc4",
-  "base_anchor_commit": "0d443808ffff9ad6ada3097ce4f9fd9652f319a5",
-  "total_files": 2,
+  "release_candidate_commit": "7d4e5676b73e9d438031d6ad5698f7671d206eb0",
+  "base_anchor_commit": "d247ee78234139308e2c611807d5efb8dd6ccc63",
+  "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "SM-ACT-020-BACKUP-RETENTION-SAFETY",
+  "directive": "RADAR_ACT_007_008_VCP_TEMPORAL_FIX",
   "files": {
-    "analyst_dashboard/smart_money/storage/backup/retention.py": {
+    "analyst_dashboard/analyzers/scanner_runner.py": {
       "operation": "M",
-      "originating_pr_number": 184,
-      "originating_commit": "f57a65ed48f6e5723115779ba9ea0190ea2b567b",
-      "governing_requirement": "SM-ACT-020: bounded fail-closed retention protection; draft owner-approved staging, no production activation",
-      "sha256": "b2276a05f10e3bf89ac9197a1d78d39c6d6aca2d4d974b423d3894a028c12a0a",
-      "size_bytes": 6498
+      "originating_pr_number": 188,
+      "originating_commit": "2aea348be771719d8d5cfc19acf3e694e3f0a59e",
+      "governing_requirement": "RADAR-NATURAL-VCP-007: temporal cutoff parsing in America/New_York and 200-bar fetch boundary",
+      "sha256": "601e3fd759c2926c99b99cafc880e8d223f0a0626eb08ae02b6d0a779d9d8169",
+      "size_bytes": 76180
     },
-    "tests/test_smart_money_backup_retention_safety.py": {
+    "analyst_dashboard/vcp/temporal_contract.py": {
+      "operation": "M",
+      "originating_pr_number": 188,
+      "originating_commit": "2aea348be771719d8d5cfc19acf3e694e3f0a59e",
+      "governing_requirement": "RADAR-NATURAL-VCP-007: America/New_York timezone resolution and bitemporal cutoff guard",
+      "sha256": "4af5acb78481be0a8311449f8d18716a087e178ca4cef1970dce2d1d76bf8f7a",
+      "size_bytes": 4381
+    },
+    "tests/test_vcp_temporal_cutoff_qualification.py": {
       "operation": "A",
-      "originating_pr_number": 184,
-      "originating_commit": "f57a65ed48f6e5723115779ba9ea0190ea2b567b",
-      "governing_requirement": "SM-ACT-020: bounded fail-closed retention protection; draft owner-approved staging, no production activation",
-      "sha256": "6d6345f459b43c1d61975d913d785f754abfcdd00d0ebe7e8c4e0e2be6fa0a56",
-      "size_bytes": 4197
+      "originating_pr_number": 188,
+      "originating_commit": "2aea348be771719d8d5cfc19acf3e694e3f0a59e",
+      "governing_requirement": "RADAR-NATURAL-VCP-007: 10/10 temporal cutoff qualification suite",
+      "sha256": "c9f03758df000d867438d36f9b2b4cd00c0e0315a5dd306049b9d35aace5ede5",
+      "size_bytes": 12257
     }
   },
   "qualification_framework_files": {
@@ -29,9 +37,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "8a4cf61cc0f9bcbbd2a146ad325d3bfbdef85c02bbf0d3f12a2dfed93e81dfbc",
-      "bytes": 58994,
-      "size_bytes": 58994
+      "sha256": "891fac3bf32451b8b80349a6ceef94f0b282931bd064f3fa10890b9680aa85de",
+      "bytes": 59004,
+      "size_bytes": 59004
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
