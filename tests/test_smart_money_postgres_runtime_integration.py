@@ -451,13 +451,21 @@ class TestMigrationConflictFailClosed:
         import datetime
         import sqlite3
 
-        # 1. Helper function checks
+        # 1. Helper function checks & timezone-aware UTC Z conversions
         assert _format_canonical_sec_timestamp(None) is None
         assert _format_canonical_sec_timestamp("") is None
-        assert _format_canonical_sec_timestamp("2026-09-18") is None  # Date only must not invent time
+        assert _format_canonical_sec_timestamp("2026-09-18") is None  # Date-only string must not invent time
+        assert _format_canonical_sec_timestamp(datetime.date(2026, 9, 18)) is None  # datetime.date rejected
         assert _format_canonical_sec_timestamp("invalid-date") is None
+        assert _format_canonical_sec_timestamp("TOTAL TRASH") is None
         assert _format_canonical_sec_timestamp("2026-09-18 21:13:29+00:00") == "2026-09-18T21:13:29Z"
+        assert _format_canonical_sec_timestamp("2026-09-18T21:13:29Z") == "2026-09-18T21:13:29Z"
+        assert _format_canonical_sec_timestamp("2026-09-18T21:13:29.000Z") == "2026-09-18T21:13:29Z"
+        # Positive and negative offset conversion to canonical UTC Z
+        assert _format_canonical_sec_timestamp("2026-09-18T17:13:29-04:00") == "2026-09-18T21:13:29Z"
+        assert _format_canonical_sec_timestamp("2026-09-19T02:43:29+05:30") == "2026-09-18T21:13:29Z"
         assert _format_canonical_sec_timestamp(datetime.datetime(2026, 9, 18, 21, 13, 29, tzinfo=datetime.timezone.utc)) == "2026-09-18T21:13:29Z"
+        assert _format_canonical_sec_timestamp(datetime.datetime(2026, 9, 18, 17, 13, 29, tzinfo=datetime.timezone(datetime.timedelta(hours=-4)))) == "2026-09-18T21:13:29Z"
 
         # 2. SQLite record with NULL acceptance_datetime
         db_path = tmp_path / "null_ts.db"
@@ -616,3 +624,111 @@ class TestMigrationConflictFailClosed:
             assert res["pillar_eligibility"] is False
             assert res["pillar_score"] is None
             assert "HOLD_SEC_001" in res["active_holds"]
+
+    def test_form4_vs_form4a_provenance_and_metadata(self, real_postgres_uri):
+        """Form 4 vs Form 4/A provenance preserves amendment metadata and never misclassifies."""
+        from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
+        from unittest.mock import patch
+        import psycopg2
+
+        # Setup Form 4 and Form 4/A records in real postgres
+        with psycopg2.connect(real_postgres_uri) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS sm_amendments (
+                        amendment_accession VARCHAR(32) PRIMARY KEY,
+                        base_accession VARCHAR(32),
+                        amendment_number INTEGER NOT NULL DEFAULT 1,
+                        resolution_status VARCHAR(32) NOT NULL,
+                        resolved_at TIMESTAMPTZ
+                    );
+                """)
+                # Insert base Form 4
+                cur.execute("""
+                    INSERT INTO form4_raw_filings (
+                        accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                        xml_content, content_hash, source_url
+                    ) VALUES (
+                        '0001045810-26-000001', '0001045810', 'NVDA', 'NVIDIA CORP', '2026-09-01',
+                        '2026-09-01 20:00:00+00:00', '<ownershipDocument><documentType>4</documentType></ownershipDocument>',
+                        'hash_base_4', 'https://sec.gov/base4.txt'
+                    ) ON CONFLICT (accession_number) DO NOTHING;
+                """)
+                # Insert Form 4/A linked via sm_amendments
+                cur.execute("""
+                    INSERT INTO form4_raw_filings (
+                        accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                        xml_content, content_hash, source_url
+                    ) VALUES (
+                        '0001045810-26-000002', '0001045810', 'NVDA', 'NVIDIA CORP', '2026-09-05',
+                        '2026-09-05 20:00:00+00:00', '<ownershipDocument><documentType>4/A</documentType></ownershipDocument>',
+                        'hash_amend_4a', 'https://sec.gov/amend4a.txt'
+                    ) ON CONFLICT (accession_number) DO NOTHING;
+                """)
+                cur.execute("""
+                    INSERT INTO sm_amendments (
+                        amendment_accession, base_accession, amendment_number, resolution_status, resolved_at
+                    ) VALUES (
+                        '0001045810-26-000002', '0001045810-26-000001', 1, 'RESOLVED_TARGET', NOW()
+                    ) ON CONFLICT (amendment_accession) DO NOTHING;
+                """)
+            conn.commit()
+
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "STANDBY",
+            "ARX_STORAGE_BACKEND": "postgres",
+            "SMART_MONEY_DATABASE_URL": real_postgres_uri,
+            "DATABASE_URL": real_postgres_uri,
+        }):
+            fetcher = SecEdgarFetcher(user_agent="ValidApp valid@domain.com")
+            
+            # 1. Query all filings: verifies Form 4 and Form 4/A are correctly classified
+            env_all = fetcher.get_recent_filings_envelope("NVDA")
+            assert env_all["status"] == "AVAILABLE_WITH_RESULTS"
+            f4 = next((it for it in env_all["items"] if it["accession_number"] == "0001045810-26-000001"), None)
+            f4a = next((it for it in env_all["items"] if it["accession_number"] == "0001045810-26-000002"), None)
+            
+            assert f4 is not None
+            assert f4["form"] == "4"
+            assert f4["is_amendment"] is False
+            assert "Form 4 Insider Filing" in f4["description"]
+
+            assert f4a is not None
+            assert f4a["form"] == "4/A"
+            assert f4a["is_amendment"] is True
+            assert f4a["base_accession"] == "0001045810-26-000001"
+            assert f4a["amendment_number"] == 1
+            assert "Form 4/A" in f4a["description"]
+
+            # 2. Filter for only Form 4: Form 4/A must NOT be included
+            env_f4_only = fetcher.get_recent_filings_envelope("NVDA", form_types=["4"])
+            assert all(it["form"] == "4" for it in env_f4_only["items"])
+            assert not any(it["accession_number"] == "0001045810-26-000002" for it in env_f4_only["items"])
+
+            # 3. Filter for only Form 4/A: Form 4 must NOT be included
+            env_f4a_only = fetcher.get_recent_filings_envelope("NVDA", form_types=["4/A"])
+            assert all(it["form"] == "4/A" for it in env_f4a_only["items"])
+            assert any(it["accession_number"] == "0001045810-26-000002" for it in env_f4a_only["items"])
+
+    def test_database_exception_sanitization_in_api_envelope(self, real_postgres_uri):
+        """Database exception text is sanitized in user-facing envelope without leaking connection or SQL details."""
+        from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
+        from unittest.mock import patch
+
+        fetcher = SecEdgarFetcher(user_agent="ValidApp valid@domain.com")
+
+        # Simulate database query error
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "STANDBY",
+            "ARX_STORAGE_BACKEND": "postgres",
+            "SMART_MONEY_DATABASE_URL": real_postgres_uri,
+            "DATABASE_URL": real_postgres_uri,
+        }), patch("analyst_dashboard.smart_money.storage.postgres_connection.get_connection", side_effect=RuntimeError("FATAL: password authentication failed for user secret_admin")):
+            env = fetcher.get_recent_filings_envelope("NVDA")
+            assert env["status"] == "BACKEND_STORAGE_ERROR"
+            assert env["reason"] == "STORAGE_QUERY_FAILED"
+            assert env["error_detail"] == "Failed to query filings store for NVDA."
+            # Confirm no secret credentials or driver traces leaked
+            assert "password" not in env["error_detail"].lower()
+            assert "secret_admin" not in env["error_detail"]
+            assert "FATAL" not in env["error_detail"]

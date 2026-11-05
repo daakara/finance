@@ -18,8 +18,9 @@ logger = logging.getLogger(__name__)
 
 def _format_canonical_sec_timestamp(val: Any) -> Optional[str]:
     """
-    Formats a datetime or ISO timestamp into canonical ISO 8601 UTC with 'Z' suffix (e.g. '2026-09-18T21:13:29Z').
-    Returns None if missing or invalid; never fabricates timestamps from dates.
+    Formats a datetime, date, or ISO timestamp into canonical ISO 8601 UTC with 'Z' suffix (e.g. '2026-09-18T21:13:29Z').
+    Converts all valid timezone-aware values (positive and negative offsets) to canonical UTC 'Z'.
+    Returns None if missing or invalid; strictly refuses to fabricate timestamps from date-only values.
     """
     if val is None:
         return None
@@ -27,20 +28,24 @@ def _format_canonical_sec_timestamp(val: Any) -> Optional[str]:
         if val.tzinfo is None:
             val = val.replace(tzinfo=datetime.timezone.utc)
         return val.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if isinstance(val, datetime.date) and not isinstance(val, datetime.datetime):
+        return None
     if isinstance(val, str):
         cleaned = val.strip()
-        if not cleaned:
+        if not cleaned or len(cleaned) <= 10:
             return None
-        if cleaned.endswith("+00:00"):
-            cleaned = cleaned[:-6] + "Z"
         if "T" not in cleaned and " " not in cleaned:
             return None
-        if " " in cleaned and "T" not in cleaned:
-            cleaned = cleaned.replace(" ", "T")
-        if not cleaned.endswith("Z") and "+" not in cleaned and "-" not in cleaned[10:]:
-            cleaned += "Z"
-        return cleaned
+        iso_str = cleaned.replace("Z", "+00:00")
+        try:
+            dt = datetime.datetime.fromisoformat(iso_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=datetime.timezone.utc)
+            return dt.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        except (ValueError, TypeError):
+            return None
     return None
+
 
 DISALLOWED_DOMAINS = {
     "internal", "local", "example.com", "sample.com", "test.com", "placeholder", "invalid"
@@ -437,6 +442,7 @@ class SecEdgarFetcher:
             try:
                 from analyst_dashboard.smart_money.storage.postgres_connection import get_connection
                 from psycopg2.extras import RealDictCursor
+
                 with get_connection() as conn:
                     with conn.cursor(cursor_factory=RealDictCursor) as cur:
                         has_query = "SELECT 1 FROM form4_raw_filings WHERE (cik = %s OR ticker = %s) LIMIT 1" if cik else "SELECT 1 FROM form4_raw_filings WHERE ticker = %s LIMIT 1"
@@ -455,19 +461,45 @@ class SecEdgarFetcher:
                                 "cached": True,
                             }
 
-                        query = """
-                            SELECT
-                                r.accession_number,
-                                r.cik,
-                                r.ticker,
-                                r.filing_date,
-                                r.accepted_datetime,
-                                r.source_url,
-                                l.public_availability_at
-                            FROM form4_raw_filings r
-                            LEFT JOIN sm_source_availability_ledger l ON r.accession_number = l.accession_number
-                            WHERE 1=1
-                        """
+                        # Check available tables and columns dynamically
+                        cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('sm_source_availability_ledger', 'sm_amendments')")
+                        found_tables = {r["table_name"] for r in cur.fetchall()}
+                        has_ledger = "sm_source_availability_ledger" in found_tables
+                        has_amendments = "sm_amendments" in found_tables
+
+                        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'form4_raw_filings'")
+                        raw_cols = {r["column_name"] for r in cur.fetchall()}
+
+                        select_parts = [
+                            "r.accession_number",
+                            "r.cik",
+                            "r.ticker",
+                            "r.filing_date",
+                            "r.accepted_datetime",
+                            "r.source_url",
+                        ]
+                        if has_ledger:
+                            select_parts.append("l.public_availability_at")
+                        else:
+                            select_parts.append("NULL AS public_availability_at")
+
+                        if has_amendments:
+                            select_parts.extend(["am.base_accession", "am.amendment_number"])
+                        else:
+                            select_parts.extend(["NULL AS base_accession", "NULL AS amendment_number"])
+
+                        if "document_type" in raw_cols:
+                            select_parts.append("r.document_type")
+                        if "xml_content" in raw_cols:
+                            select_parts.append("r.xml_content")
+
+                        query = f"SELECT {', '.join(select_parts)} FROM form4_raw_filings r"
+                        if has_ledger:
+                            query += " LEFT JOIN sm_source_availability_ledger l ON r.accession_number = l.accession_number"
+                        if has_amendments:
+                            query += " LEFT JOIN sm_amendments am ON r.accession_number = am.amendment_accession"
+
+                        query += " WHERE 1=1"
                         params = []
                         if cik:
                             query += " AND (r.cik = %s OR r.ticker = %s)"
@@ -481,8 +513,20 @@ class SecEdgarFetcher:
                         rows = cur.fetchall()
 
                         for r in rows:
-                            doc_type = "4"
-                            if allowed_forms and doc_type not in allowed_forms and not any(f.startswith("4") for f in allowed_forms):
+                            base_acc = r.get("base_accession")
+                            amend_num = r.get("amendment_number")
+                            raw_doc = str(r.get("document_type") or "").strip().upper()
+                            xml_content = r.get("xml_content") or ""
+                            is_amend = (
+                                (base_acc is not None)
+                                or (amend_num is not None)
+                                or (raw_doc in ("4/A", "4A"))
+                                or ("<documentType>4/A" in xml_content)
+                                or ("<documentType>4A" in xml_content)
+                            )
+                            doc_type = "4/A" if is_amend else "4"
+
+                            if allowed_forms and doc_type not in allowed_forms:
                                 continue
 
                             acc_num = r["accession_number"]
@@ -495,16 +539,29 @@ class SecEdgarFetcher:
                             pub_dt = _format_canonical_sec_timestamp(r.get("public_availability_at"))
                             avail_from = pub_dt or acc_dt
 
-                            results.append({
+                            if is_amend:
+                                desc = f"Form 4/A Insider Filing (Amendment {amend_num} to {base_acc})" if (amend_num and base_acc) else (f"Form 4/A Insider Filing (Amendment {amend_num})" if amend_num else "Form 4/A Insider Filing (Amendment)")
+                            else:
+                                desc = "Form 4 Insider Filing"
+
+                            item = {
                                 "form": doc_type,
                                 "filing_date": f_date,
                                 "report_date": f_date,
                                 "acceptance_datetime": acc_dt,
                                 "available_from": avail_from,
-                                "description": "Form 4 Insider Filing",
+                                "description": desc,
                                 "accession_number": acc_num,
                                 "sec_url": r.get("source_url") or f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
-                            })
+                                "is_amendment": is_amend,
+                            }
+                            if is_amend:
+                                if base_acc:
+                                    item["base_accession"] = base_acc
+                                if amend_num is not None:
+                                    item["amendment_number"] = amend_num
+
+                            results.append(item)
 
                         if results:
                             return {
@@ -527,13 +584,13 @@ class SecEdgarFetcher:
                                 "cached": True,
                             }
             except Exception as e:
-                logger.error(f"Failed to query PostgreSQL filings store for {clean_sym}: {e}")
+                logger.error(f"Failed to query PostgreSQL filings store for {clean_sym}: {e}", exc_info=True)
                 return {
                     "status": "BACKEND_STORAGE_ERROR",
                     "status_code": None,
                     "cik": cik,
                     "reason": "STORAGE_QUERY_FAILED",
-                    "error_detail": f"Failed to query PostgreSQL filings store: {e}",
+                    "error_detail": f"Failed to query filings store for {clean_sym}.",
                     "items": None,
                     "cached": True,
                 }
@@ -565,39 +622,40 @@ class SecEdgarFetcher:
                     }
 
                 has_ledger = False
+                has_amendments = False
                 try:
-                    cur.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sm_source_availability_ledger'")
-                    has_ledger = cur.fetchone() is not None
+                    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('sm_source_availability_ledger', 'sm_amendments')")
+                    tbls = {r[0] for r in cur.fetchall()}
+                    has_ledger = "sm_source_availability_ledger" in tbls
+                    has_amendments = "sm_amendments" in tbls
                 except Exception:
-                    has_ledger = False
+                    pass
 
+                select_cols = [
+                    "r.accession_number",
+                    "r.issuer_cik",
+                    "r.filing_date",
+                    "r.acceptance_datetime",
+                    "r.source_url",
+                    "r.document_type",
+                ]
                 if has_ledger:
-                    query = """
-                        SELECT
-                            r.accession_number,
-                            r.issuer_cik,
-                            r.filing_date,
-                            r.acceptance_datetime,
-                            r.document_type,
-                            r.source_url,
-                            l.public_availability_at
-                        FROM form4_raw_filings r
-                        LEFT JOIN sm_source_availability_ledger l ON r.accession_number = l.accession_number
-                        WHERE 1=1
-                    """
+                    select_cols.append("l.public_availability_at")
                 else:
-                    query = """
-                        SELECT
-                            r.accession_number,
-                            r.issuer_cik,
-                            r.filing_date,
-                            r.acceptance_datetime,
-                            r.document_type,
-                            r.source_url,
-                            NULL as public_availability_at
-                        FROM form4_raw_filings r
-                        WHERE 1=1
-                    """
+                    select_cols.append("NULL AS public_availability_at")
+
+                if has_amendments:
+                    select_cols.extend(["am.base_accession", "am.amendment_number"])
+                else:
+                    select_cols.extend(["NULL AS base_accession", "NULL AS amendment_number"])
+
+                query = f"SELECT {', '.join(select_cols)} FROM form4_raw_filings r"
+                if has_ledger:
+                    query += " LEFT JOIN sm_source_availability_ledger l ON r.accession_number = l.accession_number"
+                if has_amendments:
+                    query += " LEFT JOIN sm_amendments am ON r.accession_number = am.amendment_accession"
+
+                query += " WHERE 1=1"
                 params = []
                 if cik:
                     query += " AND (r.issuer_cik = ? OR r.issuer_symbol = ?)"
@@ -606,36 +664,54 @@ class SecEdgarFetcher:
                     query += " AND r.issuer_symbol = ?"
                     params.append(clean_sym)
 
-                query += " ORDER BY r.filing_date DESC LIMIT 25"
+                query += " ORDER BY r.filing_date DESC, r.acceptance_datetime DESC LIMIT 25"
                 cur.execute(query, tuple(params))
                 rows = cur.fetchall()
                 conn.close()
 
                 for r in rows:
-                    doc_type = r["document_type"] or "4"
-                    if allowed_forms and doc_type not in allowed_forms and not any(doc_type.startswith(f) for f in allowed_forms):
+                    base_acc = r["base_accession"]
+                    amend_num = r["amendment_number"]
+                    raw_doc = str(r["document_type"] or "4").strip().upper()
+                    is_amend = (base_acc is not None) or (amend_num is not None) or (raw_doc in ("4/A", "4A"))
+                    doc_type = "4/A" if is_amend else "4"
+
+                    if allowed_forms and doc_type not in allowed_forms:
                         continue
 
                     acc_num = r["accession_number"]
                     clean_acc = acc_num.replace("-", "")
                     cik_val = r["issuer_cik"] or (str(cik).zfill(10) if cik else "0")
                     cik_int = int(cik_val) if str(cik_val).isdigit() else 0
-                    f_date = r["filing_date"] or ""
+                    f_date = str(r["filing_date"]) if r["filing_date"] else ""
 
                     acc_dt = _format_canonical_sec_timestamp(r["acceptance_datetime"])
-                    pub_dt = _format_canonical_sec_timestamp(r["public_availability_at"]) if "public_availability_at" in r.keys() else None
+                    pub_dt = _format_canonical_sec_timestamp(r["public_availability_at"])
                     avail_from = pub_dt or acc_dt
 
-                    results.append({
+                    if is_amend:
+                        desc = f"Form 4/A Insider Filing (Amendment {amend_num} to {base_acc})" if (amend_num and base_acc) else (f"Form 4/A Insider Filing (Amendment {amend_num})" if amend_num else "Form 4/A Insider Filing (Amendment)")
+                    else:
+                        desc = "Form 4 Insider Filing"
+
+                    item = {
                         "form": doc_type,
                         "filing_date": f_date,
                         "report_date": f_date,
                         "acceptance_datetime": acc_dt,
                         "available_from": avail_from,
-                        "description": f"Form {doc_type} Insider Filing",
+                        "description": desc,
                         "accession_number": acc_num,
                         "sec_url": r["source_url"] or f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
-                    })
+                        "is_amendment": is_amend,
+                    }
+                    if is_amend:
+                        if base_acc:
+                            item["base_accession"] = base_acc
+                        if amend_num is not None:
+                            item["amendment_number"] = amend_num
+
+                    results.append(item)
 
                 if results:
                     return {
@@ -659,16 +735,17 @@ class SecEdgarFetcher:
                     }
 
             except Exception as e:
-                logger.error(f"Failed to query SQLite filings store for {clean_sym}: {e}")
+                logger.error(f"Failed to query SQLite filings store for {clean_sym}: {e}", exc_info=True)
                 return {
                     "status": "BACKEND_STORAGE_ERROR",
                     "status_code": None,
                     "cik": cik,
                     "reason": "STORAGE_QUERY_FAILED",
-                    "error_detail": f"Failed to query SQLite filings store: {e}",
+                    "error_detail": f"Failed to query filings store for {clean_sym}.",
                     "items": None,
                     "cached": True,
                 }
+
         else:
             return {
                 "status": "CONFIGURATION_BLOCKED",
