@@ -281,7 +281,7 @@ class ScannerSnapshotStore:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT * FROM scanner_snapshots
-                WHERE scanner_id = ? AND publication_decision = 'PUBLISH'
+                WHERE scanner_id = ? AND publication_decision = 'PUBLISH' AND status_at_publication = 'AVAILABLE'
                 ORDER BY created_at DESC, rowid DESC
                 LIMIT 1
             """, (scanner_id,))
@@ -300,7 +300,7 @@ class ScannerSnapshotStore:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT snapshot_id FROM scanner_snapshots
-                WHERE scanner_id = ? AND publication_decision = 'PUBLISH'
+                WHERE scanner_id = ? AND publication_decision = 'PUBLISH' AND status_at_publication = 'AVAILABLE'
                 ORDER BY created_at DESC, rowid DESC
                 LIMIT 1
             """, (scanner_id,))
