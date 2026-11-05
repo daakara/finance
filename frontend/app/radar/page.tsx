@@ -8,6 +8,8 @@ import PageIntro from '../../components/PageIntro';
 import {
   fetchScreenerGems,
   fetchAssetAnalytics,
+  fetchVCPExplain,
+  VCPExplainResponse,
   CanonicalRadarCategory,
   RadarCapabilities,
   RadarCapabilityStatus,
@@ -124,6 +126,7 @@ function RadarContent() {
   const [hasPartialResults, setHasPartialResults] = useState(false);
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
+  const [vcpExplanation, setVcpExplanation] = useState<VCPExplainResponse | null | 'LOADING' | 'UNAVAILABLE'>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
   const latestRequestIdRef = React.useRef(0);
 
@@ -430,6 +433,33 @@ function RadarContent() {
   const cleanQ = searchQuery.trim().toUpperCase();
   const isSearching = searchQuery.trim().length > 0;
   const isTickerQuery = /^[A-Z0-9\.\-]{1,6}$/i.test(searchQuery.trim());
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!cleanQ || !isTickerQuery) {
+      setVcpExplanation(null);
+      return;
+    }
+
+    setVcpExplanation('LOADING');
+    fetchVCPExplain(cleanQ)
+      .then((data) => {
+        if (!isMounted) return;
+        if (data) {
+          setVcpExplanation(data);
+        } else {
+          setVcpExplanation('UNAVAILABLE');
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setVcpExplanation('UNAVAILABLE');
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cleanQ, isTickerQuery]);
 
   const activeCanonicalAsset = useMemo(() => {
     // 1. If an active ticker query is being typed (e.g. 'TSLA'), that query supersedes prior selection
@@ -1604,6 +1634,54 @@ function RadarContent() {
                               : `Try switching to "All Confluences" to view all active setups.`}
                           </p>
                         </div>
+
+                        {/* VCP Explainability Diagnostic Box (Read-Only Reconstructed Evidence) */}
+                        {isTickerQuery && (
+                          <div className="my-4 mx-auto max-w-lg text-left p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] shadow-sm space-y-2 font-mono" data-testid="vcp-explain-card">
+                            {vcpExplanation === 'LOADING' ? (
+                              <div className="text-xs text-[var(--text-2)] py-2 text-center animate-pulse">
+                                Reconstructing historical VCP evidence for {cleanQ}...
+                              </div>
+                            ) : vcpExplanation && vcpExplanation !== 'UNAVAILABLE' ? (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)]">
+                                  <span className="text-sm font-bold text-amber-400">
+                                    {cleanQ} — {vcpExplanation.classification.vcpQualified ? "VCP Qualified" : "VCP Not Qualified"}
+                                  </span>
+                                  <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                    Advisory Only
+                                  </span>
+                                </div>
+                                <div className="text-xs text-[var(--text-1)]">
+                                  {vcpExplanation.classification.passedNormativeCount} of {vcpExplanation.classification.totalNormativeCount} normative predicates passed.
+                                </div>
+                                {vcpExplanation.classification.primaryRejection && (
+                                  <div className="text-xs text-rose-300 bg-rose-950/30 p-2.5 rounded-lg border border-rose-900/40">
+                                    {vcpExplanation.classification.primaryRejection.explanation}
+                                  </div>
+                                )}
+                                <div className="pt-1 text-[11px] text-[var(--text-3)] flex flex-wrap items-center justify-between gap-1">
+                                  <span>Historical reconstructed evidence — {vcpExplanation.evaluationContext.asOfDate ? (new Date(vcpExplanation.evaluationContext.asOfDate + "T12:00:00Z").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })) : "November 3, 2026"}.</span>
+                                </div>
+                                <div className="text-[10px] text-slate-500 italic">
+                                  Not an executable trade signal.
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-1 py-1">
+                                <div className="text-xs font-bold text-[var(--text-2)]">
+                                  {cleanQ} — VCP Evidence Unavailable
+                                </div>
+                                <div className="text-[11px] text-[var(--text-3)]">
+                                  Historical candle depth or evaluation context unavailable for this symbol.
+                                </div>
+                                <div className="text-[10px] text-slate-500 italic pt-1">
+                                  Not an executable trade signal.
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {onDemandError && (
                           <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-800 text-rose-300 text-xs">
