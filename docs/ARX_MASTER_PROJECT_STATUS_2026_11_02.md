@@ -1,5 +1,7 @@
 # ARX Terminal — Current Project Status
 
+> **Historical status snapshot — 2026-11-02.** This document records conditions at its stated date. It is **not** the current deployment, PR or authorization register. Use [ARX_CURRENT_PROJECT_STATUS.md](ARX_CURRENT_PROJECT_STATUS.md) for updated production/mainline status, and preserve this report as historical evidence.
+
 **As of:** 2026-11-02  
 **Scope:** Consolidated current-state addendum to the historical [29 October master baseline](ARX_MASTER_PROJECT_STATUS_2026_10_29.md). The 29 October document remains a point-in-time record; this file supersedes its *current* deployment and PR-status assertions, not its historical evidence.  
 **GitHub main anchor at verification:** `cef6a2deb1e33f3f9ff453218d667f7d3d97872f`  
