@@ -1,49 +1,25 @@
 {
-  "release_candidate_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
-  "base_anchor_commit": "183616cebde0448f66375012537fc2c82c70e6ee",
-  "total_files": 5,
+  "release_candidate_commit": "e27fb237b4bb7ad6b57834ec62a6ba0406fddcb1",
+  "base_anchor_commit": "eed8d201e0696f7db41f30a598b1619a9a0699f4",
+  "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "RADAR_RECOVERY_002_SNAPSHOT_AUTHORITY",
+  "directive": "SMART_MONEY_PRODUCTION_RECOVERY_002",
   "files": {
-    "analyst_dashboard/analyzers/scanner_runner.py": {
+    "analyst_dashboard/smart_money/storage/postgres_roles.sql": {
       "operation": "M",
-      "originating_pr_number": 194,
-      "originating_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
-      "governing_requirement": "RADAR-RECOVERY-002: quarantine boot warmup and non-available VCP publication",
-      "sha256": "68266bac74867fd1019c9fe88f2b0698b4b9d0b05531cace55d3f746bf47fe06",
-      "size_bytes": 76371
+      "originating_pr_number": 195,
+      "originating_commit": "e27fb237b4bb7ad6b57834ec62a6ba0406fddcb1",
+      "governing_requirement": "SM-ACT-026R / Recovery 002: permit web role read-only access to cached Form 4 evidence",
+      "sha256": "51d28d5978346d5d72b43906b69c7231a69c644f3c0098a38181dde6160321e9",
+      "size_bytes": 3105
     },
-    "analyst_dashboard/data/scanner_store.py": {
-      "operation": "M",
-      "originating_pr_number": 194,
-      "originating_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
-      "governing_requirement": "RADAR-RECOVERY-002: restrict active snapshot and ID selection to available evidence",
-      "sha256": "334acc4924e3c47d87c3f477e2b98b672e5cff671e0d34b50983f7d96fda839f",
-      "size_bytes": 17180
-    },
-    "api/main.py": {
-      "operation": "M",
-      "originating_pr_number": 194,
-      "originating_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
-      "governing_requirement": "RADAR-RECOVERY-002: disable evidence-producing VCP boot scan on production startup",
-      "sha256": "53c2a362602a7ca86b080e7162bc0dec3fe432e7dfd3f6452ddf73aa1fc220d5",
-      "size_bytes": 10478
-    },
-    "tests/test_radar_production_recovery_002.py": {
+    "scripts/release/sql/sm_act_026r_web_evidence_read_grant.sql": {
       "operation": "A",
-      "originating_pr_number": 194,
-      "originating_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
-      "governing_requirement": "RADAR-RECOVERY-002: cover active snapshot eligibility and boot-warmup quarantine",
-      "sha256": "b51f398f4e654f3793e61e0db550cb3be06fa28352ecb4ef2abd1a3f3d44156c",
-      "size_bytes": 3031
-    },
-    "tests/test_radar_scanner_pipeline.py": {
-      "operation": "M",
-      "originating_pr_number": 194,
-      "originating_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
-      "governing_requirement": "RADAR-RECOVERY-002: distinguish empty universe failure from valid computed zero match",
-      "sha256": "4a79e3b10ae135f4c84b20b5ff63b28a0bcb223a24da5f18265906c01f849fd1",
-      "size_bytes": 14240
+      "originating_pr_number": 195,
+      "originating_commit": "e27fb237b4bb7ad6b57834ec62a6ba0406fddcb1",
+      "governing_requirement": "SM-ACT-026R / Recovery 002: staged idempotent read-only production grant with privilege assertions",
+      "sha256": "e68f7339838450f4e924e00023c594284ba8264003a387f511c39c84bfcbaa8a",
+      "size_bytes": 2267
     }
   },
   "qualification_framework_files": {
@@ -53,9 +29,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "8549dd27d6197dfc0304d903dbd1d3053c673e255068180036ec92c7ab9b6dab",
-      "bytes": 59014,
-      "size_bytes": 59014
+      "sha256": "04a485fb80e640546afd6c512135074ad2facfd232e78605c8814fce163c04f2",
+      "bytes": 57811,
+      "size_bytes": 57811
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
@@ -98,9 +74,9 @@
       "size_bytes": 7459
     },
     "scripts/release/rq11_rollback_readiness.py": {
-      "sha256": "b2125cd6c71db2a2a4d66306207686d6c2c98d3ded3d5e2009da51617a34dc07",
+      "sha256": "37edf0c509b2f5116d8fa2cdf5e0e47faccedadc4add1c26165be2d8cfb3ff06",
       "description": "Release qualification module: rq11_rollback_readiness.py",
-      "size_bytes": 14692
+      "size_bytes": 23633
     },
     "scripts/release/rq12_qualification_summary.py": {
       "sha256": "eb6fa07022544ad745584c94dfb21623a89abca8935fd8bb355d155e0c88082f",
@@ -133,9 +109,9 @@
       "size_bytes": 20012
     },
     "scripts/release/test_rq11_adversarial_controls.py": {
-      "sha256": "03f4ae2b552e029810a883e749ce66256333ead9d69571d9de8766e8a3b67291",
-      "bytes": 8684,
-      "size_bytes": 8684
+      "sha256": "8f4141000511fab66be203043c579bfc409c6130df0735a9238441073f9880cc",
+      "bytes": 12373,
+      "size_bytes": 12373
     }
   }
 }
