@@ -8,60 +8,53 @@ interface TraderArchetypesCardProps {
 }
 
 export default function TraderArchetypesCard({ symbol, traderArchetypes }: TraderArchetypesCardProps) {
-  const data = traderArchetypes || {
-    consensusScore: 84,
-    verdict: "Strong Accumulation Candidate",
-    availableCount: 5,
-    unavailableCount: 0,
-    coverageRatio: 1.0,
-    archetypes: [
-      {
-        name: "Warren Buffett (Value & Moat)",
-        archetype: "High Cash Flow & Wide Moats",
-        alignmentScore: 88,
-        evidenceStatus: "AUTHORITATIVE_DYNAMIC",
-        status: "High Moat Alignment",
-        thesis: "High cash generation with strong pricing power, low corporate debt, and consistent share buybacks.",
-        catalyst: "Durable competitive advantage and steady profit margins across economic cycles.",
-      },
-      {
-        name: "Nancy Pelosi (Policy & Government Catalysts)",
-        archetype: "Government Spending & High-Conviction Tech",
-        alignmentScore: 94,
-        evidenceStatus: "AUTHORITATIVE_DYNAMIC",
-        status: "Strong Policy Support",
-        thesis: "Direct beneficiary of federal technology subsidies, infrastructure spending, and government contracts.",
-        catalyst: "Federal digital modernization mandates and legislative funding programs.",
-      },
-      {
-        name: "Stanley Druckenmiller (Macro Trends)",
-        archetype: "Interest Rate Trends & Market Momentum",
-        alignmentScore: 82,
-        evidenceStatus: "AUTHORITATIVE_DYNAMIC",
-        status: "Positive Macro Trend",
-        thesis: "The lower interest rate environment and upward price momentum favor holding this asset.",
-        catalyst: "Central bank rate cuts and strong institutional buying momentum.",
-      },
-      {
-        name: "Jim Simons (Quantitative Risk)",
-        archetype: "Statistical Stability & Crash Protection",
-        alignmentScore: 76,
-        evidenceStatus: "AUTHORITATIVE_DYNAMIC",
-        status: "Low Downside Risk",
-        thesis: "Solid risk-adjusted returns with limited crash risk in down markets.",
-        catalyst: "Low downside volatility and steady historical recovery during market pullbacks.",
-      },
-      {
-        name: "David Gardner (Motley Fool Rule Breakers)",
-        archetype: "First-Mover Disruptors & Hyper-Growth",
-        alignmentScore: 92,
-        evidenceStatus: "AUTHORITATIVE_DYNAMIC",
-        status: "High-Conviction Rule Breaker",
-        thesis: "Top-dog enterprise architecture with high gross margins, founder-led leadership, and rapid market expansion.",
-        catalyst: "Secular migration toward modern digital compute and AI cloud workflows.",
-      },
-    ],
-  };
+  // Truthful state check: missing data must NEVER display hardcoded fictional example scores
+  if (!traderArchetypes || !traderArchetypes.archetypes || traderArchetypes.archetypes.length === 0) {
+    return (
+      <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+              <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
+                <svg className="w-4 h-4 text-purple-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                <span>{symbol} Institutional Strategy Alignment (Hypothetical Archetypes)</span>
+              </h3>
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+              Model-derived similarity to selected investment strategies. These scores do not indicate current trades, positions, endorsements, or intentions of the named investors.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 inline-flex items-center gap-1">
+                <span>🎭</span> Strategy Alignment Model (Not Actual Holdings)
+              </span>
+              <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-[#1b2434] text-slate-400 border border-slate-700/60">
+                Coverage: 0 / 5 Modeled
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <div className="bg-slate-900 border border-slate-700 px-3 py-1 rounded-lg text-right">
+              <span className="text-[9px] sm:text-[10px] text-slate-400 block uppercase leading-none font-bold">Model Consensus</span>
+              <span className="text-sm sm:text-base font-bold text-slate-500">Unavailable</span>
+            </div>
+            <span className="text-[11px] sm:text-xs font-semibold px-2.5 py-1 rounded-md border bg-slate-900 text-slate-400 border-slate-700">
+              Strategy Telemetry Unavailable
+            </span>
+          </div>
+        </div>
+
+        <div className="p-6 rounded-lg border border-dashed border-slate-800 bg-[#090d14] text-center text-xs text-slate-400">
+          Strategy archetype telemetry is currently unavailable for {symbol}. No hypothetical model scores or fictional defaults are displayed.
+        </div>
+      </div>
+    );
+  }
+
+  const data = traderArchetypes;
 
   return (
     <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
@@ -74,7 +67,7 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
               <svg className="w-4 h-4 text-purple-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
-              <span>{symbol} Institutional Strategy Alignment</span>
+              <span>{symbol} Institutional Strategy Alignment (Hypothetical Archetypes)</span>
             </h3>
           </div>
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
@@ -86,7 +79,7 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
             </span>
             {data.availableCount !== undefined && (
               <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-[#1b2434] text-slate-300 border border-slate-700/60">
-                Coverage: {data.availableCount} / {data.archetypes.length} Measured
+                Coverage: {data.availableCount} / {data.archetypes.length} Modeled
               </span>
             )}
           </div>
@@ -94,7 +87,7 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
 
         <div className="flex items-center space-x-2">
           <div className="bg-purple-950/80 border border-purple-700/80 px-3 py-1 rounded-lg text-right">
-            <span className="text-[9px] sm:text-[10px] text-purple-300 block uppercase leading-none font-bold">Consensus</span>
+            <span className="text-[9px] sm:text-[10px] text-purple-300 block uppercase leading-none font-bold">Model Consensus</span>
             <span className="text-sm sm:text-base font-bold text-purple-400">
               {data.consensusScore != null ? `${data.consensusScore} / 100` : "Unavailable"}
             </span>
@@ -102,11 +95,11 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
           <span
             className={`text-[11px] sm:text-xs font-semibold px-2.5 py-1 rounded-md border ${
               data.consensusScore != null
-                ? "bg-emerald-950/80 text-emerald-400 border-emerald-800/80"
+                ? "bg-purple-950/80 text-purple-300 border-purple-800/80"
                 : "bg-slate-900 text-slate-400 border-slate-700"
             }`}
           >
-            {data.verdict}
+            {data.verdict || "Strategy Telemetry Unavailable"}
           </span>
         </div>
       </div>
@@ -140,7 +133,7 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
                       isUnavailable ? "text-slate-500 text-xs" : isHigh ? "text-cyan-400" : isMid ? "text-emerald-400" : "text-amber-400"
                     }`}
                   >
-                    {isUnavailable ? "Unavailable" : `${item.alignmentScore}%`}
+                    {isUnavailable ? "Unavailable" : `${item.alignmentScore} / 100`}
                   </span>
                 </div>
 
@@ -163,9 +156,9 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
                   {hasPrior && (
                     <span
                       className="inline-block text-[9px] px-1.5 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 font-semibold"
-                      title={item.thematicPrior?.source || "Static Domain Prior"}
+                      title={item.thematicPrior?.disclaimer || `${item.thematicPrior?.source || "Domain Prior"} — Modeled qualitative assumption; not verified statutory disclosure or government action.`}
                     >
-                      Thematic Prior
+                      Modeled Prior (Assumption)
                     </span>
                   )}
                 </div>
