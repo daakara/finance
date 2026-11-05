@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] — reconciled 2026-11-06
 
-- **Radar PR #199:** Selective production port of PR #196 historical VCP evidence integrity / explainability **merged and deployed** at `ccd8fe1a`. Targeted live functional readback remains separately pending. The original PR #196 passed CI and merged into `main` (`5ebd758d`).
+- **Radar PR #199:** Selective production port of PR #196 historical VCP evidence integrity / explainability **merged and deployed** at `ccd8fe1a`. Operator-reported targeted live functional acceptance passed under Directive 011U; platform deployment independently verified. The original PR #196 passed CI and merged into `main` (`5ebd758d`).
 - **Strategy Alignment PR #193:** Open production-targeted release work remains separate.
 - **Sprint 5:** Proposed scope reduction to Radar classification truth, bounded operational readiness and decision-surface parity; the canonical execution authorization remains **false**, and no natural scheduler, SEC worker or trade execution HOLD was lifted.
 - **Technical debt:** Issues #197 (Pre-Flight decision integrity and duplicate UX) and #198 (evidence cache, OHLCV provenance, runtime lifecycle) are deferred; not proof of production incidents.
@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - PR #199 selectively promoted PR #196 to `release/production` as `ccd8fe1a3ebddf0defcc5a378c0d25c89cec6e3d`.
 - Railway `web` and Smart Money worker deployments reported SUCCESS/ONLINE at the release SHA; PostgreSQL remains online.
-- Historical VCP provenance and explainability contracts are now present in the production branch; targeted live API/UI functional acceptance was not independently rerun in this documentation pass.
+- Historical VCP provenance and explainability contracts are production-accepted under 011U: live LNTH 9/10 explainability (volume dry-up rejected), fail-closed historical 422, unchanged AVAILABLE/0 snapshot, NVDA Smart Money non-regression and operational HOLD verification (operator evidence).
 - Recurring natural VCP scans, SEC ingestion, trade execution and Sprint 5 remain held.
 - [Release note](docs/releases/2026-11-06_ccd8fe1a_radar_evidence_promotion.md).
 
