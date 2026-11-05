@@ -3,18 +3,18 @@
 **Verified against GitHub and Railway:** 2026-11-06. This is a **living status entry point**, not a substitute for immutable historical evidence. Reverify branch heads and deployment identities before any release decision.  
 **Repository:** [daakara/finance](https://github.com/daakara/finance)  
 **Current mainline at verification:** `5ebd758d1c6dfc9375140c731c1adf0791b29bc3`  
-**Current production release branch at verification:** `74123474cc3b3cf84c78da4cb19a759343aadc71`
+**Current production release branch at verification:** `ccd8fe1a3ebddf0defcc5a378c0d25c89cec6e3d`
 
 ## Deployment and release authority
 
 | Component or workstream | State as verified/reported | Authority and limits |
 | --- | --- | --- |
-| Railway production web API | **SUCCESS** on `74123474`; deployment `cd55c99e-c590-4143-b456-e231d5c6256c` | GitHub/Railway verified; production web service online |
-| Railway Smart Money worker | **SUCCESS** on `74123474`; deployment `b3d5937c-106f-4d49-a572-baeb602aa9fc` | Railway verified; runtime logs show worker STANDBY and `ARX_SEC_EGRESS_ROLE=DISABLED` |
+| Railway production web API | **SUCCESS** on `ccd8fe1a`; deployment `54aa4381-d893-4a0e-9119-ce1ce3cfdbd9` | GitHub/Railway verified; production web service online |
+| Railway Smart Money worker | **SUCCESS** on `ccd8fe1a`; deployment `327ef32d-d8a5-4c2e-b962-597d087e1355` | Railway verified; operator reported STANDBY before release. **Latest post-#199 runtime role not independently rechecked here** |
 | Production PostgreSQL | **ONLINE** | Railway health verified; application privilege assertions are from operator's Recovery 002R dossier |
 | Smart Money Recovery 002R | **PRODUCTION_ACCEPTED**, PR [#195](https://github.com/daakara/finance/pull/195) merged | Operator verified SELECT-only evidence grants, denied writes and NVDA accession readback; independently verified merge and Railway deployments. See [release note](releases/2026-11-05_74123474_smart_money_recovery_002r.md) and [Issue #165 acceptance](https://github.com/daakara/finance/issues/165#issuecomment-6671363712) |
 | Radar boot-scan containment | PR [#194](https://github.com/daakara/finance/pull/194) included in production lineage | Startup natural VCP boot-scan disabled; publication authority preserved |
-| Radar historical VCP explainability | PR [#196](https://github.com/daakara/finance/pull/196) **merged to main only**, merge SHA `5ebd758d` | Production promotion pending under PR [#199](https://github.com/daakara/finance/pull/199); **do not claim deployed** until that PR passes production qualification and deploys |
+| Radar historical VCP explainability | PR [#196](https://github.com/daakara/finance/pull/196) **merged to main**; selective production PR [#199](https://github.com/daakara/finance/pull/199) **merged and deployed** | Production SHA `ccd8fe1a`; Railway deployments SUCCESS. **Targeted live Radar functional acceptance not independently rechecked here**; see [release note](releases/2026-11-06_ccd8fe1a_radar_evidence_promotion.md) |
 | Strategy Alignment | PR [#193](https://github.com/daakara/finance/pull/193) **open**, target `release/production` | Separate release workstream, not covered by Radar #199 |
 | Radar natural discovery | Bounded launch-cohort data and classification receipts exist; recurring scheduler **not authorized** | The 133-candidate/122-data-ready cohort and valid zero-match research do **not** demonstrate continuous scheduled production operation. Follow [Issue #166](https://github.com/daakara/finance/issues/166) |
 | Full-market Radar | **QUARANTINED / NOT FULLY OPERATIONAL** | 5,871-candidate expansion requires separate source coverage, identity and publication gates |
