@@ -4,9 +4,9 @@ A professional-grade quantitative intelligence platform featuring real-time mark
 
 **Live Deployment**: [https://www.arxterminal.com/](https://www.arxterminal.com/)  
 **Current verified status:** [Living project status](docs/ARX_CURRENT_PROJECT_STATUS.md) · [Production releases](docs/releases/README.md)  
-**Last verified Railway production SHA:** `ccd8fe1a3ebddf0defcc5a378c0d25c89cec6e3d` (2026-11-06; Radar #199 deployed, targeted functional acceptance pending)  
+**Last verified Railway production SHA:** `ccd8fe1a3ebddf0defcc5a378c0d25c89cec6e3d` (2026-11-06; Radar #199 deployed, 011U operator functional acceptance passed)  
 **Mainline SHA at documentation reconciliation:** `5ebd758d1c6dfc9375140c731c1adf0791b29bc3` (2026-11-06)  
-**Governance:** Sprint 5 execution `NOT_AUTHORIZED`; SEC / scanner / execution HOLDs active. Radar PR #196 merged to main; production PR #199 deployed, functional acceptance pending.  
+**Governance:** Sprint 5 execution `NOT_AUTHORIZED`; SEC / scanner / execution HOLDs active. Radar PR #196 merged to main; production PR #199 accepted for historical VCP evidence under Directive 011U; natural scheduling remains held.  
 
 ![Next.js](https://img.shields.io/badge/next.js-14.2-black.svg)
 ![React](https://img.shields.io/badge/react-18-cyan.svg)
