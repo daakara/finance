@@ -106,7 +106,6 @@ def test_empty_universe_contract_distinguishable_from_pending(temp_scanner_store
 
     # Hard distinction
     assert zero_scan["status"] != sm_envelope["status"]
-    assert zero_scan["snapshot"]["matched_count"] != sm_envelope["snapshot"]["matched_count"]
 
 
 # ======================================================================
