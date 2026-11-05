@@ -81,24 +81,21 @@ def temp_scanner_store():
 # SECTION 24: ZERO-RESULT CONTRACT TESTS
 # ======================================================================
 
-def test_zero_result_contract_distinguishable_from_pending(temp_scanner_store):
+def test_empty_universe_contract_distinguishable_from_pending(temp_scanner_store):
     """
     Section 24 Invariant:
-    A completed scan with no matches yields:
-      status = AVAILABLE
-      matched_count = 0
-    This must remain strictly distinguishable from PIPELINE_PENDING where:
-      status = PIPELINE_PENDING
-      matched_count = None
+    An empty universe is an ERROR, not a genuinely computed zero-match.
+    A non-empty completed scan with no qualified setups is AVAILABLE/0.
+    PIPELINE_PENDING remains a separate uncomputed state.
     """
     vcp_runner = VCPScannerRunner(snapshot_store=temp_scanner_store)
-    # Scan with empty universe to produce 0 matches
     zero_scan = vcp_runner.execute_market_wide_scan(universe_override=[])
 
-    assert zero_scan["status"] == ScannerStatus.AVAILABLE.value
-    assert zero_scan["snapshot"]["matched_count"] == 0
+    assert zero_scan["status"] == ScannerStatus.ERROR.value
+    assert zero_scan["snapshot"]["matched_count"] is None
     assert zero_scan["snapshot"]["universe_size"] == 0
     assert len(zero_scan["results"]) == 0
+    assert temp_scanner_store.get_latest_active_snapshot("MINERVINI_VCP") is None
 
     sm_runner = SmartMoneyScannerRunner()
     sm_envelope = sm_runner.get_status_envelope()
