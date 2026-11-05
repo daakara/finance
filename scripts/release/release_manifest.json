@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "85abbd41f62bcb095faac72f950886412a4d7783",
+  "release_candidate_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
   "base_anchor_commit": "649d31511c79324dbd1cb7369ffacac1c36ea75f",
   "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -8,15 +8,15 @@
     "analyst_dashboard/data/sec_edgar_fetcher.py": {
       "operation": "M",
       "originating_pr_number": 192,
-      "originating_commit": "85abbd41f62bcb095faac72f950886412a4d7783",
+      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
       "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "7642d35c40f707045410cb98baf301cb2de64e14a7fa72bed32c450f3864729e",
-      "size_bytes": 34433
+      "sha256": "83711f10e3bc85db29dbe0331a1562c134309557868241f95187a1751ff51500",
+      "size_bytes": 38908
     },
     "analyst_dashboard/smart_money/storage/postgres_connection.py": {
       "operation": "M",
       "originating_pr_number": 192,
-      "originating_commit": "85abbd41f62bcb095faac72f950886412a4d7783",
+      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
       "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
       "sha256": "6508601d58bdc157172f5994168c72961cecd0ea1fffb8e8cd95be5a87271b2b",
       "size_bytes": 5421
@@ -24,7 +24,7 @@
     "evidence/release-closure/SM-ACT-025-visibility-closure-issue-165.md": {
       "operation": "A",
       "originating_pr_number": 192,
-      "originating_commit": "85abbd41f62bcb095faac72f950886412a4d7783",
+      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
       "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
       "sha256": "7da6f89abe397a243d4a99f100e78439ab65aa7c0316e18684646cfa1789b9cd",
       "size_bytes": 4632
@@ -32,18 +32,18 @@
     "evidence/release-closure/SM-ACT-026-evidence-visibility-qualification-issue-165.md": {
       "operation": "A",
       "originating_pr_number": 192,
-      "originating_commit": "85abbd41f62bcb095faac72f950886412a4d7783",
+      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
       "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "c31365c9b2d219521220098fd335aace33bbdef6109eb7abde4fd23e4a3166ae",
-      "size_bytes": 4519
+      "sha256": "e1bd9be50355d6051c4ddc1e93f3f98ec1cc8103384cb340da2cff449cde1976",
+      "size_bytes": 6585
     },
     "tests/test_smart_money_postgres_runtime_integration.py": {
       "operation": "M",
       "originating_pr_number": 192,
-      "originating_commit": "85abbd41f62bcb095faac72f950886412a4d7783",
+      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
       "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "2cccebf3f197dd0927130ca95c885861925177273f570e504c63e1deed46fc74",
-      "size_bytes": 27646
+      "sha256": "971cb09f330ca64711df3a02eb4211d0818cb406cb9f8f7af8776b998436e99d",
+      "size_bytes": 34612
     }
   },
   "qualification_framework_files": {
