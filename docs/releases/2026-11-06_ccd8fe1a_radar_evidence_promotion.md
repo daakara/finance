@@ -25,12 +25,24 @@
 - Startup/boot-warmup must not publish authoritative natural VCP discoveries; existing PR #194 guards remain controlling.
 - Neither a valid zero-match outcome nor an HTTP 200 proves recurring natural scanning is enabled.
 
-## Outstanding verification boundary
+## Final live production acceptance — Directive 011U
 
-This documentation pass independently verified **GitHub merge and Railway deployment success**, but did **not** independently rerun production VCP temporal requests, snapshot provenance readback, test the UI or verify the full runtime HOLD configuration after the release.
+**Operator acceptance verdict:** `RADAR_VCP_HISTORICAL_EVIDENCE_PRODUCTION_ACCEPTED`.
 
-Therefore this note records **`PRODUCTION_DEPLOYED — TARGETED_FUNCTIONAL_ACCEPTANCE_NOT_YET_VERIFIED_HERE`**, not blanket `RADAR_VCP_HISTORICAL_EVIDENCE_PRODUCTION_ACCEPTED`.
+Antigravity's 011U post-deploy receipt `ARX_RADAR_VCP_011U_PRODUCTION_ACCEPTANCE_REPORT.md` records direct production endpoint and browser checks against `https://web-production-470560.up.railway.app`, using production SHA `ccd8fe1a3ebddf0defcc5a378c0d25c89cec6e3d`:
 
-Reconcile the Radar operator's eventual post-deployment acceptance receipt against this exact SHA before changing the status. Track in [Issue #166](https://github.com/daakara/finance/issues/166).
+| Test | Operator-reported live result |
+| --- | --- |
+| `GET /api/v1/screener/vcp/explain/LNTH` | HTTP 200; passed 9/10 normative predicates, `vcpQualified=false`; `PRED_VOLUME_DRY_UP` failed with observed 0.9884 versus max 0.70 |
+| Provenance | `DETERMINISTIC_RECALCULATION`, `historicalPointInTimeCertified=false`, `bitemporalCutoffEnforced=true`; context `asOfDate=2026-11-05` |
+| Unauthorized historical as-of `2024-01-01T00:00:00Z` | HTTP 422 `EVIDENCE_UNAVAILABLE`; no fabricated historical evaluation |
+| Active snapshot | `vcp-snap-1793837026-768f94d4`; `AVAILABLE`, `matched_count=0`, no unexpected publication |
+| `GET /api/v1/smart-money/sec-filings/NVDA` | HTTP 200, `AVAILABLE_WITH_RESULTS`, 7 filings, accession `0001696841-26-000012` |
+| Frontend | Operator reports successful Cloudflare Pages production deployment and Radar page acceptance |
+| Safety | Operator reports `HOLD_SCAN_001`, `HOLD_SEC_001`, `HOLD_EXEC_001` active, scheduler flag 0, SEC egress DISABLED, worker STANDBY |
+
+**Evidence distinction:** GitHub PR merge and Railway deployment were independently reverified via connected services. The detailed live endpoint JSON, Cloudflare production readback, exact worker runtime HOLD values and frontend checks are sourced from the operator's 011U report; they were not independently rerun in this documentation session.
+
+**Acceptance scope:** historical VCP evidence integrity, explainability and Smart Money regression isolation on the promoted production release. It does **not** authorize natural recurring scans, full-market publication, SEC ingestion, Sprint 5 execution or trading. Track broader activation in [Radar Issue #166](https://github.com/daakara/finance/issues/166).
 
 **No authority changes:** This release is not authorization for new natural VCP scans, continuous scheduler activation, full-market universe publication, SEC ingestion, strategy tuning, Sprint 5 activation or trading execution.
