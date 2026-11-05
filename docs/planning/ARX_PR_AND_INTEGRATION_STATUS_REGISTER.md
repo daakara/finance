@@ -1,4 +1,7 @@
 # ARX TERMINAL — PULL REQUEST & INTEGRATION STATUS REGISTER
+
+> **Historical PR register — 2026-10-29.** This list is not a live exhaustive PR inventory. Current GitHub PR metadata and [ARX current project status](../ARX_CURRENT_PROJECT_STATUS.md) supersede the dates and open/merged claims below for present decisions. Historical entries are preserved for traceability.
+
 ## Comprehensive Accounting of Merged, Open, Draft & Candidate Branches
 **Review Date:** 29 October 2026 (22:30 UTC+1)  
 **Mainline Anchor SHA:** `09c2112e5e9f415b3dec5bea9cb2c85311fb22dd`  
