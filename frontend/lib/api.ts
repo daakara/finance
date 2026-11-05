@@ -1133,6 +1133,61 @@ export interface ScreenerResponse {
   partialErrors?: unknown[];
 }
 
+export interface VCPExplainEvaluationContext {
+  asOfDate: string;
+  evaluationAsOf: string;
+  rulesetVersion: string;
+  classifierVersion: string;
+  rulesetHash: string;
+  snapshotId?: string | null;
+}
+
+export interface VCPExplainPrimaryRejection {
+  predicateId: string;
+  name: string;
+  status: string;
+  measuredValue: any;
+  thresholdApplied: any;
+  reasonCodes: string[];
+  explanation: string;
+}
+
+export interface VCPExplainClassification {
+  vcpQualified: boolean;
+  vcpClassification: string;
+  stageClassification: string;
+  passedNormativeCount: number;
+  totalNormativeCount: number;
+  primaryRejection?: VCPExplainPrimaryRejection | null;
+  summary: string;
+}
+
+export interface VCPExplainPredicate {
+  predicateId: string;
+  status: string;
+  measuredValue: any;
+  thresholdApplied: any;
+  reasonCodes: string[];
+}
+
+export interface VCPExplainProvenance {
+  provenanceType: string;
+  evidenceSemantics?: string;
+  historicalPointInTimeCertified?: boolean;
+  source: string;
+  bitemporalCutoffEnforced: boolean;
+  evaluationAsOf: string;
+  disclaimer: string;
+}
+
+export interface VCPExplainResponse {
+  symbol: string;
+  evaluationContext: VCPExplainEvaluationContext;
+  classification: VCPExplainClassification;
+  predicates: VCPExplainPredicate[];
+  provenance: VCPExplainProvenance;
+}
+
 // 🧠 Global Spot Price & Metadata Registry (Enforces 100% price parity across all timeframes)
 export const SpotPriceRegistry = new Map<string, {
   price: number;
@@ -2071,6 +2126,30 @@ export async function fetchScreenerGems(model: string = "all", universe?: string
     status: "ERROR",
     error: "Screener API unavailable",
   };
+}
+
+/**
+ * Fetches deterministic VCP classification explainability for a symbol based on
+ * the active production snapshot evaluation context.
+ * Strict read-only diagnostic reconstruction with bitemporal cutoff enforcement.
+ */
+export async function fetchVCPExplain(symbol: string): Promise<VCPExplainResponse | null> {
+  const clean = symbol.trim().toUpperCase();
+  if (!clean) return null;
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/screener/vcp/explain/${encodeURIComponent(clean)}`, {
+      headers: ARX_API_HEADERS,
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    return null;
+  } catch (err) {
+    console.warn(`VCP explain fetch failed for ${clean}:`, err);
+    return null;
+  }
 }
 
 /**
