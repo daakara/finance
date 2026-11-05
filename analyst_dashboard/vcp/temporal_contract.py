@@ -81,6 +81,11 @@ class VCPTemporalContract:
         2. known_at <= evaluation_as_of
         3. is_session_closed is True (partial-bar safety)
         """
+        if not bar.known_at:
+            return False, f"MISSING_AVAILABILITY_TIMESTAMP: bar on {bar.bar_date} lacks proven availability timestamp (known_at)"
+        if not bar.valid_time:
+            return False, f"MISSING_VALID_TIMESTAMP: bar on {bar.bar_date} lacks valid_time"
+
         cutoff_dt = cls.parse_iso(evaluation_as_of)
         valid_dt = cls.parse_iso(bar.valid_time)
         known_dt = cls.parse_iso(bar.known_at)
