@@ -1,33 +1,49 @@
 {
-  "release_candidate_commit": "7d4e5676b73e9d438031d6ad5698f7671d206eb0",
-  "base_anchor_commit": "d247ee78234139308e2c611807d5efb8dd6ccc63",
-  "total_files": 3,
+  "release_candidate_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
+  "base_anchor_commit": "649d31511c79324dbd1cb7369ffacac1c36ea75f",
+  "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "RADAR_ACT_007_008_VCP_TEMPORAL_FIX",
+  "directive": "SM_ACT_026_POSTGRES_EVIDENCE_VISIBILITY",
   "files": {
-    "analyst_dashboard/analyzers/scanner_runner.py": {
+    "analyst_dashboard/data/sec_edgar_fetcher.py": {
       "operation": "M",
-      "originating_pr_number": 188,
-      "originating_commit": "2aea348be771719d8d5cfc19acf3e694e3f0a59e",
-      "governing_requirement": "RADAR-NATURAL-VCP-007: temporal cutoff parsing in America/New_York and 200-bar fetch boundary",
-      "sha256": "601e3fd759c2926c99b99cafc880e8d223f0a0626eb08ae02b6d0a779d9d8169",
-      "size_bytes": 76180
+      "originating_pr_number": 192,
+      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
+      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
+      "sha256": "83711f10e3bc85db29dbe0331a1562c134309557868241f95187a1751ff51500",
+      "size_bytes": 38908
     },
-    "analyst_dashboard/vcp/temporal_contract.py": {
+    "analyst_dashboard/smart_money/storage/postgres_connection.py": {
       "operation": "M",
-      "originating_pr_number": 188,
-      "originating_commit": "2aea348be771719d8d5cfc19acf3e694e3f0a59e",
-      "governing_requirement": "RADAR-NATURAL-VCP-007: America/New_York timezone resolution and bitemporal cutoff guard",
-      "sha256": "4af5acb78481be0a8311449f8d18716a087e178ca4cef1970dce2d1d76bf8f7a",
-      "size_bytes": 4381
+      "originating_pr_number": 192,
+      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
+      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
+      "sha256": "6508601d58bdc157172f5994168c72961cecd0ea1fffb8e8cd95be5a87271b2b",
+      "size_bytes": 5421
     },
-    "tests/test_vcp_temporal_cutoff_qualification.py": {
+    "evidence/release-closure/SM-ACT-025-visibility-closure-issue-165.md": {
       "operation": "A",
-      "originating_pr_number": 188,
-      "originating_commit": "2aea348be771719d8d5cfc19acf3e694e3f0a59e",
-      "governing_requirement": "RADAR-NATURAL-VCP-007: 10/10 temporal cutoff qualification suite",
-      "sha256": "c9f03758df000d867438d36f9b2b4cd00c0e0315a5dd306049b9d35aace5ede5",
-      "size_bytes": 12257
+      "originating_pr_number": 192,
+      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
+      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
+      "sha256": "7da6f89abe397a243d4a99f100e78439ab65aa7c0316e18684646cfa1789b9cd",
+      "size_bytes": 4632
+    },
+    "evidence/release-closure/SM-ACT-026-evidence-visibility-qualification-issue-165.md": {
+      "operation": "A",
+      "originating_pr_number": 192,
+      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
+      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
+      "sha256": "e1bd9be50355d6051c4ddc1e93f3f98ec1cc8103384cb340da2cff449cde1976",
+      "size_bytes": 6585
+    },
+    "tests/test_smart_money_postgres_runtime_integration.py": {
+      "operation": "M",
+      "originating_pr_number": 192,
+      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
+      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
+      "sha256": "971cb09f330ca64711df3a02eb4211d0818cb406cb9f8f7af8776b998436e99d",
+      "size_bytes": 34612
     }
   },
   "qualification_framework_files": {
@@ -37,9 +53,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "891fac3bf32451b8b80349a6ceef94f0b282931bd064f3fa10890b9680aa85de",
-      "bytes": 59004,
-      "size_bytes": 59004
+      "sha256": "0e423bc20102285a1dc786cb818e6e33aa5c0cda753afaf95eb9c9cfc0cb40d8",
+      "bytes": 59009,
+      "size_bytes": 59009
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
