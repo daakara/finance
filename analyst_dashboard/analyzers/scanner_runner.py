@@ -753,17 +753,31 @@ class VCPScannerRunner:
                     "evaluated_at": generated_at,
                     "status": FreshnessStatus.LIVE.value,
                 },
-                "publication_decision": eval_report.decision.value,
+                "publication_decision": (
+                    PublicationDecision.PUBLISH.value
+                    if (
+                        eval_report.decision == PublicationDecision.PUBLISH
+                        and not (startup_context or eff_invocation_class == "BOOT_WARMUP" or originating_principal_type == "BOOTSTRAP")
+                        and status_at_pub == ScannerStatus.AVAILABLE
+                    )
+                    else PublicationDecision.QUARANTINE.value
+                ),
                 "universe_metadata": universe_metadata,
                 "coverage_metadata": coverage_metadata,
             }
 
-            if (
+            is_warmup_or_bootstrap = bool(
+                startup_context
+                or eff_invocation_class == "BOOT_WARMUP"
+                or originating_principal_type == "BOOTSTRAP"
+            )
+            is_publishable = bool(
                 eval_report.decision == PublicationDecision.PUBLISH
+                and not is_warmup_or_bootstrap
                 and status_at_pub == ScannerStatus.AVAILABLE
-                and eff_invocation_class != "BOOT_WARMUP"
-                and not startup_context
-            ):
+            )
+
+            if is_publishable:
                 if lease is not None:
                     # Transactional Fenced Publication (Atomic authority check + publication)
                     self.fenced_publisher.publish_snapshot_fenced(
@@ -781,7 +795,10 @@ class VCPScannerRunner:
                 if lease is not None:
                     self.coordinator.release(lease)
                     lease_released_by_publisher = True
-                logger.warning(f"VCP Scanner snapshot {snapshot_id} quarantined due to violations: {eval_report.violations}")
+                if is_warmup_or_bootstrap:
+                    logger.info(f"VCP Scanner snapshot {snapshot_id} from {eff_invocation_class} quarantined from publication authority (NON_EVIDENCE_BOOTSTRAP).")
+                else:
+                    logger.warning(f"VCP Scanner snapshot {snapshot_id} quarantined due to violations: {eval_report.violations or status_at_pub.value}")
 
             return ImmutableScannerSnapshot(
                 scanner_id="MINERVINI_VCP",
@@ -798,7 +815,7 @@ class VCPScannerRunner:
                 results=qualified_candidates,
                 provenance=snapshot_record["provenance"],
                 freshness=snapshot_record["freshness"],
-                publication_decision=eval_report.decision,
+                publication_decision=PublicationDecision(snapshot_record["publication_decision"]),
                 universe_metadata=universe_metadata,
                 coverage_metadata=coverage_metadata,
             ).to_envelope()
