@@ -1,49 +1,57 @@
 {
-  "release_candidate_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-  "base_anchor_commit": "649d31511c79324dbd1cb7369ffacac1c36ea75f",
-  "total_files": 5,
+  "release_candidate_commit": "a5c8c43326d2f872ac84f4d2897ca30ad4877db0",
+  "base_anchor_commit": "183616cebde0448f66375012537fc2c82c70e6ee",
+  "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "SM_ACT_026_POSTGRES_EVIDENCE_VISIBILITY",
+  "directive": "NVDA_STRATEGY_ALIGNMENT_PROD_PROMOTION",
   "files": {
-    "analyst_dashboard/data/sec_edgar_fetcher.py": {
+    "analyst_dashboard/analyzers/trader_archetypes.py": {
       "operation": "M",
-      "originating_pr_number": 192,
-      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "83711f10e3bc85db29dbe0331a1562c134309557868241f95187a1751ff51500",
-      "size_bytes": 38908
+      "originating_pr_number": 191,
+      "originating_commit": "fe3c93e3905206d1e47fa525ee16696c3b265013",
+      "governing_requirement": "NVDA-STRATEGY-ALIGNMENT-002: Non-advisory factor alignment verdict descriptions and modeled assumption tags",
+      "sha256": "6ada4ea2e2cfe3a2a591e68eeec3d1a01d771085277ac673daa8b3b23a156cc2",
+      "size_bytes": 52913
     },
-    "analyst_dashboard/smart_money/storage/postgres_connection.py": {
+    "frontend/app/page.tsx": {
       "operation": "M",
-      "originating_pr_number": 192,
-      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "6508601d58bdc157172f5994168c72961cecd0ea1fffb8e8cd95be5a87271b2b",
-      "size_bytes": 5421
+      "originating_pr_number": 191,
+      "originating_commit": "fe3c93e3905206d1e47fa525ee16696c3b265013",
+      "governing_requirement": "NVDA-STRATEGY-ALIGNMENT-002: Supporting model accordion clarification (not actual holdings)",
+      "sha256": "cf1c0e592bec0dfc6c4aa6a55d0c9bdfd58d2f962d29a22ac1501d1fc9fd905b",
+      "size_bytes": 42994
     },
-    "evidence/release-closure/SM-ACT-025-visibility-closure-issue-165.md": {
+    "frontend/components/TraderArchetypesCard.tsx": {
+      "operation": "M",
+      "originating_pr_number": 191,
+      "originating_commit": "fe3c93e3905206d1e47fa525ee16696c3b265013",
+      "governing_requirement": "NVDA-STRATEGY-ALIGNMENT-002: Removal of hardcoded fictional fallbacks, /100 score units, Coverage X/Y Modeled",
+      "sha256": "ad51cdd4c9230d7785401c139a0d5614f1a0800c269706dfd452f41796804b5c",
+      "size_bytes": 10498
+    },
+    "frontend/lib/api.ts": {
+      "operation": "M",
+      "originating_pr_number": 191,
+      "originating_commit": "fe3c93e3905206d1e47fa525ee16696c3b265013",
+      "governing_requirement": "NVDA-STRATEGY-ALIGNMENT-002: ThematicPrior type definition with modeled assumption metadata",
+      "sha256": "3775111b65df4a847ede49871999ed374105c023a5358d5d04598797e24adea0",
+      "size_bytes": 182262
+    },
+    "frontend/tests/strategyAlignmentSemantics002.test.ts": {
       "operation": "A",
-      "originating_pr_number": 192,
-      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "7da6f89abe397a243d4a99f100e78439ab65aa7c0316e18684646cfa1789b9cd",
-      "size_bytes": 4632
+      "originating_pr_number": 191,
+      "originating_commit": "fe3c93e3905206d1e47fa525ee16696c3b265013",
+      "governing_requirement": "NVDA-STRATEGY-ALIGNMENT-002: 6/6 frontend semantic verification suite",
+      "sha256": "f17dc66398becfba7f7016405b9f3f9a6ff6a85b13a6550485d021fdb58b7f83",
+      "size_bytes": 6281
     },
-    "evidence/release-closure/SM-ACT-026-evidence-visibility-qualification-issue-165.md": {
+    "tests/test_strategy_alignment_semantics_002.py": {
       "operation": "A",
-      "originating_pr_number": 192,
-      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "e1bd9be50355d6051c4ddc1e93f3f98ec1cc8103384cb340da2cff449cde1976",
-      "size_bytes": 6585
-    },
-    "tests/test_smart_money_postgres_runtime_integration.py": {
-      "operation": "M",
-      "originating_pr_number": 192,
-      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "971cb09f330ca64711df3a02eb4211d0818cb406cb9f8f7af8776b998436e99d",
-      "size_bytes": 34612
+      "originating_pr_number": 191,
+      "originating_commit": "fe3c93e3905206d1e47fa525ee16696c3b265013",
+      "governing_requirement": "NVDA-STRATEGY-ALIGNMENT-002: 5/5 backend invariant and authority isolation test suite",
+      "sha256": "eab46295a92e1309660f2706620da6b82aac2fe923e7d11d1a7eedf935f84323",
+      "size_bytes": 8687
     }
   },
   "qualification_framework_files": {
@@ -53,9 +61,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "0e423bc20102285a1dc786cb818e6e33aa5c0cda753afaf95eb9c9cfc0cb40d8",
-      "bytes": 59009,
-      "size_bytes": 59009
+      "sha256": "9869f68585711224993765182f942ed268b9f3933d287930ce88c9572f8c8182",
+      "bytes": 59019,
+      "size_bytes": 59019
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",

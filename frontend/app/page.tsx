@@ -718,7 +718,7 @@ function TerminalContent() {
                 />
                 {!capabilities.canUseETFWorkflow && (
                   <details className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] p-3">
-                    <summary className="min-h-[44px] cursor-pointer text-sm font-semibold text-[var(--text-1)] focus-visible:outline focus-visible:outline-2">Strategy alignment · supporting model comparisons</summary>
+                    <summary className="min-h-[44px] cursor-pointer text-sm font-semibold text-[var(--text-1)] focus-visible:outline focus-visible:outline-2">Hypothetical strategy alignment · supporting model comparisons (not actual holdings)</summary>
                     <TraderArchetypesCard
                       symbol={selectedSymbol}
                       traderArchetypes={data?.traderArchetypes}

@@ -160,6 +160,8 @@ export interface ThematicPrior {
   evidenceType: string;
   isStaticPrior?: boolean;
   isLiveObservation?: boolean;
+  isModeledAssumption?: boolean;
+  disclaimer?: string;
   description?: string;
   thesis?: string;
   catalyst?: string;
