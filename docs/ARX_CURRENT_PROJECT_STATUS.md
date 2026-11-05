@@ -38,7 +38,7 @@
 
 ## Sprint 5: planning state, not execution
 
-The [canonical backlog](planning/arx_canonical_backlog.json) was last reconciled 2026-10-31, remains labelled Sprint 4 and lists eight Sprint 5 carryforwards. These may overlap with subsequent Radar PRs. **Proposed**, not yet committed, rescope: (A) Radar classification source integrity; (B) bounded operational readiness; (C) cross-surface decision truth. Reconcile task-by-task using actual current production evidence before changing lifecycle records. Do not mark tasks closed without verified acceptance or silently unlock Sprint 5.
+The [canonical backlog](planning/arx_canonical_backlog.json) was last reconciled 2026-10-31, remains labelled Sprint 4 and lists eight Sprint 5 carryforwards. These may overlap with subsequent Radar PRs. **Proposed**, not yet committed, [Sprint 5 rescope](planning/ARX_SPRINT5_RESCOPE_PROPOSAL_2026_11_06.md): (A) Radar classification source integrity; (B) bounded operational readiness; (C) cross-surface decision truth. Reconcile task-by-task using actual current production evidence before changing lifecycle records. Do not mark tasks closed without verified acceptance or silently unlock Sprint 5.
 
 Related deferred work: [Pre-Flight #197](https://github.com/daakara/finance/issues/197), [technical debt #198](https://github.com/daakara/finance/issues/198), [risk/reward presentation #181](https://github.com/daakara/finance/issues/181).
 
