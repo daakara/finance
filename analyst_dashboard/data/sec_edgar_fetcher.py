@@ -5,6 +5,7 @@ import re
 import json
 import logging
 import requests
+import datetime
 from typing import Dict, Any, List, Optional, Tuple
 
 import threading
@@ -13,6 +14,33 @@ import time
 import sqlite3
 
 logger = logging.getLogger(__name__)
+
+
+def _format_canonical_sec_timestamp(val: Any) -> Optional[str]:
+    """
+    Formats a datetime or ISO timestamp into canonical ISO 8601 UTC with 'Z' suffix (e.g. '2026-09-18T21:13:29Z').
+    Returns None if missing or invalid; never fabricates timestamps from dates.
+    """
+    if val is None:
+        return None
+    if isinstance(val, datetime.datetime):
+        if val.tzinfo is None:
+            val = val.replace(tzinfo=datetime.timezone.utc)
+        return val.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if isinstance(val, str):
+        cleaned = val.strip()
+        if not cleaned:
+            return None
+        if cleaned.endswith("+00:00"):
+            cleaned = cleaned[:-6] + "Z"
+        if "T" not in cleaned and " " not in cleaned:
+            return None
+        if " " in cleaned and "T" not in cleaned:
+            cleaned = cleaned.replace(" ", "T")
+        if not cleaned.endswith("Z") and "+" not in cleaned and "-" not in cleaned[10:]:
+            cleaned += "Z"
+        return cleaned
+    return None
 
 DISALLOWED_DOMAINS = {
     "internal", "local", "example.com", "sample.com", "test.com", "placeholder", "invalid"
@@ -387,68 +415,270 @@ class SecEdgarFetcher:
         allowed_forms = set(form_types) if form_types else {"10-K", "10-Q", "8-K", "4", "4/A", "13F-HR"}
         results = []
 
+        backend = "sqlite"
         try:
-            conn = connect_smart_money_db()
-            conn.row_factory = sqlite3.Row
-            cur = conn.cursor()
-            query = """
-                SELECT accession_number, issuer_cik, filing_date, document_type, source_url, disposition
-                FROM form4_raw_filings
-                WHERE 1=1
-            """
-            params = []
-            if cik:
-                query += " AND issuer_cik = ?"
-                params.append(str(cik).zfill(10))
-            else:
-                query += " AND accession_number IN (SELECT accession_number FROM form4_parsed_transactions WHERE issuer_symbol = ?)"
-                params.append(clean_sym)
+            from analyst_dashboard.smart_money.storage.config import get_storage_backend
+            backend = get_storage_backend()
+        except Exception as e:
+            if "PRODUCTION_STORAGE_CONFIGURATION_VIOLATION" in str(e) or "POSTGRES_STORAGE_BACKEND_CONFIGURATION_VIOLATION" in str(e):
+                logger.error(f"Storage backend configuration violation: {e}")
+                return {
+                    "status": "BACKEND_STORAGE_ERROR",
+                    "status_code": None,
+                    "cik": cik,
+                    "reason": "STORAGE_CONFIGURATION_VIOLATION",
+                    "error_detail": str(e),
+                    "items": None,
+                    "cached": True,
+                }
+            backend = "sqlite"
 
-            query += " ORDER BY filing_date DESC LIMIT 25"
-            cur.execute(query, tuple(params))
-            rows = cur.fetchall()
-            conn.close()
+        if backend == "postgres":
+            try:
+                from analyst_dashboard.smart_money.storage.postgres_connection import get_connection
+                from psycopg2.extras import RealDictCursor
+                with get_connection() as conn:
+                    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                        has_query = "SELECT 1 FROM form4_raw_filings WHERE (cik = %s OR ticker = %s) LIMIT 1" if cik else "SELECT 1 FROM form4_raw_filings WHERE ticker = %s LIMIT 1"
+                        has_params = [str(cik).zfill(10), clean_sym] if cik else [clean_sym]
+                        cur.execute(has_query, tuple(has_params))
+                        has_issuer = cur.fetchone() is not None
 
-            for r in rows:
-                doc_type = r["document_type"] or "4"
-                if doc_type in allowed_forms or doc_type.startswith("4"):
+                        if not has_issuer:
+                            return {
+                                "status": "CONFIGURATION_BLOCKED",
+                                "status_code": None,
+                                "cik": cik,
+                                "reason": "SOURCE_NOT_INGESTED",
+                                "error_detail": f"SEC filings for {clean_sym} not yet ingested in local store. Live SEC egress disabled in API web workers (ARX_SEC_EGRESS_ROLE != OWNER).",
+                                "items": None,
+                                "cached": True,
+                            }
+
+                        query = """
+                            SELECT
+                                r.accession_number,
+                                r.cik,
+                                r.ticker,
+                                r.filing_date,
+                                r.accepted_datetime,
+                                r.source_url,
+                                l.public_availability_at
+                            FROM form4_raw_filings r
+                            LEFT JOIN sm_source_availability_ledger l ON r.accession_number = l.accession_number
+                            WHERE 1=1
+                        """
+                        params = []
+                        if cik:
+                            query += " AND (r.cik = %s OR r.ticker = %s)"
+                            params.extend([str(cik).zfill(10), clean_sym])
+                        else:
+                            query += " AND r.ticker = %s"
+                            params.append(clean_sym)
+
+                        query += " ORDER BY r.filing_date DESC, r.accepted_datetime DESC NULLS LAST LIMIT 25"
+                        cur.execute(query, tuple(params))
+                        rows = cur.fetchall()
+
+                        for r in rows:
+                            doc_type = "4"
+                            if allowed_forms and doc_type not in allowed_forms and not any(f.startswith("4") for f in allowed_forms):
+                                continue
+
+                            acc_num = r["accession_number"]
+                            clean_acc = acc_num.replace("-", "")
+                            cik_val = r.get("cik") or (str(cik).zfill(10) if cik else "0")
+                            cik_int = int(cik_val) if str(cik_val).isdigit() else 0
+                            f_date = str(r["filing_date"]) if r.get("filing_date") else ""
+
+                            acc_dt = _format_canonical_sec_timestamp(r.get("accepted_datetime"))
+                            pub_dt = _format_canonical_sec_timestamp(r.get("public_availability_at"))
+                            avail_from = pub_dt or acc_dt
+
+                            results.append({
+                                "form": doc_type,
+                                "filing_date": f_date,
+                                "report_date": f_date,
+                                "acceptance_datetime": acc_dt,
+                                "available_from": avail_from,
+                                "description": "Form 4 Insider Filing",
+                                "accession_number": acc_num,
+                                "sec_url": r.get("source_url") or f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
+                            })
+
+                        if results:
+                            return {
+                                "status": "AVAILABLE_WITH_RESULTS",
+                                "status_code": 200,
+                                "cik": cik,
+                                "reason": None,
+                                "error_detail": None,
+                                "items": results,
+                                "cached": True,
+                            }
+                        else:
+                            return {
+                                "status": "AVAILABLE_NO_RESULTS",
+                                "status_code": 200,
+                                "cik": cik,
+                                "reason": None,
+                                "error_detail": None,
+                                "items": [],
+                                "cached": True,
+                            }
+            except Exception as e:
+                logger.error(f"Failed to query PostgreSQL filings store for {clean_sym}: {e}")
+                return {
+                    "status": "BACKEND_STORAGE_ERROR",
+                    "status_code": None,
+                    "cik": cik,
+                    "reason": "STORAGE_QUERY_FAILED",
+                    "error_detail": f"Failed to query PostgreSQL filings store: {e}",
+                    "items": None,
+                    "cached": True,
+                }
+
+        elif backend == "sqlite":
+            try:
+                conn = connect_smart_money_db()
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+
+                has_query = "SELECT 1 FROM form4_raw_filings WHERE (issuer_cik = ? OR issuer_symbol = ?) LIMIT 1" if cik else "SELECT 1 FROM form4_raw_filings WHERE issuer_symbol = ? LIMIT 1"
+                has_params = [str(cik).zfill(10), clean_sym] if cik else [clean_sym]
+                try:
+                    cur.execute(has_query, tuple(has_params))
+                    has_issuer = cur.fetchone() is not None
+                except sqlite3.OperationalError:
+                    has_issuer = False
+
+                if not has_issuer:
+                    conn.close()
+                    return {
+                        "status": "CONFIGURATION_BLOCKED",
+                        "status_code": None,
+                        "cik": cik,
+                        "reason": "SOURCE_NOT_INGESTED",
+                        "error_detail": f"SEC filings for {clean_sym} not yet ingested in local store. Live SEC egress disabled in API web workers (ARX_SEC_EGRESS_ROLE != OWNER).",
+                        "items": None,
+                        "cached": True,
+                    }
+
+                has_ledger = False
+                try:
+                    cur.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sm_source_availability_ledger'")
+                    has_ledger = cur.fetchone() is not None
+                except Exception:
+                    has_ledger = False
+
+                if has_ledger:
+                    query = """
+                        SELECT
+                            r.accession_number,
+                            r.issuer_cik,
+                            r.filing_date,
+                            r.acceptance_datetime,
+                            r.document_type,
+                            r.source_url,
+                            l.public_availability_at
+                        FROM form4_raw_filings r
+                        LEFT JOIN sm_source_availability_ledger l ON r.accession_number = l.accession_number
+                        WHERE 1=1
+                    """
+                else:
+                    query = """
+                        SELECT
+                            r.accession_number,
+                            r.issuer_cik,
+                            r.filing_date,
+                            r.acceptance_datetime,
+                            r.document_type,
+                            r.source_url,
+                            NULL as public_availability_at
+                        FROM form4_raw_filings r
+                        WHERE 1=1
+                    """
+                params = []
+                if cik:
+                    query += " AND (r.issuer_cik = ? OR r.issuer_symbol = ?)"
+                    params.extend([str(cik).zfill(10), clean_sym])
+                else:
+                    query += " AND r.issuer_symbol = ?"
+                    params.append(clean_sym)
+
+                query += " ORDER BY r.filing_date DESC LIMIT 25"
+                cur.execute(query, tuple(params))
+                rows = cur.fetchall()
+                conn.close()
+
+                for r in rows:
+                    doc_type = r["document_type"] or "4"
+                    if allowed_forms and doc_type not in allowed_forms and not any(doc_type.startswith(f) for f in allowed_forms):
+                        continue
+
                     acc_num = r["accession_number"]
                     clean_acc = acc_num.replace("-", "")
-                    cik_int = int(cik) if cik and str(cik).isdigit() else 0
+                    cik_val = r["issuer_cik"] or (str(cik).zfill(10) if cik else "0")
+                    cik_int = int(cik_val) if str(cik_val).isdigit() else 0
                     f_date = r["filing_date"] or ""
+
+                    acc_dt = _format_canonical_sec_timestamp(r["acceptance_datetime"])
+                    pub_dt = _format_canonical_sec_timestamp(r["public_availability_at"]) if "public_availability_at" in r.keys() else None
+                    avail_from = pub_dt or acc_dt
+
                     results.append({
                         "form": doc_type,
                         "filing_date": f_date,
                         "report_date": f_date,
-                        "acceptance_datetime": f"{f_date}T18:00:00Z" if f_date else "",
-                        "available_from": f"{f_date}T18:00:00Z" if f_date else "",
+                        "acceptance_datetime": acc_dt,
+                        "available_from": avail_from,
                         "description": f"Form {doc_type} Insider Filing",
                         "accession_number": acc_num,
-                        "sec_url": f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
+                        "sec_url": r["source_url"] or f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
                     })
-        except Exception as e:
-            logger.warning(f"Failed to query local cached filings for {clean_sym}: {e}")
 
-        if results:
+                if results:
+                    return {
+                        "status": "AVAILABLE_WITH_RESULTS",
+                        "status_code": 200,
+                        "cik": cik,
+                        "reason": None,
+                        "error_detail": None,
+                        "items": results,
+                        "cached": True,
+                    }
+                else:
+                    return {
+                        "status": "AVAILABLE_NO_RESULTS",
+                        "status_code": 200,
+                        "cik": cik,
+                        "reason": None,
+                        "error_detail": None,
+                        "items": [],
+                        "cached": True,
+                    }
+
+            except Exception as e:
+                logger.error(f"Failed to query SQLite filings store for {clean_sym}: {e}")
+                return {
+                    "status": "BACKEND_STORAGE_ERROR",
+                    "status_code": None,
+                    "cik": cik,
+                    "reason": "STORAGE_QUERY_FAILED",
+                    "error_detail": f"Failed to query SQLite filings store: {e}",
+                    "items": None,
+                    "cached": True,
+                }
+        else:
             return {
-                "status": "AVAILABLE_WITH_RESULTS",
-                "status_code": 200,
+                "status": "CONFIGURATION_BLOCKED",
+                "status_code": None,
                 "cik": cik,
-                "reason": None,
-                "error_detail": None,
-                "items": results,
+                "reason": "UNSUPPORTED_STORAGE_BACKEND",
+                "error_detail": f"Unsupported storage backend '{backend}'. Supported: 'postgres', 'sqlite'.",
+                "items": None,
                 "cached": True,
             }
-
-        return {
-            "status": "CONFIGURATION_BLOCKED",
-            "status_code": None,
-            "cik": cik,
-            "reason": "SOURCE_NOT_INGESTED",
-            "error_detail": f"SEC filings for {clean_sym} not yet ingested in local store. Live SEC egress disabled in API web workers (ARX_SEC_EGRESS_ROLE != OWNER).",
-            "items": None,
-            "cached": True,
-        }
 
     def get_recent_filings_envelope(
         self, symbol: str, form_types: Optional[List[str]] = None

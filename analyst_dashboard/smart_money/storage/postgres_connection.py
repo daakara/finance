@@ -63,7 +63,7 @@ def get_connection_pool(dsn: Optional[str] = None, role: Optional[str] = None) -
     settings = POOL_SETTINGS.get(target_role, POOL_SETTINGS[ROLE_WEB])
 
     with _pool_lock:
-        if _global_pool is None or _pool_dsn != target_dsn:
+        if _global_pool is None or getattr(_global_pool, "closed", False) or _pool_dsn != target_dsn:
             if _global_pool is not None:
                 try:
                     _global_pool.closeall()

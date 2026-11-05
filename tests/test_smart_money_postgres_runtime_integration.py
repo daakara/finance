@@ -361,3 +361,258 @@ class TestMigrationConflictFailClosed:
         manifest = migrator.run_migration()
         assert manifest["status"] == "SUCCESS"
         assert manifest["conflict_count"] == 0
+
+    def test_sec_fetcher_cached_envelope_queries_postgres_when_configured(self, real_postgres_uri):
+        from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
+        from unittest.mock import patch
+
+        acc = "0001045810-26-999999"
+        pg_conn = psycopg2.connect(real_postgres_uri)
+        with pg_conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date,
+                    accepted_datetime, xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (accession_number) DO NOTHING;
+            """, (
+                acc, "0001045810", "NVDA", "NVIDIA CORP", "2026-09-18",
+                "2026-09-18T21:13:29+00:00", "<xml>test</xml>", "hash_test_999", "https://sec.gov/test.xml"
+            ))
+        pg_conn.commit()
+        pg_conn.close()
+
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "STANDBY",
+            "SMART_MONEY_STORAGE_BACKEND": "postgres",
+            "SMART_MONEY_DATABASE_URL": real_postgres_uri,
+            "DATABASE_URL": real_postgres_uri,
+        }):
+            fetcher = SecEdgarFetcher(user_agent="ValidApp valid@domain.com")
+            env = fetcher.get_recent_filings_envelope("NVDA")
+            assert env["status"] == "AVAILABLE_WITH_RESULTS"
+            assert env["cached"] is True
+            items = env["items"]
+            assert any(it["accession_number"] == acc for it in items)
+
+    def test_nvda_canary_acceptance_time_and_canonical_provenance(self, real_postgres_uri):
+        """Confirm accession 0001696841-26-000012 carries exact acceptance timestamp 2026-09-18T21:13:29Z."""
+        from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
+        from unittest.mock import patch
+
+        acc = "0001696841-26-000012"
+        pg_conn = psycopg2.connect(real_postgres_uri)
+        with pg_conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date,
+                    accepted_datetime, xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (accession_number) DO UPDATE SET
+                    accepted_datetime = EXCLUDED.accepted_datetime;
+            """, (
+                acc, "0001045810", "NVDA", "NVIDIA CORP", "2026-09-18",
+                "2026-09-18T21:13:29+00:00", "<xml>canary</xml>", "hash_canary_012", "https://sec.gov/canary.xml"
+            ))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (
+                    accession_number, public_availability_at, source, source_reference
+                ) VALUES (%s, %s, %s, %s)
+                ON CONFLICT (accession_number) DO UPDATE SET
+                    public_availability_at = EXCLUDED.public_availability_at;
+            """, (
+                acc, "2026-09-18T21:13:29+00:00", "SEC_EDGAR_API", "canary_receipt_023"
+            ))
+        pg_conn.commit()
+        pg_conn.close()
+
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "STANDBY",
+            "ARX_STORAGE_BACKEND": "postgres",
+            "SMART_MONEY_DATABASE_URL": real_postgres_uri,
+            "DATABASE_URL": real_postgres_uri,
+        }):
+            fetcher = SecEdgarFetcher(user_agent="ValidApp valid@domain.com")
+            env = fetcher.get_recent_filings_envelope("NVDA")
+            assert env["status"] == "AVAILABLE_WITH_RESULTS"
+            assert env["cached"] is True
+            items = env["items"]
+            target = next((it for it in items if it["accession_number"] == acc), None)
+            assert target is not None
+            assert target["acceptance_datetime"] == "2026-09-18T21:13:29Z"
+            assert target["available_from"] == "2026-09-18T21:13:29Z"
+            assert target["filing_date"] == "2026-09-18"
+            assert target["form"] == "4"
+
+    def test_missing_and_invalid_timestamps_never_invented(self, tmp_path):
+        """Missing or invalid timestamps do not silently become invented availability times."""
+        from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher, _format_canonical_sec_timestamp
+        from unittest.mock import patch
+        import datetime
+        import sqlite3
+
+        # 1. Helper function checks
+        assert _format_canonical_sec_timestamp(None) is None
+        assert _format_canonical_sec_timestamp("") is None
+        assert _format_canonical_sec_timestamp("2026-09-18") is None  # Date only must not invent time
+        assert _format_canonical_sec_timestamp("invalid-date") is None
+        assert _format_canonical_sec_timestamp("2026-09-18 21:13:29+00:00") == "2026-09-18T21:13:29Z"
+        assert _format_canonical_sec_timestamp(datetime.datetime(2026, 9, 18, 21, 13, 29, tzinfo=datetime.timezone.utc)) == "2026-09-18T21:13:29Z"
+
+        # 2. SQLite record with NULL acceptance_datetime
+        db_path = tmp_path / "null_ts.db"
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("""
+            CREATE TABLE form4_raw_filings (
+                accession_number TEXT PRIMARY KEY,
+                issuer_cik TEXT,
+                issuer_symbol TEXT,
+                filing_date TEXT,
+                acceptance_datetime TEXT,
+                document_type TEXT,
+                source_url TEXT,
+                disposition TEXT
+            );
+        """)
+        conn.execute("""
+            INSERT INTO form4_raw_filings VALUES (
+                '0001045810-26-888888', '0001045810', 'NVDA', '2026-09-18',
+                NULL, '4', 'https://sec.gov/null.xml', 'PROCESSED'
+            );
+        """)
+        conn.commit()
+        conn.close()
+
+        with patch("analyst_dashboard.smart_money.form4_ingestion.connect_smart_money_db", side_effect=lambda: sqlite3.connect(str(db_path))), \
+             patch.dict(os.environ, {
+                 "ARX_SEC_EGRESS_ROLE": "STANDBY",
+                 "ARX_STORAGE_BACKEND": "sqlite",
+                 "ARX_ENVIRONMENT": "development",
+             }):
+            fetcher = SecEdgarFetcher(user_agent="ValidApp valid@domain.com")
+            env = fetcher.get_recent_filings_envelope("NVDA")
+            target = next((it for it in env["items"] if it["accession_number"] == '0001045810-26-888888'), None)
+            assert target is not None
+            assert target["acceptance_datetime"] is None
+            assert target["available_from"] is None
+            assert target["acceptance_datetime"] != "2026-09-18T18:00:00Z"
+            assert target["available_from"] != "2026-09-18T00:00:00Z"
+
+    def test_truthful_distinguishable_states(self, real_postgres_uri):
+        """Missing symbols, valid empty results, and storage failures return truthful, distinguishable states."""
+        from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
+        from unittest.mock import patch
+
+        fetcher = SecEdgarFetcher(user_agent="ValidApp valid@domain.com")
+
+        # A. Missing symbol (never ingested) -> CONFIGURATION_BLOCKED (SOURCE_NOT_INGESTED)
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "STANDBY",
+            "ARX_STORAGE_BACKEND": "postgres",
+            "SMART_MONEY_DATABASE_URL": real_postgres_uri,
+        }):
+            env_missing = fetcher.get_recent_filings_envelope("TOTALLY_UNKNOWN_SYM_123")
+            assert env_missing["status"] == "CONFIGURATION_BLOCKED"
+            assert env_missing["reason"] == "SOURCE_NOT_INGESTED"
+            assert env_missing["items"] is None
+
+        # B. Valid empty results (known issuer, but 0 matching form types) -> AVAILABLE_NO_RESULTS
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "STANDBY",
+            "ARX_STORAGE_BACKEND": "postgres",
+            "SMART_MONEY_DATABASE_URL": real_postgres_uri,
+        }):
+            env_empty = fetcher.get_recent_filings_envelope("NVDA", form_types=["10-K", "10-Q"])
+            assert env_empty["status"] == "AVAILABLE_NO_RESULTS"
+            assert env_empty["status_code"] == 200
+            assert env_empty["items"] == []
+
+        # C. Storage failure -> BACKEND_STORAGE_ERROR (STORAGE_QUERY_FAILED)
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "STANDBY",
+            "ARX_STORAGE_BACKEND": "postgres",
+            "SMART_MONEY_DATABASE_URL": "postgresql://invalid_host_arx:5432/bad_db",
+            "DATABASE_URL": "postgresql://invalid_host_arx:5432/bad_db",
+        }):
+            env_err = fetcher.get_recent_filings_envelope("NVDA")
+            assert env_err["status"] == "BACKEND_STORAGE_ERROR"
+            assert env_err["reason"] == "STORAGE_QUERY_FAILED"
+            assert env_err["items"] is None
+            assert env_err["status"] != env_missing["status"]
+            assert env_err["status"] != env_empty["status"]
+
+    def test_sqlite_compatibility_and_timestamp_handling(self, tmp_path):
+        """SQLite compatibility is preserved with correct canonical timestamps."""
+        from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
+        from unittest.mock import patch
+        import sqlite3
+
+        db_path = tmp_path / "smart_money_test.db"
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("""
+            CREATE TABLE form4_raw_filings (
+                accession_number TEXT PRIMARY KEY,
+                issuer_cik TEXT,
+                issuer_symbol TEXT,
+                filing_date TEXT,
+                acceptance_datetime TEXT,
+                document_type TEXT,
+                source_url TEXT,
+                disposition TEXT
+            );
+        """)
+        conn.execute("""
+            INSERT INTO form4_raw_filings VALUES (
+                '0000320193-26-000099', '0000320193', 'AAPL', '2026-02-18',
+                '2026-02-18T16:05:22+00:00', '4', 'https://sec.gov/aapl.xml', 'PROCESSED'
+            );
+        """)
+        conn.commit()
+        conn.close()
+
+        with patch("analyst_dashboard.smart_money.form4_ingestion.connect_smart_money_db", side_effect=lambda: sqlite3.connect(str(db_path))),              patch.dict(os.environ, {
+                 "ARX_SEC_EGRESS_ROLE": "STANDBY",
+                 "ARX_STORAGE_BACKEND": "sqlite",
+                 "ARX_ENVIRONMENT": "development",
+             }):
+            fetcher = SecEdgarFetcher(user_agent="ValidApp valid@domain.com")
+            env = fetcher.get_recent_filings_envelope("AAPL")
+            assert env["status"] == "AVAILABLE_WITH_RESULTS"
+            assert env["items"][0]["accession_number"] == "0000320193-26-000099"
+            assert env["items"][0]["acceptance_datetime"] == "2026-02-18T16:05:22Z"
+            assert env["items"][0]["available_from"] == "2026-02-18T16:05:22Z"
+
+    def test_zero_sec_network_egress_in_cache_mode(self, real_postgres_uri):
+        """In cache-only mode, SecEdgarFetcher performs zero outbound HTTP requests."""
+        from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
+        from unittest.mock import patch
+
+        def _forbidden_network(*args, **kwargs):
+            raise AssertionError("ILLEGAL_OUTBOUND_NETWORK_EGRESS: SecEdgarFetcher attempted network call in cache mode")
+
+        with patch.dict(os.environ, {
+            "ARX_SEC_EGRESS_ROLE": "STANDBY",
+            "ARX_STORAGE_BACKEND": "postgres",
+            "SMART_MONEY_DATABASE_URL": real_postgres_uri,
+        }), patch("requests.Session.send", side_effect=_forbidden_network):
+            fetcher = SecEdgarFetcher(user_agent="ValidApp valid@domain.com")
+            # Must succeed via database without triggering network call
+            env = fetcher.get_recent_filings_envelope("NVDA")
+            assert env["status"] in ("AVAILABLE_WITH_RESULTS", "AVAILABLE_NO_RESULTS")
+            assert env["cached"] is True
+
+    def test_advisory_scoring_and_snapshot_containment_preserved(self):
+        """Scoring and snapshot publication remains fail-closed under HOLD_SEC_001."""
+        from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
+        from unittest.mock import patch
+
+        with patch.dict(os.environ, {
+            "HOLD_SEC_001": "1",
+            "HOLD_SCAN_001": "1",
+            "HOLD_EXEC_001": "1",
+        }):
+            res = SmartMoneyEngine.assess_symbol("NVDA")
+            assert res["overall_status"] == "PIPELINE_HELD"
+            assert res["pillar_eligibility"] is False
+            assert res["pillar_score"] is None
+            assert "HOLD_SEC_001" in res["active_holds"]
