@@ -27,6 +27,8 @@ GRANT SELECT ON
     scanner_snapshots,
     scanner_active_snapshots,
     form4_parsed_transactions,
+    form4_raw_filings,
+    sm_amendments,
     governed_issuers,
     sm_source_availability_ledger,
     sm_reconciliation_receipts,
