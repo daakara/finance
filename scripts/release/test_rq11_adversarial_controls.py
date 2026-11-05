@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ARX Release Qualification - RQ-11 Adversarial Falsification Suite
-Directives: ARX — Final RQ-11 Production Rollback Authority Closure & 074-A4.1
+Directives: ARX — Final RQ-11 Production Rollback Authority Closure & Recovery 002
 
 Adversarially tests Check RQ-11 under negative controls:
 1. PC-00: Baseline Positive Control (Active Railway & Cloudflare recovery targets, 0-DDL, valid anchors) -> RC 0
@@ -12,6 +12,11 @@ Adversarially tests Check RQ-11 under negative controls:
 6. NC-05: Unrecognized Cloudflare Target UUID -> RC 1 (UNRECOGNIZED_ROLLBACK_TARGET)
 7. NC-06: Simulated Destructive Database Schema DDL Mutation -> RC 1 (DDL_MIGRATIONS_DETECTED)
 8. NC-07: Missing/Invalid Git Base Anchor Object -> RC 1 (MISSING_GIT_ANCHOR)
+9. NC-08: Attempted Prohibited Schema DDL Mutation in SQL file -> RC 1 (DDL_MIGRATIONS_DETECTED)
+10. NC-09: Attempted Prohibited Data Mutation (DML) in SQL file -> RC 1 (DML_MUTATION_DETECTED)
+11. NC-10: Attempted Unauthorized Privilege Expansion in SQL file -> RC 1 (UNAUTHORIZED_PRIVILEGE_EXPANSION)
+12. NC-11: Attempted Grant Script Without Accompanying Rollback Script/Procedure -> RC 1 (MISSING_ROLLBACK_SCRIPT)
+13. NC-12: Attempted SQL File in Unapproved Directory Location -> RC 1 (UNAUTHORIZED_SQL_LOCATION)
 
 Preserves canonical qualification evidence via ARX_RECEIPTS_DIR_OVERRIDE.
 """
@@ -38,8 +43,8 @@ def run_rq11(args_list, env=None):
 
 def main():
     print("================================================================================")
-    print("ARX RELEASE QUALIFICATION - RQ-11 ADVERSARIAL FALSIFICATION SUITE (8 CONTROLS)")
-    print("Directive: ARX — Final RQ-11 Production Rollback Authority Closure")
+    print("ARX RELEASE QUALIFICATION - RQ-11 ADVERSARIAL FALSIFICATION SUITE (13 CONTROLS)")
+    print("Directive: ARX — Final RQ-11 Production Rollback Authority Closure & Recovery 002")
     print("================================================================================")
 
     results = []
@@ -145,6 +150,66 @@ def main():
         })
         print(f"[{'PASS' if passed else 'FAIL'}] NC-07: Missing Git base anchor object (rc={rc})")
 
+        # NC-08: Attempted Prohibited Schema DDL Mutation in SQL file
+        rc, out, err = run_rq11(["--simulate-sql-ddl"])
+        passed = (rc == 1 and "DDL_MIGRATIONS_DETECTED" in out)
+        results.append({
+            "control": "NC-08: Attempted Prohibited Schema DDL Mutation in SQL file",
+            "expected_rc": 1,
+            "actual_rc": rc,
+            "passed": passed,
+            "details": "Fails closed with DDL_MIGRATIONS_DETECTED on prohibited CREATE/ALTER/DROP in SQL file"
+        })
+        print(f"[{'PASS' if passed else 'FAIL'}] NC-08: Prohibited Schema DDL Mutation in SQL (rc={rc})")
+
+        # NC-09: Attempted Prohibited Data Mutation (DML) in SQL file
+        rc, out, err = run_rq11(["--simulate-sql-dml"])
+        passed = (rc == 1 and "DML_MUTATION_DETECTED" in out)
+        results.append({
+            "control": "NC-09: Attempted Prohibited Data Mutation (DML) in SQL file",
+            "expected_rc": 1,
+            "actual_rc": rc,
+            "passed": passed,
+            "details": "Fails closed with DML_MUTATION_DETECTED on prohibited INSERT/UPDATE/DELETE in SQL file"
+        })
+        print(f"[{'PASS' if passed else 'FAIL'}] NC-09: Prohibited Data Mutation (DML) in SQL (rc={rc})")
+
+        # NC-10: Attempted Unauthorized Privilege Expansion in SQL file
+        rc, out, err = run_rq11(["--simulate-sql-priv-expansion"])
+        passed = (rc == 1 and "UNAUTHORIZED_PRIVILEGE_EXPANSION" in out)
+        results.append({
+            "control": "NC-10: Attempted Unauthorized Privilege Expansion in SQL file",
+            "expected_rc": 1,
+            "actual_rc": rc,
+            "passed": passed,
+            "details": "Fails closed with UNAUTHORIZED_PRIVILEGE_EXPANSION on GRANT ALL / write privilege expansion"
+        })
+        print(f"[{'PASS' if passed else 'FAIL'}] NC-10: Unauthorized Privilege Expansion in SQL (rc={rc})")
+
+        # NC-11: Attempted Grant Script Without Accompanying Rollback Script/Procedure
+        rc, out, err = run_rq11(["--simulate-missing-rollback"])
+        passed = (rc == 1 and "MISSING_ROLLBACK_SCRIPT" in out)
+        results.append({
+            "control": "NC-11: Attempted Grant Script Without Accompanying Rollback Script/Procedure",
+            "expected_rc": 1,
+            "actual_rc": rc,
+            "passed": passed,
+            "details": "Fails closed with MISSING_ROLLBACK_SCRIPT when grant lacks verified rollback procedure"
+        })
+        print(f"[{'PASS' if passed else 'FAIL'}] NC-11: Missing Rollback Script for Grant (rc={rc})")
+
+        # NC-12: Attempted SQL File in Unapproved Directory Location
+        rc, out, err = run_rq11(["--simulate-unapproved-sql-location"])
+        passed = (rc == 1 and "UNAUTHORIZED_SQL_LOCATION" in out)
+        results.append({
+            "control": "NC-12: Attempted SQL File in Unapproved Directory Location",
+            "expected_rc": 1,
+            "actual_rc": rc,
+            "passed": passed,
+            "details": "Fails closed with UNAUTHORIZED_SQL_LOCATION when SQL file placed in unapproved path"
+        })
+        print(f"[{'PASS' if passed else 'FAIL'}] NC-12: Unapproved SQL File Location (rc={rc})")
+
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
@@ -153,10 +218,9 @@ def main():
     total_tests = len(results)
     print(f"SUMMARY: {total_passed}/{total_tests} controls passed.")
 
-    # Write adversarial test receipt
     receipt = {
         "suite": "RQ-11 Adversarial Falsification Suite",
-        "directive": "ARX — Final RQ-11 Production Rollback Authority Closure",
+        "directive": "ARX — Final RQ-11 Production Rollback Authority Closure & Recovery 002",
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "total_controls": total_tests,
         "passed_controls": total_passed,
@@ -172,10 +236,10 @@ def main():
 
     if total_passed == total_tests:
         print("=== RQ-11 ADVERSARIAL FALSIFICATION SUITE: ALL CONTROLS PASSED (FAIL-CLOSED VERIFIED) ===")
-        sys.exit(0)
+        return 0
     else:
         print("=== RQ-11 ADVERSARIAL FALSIFICATION SUITE: FAILURES DETECTED ===")
-        sys.exit(1)
+        return 1
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
