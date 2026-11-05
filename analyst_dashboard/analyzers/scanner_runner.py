@@ -758,7 +758,12 @@ class VCPScannerRunner:
                 "coverage_metadata": coverage_metadata,
             }
 
-            if eval_report.decision == PublicationDecision.PUBLISH:
+            if (
+                eval_report.decision == PublicationDecision.PUBLISH
+                and status_at_pub == ScannerStatus.AVAILABLE
+                and eff_invocation_class != "BOOT_WARMUP"
+                and not startup_context
+            ):
                 if lease is not None:
                     # Transactional Fenced Publication (Atomic authority check + publication)
                     self.fenced_publisher.publish_snapshot_fenced(

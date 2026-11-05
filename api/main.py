@@ -56,12 +56,17 @@ def _warmup_worker():
     except Exception as e:
         logger.warning(f"Background pre-warming screener error: {e}")
 
-    try:
-        from analyst_dashboard.vcp.natural_trigger import get_natural_vcp_trigger_service
-        get_natural_vcp_trigger_service().trigger_boot_warmup()
-        logger.info("VCP scan boot warmup completed successfully.")
-    except Exception as e:
-        logger.warning(f"VCP scan boot warmup deferred or failed: {e}")
+    # Startup cache initialization must not initiate an evidence-producing market-wide scan.
+    # Production VCP execution is authorized independently of container lifecycle.
+    if not IS_PRODUCTION:
+        try:
+            from analyst_dashboard.vcp.natural_trigger import get_natural_vcp_trigger_service
+            get_natural_vcp_trigger_service().trigger_boot_warmup()
+            logger.info("VCP scan boot warmup completed successfully.")
+        except Exception as e:
+            logger.warning(f"VCP scan boot warmup deferred or failed: {e}")
+    else:
+        logger.info("Production VCP boot scan skipped: evidence execution requires explicit authority.")
 
 
 async def warmup_core_assets():

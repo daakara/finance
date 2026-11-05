@@ -1,49 +1,49 @@
 {
-  "release_candidate_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-  "base_anchor_commit": "649d31511c79324dbd1cb7369ffacac1c36ea75f",
+  "release_candidate_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
+  "base_anchor_commit": "183616cebde0448f66375012537fc2c82c70e6ee",
   "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "SM_ACT_026_POSTGRES_EVIDENCE_VISIBILITY",
+  "directive": "RADAR_RECOVERY_002_SNAPSHOT_AUTHORITY",
   "files": {
-    "analyst_dashboard/data/sec_edgar_fetcher.py": {
+    "analyst_dashboard/analyzers/scanner_runner.py": {
       "operation": "M",
-      "originating_pr_number": 192,
-      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "83711f10e3bc85db29dbe0331a1562c134309557868241f95187a1751ff51500",
-      "size_bytes": 38908
+      "originating_pr_number": 194,
+      "originating_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
+      "governing_requirement": "RADAR-RECOVERY-002: quarantine boot warmup and non-available VCP publication",
+      "sha256": "68266bac74867fd1019c9fe88f2b0698b4b9d0b05531cace55d3f746bf47fe06",
+      "size_bytes": 76371
     },
-    "analyst_dashboard/smart_money/storage/postgres_connection.py": {
+    "analyst_dashboard/data/scanner_store.py": {
       "operation": "M",
-      "originating_pr_number": 192,
-      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "6508601d58bdc157172f5994168c72961cecd0ea1fffb8e8cd95be5a87271b2b",
-      "size_bytes": 5421
+      "originating_pr_number": 194,
+      "originating_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
+      "governing_requirement": "RADAR-RECOVERY-002: restrict active snapshot and ID selection to available evidence",
+      "sha256": "334acc4924e3c47d87c3f477e2b98b672e5cff671e0d34b50983f7d96fda839f",
+      "size_bytes": 17180
     },
-    "evidence/release-closure/SM-ACT-025-visibility-closure-issue-165.md": {
+    "api/main.py": {
+      "operation": "M",
+      "originating_pr_number": 194,
+      "originating_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
+      "governing_requirement": "RADAR-RECOVERY-002: disable evidence-producing VCP boot scan on production startup",
+      "sha256": "53c2a362602a7ca86b080e7162bc0dec3fe432e7dfd3f6452ddf73aa1fc220d5",
+      "size_bytes": 10478
+    },
+    "tests/test_radar_production_recovery_002.py": {
       "operation": "A",
-      "originating_pr_number": 192,
-      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "7da6f89abe397a243d4a99f100e78439ab65aa7c0316e18684646cfa1789b9cd",
-      "size_bytes": 4632
+      "originating_pr_number": 194,
+      "originating_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
+      "governing_requirement": "RADAR-RECOVERY-002: cover active snapshot eligibility and boot-warmup quarantine",
+      "sha256": "b51f398f4e654f3793e61e0db550cb3be06fa28352ecb4ef2abd1a3f3d44156c",
+      "size_bytes": 3031
     },
-    "evidence/release-closure/SM-ACT-026-evidence-visibility-qualification-issue-165.md": {
-      "operation": "A",
-      "originating_pr_number": 192,
-      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "e1bd9be50355d6051c4ddc1e93f3f98ec1cc8103384cb340da2cff449cde1976",
-      "size_bytes": 6585
-    },
-    "tests/test_smart_money_postgres_runtime_integration.py": {
+    "tests/test_radar_scanner_pipeline.py": {
       "operation": "M",
-      "originating_pr_number": 192,
-      "originating_commit": "9b695ec20dcc9e8e3d5f7a7481ff8a3f1c4b465b",
-      "governing_requirement": "SM-ACT-026: PostgreSQL read-only SEC evidence projection repair and qualification",
-      "sha256": "971cb09f330ca64711df3a02eb4211d0818cb406cb9f8f7af8776b998436e99d",
-      "size_bytes": 34612
+      "originating_pr_number": 194,
+      "originating_commit": "af5b98d5d9ab03f363ab4b17f40bfceb82229f9f",
+      "governing_requirement": "RADAR-RECOVERY-002: distinguish empty universe failure from valid computed zero match",
+      "sha256": "4a79e3b10ae135f4c84b20b5ff63b28a0bcb223a24da5f18265906c01f849fd1",
+      "size_bytes": 14240
     }
   },
   "qualification_framework_files": {
@@ -53,9 +53,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "0e423bc20102285a1dc786cb818e6e33aa5c0cda753afaf95eb9c9cfc0cb40d8",
-      "bytes": 59009,
-      "size_bytes": 59009
+      "sha256": "8549dd27d6197dfc0304d903dbd1d3053c673e255068180036ec92c7ab9b6dab",
+      "bytes": 59014,
+      "size_bytes": 59014
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
