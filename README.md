@@ -3,10 +3,10 @@
 A professional-grade quantitative intelligence platform featuring real-time market surveillance, Mark Minervini Volatility Contraction Pattern (VCP) setup detection, dual-horizon candlestick geometry, multi-pillar Confluence scoring, and Cornish-Fisher Modified Value-at-Risk modeling.
 
 **Live Deployment**: [https://www.arxterminal.com/](https://www.arxterminal.com/)  
-**Current status (2026-11-02)**: [Current master status](docs/ARX_MASTER_PROJECT_STATUS_2026_11_02.md) · [Production release notes](docs/releases/2026-11-02_7a513929_smart-money-radar.md)  
-**Verified production release SHA**: `7a513929bbcd74a3e568dcfe626bfac582ee68fb` (Cloudflare Pages + Railway)  
-**Historical mainline anchor (2026-10-29)**: `e10de3b2714e7c7cba49c51e0e7a4eb13a7033f6`  
-**Governance Baseline**: Sprint 4 Administratively Closed | Sprint 5 `NOT_AUTHORIZED` | `HOLD_EXEC_001` Active
+**Current verified status:** [Living project status](docs/ARX_CURRENT_PROJECT_STATUS.md) · [Production releases](docs/releases/README.md)  
+**Last verified Railway production SHA:** `74123474cc3b3cf84c78da4cb19a759343aadc71` (2026-11-05; verify live SHA before subsequent deployments)  
+**Mainline SHA at documentation reconciliation:** `5ebd758d1c6dfc9375140c731c1adf0791b29bc3` (2026-11-06)  
+**Governance:** Sprint 5 execution `NOT_AUTHORIZED`; SEC / scanner / execution HOLDs active. Radar PR #196 merged to main, production PR #199 pending.  
 
 ![Next.js](https://img.shields.io/badge/next.js-14.2-black.svg)
 ![React](https://img.shields.io/badge/react-18-cyan.svg)
@@ -23,15 +23,16 @@ The ARX Terminal documentation estate is consolidated into a canonical hierarchy
 
 | Dimension | Canonical Documentation Portal | Primary Focus & Governance Scope |
 | :--- | :--- | :--- |
-| **Current Integrated Project Status** | [`ARX_MASTER_PROJECT_STATUS_2026_11_02.md`](docs/ARX_MASTER_PROJECT_STATUS_2026_11_02.md) | Current release, governance, production holds and pending acceptance; October 29 status retained as a historical snapshot. |
-| **Production Release Notes** | [`2026-11-02_7a513929_smart-money-radar.md`](docs/releases/2026-11-02_7a513929_smart-money-radar.md) | PR #161 release scope, verified deployment parity and remaining live checks. |
+| **Current Integrated Project Status** | [`ARX_CURRENT_PROJECT_STATUS.md`](docs/ARX_CURRENT_PROJECT_STATUS.md) | Living verified mainline-versus-production status, capability states, holds and pending promotion. |
+| **Historical 2026-11-02 Snapshot** | [`ARX_MASTER_PROJECT_STATUS_2026_11_02.md`](docs/ARX_MASTER_PROJECT_STATUS_2026_11_02.md) | Immutable point-in-time record; do not use for present release decisions. |
+| **Production Release Notes** | [`docs/releases/README.md`](docs/releases/README.md) | Indexed dated production receipts, including Smart Money Recovery 002R. |
 | **Documentation Master Inventory** | [`ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md`](docs/planning/ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md) | Comprehensive audit and 8-tier authority classification of all 1,478 repository documents. |
 | **Engine Architecture & Contracts** | [`ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md`](docs/architecture/ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md) | Full 12-engine contract reconciliation, input/output data boundaries, fallbacks, and sizing. |
 | **Market-Wide Discovery Research** | [`ARX_MARKET_WIDE_RESEARCH_DECISION_AND_EVIDENCE_REGISTER.md`](docs/research/ARX_MARKET_WIDE_RESEARCH_DECISION_AND_EVIDENCE_REGISTER.md) | MW-004 research reconciliation, Model E+ ratification, candidate freeze, and scoring repair. |
 | **Synthesis E V3 UX Architecture** | [`ARX_UX_V3_APPROVAL_IMPLEMENTATION_AND_RELEASE_STATUS.md`](docs/ux/ARX_UX_V3_APPROVAL_IMPLEMENTATION_AND_RELEASE_STATUS.md) | Three-mode terminal (Guided/Standard/Quant), Paper Light theme, accessibility, and PR #131. |
 | **Sprint 1–4 Obligations & Holds** | [`ARX_SPRINT1_4_OBLIGATION_AND_HOLD_REGISTER.md`](docs/planning/ARX_SPRINT1_4_OBLIGATION_AND_HOLD_REGISTER.md) | Deduplicated historical findings, 14 platform security holds, and administrative closure. |
 | **CI/CD & Deployment Authority** | [`ARX_CI_RELEASE_AND_DEPLOYMENT_AUTHORITY_MATRIX.md`](docs/releases/ARX_CI_RELEASE_AND_DEPLOYMENT_AUTHORITY_MATRIX.md) | Release Qualification Suite (RQ-01..12), GitHub rulesets `25187391` & `26024894`, hosting boundaries. |
-| **PR & Integration Register** | [`ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md`](docs/planning/ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md) | Exhaustive register of all open and merged PRs, commit SHAs, and combined candidate D4. |
+| **Historical PR & Integration Register** | [`ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md`](docs/planning/ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md) | 2026-10-29 snapshot; use live GitHub PR state and current status for subsequent decisions. |
 | **Conflict & Correction Log** | [`ARX_DOCUMENTATION_CONFLICT_AND_CORRECTION_LOG.md`](docs/planning/ARX_DOCUMENTATION_CONFLICT_AND_CORRECTION_LOG.md) | Authoritative resolutions for historical contradictions, stale SHAs, and superseded findings. |
 | **Evidence Traceability Matrix** | [`ARX_DOCUMENTATION_EVIDENCE_TRACEABILITY_MATRIX.csv`](docs/planning/ARX_DOCUMENTATION_EVIDENCE_TRACEABILITY_MATRIX.csv) | Machine-readable claim-to-source mapping covering core architectural facts. |
 | **Documentation QA Report** | [`ARX_DOCUMENTATION_QA_REPORT.md`](docs/planning/ARX_DOCUMENTATION_QA_REPORT.md) | 18-point documentation verification suite results (100% PASS, zero broken links). |
