@@ -26,7 +26,7 @@ from rq_receipt_utils import (
     is_git_ancestor, SHA40_REGEX
 )
 
-APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 145, 147, 149, 150, 151, 153, 156, 159, 160, 163}
+APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 145, 147, 149, 150, 151, 153, 156, 159, 160, 162, 163, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 186, 188, 196}
 
 FORBIDDEN_ADMIN_PREFIXES = (
     "api/",
@@ -762,8 +762,8 @@ def main():
                 continue
 
             # 4. Allowed directory tree boundaries
-            # PR #163: exact root documentation entrypoints only.
-            # All other root paths remain rejected; no application scope expansion.
+            # Exact, PR-scoped root documentation entrypoints for refresh PR #163.
+            # Retain path traversal, protected-file, and all other existing guards.
             is_approved_docs_entrypoint = (
                 str(pr_number) == "163"
                 and path in ("README.md", "CHANGELOG.md")
