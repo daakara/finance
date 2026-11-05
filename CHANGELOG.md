@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — reconciled 2026-11-06
+
+- **Radar PR #199:** Selective port of PR #196 historical VCP evidence integrity / explainability to `release/production` is **open**, not yet qualified/deployed in this status snapshot. The original PR #196 passed CI and merged into `main` (`5ebd758d`).
+- **Strategy Alignment PR #193:** Open production-targeted release work remains separate.
+- **Sprint 5:** Proposed scope reduction to Radar classification truth, bounded operational readiness and decision-surface parity; the canonical execution authorization remains **false**, and no natural scheduler, SEC worker or trade execution HOLD was lifted.
+- **Technical debt:** Issues #197 (Pre-Flight decision integrity and duplicate UX) and #198 (evidence cache, OHLCV provenance, runtime lifecycle) are deferred; not proof of production incidents.
+- **Docs authority:** [Current project status](docs/ARX_CURRENT_PROJECT_STATUS.md) distinguishes mainline work, deployed production and operator-verified live evidence. Historical reports remain dated records.
+
+## [2026-11-05] — Smart Money Recovery 002R
+
+### Production accepted (scope limited)
+
+- **PR #195** merged to `release/production` as `74123474cc3b3cf84c78da4cb19a759343aadc71`.
+- Railway `web` and `smart-money-worker` deployed successfully; worker remained STANDBY with effective SEC egress DISABLED.
+- Versioned read grant permitted `smart_money_web` SELECT on `form4_raw_filings` and `sm_amendments`; operator confirmed write operations remained denied.
+- NVDA SEC filings API returned seven records, including accession `0001696841-26-000012`; operator reconciled accepted timestamp and stored content.
+- No recurring SEC ingestion, VCP natural scanning, Smart Money score publication or trading activation.
+- [Recovery release note](docs/releases/2026-11-05_74123474_smart_money_recovery_002r.md); [Issue #165 acceptance](https://github.com/daakara/finance/issues/165#issuecomment-6671363712).
+
+## [2026-11-05] — Radar production safety and mainline evidence integrity
+
+- **PR #194:** Production natural VCP boot-scan prevention and snapshot publication authority preserved in `release/production` lineage before PR #195.
+- **PR #196:** Historic known-at-time cutoff, truthful deterministic recalculation, unrecorded predicate uncertainty, nonfabricated as-of context; **merged to main only** as `5ebd758d`. Production promotion tracked separately under PR #199.
+- Bounded 133-candidate / 122-data-ready launch evidence does not authorize full-market or continuous scheduled scanning.
+
 ## [Unreleased] — documentation and governance follow-up (2026-11-02)
 
 - **SM-DATA-GOV-001 / PR #162:** Historical replay, amendment lifecycle and evidence retention candidate is open with six successful hosted CI checks; not merged or deployed. Pending targeted corrections for deletion authorization and SQLite ARX-observed cutoff semantics.
