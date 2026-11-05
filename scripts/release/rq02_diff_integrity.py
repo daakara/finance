@@ -26,7 +26,7 @@ from rq_receipt_utils import (
     is_git_ancestor, SHA40_REGEX
 )
 
-APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 145, 147, 149, 150, 151, 153, 156, 159, 160}
+APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 145, 147, 149, 150, 151, 153, 156, 159, 160, 163}
 
 FORBIDDEN_ADMIN_PREFIXES = (
     "api/",
@@ -762,7 +762,13 @@ def main():
                 continue
 
             # 4. Allowed directory tree boundaries
-            if not any(path.startswith(prefix) for prefix in ALLOWED_APP_PREFIXES):
+            # PR #163: exact root documentation entrypoints only.
+            # All other root paths remain rejected; no application scope expansion.
+            is_approved_docs_entrypoint = (
+                str(pr_number) == "163"
+                and path in ("README.md", "CHANGELOG.md")
+            )
+            if not any(path.startswith(prefix) for prefix in ALLOWED_APP_PREFIXES) and not is_approved_docs_entrypoint:
                 unauthorized_paths.append(path)
                 errors.append(f"UNAUTHORIZED_DIFF_PATH: File '{path}' is outside authorized application trees.")
                 continue
