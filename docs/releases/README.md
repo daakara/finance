@@ -22,7 +22,7 @@ RELEASE_NOTES_COMMITTED
 
 | Date | Release SHA | Summary | Status |
 | :--- | :--- | :--- | :--- |
-| 2026-11-06 | [`ccd8fe1a`](2026-11-06_ccd8fe1a_radar_evidence_promotion.md) | PR #199 Radar historical VCP evidence integrity promotion | DEPLOYED; targeted functional acceptance pending |
+| 2026-11-06 | [`ccd8fe1a`](2026-11-06_ccd8fe1a_radar_evidence_promotion.md) | PR #199 Radar historical VCP evidence integrity promotion | PRODUCTION_ACCEPTED for historical VCP evidence (011U operator receipt) |
 | 2026-11-05 | [`74123474`](2026-11-05_74123474_smart_money_recovery_002r.md) | PR #195 Smart Money SEC Form 4 evidence-read permission recovery; actual NVDA readback | **PRODUCTION_ACCEPTED** for read path (operator acceptance + platform verification) |
 | 2026-11-02 | [`7a513929`](2026-11-02_7a513929_smart-money-radar.md) | PR #161 consolidated Smart Money and Radar release | DEPLOYED; original acceptance partially verified; superseded by newer release |
 | 2026-10-08 | [`5dcfeb4`](2026-10-08_5dcfeb4_execution-ladder-passive-capture.md) | Execution Ladder Prospective Passive Capture | VERIFIED |
