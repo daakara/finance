@@ -1,25 +1,57 @@
 {
-  "release_candidate_commit": "e27fb237b4bb7ad6b57834ec62a6ba0406fddcb1",
-  "base_anchor_commit": "eed8d201e0696f7db41f30a598b1619a9a0699f4",
-  "total_files": 2,
+  "release_candidate_commit": "bfc4c68936082c94a685d6fc7f01b83a674cabd1",
+  "base_anchor_commit": "74123474cc3b3cf84c78da4cb19a759343aadc71",
+  "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "SMART_MONEY_PRODUCTION_RECOVERY_002",
+  "directive": "RADAR_VCP_HISTORICAL_EVIDENCE_PRODUCTION_011U",
   "files": {
-    "analyst_dashboard/smart_money/storage/postgres_roles.sql": {
+    "analyst_dashboard/analyzers/scanner_runner.py": {
       "operation": "M",
-      "originating_pr_number": 195,
-      "originating_commit": "e27fb237b4bb7ad6b57834ec62a6ba0406fddcb1",
-      "governing_requirement": "SM-ACT-026R / Recovery 002: permit web role read-only access to cached Form 4 evidence",
-      "sha256": "51d28d5978346d5d72b43906b69c7231a69c644f3c0098a38181dde6160321e9",
-      "size_bytes": 3105
+      "originating_pr_number": 200,
+      "originating_commit": "bfc4c68936082c94a685d6fc7f01b83a674cabd1",
+      "governing_requirement": "RADAR-011U: quarantine boot warmup/bootstrap and validate cached snapshot status",
+      "sha256": "ce1f5e785d0cfac7a5ab2b47b267212cadc5b4d09244d03b68ebdeb0614236fd",
+      "size_bytes": 77968
     },
-    "scripts/release/sql/sm_act_026r_web_evidence_read_grant.sql": {
+    "analyst_dashboard/vcp/temporal_contract.py": {
+      "operation": "M",
+      "originating_pr_number": 200,
+      "originating_commit": "bfc4c68936082c94a685d6fc7f01b83a674cabd1",
+      "governing_requirement": "RADAR-011U: bitemporal source availability inspection and missing timestamp fail-closed",
+      "sha256": "411f68c9c58dc1f291b819ed1ae9344c2ee2b052083f0c4afb62a949dcb7b93c",
+      "size_bytes": 4665
+    },
+    "api/routes/screener.py": {
+      "operation": "M",
+      "originating_pr_number": 200,
+      "originating_commit": "bfc4c68936082c94a685d6fc7f01b83a674cabd1",
+      "governing_requirement": "RADAR-011U: read-only vcp classification explainability endpoint",
+      "sha256": "2e6300de58d29b7eb93e7d438a6cb526dca00a6444e9cba31c432f5ecc1f2207",
+      "size_bytes": 94620
+    },
+    "frontend/app/radar/page.tsx": {
+      "operation": "M",
+      "originating_pr_number": 200,
+      "originating_commit": "bfc4c68936082c94a685d6fc7f01b83a674cabd1",
+      "governing_requirement": "RADAR-011U: diagnostic vcp explanation empty-state panel",
+      "sha256": "3eacc82fed402d01e14dabf2ce82a8c57f0f81e3d0149834e9943f9d8ce8e999",
+      "size_bytes": 109832
+    },
+    "frontend/lib/api.ts": {
+      "operation": "M",
+      "originating_pr_number": 200,
+      "originating_commit": "bfc4c68936082c94a685d6fc7f01b83a674cabd1",
+      "governing_requirement": "RADAR-011U: typed vcp explain contracts and fetchVCPExplain client",
+      "sha256": "881f1afbb5709e412738a999b4a868d14842984b0b1fe47b39381e6816111936",
+      "size_bytes": 184296
+    },
+    "tests/test_vcp_explainability_and_authority_guard.py": {
       "operation": "A",
-      "originating_pr_number": 195,
-      "originating_commit": "e27fb237b4bb7ad6b57834ec62a6ba0406fddcb1",
-      "governing_requirement": "SM-ACT-026R / Recovery 002: staged idempotent read-only production grant with privilege assertions",
-      "sha256": "e68f7339838450f4e924e00023c594284ba8264003a387f511c39c84bfcbaa8a",
-      "size_bytes": 2267
+      "originating_pr_number": 200,
+      "originating_commit": "bfc4c68936082c94a685d6fc7f01b83a674cabd1",
+      "governing_requirement": "RADAR-011U: 12-test adversarial qualification test suite",
+      "sha256": "93df39ba3fa00718c0e7c85fc7118179092bbed3b966520ada9bd531a0c8980e",
+      "size_bytes": 23397
     }
   },
   "qualification_framework_files": {
@@ -29,9 +61,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "04a485fb80e640546afd6c512135074ad2facfd232e78605c8814fce163c04f2",
-      "bytes": 57811,
-      "size_bytes": 57811
+      "sha256": "bf6f64cd1f86414554853c928492274e69e992224437a8706f77e177d2078997",
+      "bytes": 57816,
+      "size_bytes": 57816
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
