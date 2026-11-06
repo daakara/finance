@@ -317,7 +317,7 @@ class HistoryDatabaseEngine:
 
     @retry_sqlite()
     def get_setup_accuracy_summary(self, ticker: Optional[str] = None) -> Dict[str, Any]:
-        """Query persistent database to calculate real setup hit rates and accuracy metrics."""
+        """Summarize logged setup counts and planned risk/reward (not realized accuracy)."""
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
@@ -338,8 +338,8 @@ class HistoryDatabaseEngine:
                     "total_logged_setups": 0,
                     "target_hit_rate_pct": None,
                     "avg_risk_reward": None,
-                    "model_calibration_status": "Awaiting Live Observations (0 Logged Setups)",
-                    "statistical_confidence": "Insufficient Data (Minimum 30 Required)",
+                    "model_calibration_status": "No logged recommendations; outcome calibration not established",
+                    "statistical_confidence": "Not estimated (no outcome-based confidence interval)",
                 }
 
             return {
@@ -347,8 +347,8 @@ class HistoryDatabaseEngine:
                 "total_logged_setups": total_recommendations,
                 "target_hit_rate_pct": None,
                 "avg_risk_reward": avg_rr,
-                "model_calibration_status": "Active (Persistent SQLite NVMe Ledger)",
-                "statistical_confidence": "95% Statistical Confidence" if total_recommendations >= 30 else "Preliminary Calibration",
+                "model_calibration_status": "Recommendation history recorded; outcome calibration not established",
+                "statistical_confidence": "Not estimated (no outcome-based confidence interval)",
             }
         finally:
             conn.close()
