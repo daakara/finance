@@ -697,19 +697,38 @@ def main():
             if not registration_bootstrap:
                 errors.append(f"REGISTRATION_BOOTSTRAP_REJECTED: {bootstrap_reason}")
 
-        # Candidate PR Authorization check
+        # Candidate PR Authorization: the historical allowlist is retained only
+        # for already accepted PRs. New mainline PRs use an exact-SHA, time-bound
+        # GitHub comment from the repository owner, not changes to this source.
+        owner_admitted = False
+        owner_admission_evidence = "NOT_EVALUATED"
         try:
             pr_val = int(pr_number)
-            is_approved_pr = (pr_val in APPROVED_PRS) or registration_bootstrap
-        except Exception:
+            is_legacy_approved = pr_val in APPROVED_PRS or registration_bootstrap
+            if not is_legacy_approved and clean_target == "main":
+                from rq02_owner_admission import verify_owner_admission
+                owner_admitted, owner_admission_evidence = verify_owner_admission(
+                    pr_number=pr_val, head_sha=head_sha, target=clean_target
+                )
+            is_approved_pr = is_legacy_approved or owner_admitted
+        except (ValueError, TypeError, ImportError) as exc:
             is_approved_pr = False
+            owner_admission_evidence = f"ADMISSION_EVALUATION_ERROR:{type(exc).__name__}"
         assertions.append({
-            "assertion": "Candidate PR is an approved release or remediation workstream",
-            "observed": {"pr_number": pr_number, "approved_prs": sorted(list(APPROVED_PRS))},
+            "assertion": "Candidate PR has legacy or explicit SHA-bound owner authorization",
+            "observed": {
+                "pr_number": pr_number,
+                "legacy_allowlist": bool(is_approved_pr and not owner_admitted),
+                "owner_approval_evidence": owner_admission_evidence,
+            },
             "passed": is_approved_pr
         })
         if not is_approved_pr:
-            errors.append(f"UNAPPROVED_PR_NUMBER: PR #{pr_number} is not in approved release PR set.")
+            errors.append(
+                f"UNAPPROVED_PR_NUMBER: PR #{pr_number} has neither historical approval "
+                f"nor current GitHub owner admission for its exact head SHA "
+                f"({owner_admission_evidence})."
+            )
 
         # Diff evaluation & security checks
         diff_entries = run_git_diff_status(base_sha, head_sha)
@@ -767,6 +786,13 @@ def main():
             if ".." in path or path.startswith("/") or path.startswith("\\") or "\x00" in path:
                 path_traversal_violations.append(path)
                 errors.append(f"PATH_TRAVERSAL_DETECTED: Malformed or traversing path '{path}' detected in PR diff.")
+                continue
+
+            # Application candidates cannot edit their own release verifier,
+            # adversarial tests or release scripts to manufacture qualification.
+            if path.startswith("scripts/release/"):
+                forbidden_modifications.append((status_code, path, "RELEASE_QUALIFICATION_CODE"))
+                errors.append(f"FORBIDDEN_RELEASE_FRAMEWORK_MODIFICATION: '{path}' requires a separate governed qualification PR.")
                 continue
 
             # 2. Scope & Boundary Checks: Strictly Protect Secrets, Production Manifests, Rulesets, and Environment
