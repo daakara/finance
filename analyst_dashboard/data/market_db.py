@@ -4,7 +4,7 @@ import json
 import time
 import functools
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional, Union, Tuple
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,10 @@ from analyst_dashboard.data.market_evidence import (
     create_legacy_provenance,
     create_cached_evidence,
     assess_structural_quality,
+)
+from analyst_dashboard.governance.decision_context import (
+    is_pit_eligible,
+    parse_utc_instant,
 )
 
 DATA_DIR = os.getenv("FINANCE_DATA_DIR", os.getenv("DATA_DIR", os.path.expanduser("~")))
@@ -676,9 +680,9 @@ class MarketDatabaseEngine:
             Returns the latest stored snapshot for the symbol.
         If evaluation_timestamp is provided (historical replay / backtest cutoff T):
             Returns the latest snapshot strictly satisfying:
-                available_from <= evaluation_timestamp
+                is_pit_eligible(available_from, evaluation_timestamp) is True
             with point_in_time_status == 'POINT_IN_TIME'.
-            Never returns a record where available_from > evaluation_timestamp.
+            Never returns a record where available_from > evaluation_timestamp in true UTC instant.
             Returns None if no eligible point-in-time record exists.
         """
         upper = symbol.upper().strip()
@@ -697,25 +701,32 @@ class MarketDatabaseEngine:
                     return None
                 return dict(row)
 
-            # Historical evaluation at cutoff T
-            eval_ts = str(evaluation_timestamp).strip()
+            # Historical evaluation at cutoff T: fail closed if evaluation_timestamp cannot be parsed
+            eval_instant = parse_utc_instant(evaluation_timestamp)
+            if eval_instant is None:
+                return None
+
             cursor.execute("""
                 SELECT * FROM asset_factor_snapshots
                 WHERE symbol = ?
                   AND point_in_time_status = 'POINT_IN_TIME'
                   AND available_from IS NOT NULL
-                  AND available_from <= ?
-                ORDER BY available_from DESC, id DESC
-                LIMIT 1
-            """, (upper, eval_ts))
-            row = cursor.fetchone()
-            if not row:
+                ORDER BY id DESC
+            """, (upper,))
+            rows = cursor.fetchall()
+            eligible = []
+            for r in rows:
+                d = dict(r)
+                avail = d.get("available_from")
+                if is_pit_eligible(avail, evaluation_timestamp):
+                    instant = parse_utc_instant(avail)
+                    if instant is not None:
+                        eligible.append((instant, d.get("id", 0), d))
+            if not eligible:
                 return None
-            res = dict(row)
-            # Invariant: Never leak future fundamental data
-            if res.get("available_from") and res["available_from"] > eval_ts:
-                return None
-            return res
+            # Sort by normalized UTC instant descending, tie-breaking by id descending
+            eligible.sort(key=lambda item: (item[0], item[1]), reverse=True)
+            return eligible[0][2]
         finally:
             conn.close()
 
@@ -729,9 +740,15 @@ class MarketDatabaseEngine:
             cursor.execute("""
                 SELECT * FROM asset_factor_snapshots
                 WHERE symbol = ?
-                ORDER BY available_from ASC, id ASC
+                ORDER BY id ASC
             """, (upper,))
-            return [dict(row) for row in cursor.fetchall()]
+            rows = [dict(row) for row in cursor.fetchall()]
+            def _sort_key(r: Dict[str, Any]) -> Tuple[datetime, int]:
+                instant = parse_utc_instant(r.get("available_from"))
+                ts = instant if instant is not None else datetime.min.replace(tzinfo=timezone.utc)
+                return (ts, r.get("id", 0))
+            rows.sort(key=_sort_key)
+            return rows
         finally:
             conn.close()
 
