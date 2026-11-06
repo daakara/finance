@@ -10,36 +10,91 @@ The frontend sends it as: X-API-Key: <value>
 import os
 import hmac
 import logging
+from typing import Set
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
-# Routes that do NOT require authentication
-PUBLIC_PATHS = {"/health", "/docs", "/openapi.json", "/redoc"}
+# Base public routes that bypass authentication
+PUBLIC_PATHS: Set[str] = {"/health"}
+DEV_DOCS_PATHS: Set[str] = {"/docs", "/openapi.json", "/redoc"}
 
-ARX_API_KEY = os.getenv("ARX_API_KEY", "")
+
+def is_production() -> bool:
+    """Authoritatively determine whether server is executing under production posture."""
+    env = os.getenv("ENVIRONMENT", "").strip().lower()
+    railway_env = os.getenv("RAILWAY_ENVIRONMENT", "").strip().lower()
+    railway_env_name = os.getenv("RAILWAY_ENVIRONMENT_NAME", "").strip().lower()
+    
+    # Explicit non-production environments
+    for val in (env, railway_env, railway_env_name):
+        if val in ("dev", "development", "test", "staging", "preview"):
+            return False
+            
+    if env == "production" or railway_env == "production" or railway_env_name == "production":
+        return True
+
+    # If running inside pytest without explicit ENVIRONMENT override, treat as non-production
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return False
+
+    # Default to production fail-closed for safety
+    return True
+
+
+def get_configured_api_key() -> str:
+    """Retrieve server-side API key dynamically from environment."""
+    return os.getenv("ARX_API_KEY", "").strip()
 
 
 class ApiKeyAuthMiddleware(BaseHTTPMiddleware):
     """
     Enforces X-API-Key header authentication on all protected API routes.
-    Bypassed for CORS preflight, /health, and documentation paths.
+    Fails closed in production if ARX_API_KEY is unset or empty.
+    Bypassed for CORS preflight (OPTIONS) and /health.
     """
 
     async def dispatch(self, request: Request, call_next):
-        # Always pass through CORS preflight and public paths
-        if request.method == "OPTIONS" or request.url.path in PUBLIC_PATHS:
+        path = request.url.path.rstrip("/") or "/"
+        
+        # Always pass through CORS preflight (OPTIONS)
+        if request.method == "OPTIONS":
             return await call_next(request)
 
-        # If ARX_API_KEY is not configured server-side, skip enforcement
-        # This allows local development without needing the env var set.
-        if not ARX_API_KEY:
-            logger.debug("ARX_API_KEY not set — API key enforcement skipped (dev mode).")
+        # Health endpoint is public in all environments
+        if path == "/health":
             return await call_next(request)
 
-        incoming_key = request.headers.get("X-API-Key", "")
+        prod_mode = is_production()
+
+        # Non-production interactive documentation bypass
+        if not prod_mode and path in DEV_DOCS_PATHS:
+            return await call_next(request)
+
+        configured_key = get_configured_api_key()
+
+        # FAIL-CLOSED IN PRODUCTION: If ARX_API_KEY is missing, reject all requests.
+        # Never allow silent pass-through when operating in production.
+        if not configured_key:
+            if prod_mode:
+                logger.critical(
+                    "SECURITY FAIL-CLOSED: ARX_API_KEY is not configured in production environment. "
+                    "Rejecting request to %s.", path
+                )
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "error": "Internal Server Misconfiguration",
+                        "message": "Authentication is mandatory in production, but ARX_API_KEY is not configured.",
+                    },
+                )
+            else:
+                logger.debug("ARX_API_KEY not set — API key enforcement skipped (dev mode).")
+                return await call_next(request)
+
+        incoming_key = request.headers.get("X-API-Key", "").strip()
 
         if not incoming_key:
             return JSONResponse(
@@ -51,7 +106,7 @@ class ApiKeyAuthMiddleware(BaseHTTPMiddleware):
             )
 
         # Constant-time comparison to prevent timing-based side-channel attacks
-        if not _secure_compare(incoming_key, ARX_API_KEY):
+        if not _secure_compare(incoming_key, configured_key):
             logger.warning(
                 "Invalid API key attempt from %s on %s",
                 request.client.host if request.client else "unknown",
@@ -73,5 +128,3 @@ def _secure_compare(a: str, b: str) -> bool:
     if not isinstance(a, str) or not isinstance(b, str):
         return False
     return hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))
-
-
