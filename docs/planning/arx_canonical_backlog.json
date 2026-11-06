@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "backlog_name": "ARX Terminal Canonical Enterprise Backlog",
-  "last_reconciled": "2026-10-31T10:45:00Z",
+  "last_reconciled": "2026-11-06T00:53:18.170Z",
   "active_sprint": "SPRINT_4",
   "governance_framework": "ARX Closure Model v2 + Governance Efficiency v1.1",
   "immutable_holds": {
@@ -165,7 +165,10 @@
       "evidence_refs": [
         "frontend/app/radar/page.tsx",
         "api/routes/screener.py",
-        "analyst_dashboard/analyzers/scanner_runner.py"
+        "analyst_dashboard/analyzers/scanner_runner.py",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949",
+        "https://github.com/daakara/finance/pull/199",
+        "docs/releases/2026-11-06_ccd8fe1a_radar_evidence_promotion.md"
       ],
       "github_issues": [
         61,
@@ -174,7 +177,10 @@
         70
       ],
       "github_prs": [
-        73
+        73,
+        194,
+        196,
+        199
       ],
       "authorization_boundary": "DISCOVERY_ONLY",
       "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5B_OPS",
@@ -185,7 +191,7 @@
         "ARX-S4-RADAR-VCP-TRUTH"
       ],
       "superseded_by": null,
-      "description": "Investigation and remediation of Minervini VCP screening operational acceptance. Documents the authoritative distinction between: (1) reported 35-symbol internal-reference snapshot, (2) valid governed production-universe publication, (3) full US-listed market assessment, (4) current Radar availability displaying 'Universe Scanner Pending', and (5) scanner execution and activation authority. The reported internal snapshot does not establish full-market operational acceptance. Preserves PR #73 as a held implementation candidate for clean rebase in Sprint 4 Workstream 4.3, not an authorized production activation."
+      "description": "Investigation and remediation of Minervini VCP screening operational acceptance. Documents the authoritative distinction between: (1) reported 35-symbol internal-reference snapshot, (2) valid governed production-universe publication, (3) full US-listed market assessment, (4) current Radar availability displaying 'Universe Scanner Pending', and (5) scanner execution and activation authority. The reported internal snapshot does not establish full-market operational acceptance. Preserves PR #73 as a held implementation candidate for clean rebase in Sprint 4 Workstream 4.3, not an authorized production activation.\n\n2026-11-06 evidence reconciliation: PR #199 historical VCP integrity production-accepted on ccd8fe1a, including truthful AVAILABLE/zero and read-only explainability. This does not prove recurring scheduled natural scans, broad-market universe activation or all original authority-chain acceptance criteria; preserve open Sprint 5 operational scope and HOLD_SCAN_001."
     },
     {
       "task_id": "ARX-S1-001",
@@ -677,7 +683,9 @@
       ],
       "evidence_refs": [
         "docs/planning/ENGINEERING_BACKLOG.md",
-        "docs/sprints/SPRINT_2_KICKOFF.md"
+        "docs/sprints/SPRINT_2_KICKOFF.md",
+        "docs/planning/ARX_SPRINT5_RESCOPE_PROPOSAL_2026_11_06.md",
+        "https://github.com/daakara/finance/issues/166"
       ],
       "github_issues": [],
       "github_prs": [],
@@ -689,7 +697,7 @@
         "S2-05"
       ],
       "superseded_by": null,
-      "description": "Market-Data Coverage and Processing Capacity Verification. Managed under INFRASTRUCTURE workstream for SPRINT_2."
+      "description": "Market-Data Coverage and Processing Capacity Verification. Managed under INFRASTRUCTURE workstream for SPRINT_2.\n\n2026-11-06 planning-only reconciliation: full US-listings capacity and streaming-pressure benchmarks remain unverified; a bounded 122/133 launch-cohort data receipt cannot substitute for full-market acceptance. Deferral is proposed, not executed or closed."
     },
     {
       "task_id": "ARX-S2-006",
@@ -769,7 +777,9 @@
       ],
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/42",
-        "docs/planning/ENGINEERING_BACKLOG.md"
+        "docs/planning/ENGINEERING_BACKLOG.md",
+        "https://github.com/daakara/finance/issues/166",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949"
       ],
       "github_issues": [],
       "github_prs": [
@@ -783,7 +793,7 @@
         "S2-07"
       ],
       "superseded_by": null,
-      "description": "Scanner and Radar Membership Integration. Managed under RADAR_VCP workstream for SPRINT_2."
+      "description": "Scanner and Radar Membership Integration. Managed under RADAR_VCP workstream for SPRINT_2.\n\n2026-11-06 evidence reconciliation: historical 133-candidate/122-data-ready launch cohort and 122 successful bounded evaluations are recorded in Issue #166. They do not prove the original dynamic Security Master-to-scanner membership contract or out-of-list candidate acceptance; no closure inferred."
     },
     {
       "task_id": "ARX-S2-008",
@@ -815,7 +825,9 @@
       ],
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/44",
-        "tests/test_full_population_assessment_accounting.py"
+        "tests/test_full_population_assessment_accounting.py",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949",
+        "docs/planning/ARX_SPRINT5_RESCOPE_PROPOSAL_2026_11_06.md"
       ],
       "github_issues": [],
       "github_prs": [
@@ -829,7 +841,7 @@
         "S2-08"
       ],
       "superseded_by": null,
-      "description": "PR #44: S2-08 full-population assessment accounting and telemetry envelope. Retains existing governance restrictions and parent-branch dependency on PR #42. Delivers full population accounting without requiring live market streaming scanner ingestion."
+      "description": "PR #44: S2-08 full-population assessment accounting and telemetry envelope. Retains existing governance restrictions and parent-branch dependency on PR #42. Delivers full population accounting without requiring live market streaming scanner ingestion.\n\n2026-11-06 evidence reconciliation: production snapshot accounted 122 scanned successfully, 11 unavailable, and 0 qualified matches out of the bounded 133 cohort. This does not independently prove the original six-outcome full-population telemetry or a published PR #44 implementation; preserve original open requirements."
     },
     {
       "task_id": "ARX-S2-009",
@@ -861,14 +873,17 @@
       ],
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/42",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949",
+        "https://github.com/daakara/finance/pull/199"
       ],
       "github_issues": [
         61,
         62
       ],
       "github_prs": [
-        42
+        42,
+        199
       ],
       "authorization_boundary": "BOUNDED_DISCOVERY",
       "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5B_OPS",
@@ -878,7 +893,7 @@
         "S2-09"
       ],
       "superseded_by": null,
-      "description": "Radar Coverage Disclosure & Analysis Handoff Alignment. Managed under RADAR_VCP workstream for SPRINT_2."
+      "description": "Radar Coverage Disclosure & Analysis Handoff Alignment. Managed under RADAR_VCP workstream for SPRINT_2.\n\n2026-11-06 evidence reconciliation: production explainability and status semantics accepted for Radar 011U; selected evaluation-context handoff and complete coverage-disclosure UX acceptance are not proven by this receipt alone."
     },
     {
       "task_id": "ARX-S2-010",
@@ -1357,13 +1372,18 @@
       "evidence_refs": [
         "https://github.com/daakara/finance/issues/61",
         "https://github.com/daakara/finance/pull/98",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "https://github.com/daakara/finance/pull/199",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949"
       ],
       "github_issues": [
         61
       ],
       "github_prs": [
-        98
+        98,
+        127,
+        133,
+        199
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
       "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5A_UX",
@@ -1374,7 +1394,7 @@
         "ISSUE-61"
       ],
       "superseded_by": null,
-      "description": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry. Managed under RADAR_VCP workstream for SPRINT_3."
+      "description": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry. Managed under RADAR_VCP workstream for SPRINT_3.\n\n2026-11-06 evidence reconciliation: live production API distinguishes true AVAILABLE/zero from invalid symbol 400, unavailable historical data 422 and VCP_INSUFFICIENT_DATA. Original UI network-loss/404/500 retry affordance criteria still require exact-current-frontend evidence; do not blanket-close the legacy P0."
     },
     {
       "task_id": "ARX-S3-005",
@@ -1407,13 +1427,18 @@
       "evidence_refs": [
         "https://github.com/daakara/finance/issues/62",
         "https://github.com/daakara/finance/pull/98",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "https://github.com/daakara/finance/pull/199",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949"
       ],
       "github_issues": [
         62
       ],
       "github_prs": [
-        98
+        98,
+        175,
+        176,
+        199
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
       "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5A_UX",
@@ -1424,7 +1449,7 @@
         "ISSUE-62"
       ],
       "superseded_by": null,
-      "description": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance. Managed under RADAR_VCP workstream for SPRINT_3."
+      "description": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance. Managed under RADAR_VCP workstream for SPRINT_3.\n\n2026-11-06 evidence reconciliation: PR #199 proves historical source/provenance correctness for LNTH; Issue #166 also records delisted CPRX acceptance under PR #175/#176. Complete live UI candidate actionability and date-label contracts must still be checked before full closure."
     },
     {
       "task_id": "ARX-S3-006",
@@ -1457,7 +1482,8 @@
       "evidence_refs": [
         "https://github.com/daakara/finance/issues/63",
         "https://github.com/daakara/finance/pull/86",
-        "https://github.com/daakara/finance/pull/98"
+        "https://github.com/daakara/finance/pull/98",
+        "docs/planning/ARX_SPRINT5_RESCOPE_PROPOSAL_2026_11_06.md"
       ],
       "github_issues": [
         63
@@ -1475,7 +1501,7 @@
         "ISSUE-63"
       ],
       "superseded_by": null,
-      "description": "Research Workstation: Decision-First Layout Rollout (Quality Watch Collection). Managed under UX_WORKSTATION workstream for SPRINT_3."
+      "description": "Research Workstation: Decision-First Layout Rollout (Quality Watch Collection). Managed under UX_WORKSTATION workstream for SPRINT_3.\n\n2026-11-06 planning-only reconciliation: broad six-asset decision-first Quality Watch rollout is proposed for deferment, not automatically accepted or deployed as part of Radar 011U; explicit existing owner gate remains."
     },
     {
       "task_id": "ARX-S3-007",
@@ -2046,7 +2072,7 @@
       },
       "acceptance_criteria": [
         "AC-LIQ-01: Extend DecisionHierarchyEngine.resolve_decision_state() with an optional execution_hazard: bool parameter (defaulting to False when evidence is unavailable, while enforcing fail-closed actionability).",
-        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup \u2014 Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
+        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup — Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
         "AC-LIQ-03: Set disqualificationReason to explicit liquidity warning: 'Trade execution suppressed: Severe liquidity hazard detected (ADV / slippage friction exceeds safety threshold).'",
         "AC-LIQ-04: Wire execution_hazard from OptimalExecutionEngine raw_plan['liquidity_defense']['execution_hazard'] into api/routes/analytics.py, api/routes/screener.py, and DecisionTraceEngine.",
         "AC-LIQ-05: Preserve F_10 governance invariant: Missing liquidity evidence (UNAVAILABLE/UNKNOWN) must fail closed without synthesizing fictitious zero-hazard fallbacks.",
@@ -2056,7 +2082,7 @@
         "NEG-LIQ-01: Micro-cap illiquid fixture (ADV $85k, Amihud 4.2) with confluence 88.0 inside buy zone strictly produces isActionable=False and canSizeTrade=False.",
         "NEG-LIQ-02: Illiquid setup suppresses position sizing in GovernorSizingEngine with 0 shares.",
         "NEG-LIQ-03: Missing volume profile (None) produces execution_hazard=True (fail-closed) and blocks ACTIONABLE_SETUP.",
-        "NEG-LIQ-04: Setup with execution_hazard=True and execution_status=STOPPED_OUT produces label 'Setup Invalidated \u2014 Stopped Out' (STOPPED_OUT takes precedence over liquidity friction)."
+        "NEG-LIQ-04: Setup with execution_hazard=True and execution_status=STOPPED_OUT produces label 'Setup Invalidated — Stopped Out' (STOPPED_OUT takes precedence over liquidity friction)."
       ],
       "dependencies": [
         "ARX-S4-ARCH-001",
@@ -2233,14 +2259,20 @@
         70
       ],
       "github_pr_refs": [
-        73
+        73,
+        194,
+        196,
+        199
       ],
       "commit_refs": [],
       "deployment_refs": [],
       "evidence_refs": [
         "frontend/app/radar/page.tsx",
         "api/routes/screener.py",
-        "analyst_dashboard/analyzers/scanner_runner.py"
+        "analyst_dashboard/analyzers/scanner_runner.py",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949",
+        "https://github.com/daakara/finance/pull/199",
+        "docs/releases/2026-11-06_ccd8fe1a_radar_evidence_promotion.md"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -2738,7 +2770,9 @@
       "deployment_refs": [],
       "evidence_refs": [
         "docs/planning/ENGINEERING_BACKLOG.md",
-        "docs/sprints/SPRINT_2_KICKOFF.md"
+        "docs/sprints/SPRINT_2_KICKOFF.md",
+        "docs/planning/ARX_SPRINT5_RESCOPE_PROPOSAL_2026_11_06.md",
+        "https://github.com/daakara/finance/issues/166"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -2827,7 +2861,9 @@
       "deployment_refs": [],
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/42",
-        "docs/planning/ENGINEERING_BACKLOG.md"
+        "docs/planning/ENGINEERING_BACKLOG.md",
+        "https://github.com/daakara/finance/issues/166",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -2872,7 +2908,9 @@
       "deployment_refs": [],
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/44",
-        "tests/test_full_population_assessment_accounting.py"
+        "tests/test_full_population_assessment_accounting.py",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949",
+        "docs/planning/ARX_SPRINT5_RESCOPE_PROPOSAL_2026_11_06.md"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -2913,13 +2951,16 @@
         62
       ],
       "github_pr_refs": [
-        42
+        42,
+        199
       ],
       "commit_refs": [],
       "deployment_refs": [],
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/42",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949",
+        "https://github.com/daakara/finance/pull/199"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -3392,14 +3433,19 @@
         61
       ],
       "github_pr_refs": [
-        98
+        98,
+        127,
+        133,
+        199
       ],
       "commit_refs": [],
       "deployment_refs": [],
       "evidence_refs": [
         "https://github.com/daakara/finance/issues/61",
         "https://github.com/daakara/finance/pull/98",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "https://github.com/daakara/finance/pull/199",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -3439,14 +3485,19 @@
         62
       ],
       "github_pr_refs": [
-        98
+        98,
+        175,
+        176,
+        199
       ],
       "commit_refs": [],
       "deployment_refs": [],
       "evidence_refs": [
         "https://github.com/daakara/finance/issues/62",
         "https://github.com/daakara/finance/pull/98",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "https://github.com/daakara/finance/pull/199",
+        "https://github.com/daakara/finance/issues/166#issuecomment-6673365949"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -3495,7 +3546,8 @@
         "https://github.com/daakara/finance/issues/63",
         "https://github.com/daakara/finance/pull/86",
         "https://github.com/daakara/finance/pull/98",
-        "Product Owner Decision 2 (Directive 058) affirmed owner authorization for exploratory research in Sprint 5"
+        "Product Owner Decision 2 (Directive 058) affirmed owner authorization for exploratory research in Sprint 5",
+        "docs/planning/ARX_SPRINT5_RESCOPE_PROPOSAL_2026_11_06.md"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -4065,7 +4117,7 @@
       "governance_state": "AUTHORIZED",
       "acceptance_criteria": [
         "AC-LIQ-01: Extend DecisionHierarchyEngine.resolve_decision_state() with an optional execution_hazard: bool parameter (defaulting to False when evidence is unavailable, while enforcing fail-closed actionability).",
-        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup \u2014 Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
+        "AC-LIQ-02: Enforce Precedence in DecisionHierarchyEngine: If execution_hazard is True, the setup MUST be disqualified from ACTIONABLE_SETUP, setting state=VALID_SETUP, isActionable=False, canSizeTrade=False, label='Valid Setup — Liquidity Hazard', and allowedActions=['ADD_WATCHLIST', 'RESEARCH_PROFILE'].",
         "AC-LIQ-03: Set disqualificationReason to explicit liquidity warning: 'Trade execution suppressed: Severe liquidity hazard detected (ADV / slippage friction exceeds safety threshold).'",
         "AC-LIQ-04: Wire execution_hazard from OptimalExecutionEngine raw_plan['liquidity_defense']['execution_hazard'] into api/routes/analytics.py, api/routes/screener.py, and DecisionTraceEngine.",
         "AC-LIQ-05: Preserve F_10 governance invariant: Missing liquidity evidence (UNAVAILABLE/UNKNOWN) must fail closed without synthesizing fictitious zero-hazard fallbacks.",
