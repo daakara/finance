@@ -7,6 +7,9 @@ import pytest
 
 from analyst_dashboard.analyzers.self_healing_engine import SelfHealingForecastAuditor
 
+# Keep this focused suite in the existing hosted Tier 2 CI collection.
+pytestmark = pytest.mark.tier2b
+
 
 @pytest.mark.parametrize(
     "prices,expected_status",
