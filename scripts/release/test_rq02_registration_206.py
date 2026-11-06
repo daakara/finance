@@ -15,17 +15,8 @@ from rq02_registration_206 import (
 
 ORIGINAL = "intro\nAPPROVED_PRS = {196, 201}\n        # Candidate PR Authorization check\n        try:\n            pr_val = int(pr_number)\n            is_approved_pr = pr_val in APPROVED_PRS\n        except Exception:\n            is_approved_pr = False\n"
 
-BOOTSTRAP = """        # Bounded administrative registration bootstrap: PR #206 only.
-        registration_bootstrap = False
-        if str(pr_number) == "206" and clean_target == "main":
-            from rq02_registration_206 import verify_registration_only
-            registration_bootstrap, bootstrap_reason = verify_registration_only(
-                base_sha=base_sha, head_sha=head_sha, repo_root=PROJECT_ROOT,
-            )
-            if not registration_bootstrap:
-                errors.append(f"REGISTRATION_BOOTSTRAP_REJECTED: {bootstrap_reason}")
-
-"""
+from rq02_registration_206 import EXPECTED_BOOTSTRAP_BLOCK
+BOOTSTRAP = EXPECTED_BOOTSTRAP_BLOCK
 CANDIDATE = ORIGINAL.replace("201}", "201, 205}").replace(
     "        # Candidate PR Authorization check\n",
     BOOTSTRAP + "        # Candidate PR Authorization check\n",
