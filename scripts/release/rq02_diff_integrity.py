@@ -677,10 +677,30 @@ def main():
             if not lineage_ok:
                 errors.append(f"BASE_LINEAGE_INVALID: Base commit '{base_sha}' is not an ancestor of candidate '{head_sha}'.")
 
+        # Bounded administrative registration bootstrap: PR #206 only.
+        # This resolves the allowlist recursion without permitting application
+        # changes or registering a governance PR as an application candidate.
+        # See accompanying adversarial tests in test_rq02_registration_206.py.
+        registration_bootstrap = False
+        if str(pr_number) == "206" and clean_target == "main":
+            from rq02_registration_206 import verify_registration_only
+            registration_bootstrap, bootstrap_reason = verify_registration_only(
+                base_sha=base_sha,
+                head_sha=head_sha,
+                repo_root=PROJECT_ROOT,
+            )
+            assertions.append({
+                "assertion": "Governance registration PR #206 is strictly confined to approved PR #205 admission",
+                "observed": {"reason": bootstrap_reason},
+                "passed": registration_bootstrap
+            })
+            if not registration_bootstrap:
+                errors.append(f"REGISTRATION_BOOTSTRAP_REJECTED: {bootstrap_reason}")
+
         # Candidate PR Authorization check
         try:
             pr_val = int(pr_number)
-            is_approved_pr = pr_val in APPROVED_PRS
+            is_approved_pr = (pr_val in APPROVED_PRS) or registration_bootstrap
         except Exception:
             is_approved_pr = False
         assertions.append({
