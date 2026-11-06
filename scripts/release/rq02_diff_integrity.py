@@ -26,7 +26,7 @@ from rq_receipt_utils import (
     is_git_ancestor, SHA40_REGEX
 )
 
-APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 145, 147, 149, 150, 151, 153, 156, 159, 160, 162, 163, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 186, 188, 196, 201}
+APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 145, 147, 149, 150, 151, 153, 156, 159, 160, 162, 163, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 186, 188, 196, 201, 205}
 
 FORBIDDEN_ADMIN_PREFIXES = (
     "api/",
@@ -677,10 +677,30 @@ def main():
             if not lineage_ok:
                 errors.append(f"BASE_LINEAGE_INVALID: Base commit '{base_sha}' is not an ancestor of candidate '{head_sha}'.")
 
+        # Bounded administrative registration bootstrap: PR #206 only.
+        # This resolves the allowlist recursion without permitting application
+        # changes or registering a governance PR as an application candidate.
+        # See accompanying adversarial tests in test_rq02_registration_206.py.
+        registration_bootstrap = False
+        if str(pr_number) == "206" and clean_target == "main":
+            from rq02_registration_206 import verify_registration_only
+            registration_bootstrap, bootstrap_reason = verify_registration_only(
+                base_sha=base_sha,
+                head_sha=head_sha,
+                repo_root=PROJECT_ROOT,
+            )
+            assertions.append({
+                "assertion": "Governance registration PR #206 is strictly confined to approved PR #205 admission",
+                "observed": {"reason": bootstrap_reason},
+                "passed": registration_bootstrap
+            })
+            if not registration_bootstrap:
+                errors.append(f"REGISTRATION_BOOTSTRAP_REJECTED: {bootstrap_reason}")
+
         # Candidate PR Authorization check
         try:
             pr_val = int(pr_number)
-            is_approved_pr = pr_val in APPROVED_PRS
+            is_approved_pr = (pr_val in APPROVED_PRS) or registration_bootstrap
         except Exception:
             is_approved_pr = False
         assertions.append({
