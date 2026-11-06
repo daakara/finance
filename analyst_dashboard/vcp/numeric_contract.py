@@ -126,21 +126,23 @@ class VCPNumericContract:
     def compute_sma_slope(
         sma_series: Sequence[Optional[float]], lookback_bars: int = 22
     ) -> Optional[float]:
-        """Calculates percentage change of SMA over trailing lookback_bars."""
-        if not sma_series:
-            return None
-        current = sma_series[-1]
-        if current is None:
+        """Calculates percentage change of SMA over trailing lookback_bars.
+
+        Requires both current and exact lookback_bars-prior SMA values to be non-None and positive.
+        Returns None if either value is missing, invalid, or if the series has insufficient history
+        to span the exact lookback window. Does NOT substitute earlier averages or fabricate zero.
+        Preserves 0.0 only when current == prior for a mathematically flat SMA.
+        """
+        if not sma_series or lookback_bars < 1:
             return None
         if len(sma_series) <= lookback_bars:
-            prior = next((x for x in sma_series if x is not None), None)
-        else:
-            prior = sma_series[-(lookback_bars + 1)]
-            if prior is None:
-                prior = next((x for x in sma_series if x is not None), None)
-
+            return None
+        current = sma_series[-1]
+        if current is None or current <= 0:
+            return None
+        prior = sma_series[-(lookback_bars + 1)]
         if prior is None or prior <= 0:
-            return 0.0  # Default non-declining baseline if only 1 bar exists
+            return None
         slope = (current - prior) / prior
         return VCPNumericContract.round_ratio(slope)
 

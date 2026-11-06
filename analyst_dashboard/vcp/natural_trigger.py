@@ -121,6 +121,7 @@ class NaturalVCPTriggerService:
         candidate_generation_id: str = CANDIDATE_004_GENERATION_ID,
         allow_session_correction: bool = False,
         operator_request_id: Optional[str] = None,
+        is_canary: bool = False,
     ) -> Dict[str, Any]:
         """Executes a genuine natural production market-wide VCP scan.
 
@@ -200,15 +201,28 @@ class NaturalVCPTriggerService:
             f"candidate={CANDIDATE_004_GENERATION_ID}, logical_job_key={logical_trigger_id}"
         )
 
+        if is_canary or operator_request_id:
+            eff_invocation_class = "MANUAL_OPERATOR_CANARY"
+            eff_principal_type = "OPERATOR_CANARY"
+            eff_principal_id = f"operator:{operator_request_id or 'manual-canary'}"
+            eff_origin_class = "ADMIN_FORCED"
+            eff_trigger_type = TriggerType.MANUAL
+        else:
+            eff_invocation_class = "SCHEDULED_PRODUCTION"
+            eff_principal_type = "SCHEDULER"
+            eff_principal_id = "scheduler:arx-daily-cadence"
+            eff_origin_class = "NATURAL_PRODUCTION"
+            eff_trigger_type = TriggerType.SCHEDULED
+
         envelope = runner.execute_market_wide_scan(
             universe_build_id=effective_build_id,
             logical_job_key=logical_trigger_id,
             logical_trigger_id=logical_trigger_id,
             logical_scan_run_id=logical_scan_run_id,
-            trigger_type=TriggerType.SCHEDULED,
-            invocation_class="SCHEDULED_PRODUCTION",
-            originating_principal_type="SCHEDULER",
-            originating_principal_id="scheduler:arx-daily-cadence",
+            trigger_type=eff_trigger_type,
+            invocation_class=eff_invocation_class,
+            originating_principal_type=eff_principal_type,
+            originating_principal_id=eff_principal_id,
             scheduler_job_id=eff_job_id,
             scheduler_event_id=eff_event_id,
             scheduled_for=today_str,
@@ -217,6 +231,7 @@ class NaturalVCPTriggerService:
             execution_attempt_id=execution_attempt_id,
             operator_request_id=operator_request_id,
             candidate_generation_id=CANDIDATE_004_GENERATION_ID,
+            is_canary=is_canary,
         )
 
         # Phase B: Authoritative response unwrap & durable reconciliation

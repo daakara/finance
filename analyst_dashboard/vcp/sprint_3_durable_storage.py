@@ -210,7 +210,7 @@ CREATE TABLE IF NOT EXISTS logical_scan_runs (
     universe_build_id TEXT NOT NULL,
     evaluation_as_of TEXT NOT NULL,
     scheduled_for TEXT,
-    invocation_class TEXT NOT NULL CHECK(invocation_class IN ('BOOT_WARMUP', 'SCHEDULED_PRODUCTION', 'PRODUCT_LIFECYCLE', 'MANUAL_OPERATOR', 'REPLAY', 'TEST', 'SYNTHETIC', 'PROVENANCE_CONFLICT')),
+    invocation_class TEXT NOT NULL CHECK(invocation_class IN ('BOOT_WARMUP', 'SCHEDULED_PRODUCTION', 'PRODUCT_LIFECYCLE', 'MANUAL_OPERATOR', 'MANUAL_OPERATOR_CANARY', 'REPLAY', 'TEST', 'SYNTHETIC', 'PROVENANCE_CONFLICT')),
     origin_class TEXT NOT NULL CHECK(origin_class IN ('NATURAL_PRODUCTION', 'NON_EVIDENCE_BOOTSTRAP', 'SYNTHETIC', 'REPLAY', 'ADMIN_FORCED', 'TEST', 'NOT_ADMITTED')),
     originating_principal_type TEXT NOT NULL,
     originating_principal_id TEXT NOT NULL,
@@ -775,7 +775,7 @@ class Sprint3DurableEvidenceStore:
                     universe_build_id TEXT NOT NULL,
                     evaluation_as_of TEXT NOT NULL,
                     scheduled_for TEXT,
-                    invocation_class TEXT NOT NULL CHECK(invocation_class IN ('BOOT_WARMUP', 'SCHEDULED_PRODUCTION', 'PRODUCT_LIFECYCLE', 'MANUAL_OPERATOR', 'REPLAY', 'TEST', 'SYNTHETIC', 'PROVENANCE_CONFLICT')),
+                    invocation_class TEXT NOT NULL CHECK(invocation_class IN ('BOOT_WARMUP', 'SCHEDULED_PRODUCTION', 'PRODUCT_LIFECYCLE', 'MANUAL_OPERATOR', 'MANUAL_OPERATOR_CANARY', 'REPLAY', 'TEST', 'SYNTHETIC', 'PROVENANCE_CONFLICT')),
                     origin_class TEXT NOT NULL CHECK(origin_class IN ('NATURAL_PRODUCTION', 'NON_EVIDENCE_BOOTSTRAP', 'SYNTHETIC', 'REPLAY', 'ADMIN_FORCED', 'TEST', 'NOT_ADMITTED')),
                     originating_principal_type TEXT NOT NULL,
                     originating_principal_id TEXT NOT NULL,
@@ -1599,7 +1599,7 @@ class Sprint3DurableEvidenceStore:
             )
 
         # PROV-002: HUMAN_CALLER_CLAIMS_SCHEDULED_ORIGIN
-        if originating_principal_type in ("HUMAN_OPERATOR", "OPERATOR"):
+        if originating_principal_type in ("HUMAN_OPERATOR", "OPERATOR", "OPERATOR_CANARY"):
             if invocation_class == "SCHEDULED_PRODUCTION" or origin_class == "NATURAL_PRODUCTION":
                 raise ProvenanceConflictError(
                     "PROV-002",
@@ -1841,28 +1841,57 @@ class Sprint3DurableEvidenceStore:
                     "status": "EXISTING_LOGICAL_RUN",
                 }
 
-            cur.execute(
-                """
-                INSERT INTO logical_scan_runs (
-                    logical_scan_run_id, logical_trigger_id, scanner_id, universe_build_id,
-                    evaluation_as_of, scheduled_for, invocation_class, origin_class,
-                    originating_principal_type, originating_principal_id, immediate_caller_principal_id,
-                    scheduler_job_id, scheduler_event_id, startup_context, boot_instance_id,
-                    product_request_id, replay_of_logical_scan_run_id, classification_policy_version,
-                    identity_schema_version, canonicalization_version, provenance_fingerprint,
-                    created_at, classified_at, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    logical_scan_run_id, logical_trigger_id, scanner_id, universe_build_id,
-                    evaluation_as_of, scheduled_for, invocation_class, origin_class,
-                    originating_principal_type, originating_principal_id, immediate_caller_principal_id,
-                    scheduler_job_id, scheduler_event_id, 1 if startup_context else 0, boot_instance_id,
-                    product_request_id, replay_of_logical_scan_run_id, classification_policy_version,
-                    identity_schema_version, canonicalization_version, fp,
-                    now_utc, now_utc, "CREATED"
-                ),
-            )
+            db_invocation_class = invocation_class
+            try:
+                cur.execute(
+                    """
+                    INSERT INTO logical_scan_runs (
+                        logical_scan_run_id, logical_trigger_id, scanner_id, universe_build_id,
+                        evaluation_as_of, scheduled_for, invocation_class, origin_class,
+                        originating_principal_type, originating_principal_id, immediate_caller_principal_id,
+                        scheduler_job_id, scheduler_event_id, startup_context, boot_instance_id,
+                        product_request_id, replay_of_logical_scan_run_id, classification_policy_version,
+                        identity_schema_version, canonicalization_version, provenance_fingerprint,
+                        created_at, classified_at, status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        logical_scan_run_id, logical_trigger_id, scanner_id, universe_build_id,
+                        evaluation_as_of, scheduled_for, db_invocation_class, origin_class,
+                        originating_principal_type, originating_principal_id, immediate_caller_principal_id,
+                        scheduler_job_id, scheduler_event_id, 1 if startup_context else 0, boot_instance_id,
+                        product_request_id, replay_of_logical_scan_run_id, classification_policy_version,
+                        identity_schema_version, canonicalization_version, fp,
+                        now_utc, now_utc, "CREATED"
+                    ),
+                )
+            except Exception as _ins_err:
+                if "CHECK constraint failed" in str(_ins_err) and db_invocation_class == "MANUAL_OPERATOR_CANARY":
+                    db_invocation_class = "MANUAL_OPERATOR"
+                    cur.execute(
+                        """
+                        INSERT INTO logical_scan_runs (
+                            logical_scan_run_id, logical_trigger_id, scanner_id, universe_build_id,
+                            evaluation_as_of, scheduled_for, invocation_class, origin_class,
+                            originating_principal_type, originating_principal_id, immediate_caller_principal_id,
+                            scheduler_job_id, scheduler_event_id, startup_context, boot_instance_id,
+                            product_request_id, replay_of_logical_scan_run_id, classification_policy_version,
+                            identity_schema_version, canonicalization_version, provenance_fingerprint,
+                            created_at, classified_at, status
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            logical_scan_run_id, logical_trigger_id, scanner_id, universe_build_id,
+                            evaluation_as_of, scheduled_for, db_invocation_class, origin_class,
+                            originating_principal_type, originating_principal_id, immediate_caller_principal_id,
+                            scheduler_job_id, scheduler_event_id, 1 if startup_context else 0, boot_instance_id,
+                            product_request_id, replay_of_logical_scan_run_id, classification_policy_version,
+                            identity_schema_version, canonicalization_version, fp,
+                            now_utc, now_utc, "CREATED"
+                        ),
+                    )
+                else:
+                    raise
 
             # Bind epoch membership if evidence_epoch_memberships exists (Schema V4)
             cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='evidence_epoch_memberships';")
@@ -2038,7 +2067,7 @@ class Sprint3DurableEvidenceStore:
                 eff_origin_class = "NATURAL_PRODUCTION"
             elif eff_invocation_class == "PRODUCT_LIFECYCLE":
                 eff_origin_class = "NATURAL_PRODUCTION" if caller_delegation_valid else "ADMIN_FORCED"
-            elif eff_invocation_class == "MANUAL_OPERATOR":
+            elif eff_invocation_class in ("MANUAL_OPERATOR", "MANUAL_OPERATOR_CANARY"):
                 eff_origin_class = "ADMIN_FORCED"
             elif eff_invocation_class == "REPLAY":
                 eff_origin_class = "REPLAY"
@@ -2265,7 +2294,7 @@ class Sprint3DurableEvidenceStore:
                     if startup_context or eff_invocation_class == "BOOT_WARMUP":
                         mem_class = "NON_NATURAL"
                         prosp_disp = "NON_NATURAL_INELIGIBLE"
-                    elif eff_invocation_class == "MANUAL_OPERATOR" or eff_origin_class == "ADMIN_FORCED":
+                    elif eff_invocation_class in ("MANUAL_OPERATOR", "MANUAL_OPERATOR_CANARY") or eff_origin_class == "ADMIN_FORCED":
                         mem_class = "NON_NATURAL"
                         prosp_disp = "NON_NATURAL_INELIGIBLE"
                     elif eff_invocation_class == "REPLAY" or eff_origin_class == "REPLAY" or replay_of_logical_scan_run_id:
