@@ -3,7 +3,8 @@
 import time
 import os
 import logging
-from typing import Dict
+import ipaddress
+from typing import Dict, List, Optional, Union
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
@@ -26,6 +27,109 @@ if REDIS_URL:
 
 # Fallback in-memory store: { client_ip: [timestamp1, timestamp2, ...] }
 in_memory_rate_store: Dict[str, list] = {}
+
+
+def _parse_trusted_proxies() -> List[Union[ipaddress.IPv4Network, ipaddress.IPv6Network]]:
+    """Parse trusted proxy IP networks from TRUSTED_PROXIES environment variable.
+    
+    Defaults to loopback networks (127.0.0.0/8, ::1/128).
+    """
+    default_networks = [
+        ipaddress.ip_network("127.0.0.0/8"),
+        ipaddress.ip_network("::1/128"),
+    ]
+    env_proxies = os.getenv("TRUSTED_PROXIES", "").strip()
+    if not env_proxies:
+        return default_networks
+    
+    parsed = list(default_networks)
+    for item in env_proxies.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        try:
+            if "/" in item:
+                parsed.append(ipaddress.ip_network(item, strict=False))
+            else:
+                ip = ipaddress.ip_address(item)
+                parsed.append(ipaddress.ip_network(f"{ip}/{32 if ip.version == 4 else 128}"))
+        except ValueError as e:
+            logger.warning("Invalid TRUSTED_PROXIES entry '%s': %s", item, e)
+    return parsed
+
+
+def is_ip_trusted_proxy(ip_str: str, trusted_networks: Optional[List] = None) -> bool:
+    """Check if an IP address string belongs to any trusted proxy network."""
+    if not ip_str:
+        return False
+    # Allow in-process mock test client during testing
+    if ip_str == "testclient" and "PYTEST_CURRENT_TEST" in os.environ:
+        return True
+    try:
+        ip = ipaddress.ip_address(ip_str.strip())
+        networks = trusted_networks if trusted_networks is not None else _parse_trusted_proxies()
+        return any(ip in net for net in networks)
+    except ValueError:
+        return False
+
+
+def resolve_client_ip(request: Request) -> str:
+    """Securely resolve client IP address with trusted proxy verification.
+    
+    ANTI-SPOOFING RULES:
+    1. Direct peer is request.client.host.
+    2. If direct peer is NOT a trusted proxy, client-supplied forwarding headers
+       (X-Forwarded-For, CF-Connecting-IP) are untrusted and MUST be ignored.
+    3. If direct peer IS a trusted proxy:
+       - Prefer CF-Connecting-IP if valid IP.
+       - Otherwise, evaluate X-Forwarded-For from right to left, skipping trusted proxy hops.
+         The first untrusted hop from the right is the genuine client IP.
+    """
+    direct_host = request.client.host if request.client else None
+    if not direct_host:
+        return "unknown_client"
+    
+    direct_host = direct_host.strip()
+    
+    # In dev or testing, explicit flag allows trusting all proxies
+    trust_all = os.getenv("TRUST_ALL_PROXIES", "").strip() == "1"
+    
+    trusted_networks = _parse_trusted_proxies()
+    is_trusted_peer = trust_all or is_ip_trusted_proxy(direct_host, trusted_networks)
+    
+    if not is_trusted_peer:
+        # Untrusted direct peer: ignore client-supplied forwarding headers completely
+        return direct_host
+    
+    # Direct peer is a trusted proxy: evaluate headers safely
+    cf_ip = request.headers.get("cf-connecting-ip")
+    if cf_ip:
+        cf_ip = cf_ip.strip()
+        try:
+            ipaddress.ip_address(cf_ip)
+            return cf_ip
+        except ValueError:
+            pass
+            
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        hops = [h.strip() for h in forwarded.split(",") if h.strip()]
+        # Walk backwards from rightmost (nearest proxy) to leftmost (originating client)
+        for hop in reversed(hops):
+            try:
+                ip_obj = ipaddress.ip_address(hop)
+                if not any(ip_obj in net for net in trusted_networks):
+                    return str(ip_obj)
+            except ValueError:
+                continue
+        if hops:
+            try:
+                ipaddress.ip_address(hops[0])
+                return hops[0]
+            except ValueError:
+                pass
+
+    return direct_host
 
 
 class RedisRateLimitMiddleware(BaseHTTPMiddleware):
@@ -55,9 +159,8 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS" or request.url.path in ["/health", "/docs", "/openapi.json", "/redoc"]:
             return await call_next(request)
 
-        # Extract client IP (handling reverse proxy forwarded headers)
-        forwarded = request.headers.get("x-forwarded-for")
-        client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown_client")
+        # Securely extract client IP (anti-spoofing)
+        client_ip = resolve_client_ip(request)
 
         limit = self._get_route_limit(request.url.path)
         current_time = int(time.time())

@@ -123,10 +123,13 @@ app = FastAPI(
 )
 
 # 1. Strict CORS Whitelist Configuration
-ALLOWED_ORIGINS = [
+PROD_ALLOWED_ORIGINS = [
     "https://www.arxterminal.com",
     "https://arxterminal.com",
     "https://finance-xp8.pages.dev",
+]
+
+DEV_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:3005",
     "http://127.0.0.1:3000",
@@ -134,17 +137,30 @@ ALLOWED_ORIGINS = [
     "http://localhost:8000",
 ]
 
+ALLOWED_ORIGINS = list(PROD_ALLOWED_ORIGINS)
+if not IS_PRODUCTION:
+    ALLOWED_ORIGINS.extend(DEV_ALLOWED_ORIGINS)
+
 # Allow a single additional origin set via environment variable (e.g. staging preview)
-extra_origin = os.getenv("ALLOWED_ORIGIN", "")
-if extra_origin and extra_origin not in ALLOWED_ORIGINS:
-    ALLOWED_ORIGINS.append(extra_origin)
+extra_origin = os.getenv("ALLOWED_ORIGIN", "").strip()
+if extra_origin:
+    if IS_PRODUCTION:
+        # In production, require HTTPS for any additional origin
+        if extra_origin.startswith("https://") and extra_origin not in ALLOWED_ORIGINS:
+            ALLOWED_ORIGINS.append(extra_origin)
+    elif extra_origin not in ALLOWED_ORIGINS:
+        ALLOWED_ORIGINS.append(extra_origin)
+
+cors_origin_regex = (
+    r"^https://(www\.)?arxterminal\.com$|^https://finance-xp8\.pages\.dev$"
+    if IS_PRODUCTION
+    else r"https://(www\.)?arxterminal\.com|https://finance-xp8\.pages\.dev|http://localhost:\d+|http://127\.0\.0\.1:\d+"
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    # Tightened: only exact arxterminal.com subdomains and the specific pages.dev project.
-    # No longer matches arbitrary *.pages.dev or *.vercel.app wildcards.
-    allow_origin_regex=r"https://(www\.)?arxterminal\.com|https://finance-xp8\.pages\.dev|http://localhost:\d+|http://127\.0\.0\.1:\d+",
+    allow_origin_regex=cors_origin_regex,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=[
@@ -172,15 +188,17 @@ app.add_middleware(
 # 2. Correlation and Request Tracing Middleware
 app.add_middleware(CorrelationMiddleware)
 
-# 3. Backend Security Headers Middleware (HSTS, nosniff, frame protection)
+# 3. Backend Security Headers Middleware (HSTS, nosniff, frame protection, CSP)
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response: Response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     if IS_PRODUCTION:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none';"
     return response
 
 # 4. API Key Authentication (enforced in production when ARX_API_KEY env var is set)
