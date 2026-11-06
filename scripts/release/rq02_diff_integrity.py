@@ -152,6 +152,7 @@ def main():
     parser.add_argument("--manifest", default=None, help="Approved release or administrative manifest")
     parser.add_argument("--allow-main-target", action="store_true", help="Permit main as target during staging/administrative PR qualification")
     parser.add_argument("--target-branch", default=None, help="Target branch override")
+    parser.add_argument("--pr", default=None, help="Pull request number override (e.g. 207)")
     parser.add_argument("--allow-uncommitted", action="store_true", help="Permit uncommitted changes in working tree (testing only)")
     parser.add_argument("--skip-framework-check", action="store_true", help="Skip framework self-integrity check (testing only)")
     args = parser.parse_args()
@@ -649,7 +650,7 @@ def main():
     elif mode == "pr":
         source_sha = identity["source_sha"] if ok else get_git_commit("HEAD")
         head_sha = get_git_commit(args.head) if args.head else source_sha
-        pr_number = identity.get("pr_number") if ok else None
+        pr_number = args.pr if args.pr is not None else (identity.get("pr_number") if ok else None)
 
         if args.base:
             base_sha = get_git_commit(args.base) or args.base
@@ -807,15 +808,22 @@ def main():
                 continue
 
             # 5. Compute cryptographic blob hash directly from Git Merkle tree at candidate HEAD
-            blob_hash = compute_git_blob_sha256(head_sha, path)
-            if not blob_hash:
-                errors.append(f"BLOB_HASH_COMPUTATION_FAILED: Unable to compute git blob hash for '{path}' at {head_sha}.")
-            else:
+            if status_code.startswith("D"):
                 candidate_blobs[path] = {
                     "operation": status_code,
-                    "sha256": blob_hash,
+                    "sha256": "DELETED",
                     "originating_pr_number": pr_number
                 }
+            else:
+                blob_hash = compute_git_blob_sha256(head_sha, path)
+                if not blob_hash:
+                    errors.append(f"BLOB_HASH_COMPUTATION_FAILED: Unable to compute git blob hash for '{path}' at {head_sha}.")
+                else:
+                    candidate_blobs[path] = {
+                        "operation": status_code,
+                        "sha256": blob_hash,
+                        "originating_pr_number": pr_number
+                    }
 
         assertions.append({
             "assertion": "Zero path traversal or malformed paths detected",
