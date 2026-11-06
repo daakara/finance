@@ -42,3 +42,44 @@ def test_pagination_limit_fails_closed(monkeypatch):
     import rq02_trusted_admission as gate
     monkeypatch.setattr(gate, "_github_json", lambda _: [f("frontend/one.ts")] * 100)
     assert get_all_files("daakara/finance", 207) is None
+
+
+
+def test_trusted_commit_status_binds_success_to_exact_head(monkeypatch):
+    import rq02_trusted_admission as gate
+    from unittest.mock import call, patch
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    with patch.object(gate, "_event_head", return_value=("daakara/finance", "a"*40)):
+        with patch.object(gate, "_evaluate_main", return_value=0):
+            with patch.object(gate, "post_commit_status") as status:
+                assert gate.main() == 0
+                assert status.call_count == 2
+                assert status.call_args_list[0].args[:3] == ("daakara/finance", "a"*40, "pending")
+                assert status.call_args_list[1].args[:3] == ("daakara/finance", "a"*40, "success")
+
+
+def test_trusted_commit_status_fails_closed_on_rejection(monkeypatch):
+    import rq02_trusted_admission as gate
+    from unittest.mock import patch
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    with patch.object(gate, "_event_head", return_value=("daakara/finance", "a"*40)):
+        with patch.object(gate, "_evaluate_main", return_value=1):
+            with patch.object(gate, "post_commit_status") as status:
+                assert gate.main() == 1
+                assert status.call_args_list[-1].args[2] == "failure"
+
+
+def test_status_api_failure_never_turns_into_pass(monkeypatch):
+    import rq02_trusted_admission as gate
+    from unittest.mock import patch
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    with patch.object(gate, "_event_head", return_value=("daakara/finance", "a"*40)):
+        with patch.object(gate, "post_commit_status", side_effect=OSError("status API down")):
+            assert gate.main() == 1
+
+
+def test_status_write_requires_trusted_token(monkeypatch):
+    import rq02_trusted_admission as gate
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    with pytest.raises(ValueError, match="token unavailable"):
+        gate.post_commit_status("daakara/finance", "a"*40, "success", "test")
