@@ -282,6 +282,7 @@ class ScannerSnapshotStore:
             cursor.execute("""
                 SELECT * FROM scanner_snapshots
                 WHERE scanner_id = ? AND publication_decision = 'PUBLISH'
+                  AND status_at_publication IN ('AVAILABLE', 'STALE')
                 ORDER BY created_at DESC, rowid DESC
                 LIMIT 1
             """, (scanner_id,))
@@ -301,6 +302,7 @@ class ScannerSnapshotStore:
             cursor.execute("""
                 SELECT snapshot_id FROM scanner_snapshots
                 WHERE scanner_id = ? AND publication_decision = 'PUBLISH'
+                  AND status_at_publication IN ('AVAILABLE', 'STALE')
                 ORDER BY created_at DESC, rowid DESC
                 LIMIT 1
             """, (scanner_id,))

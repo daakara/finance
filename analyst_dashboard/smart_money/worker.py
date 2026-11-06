@@ -12,6 +12,7 @@ Enforces:
 
 import os
 import sys
+import json
 import time
 import signal
 import logging
@@ -668,9 +669,39 @@ class SmartMoneyIngestionWorker:
 def main():
     """CLI Entrypoint: python -m analyst_dashboard.smart_money.worker"""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    import argparse
+    parser = argparse.ArgumentParser(description="ARX Terminal Smart Money Worker")
+    parser.add_argument("--canary-nvda", action="store_true", help="Execute bounded single-shot NVDA SEC canary")
+    parser.add_argument("--ten-issuer-pilot", action="store_true", help="Execute bounded sequential 10-issuer SEC pilot")
+    parser.add_argument("--authorize-pilot", action="store_true", help="Explicit one-shot owner authorization for --ten-issuer-pilot")
+    parser.add_argument("--pilot-expires-at", type=str, default=None, help="Authorization expiry ISO timestamp")
+    parser.add_argument("--pilot-release-sha", type=str, default=None, help="Authorization production release SHA binding")
+    parser.add_argument("--single-cycle", action="store_true", help="Execute a single worker cycle and terminate")
+    args, _ = parser.parse_known_args()
+
+    if args.canary_nvda:
+        from analyst_dashboard.smart_money.canary_runner import run_nvda_canary
+        logger.info("Executing bounded NVDA SEC Form 4 canary via worker CLI...")
+        res = run_nvda_canary()
+        print(json.dumps(res, indent=2, default=str))
+        sys.exit(0 if res.get("verdict") == "SUCCESS" else 1)
+
+    if args.ten_issuer_pilot:
+        if args.authorize_pilot:
+            os.environ["ARX_TEN_ISSUER_PILOT_AUTHORIZED"] = "true"
+        if args.pilot_expires_at:
+            os.environ["ARX_TEN_ISSUER_PILOT_EXPIRES_AT"] = args.pilot_expires_at
+        if args.pilot_release_sha:
+            os.environ["ARX_TEN_ISSUER_PILOT_RELEASE_SHA"] = args.pilot_release_sha
+        from analyst_dashboard.smart_money.pilot_runner import run_ten_issuer_pilot
+        logger.info("Executing bounded 10-issuer SEC Form 4 pilot via worker CLI (supervised process)...")
+        res = run_ten_issuer_pilot()
+        print(json.dumps(res, indent=2, default=str))
+        sys.exit(0 if res.get("verdict") == "SUCCESS" else 1)
+
     worker = SmartMoneyIngestionWorker()
     try:
-        worker.start()
+        worker.start(single_cycle=args.single_cycle)
     except Exception as e:
         logger.critical(f"FATAL: Worker terminated with exception: {e}")
         sys.exit(1)

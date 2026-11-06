@@ -104,11 +104,28 @@ def _normalize_to_transaction_obj(tx: Any) -> SmartMoneyTransaction:
     if isinstance(tx, dict):
         is_deriv = bool(tx.get("is_derivative", False))
         is_buy = (tx.get("is_open_market_purchase_evidence", False) or (tx.get("transaction_code") == "P" and not is_deriv and tx.get("acquired_disposed", "A") == "A")) and not is_deriv
-        sig_type = SmartMoneySignalType.OTHER if is_deriv else (
-            SmartMoneySignalType.OPEN_MARKET_PURCHASE if is_buy else (
-                SmartMoneySignalType.OPEN_MARKET_SALE if tx.get("transaction_code") == "S" else SmartMoneySignalType.OTHER
-            )
-        )
+        t_code = (tx.get("transaction_code") or "").upper().strip()
+        raw_sig = tx.get("signal_type")
+        raw_sig_str = raw_sig.value if isinstance(raw_sig, SmartMoneySignalType) else str(raw_sig or "")
+
+        if is_deriv:
+            sig_type = SmartMoneySignalType.OTHER
+        elif is_buy:
+            sig_type = SmartMoneySignalType.OPEN_MARKET_PURCHASE
+        elif t_code == "S" or raw_sig_str == "OPEN_MARKET_SALE":
+            sig_type = SmartMoneySignalType.OPEN_MARKET_SALE
+        elif t_code == "F" or raw_sig_str == "TAX_WITHHOLDING":
+            sig_type = SmartMoneySignalType.TAX_WITHHOLDING
+        elif t_code == "G" or raw_sig_str == "GIFT":
+            sig_type = SmartMoneySignalType.GIFT
+        elif t_code == "D" or raw_sig_str == "ISSUER_DISPOSITION":
+            sig_type = SmartMoneySignalType.ISSUER_DISPOSITION
+        elif t_code == "M" or raw_sig_str == "OPTION_EXERCISE":
+            sig_type = SmartMoneySignalType.OPTION_EXERCISE
+        elif t_code == "A" or raw_sig_str == "EQUITY_GRANT":
+            sig_type = SmartMoneySignalType.EQUITY_GRANT
+        else:
+            sig_type = SmartMoneySignalType.OTHER
         return SmartMoneyTransaction(
             record_key=tx.get("transaction_id", tx.get("record_key", str(uuid.uuid4()))),
             accession_number=tx.get("accession_number", "0000000000-00-000000"),

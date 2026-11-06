@@ -16,6 +16,14 @@ import threading
 import socket
 from typing import Dict, Any, List, Optional
 import pandas as pd
+import datetime
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
+
+US_EASTERN = ZoneInfo("America/New_York")
 
 from analyst_dashboard.data.market_evidence import AdjustmentState
 
@@ -64,6 +72,7 @@ from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.universe.store import UniverseStore
 from analyst_dashboard.universe.contracts import UNIVERSE_ID, UNIVERSE_VERSION
+from analyst_dashboard.universe.lifecycle import get_security_lifecycle_registry
 
 from analyst_dashboard.coordination import (
     DurableRunCoordinator,
@@ -298,8 +307,21 @@ class VCPScannerRunner:
             adjustment_state_counts: Dict[str, int] = {}
             qualified_candidates: List[Dict[str, Any]] = []
 
+            eff_obs_date = scheduled_for or time.strftime("%Y-%m-%d", time.gmtime())
+            lifecycle_reg = get_security_lifecycle_registry()
+
             for sym in universe:
                 clean_sym = sym.strip().upper()
+
+                # Authoritative lifecycle guard: Delisted / non-screening-eligible securities are excluded
+                lifecycle_eval = lifecycle_reg.evaluate_lifecycle(clean_sym, as_of_date=eff_obs_date)
+                if lifecycle_eval.is_delisted:
+                    unavailable_reasons["DELISTED_SECURITY"] = unavailable_reasons.get("DELISTED_SECURITY", 0) + 1
+                    continue
+                if not lifecycle_eval.is_screening_eligible:
+                    unavailable_reasons["SUSPENDED_SECURITY"] = unavailable_reasons.get("SUSPENDED_SECURITY", 0) + 1
+                    continue
+
                 try:
                     latest = self.market_db.get_latest_price(clean_sym)
                 except Exception as exc:
@@ -384,26 +406,114 @@ class VCPScannerRunner:
                     actual_sma_50 = round(float(close_s.rolling(50).mean().iloc[-1]), 4) if len(close_s) >= 50 else None
                     actual_ema_20 = round(float(close_s.ewm(span=20, adjust=False).mean().iloc[-1]), 4) if len(close_s) >= 20 else None
 
-                    # Truthfulness Invariant: OptimalExecutionEngine evaluates tactical execution corridors (entry/stop/target/ATR).
-                    # Its legacy strategy 2.0.0 heuristic strings ("Minervini VCP", "Stage 2") on 60-bar windows
-                    # do not constitute authoritative VCP domain classification or 200-session trend template qualification.
-                    # A 60-bar query window is epistemically incapable of evaluating a 200-session trend template.
-                    # Operational runner rejects the legacy false-certification fallback and enforces uncomputed status:
-                    vcp_authoritative_computed = bool(exec_res.get("vcp_authoritative_evaluated", False))
+                    # Authoritative VCP Domain Classification via VCPClassifier + 200-session Trend Template.
+                    # Requires a separate 200-bar fetch — the 60-bar tactical execution window is epistemically
+                    # incapable of evaluating the Minervini Trend Template (200-session SMA, stage qualification).
+                    vcp_authoritative_computed = False
+                    vcp_domain_assessment = None
+                    try:
+                        from analyst_dashboard.vcp.classifier import VCPClassifier
+                        from analyst_dashboard.vcp.case_compiler import VCPTemporalCaseCompiler
+                        from analyst_dashboard.vcp.temporal_contract import DailyOHLCVBar
 
-                    if vcp_authoritative_computed:
-                        vcp_status = exec_res.get("vcp_contraction_status")
-                        stage_status = exec_res.get("stage_phase")
-                        setup_pattern = exec_res.get("setup_pattern")
+                        # Fetch bounded 250-session window for VCP trend template evaluation (eliminates 200-bar fetch-boundary failure)
+                        today_str = eff_obs_date
+                        vcp_candles_250 = None
+                        if hasattr(self.market_db, "get_daily_candles_with_evidence"):
+                            ret250 = self.market_db.get_daily_candles_with_evidence(clean_sym, limit=250)
+                            if isinstance(ret250, tuple) and len(ret250) == 2 and isinstance(ret250[0], list):
+                                vcp_candles_250 = ret250[0]
+                        if vcp_candles_250 is None and hasattr(self.market_db, "get_daily_candles"):
+                            vcp_candles_250 = self.market_db.get_daily_candles(clean_sym, limit=250)
+
+                        if vcp_candles_250 and len(vcp_candles_250) >= 50:
+                            raw_bars = []
+                            for c in vcp_candles_250:
+                                b_date_str = c["time"][:10]
+                                b_d = datetime.date.fromisoformat(b_date_str)
+                                # Derive authoritative session close (16:00 ET) and settlement consolidation (+30m) in America/New_York
+                                b_close_et = datetime.datetime(b_d.year, b_d.month, b_d.day, 16, 0, 0, tzinfo=US_EASTERN)
+                                b_close_utc = b_close_et.astimezone(datetime.timezone.utc)
+                                b_known_utc = b_close_utc + datetime.timedelta(minutes=30)
+                                raw_bars.append(
+                                    DailyOHLCVBar(
+                                        symbol=clean_sym,
+                                        bar_date=b_date_str,
+                                        open=float(c["open"]),
+                                        high=float(c["high"]),
+                                        low=float(c["low"]),
+                                        close=float(c["close"]),
+                                        volume=int(c["volume"]),
+                                        valid_time=b_close_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                        known_at=b_known_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                        is_session_closed=True,
+                                    )
+                                )
+
+                            # Resolve authenticated post-settlement observation timestamp from session guard if date-only string provided
+                            eval_as_of = today_str
+                            if "T" not in eval_as_of:
+                                try:
+                                    from analyst_dashboard.vcp.session_guard import get_session_bounds, get_settlement_buffer_minutes
+                                    _, s_close_utc, _ = get_session_bounds(eval_as_of, allow_rulebook_fallback=True)
+                                    settlement_dt = s_close_utc + datetime.timedelta(minutes=get_settlement_buffer_minutes())
+                                    eval_as_of = settlement_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+                                except Exception:
+                                    d = datetime.date.fromisoformat(eval_as_of)
+                                    dt = datetime.datetime(d.year, d.month, d.day, 16, 45, 0, tzinfo=US_EASTERN)
+                                    eval_as_of = dt.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                            compiler = VCPTemporalCaseCompiler()
+                            package = compiler.compile_case(
+                                case_id=f"CASE-{clean_sym}-{today_str}",
+                                security_id=clean_sym,
+                                symbol=clean_sym,
+                                evaluation_as_of=eval_as_of,
+                                raw_bars=raw_bars,
+                                reference_data={},
+                                corporate_actions=[],
+                                run_id=logical_scan_run_id or run_id,
+                            )
+                            vcp_domain_assessment = VCPClassifier().classify_case(package)
+                            vcp_authoritative_computed = bool(
+                                vcp_domain_assessment is not None
+                                and vcp_domain_assessment.vcp_classification not in ("VCP_INSUFFICIENT_DATA", "VCP_UNRESOLVED")
+                            )
+                    except Exception as _vcp_exc:
+                        # VCP classifier failure is non-fatal: fall through to uncomputed status
+                        logger.warning(
+                            f"VCPClassifier evaluation failed for {clean_sym}: {_vcp_exc}. "
+                            f"Reporting as UNCOMPUTED."
+                        )
+                        vcp_authoritative_computed = False
+                        vcp_domain_assessment = None
+
+                    if vcp_authoritative_computed and vcp_domain_assessment is not None:
+                        vcp_status = (
+                            "VCP 3-Stage Compression Confirmed"
+                            if vcp_domain_assessment.vcp_classification == "VCP_QUALIFIED"
+                            else vcp_domain_assessment.vcp_classification
+                        )
+                        stage_status = (
+                            "Stage 2 Advancing Growth Phase"
+                            if getattr(vcp_domain_assessment, "stage_classification", None) == "STAGE_2"
+                            else getattr(vcp_domain_assessment, "stage_classification", "Stage Unverified")
+                        )
+                        setup_pattern = getattr(vcp_domain_assessment, "authorized_label", None) or (
+                            "VCP Setup" if vcp_domain_assessment.vcp_qualified else "Consolidation Setup (Non-VCP)"
+                        )
                         computed_evaluations_count += 1
                     else:
+                        # Truthfulness Invariant: OptimalExecutionEngine evaluates tactical execution corridors
+                        # (entry/stop/target/ATR) only. A 60-bar window cannot evaluate the 200-session trend
+                        # template. Uncomputed status is preserved until domain classifier succeeds.
                         vcp_status = "Consolidation Unverified"
                         stage_status = "Stage Unverified (Trend Template Uncomputed)"
                         setup_pattern = "Consolidation Setup (Pattern Unverified)"
                         uncomputed_evaluations_count += 1
 
                     # Qualification ruleset: Must be authoritatively confirmed VCP in Stage 2 Advancing Growth Phase
-                    is_vcp = vcp_authoritative_computed and (vcp_status == "VCP 3-Stage Compression Confirmed")
+                    is_vcp = vcp_authoritative_computed and (vcp_domain_assessment.vcp_qualified is True)
                     is_stage_2 = vcp_authoritative_computed and (stage_status == "Stage 2 Advancing Growth Phase")
 
                     if is_vcp and is_stage_2:
@@ -643,12 +753,31 @@ class VCPScannerRunner:
                     "evaluated_at": generated_at,
                     "status": FreshnessStatus.LIVE.value,
                 },
-                "publication_decision": eval_report.decision.value,
+                "publication_decision": (
+                    PublicationDecision.PUBLISH.value
+                    if (
+                        eval_report.decision == PublicationDecision.PUBLISH
+                        and not (startup_context or eff_invocation_class == "BOOT_WARMUP" or originating_principal_type == "BOOTSTRAP")
+                        and status_at_pub != ScannerStatus.ERROR
+                    )
+                    else PublicationDecision.QUARANTINE.value
+                ),
                 "universe_metadata": universe_metadata,
                 "coverage_metadata": coverage_metadata,
             }
 
-            if eval_report.decision == PublicationDecision.PUBLISH:
+            is_warmup_or_bootstrap = bool(
+                startup_context
+                or eff_invocation_class == "BOOT_WARMUP"
+                or originating_principal_type == "BOOTSTRAP"
+            )
+            is_publishable = bool(
+                eval_report.decision == PublicationDecision.PUBLISH
+                and not is_warmup_or_bootstrap
+                and status_at_pub != ScannerStatus.ERROR
+            )
+
+            if is_publishable:
                 if lease is not None:
                     # Transactional Fenced Publication (Atomic authority check + publication)
                     self.fenced_publisher.publish_snapshot_fenced(
@@ -666,7 +795,10 @@ class VCPScannerRunner:
                 if lease is not None:
                     self.coordinator.release(lease)
                     lease_released_by_publisher = True
-                logger.warning(f"VCP Scanner snapshot {snapshot_id} quarantined due to violations: {eval_report.violations}")
+                if is_warmup_or_bootstrap:
+                    logger.info(f"VCP Scanner snapshot {snapshot_id} from {eff_invocation_class} quarantined from publication authority (NON_EVIDENCE_BOOTSTRAP).")
+                else:
+                    logger.warning(f"VCP Scanner snapshot {snapshot_id} quarantined due to violations: {eval_report.violations or status_at_pub.value}")
 
             return ImmutableScannerSnapshot(
                 scanner_id="MINERVINI_VCP",
@@ -683,7 +815,7 @@ class VCPScannerRunner:
                 results=qualified_candidates,
                 provenance=snapshot_record["provenance"],
                 freshness=snapshot_record["freshness"],
-                publication_decision=eval_report.decision,
+                publication_decision=PublicationDecision(snapshot_record["publication_decision"]),
                 universe_metadata=universe_metadata,
                 coverage_metadata=coverage_metadata,
             ).to_envelope()
@@ -836,6 +968,7 @@ class VCPScannerRunner:
                 if (
                     self._cached_active_snapshot.get("implementation_release_sha") == CURRENT_IMPLEMENTATION_RELEASE_SHA
                     and not self._has_unsupported_vcp_matches(self._cached_active_snapshot)
+                    and self._cached_active_snapshot.get("status_at_publication") in (ScannerStatus.AVAILABLE.value, ScannerStatus.STALE.value)
                 ):
                     latest_id = self.snapshot_store.get_latest_active_snapshot_id("MINERVINI_VCP")
                     if latest_id == self._cached_active_snapshot.get("snapshot_id"):
@@ -858,6 +991,13 @@ class VCPScannerRunner:
                         status=ScannerStatus.PIPELINE_PENDING,
                         reason="UNSUPPORTED_LEGACY_MATCHES",
                         detail="Retained scanner snapshot contains unsupported or unverified VCP classifications. Pipeline execution pending.",
+                    )
+                if persisted.get("status_at_publication") not in (ScannerStatus.AVAILABLE.value, ScannerStatus.STALE.value):
+                    logger.warning(f"VCPScannerRunner: retained snapshot has non-authoritative status ({persisted.get('status_at_publication')}); failing closed to PIPELINE_PENDING.")
+                    return self._to_status_envelope(
+                        status=ScannerStatus.PIPELINE_PENDING,
+                        reason="NO_ACTIVE_SNAPSHOT",
+                        detail="No verified active VCP scanner snapshot available.",
                     )
                 self._cached_active_snapshot = persisted
                 return self._to_envelope(persisted)

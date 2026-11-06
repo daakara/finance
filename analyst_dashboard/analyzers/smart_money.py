@@ -2090,6 +2090,8 @@ class SmartMoneyEngine:
         asset_class: Optional[str] = None,
         security_type: Optional[str] = None,
         evaluation_date: Optional[str] = None,
+        as_of: Optional[str] = None,
+        replay_mode: str = "PUBLIC_AVAILABLE",
     ) -> Dict[str, Any]:
         """
         Comprehensive bounded analytical evaluation of Smart Money evidence across:
@@ -2098,10 +2100,19 @@ class SmartMoneyEngine:
         3. Congressional STOCK Act Disclosures
 
         Maintains independent feed states, distinct timestamps, truthful coverage representation,
+        point-in-time historical replay isolation (SM-DATA-GOV-001 Section 3),
         and provides normalized Confluence Engine inputs without synthetic promotion.
         """
         clean_sym = symbol.upper().replace("-USD", "").strip() if symbol else ""
         raw_sym = symbol.upper().strip() if symbol else ""
+
+        if replay_mode not in ("PUBLIC_AVAILABLE", "ARX_OBSERVED"):
+            raise ValueError(f"Invalid replay_mode '{replay_mode}'. Allowed modes: 'PUBLIC_AVAILABLE', 'ARX_OBSERVED'.")
+        if as_of is not None:
+            try:
+                datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+            except Exception as e:
+                raise ValueError(f"Invalid as_of timestamp '{as_of}': must be valid ISO 8601 string.") from e
 
         is_crypto = (
             raw_sym.endswith("-USD")
@@ -2130,9 +2141,12 @@ class SmartMoneyEngine:
             or clean_sym in known_foreign_adrs
         )
 
-        # Establish analytical evaluation window
+        # Establish analytical evaluation window and point-in-time watermark
+        as_of_watermark = as_of
         try:
-            if evaluation_date:
+            if as_of:
+                eval_date = datetime.strptime(str(as_of)[:10], "%Y-%m-%d").date()
+            elif evaluation_date:
                 eval_date = datetime.strptime(str(evaluation_date)[:10], "%Y-%m-%d").date()
             else:
                 eval_date = datetime.now(timezone.utc).date()
@@ -2207,8 +2221,14 @@ class SmartMoneyEngine:
                                     COALESCE(tx.signal_type, CASE
                                         WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'DERIVATIVE_PURCHASE'
                                         WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'DERIVATIVE_SALE'
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'M' THEN 'OPTION_EXERCISE'
                                         WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' AND COALESCE(tx.acquired_disposed, 'A') = 'A' THEN 'OPEN_MARKET_PURCHASE'
-                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND (tx.transaction_code = 'S' OR COALESCE(tx.acquired_disposed, 'D') = 'D') THEN 'OPEN_MARKET_SALE'
+                                        WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'S' AND COALESCE(tx.acquired_disposed, 'D') = 'D' THEN 'OPEN_MARKET_SALE'
+                                        WHEN tx.transaction_code = 'F' THEN 'TAX_WITHHOLDING'
+                                        WHEN tx.transaction_code = 'G' THEN 'GIFT'
+                                        WHEN tx.transaction_code = 'A' THEN 'EQUITY_GRANT'
+                                        WHEN tx.transaction_code = 'M' THEN 'OPTION_EXERCISE'
+                                        WHEN tx.transaction_code = 'D' THEN 'ISSUER_DISPOSITION'
                                         ELSE 'OTHER_TRANSACTION'
                                     END) AS signal_type,
                                     COALESCE(tx.acquired_disposed, CASE WHEN tx.transaction_code = 'S' THEN 'D' ELSE 'A' END) AS acquired_disposed,
@@ -2230,8 +2250,14 @@ class SmartMoneyEngine:
                                     CASE
                                         WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'DERIVATIVE_PURCHASE'
                                         WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'DERIVATIVE_SALE'
+                                        WHEN tx.transaction_id LIKE '%%:DERIVATIVE:%%' AND tx.transaction_code = 'M' THEN 'OPTION_EXERCISE'
                                         WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'P' THEN 'OPEN_MARKET_PURCHASE'
                                         WHEN tx.transaction_id LIKE '%%:NON_DERIVATIVE:%%' AND tx.transaction_code = 'S' THEN 'OPEN_MARKET_SALE'
+                                        WHEN tx.transaction_code = 'F' THEN 'TAX_WITHHOLDING'
+                                        WHEN tx.transaction_code = 'G' THEN 'GIFT'
+                                        WHEN tx.transaction_code = 'A' THEN 'EQUITY_GRANT'
+                                        WHEN tx.transaction_code = 'M' THEN 'OPTION_EXERCISE'
+                                        WHEN tx.transaction_code = 'D' THEN 'ISSUER_DISPOSITION'
                                         ELSE 'OTHER_TRANSACTION'
                                     END AS signal_type,
                                     CASE WHEN tx.transaction_code = 'S' THEN 'D' ELSE 'A' END AS acquired_disposed,
@@ -2245,6 +2271,24 @@ class SmartMoneyEngine:
                                     END AS is_open_market_purchase_evidence
                                 """
 
+                            pit_sql = ""
+                            am_pit_filter = ""
+                            part_pit_filter = ""
+                            re_pit_filter = ""
+                            pg_params = [clean_sym, cutoff_str, cutoff_str]
+                            if as_of_watermark:
+                                if replay_mode == "ARX_OBSERVED":
+                                    pit_sql = " AND COALESCE(av.recorded_at, f.created_at) <= %s AND f.filing_date <= %s"
+                                    am_pit_filter = " AND COALESCE(am_av.recorded_at, am_f.created_at) <= %s"
+                                    part_pit_filter = " AND COALESCE(part_av.recorded_at, part_f.created_at) <= %s"
+                                    re_pit_filter = " AND COALESCE(re_av.recorded_at, re_f.created_at) <= %s"
+                                else:  # PUBLIC_AVAILABLE (default)
+                                    pit_sql = " AND av.public_availability_at IS NOT NULL AND av.public_availability_at <= %s AND f.filing_date <= %s"
+                                    am_pit_filter = " AND am_av.public_availability_at IS NOT NULL AND am_av.public_availability_at <= %s"
+                                    part_pit_filter = " AND part_av.public_availability_at IS NOT NULL AND part_av.public_availability_at <= %s"
+                                    re_pit_filter = " AND re_av.public_availability_at IS NOT NULL AND re_av.public_availability_at <= %s"
+                                pg_params.extend([as_of_watermark, eval_date.isoformat(), as_of_watermark, as_of_watermark, as_of_watermark])
+
                             pg_query = f"""
                                 SELECT tx.transaction_id AS record_key, tx.accession_number, f.cik AS issuer_cik,
                                        f.ticker AS issuer_symbol, tx.reporting_owner_name,
@@ -2252,42 +2296,63 @@ class SmartMoneyEngine:
                                        f.filing_date, tx.transaction_date, tx.transaction_code,
                                        tx.shares, tx.price_per_share, tx.total_value_usd,
                                        av.public_availability_at AS acceptance_datetime,
+                                       av.recorded_at AS arx_first_observed_at,
+                                       f.created_at AS arx_processed_at,
+                                       f.accepted_datetime AS sec_accepted_at,
                                        {deriv_cols}
                                 FROM form4_parsed_transactions tx
                                 JOIN form4_raw_filings f ON tx.accession_number = f.accession_number
                                 JOIN sm_source_availability_ledger av ON tx.accession_number = av.accession_number
                                 WHERE f.ticker = %s AND (f.filing_date >= %s OR tx.transaction_date >= %s)
+                                  {pit_sql}
                                   -- 1. Exclude unresolved or ambiguous amendments
                                   AND NOT EXISTS (
                                       SELECT 1 FROM sm_amendments ambig
                                       WHERE ambig.amendment_accession = tx.accession_number
                                         AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
                                   )
-                                  -- 2. Exclude transactions superseded by full filing amendments
+                                  -- 2. Exclude transactions superseded by full filing amendments available <= W
                                   AND NOT EXISTS (
                                       SELECT 1 FROM sm_amendments am
+                                      LEFT JOIN sm_source_availability_ledger am_av ON am.amendment_accession = am_av.accession_number
+                                      LEFT JOIN form4_raw_filings am_f ON am.amendment_accession = am_f.accession_number
                                       WHERE am.base_accession = tx.accession_number
                                         AND am.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
+                                        {am_pit_filter}
                                   )
-                                  -- 3. Transaction-level reconciliation for partial corrections
+                                  -- 3. Transaction-level reconciliation for partial corrections available <= W
                                   AND NOT EXISTS (
                                       SELECT 1 FROM sm_amendments part_am
                                       JOIN form4_parsed_transactions amend_tx ON part_am.amendment_accession = amend_tx.accession_number
+                                      LEFT JOIN sm_source_availability_ledger part_av ON part_am.amendment_accession = part_av.accession_number
+                                      LEFT JOIN form4_raw_filings part_f ON part_am.amendment_accession = part_f.accession_number
                                       WHERE part_am.base_accession = tx.accession_number
                                         AND part_am.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
                                         AND amend_tx.reporting_owner_name = tx.reporting_owner_name
                                         AND amend_tx.transaction_date = tx.transaction_date
                                         AND amend_tx.transaction_code = tx.transaction_code
+                                        {part_pit_filter}
                                   )
-                                  -- 4. Exclude amendments that were themselves superseded
+                                  -- 4. Exclude amendments that were themselves superseded (chains / re-amendments)
                                   AND NOT EXISTS (
                                       SELECT 1 FROM sm_amendments re_am
-                                      WHERE re_am.base_accession = tx.accession_number
+                                      LEFT JOIN sm_source_availability_ledger re_av ON re_am.amendment_accession = re_av.accession_number
+                                      LEFT JOIN form4_raw_filings re_f ON re_am.amendment_accession = re_f.accession_number
+                                      WHERE (
+                                          re_am.base_accession = tx.accession_number
+                                          OR EXISTS (
+                                              SELECT 1 FROM sm_amendments curr_am
+                                              WHERE curr_am.amendment_accession = tx.accession_number
+                                                AND re_am.base_accession = curr_am.base_accession
+                                                AND re_am.amendment_number > curr_am.amendment_number
+                                          )
+                                      )
                                         AND re_am.resolution_status NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'ADDITIONAL_TRANSACTION', 'PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                                        {re_pit_filter}
                                   )
                                 ORDER BY f.filing_date DESC
                             """
-                            pg_cur.execute(pg_query, (clean_sym, cutoff_str, cutoff_str))
+                            pg_cur.execute(pg_query, tuple(pg_params))
                             sec_rows = pg_cur.fetchall()
                             if sec_rows:
                                 sec_cik = str(sec_rows[0]["issuer_cik"]).zfill(10)
@@ -2311,35 +2376,152 @@ class SmartMoneyEngine:
                         has_amendments = False
 
                     has_deriv_col = False
+                    has_created_at_col = False
                     try:
                         cur.execute("PRAGMA table_info(form4_parsed_transactions)")
                         cols = [r["name"] for r in cur.fetchall()]
                         has_deriv_col = "is_derivative" in cols
+                        has_created_at_col = "created_at" in cols
                     except Exception:
                         has_deriv_col = False
+                        has_created_at_col = False
 
                     deriv_select = "is_derivative" if has_deriv_col else "0 AS is_derivative"
+                    created_at_select = "created_at AS arx_first_observed_at" if has_created_at_col else "NULL AS arx_first_observed_at"
+
+                    sqlite_pit = ""
+                    sqlite_params = [clean_sym, cutoff_str, cutoff_str]
+                    if as_of_watermark:
+                        if replay_mode == "ARX_OBSERVED":
+                            if has_created_at_col:
+                                sqlite_pit = " AND created_at IS NOT NULL AND created_at <= ? AND filing_date <= ?"
+                                sqlite_params.extend([as_of_watermark, eval_date.isoformat()])
+                            else:
+                                sqlite_pit = " AND 1 = 0"
+                        else:  # PUBLIC_AVAILABLE
+                            sqlite_pit = " AND acceptance_datetime IS NOT NULL AND acceptance_datetime <= ? AND filing_date <= ?"
+                            sqlite_params.extend([as_of_watermark, eval_date.isoformat()])
 
                     query = f"""
                         SELECT record_key, accession_number, issuer_cik, issuer_symbol, reporting_owner_name,
                                officer_title, is_director, is_officer, is_ten_percent_owner, filing_date,
                                transaction_date, transaction_code, signal_type, shares, price_per_share, total_value_usd, acquired_disposed,
                                is_positive_buying_conviction, is_open_market_purchase_evidence, acceptance_datetime,
-                               {deriv_select}
+                               {deriv_select},
+                               {created_at_select}
                         FROM form4_parsed_transactions
                         WHERE issuer_symbol = ? AND (filing_date >= ? OR transaction_date >= ?)
+                          {sqlite_pit}
                     """
                     if has_amendments:
-                        query += """
-                          AND NOT EXISTS (
-                              SELECT 1 FROM sm_amendments a
-                              WHERE (a.accession_number = form4_parsed_transactions.accession_number AND a.relationship = 'SUPERSEDED_OR_CORRECTED')
-                                 OR (a.amended_accession_number = form4_parsed_transactions.accession_number AND a.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT', 'SUPERSEDED_OR_CORRECTED'))
-                          )
-                        """
+                        try:
+                            cur.execute("PRAGMA table_info(sm_amendments)")
+                            amend_cols = [r["name"] for r in cur.fetchall()]
+                        except Exception:
+                            amend_cols = []
+
+                        if "amendment_accession" in amend_cols and "base_accession" in amend_cols:
+                            has_amend_num = "amendment_number" in amend_cols
+                            chain_sql = ""
+                            if has_amend_num:
+                                chain_sql = """
+                                    OR EXISTS (
+                                        SELECT 1 FROM sm_amendments curr_am
+                                        WHERE curr_am.amendment_accession = form4_parsed_transactions.accession_number
+                                          AND a.base_accession = curr_am.base_accession
+                                          AND a.amendment_number > curr_am.amendment_number
+                                    )
+                                """
+                            if as_of_watermark:
+                                if replay_mode == "ARX_OBSERVED" and has_created_at_col:
+                                    sqlite_am_pit = " AND COALESCE(amend_tx.created_at, amend_tx.acceptance_datetime) IS NOT NULL AND COALESCE(amend_tx.created_at, amend_tx.acceptance_datetime) <= ?"
+                                else:
+                                    sqlite_am_pit = " AND amend_tx.acceptance_datetime IS NOT NULL AND amend_tx.acceptance_datetime <= ?"
+                                query += f"""
+                                  -- 1. Exclude unresolved or ambiguous amendments
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments ambig
+                                      WHERE ambig.amendment_accession = form4_parsed_transactions.accession_number
+                                        AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
+                                  )
+                                  -- 2. Exclude transactions superseded by full filing amendments available <= W
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      LEFT JOIN form4_parsed_transactions amend_tx ON a.amendment_accession = amend_tx.accession_number
+                                      WHERE (a.base_accession = form4_parsed_transactions.accession_number {chain_sql})
+                                        AND a.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
+                                        {sqlite_am_pit}
+                                  )
+                                  -- 3. Transaction-level reconciliation for partial corrections available <= W
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      JOIN form4_parsed_transactions amend_tx ON a.amendment_accession = amend_tx.accession_number
+                                      WHERE a.base_accession = form4_parsed_transactions.accession_number
+                                        AND a.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                                        AND amend_tx.reporting_owner_name = form4_parsed_transactions.reporting_owner_name
+                                        AND amend_tx.transaction_date = form4_parsed_transactions.transaction_date
+                                        AND amend_tx.transaction_code = form4_parsed_transactions.transaction_code
+                                        {sqlite_am_pit}
+                                  )
+                                """
+                                sqlite_params.extend([as_of_watermark, as_of_watermark])
+                            else:
+                                query += f"""
+                                  -- 1. Exclude unresolved or ambiguous amendments
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments ambig
+                                      WHERE ambig.amendment_accession = form4_parsed_transactions.accession_number
+                                        AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
+                                  )
+                                  -- 2. Exclude transactions superseded by full filing amendments
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      WHERE (a.base_accession = form4_parsed_transactions.accession_number {chain_sql})
+                                        AND a.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
+                                  )
+                                  -- 3. Transaction-level reconciliation for partial corrections
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      JOIN form4_parsed_transactions amend_tx ON a.amendment_accession = amend_tx.accession_number
+                                      WHERE a.base_accession = form4_parsed_transactions.accession_number
+                                        AND a.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                                        AND amend_tx.reporting_owner_name = form4_parsed_transactions.reporting_owner_name
+                                        AND amend_tx.transaction_date = form4_parsed_transactions.transaction_date
+                                        AND amend_tx.transaction_code = form4_parsed_transactions.transaction_code
+                                  )
+                                """
+                        else:
+                            if as_of_watermark:
+                                if replay_mode == "ARX_OBSERVED" and has_created_at_col:
+                                    sqlite_am_pit = " AND COALESCE(amend_tx.created_at, amend_tx.acceptance_datetime) IS NOT NULL AND COALESCE(amend_tx.created_at, amend_tx.acceptance_datetime) <= ?"
+                                else:
+                                    sqlite_am_pit = " AND amend_tx.acceptance_datetime IS NOT NULL AND amend_tx.acceptance_datetime <= ?"
+                                query += f"""
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      LEFT JOIN form4_parsed_transactions amend_tx ON a.accession_number = amend_tx.accession_number
+                                      WHERE a.amended_accession_number = form4_parsed_transactions.accession_number
+                                        AND a.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT')
+                                        {sqlite_am_pit}
+                                  )
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      WHERE a.accession_number = form4_parsed_transactions.accession_number
+                                        AND a.relationship = 'SUPERSEDED_OR_CORRECTED'
+                                  )
+                                """
+                                sqlite_params.append(as_of_watermark)
+                            else:
+                                query += """
+                                  AND NOT EXISTS (
+                                      SELECT 1 FROM sm_amendments a
+                                      WHERE (a.accession_number = form4_parsed_transactions.accession_number AND a.relationship = 'SUPERSEDED_OR_CORRECTED')
+                                         OR (a.amended_accession_number = form4_parsed_transactions.accession_number AND a.relationship NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED_AMENDMENT', 'SUPERSEDED_OR_CORRECTED'))
+                                  )
+                                """
                     query += " ORDER BY filing_date DESC"
 
-                    cur.execute(query, (clean_sym, cutoff_str, cutoff_str))
+                    cur.execute(query, tuple(sqlite_params))
                     sec_rows = cur.fetchall()
 
                     cur.execute("SELECT issuer_cik FROM form4_parsed_transactions WHERE issuer_symbol = ? LIMIT 1", (clean_sym,))
@@ -2377,7 +2559,10 @@ class SmartMoneyEngine:
                     price_val = float(r["price_per_share"] or 0) if "price_per_share" in r.keys() else 0.0
 
                     is_buy = not is_deriv and (is_pos_conviction or (sig_type == "OPEN_MARKET_PURCHASE" and acq_disp == "A" and shares_val > 0 and price_val > 0))
-                    is_sell = not is_deriv and (t_code == "S" or sig_type == "OPEN_MARKET_SALE" or (acq_disp == "D" and not is_buy))
+                    # Discretionary insider selling conviction: Open market sale ('S' / OPEN_MARKET_SALE), non-derivative, disposed ('D').
+                    # Strictly excludes statutory tax withholding ('F' / TAX_WITHHOLDING), bona fide gifts ('G' / GIFT),
+                    # issuer dispositions ('D' / ISSUER_DISPOSITION), equity grants ('A'), and option exercises ('M').
+                    is_sell = not is_deriv and (t_code == "S" or sig_type == "OPEN_MARKET_SALE") and (acq_disp != "A")
 
                     if is_deriv:
                         if t_code == "P" or "PURCHASE" in sig_type:
@@ -2392,19 +2577,22 @@ class SmartMoneyEngine:
                         tx_type = "Purchase (Direct Open Market)"
                     elif is_sell:
                         tx_type = "Sale (Direct)"
+                    elif t_code == "F" or sig_type == "TAX_WITHHOLDING":
+                        tx_type = "Tax Withholding"
+                    elif t_code == "G" or sig_type == "GIFT":
+                        tx_type = "Gift"
+                    elif t_code == "D" or sig_type == "ISSUER_DISPOSITION":
+                        tx_type = "Disposition to Issuer"
                     elif t_code == "M" or sig_type == "OPTION_EXERCISE":
                         tx_type = "Option Exercise"
                     elif t_code == "A" or sig_type == "EQUITY_GRANT":
                         tx_type = "Equity Grant / Award"
-                    elif t_code == "G" or sig_type == "GIFT":
-                        tx_type = "Gift"
-                    elif t_code == "F" or sig_type == "TAX_WITHHOLDING":
-                        tx_type = "Tax Withholding"
-                    elif t_code == "D" or sig_type == "ISSUER_DISPOSITION":
-                        tx_type = "Disposition to Issuer"
+                    elif acq_disp == "D":
+                        tx_type = f"Disposition ({t_code})" if t_code else "Insider Disposition"
                     else:
                         tx_type = f"Transaction ({t_code})" if t_code else "Other Insider Transaction"
 
+                    acc_dt = r["acceptance_datetime"]
                     sec_observations.append({
                         "id": r["accession_number"],
                         "insider_name": r["reporting_owner_name"],
@@ -2413,13 +2601,17 @@ class SmartMoneyEngine:
                         "transaction_type": tx_type,
                         "transaction_code": t_code,
                         "signal_type": sig_type,
-                        "shares_traded": r["shares"] or 0,
-                        "price_per_share": r["price_per_share"] or 0.0,
-                        "total_value_usd": r["total_value_usd"] or 0.0,
+                        "shares_traded": float(r["shares"] or 0) if "shares" in r.keys() else 0.0,
+                        "price_per_share": float(r["price_per_share"] or 0.0) if "price_per_share" in r.keys() else 0.0,
+                        "total_value_usd": float(r["total_value_usd"] or 0.0) if "total_value_usd" in r.keys() else 0.0,
                         "filing_date": r["filing_date"],
                         "transaction_date": r["transaction_date"] or r["filing_date"],
-                        "acceptance_datetime": r["acceptance_datetime"],
-                        "ingestion_timestamp": r["acceptance_datetime"],
+                        "acceptance_datetime": acc_dt,
+                        "ingestion_timestamp": acc_dt,
+                        "arx_first_observed_at": r.get("arx_first_observed_at") if hasattr(r, "get") else None,
+                        "arx_processed_at": r.get("arx_processed_at") if hasattr(r, "get") else None,
+                        "sec_accepted_at": r.get("sec_accepted_at") if hasattr(r, "get") else None,
+                        "availability_uncertain": bool(not acc_dt),
                         "acquired_disposed": acq_disp,
                         "is_positive_buying_conviction": is_pos_conviction,
                         "is_open_market_purchase_evidence": is_pos_conviction,
@@ -2452,6 +2644,8 @@ class SmartMoneyEngine:
                     "status": "VERIFIED",
                     "status_label": "Verified",
                     "coverage": "SUPPORTED_SEC_ISSUER",
+                    "coverage_status": "SUPPORTED_SEC_ISSUER",
+                    "evidence_status": "VERIFIED",
                     "cik": sec_cik,
                     "observations": sec_observations,
                     "observation_count": len(sec_observations),
@@ -2460,12 +2654,20 @@ class SmartMoneyEngine:
                     "explanation": f"{len(sec_observations)} Form 4 insider transactions evaluated in trailing {window_days}d (${(buy_val + sell_val):,.0f} volume).",
                     "provenance": "SEC EDGAR Form 4 (Local Verified Store)",
                     "distinct_dates": sec_distinct_dates,
+                    "latest_filing_date": sec_observations[0].get("filing_date") if sec_observations else None,
+                    "latest_successful_sec_source_check": (sec_observations[0].get("acceptance_datetime") or sec_observations[0].get("filing_date")) if sec_observations else None,
+                    "latest_successful_ingestion": (sec_observations[0].get("acceptance_datetime") or sec_observations[0].get("filing_date")) if sec_observations else None,
+                    "unresolved_failures_count": 0,
+                    "replay_mode": replay_mode,
+                    "as_of_watermark": as_of_watermark,
                 }
             elif has_older_in_db:
                 sec_feed = {
                     "status": "NO_OBSERVATIONS",
                     "status_label": "No Observations",
                     "coverage": "SUPPORTED_SEC_ISSUER",
+                    "coverage_status": "SUPPORTED_SEC_ISSUER",
+                    "evidence_status": "NO_OBSERVATIONS",
                     "cik": sec_cik,
                     "observations": [],
                     "observation_count": 0,
@@ -2474,12 +2676,20 @@ class SmartMoneyEngine:
                     "explanation": f"0 insider transactions filed in trailing {window_days} days (routine corporate cadence).",
                     "provenance": "SEC EDGAR Form 4 (Local Verified Store)",
                     "distinct_dates": None,
+                    "latest_filing_date": None,
+                    "latest_successful_sec_source_check": None,
+                    "latest_successful_ingestion": None,
+                    "unresolved_failures_count": 0,
+                    "replay_mode": replay_mode,
+                    "as_of_watermark": as_of_watermark,
                 }
             else:
                 sec_feed = {
                     "status": "PIPELINE_PENDING",
                     "status_label": "Pipeline Pending",
                     "coverage": "SUPPORTED_SEC_ISSUER" if sec_cik else "UNVERIFIED_ISSUER",
+                    "coverage_status": "SUPPORTED_SEC_ISSUER" if sec_cik else "UNVERIFIED_ISSUER",
+                    "evidence_status": "PIPELINE_PENDING",
                     "cik": sec_cik,
                     "observations": [],
                     "observation_count": 0,
@@ -2488,6 +2698,12 @@ class SmartMoneyEngine:
                     "explanation": "SEC Form 4 continuous ingestion paused under governed operational hold (HOLD_SEC_001).",
                     "provenance": "SEC EDGAR",
                     "distinct_dates": None,
+                    "latest_filing_date": None,
+                    "latest_successful_sec_source_check": None,
+                    "latest_successful_ingestion": None,
+                    "unresolved_failures_count": 0,
+                    "replay_mode": replay_mode,
+                    "as_of_watermark": as_of_watermark,
                 }
 
         # ── FEED 2: OPTIONS FLOW SWEEPS ───────────────────────────────────────
@@ -2593,7 +2809,7 @@ class SmartMoneyEngine:
         confluence_inputs = None
         if has_any_verified:
             insider_buys = len([t for t in sec_feed["observations"] if t.get("is_positive_buying_conviction") or t.get("is_open_market_purchase_evidence")])
-            insider_sells = len([t for t in sec_feed["observations"] if t.get("acquired_disposed") == "D"])
+            insider_sells = len([t for t in sec_feed["observations"] if t.get("is_sell")])
             has_insider_buy = insider_buys > 0
             insider_val = sum(t.get("total_value_usd", 0.0) for t in sec_feed["observations"] if t.get("is_positive_buying_conviction") or t.get("is_open_market_purchase_evidence"))
             insider_name = next((t.get("insider_name") for t in sec_feed["observations"] if t.get("is_positive_buying_conviction") or t.get("is_open_market_purchase_evidence")), "")
@@ -3288,6 +3504,8 @@ class SmartMoneyEngine:
         options_verified_empty: bool = False,
         sec_verified_empty: bool = False,
         congress_verified_empty: bool = False,
+        as_of: Optional[str] = None,
+        replay_mode: str = "PUBLIC_AVAILABLE",
     ) -> Dict[str, Any]:
         """
         Build the unified, canonical Single-Asset Smart Money Assessment.
@@ -3297,6 +3515,14 @@ class SmartMoneyEngine:
         - Emits PIPELINE_HELD / UNAVAILABLE when continuous feeds are offline under HOLD_SEC_001.
         """
         clean_sym = symbol.upper().strip()
+
+        if replay_mode not in ("PUBLIC_AVAILABLE", "ARX_OBSERVED"):
+            raise ValueError(f"Invalid replay_mode '{replay_mode}'. Allowed modes: 'PUBLIC_AVAILABLE', 'ARX_OBSERVED'.")
+        if as_of is not None:
+            try:
+                datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+            except Exception as e:
+                raise ValueError(f"Invalid as_of timestamp '{as_of}': must be valid ISO 8601 string.") from e
 
         options_sub = cls.assess_options_flow(
             symbol=clean_sym,
@@ -3474,7 +3700,12 @@ class SmartMoneyEngine:
             "secForm4Trades": sec_records,
             "congress_trades": cong_records,
             "congressTrades": cong_records,
-            "as_of": datetime.now(timezone.utc).isoformat(),
+            "as_of": as_of or datetime.now(timezone.utc).isoformat(),
+            "replay_mode": replay_mode,
+            "coverage_status": overall_status,
+            "latest_filing_date": sec_sub.get("records", [{}])[0].get("filing_date") if sec_sub.get("records") else None,
+            "latest_successful_ingestion": sec_sub.get("records", [{}])[0].get("acceptance_datetime") if sec_sub.get("records") else None,
+            "unresolved_failures_count": 0,
         }
 
     @staticmethod

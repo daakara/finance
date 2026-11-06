@@ -160,6 +160,8 @@ export interface ThematicPrior {
   evidenceType: string;
   isStaticPrior?: boolean;
   isLiveObservation?: boolean;
+  isModeledAssumption?: boolean;
+  disclaimer?: string;
   description?: string;
   thesis?: string;
   catalyst?: string;
@@ -1103,6 +1105,10 @@ export interface GemCandidate {
   screeningStatus?: string;
   screeningGeometry?: string;
   screeningEligible?: boolean;
+  marketStage?: string;
+  marketStageLabel?: string;
+  isBullishEligible?: boolean;
+  trendTemplatePassed?: boolean;
   decisionState?: string;
   decisionStateLabel?: string;
   isActionable?: boolean;
@@ -1131,6 +1137,61 @@ export interface ScreenerResponse {
   scanState?: string;
   datasetState?: string;
   partialErrors?: unknown[];
+}
+
+export interface VCPExplainEvaluationContext {
+  asOfDate: string;
+  evaluationAsOf: string;
+  rulesetVersion: string;
+  classifierVersion: string;
+  rulesetHash: string;
+  snapshotId?: string | null;
+}
+
+export interface VCPExplainPrimaryRejection {
+  predicateId: string;
+  name: string;
+  status: string;
+  measuredValue: any;
+  thresholdApplied: any;
+  reasonCodes: string[];
+  explanation: string;
+}
+
+export interface VCPExplainClassification {
+  vcpQualified: boolean;
+  vcpClassification: string;
+  stageClassification: string;
+  passedNormativeCount: number;
+  totalNormativeCount: number;
+  primaryRejection?: VCPExplainPrimaryRejection | null;
+  summary: string;
+}
+
+export interface VCPExplainPredicate {
+  predicateId: string;
+  status: string;
+  measuredValue: any;
+  thresholdApplied: any;
+  reasonCodes: string[];
+}
+
+export interface VCPExplainProvenance {
+  provenanceType: string;
+  evidenceSemantics?: string;
+  historicalPointInTimeCertified?: boolean;
+  source: string;
+  bitemporalCutoffEnforced: boolean;
+  evaluationAsOf: string;
+  disclaimer: string;
+}
+
+export interface VCPExplainResponse {
+  symbol: string;
+  evaluationContext: VCPExplainEvaluationContext;
+  classification: VCPExplainClassification;
+  predicates: VCPExplainPredicate[];
+  provenance: VCPExplainProvenance;
 }
 
 // 🧠 Global Spot Price & Metadata Registry (Enforces 100% price parity across all timeframes)
@@ -1808,6 +1869,20 @@ export function resolveCandidateEligibility(r: any): {
     };
   }
 
+  // Invariant 1b (RADAR-ACT-008R Market Stage Eligibility):
+  // Non-Stage-2 or non-bullish-eligible securities can NEVER be screeningEligible
+  const isNonBullishStage = (r.marketStage && r.marketStage !== "STAGE_2") || r.isBullishEligible === false;
+  if (isNonBullishStage) {
+    const rawSt = typeof r.executionStatus === "string" && r.executionStatus.trim().length > 0
+      ? r.executionStatus.trim()
+      : (typeof r.execution_status === "string" ? r.execution_status.trim() : "WAITING_PULLBACK");
+    return {
+      screeningEligible: false,
+      screeningStatus: r.marketStage === "STAGE_4" ? "STAGE_4_MARKDOWN" : (r.screeningStatus || rawSt),
+      screeningGeometry: "OUTSIDE_TOLERANCE",
+    };
+  }
+
   // Invariant 2 (ARX-036-D11R-CLOSE Gate B / F-01):
   // screeningEligible === true strictly requires executionStatus === "IN_BUY_ZONE"
   // AND explicit backend eligibility value of true. All other combinations are noneligible.
@@ -2009,6 +2084,10 @@ export async function fetchScreenerGems(model: string = "all", universe?: string
           screeningStatus: eligibility.screeningStatus,
           screeningGeometry: eligibility.screeningGeometry,
           screeningEligible: eligibility.screeningEligible,
+          marketStage: r.marketStage || (r.stagePhase && r.stagePhase.includes("Stage 2") ? "STAGE_2" : (r.stagePhase && r.stagePhase.includes("Stage 4") ? "STAGE_4" : (r.screeningEligible === true ? "STAGE_2" : undefined))),
+          marketStageLabel: r.marketStageLabel || r.stagePhase || (r.screeningEligible === true ? "Stage 2 Advancing" : undefined),
+          isBullishEligible: typeof r.isBullishEligible === "boolean" ? r.isBullishEligible : (r.marketStage === "STAGE_2" || r.screeningEligible === true),
+          trendTemplatePassed: typeof r.trendTemplatePassed === "boolean" ? r.trendTemplatePassed : (r.marketStage === "STAGE_2" || r.screeningEligible === true),
           rvol: typeof r.rvol === "string" ? r.rvol : null,
           riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
           decisionState: r.decisionState || "UNVERIFIED_SETUP",
@@ -2071,6 +2150,30 @@ export async function fetchScreenerGems(model: string = "all", universe?: string
     status: "ERROR",
     error: "Screener API unavailable",
   };
+}
+
+/**
+ * Fetches deterministic VCP classification explainability for a symbol based on
+ * the active production snapshot evaluation context.
+ * Strict read-only diagnostic reconstruction with bitemporal cutoff enforcement.
+ */
+export async function fetchVCPExplain(symbol: string): Promise<VCPExplainResponse | null> {
+  const clean = symbol.trim().toUpperCase();
+  if (!clean) return null;
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/screener/vcp/explain/${encodeURIComponent(clean)}`, {
+      headers: ARX_API_HEADERS,
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    return null;
+  } catch (err) {
+    console.warn(`VCP explain fetch failed for ${clean}:`, err);
+    return null;
+  }
 }
 
 /**

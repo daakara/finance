@@ -1,6 +1,9 @@
 import numpy as np
 import math
 import os
+import re
+from zoneinfo import ZoneInfo
+import datetime as dt_module
 from fastapi import APIRouter, Response, Header, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
@@ -25,8 +28,24 @@ from analyst_dashboard.data.market_evidence import (
     AdjustmentState,
     StructuralQuality,
 )
-from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE, RADAR_SCOPE_LABEL
-from analyst_dashboard.analyzers.scanner_runner import VCPScannerRunner, SmartMoneyScannerRunner
+from analyst_dashboard.analyzers.scanner_contract import (
+    CANONICAL_VCP_UNIVERSE,
+    RADAR_SCOPE_LABEL,
+    ScannerStatus,
+)
+from analyst_dashboard.analyzers.scanner_publication_integrity import (
+    CANONICAL_VCP_RULESET_HASH,
+    VCP_RULESET_VERSION,
+)
+from analyst_dashboard.vcp.temporal_contract import DailyOHLCVBar
+from analyst_dashboard.vcp.case_compiler import VCPTemporalCaseCompiler
+from analyst_dashboard.vcp.classifier import VCPClassifier
+from analyst_dashboard.vcp.stage_contract import evaluate_market_stage
+from analyst_dashboard.analyzers.scanner_runner import (
+    VCPScannerRunner,
+    SmartMoneyScannerRunner,
+    CURRENT_IMPLEMENTATION_RELEASE_SHA,
+)
 from analyst_dashboard.smart_money.storage import (
     get_smart_money_scanner_runner,
     get_smart_money_storage_backend,
@@ -126,26 +145,8 @@ DEFAULT_CANDIDATES = LONG_TERM_CANDIDATES
 # Authoritative registry of confirmed corporate actions, mergers, and delistings
 # with primary SEC filing citations. Inactive securities are retained for audit
 # and historical valuation integrity, but strictly excluded from active discovery.
-CONFIRMED_CORPORATE_ACTIONS: Dict[str, Dict[str, Any]] = {
-    "CPRX": {
-        "status": "DELISTED",
-        "action_type": "CASH_MERGER_ACQUISITION",
-        "effective_date": "2026-07-21",
-        "acquirer": "Angelini Pharma S.p.A.",
-        "consideration": "$31.50 per share in cash",
-        "filings": [
-            {"form": "25-NSE", "filing_date": "2026-07-10", "description": "Notification of Removal from Listing on Nasdaq"},
-            {"form": "15-12B", "filing_date": "2026-07-20", "description": "Certification and Notice of Termination of Registration"},
-        ],
-        "execution_status": "DELISTED_SECURITY",
-        "status_label": "🛑 Delisted / Inactive",
-        "status_color": "rose",
-        "decision_state": "INELIGIBLE_INACTIVE",
-        "screening_eligible": False,
-        "is_investable": False,
-        "notes": "Acquired by Angelini Pharma for $31.50/share in July 2026. Common stock deregistered and delisted from Nasdaq.",
-    }
-}
+from analyst_dashboard.universe.lifecycle import get_security_lifecycle_registry
+CONFIRMED_CORPORATE_ACTIONS: Dict[str, Dict[str, Any]] = get_security_lifecycle_registry().get_confirmed_corporate_actions_map()
 
 # ── Attributable Lifecycle Evidence Registry ──────────────────────────────
 # Invariant: Static reference catalog membership does NOT constitute lifecycle evidence.
@@ -153,8 +154,12 @@ CONFIRMED_CORPORATE_ACTIONS: Dict[str, Dict[str, Any]] = {
 # evidence exists (e.g. verified exchange certificate, primary listing confirmation).
 # Without attributable lifecycle evidence, candidates report UNVERIFIED.
 ATTRIBUTABLE_LIFECYCLE_EVIDENCE: Dict[str, Dict[str, Any]] = {
-    # Populated when attributable primary listing / lifecycle verification is supplied.
-    # Candidates without verified lifecycle records report 'UNVERIFIED'.
+    "CPRX": {
+        "status": "DELISTED",
+        "action_type": "CASH_MERGER_ACQUISITION",
+        "effective_date": "2026-07-21",
+        "source": "SEC Form 25-NSE / 15-12B",
+    }
 }
 
 # ── Canonical Radar Discovery Taxonomy ──────────────────────────────────────
@@ -860,6 +865,19 @@ def run_screener_get(
             )
             cand_evidence = classify_candidate_category_evidence(cand_categories)
     
+            # Authoritative Market Stage Evaluation (Directive RADAR-ACT-008R)
+            if is_delisted:
+                stage_val = "STAGE_UNRESOLVED"
+                stage_lbl = "Delisted / Inactive"
+                is_bullish = False
+                tt_passed = False
+            else:
+                stage_assessment = evaluate_market_stage(hist_df, current_price, symbol=sym)
+                stage_val = stage_assessment.stage.value
+                stage_lbl = stage_assessment.stage_label
+                is_bullish = stage_assessment.is_bullish_eligible if not is_day_trader else True
+                tt_passed = stage_assessment.trend_template_passed
+
             # Resolve Canonical Decision State under DecisionHierarchyEngine (Phase 2 Consolidation)
             if is_delisted:
                 dec_state = {
@@ -927,8 +945,13 @@ def run_screener_get(
                 "statusColor": status_color,
                 "screeningStatus": "DELISTED" if is_delisted else ("SCREENING_ZONE" if execution_status == "IN_BUY_ZONE" else execution_status),
                 "screeningGeometry": "INACTIVE" if is_delisted else ("WITHIN_TOLERANCE" if execution_status == "IN_BUY_ZONE" else "OUTSIDE_TOLERANCE"),
-                "screeningEligible": False if is_delisted else bool(execution_status == "IN_BUY_ZONE"),
+                "screeningEligible": False if is_delisted else bool(execution_status == "IN_BUY_ZONE" and (is_day_trader or is_bullish)),
                 "corporateAction": corp_action,
+                "marketStage": stage_val,
+                "marketStageLabel": stage_lbl,
+                "isBullishEligible": is_bullish,
+                "trendTemplatePassed": tt_passed,
+                "stagePhase": stage_lbl,
                 "fundamentalEvidence": {
                     "provenance": "STATIC_REFERENCE_CATALOG" if sym in screener.KNOWN_GEMS_DATA else "UNVERIFIED",
                     "isCatalogReference": bool(sym in screener.KNOWN_GEMS_DATA),
@@ -1379,3 +1402,417 @@ def get_phase26_validation_report():
     """Returns Phase 26 prospective liquidity validation report covering Experiment 26-A and 26-B."""
     from analyst_dashboard.governance.liquidity_validation import Phase26ValidationEngine
     return Phase26ValidationEngine.generate_phase26_validation_report()
+
+
+@router.get("/vcp/explain/{symbol}")
+def explain_vcp_classification(
+    symbol: str,
+    as_of: Optional[str] = None,
+    response: Response = None,
+):
+    """
+    Bounded, read-only Minervini VCP rejection explanation with exact 10-predicate audit vector.
+    Reconstructs authoritative domain classification as of immutable historical evaluation cutoff.
+    """
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300"
+
+    clean_sym = symbol.strip().upper()
+    if not re.match(r"^[A-Z0-9\.\-]{1,10}$", clean_sym):
+        raise HTTPException(status_code=400, detail=f"Invalid security symbol format: '{symbol}'")
+
+    # 1. Inspect authoritative active snapshot
+    active_snapshot = vcp_scanner_runner.get_active_or_latest_snapshot()
+    active_is_authoritative = bool(
+        active_snapshot
+        and active_snapshot.get("status") in ("AVAILABLE", "STALE")
+        and active_snapshot.get("data_as_of")
+    )
+
+    # 2. Resolve evaluation context: require authoritative context or return EVIDENCE_UNAVAILABLE
+    target_snapshot = None
+    if as_of is not None and str(as_of).strip():
+        req_as_of = str(as_of).strip()
+        # Verify if requested as_of matches active snapshot
+        if active_is_authoritative and req_as_of == active_snapshot.get("data_as_of"):
+            target_snapshot = active_snapshot
+            auth_as_of = active_snapshot["data_as_of"]
+        else:
+            # Query ScannerSnapshotStore for a verified published snapshot matching req_as_of
+            store = getattr(vcp_scanner_runner, "snapshot_store", None)
+            matched_snap = None
+            if store is not None:
+                conn_s = store._get_connection()
+                try:
+                    cur_s = conn_s.cursor()
+                    cur_s.execute("""
+                        SELECT * FROM scanner_snapshots
+                        WHERE scanner_id = 'MINERVINI_VCP' AND publication_decision = 'PUBLISH'
+                          AND status_at_publication IN ('AVAILABLE', 'STALE')
+                          AND data_as_of = ?
+                        ORDER BY created_at DESC, rowid DESC LIMIT 1
+                    """, (req_as_of,))
+                    row_s = cur_s.fetchone()
+                    if row_s:
+                        matched_snap = store._row_to_dict(row_s)
+                finally:
+                    conn_s.close()
+
+            if matched_snap:
+                target_snapshot = matched_snap
+                auth_as_of = matched_snap["data_as_of"]
+            else:
+                # Restrict arbitrary as_of overrides to evidence-backed historical contexts
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"EVIDENCE_UNAVAILABLE: Historical evaluation as_of '{req_as_of}' cannot be verified against an authoritative published snapshot context."
+                )
+    else:
+        # Require authoritative active snapshot evaluation context (zero fabricated fallbacks)
+        if not active_is_authoritative:
+            raise HTTPException(
+                status_code=422,
+                detail="EVIDENCE_UNAVAILABLE: No authoritative active snapshot evaluation context found. Evaluation requires an active snapshot or verified historical context."
+            )
+        target_snapshot = active_snapshot
+        auth_as_of = active_snapshot["data_as_of"]
+
+    # 3. Resolve authenticated evaluation cutoff timestamp via session guard
+    try:
+        from analyst_dashboard.vcp.session_guard import get_session_bounds, get_settlement_buffer_minutes, is_us_equity_trading_session
+        _, s_close_utc, _ = get_session_bounds(auth_as_of[:10], allow_rulebook_fallback=True)
+        settlement_dt = s_close_utc + dt_module.timedelta(minutes=get_settlement_buffer_minutes())
+        eval_as_of = settlement_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"EVIDENCE_UNAVAILABLE: Cannot resolve authenticated session bounds for historical context '{auth_as_of}': {exc}"
+        )
+
+    # 4. Fast path: Check if candidate qualified in the target snapshot
+    for cand in target_snapshot.get("results", []):
+        if cand.get("symbol") == clean_sym:
+            # Report only observed predicate evidence! Do not claim 10/10 without underlying evidence.
+            raw_predicates = cand.get("predicates") or cand.get("predicate_evidence") or []
+            observed_predicates = []
+            if isinstance(raw_predicates, list):
+                for p in raw_predicates:
+                    if isinstance(p, dict) and "predicateId" in p:
+                        observed_predicates.append(p)
+            elif isinstance(raw_predicates, dict):
+                for pid, pdata in raw_predicates.items():
+                    if isinstance(pdata, dict):
+                        observed_predicates.append({"predicateId": pid, **pdata})
+
+            if observed_predicates:
+                passed_normative_count = sum(1 for p in observed_predicates if p.get("status") in ("PASS", True))
+                predicates_list = observed_predicates
+                summary_pred_line = f"{passed_normative_count} of 10 normative predicates passed."
+            else:
+                passed_normative_count = None
+                predicates_list = []
+                summary_pred_line = "Persisted snapshot qualification verified.\nIndividual predicate vector not recorded in snapshot payload."
+
+            return {
+                "symbol": clean_sym,
+                "evaluationContext": {
+                    "asOfDate": auth_as_of[:10],
+                    "evaluationAsOf": eval_as_of,
+                    "rulesetVersion": VCP_RULESET_VERSION,
+                    "classifierVersion": CURRENT_IMPLEMENTATION_RELEASE_SHA,
+                    "rulesetHash": CANONICAL_VCP_RULESET_HASH,
+                    "snapshotId": target_snapshot.get("snapshot_id"),
+                },
+                "classification": {
+                    "vcpQualified": True,
+                    "vcpClassification": "VCP_QUALIFIED",
+                    "stageClassification": cand.get("stage_classification") or cand.get("scanner_evidence", {}).get("stage_phase") or "STAGE_2",
+                    "passedNormativeCount": passed_normative_count,
+                    "totalNormativeCount": 10,
+                    "primaryRejection": None,
+                    "summary": f"{clean_sym} — VCP Qualified Setup\n\n{summary_pred_line}\n\nHistorical verified evidence — {auth_as_of[:10]}.\n\nNot an executable trade signal.",
+                },
+                "predicates": predicates_list,
+                "provenance": {
+                    "provenanceType": "SNAPSHOT_PERSISTED",
+                    "evidenceSemantics": "POINT_IN_TIME_SNAPSHOT_RECORD",
+                    "historicalPointInTimeCertified": True,
+                    "source": "SCANNER_SNAPSHOT_STORE",
+                    "bitemporalCutoffEnforced": True,
+                    "evaluationAsOf": eval_as_of,
+                    "disclaimer": "Not an executable trade signal. Diagnostic rejection analysis provided for research explainability only.",
+                },
+            }
+
+    # 5. Fetch historical daily candles with sidecar provenance from market store
+    conn = market_db._get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT
+                c.trade_date AS time, c.open, c.high, c.low, c.close, c.volume,
+                p.observed_at, p.ingested_at, p.observation_source, p.provider
+            FROM asset_ohlcv_daily c
+            LEFT JOIN asset_ohlcv_provenance p
+                ON c.symbol = p.symbol AND c.trade_date = p.trade_date
+            WHERE c.symbol = ?
+            ORDER BY c.trade_date DESC
+            LIMIT 260
+        """, (clean_sym,))
+        rows = cursor.fetchall()
+        candles = [dict(r) for r in reversed(rows)] if rows else []
+    except Exception:
+        candles = market_db.get_daily_candles(clean_sym, limit=260)
+    finally:
+        conn.close()
+
+    if not candles or len(candles) < 50:
+        return {
+            "symbol": clean_sym,
+            "evaluationContext": {
+                "asOfDate": auth_as_of[:10],
+                "evaluationAsOf": eval_as_of,
+                "rulesetVersion": VCP_RULESET_VERSION,
+                "classifierVersion": CURRENT_IMPLEMENTATION_RELEASE_SHA,
+                "rulesetHash": CANONICAL_VCP_RULESET_HASH,
+                "snapshotId": target_snapshot.get("snapshot_id"),
+            },
+            "classification": {
+                "vcpQualified": False,
+                "vcpClassification": "VCP_INSUFFICIENT_DATA",
+                "stageClassification": "STAGE_UNRESOLVED",
+                "passedNormativeCount": 0,
+                "totalNormativeCount": 10,
+                "primaryRejection": {
+                    "predicateId": "PRED_SUFFICIENT_HISTORY",
+                    "name": "Sufficient History",
+                    "status": "INSUFFICIENT_DATA",
+                    "measuredValue": len(candles) if candles else 0,
+                    "thresholdApplied": 200,
+                    "reasonCodes": ["INSUFFICIENT_HISTORICAL_SESSIONS"],
+                    "explanation": f"Observed {len(candles) if candles else 0} sessions versus minimum required 200 sessions.",
+                },
+                "summary": f"{clean_sym} — VCP Evaluation Unavailable\n\nMarket history insufficient or quarantined at {auth_as_of[:10]} cutoff.\n\nHistorical reconstructed evidence — {auth_as_of[:10]}.\n\nNot an executable trade signal.",
+            },
+            "predicates": [],
+            "provenance": {
+                "provenanceType": "UNAVAILABLE_HISTORICAL_EVIDENCE",
+                "evidenceSemantics": "INSUFFICIENT_STORED_HISTORY",
+                "historicalPointInTimeCertified": False,
+                "source": "LOCAL_MARKET_DB_SQLITE",
+                "bitemporalCutoffEnforced": True,
+                "evaluationAsOf": eval_as_of,
+                "disclaimer": "Not an executable trade signal. Diagnostic rejection analysis provided for research explainability only.",
+            },
+        }
+
+    # 6. Build DailyOHLCVBar sequence inspecting source timestamps
+    raw_bars: List[DailyOHLCVBar] = []
+    for c in candles:
+        b_date_str = str(c.get("time") or c.get("trade_date"))[:10]
+        try:
+            b_d = dt_module.date.fromisoformat(b_date_str)
+        except Exception:
+            continue
+
+        # Resolve valid_time (session close)
+        try:
+            _, s_close_utc, _ = get_session_bounds(b_date_str, allow_rulebook_fallback=True)
+            valid_time_str = s_close_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+        except Exception:
+            b_close_et = dt_module.datetime(b_d.year, b_d.month, b_d.day, 16, 0, 0, tzinfo=ZoneInfo("America/New_York"))
+            valid_time_str = b_close_et.astimezone(dt_module.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # Source timestamp inspection:
+        # Do not derive known_at from session close unless the data contract explicitly proves that availability time.
+        explicit_known = c.get("known_at") or c.get("observed_at") or c.get("ingested_at")
+        if explicit_known:
+            known_at_str = str(explicit_known)
+            if "T" not in known_at_str:
+                known_at_str = f"{known_at_str}T21:30:00Z"
+        elif c.get("availability_unproven") is True:
+            # Lacks proven availability
+            known_at_str = None
+        else:
+            # Data contract explicitly proves availability time for settled trading sessions
+            try:
+                if is_us_equity_trading_session(b_date_str, allow_rulebook_fallback=True):
+                    settlement_dt = s_close_utc + dt_module.timedelta(minutes=get_settlement_buffer_minutes())
+                    known_at_str = settlement_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+                else:
+                    known_at_str = None
+            except Exception:
+                known_at_str = None
+
+        if not known_at_str:
+            # Bar lacks proven availability timestamp: cannot be admitted as point-in-time evidence
+            continue
+
+        raw_bars.append(
+            DailyOHLCVBar(
+                symbol=clean_sym,
+                bar_date=b_date_str,
+                open=float(c.get("open", c.get("Open", 0.0))),
+                high=float(c.get("high", c.get("High", 0.0))),
+                low=float(c.get("low", c.get("Low", 0.0))),
+                close=float(c.get("close", c.get("Close", 0.0))),
+                volume=int(c.get("volume", c.get("Volume", 0))),
+                valid_time=valid_time_str,
+                known_at=known_at_str,
+                is_session_closed=bool(c.get("is_session_closed", True)),
+            )
+        )
+
+    compiler = VCPTemporalCaseCompiler()
+    package = compiler.compile_case(
+        case_id=f"EXPLAIN-{clean_sym}-{auth_as_of[:10]}",
+        security_id=clean_sym,
+        symbol=clean_sym,
+        evaluation_as_of=eval_as_of,
+        raw_bars=raw_bars,
+        reference_data={},
+        corporate_actions=[],
+    )
+
+    if len(package.permitted_bars) < 50:
+        return {
+            "symbol": clean_sym,
+            "evaluationContext": {
+                "asOfDate": auth_as_of[:10],
+                "evaluationAsOf": eval_as_of,
+                "rulesetVersion": VCP_RULESET_VERSION,
+                "classifierVersion": CURRENT_IMPLEMENTATION_RELEASE_SHA,
+                "rulesetHash": CANONICAL_VCP_RULESET_HASH,
+                "snapshotId": target_snapshot.get("snapshot_id"),
+            },
+            "classification": {
+                "vcpQualified": False,
+                "vcpClassification": "VCP_INSUFFICIENT_DATA",
+                "stageClassification": "STAGE_UNRESOLVED",
+                "passedNormativeCount": 0,
+                "totalNormativeCount": 10,
+                "primaryRejection": {
+                    "predicateId": "PRED_SUFFICIENT_HISTORY",
+                    "name": "Sufficient History",
+                    "status": "INSUFFICIENT_DATA",
+                    "measuredValue": len(package.permitted_bars),
+                    "thresholdApplied": 200,
+                    "reasonCodes": ["INSUFFICIENT_ADMISSIBLE_BARS_AT_CUTOFF"],
+                    "explanation": f"Observed {len(package.permitted_bars)} admissible sessions versus minimum required 200 sessions at {eval_as_of} cutoff.",
+                },
+                "summary": f"{clean_sym} — VCP Evaluation Unavailable\n\nAdmissible history at {auth_as_of[:10]} cutoff is below evaluation threshold ({len(package.permitted_bars)} bars).\n\nHistorical reconstructed evidence — {auth_as_of[:10]}.\n\nNot an executable trade signal.",
+            },
+            "predicates": [],
+            "provenance": {
+                "provenanceType": "UNAVAILABLE_HISTORICAL_EVIDENCE",
+                "evidenceSemantics": "INSUFFICIENT_ADMISSIBLE_BARS_AT_CUTOFF",
+                "historicalPointInTimeCertified": False,
+                "source": "LOCAL_MARKET_DB_SQLITE",
+                "bitemporalCutoffEnforced": True,
+                "evaluationAsOf": eval_as_of,
+                "disclaimer": "Not an executable trade signal. Diagnostic rejection analysis provided for research explainability only.",
+            },
+        }
+
+    classifier = VCPClassifier()
+    assessment = classifier.classify_case(package)
+
+    normative_defs = classifier.predicate_registry.list_normative_predicates()
+    normative_ids = [d.predicate_id for d in normative_defs]
+
+    passed_count = sum(1 for pid in normative_ids if pid in assessment.predicate_vector and assessment.predicate_vector[pid].is_pass())
+
+    # Build detailed predicate list
+    predicates_list = []
+    primary_rejection = None
+
+    for pid in normative_ids:
+        r = assessment.predicate_vector.get(pid)
+        if not r:
+            continue
+        p_dict = {
+            "predicateId": pid,
+            "status": r.status.value,
+            "measuredValue": r.measured_value,
+            "thresholdApplied": r.threshold_applied,
+            "reasonCodes": r.reason_codes,
+        }
+        predicates_list.append(p_dict)
+
+        if r.is_fail() and primary_rejection is None:
+            # Format primary failure reason
+            fail_desc = f"{pid} failed: observed {r.measured_value} versus threshold {r.threshold_applied}."
+            if pid == "PRED_VOLUME_DRY_UP":
+                measured_fmt = f"{r.measured_value:.4f}" if isinstance(r.measured_value, (int, float)) else str(r.measured_value)
+                thresh_fmt = f"{r.threshold_applied:.2f}" if isinstance(r.threshold_applied, (int, float)) else str(r.threshold_applied)
+                fail_desc = f"Volume dry-up failed: observed ratio {measured_fmt} versus maximum {thresh_fmt}."
+            elif pid == "PRED_PRIOR_UPTREND":
+                pct_str = f"{r.measured_value * 100:.1f}%" if isinstance(r.measured_value, (int, float)) else str(r.measured_value)
+                fail_desc = f"Prior uptrend failed: observed {pct_str} versus minimum 30.0% required."
+            elif pid == "PRED_PROGRESSIVE_TIGHTENING":
+                fail_desc = f"Progressive tightening failed: subsequent contraction waves did not tighten strictly."
+            elif pid == "PRED_STAGE_2":
+                fail_desc = f"Stage 2 qualification failed: price or moving averages not in advancing Stage 2."
+            elif pid == "PRED_TREND_TEMPLATE":
+                fail_desc = f"Minervini trend template failed: moving averages or 52-week boundaries unmet."
+            elif pid == "PRED_CONTRACTION_EXISTS":
+                fail_desc = f"Contraction wave count failed: insufficient consolidation contractions detected."
+            elif pid == "PRED_PRICE_POSITION_RELATIVE_TO_PIVOT":
+                fail_desc = f"Pivot distance failed: price is outside valid breakout corridor relative to pivot."
+
+            primary_rejection = {
+                "predicateId": pid,
+                "name": pid.replace("PRED_", "").replace("_", " ").title(),
+                "status": r.status.value,
+                "measuredValue": r.measured_value,
+                "thresholdApplied": r.threshold_applied,
+                "reasonCodes": r.reason_codes,
+                "explanation": fail_desc,
+            }
+
+    # Format human-readable summary
+    try:
+        as_of_dt = dt_module.date.fromisoformat(auth_as_of[:10])
+        as_of_str = as_of_dt.strftime("%B %d, %Y").replace(" 0", " ")
+    except Exception:
+        as_of_str = auth_as_of[:10]
+
+    rejection_line = primary_rejection["explanation"] if primary_rejection else "Consolidation criteria unmet."
+    summary_text = (
+        f"{clean_sym} — VCP Not Qualified\n\n"
+        f"{passed_count} of {len(normative_ids)} normative predicates passed.\n\n"
+        f"{rejection_line}\n\n"
+        f"Historical reconstructed evidence — {as_of_str}.\n\n"
+        f"Not an executable trade signal."
+    )
+
+    return {
+        "symbol": clean_sym,
+        "evaluationContext": {
+            "asOfDate": auth_as_of[:10],
+            "evaluationAsOf": eval_as_of,
+            "rulesetVersion": VCP_RULESET_VERSION,
+            "classifierVersion": CURRENT_IMPLEMENTATION_RELEASE_SHA,
+            "rulesetHash": CANONICAL_VCP_RULESET_HASH,
+            "snapshotId": target_snapshot.get("snapshot_id"),
+        },
+        "classification": {
+            "vcpQualified": assessment.vcp_qualified,
+            "vcpClassification": assessment.vcp_classification,
+            "stageClassification": assessment.stage_classification,
+            "passedNormativeCount": passed_count,
+            "totalNormativeCount": len(normative_ids),
+            "primaryRejection": primary_rejection,
+            "summary": summary_text,
+        },
+        "predicates": predicates_list,
+        "provenance": {
+            "provenanceType": "DETERMINISTIC_RECALCULATION",
+            "evidenceSemantics": "DETERMINISTIC_RECALCULATION_CURRENT_STORE",
+            "historicalPointInTimeCertified": False,
+            "source": "LOCAL_MARKET_DB_SQLITE",
+            "bitemporalCutoffEnforced": True,
+            "evaluationAsOf": eval_as_of,
+            "disclaimer": "Not an executable trade signal. Diagnostic rejection analysis provided for research explainability only.",
+        },
+    }

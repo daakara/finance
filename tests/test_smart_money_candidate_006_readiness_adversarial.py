@@ -354,8 +354,14 @@ class TestSection6CanonicalSecOwnerLockVerification:
         # 3. Worker A drops connection abruptly (simulating SIGKILL)
         conn_a.close()
 
-        # 4. Worker B retries acquisition -> Succeeds immediately
-        assert acquire_sec_owner_lock(conn_b) is True
+        # 4. Worker B retries acquisition -> Succeeds as soon as backend drops
+        acquired = False
+        for _ in range(30):
+            if acquire_sec_owner_lock(conn_b):
+                acquired = True
+                break
+            time.sleep(0.05)
+        assert acquired is True
 
         # Clean up
         assert release_backup_lock(conn_backup) is True

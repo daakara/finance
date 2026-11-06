@@ -171,13 +171,13 @@ class TraderArchetypeAnalyzer:
                 sum(a["alignmentScore"] for a in available_archetypes) / len(available_archetypes)
             )
             if consensus_score >= 85:
-                verdict = "Strong Buy / Core Accumulation"
+                verdict = "High Multi-Strategy Alignment"
             elif consensus_score >= 75:
-                verdict = "Favorable Multi-Strategy Buy"
+                verdict = "Favorable Multi-Strategy Alignment"
             elif consensus_score >= 65:
-                verdict = "Moderate Growth Hold"
+                verdict = "Moderate Multi-Strategy Alignment"
             else:
-                verdict = "High Volatility Speculative"
+                verdict = "Low / Divergent Strategy Alignment"
         else:
             consensus_score = None
             verdict = "Telemetry Unavailable"
@@ -414,8 +414,10 @@ class TraderArchetypeAnalyzer:
                 "evidenceType": EvidenceType.STATIC_DOMAIN_PRIOR,
                 "isStaticPrior": True,
                 "isLiveObservation": False,
+                "isModeledAssumption": True,
                 "description": policy_catalyst,
                 "thesis": policy_catalyst,
+                "disclaimer": "Modeled qualitative assumption; not verified statutory disclosure or official government action.",
             }
 
         # Check required empirical factors: momentumScore and growthScore
@@ -706,9 +708,11 @@ class TraderArchetypeAnalyzer:
                 "evidenceType": EvidenceType.STATIC_DOMAIN_PRIOR,
                 "isStaticPrior": True,
                 "isLiveObservation": False,
+                "isModeledAssumption": True,
                 "description": disruptor["thesis"],
                 "thesis": disruptor["thesis"],
                 "catalyst": disruptor["catalyst"],
+                "disclaimer": "Modeled qualitative assumption; not verified individual investor holding or recommendation.",
             }
 
         # Check required factors: growthScore and momentumScore
