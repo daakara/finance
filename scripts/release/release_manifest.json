@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "60418d3bbf235e616d67b6a3ce8a622968bc9470",
+  "release_candidate_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
   "base_anchor_commit": "ccd8fe1a3ebddf0defcc5a378c0d25c89cec6e3d",
   "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -8,56 +8,56 @@
     "analyst_dashboard/analyzers/scanner_runner.py": {
       "operation": "M",
       "originating_pr_number": 202,
-      "originating_commit": "60418d3bbf235e616d67b6a3ce8a622968bc9470",
-      "governing_requirement": "RADAR-012R: caller provenance separation and canary metadata injection",
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: enforce caller provenance distinction (SCHEDULED_PRODUCTION vs MANUAL_OPERATOR_CANARY) and record invocation metadata",
       "sha256": "5ba431187ef1f76c14b82c9fe48b4801aca4380e4045a9fafd9cda997d875df0",
       "size_bytes": 78111
     },
     "analyst_dashboard/vcp/natural_trigger.py": {
       "operation": "M",
       "originating_pr_number": 202,
-      "originating_commit": "60418d3bbf235e616d67b6a3ce8a622968bc9470",
-      "governing_requirement": "RADAR-012R: natural trigger service canary mode and operator principal routing",
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: support canary execution and route operator request ID to prevent false autonomous scheduler attribution",
       "sha256": "1359db333e16dfea561d009bf03805516809e667b8b6c2e64bc2e5f14c37325a",
       "size_bytes": 16348
     },
     "analyst_dashboard/vcp/numeric_contract.py": {
       "operation": "M",
       "originating_pr_number": 202,
-      "originating_commit": "60418d3bbf235e616d67b6a3ce8a622968bc9470",
-      "governing_requirement": "RADAR-012R: untruncated 22-session 200-SMA slope requirement and elimination of synthetic zero",
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: enforce strict 22-session 200-SMA slope lookback (>=222 bars) and eliminate truncated window fallback and fabricated zero",
       "sha256": "b997a9cacf14aa7270834e5ddae63810eff523742eb8b94db2e572a7309d7442",
       "size_bytes": 7919
     },
     "analyst_dashboard/vcp/sprint_3_durable_storage.py": {
       "operation": "M",
       "originating_pr_number": 202,
-      "originating_commit": "60418d3bbf235e616d67b6a3ce8a622968bc9470",
-      "governing_requirement": "RADAR-012R: durable evidence store schema and legacy DB fallback for canary invocation",
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: register MANUAL_OPERATOR_CANARY invocation class and enforce non-natural provenance isolation",
       "sha256": "eea935e56d7735e5652992a66f2a8efb167ff2239eef788f7a142f1be9aae3ee",
       "size_bytes": 128318
     },
     "api/routes/screener.py": {
       "operation": "M",
       "originating_pr_number": 202,
-      "originating_commit": "60418d3bbf235e616d67b6a3ce8a622968bc9470",
-      "governing_requirement": "RADAR-012R: canary headers and payload flags on VCP scan and natural-scan routes",
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: accept canary mode and operator request ID in natural scan routes with truthful origin attribution",
       "sha256": "26cb30fccec6f025e81cdc49bc1168bf49a01bff7ee44acf180137433d93f069",
       "size_bytes": 95476
     },
     "tests/test_vcp_source_integrity_012r.py": {
       "operation": "A",
       "originating_pr_number": 202,
-      "originating_commit": "60418d3bbf235e616d67b6a3ce8a622968bc9470",
-      "governing_requirement": "RADAR-012R: 11-test mathematical slope boundary, cutoff exclusion and provenance test suite",
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: 11-test adversarial qualification test suite for slope boundaries and caller provenance",
       "sha256": "2e0e3dfc7f0dd74daf63ebefc6ec643c9fdc08e8106b0bfb5e3f8b9c404d351b",
       "size_bytes": 10244
     },
     "tests/test_vcp_temporal_cutoff_qualification.py": {
       "operation": "M",
       "originating_pr_number": 202,
-      "originating_commit": "60418d3bbf235e616d67b6a3ce8a622968bc9470",
-      "governing_requirement": "RADAR-012R: update 200/222 bar boundary qualification assertions",
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: align 200-bar and 222-bar boundary tests with untruncated 22-session slope requirements",
       "sha256": "088930f9cf6803c620c3883d98bd50b690613ba090b9dbb9adbc33a1f848d3bb",
       "size_bytes": 13439
     }
