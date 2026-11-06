@@ -12,8 +12,9 @@ GOVERNING INVARIANTS:
 4. ABSOLUTE BOUNDARY ISOLATION: Modification of secrets (.secrets/), rulesets (.github/rulesets/),
    environment (.env*), production release manifests (release_manifest.json), or deployment
    configs (railway.json, wrangler.toml) strictly fails closed.
-5. BACKWARDS COMPATIBILITY: Historical approved PRs (123..205) are preserved via registry.
-6. ZERO BYPASS: Evaluates fail-closed under missing, corrupted, or tampered registry.
+5. SEPARATION OF CONCERNS: Separate application, administrative-governance, and production-release qualification.
+6. BACKWARDS COMPATIBILITY: Historical approved PRs (123..205) are preserved via registry.
+7. ZERO BYPASS: Evaluates fail-closed under missing, corrupted, or tampered registry.
 """
 from __future__ import annotations
 
@@ -43,6 +44,16 @@ FORBIDDEN_PROTECTED_FILES = (
     "railway.json",
     "wrangler.toml",
     "scripts/release/release_manifest.json",
+)
+
+ALLOWED_ADMIN_PREFIXES = (
+    "scripts/release/",
+    "docs/",
+)
+
+ALLOWED_ADMIN_EXACT_FILES = (
+    "CHANGELOG.md",
+    "README.md",
 )
 
 
@@ -132,7 +143,14 @@ def verify_candidate_authorization(
 
     str_pr = str(pr_val)
 
-    # Path A: Explicit Solo-Owner Candidate Authorization
+    # Classify PR intent based on touched files
+    diff_paths = {p for _, p in diff_entries}
+    is_app_pr = any(
+        p.startswith("api/") or p.startswith("analyst_dashboard/") or p.startswith("frontend/") or p.startswith("migrations/")
+        for p in diff_paths
+    )
+
+    # Path A: Explicit Solo-Owner Application Candidate Authorization
     if str_pr in authorizations:
         audit_details["mode"] = "EXPLICIT_OWNER_AUTHORIZATION"
         auth = authorizations[str_pr]
@@ -242,7 +260,50 @@ def verify_candidate_authorization(
 
         return True, "HISTORICAL_PR_AUTHORIZED", audit_details
 
-    # Path C: Unapproved PR -> Fail Closed
+    # Path C: Solo-Owner Administrative Governance PR (Zero application code modified)
+    elif not is_app_pr and clean_target == "main":
+        audit_details["mode"] = "ADMINISTRATIVE_GOVERNANCE"
+
+        # 1. Reject if PR author is not repo owner in hosted environment
+        if identity and identity.get("event_name") == "pull_request":
+            pr_author = identity.get("pr_author") or identity.get("user")
+            pr_association = identity.get("author_association")
+            if pr_author and pr_author != AUTHORIZED_OWNER and pr_association != "OWNER":
+                err_msg = f"UNAUTHORIZED_GOVERNANCE_AUTHOR: PR author '{pr_author}' cannot submit administrative governance changes."
+                audit_details["violations"].append(err_msg)
+                return False, err_msg, audit_details
+
+        # 2. Verify all changed files are strictly within authorized administrative directories
+        for status_code, path in diff_entries:
+            # Traversal check
+            if ".." in path or path.startswith("/") or path.startswith("\\") or "\x00" in path:
+                err_msg = f"PATH_TRAVERSAL_DETECTED: '{path}'"
+                audit_details["violations"].append(err_msg)
+                return False, err_msg, audit_details
+
+            # Strictly reject application code
+            if any(path.startswith(pfx) for pfx in FORBIDDEN_ADMIN_PREFIXES):
+                err_msg = f"FORBIDDEN_APPLICATION_CODE_IN_GOVERNANCE: '{path}' is not permitted in governance PR."
+                audit_details["violations"].append(err_msg)
+                return False, err_msg, audit_details
+
+            # Strictly reject protected deployment/secret configs
+            if path in FORBIDDEN_PROTECTED_FILES:
+                err_msg = f"FORBIDDEN_PROTECTED_PATH_MODIFICATION: '{path}'"
+                audit_details["violations"].append(err_msg)
+                return False, err_msg, audit_details
+
+            # Permitted administrative scope: scripts/release/, docs/, CHANGELOG.md, README.md
+            in_admin_prefix = any(path.startswith(pfx) for pfx in ALLOWED_ADMIN_PREFIXES)
+            in_exact_files = path in ALLOWED_ADMIN_EXACT_FILES
+            if not in_admin_prefix and not in_exact_files:
+                err_msg = f"UNAUTHORIZED_GOVERNANCE_PATH: File '{path}' is outside administrative governance scope."
+                audit_details["violations"].append(err_msg)
+                return False, err_msg, audit_details
+
+        return True, "OWNER_GOVERNANCE_AUTHORIZED", audit_details
+
+    # Path D: Unapproved PR -> Fail Closed
     else:
         err_msg = f"UNAPPROVED_PR_NUMBER: PR #{pr_val} is not in approved release or owner-authorized PR registry."
         audit_details["violations"].append(err_msg)

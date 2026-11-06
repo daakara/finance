@@ -293,6 +293,98 @@ class SoloOwnerAuthorizationTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("TARGET_BRANCH_MISMATCH", reason)
 
+    # 15. Positive: Pure solo-owner governance PR targeting main passes without pre-registered number
+    def test_positive_pure_governance_pr(self):
+        diff = [
+            ("M", "scripts/release/rq02_diff_integrity.py"),
+            ("A", "scripts/release/pr_authorizations.json"),
+            ("M", "docs/architecture.md"),
+        ]
+        ok, reason, details = verify_candidate_authorization(
+            pr_number=999,  # Any new governance PR number
+            head_sha=FIXTURE_HEAD_SHA,
+            base_sha=FIXTURE_BASE_SHA,
+            clean_target="main",
+            diff_entries=diff,
+            registry_path=self.registry_file,
+        )
+        self.assertTrue(ok, f"Expected pass, got: {reason}")
+        self.assertEqual(reason, "GOVERNANCE_PR_AUTHORIZED")
+        self.assertEqual(details["mode"], "SOLO_OWNER_GOVERNANCE_ADMISSION")
+
+    # 16. Negative: Governance PR slipping in application code strictly rejected
+    def test_negative_governance_pr_with_app_leak(self):
+        diff = [
+            ("M", "scripts/release/rq02_diff_integrity.py"),
+            ("M", "api/routes/analytics.py"),  # Application code leak!
+        ]
+        ok, reason, details = verify_candidate_authorization(
+            pr_number=999,
+            head_sha=FIXTURE_HEAD_SHA,
+            base_sha=FIXTURE_BASE_SHA,
+            clean_target="main",
+            diff_entries=diff,
+            registry_path=self.registry_file,
+        )
+        self.assertFalse(ok)
+        self.assertIn("UNAPPROVED_PR_NUMBER", reason)
+
+    # 17. Negative: Governance PR slipping in secrets strictly rejected
+    def test_negative_governance_pr_with_secret_leak(self):
+        diff = [
+            ("M", "scripts/release/rq02_diff_integrity.py"),
+            ("A", ".secrets/leak.key"),  # Secret leak!
+        ]
+        ok, reason, details = verify_candidate_authorization(
+            pr_number=999,
+            head_sha=FIXTURE_HEAD_SHA,
+            base_sha=FIXTURE_BASE_SHA,
+            clean_target="main",
+            diff_entries=diff,
+            registry_path=self.registry_file,
+        )
+        self.assertFalse(ok)
+        self.assertIn("UNAPPROVED_PR_NUMBER", reason)
+
+    # 18. Negative: Governance PR slipping in release manifest strictly rejected
+    def test_negative_governance_pr_with_manifest_leak(self):
+        diff = [
+            ("M", "scripts/release/rq02_diff_integrity.py"),
+            ("M", "scripts/release/release_manifest.json"),  # Manifest tampering!
+        ]
+        ok, reason, details = verify_candidate_authorization(
+            pr_number=999,
+            head_sha=FIXTURE_HEAD_SHA,
+            base_sha=FIXTURE_BASE_SHA,
+            clean_target="main",
+            diff_entries=diff,
+            registry_path=self.registry_file,
+        )
+        self.assertFalse(ok)
+        self.assertIn("UNAPPROVED_PR_NUMBER", reason)
+
+    # 19. Negative: Non-owner governance PR strictly rejected
+    def test_negative_governance_pr_non_owner(self):
+        diff = [
+            ("M", "scripts/release/rq02_diff_integrity.py"),
+        ]
+        spoofed_identity = {
+            "event_name": "pull_request",
+            "pr_author": "unauthorized_user",
+            "author_association": "COLLABORATOR",
+        }
+        ok, reason, details = verify_candidate_authorization(
+            pr_number=999,
+            head_sha=FIXTURE_HEAD_SHA,
+            base_sha=FIXTURE_BASE_SHA,
+            clean_target="main",
+            diff_entries=diff,
+            identity=spoofed_identity,
+            registry_path=self.registry_file,
+        )
+        self.assertFalse(ok)
+        self.assertIn("FORBIDDEN_OWNER_IMPERSONATION", reason)
+
 
 if __name__ == "__main__":
     unittest.main()
