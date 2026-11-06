@@ -172,15 +172,15 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
               <p className="text-[10px] text-amber-300">Formula-based research estimates, not calibrated 90-day probability bands or execution signals. Values are not statistical percentiles and need not be ordered.</p>
               <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
               <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
-                <span className="text-[10px] text-slate-400 block">"Downside heuristic"</span>
+                <span className="text-[10px] text-slate-400 block">Downside heuristic</span>
                 <span className="font-bold text-rose-400">{er.estimatedDownside}%</span>
               </div>
               <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
-                <span className="text-[10px] text-slate-400 block">"Recent-move heuristic"</span>
+                <span className="text-[10px] text-slate-400 block">Recent-move heuristic</span>
                 <span className="font-bold text-emerald-400">{er.recentMoveEstimate > 0 ? `+${er.recentMoveEstimate}` : er.recentMoveEstimate}%</span>
               </div>
               <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
-                <span className="text-[10px] text-slate-400 block">"Volatility heuristic"</span>
+                <span className="text-[10px] text-slate-400 block">Volatility heuristic</span>
                 <span className="font-bold text-cyan-400">{er.volatilityUpside > 0 ? "+" : ""}{er.volatilityUpside}%</span>
               </div>
               </div>
