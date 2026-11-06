@@ -192,6 +192,7 @@ class VCPScannerRunner:
         execution_attempt_id: Optional[str] = None,
         candidate_generation_id: str = "CANDIDATE_GENERATION_004",
         min_coverage_pct: Optional[float] = None,
+        is_canary: bool = False,
     ) -> Dict[str, Any]:
         """
         Execute deterministic market-wide scan across eligible universe:
@@ -581,8 +582,10 @@ class VCPScannerRunner:
                 eff_invocation_class = shadow_trigger_override
             elif startup_context or str(trigger_type).upper() in ("MAINTENANCE", "BOOT_WARMUP", "WARMUP"):
                 eff_invocation_class = "BOOT_WARMUP"
-            elif trigger_type == TriggerType.SCHEDULED and not operator_request_id:
+            elif trigger_type == TriggerType.SCHEDULED and not operator_request_id and not is_canary:
                 eff_invocation_class = "SCHEDULED_PRODUCTION"
+            elif is_canary or (operator_request_id and "canary" in str(operator_request_id).lower()):
+                eff_invocation_class = "MANUAL_OPERATOR_CANARY"
             else:
                 eff_invocation_class = "MANUAL_OPERATOR"
 
@@ -712,6 +715,13 @@ class VCPScannerRunner:
                 "data_as_of": data_as_of,
                 "universe_metadata": universe_metadata,
                 "coverage_metadata": coverage_metadata,
+                "invocation_metadata": {
+                    "invocation_class": eff_invocation_class,
+                    "originating_principal_type": originating_principal_type or ("SCHEDULER" if eff_invocation_class == "SCHEDULED_PRODUCTION" else "OPERATOR"),
+                    "originating_principal_id": originating_principal_id or ("scheduler:arx-daily-cadence" if eff_invocation_class == "SCHEDULED_PRODUCTION" else "operator:manual"),
+                    "scheduler_job_id": scheduler_job_id,
+                    "scheduler_event_id": scheduler_event_id,
+                },
             }
             if lease:
                 provenance_dict["coordination"] = lease.to_provenance()

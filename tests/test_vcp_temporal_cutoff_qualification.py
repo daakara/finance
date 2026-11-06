@@ -191,8 +191,13 @@ def test_insufficient_history_fails_closed():
     assert res.vcp_qualified is False
 
 
-def test_exactly_200_valid_observations_computes_cleanly():
-    """Exactly 200 observations must compute authoritatively (not INSUFFICIENT_DATA)."""
+def test_exactly_200_valid_observations_fails_closed_due_to_untruncated_slope_requirement():
+    """
+    Under RADAR-012R numeric contract, 200 bars provides the current 200-SMA,
+    but does NOT provide the 22-session prior 200-SMA (which requires 222 bars).
+    Therefore, slope calculation returns None without synthetic zero fallback,
+    and classification fails closed to VCP_INSUFFICIENT_DATA.
+    """
     bars_200 = generate_clean_history("TEST", "2026-11-03", total_bars=200, contractions=[(0.18, 26), (0.06, 14)])
     compiler = VCPTemporalCaseCompiler()
     pkg = compiler.compile_case(
@@ -206,6 +211,29 @@ def test_exactly_200_valid_observations_computes_cleanly():
         run_id="run-test",
     )
     assert len(pkg.permitted_bars) == 200
+    res = VCPClassifier().classify_case(pkg)
+    assert res.vcp_classification == "VCP_INSUFFICIENT_DATA"
+    assert res.predicate_vector["PRED_STAGE_2"].status.value == "INSUFFICIENT_DATA"
+
+
+def test_exactly_222_valid_observations_computes_cleanly():
+    """
+    Exactly 222 observations (200 bars for current SMA + 22 prior bars for lookback)
+    provides the exact 22-session prior 200-SMA and computes authoritatively.
+    """
+    bars_222 = generate_clean_history("TEST", "2026-11-03", total_bars=222, contractions=[(0.18, 26), (0.06, 14)])
+    compiler = VCPTemporalCaseCompiler()
+    pkg = compiler.compile_case(
+        case_id="CASE-222",
+        security_id="TEST",
+        symbol="TEST",
+        evaluation_as_of="2026-11-03T21:45:00Z",
+        raw_bars=bars_222,
+        reference_data={"rs_rank": 90.0},
+        corporate_actions=[],
+        run_id="run-test",
+    )
+    assert len(pkg.permitted_bars) == 222
     res = VCPClassifier().classify_case(pkg)
     assert res.vcp_classification in ("VCP_NON_QUALIFIED", "VCP_QUALIFIED")
     assert res.vcp_classification != "VCP_INSUFFICIENT_DATA"

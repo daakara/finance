@@ -104,6 +104,8 @@ class VCPNaturalScanRequest(BaseModel):
     universe_build_id: Optional[str] = None
     scheduler_job_id: Optional[str] = None
     scheduler_event_id: Optional[str] = None
+    is_canary: Optional[bool] = False
+    operator_request_id: Optional[str] = None
 
 router = APIRouter()
 screener = HiddenGemsScreener()
@@ -1215,8 +1217,10 @@ def trigger_smart_money_scan(
 def trigger_vcp_scan(
     x_operator_token: Optional[str] = Header(None, alias="X-Operator-Token"),
     x_operator_request_id: Optional[str] = Header(None, alias="X-Operator-Request-Id"),
+    x_canary_mode: Optional[str] = Header(None, alias="X-Canary-Mode"),
     universe_build_id: Optional[str] = None,
     logical_job_key: Optional[str] = None,
+    is_canary: Optional[bool] = False,
 ):
     """
     Operator-only trigger for Minervini VCP market-wide scan (Section 16).
@@ -1227,11 +1231,13 @@ def trigger_vcp_scan(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="PUBLIC_MARKET_WIDE_SCAN_FORBIDDEN: Operator authorization required to trigger market-wide scanner.",
         )
+    eff_canary = bool(is_canary or (x_canary_mode and x_canary_mode.strip().lower() in ("1", "true", "yes")))
     try:
         return vcp_scanner_runner.execute_market_wide_scan(
             universe_build_id=universe_build_id,
             operator_request_id=x_operator_request_id,
             logical_job_key=logical_job_key,
+            is_canary=eff_canary,
         )
     except RuntimeError as e:
         if "OVERLAPPING_VCP_SCANS_PROHIBITED" in str(e):
@@ -1255,6 +1261,8 @@ def trigger_natural_vcp_scan(
     x_scheduler_token: Optional[str] = Header(None, alias="X-Scheduler-Token"),
     x_scheduler_job_id: Optional[str] = Header(None, alias="X-Scheduler-Job-Id"),
     x_scheduler_event_id: Optional[str] = Header(None, alias="X-Scheduler-Event-Id"),
+    x_canary_mode: Optional[str] = Header(None, alias="X-Canary-Mode"),
+    x_operator_request_id: Optional[str] = Header(None, alias="X-Operator-Request-Id"),
 ):
     """
     Authoritative natural production trigger for Minervini VCP market-wide EOD scans.
@@ -1307,6 +1315,8 @@ def trigger_natural_vcp_scan(
         )
 
     trigger_svc = get_natural_vcp_trigger_service()
+    eff_canary = bool((payload and payload.is_canary) or (x_canary_mode and x_canary_mode.strip().lower() in ("1", "true", "yes")))
+    eff_operator_id = (payload.operator_request_id if payload and payload.operator_request_id else None) or x_operator_request_id
 
     try:
         return trigger_svc.trigger_natural_scan(
@@ -1314,6 +1324,8 @@ def trigger_natural_vcp_scan(
             universe_build_id=eligibility.universe_build_id or req_build,
             scheduler_job_id=eff_job,
             scheduler_event_id=eff_event,
+            operator_request_id=eff_operator_id,
+            is_canary=eff_canary,
         )
     except RuntimeError as e:
         if "OVERLAPPING_VCP_SCANS_PROHIBITED" in str(e):

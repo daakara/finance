@@ -1,57 +1,65 @@
 {
-  "release_candidate_commit": "fbe8a924250a304b2cc4d9dc63ca0e3ff990a083",
-  "base_anchor_commit": "74123474cc3b3cf84c78da4cb19a759343aadc71",
-  "total_files": 6,
+  "release_candidate_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+  "base_anchor_commit": "ccd8fe1a3ebddf0defcc5a378c0d25c89cec6e3d",
+  "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "RADAR_VCP_HISTORICAL_EVIDENCE_PRODUCTION_011U",
+  "directive": "RADAR_VCP_SOURCE_INTEGRITY_012R",
   "files": {
     "analyst_dashboard/analyzers/scanner_runner.py": {
       "operation": "M",
-      "originating_pr_number": 196,
-      "originating_commit": "fbe8a924250a304b2cc4d9dc63ca0e3ff990a083",
-      "governing_requirement": "RADAR-VCP-011U: explainability runner integration & startup warmup quarantine",
-      "sha256": "c6b2e6e087d1e027c615a10eb7f9672f8d0c681cb74c50eaf92ede9f293bb35c",
-      "size_bytes": 77309
+      "originating_pr_number": 202,
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: enforce caller provenance distinction (SCHEDULED_PRODUCTION vs MANUAL_OPERATOR_CANARY) and record invocation metadata",
+      "sha256": "5ba431187ef1f76c14b82c9fe48b4801aca4380e4045a9fafd9cda997d875df0",
+      "size_bytes": 78111
     },
-    "analyst_dashboard/vcp/temporal_contract.py": {
+    "analyst_dashboard/vcp/natural_trigger.py": {
       "operation": "M",
-      "originating_pr_number": 196,
-      "originating_commit": "fbe8a924250a304b2cc4d9dc63ca0e3ff990a083",
-      "governing_requirement": "RADAR-VCP-011U: enforce source availability inspection in VCPTemporalContract",
-      "sha256": "411f68c9c58dc1f291b819ed1ae9344c2ee2b052083f0c4afb62a949dcb7b93c",
-      "size_bytes": 4665
+      "originating_pr_number": 202,
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: support canary execution and route operator request ID to prevent false autonomous scheduler attribution",
+      "sha256": "1359db333e16dfea561d009bf03805516809e667b8b6c2e64bc2e5f14c37325a",
+      "size_bytes": 16348
+    },
+    "analyst_dashboard/vcp/numeric_contract.py": {
+      "operation": "M",
+      "originating_pr_number": 202,
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: enforce strict 22-session 200-SMA slope lookback (>=222 bars) and eliminate truncated window fallback and fabricated zero",
+      "sha256": "b997a9cacf14aa7270834e5ddae63810eff523742eb8b94db2e572a7309d7442",
+      "size_bytes": 7919
+    },
+    "analyst_dashboard/vcp/sprint_3_durable_storage.py": {
+      "operation": "M",
+      "originating_pr_number": 202,
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: register MANUAL_OPERATOR_CANARY invocation class and enforce non-natural provenance isolation",
+      "sha256": "eea935e56d7735e5652992a66f2a8efb167ff2239eef788f7a142f1be9aae3ee",
+      "size_bytes": 128318
     },
     "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 196,
-      "originating_commit": "fbe8a924250a304b2cc4d9dc63ca0e3ff990a083",
-      "governing_requirement": "RADAR-VCP-011U: read-only deterministic historical VCP explainability endpoint",
-      "sha256": "2e6300de58d29b7eb93e7d438a6cb526dca00a6444e9cba31c432f5ecc1f2207",
-      "size_bytes": 94620
+      "originating_pr_number": 202,
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: accept canary mode and operator request ID in natural scan routes with truthful origin attribution",
+      "sha256": "26cb30fccec6f025e81cdc49bc1168bf49a01bff7ee44acf180137433d93f069",
+      "size_bytes": 95476
     },
-    "frontend/app/radar/page.tsx": {
-      "operation": "M",
-      "originating_pr_number": 196,
-      "originating_commit": "fbe8a924250a304b2cc4d9dc63ca0e3ff990a083",
-      "governing_requirement": "RADAR-VCP-011U: read-only reconstructed historical VCP diagnostic card",
-      "sha256": "3eacc82fed402d01e14dabf2ce82a8c57f0f81e3d0149834e9943f9d8ce8e999",
-      "size_bytes": 109832
-    },
-    "frontend/lib/api.ts": {
-      "operation": "M",
-      "originating_pr_number": 196,
-      "originating_commit": "fbe8a924250a304b2cc4d9dc63ca0e3ff990a083",
-      "governing_requirement": "RADAR-VCP-011U: VCP explainability client types and fetch function",
-      "sha256": "881f1afbb5709e412738a999b4a868d14842984b0b1fe47b39381e6816111936",
-      "size_bytes": 184296
-    },
-    "tests/test_vcp_explainability_and_authority_guard.py": {
+    "tests/test_vcp_source_integrity_012r.py": {
       "operation": "A",
-      "originating_pr_number": 196,
-      "originating_commit": "fbe8a924250a304b2cc4d9dc63ca0e3ff990a083",
-      "governing_requirement": "RADAR-VCP-011U: 12-gate adversarial qualification test suite",
-      "sha256": "93df39ba3fa00718c0e7c85fc7118179092bbed3b966520ada9bd531a0c8980e",
-      "size_bytes": 23397
+      "originating_pr_number": 202,
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: 11-test adversarial qualification test suite for slope boundaries and caller provenance",
+      "sha256": "2e0e3dfc7f0dd74daf63ebefc6ec643c9fdc08e8106b0bfb5e3f8b9c404d351b",
+      "size_bytes": 10244
+    },
+    "tests/test_vcp_temporal_cutoff_qualification.py": {
+      "operation": "M",
+      "originating_pr_number": 202,
+      "originating_commit": "b48d17b2808cbe23b6fe4b050aff3505f9a000af",
+      "governing_requirement": "RADAR-012R: align 200-bar and 222-bar boundary tests with untruncated 22-session slope requirements",
+      "sha256": "088930f9cf6803c620c3883d98bd50b690613ba090b9dbb9adbc33a1f848d3bb",
+      "size_bytes": 13439
     }
   },
   "qualification_framework_files": {
@@ -61,9 +69,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "aede0a67d5e105b7ecd2391f1ae9e33d778390b8e4c4838da236ddff8ad2570d",
-      "bytes": 57816,
-      "size_bytes": 57816
+      "sha256": "c7f43c9087c261c341a0abcd3a6d38ccc580b000b3f690dc1cc56f12245ad000",
+      "bytes": 57821,
+      "size_bytes": 57821
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
