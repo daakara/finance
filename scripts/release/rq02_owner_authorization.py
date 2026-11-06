@@ -247,8 +247,9 @@ def verify_candidate_authorization(
                 audit_details["violations"].append(err_msg)
                 return False, err_msg, audit_details
 
-            # Forbidden Deletions/Renames
-            if status_code.startswith("D") or status_code.startswith("R"):
+            # Forbidden Deletions/Renames of application code or protected files
+            is_app_file = any(path.startswith(pfx) for pfx in FORBIDDEN_ADMIN_PREFIXES)
+            if (status_code.startswith("D") or status_code.startswith("R")) and (is_app_file or path in FORBIDDEN_PROTECTED_FILES):
                 err_msg = f"UNAUTHORIZED_FILE_OPERATION: Operation '{status_code}' on '{path}' is forbidden."
                 audit_details["violations"].append(err_msg)
                 return False, err_msg, audit_details

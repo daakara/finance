@@ -203,7 +203,7 @@ def main():
                 )
                 if is_app_remediation:
                     mode = "pr"
-                elif identity.get("pr_number") == 145 or args.allow_main_target:
+                elif identity.get("pr_number") == 145:
                     mode = "administrative"
                 else:
                     mode = "pr"
@@ -787,8 +787,9 @@ def main():
                 errors.append(f"FORBIDDEN_PROTECTED_PATH_MODIFICATION: Protected file '{path}' cannot be modified in application PR.")
                 continue
 
-            # 3. Permitted Operations Check: Reject Unexpected Renames or Deletions of application code
-            if status_code.startswith("D") or status_code.startswith("R"):
+            # 3. Permitted Operations Check: Reject Unexpected Renames or Deletions of application code or protected files
+            is_app_file = any(path.startswith(pfx) for pfx in FORBIDDEN_ADMIN_PREFIXES)
+            if (status_code.startswith("D") or status_code.startswith("R")) and (is_app_file or path in FORBIDDEN_ADMIN_FILES):
                 unauthorized_operations.append((status_code, path))
                 errors.append(f"UNAUTHORIZED_FILE_OPERATION: Operation '{status_code}' on '{path}' is not permitted in remediation PR.")
                 continue
