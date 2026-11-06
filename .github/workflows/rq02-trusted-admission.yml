@@ -1,0 +1,43 @@
+name: RQ-02 Trusted Owner Admission
+
+# The evaluator runs ONLY code from the protected base/default branch.
+# No candidate checkout, candidate dependencies, scripts or secrets are used.
+'on':
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+    branches: [main]
+  issue_comment:
+    types: [created, edited, deleted]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: rq02-owner-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  trusted_owner_admission:
+    name: RQ-02 Trusted Owner Admission
+    if: github.event_name == 'pull_request_target' || (github.event.issue.pull_request != null)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout protected base source only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Evaluate exact SHA, owner authorization and GitHub changed-file inventory
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/release/rq02_trusted_admission.py
