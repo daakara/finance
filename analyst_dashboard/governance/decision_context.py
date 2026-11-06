@@ -79,6 +79,25 @@ def can_quality_contribute_evidence(quality: EvidenceQualityState) -> bool:
     )
 
 
+def parse_utc_instant(value: Optional[str]) -> Optional[datetime]:
+    """Parse an ISO-8601 string into a normalized UTC datetime.
+
+    Rejects timezone-naive, malformed, non-instant, or date-only strings.
+    """
+    if not isinstance(value, str):
+        return None
+    val = value.strip()
+    if not val or "T" not in val:
+        return None
+    try:
+        ts = datetime.fromisoformat(val.replace("Z", "+00:00"))
+        if ts.tzinfo is None or ts.utcoffset() is None:
+            return None
+        return ts.astimezone(timezone.utc)
+    except (ValueError, OverflowError):
+        return None
+
+
 def is_pit_eligible(available_from: Optional[str], evaluation_timestamp: Optional[str]) -> bool:
     """True only if publicly available by the evaluation instant (UTC aware).
 
@@ -86,23 +105,8 @@ def is_pit_eligible(available_from: Optional[str], evaluation_timestamp: Optiona
     publication timestamps are not sufficient for point-in-time eligibility.
     Compare normalized instants, never ISO-8601 strings: UTC offsets may differ.
     """
-    if not isinstance(available_from, str) or not isinstance(evaluation_timestamp, str):
-        return False
-
-    def parse_instant(value: str) -> Optional[datetime]:
-        value = value.strip()
-        if not value or "T" not in value:
-            return None
-        try:
-            timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            if timestamp.tzinfo is None or timestamp.utcoffset() is None:
-                return None
-            return timestamp.astimezone(timezone.utc)
-        except (ValueError, OverflowError):
-            return None
-
-    public_at = parse_instant(available_from)
-    evaluated_at = parse_instant(evaluation_timestamp)
+    public_at = parse_utc_instant(available_from)
+    evaluated_at = parse_utc_instant(evaluation_timestamp)
     return public_at is not None and evaluated_at is not None and public_at <= evaluated_at
 
 
