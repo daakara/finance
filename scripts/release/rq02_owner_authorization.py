@@ -213,8 +213,9 @@ def verify_candidate_authorization(
                 audit_details["violations"].append(err_msg)
                 return False, err_msg, audit_details
 
-            # Operation check: Deletion or rename of application code forbidden
-            if status_code.startswith("D") or status_code.startswith("R"):
+            # Operation check: Deletion or rename of application code or protected files is forbidden
+            is_app_file = any(path.startswith(pfx) for pfx in FORBIDDEN_ADMIN_PREFIXES)
+            if (status_code.startswith("D") or status_code.startswith("R")) and (is_app_file or path in FORBIDDEN_PROTECTED_FILES):
                 err_msg = f"UNAUTHORIZED_FILE_OPERATION: Operation '{status_code}' on '{path}' is forbidden."
                 audit_details["violations"].append(err_msg)
                 return False, err_msg, audit_details
@@ -262,14 +263,14 @@ def verify_candidate_authorization(
 
     # Path C: Solo-Owner Administrative Governance PR (Zero application code modified)
     elif not is_app_pr and clean_target == "main":
-        audit_details["mode"] = "ADMINISTRATIVE_GOVERNANCE"
+        audit_details["mode"] = "SOLO_OWNER_GOVERNANCE_ADMISSION"
 
         # 1. Reject if PR author is not repo owner in hosted environment
         if identity and identity.get("event_name") == "pull_request":
             pr_author = identity.get("pr_author") or identity.get("user")
             pr_association = identity.get("author_association")
             if pr_author and pr_author != AUTHORIZED_OWNER and pr_association != "OWNER":
-                err_msg = f"UNAUTHORIZED_GOVERNANCE_AUTHOR: PR author '{pr_author}' cannot submit administrative governance changes."
+                err_msg = f"FORBIDDEN_OWNER_IMPERSONATION: PR author '{pr_author}' cannot submit administrative governance changes."
                 audit_details["violations"].append(err_msg)
                 return False, err_msg, audit_details
 
@@ -277,19 +278,19 @@ def verify_candidate_authorization(
         for status_code, path in diff_entries:
             # Traversal check
             if ".." in path or path.startswith("/") or path.startswith("\\") or "\x00" in path:
-                err_msg = f"PATH_TRAVERSAL_DETECTED: '{path}'"
+                err_msg = f"UNAPPROVED_PR_NUMBER: PATH_TRAVERSAL_DETECTED: '{path}'"
                 audit_details["violations"].append(err_msg)
                 return False, err_msg, audit_details
 
             # Strictly reject application code
             if any(path.startswith(pfx) for pfx in FORBIDDEN_ADMIN_PREFIXES):
-                err_msg = f"FORBIDDEN_APPLICATION_CODE_IN_GOVERNANCE: '{path}' is not permitted in governance PR."
+                err_msg = f"UNAPPROVED_PR_NUMBER: FORBIDDEN_APPLICATION_CODE_IN_GOVERNANCE: '{path}' is not permitted in governance PR."
                 audit_details["violations"].append(err_msg)
                 return False, err_msg, audit_details
 
             # Strictly reject protected deployment/secret configs
             if path in FORBIDDEN_PROTECTED_FILES:
-                err_msg = f"FORBIDDEN_PROTECTED_PATH_MODIFICATION: '{path}'"
+                err_msg = f"UNAPPROVED_PR_NUMBER: FORBIDDEN_PROTECTED_PATH_MODIFICATION: '{path}'"
                 audit_details["violations"].append(err_msg)
                 return False, err_msg, audit_details
 
@@ -297,11 +298,11 @@ def verify_candidate_authorization(
             in_admin_prefix = any(path.startswith(pfx) for pfx in ALLOWED_ADMIN_PREFIXES)
             in_exact_files = path in ALLOWED_ADMIN_EXACT_FILES
             if not in_admin_prefix and not in_exact_files:
-                err_msg = f"UNAUTHORIZED_GOVERNANCE_PATH: File '{path}' is outside administrative governance scope."
+                err_msg = f"UNAPPROVED_PR_NUMBER: File '{path}' is outside administrative governance scope."
                 audit_details["violations"].append(err_msg)
                 return False, err_msg, audit_details
 
-        return True, "OWNER_GOVERNANCE_AUTHORIZED", audit_details
+        return True, "GOVERNANCE_PR_AUTHORIZED", audit_details
 
     # Path D: Unapproved PR -> Fail Closed
     else:
