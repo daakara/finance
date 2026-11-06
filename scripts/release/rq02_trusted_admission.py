@@ -9,6 +9,7 @@ import json
 import os
 import re
 import sys
+import urllib.request
 
 from rq02_owner_admission import _github_json, verify_owner_admission
 
@@ -56,7 +57,7 @@ def get_all_files(repo, number):
     return None  # fail closed on truncated inventory
 
 
-def main():
+def _evaluate_main():
     if os.environ.get("GITHUB_ACTIONS") != "true":
         print("FAIL: Only GitHub-hosted execution is accepted")
         return 1
@@ -109,6 +110,97 @@ def main():
     except (OSError, ValueError, TypeError, KeyError) as exc:
         print("FAIL: Trusted metadata evaluation failed: " + type(exc).__name__)
         return 1
+
+
+
+# This distinct commit-status context is the ruleset-required gate. GitHub's
+# issue_comment workflow jobs do not themselves satisfy PR required checks.
+OWNER_STATUS_CONTEXT = "ARX Owner Admission Attestation"
+
+
+def _event_head():
+    """Resolve a target PR head from trusted GitHub workflow payload."""
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    event_path = os.environ.get("GITHUB_EVENT_PATH", "")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not event_path:
+        return None
+    with open(event_path, encoding="utf-8") as handle:
+        event = json.load(handle)
+    pr = event.get("pull_request")
+    if pr is None:
+        issue = event.get("issue") or {}
+        if not issue.get("pull_request"):
+            return None
+        pr = _github_json(f"https://api.github.com/repos/{repo}/pulls/{issue['number']}")
+    if (pr.get("base") or {}).get("ref") != "main":
+        return None
+    sha = (pr.get("head") or {}).get("sha")
+    if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise ValueError("Invalid PR head identity for commit status")
+    return repo, sha
+
+
+def post_commit_status(repo, sha, state, description):
+    """Publish a SHA-specific required commit status using trusted base code.
+
+    Uses only the GitHub token's statuses:write permission. The candidate PR
+    is never checked out or executed in this workflow.
+    """
+    if state not in ("pending", "success", "failure"):
+        raise ValueError("Unsupported owner admission status")
+    if not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise ValueError("Untrusted status SHA")
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        raise ValueError("Trusted GitHub status token unavailable")
+    data = {
+        "state": state,
+        "context": OWNER_STATUS_CONTEXT,
+        "description": description[:130],
+    }
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    if run_id and run_id.isdigit():
+        data["target_url"] = f"https://github.com/{repo}/actions/runs/{run_id}"
+    req = urllib.request.Request(
+        f"https://api.github.com/repos/{repo}/statuses/{sha}",
+        data=json.dumps(data).encode("utf-8"),
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token,
+            "User-Agent": "arx-rq02-trusted-owner-status",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=10) as response:
+        if response.status != 201:
+            raise OSError("Commit status API did not accept the attestation")
+
+
+def main():
+    """Emit pending before evaluation, then exact-head success/failure."""
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return _evaluate_main()
+    try:
+        head = _event_head()
+        if head is None:
+            return _evaluate_main()
+        repo, sha = head
+        post_commit_status(repo, sha, "pending", "Owner admission verification in progress")
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print("FAIL: Could not initialize owner admission commit status: " + type(exc).__name__)
+        return 1
+
+    result = _evaluate_main()
+    try:
+        post_commit_status(
+            repo, sha, "success" if result == 0 else "failure",
+            "Verified owner admission and bounded diff" if result == 0 else "Owner admission missing or scope rejected",
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print("FAIL: Could not publish owner admission result: " + type(exc).__name__)
+        return 1
+    return result
 
 
 if __name__ == "__main__":
