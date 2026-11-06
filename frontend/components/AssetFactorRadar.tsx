@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { AssetFactorScores, MacroDifficultyRating, ExpectedReturnForecast } from "../lib/api";
+import { presentLegacyReturnHeuristics } from "../lib/forecastPresentation";
 
 interface AssetFactorRadarProps {
   symbol: string;
@@ -53,7 +54,7 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
 
   const scores = factorScores;
   const mdr = macroDifficulty;
-  const er = expectedReturn;
+  const er = presentLegacyReturnHeuristics(expectedReturn);
 
   return (
     <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
@@ -120,7 +121,7 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
         ))}
       </div>
 
-      {/* Macro Regime Intelligence & 90-Day Expected Return Grid */}
+      {/* Macro Regime Intelligence & explicitly uncalibrated return heuristics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* FRED Macro Regime Card */}
         <div className="bg-[#090d14] p-4 rounded-lg border border-[#243044] space-y-2">
@@ -150,11 +151,11 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
           )}
         </div>
 
-        {/* 90-Day Expected Return Simulation */}
+        {/* Historical heuristics: never represent these as calibrated probabilities */}
         <div className="bg-[#090d14] p-4 rounded-lg border border-[#243044] space-y-2">
           <div className="flex items-center justify-between border-b border-[#1b2434] pb-2">
             <span className="text-xs font-bold text-slate-200">
-              {isPlain ? "90-Day Price Forecast Odds" : "90-Day Expected Return E[R]"}
+              {isPlain ? "Illustrative Return Scenarios" : "Uncalibrated Return Heuristics"}
             </span>
             {er ? (
               <span className="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded font-semibold">
@@ -167,23 +168,26 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
             )}
           </div>
           {er ? (
-            <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+            <div className="space-y-2">
+              <p className="text-[10px] text-amber-300">Formula-based research estimates, not calibrated 90-day probability bands or execution signals. Values are not statistical percentiles and need not be ordered.</p>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
               <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
-                <span className="text-[10px] text-slate-400 block">{isPlain ? "Bad Case" : "P10 Bear"}</span>
-                <span className="font-bold text-rose-400">{er.p10Pessimistic}%</span>
+                <span className="text-[10px] text-slate-400 block">Downside heuristic</span>
+                <span className="font-bold text-rose-400">{er.estimatedDownside}%</span>
               </div>
               <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
-                <span className="text-[10px] text-slate-400 block">{isPlain ? "Expected" : "P50 Base"}</span>
-                <span className="font-bold text-emerald-400">{er.p50Expected > 0 ? `+${er.p50Expected}` : er.p50Expected}%</span>
+                <span className="text-[10px] text-slate-400 block">Recent-move heuristic</span>
+                <span className="font-bold text-emerald-400">{er.recentMoveEstimate > 0 ? `+${er.recentMoveEstimate}` : er.recentMoveEstimate}%</span>
               </div>
               <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
-                <span className="text-[10px] text-slate-400 block">{isPlain ? "Bull Run" : "P90 Bull"}</span>
-                <span className="font-bold text-cyan-400">+{er.p90Optimistic}%</span>
+                <span className="text-[10px] text-slate-400 block">Volatility heuristic</span>
+                <span className="font-bold text-cyan-400">{er.volatilityUpside > 0 ? "+" : ""}{er.volatilityUpside}%</span>
+              </div>
               </div>
             </div>
           ) : (
             <p className="text-xs text-slate-500 italic">
-              Expected return simulations require minimum calibrated empirical return distribution.
+              Uncalibrated research heuristics unavailable or invalid. No probabilistic forecast is asserted.
             </p>
           )}
         </div>
