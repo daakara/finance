@@ -63,11 +63,10 @@ def test_exact_owner_approval_from_live_repository_metadata():
         "head": {"sha": HEAD, "repo": {"full_name": "daakara/finance"}},
         "base": {"ref": "main"},
     }
+    fresh = dt.datetime.now(dt.timezone.utc).isoformat()
     with patch.dict("os.environ", {"GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": "daakara/finance"}):
-        with patch.object(admission, "_github_json", side_effect=[repo, pr, [comment()]]):
-            with patch.object(admission.datetime, "datetime", wraps=dt.datetime) as mocked:
-                mocked.now.return_value = NOW
-                passed, evidence = admission.verify_owner_admission(pr_number=207, head_sha=HEAD, target="main")
+        with patch.object(admission, "_github_json", side_effect=[repo, pr, [comment(when=fresh)]]):
+            passed, evidence = admission.verify_owner_admission(pr_number=207, head_sha=HEAD, target="main")
     assert passed is True
     assert "issuecomment-123" in evidence
 
