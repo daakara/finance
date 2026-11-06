@@ -79,17 +79,35 @@ def can_quality_contribute_evidence(quality: EvidenceQualityState) -> bool:
     )
 
 
-def is_pit_eligible(available_from: Optional[str], evaluation_timestamp: Optional[str]) -> bool:
-    """Evaluates whether an evidence record was publicly available at or before evaluation_timestamp.
+def parse_utc_instant(value: Optional[str]) -> Optional[datetime]:
+    """Parse an ISO-8601 string into a normalized UTC datetime.
 
-    Canonical PIT Invariant: availableFrom <= evaluation_timestamp.
-    Period end date or filing date alone without public publication are strictly insufficient.
+    Rejects timezone-naive, malformed, non-instant, or date-only strings.
     """
-    if not available_from or not evaluation_timestamp:
-        return False
-    af = str(available_from).strip()
-    et = str(evaluation_timestamp).strip()
-    return af <= et
+    if not isinstance(value, str):
+        return None
+    val = value.strip()
+    if not val or "T" not in val:
+        return None
+    try:
+        ts = datetime.fromisoformat(val.replace("Z", "+00:00"))
+        if ts.tzinfo is None or ts.utcoffset() is None:
+            return None
+        return ts.astimezone(timezone.utc)
+    except (ValueError, OverflowError):
+        return None
+
+
+def is_pit_eligible(available_from: Optional[str], evaluation_timestamp: Optional[str]) -> bool:
+    """True only if publicly available by the evaluation instant (UTC aware).
+
+    Period-end dates, malformed timestamps, naive clock times and unavailable
+    publication timestamps are not sufficient for point-in-time eligibility.
+    Compare normalized instants, never ISO-8601 strings: UTC offsets may differ.
+    """
+    public_at = parse_utc_instant(available_from)
+    evaluated_at = parse_utc_instant(evaluation_timestamp)
+    return public_at is not None and evaluated_at is not None and public_at <= evaluated_at
 
 
 def weakest_pit_status(statuses: List[PointInTimeStatus | str]) -> PointInTimeStatus:
