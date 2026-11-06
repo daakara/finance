@@ -26,7 +26,21 @@ from rq_receipt_utils import (
     is_git_ancestor, SHA40_REGEX
 )
 
-APPROVED_PRS = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 145, 147, 149, 150, 151, 153, 156, 159, 160, 162, 163, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 186, 188, 196, 201, 205}
+def load_approved_prs_set():
+    default_prs = {123, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 145, 147, 149, 150, 151, 153, 156, 159, 160, 162, 163, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 186, 188, 196, 201, 205}
+    reg_path = os.path.join(os.path.dirname(__file__), "pr_authorizations.json")
+    if os.path.exists(reg_path):
+        try:
+            with open(reg_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            historical = set(data.get("historical_approved_prs", []))
+            auths = {int(k) for k in data.get("authorizations", {}).keys() if str(k).isdigit()}
+            return historical | auths | default_prs
+        except Exception:
+            pass
+    return default_prs
+
+APPROVED_PRS = load_approved_prs_set()
 
 FORBIDDEN_ADMIN_PREFIXES = (
     "api/",
@@ -41,6 +55,15 @@ FORBIDDEN_ADMIN_FILES = (
     "railway.json",
     "wrangler.toml",
     "scripts/release/release_manifest.json",
+)
+
+ALLOWED_APP_PREFIXES = (
+    "api/",
+    "analyst_dashboard/",
+    "frontend/",
+    "tests/",
+    "scripts/release/",
+    "docs/",
 )
 
 def check_duplicate_keys_hook(pairs):
@@ -677,40 +700,6 @@ def main():
             if not lineage_ok:
                 errors.append(f"BASE_LINEAGE_INVALID: Base commit '{base_sha}' is not an ancestor of candidate '{head_sha}'.")
 
-        # Bounded administrative registration bootstrap: PR #206 only.
-        # This resolves the allowlist recursion without permitting application
-        # changes or registering a governance PR as an application candidate.
-        # See accompanying adversarial tests in test_rq02_registration_206.py.
-        registration_bootstrap = False
-        if str(pr_number) == "206" and clean_target == "main":
-            from rq02_registration_206 import verify_registration_only
-            registration_bootstrap, bootstrap_reason = verify_registration_only(
-                base_sha=base_sha,
-                head_sha=head_sha,
-                repo_root=PROJECT_ROOT,
-            )
-            assertions.append({
-                "assertion": "Governance registration PR #206 is strictly confined to approved PR #205 admission",
-                "observed": {"reason": bootstrap_reason},
-                "passed": registration_bootstrap
-            })
-            if not registration_bootstrap:
-                errors.append(f"REGISTRATION_BOOTSTRAP_REJECTED: {bootstrap_reason}")
-
-        # Candidate PR Authorization check
-        try:
-            pr_val = int(pr_number)
-            is_approved_pr = (pr_val in APPROVED_PRS) or registration_bootstrap
-        except Exception:
-            is_approved_pr = False
-        assertions.append({
-            "assertion": "Candidate PR is an approved release or remediation workstream",
-            "observed": {"pr_number": pr_number, "approved_prs": sorted(list(APPROVED_PRS))},
-            "passed": is_approved_pr
-        })
-        if not is_approved_pr:
-            errors.append(f"UNAPPROVED_PR_NUMBER: PR #{pr_number} is not in approved release PR set.")
-
         # Diff evaluation & security checks
         diff_entries = run_git_diff_status(base_sha, head_sha)
         if diff_entries is None:
@@ -718,6 +707,31 @@ def main():
             diff_entries = []
 
         candidate_diff_paths = {p for _, p in diff_entries}
+
+        # Candidate PR Authorization check (Sustainable Solo-Owner Governance)
+        from rq02_owner_authorization import verify_candidate_authorization
+        is_auth, auth_reason, auth_details = verify_candidate_authorization(
+            pr_number=pr_number,
+            head_sha=head_sha,
+            base_sha=base_sha,
+            clean_target=clean_target,
+            diff_entries=diff_entries,
+            identity=identity if ok else None,
+            allowed_app_prefixes=ALLOWED_APP_PREFIXES,
+        )
+        assertions.append({
+            "assertion": "Candidate PR has verified solo-owner authorization or approved historical registration",
+            "observed": {
+                "pr_number": pr_number,
+                "reason": auth_reason,
+                "mode": auth_details.get("mode"),
+                "directive": auth_details.get("directive"),
+                "violations": auth_details.get("violations", []),
+            },
+            "passed": is_auth,
+        })
+        if not is_auth:
+            errors.append(f"UNAPPROVED_PR_NUMBER: PR #{pr_number} authorization failed ({auth_reason})")
 
         # Dirty working tree check
         if not args.allow_uncommitted:
@@ -759,8 +773,6 @@ def main():
         unauthorized_operations = []
         unauthorized_paths = []
         candidate_blobs = {}
-
-        ALLOWED_APP_PREFIXES = ("api/", "analyst_dashboard/", "frontend/", "tests/", "scripts/release/", "docs/")
 
         for status_code, path in diff_entries:
             # 1. Path traversal check
@@ -861,6 +873,26 @@ def main():
         print(f"Receipt written to: {receipt_path}")
 
         if status == "PASS":
+            is_canonical_run = (
+                not args.allow_uncommitted
+                and not args.skip_framework_check
+                and os.environ.get("ARX_RQ02_SKIP_ADVERSARIAL_RECURSION") != "1"
+            )
+            if is_canonical_run:
+                sub_env = os.environ.copy()
+                sub_env["ARX_RQ02_SKIP_ADVERSARIAL_RECURSION"] = "1"
+                print("\n>>> [RQ-02-PR-ADV] Executing RQ-02 Solo-Owner Authorization Adversarial Controls...")
+                res_adv = subprocess.run(
+                    [sys.executable, "-m", "unittest", os.path.join(os.path.dirname(__file__), "test_rq02_owner_authorization.py")],
+                    cwd=PROJECT_ROOT,
+                    env=sub_env
+                )
+                if res_adv.returncode != 0:
+                    print("FAIL: RQ-02 Solo-Owner Authorization Adversarial Controls failed!")
+                    sys.exit(1)
+
+                save_stage_receipt(receipt)
+
             print(f"PASS: All {len(diff_entries)} changed files strictly match approved application remediation policy (0 unapproved).")
             print("=== [RQ-02] RESULT: PASS ===")
             sys.exit(0)
