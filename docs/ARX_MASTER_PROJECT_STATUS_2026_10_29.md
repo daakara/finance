@@ -1,4 +1,7 @@
 # ARX TERMINAL — MASTER PROJECT STATUS
+
+> **Historical status snapshot — 2026-10-29.** Release SHAs, PR dispositions and deployment states below were accurate only as of the recorded baseline; see [ARX_CURRENT_PROJECT_STATUS.md](ARX_CURRENT_PROJECT_STATUS.md) before making current decisions. Do not rewrite the historical receipt.
+
 ## Integrated System State Across Research, Engineering, UX, Governance & Production
 **Status As Of:** 29 October 2026 (22:30 UTC+1)  
 **Mainline Anchor SHA:** `e10de3b2714e7c7cba49c51e0e7a4eb13a7033f6`  

@@ -18,8 +18,13 @@ RELEASE_NOTES_COMMITTED
 
 ## Release Index
 
+> This index records **dated production releases**, not the current branch head. For the latest independently verified state and unfinished deployment gates, see [Current project status](../ARX_CURRENT_PROJECT_STATUS.md). Historical release notes remain immutable records of what was known at the time.
+
 | Date | Release SHA | Summary | Status |
 | :--- | :--- | :--- | :--- |
+| 2026-11-06 | [`ccd8fe1a`](2026-11-06_ccd8fe1a_radar_evidence_promotion.md) | PR #199 Radar historical VCP evidence integrity promotion | PRODUCTION_ACCEPTED for historical VCP evidence (011U operator receipt) |
+| 2026-11-05 | [`74123474`](2026-11-05_74123474_smart_money_recovery_002r.md) | PR #195 Smart Money SEC Form 4 evidence-read permission recovery; actual NVDA readback | **PRODUCTION_ACCEPTED** for read path (operator acceptance + platform verification) |
+| 2026-11-02 | [`7a513929`](2026-11-02_7a513929_smart-money-radar.md) | PR #161 consolidated Smart Money and Radar release | DEPLOYED; original acceptance partially verified; superseded by newer release |
 | 2026-10-08 | [`5dcfeb4`](2026-10-08_5dcfeb4_execution-ladder-passive-capture.md) | Execution Ladder Prospective Passive Capture | VERIFIED |
 | 2026-10-08 | [`5a084a9`](2026-10-08_5a084a9_qa-release-hardening.md) | Production QA Escape Hardening & Release Governance | VERIFIED |
 | 2026-10-08 | [`dd972e9`](2026-10-08_dd972e9_qa-functional-release-resolution-fix.md) | QA Functional Release Resolution Fix | VERIFIED |

@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — reconciled 2026-11-06
+
+- **Radar PR #199:** Selective production port of PR #196 historical VCP evidence integrity / explainability **merged and deployed** at `ccd8fe1a`. Operator-reported targeted live functional acceptance passed under Directive 011U; platform deployment independently verified. The original PR #196 passed CI and merged into `main` (`5ebd758d`).
+- **Strategy Alignment PR #193:** Open production-targeted release work remains separate.
+- **Sprint 5:** Proposed scope reduction to Radar classification truth, bounded operational readiness and decision-surface parity; the canonical execution authorization remains **false**, and no natural scheduler, SEC worker or trade execution HOLD was lifted.
+- **Technical debt:** Issues #197 (Pre-Flight decision integrity and duplicate UX) and #198 (evidence cache, OHLCV provenance, runtime lifecycle) are deferred; not proof of production incidents.
+- **Docs authority:** [Current project status](docs/ARX_CURRENT_PROJECT_STATUS.md) distinguishes mainline work, deployed production and operator-verified live evidence. Historical reports remain dated records.
+
+## [2026-11-06] — Radar evidence integrity production promotion
+
+- PR #199 selectively promoted PR #196 to `release/production` as `ccd8fe1a3ebddf0defcc5a378c0d25c89cec6e3d`.
+- Railway `web` and Smart Money worker deployments reported SUCCESS/ONLINE at the release SHA; PostgreSQL remains online.
+- Historical VCP provenance and explainability contracts are production-accepted under 011U: live LNTH 9/10 explainability (volume dry-up rejected), fail-closed historical 422, unchanged AVAILABLE/0 snapshot, NVDA Smart Money non-regression and operational HOLD verification (operator evidence).
+- Recurring natural VCP scans, SEC ingestion, trade execution and Sprint 5 remain held.
+- [Release note](docs/releases/2026-11-06_ccd8fe1a_radar_evidence_promotion.md).
+
+## [2026-11-05] — Smart Money Recovery 002R
+
+### Production accepted (scope limited)
+
+- **PR #195** merged to `release/production` as `74123474cc3b3cf84c78da4cb19a759343aadc71`.
+- Railway `web` and `smart-money-worker` deployed successfully; worker remained STANDBY with effective SEC egress DISABLED.
+- Versioned read grant permitted `smart_money_web` SELECT on `form4_raw_filings` and `sm_amendments`; operator confirmed write operations remained denied.
+- NVDA SEC filings API returned seven records, including accession `0001696841-26-000012`; operator reconciled accepted timestamp and stored content.
+- No recurring SEC ingestion, VCP natural scanning, Smart Money score publication or trading activation.
+- [Recovery release note](docs/releases/2026-11-05_74123474_smart_money_recovery_002r.md); [Issue #165 acceptance](https://github.com/daakara/finance/issues/165#issuecomment-6671363712).
+
+## [2026-11-05] — Radar production safety and mainline evidence integrity
+
+- **PR #194:** Production natural VCP boot-scan prevention and snapshot publication authority preserved in `release/production` lineage before PR #195.
+- **PR #196:** Historic known-at-time cutoff, truthful deterministic recalculation, unrecorded predicate uncertainty, nonfabricated as-of context; **merged to main only** as `5ebd758d`. Production promotion tracked separately under PR #199.
+- Bounded 133-candidate / 122-data-ready launch evidence does not authorize full-market or continuous scheduled scanning.
+
+## [Unreleased] — documentation and governance follow-up (2026-11-02)
+
+- **SM-DATA-GOV-001 / PR #162:** Historical replay, amendment lifecycle and evidence retention candidate is open with six successful hosted CI checks; not merged or deployed. Pending targeted corrections for deletion authorization and SQLite ARX-observed cutoff semantics.
+- **Release operations:** A protected-branch, approval-gated continuous deployment proposal remains a recommendation, not an activated configuration change.
+- **Acceptance work:** Live Smart Money response validation, Radar browser checks and VCP startup boot-warmup containment are still pending.
+
+## [2026-11-02] — Smart Money and Radar production integration (PR #161)
+
+### Added
+- Canonical Smart Money per-symbol evidence endpoint and filings alias, supporting Form 4 transaction classification, derivative exclusion and amendment-aware evidence treatment through the merged Smart Money PR #159.
+- Radar neutral discovery CTA, selection-aware analysis navigation and discovery across the 35-symbol reference screening universe and 43-symbol Master Catalog through merged Radar PR #160.
+
+### Changed
+- Promoted consolidated PR #161 to `release/production`.
+- Verified Cloudflare Pages and Railway both serve release commit `7a513929bbcd74a3e568dcfe626bfac582ee68fb`.
+- Retained production SEC, scanner and execution holds; the bounded NVDA canary does not enable continuous SEC polling.
+
+### Known acceptance limitations
+- Deployment/health/selected screener checks passed; direct live Smart Money evidence payload validation and Radar browser-level acceptance are incomplete.
+- A VCP startup `BOOT_WARMUP` published an `ERROR` snapshot; verify `HOLD_SCAN_001` containment, authoritative-snapshot behavior and lease fencing before full functional closure.
+
+**Release note:** [2026-11-02 consolidated Smart Money and Radar release](docs/releases/2026-11-02_7a513929_smart-money-radar.md).
+
+---
+
 ## [2.12.0] - 2026-08-29
 
 ### Master Catalog Expansion, Crypto Proxy Intelligence & Pre-Rendered Route SSG Consolidation
