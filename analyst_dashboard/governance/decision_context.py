@@ -95,11 +95,11 @@ def is_pit_eligible(available_from: Optional[str], evaluation_timestamp: Optiona
             return None
         try:
             timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
+            if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+                return None
+            return timestamp.astimezone(timezone.utc)
+        except (ValueError, OverflowError):
             return None
-        if timestamp.tzinfo is None or timestamp.utcoffset() is None:
-            return None
-        return timestamp.astimezone(timezone.utc)
 
     public_at = parse_instant(available_from)
     evaluated_at = parse_instant(evaluation_timestamp)
