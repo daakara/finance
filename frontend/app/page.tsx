@@ -104,7 +104,17 @@ function TerminalContent() {
   const cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map());
 
   useEffect(() => {
-    setLastUpdatedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    if (data) {
+      const obsTimeStr = data.liveObservedAt || (data.marketPriceState as any)?.asOfTimestamp || data.analysisReferenceDate;
+      if (obsTimeStr) {
+        const d = new Date(obsTimeStr);
+        if (!isNaN(d.getTime())) {
+          setLastUpdatedTime(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (Observed)");
+          return;
+        }
+      }
+      setLastUpdatedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (Rendered)");
+    }
   }, [data]);
 
   useEffect(() => {
@@ -212,11 +222,27 @@ function TerminalContent() {
       const cacheKey = getAnalysisHubCacheKey(selectedSymbol, interval, userRole);
       const cached = cacheRef.current.get(cacheKey);
 
-      // Instant optimistic display from memory cache (<10ms)
+      // Instant optimistic display from memory cache (<10ms) with source observation freshness check (PREFLIGHT-001)
       if (cached) {
-        setData(cached);
-        setLoading(false);
-        return;
+        const obsTimeStr = cached.liveObservedAt || (cached.marketPriceState as any)?.asOfTimestamp;
+        let isCacheFresh = true;
+        if (obsTimeStr) {
+          const obsTime = new Date(obsTimeStr).getTime();
+          if (!isNaN(obsTime)) {
+            const ageMinutes = (Date.now() - obsTime) / 60000;
+            const freshnessStr = typeof cached.liveFreshness === "string" ? cached.liveFreshness : (cached.liveFreshness as any)?.status;
+            if (ageMinutes > 5 && (freshnessStr === "LIVE" || freshnessStr === "REALTIME")) {
+              isCacheFresh = false;
+            }
+          }
+        }
+        if (isCacheFresh) {
+          setData(cached);
+          setLoading(false);
+          return;
+        } else {
+          cacheRef.current.delete(cacheKey);
+        }
       }
 
       setLoading(true);
@@ -336,6 +362,7 @@ function TerminalContent() {
       catalystState: rawCorporate?.preflight_state,
       catalystEvidence,
       isActionable: data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable,
+      canSizeTrade: data?.decisionTrace?.canSizeTrade ?? (data?.canonicalDecision as any)?.can_size_trade,
       decisionState: data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state,
       dataSource: data?._dataSource,
       isSynthetic: Boolean((data?._dataSource as string) === 'synthetic' || (data as any)?.isSynthetic),

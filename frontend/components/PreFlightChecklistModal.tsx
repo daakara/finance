@@ -32,6 +32,7 @@ export default function PreFlightChecklistModal({
   vixObservationTime,
   macroEvidence,
   isActionable = false,
+  canSizeTrade,
   decisionState,
   dataSource,
   isSynthetic,
@@ -98,8 +99,6 @@ export default function PreFlightChecklistModal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
   const evalResult = evaluatePreFlightChecks(
     {
@@ -122,6 +121,7 @@ export default function PreFlightChecklistModal({
       vixObservationTime,
       macroEvidence,
       isActionable,
+      canSizeTrade,
       decisionState,
       dataSource,
       isSynthetic,
@@ -252,16 +252,25 @@ export default function PreFlightChecklistModal({
       : "Catalyst Telemetry Unavailable: Corporate event schedule unverified from primary source.";
   };
 
-  // Analytics — inline try/catch, no useEffect needed (stable values within a single open session)
-  try {
-    trackPreFlightOutcome(symbol, passedCount, isCleared);
-  } catch (err) {
-    console.warn("Analytics error in PreFlightChecklistModal:", err);
-  }
+  // Analytics — Idempotent execution guarded by modal open lifecycle (PREFLIGHT-001)
+  const hasTrackedRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (isOpen && !hasTrackedRef.current) {
+      hasTrackedRef.current = true;
+      try {
+        trackPreFlightOutcome(symbol, passedCount, isCleared);
+      } catch (err) {
+        console.warn("Analytics error in PreFlightChecklistModal:", err);
+      }
+    }
+    if (!isOpen) {
+      hasTrackedRef.current = false;
+    }
+  }, [isOpen, symbol, passedCount, isCleared]);
 
   // Trade plan markdown — differentiated by vernacularMode
   const tradePlanMarkdown = isPlain
-    ? `### 📋 ARX Terminal Trade Plan: ${symbol}
+    ? `${!isCleared ? `> ⚠️ **RESEARCH / JOURNAL ONLY — NOT EXECUTABLE**\n> Clearance Blockers: ${evalResult.allBlockers.join("; ") || activeBlocker}\n\n` : ""}### 📋 ARX Terminal Trade Plan: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "⚡ Day Trader" : "🏛️ Swing / Long-Term Compounder"}
 - **Current Price**: $${safePrice.toFixed(2)}
@@ -271,9 +280,9 @@ export default function PreFlightChecklistModal({
 - **Profit Goal 2 (TP2 Runner)**: ${target2Str}
 - **Tactical Rule (Protected Trailing Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a protected trade.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
-- **Pre-Flight Score**: ${convictionPct}% Checklist (${isCleared ? "🟢 CLEARED" : `⚠️ NOT CLEARED — ${activeBlocker}`})
+- **Pre-Flight Score**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) · ${isCleared ? "🟢 CLEARED" : `⚠️ NOT CLEARED — ${activeBlocker}`}
 `
-    : `### 📋 ARX Institutional Execution Brief: ${symbol}
+    : `${!isCleared ? `> ⚠️ **RESEARCH / JOURNAL ONLY — NOT EXECUTABLE**\n> Clearance Blockers: ${evalResult.allBlockers.join("; ") || activeBlocker}\n\n` : ""}### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "Intraday Momentum Pullback" : "Swing / Compounder Accumulation"}
 - **Readiness input**: $${safePrice.toFixed(2)} | **Optimal Entry**: ${entryZoneStr}
@@ -281,9 +290,9 @@ export default function PreFlightChecklistModal({
 - **Target 1 (TP1)**: ${target1Str}
 - **Target 2 (TP2 Runner)**: ${target2Str}
 - **Execution Rule (Protected Trailing Ratchet)**: ${safeTarget !== null ? `Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure protected runner convexity.` : "Establish verified target levels before executing tactical scaling rules."}
-- **Risk/Reward**: ${isRRValid ? `${safeRR.toFixed(2)} : 1.0` : "Unverified"}
+- **Risk/Reward**: ${isRRValid ? `${safeRR.toFixed(2)}:1 (Required: 2:1)` : "Unavailable"}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
-- **Pre-Flight Clearance**: ${convictionPct}% Checklist — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : `⚠️ NOT CLEARED (${activeBlocker})`}
+- **Pre-Flight Clearance**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : `⚠️ NOT CLEARED (${activeBlocker})`}
 - **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "HAZARD" : resolvedCatalystState}
 `;
 
@@ -297,6 +306,8 @@ export default function PreFlightChecklistModal({
       console.warn("Failed to copy trade plan:", err);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -394,6 +405,20 @@ export default function PreFlightChecklistModal({
             </div>
           </div>
 
+          {/* Active Blockers List when multiple blockers exist (PREFLIGHT-001 Target 6) */}
+          {!isCleared && evalResult.allBlockers.length > 1 && (
+            <div data-testid="preflight-all-blockers" className="p-3 rounded-xl bg-amber-950/40 border border-amber-700/80 text-xs text-amber-200 space-y-1.5">
+              <span className="text-[10px] uppercase font-bold tracking-wider font-mono block text-amber-400">
+                Active Execution Blockers ({evalResult.allBlockers.length}):
+              </span>
+              <ul className="list-disc list-inside space-y-0.5 font-mono text-[11px]">
+                {evalResult.allBlockers.map((b, idx) => (
+                  <li key={idx} className="text-amber-300">{b}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* 5-Point Validation Checklist */}
           <div className="space-y-2.5 text-xs">
             {/* Check 1 */}
@@ -401,16 +426,16 @@ export default function PreFlightChecklistModal({
               <div className="space-y-0.5">
                 <div className="font-bold text-[var(--text-1)] flex items-center gap-1.5">
                   <span>{isRRPassed ? "✅" : "❌"}</span>
-                  <span>{isPlain ? "1. Reward vs Risk Balance (At least 2 to 1)" : "1. Asymmetric Payoff (Reward:Risk >= 2.0:1)"}</span>
+                  <span>{isPlain ? "1. Reward vs. Risk" : "1. Reward vs. Risk (Asymmetric Payoff)"}</span>
                 </div>
                 <p className="text-[11px] text-[var(--text-2)] pl-5">
-                  Current: <strong className="text-cyan-300 font-mono">{isRRValid && hasExecutionLevels ? `${safeRR.toFixed(2)} : 1.0` : "N/A (Missing Execution Levels)"}</strong>{" "}
-                  {isRRPassed ? "(Adequate upside cushion)" : !hasExecutionLevels ? "(Execution levels missing: Stop and target required)" : isRRValid ? "(Hazard: upside too small for downside risk)" : "(Evidence incomplete: risk-reward unavailable)"}
+                  Current: <strong className="text-cyan-300 font-mono">{isRRValid && hasExecutionLevels ? `${safeRR.toFixed(2)}:1 (Required: 2:1)` : "Unavailable"}</strong>{" "}
+                  {isRRPassed ? "(Adequate upside cushion)" : !hasExecutionLevels ? "(Execution levels missing: Stop and target required)" : isRRValid ? "(Potential reward is below the required 2:1 minimum)" : "(Evidence incomplete: risk-reward unavailable)"}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
                 isRRPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-rose-950 text-rose-300 border-rose-800"
-              }`}>{isRRPassed ? "PASS" : (!hasExecutionLevels ? "MISSING LEVELS" : "FAIL")}</span>
+              }`}>{isRRPassed ? "PASS" : (!hasExecutionLevels ? "MISSING LEVELS" : "Below minimum")}</span>
             </div>
 
             {/* Check 2 */}
