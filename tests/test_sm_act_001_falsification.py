@@ -76,6 +76,7 @@ def _generate_form4_xml(
         shares = tx.get("shares", 1000)
         price = tx.get("price", 50.0)
         acq_disp = tx.get("acq_disp", "A")
+        own_nature = tx.get("own", "D")
         tx_xml_parts.append(f"""
         <nonDerivativeTransaction>
             <securityTitle><value>Common Stock</value></securityTitle>
@@ -90,7 +91,7 @@ def _generate_form4_xml(
                 <transactionAcquiredDisposedCode><value>{acq_disp}</value></transactionAcquiredDisposedCode>
             </transactionAmounts>
             <ownershipNature>
-                <directOrIndirectOwnership><value>D</value></directOrIndirectOwnership>
+                <directOrIndirectOwnership><value>{own_nature}</value></directOrIndirectOwnership>
             </ownershipNature>
         </nonDerivativeTransaction>
         """)
@@ -248,6 +249,47 @@ class TestGateF1TransactionClassification:
             assert sm_pillar["status"] == "neutral"
             assert sm_pillar["score"] == 55.0
             assert sm_pillar["score"] != 90.0
+
+    def test_f1_05_direct_vs_indirect_ownership_classification(self, tmp_path):
+        """Direct vs indirect ownership must be strictly preserved and classified in observations."""
+        db_path = str(tmp_path / "f1_ownership_test.db")
+        mgr = Form4IngestionManager(db_path=db_path)
+
+        # 1. Direct Purchase ('P', own='D') and Indirect Sale ('S', own='I')
+        xml = _generate_form4_xml(
+            symbol="OWNTEST",
+            transactions=[
+                {"code": "P", "shares": 1000, "price": 100.0, "acq_disp": "A", "own": "D"},
+                {"code": "S", "shares": 500, "price": 100.0, "acq_disp": "D", "own": "I"},
+            ]
+        )
+        filing = Form4XmlParser.parse_filing(xml, accession_number="0001-26-OWN01")
+        assert filing.transactions[0].ownership_nature.value in ("DIRECT", "D")
+        assert filing.transactions[1].ownership_nature.value in ("INDIRECT", "I")
+
+        mgr.save_raw_filing_and_transactions(filing, source_url="https://sec.gov/own01")
+
+        with patch.dict(os.environ, {"ARX_SMART_MONEY_DB": db_path}):
+            eval_res = SmartMoneyEngine.evaluate_smart_money_feeds(
+                symbol="OWNTEST",
+                window_days=90,
+                evaluation_date="2026-10-31",
+            )
+            sec_feed = eval_res["feeds"]["sec_form4"]
+            obs = sec_feed["observations"]
+            assert len(obs) == 2
+
+            buy_obs = next(o for o in obs if o["transaction_code"] == "P")
+            sell_obs = next(o for o in obs if o["transaction_code"] == "S")
+
+            assert buy_obs["transaction_type"] == "Purchase (Direct Open Market)"
+            assert buy_obs["ownership_nature"] == "DIRECT"
+            assert buy_obs["ownership_type"] == "D"
+
+            assert sell_obs["transaction_type"] == "Sale (Indirect)"
+            assert sell_obs["ownership_nature"] == "INDIRECT"
+            assert sell_obs["ownership_type"] == "I"
+
 
 
 # =============================================================================
