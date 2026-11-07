@@ -7,7 +7,7 @@
   "files": {
     "analyst_dashboard/governance/prospective_capture.py": {
       "operation": "M",
-      "originating_pr_number": 222,
+      "originating_pr_number": 223,
       "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
       "governing_requirement": "ARX-LEARNING-004: Outcome link idempotency, no hardcoded census fallbacks, immutable settled states",
       "sha256": "5560eb3b75f5438d67487826151d7a8f14379fe2e2b22e906c967b5002c25ef9",
@@ -15,7 +15,7 @@
     },
     "analyst_dashboard/governance/shadow_replay_runner.py": {
       "operation": "M",
-      "originating_pr_number": 222,
+      "originating_pr_number": 223,
       "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
       "governing_requirement": "ARX-LEARNING-004: Market data authority and qualification invariants",
       "sha256": "3aa36f2b57e0e9c6d4c3896b8a5a93200226f8de19b8247e15c74b11f8d6ceb3",
@@ -23,7 +23,7 @@
     },
     "api/middleware/api_key_auth.py": {
       "operation": "M",
-      "originating_pr_number": 222,
+      "originating_pr_number": 223,
       "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
       "governing_requirement": "ARX-LEARNING-004: Delegated auth classification for prospective learning census route",
       "sha256": "bede42e484899801f9a2cf5bb2703ca23b051f5639846bb7f315f2ab43f05896",
@@ -31,7 +31,7 @@
     },
     "api/routes/governance.py": {
       "operation": "M",
-      "originating_pr_number": 222,
+      "originating_pr_number": 223,
       "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
       "governing_requirement": "ARX-LEARNING-004: Authenticated census access and sanitized error handling",
       "sha256": "2347f1f40295190d4bc9e029f04820c0a5515d1fad2485292cb55fa032a8283b",
@@ -39,7 +39,7 @@
     },
     "scripts/replay_prospective_settlement.py": {
       "operation": "M",
-      "originating_pr_number": 222,
+      "originating_pr_number": 223,
       "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
       "governing_requirement": "ARX-LEARNING-004: Safe replay defaults with non-persisting dry-run and persistence qualification",
       "sha256": "475c7273fa7353ab0727f9b84cf7e2c1effc1f3a526b06efb379bb73da0c71d6",
@@ -47,7 +47,7 @@
     },
     "tests/test_prospective_learning_corrections.py": {
       "operation": "A",
-      "originating_pr_number": 222,
+      "originating_pr_number": 223,
       "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
       "governing_requirement": "ARX-LEARNING-004: Adversarial tests for DB failure, replay idempotency, settled immutability, and API auth",
       "sha256": "ba65be8078902e852b678af74a61e5f73ed4e6a21222e701657e090c4dff24f1",
@@ -55,7 +55,7 @@
     },
     "tests/test_prospective_shadow_mode.py": {
       "operation": "M",
-      "originating_pr_number": 222,
+      "originating_pr_number": 223,
       "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
       "governing_requirement": "ARX-LEARNING-004: Reconciled test assertions for dynamic census",
       "sha256": "a3db7f93974e69fa8cbb6859441500519657f33ab44a0b2a73c610b199d80bdd",
@@ -69,9 +69,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "2a5eb97e7146b4e178758478915c4b21f2121ada8a04210110481ee65682706c",
-      "bytes": 57876,
-      "size_bytes": 57876
+      "sha256": "a396762e7bcfb685be0a7bbfd5970d299920859e8d10aa643b8e513a66c2cf48",
+      "bytes": 57881,
+      "size_bytes": 57881
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
