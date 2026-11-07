@@ -264,11 +264,14 @@ def resolve_coverage_envelope(
             "matched_count": eff_matched,
             "unavailable_symbol_count": c_meta.get("unavailable_symbol_count", (universe_size - scanned_count) if scanned_count is not None else 0),
             "unresolved_symbol_count": c_meta.get("unresolved_symbol_count", 0),
+            "stage_2_opportunity_count": c_meta.get("stage_2_opportunity_count"),
             "data_completeness_pct": data_completeness_pct,
             "scan_coverage_pct": scan_coverage_pct,
             "unavailable_reasons": c_meta.get("unavailable_reasons", {}),
             "failure_reason": failure_reason,
             "adjustment_state_distribution": c_meta.get("adjustment_state_distribution", {}),
+            "source_session_date": c_meta.get("source_session_date"),
+            "scanned_at": c_meta.get("scanned_at"),
         }
 
     # Historical or missing metadata path: strictly reject fabricated claims or inferences
@@ -367,6 +370,8 @@ class ImmutableScannerSnapshot:
                 "policy_version": self.version_tuple.freshness_policy_version,
                 "generated_at": self.generated_at,
                 "data_as_of": self.data_as_of,
+                "source_session_date": self.freshness.get("source_session_date") or self.data_as_of,
+                "scanned_at": self.freshness.get("scanned_at") or self.generated_at,
                 "evaluated_at": self.freshness.get("evaluated_at", self.generated_at),
                 "status": self.freshness.get("status", FreshnessStatus.LIVE.value),
             },
