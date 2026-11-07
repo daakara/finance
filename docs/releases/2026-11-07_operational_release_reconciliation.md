@@ -15,7 +15,7 @@ Reported acceptance evidence for Radar: 250 published members, 100 Stage 2, 0 VC
 - No automatic VCP natural scanning, recurring SEC egress, automatic settlement, model weight changes, Sprint 5 execution, or live trading.
 - No verified clean prospective resolved sample. Historical global / AAPL counts are *unverified historical recommendations*, not calibration evidence.
 - Cloudflare and Railway SHA mismatch after PR #222 is expected for backend-only changes; do not trigger redundant frontend release.
-- PR #223 reproduces the exact file blobs merged by PR #222; must not be merged again.
+- PR #223 reproduced the exact file blobs merged by PR #222 and was closed unmerged with an explanatory comment.
 
 ## Follow-up
 Canonical active backlog and implementation priority: [ARX active work register](../planning/ARX_ACTIVE_WORK_REGISTER_2026_11_07.md). Existing Oct 29 and earlier Nov 7 docs are historical snapshots and must not be silently rewritten into current evidence.
