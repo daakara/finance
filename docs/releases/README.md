@@ -16,6 +16,12 @@ RELEASE_NOTES_COMMITTED
 
 ---
 
+## Documentation-only addenda (not production releases)
+
+- [2026-11-07 — Radar governance and contract direction](2026-11-07_radar-governance-documentation-addendum.md). Captures evidence, target contracts, and outstanding decisions. **Not deployed and not included in the verified production-release index below.**
+
+---
+
 ## Release Index
 
 | Date | Release SHA | Summary | Status |

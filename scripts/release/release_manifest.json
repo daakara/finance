@@ -1,41 +1,89 @@
 {
-  "release_candidate_commit": "1121f04f1cc0b2133a477231455ac8b9e2e4507e",
-  "base_anchor_commit": "e766cf3c323017989aeda2cbe1a7880ddf4e1bfb",
-  "total_files": 4,
+  "release_candidate_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+  "base_anchor_commit": "1efa2906d81bfaeb0c7e86b7064d0af06b8717ff",
+  "total_files": 10,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX_RADAR_STAGE2_DISCOVERY_REMEDIATION",
+  "directive": "ARX_RADAR_INVESTMENT_GOVERNANCE_DOCS",
   "files": {
-    "analyst_dashboard/analyzers/scanner_contract.py": {
+    "CHANGELOG.md": {
       "operation": "M",
-      "originating_pr_number": 218,
-      "originating_commit": "1121f04f1cc0b2133a477231455ac8b9e2e4507e",
-      "governing_requirement": "RADAR-015: scanner coverage envelope stage 2 opportunity and timestamp passthrough",
-      "sha256": "845e104228c7efa4662f675e5da6e92ad67febe7a4aa79f880c6b358a24eee5e",
-      "size_bytes": 16965
+      "originating_pr_number": 217,
+      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+      "governing_requirement": "DOCS-001: preserve Nov 7 ARX Radar and investment governance direction changelog",
+      "sha256": "85b19ec0f0ff5f486df342fa91b89425fb75d6d542e136bf8ed2afdfc885d530",
+      "size_bytes": 31067
     },
-    "analyst_dashboard/analyzers/scanner_runner.py": {
+    "README.md": {
       "operation": "M",
-      "originating_pr_number": 218,
-      "originating_commit": "1121f04f1cc0b2133a477231455ac8b9e2e4507e",
-      "governing_requirement": "RADAR-015: decouple stage 2 opportunities from VCP and separate session/execution timestamps",
-      "sha256": "b271897ea7391e9576d3bfcf939b7b60c2cb3ffe99190d329715b6d815b82406",
-      "size_bytes": 79654
+      "originating_pr_number": 217,
+      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+      "governing_requirement": "DOCS-001: cross-link current investment governance addenda",
+      "sha256": "656bdc84b9750fd81dde44e8f16e2ad115ead6738e97ced5acb285792c87c84e",
+      "size_bytes": 12824
     },
-    "api/routes/screener.py": {
+    "docs/ARX_MASTER_PROJECT_STATUS_2026_10_29.md": {
       "operation": "M",
-      "originating_pr_number": 218,
-      "originating_commit": "1121f04f1cc0b2133a477231455ac8b9e2e4507e",
-      "governing_requirement": "RADAR-015: canonical stage classification, dynamic promoted universe, stage 2 primary filtering",
-      "sha256": "d12ee7bb95d68721727a8d240644f3a854bb0b6049e078536df75e5ea184178f",
-      "size_bytes": 105311
+      "originating_pr_number": 217,
+      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+      "governing_requirement": "DOCS-001: link current status addendum from master project status",
+      "sha256": "23750c6058f2dd3c1cac8a50742f6983e781f546ccb4718026fc782bd34df9ff",
+      "size_bytes": 8106
     },
-    "tests/test_radar_stage2_discovery_remediation.py": {
+    "docs/ARX_STATUS_ADDENDUM_2026_11_07.md": {
       "operation": "A",
-      "originating_pr_number": 218,
-      "originating_commit": "1121f04f1cc0b2133a477231455ac8b9e2e4507e",
-      "governing_requirement": "RADAR-015: authoritative 10-point regression suite for stage 2 discovery contract alignment",
-      "sha256": "e3ae9180c00fd7ab8c8e87842b1c07c9d9c45bc74107bf3faaa31a46f8abb85b",
-      "size_bytes": 12550
+      "originating_pr_number": 217,
+      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+      "governing_requirement": "DOCS-001: record Nov 7 ARX Radar project status addendum",
+      "sha256": "90607184c03be2c8504ef8028e6f8b7877d0900752d166751534e0bd3d5daadf",
+      "size_bytes": 3950
+    },
+    "docs/architecture/ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md": {
+      "operation": "M",
+      "originating_pr_number": 217,
+      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+      "governing_requirement": "DOCS-001: cross-link investment research direction in architecture reconciliation",
+      "sha256": "5b179df3178ea54f08b03b11fc565c4fcca4f4e0f21c368d2a074caf70e94500",
+      "size_bytes": 15146
+    },
+    "docs/architecture/ARX_RADAR_INVESTMENT_RESEARCH_DIRECTION_2026_11_07.md": {
+      "operation": "A",
+      "originating_pr_number": 217,
+      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+      "governing_requirement": "DOCS-001: comprehensive Radar investment research direction and strategy register",
+      "sha256": "735ee792ec98970b04c8fd3213460c4bdc501ea41666bda6932558a8e0efeb4c",
+      "size_bytes": 14065
+    },
+    "docs/governance/ARX_DOMAIN_INVARIANT_REGISTRY.md": {
+      "operation": "M",
+      "originating_pr_number": 217,
+      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+      "governing_requirement": "DOCS-001: cross-link domain invariants with Radar research direction",
+      "sha256": "a010d67ac1e0e3b2549f2bdc12f3be6bdd34fd024028bbccf8c2aa0a58fb424f",
+      "size_bytes": 6262
+    },
+    "docs/planning/ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md": {
+      "operation": "M",
+      "originating_pr_number": 217,
+      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+      "governing_requirement": "DOCS-001: update documentation master inventory with Nov 7 artifacts",
+      "sha256": "bd8dcb7ab1725334fc66f44750ef15852857e713c1d45d1500cff471d67a1fd2",
+      "size_bytes": 12002
+    },
+    "docs/releases/2026-11-07_radar-governance-documentation-addendum.md": {
+      "operation": "A",
+      "originating_pr_number": 217,
+      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+      "governing_requirement": "DOCS-001: formal release addendum for Radar governance documentation",
+      "sha256": "c8e2871afd9dbfd687c8edaf65de80105a49900e19ec3d46a959d23eb6dc2e87",
+      "size_bytes": 1859
+    },
+    "docs/releases/README.md": {
+      "operation": "M",
+      "originating_pr_number": 217,
+      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
+      "governing_requirement": "DOCS-001: index Nov 7 release documentation addendum",
+      "sha256": "7c263cbd2d0e914bfecb49932124715fc12cbd9a128067cda8d8240f80b911fa",
+      "size_bytes": 1963
     }
   },
   "qualification_framework_files": {
@@ -45,9 +93,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "88f40ca388e12fe6ab6656c7799d599bfd39e77ff07ffb210701df3850973229",
-      "bytes": 57851,
-      "size_bytes": 57851
+      "sha256": "43f6c3ff527ff1d87e15de2a49b2ac31780b883b5366e6726397e217cdede4d5",
+      "bytes": 57856,
+      "size_bytes": 57856
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",

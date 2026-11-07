@@ -8,6 +8,8 @@
 
 ---
 
+> **Inventory scope note (2026-11-07):** Counts and classifications below describe the 2026-10-29 inventory and were not reaudited or recalculated by this documentation update. New dated references: [status addendum](../ARX_STATUS_ADDENDUM_2026_11_07.md), [Radar direction and decision register](../architecture/ARX_RADAR_INVESTMENT_RESEARCH_DIRECTION_2026_11_07.md), and [documentation-only release addendum](../releases/2026-11-07_radar-governance-documentation-addendum.md). Preserve older artifacts for provenance.
+
 ## 1. Executive Summary & Classification Model
 
 This master inventory provides a comprehensive, repository-wide accounting of all 1,478 documentation, specification, evidence, and governance artifacts across the ARX Terminal codebase. Every document is assigned to one of eight authoritative governance classifications per Section 2 of Directive `ARX-DOC-2026-10-29`:
