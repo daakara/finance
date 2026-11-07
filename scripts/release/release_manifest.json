@@ -1,81 +1,65 @@
 {
-  "release_candidate_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
-  "base_anchor_commit": "6f6770e0e72f5ca129feafdbee2c2e3932047191",
-  "total_files": 9,
+  "release_candidate_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
+  "base_anchor_commit": "c569e26b1f5059bd659ae68d418e03a6482a132f",
+  "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX_LEARNING_003",
+  "directive": "ARX-LEARNING-004",
   "files": {
-    "analyst_dashboard/governance/governance_db.py": {
-      "operation": "M",
-      "originating_pr_number": 221,
-      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
-      "governing_requirement": "GOV-SHADOW-001: SQLite WAL mode and synchronous=NORMAL optimization",
-      "sha256": "537d70075effdf651bb370109e0e55857b97e1e67ceb875050d7fdedc19c8433",
-      "size_bytes": 43226
-    },
     "analyst_dashboard/governance/prospective_capture.py": {
       "operation": "M",
-      "originating_pr_number": 221,
-      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
-      "governing_requirement": "GOV-SHADOW-001: prospective outcome links, census reporting, and non-blocking recovery stream",
-      "sha256": "00f594ed2b0c6873e8eb5f91c3611d2e4646722287820c82e981ff53cf72e4d6",
-      "size_bytes": 61814
+      "originating_pr_number": 222,
+      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
+      "governing_requirement": "ARX-LEARNING-004: Outcome link idempotency, no hardcoded census fallbacks, immutable settled states",
+      "sha256": "5560eb3b75f5438d67487826151d7a8f14379fe2e2b22e906c967b5002c25ef9",
+      "size_bytes": 72410
     },
     "analyst_dashboard/governance/shadow_replay_runner.py": {
-      "operation": "A",
-      "originating_pr_number": 221,
-      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
-      "governing_requirement": "GOV-SHADOW-002: bounded idempotent shadow replay settlement runner",
-      "sha256": "24aa9c4d1d1ab932bb760a511f4ce74ceae752cbca81952d6aca78c6e09d024f",
-      "size_bytes": 7579
-    },
-    "api/routes/analytics.py": {
       "operation": "M",
-      "originating_pr_number": 221,
-      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
-      "governing_requirement": "GOV-SHADOW-001: passive shadow capture for user-selected analytical research",
-      "sha256": "8a55ca14fbe5276c89eb7d3631ae3f08e7242f24d63db4143076ded3c58b43af",
-      "size_bytes": 79740
+      "originating_pr_number": 222,
+      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
+      "governing_requirement": "ARX-LEARNING-004: Market data authority and qualification invariants",
+      "sha256": "3aa36f2b57e0e9c6d4c3896b8a5a93200226f8de19b8247e15c74b11f8d6ceb3",
+      "size_bytes": 8704
+    },
+    "api/middleware/api_key_auth.py": {
+      "operation": "M",
+      "originating_pr_number": 222,
+      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
+      "governing_requirement": "ARX-LEARNING-004: Delegated auth classification for prospective learning census route",
+      "sha256": "bede42e484899801f9a2cf5bb2703ca23b051f5639846bb7f315f2ab43f05896",
+      "size_bytes": 11673
     },
     "api/routes/governance.py": {
       "operation": "M",
-      "originating_pr_number": 221,
-      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
-      "governing_requirement": "GOV-SHADOW-003: authoritative prospective learning census endpoint",
-      "sha256": "a9e3bec73ed053b17826e43a952295fed3641348252b0146dfb801fe2cab71a5",
-      "size_bytes": 27433
-    },
-    "scripts/release/rq02_diff_integrity.py": {
-      "operation": "M",
-      "originating_pr_number": 221,
-      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
-      "governing_requirement": "GOV-SHADOW-004: add PR 221 to approved PR list",
-      "sha256": "8c8b0ac76a6a81fb748c12bd8d05ae1cb78277b54b8f8e9bfa4885c0da9a8873",
-      "size_bytes": 57871
+      "originating_pr_number": 222,
+      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
+      "governing_requirement": "ARX-LEARNING-004: Authenticated census access and sanitized error handling",
+      "sha256": "2347f1f40295190d4bc9e029f04820c0a5515d1fad2485292cb55fa032a8283b",
+      "size_bytes": 28814
     },
     "scripts/replay_prospective_settlement.py": {
-      "operation": "A",
-      "originating_pr_number": 221,
-      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
-      "governing_requirement": "GOV-SHADOW-002: administrative CLI for bounded prospective settlement replay",
-      "sha256": "dab756990df9f6a163409ea8ea159c0908f305282d8e1d2ad50e1be495df4102",
-      "size_bytes": 3288
-    },
-    "tests/test_prospective_decision_capture.py": {
       "operation": "M",
-      "originating_pr_number": 221,
-      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
-      "governing_requirement": "GOV-SHADOW-001: warm-up and tolerant latency benchmark for prospective capture",
-      "sha256": "04aceb31832b46923e1925b4227fe1f1c8ed3ed02ceef8115a9a96755d7e0f1a",
-      "size_bytes": 38536
+      "originating_pr_number": 222,
+      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
+      "governing_requirement": "ARX-LEARNING-004: Safe replay defaults with non-persisting dry-run and persistence qualification",
+      "sha256": "475c7273fa7353ab0727f9b84cf7e2c1effc1f3a526b06efb379bb73da0c71d6",
+      "size_bytes": 9714
+    },
+    "tests/test_prospective_learning_corrections.py": {
+      "operation": "A",
+      "originating_pr_number": 222,
+      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
+      "governing_requirement": "ARX-LEARNING-004: Adversarial tests for DB failure, replay idempotency, settled immutability, and API auth",
+      "sha256": "ba65be8078902e852b678af74a61e5f73ed4e6a21222e701657e090c4dff24f1",
+      "size_bytes": 21959
     },
     "tests/test_prospective_shadow_mode.py": {
-      "operation": "A",
-      "originating_pr_number": 221,
-      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
-      "governing_requirement": "GOV-SHADOW-001: adversarial test suite for shadow mode timing, provenance, and immutability",
-      "sha256": "4df34be3130f53cc04d7cb098225bffd78bbe1d97f98cbc0ea23c92dd249f928",
-      "size_bytes": 18439
+      "operation": "M",
+      "originating_pr_number": 222,
+      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
+      "governing_requirement": "ARX-LEARNING-004: Reconciled test assertions for dynamic census",
+      "sha256": "a3db7f93974e69fa8cbb6859441500519657f33ab44a0b2a73c610b199d80bdd",
+      "size_bytes": 20589
     }
   },
   "qualification_framework_files": {
@@ -85,9 +69,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "8c8b0ac76a6a81fb748c12bd8d05ae1cb78277b54b8f8e9bfa4885c0da9a8873",
-      "bytes": 57871,
-      "size_bytes": 57871
+      "sha256": "2a5eb97e7146b4e178758478915c4b21f2121ada8a04210110481ee65682706c",
+      "bytes": 57876,
+      "size_bytes": 57876
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",

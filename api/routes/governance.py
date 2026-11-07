@@ -74,12 +74,12 @@ def _verify_credential(candidate_key: str, expected_key: str) -> bool:
 def _verify_evaluation_access(
     authorization: Optional[str] = None,
     x_evaluation_key: Optional[str] = None,
+    x_admin_key: Optional[str] = None,
 ) -> bool:
-    """Verifies incoming authentication credentials using constant-time comparison."""
-    if not SERVER_EVAL_KEY:
-        logger.warning("ARX_EVALUATION_KEY not configured on server — access denied.")
-        return False
-
+    """Verifies incoming authentication credentials using constant-time comparison.
+    Accepts ARX_EVALUATION_KEY (via Authorization Bearer or X-Evaluation-Key)
+    or ARX_ADMIN_KEY (via Authorization Bearer or X-Admin-Key).
+    """
     candidate_key = ""
     if authorization:
         parts = authorization.strip().split()
@@ -89,11 +89,25 @@ def _verify_evaluation_access(
             candidate_key = parts[0]
     elif x_evaluation_key:
         candidate_key = x_evaluation_key.strip()
+    elif x_admin_key:
+        candidate_key = x_admin_key.strip()
 
     if not candidate_key:
         return False
 
-    return hmac.compare_digest(candidate_key.encode("utf-8"), SERVER_EVAL_KEY.encode("utf-8"))
+    server_eval_key = os.getenv("ARX_EVALUATION_KEY", "" if IS_PRODUCTION else DEFAULT_DEV_EVAL_KEY)
+    server_admin_key = os.getenv("ARX_ADMIN_KEY", "")
+
+    if server_eval_key and hmac.compare_digest(candidate_key.encode("utf-8"), server_eval_key.encode("utf-8")):
+        return True
+
+    if server_admin_key and hmac.compare_digest(candidate_key.encode("utf-8"), server_admin_key.encode("utf-8")):
+        return True
+
+    if not server_eval_key and not server_admin_key:
+        logger.warning("Neither ARX_EVALUATION_KEY nor ARX_ADMIN_KEY configured on server — access denied.")
+
+    return False
 
 
 SECURITY_HEADERS = {
@@ -628,11 +642,24 @@ def get_epoch2_governance_status(response: Response):
 
 
 @router.get("/prospective-learning/census", tags=["Model Governance & Prospective Evaluation"])
-def get_prospective_learning_census_route(response: Response):
+def get_prospective_learning_census_route(
+    response: Response,
+    authorization: Optional[str] = Header(None),
+    x_evaluation_key: Optional[str] = Header(None, alias="X-Evaluation-Key"),
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+):
     """Returns authoritative census reconciling prospective decisions, settled outcomes,
-    and historical unverified setups (Directive ARX-LEARNING-003).
+    and historical unverified setups (Directive ARX-LEARNING-003 / ARX-LEARNING-004).
+
+    Strictly protected by ARX_EVALUATION_KEY or ARX_ADMIN_KEY.
     """
     _set_security_headers(response)
+    if not _verify_evaluation_access(authorization, x_evaluation_key, x_admin_key):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized: Valid ARX Evaluation Key or Admin Key required to access prospective learning census.",
+            headers=SECURITY_HEADERS,
+        )
     try:
         from analyst_dashboard.governance.prospective_capture import (
             ProspectiveDecisionCaptureEngine,
@@ -643,7 +670,7 @@ def get_prospective_learning_census_route(response: Response):
         logger.error(f"Error generating prospective learning census: {e}", exc_info=True)
         return {
             "status": "ERROR",
-            "error": str(e),
+            "error": "CENSUS_GENERATION_FAILED: An internal error occurred while assembling the prospective learning census. Diagnostics recorded in server logs.",
             "governanceState": {
                 "HOLD_SCAN_001": "ACTIVE",
                 "learningStatus": "SHADOW_MODE_RECORDING_ONLY (Model modification strictly disabled)",
