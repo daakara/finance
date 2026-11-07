@@ -1028,7 +1028,11 @@ export function normalizeRadarCapabilities(
       raw.countAuthority === "DYNAMIC_CATALOG" &&
       !hasMalformedMatchedCount;
 
+    // Defense in depth: an old count is not current evidence even if a
+    // downstream backend mistakenly advertises AVAILABLE.
+    const isStaleSnapshot = raw.freshnessStatus === "STALE";
     const isAvailable =
+      !isStaleSnapshot &&
       (raw.universeScreening === "AVAILABLE" || raw.status === "AVAILABLE") &&
       !hasMalformedMatchedCount &&
       (hasValidMatchedCount || isCuratedCatalog);
@@ -1053,7 +1057,7 @@ export function normalizeRadarCapabilities(
       countAuthority: raw.countAuthority || (isCuratedCatalog ? "DYNAMIC_CATALOG" : "PUBLICATION_SNAPSHOT"),
       sortingSemantics: raw.sortingSemantics || DEFAULT_RADAR_CAPABILITIES[cat].sortingSemantics || null,
       rationale: raw.rationale || DEFAULT_RADAR_CAPABILITIES[cat].rationale,
-      matchedCount: hasValidMatchedCount ? raw.matchedCount : null,
+      matchedCount: isStaleSnapshot ? null : (hasValidMatchedCount ? raw.matchedCount : null),
       dataAsOf: raw.dataAsOf,
       generatedAt: raw.generatedAt,
       snapshotId: raw.snapshotId,
@@ -1066,7 +1070,7 @@ export function normalizeRadarCapabilities(
       isRollback: false,
       rollbackReason: null,
       membershipStatus: raw.membershipStatus ?? "AVAILABLE",
-      lifecycleState: raw.lifecycleState,
+      lifecycleState: isStaleSnapshot ? "STALE_SNAPSHOT" : raw.lifecycleState,
       publicationIntegrity: pubIntegrity,
       publicationIntegrityVerified: pubIntegrity === "VERIFIED",
     };

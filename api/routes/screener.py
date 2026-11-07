@@ -358,16 +358,16 @@ def get_radar_capabilities(
                 ),
             }
         elif snap_status == "STALE":
-            raw_matched = vcp_snapshot.get("matched_count")
-            is_valid_count = type(raw_matched) is int and raw_matched >= 0
-            matched_count = raw_matched if is_valid_count else None
+            # A historical non-negative match count cannot certify current scanner
+            # availability. Preserve snapshot identity for research provenance but
+            # expose stale classification as pending, never as a fresh zero/match.
             caps["VCP"] = {
-                "status": "AVAILABLE" if is_valid_count else "PIPELINE_PENDING",
-                "universeScreening": "AVAILABLE" if is_valid_count else "PIPELINE_PENDING",
+                "status": "PIPELINE_PENDING",
+                "universeScreening": "PIPELINE_PENDING",
                 "singleAssetAnalysis": "AVAILABLE",
-                "matchedCount": matched_count,
-                "coverageStatus": cov_info.get("coverage_status", "STALE"),
-                "scannedSuccessfullyCount": cov_info.get("scanned_successfully_count", pop_denom),
+                "matchedCount": None,
+                "coverageStatus": "STALE",
+                "scannedSuccessfullyCount": cov_info.get("scanned_successfully_count", 0),
                 "unavailableSymbolCount": cov_info.get("unavailable_symbol_count", 0),
                 "dataAsOf": freshness_info.get("data_as_of") or vcp_snapshot.get("data_as_of"),
                 "generatedAt": freshness_info.get("generated_at") or vcp_snapshot.get("generated_at"),
@@ -380,8 +380,9 @@ def get_radar_capabilities(
                 "isRollback": is_rollback,
                 "rollbackReason": rollback_reason,
                 "membershipStatus": membership_status,
-                "lifecycleState": "SCANNER_OPERATIONAL",
-                "rationale": "VCP scanner snapshot is stale past freshness policy cutoff.",
+                "lifecycleState": "STALE_SNAPSHOT",
+                "reason": "STALE_SNAPSHOT",
+                "rationale": "Historical VCP scan result is stale. Refresh through an independently authorized scan before claiming current universe availability.",
             }
     elif pop_denom:
         # No active scanner snapshot, but publication pointer exists at membership layer
