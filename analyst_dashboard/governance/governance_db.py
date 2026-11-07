@@ -77,6 +77,7 @@ def get_governance_connection(db_path: Optional[str] = None) -> sqlite3.Connecti
     conn.execute("PRAGMA foreign_keys = ON;")
     try:
         conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA synchronous = NORMAL;")
     except sqlite3.OperationalError:
         pass  # In-memory or restricted filesystem fallback
     conn.execute("PRAGMA busy_timeout = 10000;")

@@ -624,3 +624,28 @@ def get_epoch2_governance_status(response: Response):
         "prospectiveCaptureAuthorized": is_authorized,
         "storagePersistence": "VERIFIED" if is_storage_persistent() else "EPHEMERAL",
     }
+
+
+
+@router.get("/prospective-learning/census", tags=["Model Governance & Prospective Evaluation"])
+def get_prospective_learning_census_route(response: Response):
+    """Returns authoritative census reconciling prospective decisions, settled outcomes,
+    and historical unverified setups (Directive ARX-LEARNING-003).
+    """
+    _set_security_headers(response)
+    try:
+        from analyst_dashboard.governance.prospective_capture import (
+            ProspectiveDecisionCaptureEngine,
+        )
+        engine = ProspectiveDecisionCaptureEngine()
+        return engine.get_prospective_learning_census()
+    except Exception as e:
+        logger.error(f"Error generating prospective learning census: {e}", exc_info=True)
+        return {
+            "status": "ERROR",
+            "error": str(e),
+            "governanceState": {
+                "HOLD_SCAN_001": "ACTIVE",
+                "learningStatus": "SHADOW_MODE_RECORDING_ONLY (Model modification strictly disabled)",
+            },
+        }
