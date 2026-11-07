@@ -1,0 +1,40 @@
+{
+  "directive": "RADAR-P2-004",
+  "executed_at_utc": "2026-11-07T22:32:13.806730+00:00",
+  "verdict": "RADAR_P2_004_HYDRATION_READY_FOR_AUTHORIZATION",
+  "verdict_reasoning": "Consolidated SIP historical daily OHLCV bars are verified accessible under Alpaca market delay policy (HTTP 200). The 500-symbol rehearsal manifest is validated with 100% 250-member overlap and 0 dropped symbols. The exact hydration manifest partitions all 500 symbols (378 full backfill, 89 tail refresh, 33 fresh). Ingestion pipeline defects have been resolved and verified with 77/77 passing regression tests. Hydration is completely ready to execute upon operator authorization.",
+  "manifest_500_hash": "870b2f539bdf1983fd081d971176361a842930a9d9229f8ac0270f3b05dd0f55",
+  "manifest_250_hash": "889c86cd6d3f7c6aaef98852419fe16a546441e38171370e731bedab0947e313",
+  "population_counts": {
+    "total_500": 500,
+    "present_in_local_store": 122,
+    "missing_from_local_store": 378,
+    "missing_from_published_250": 128,
+    "missing_from_provisional_250": 250,
+    "stale_tail_refresh_count": 89,
+    "already_fresh_count": 33
+  },
+  "entitlement_audit": {
+    "alpaca_sip_accessible": true,
+    "alpaca_sip_status_code": 200,
+    "alpaca_rate_limit_per_min": 200,
+    "polygon_free_rate_limit_per_min": 5,
+    "iex_volume_share_pct": 2.93,
+    "feed_used": "sip",
+    "adjustment_used": "split"
+  },
+  "hydration_plan": "UB-ARX-HYDRATION-PLAN-500",
+  "resource_estimates": {
+    "direct_api_fees_usd": 0.0,
+    "storage_delta_mb": 9.64,
+    "memory_overhead_mb": 45.0,
+    "network_bandwidth_mb": 4.5
+  },
+  "holds_preserved": {
+    "HOLD_SCAN_001": "ACTIVE",
+    "VCP_NATURAL_SCHEDULER_ENABLED": 0,
+    "HOLD_SEC_001": "ACTIVE",
+    "HOLD_EXEC_001": "ACTIVE",
+    "SPRINT_5": "LOCKED"
+  }
+}
