@@ -45,8 +45,8 @@ export default function SynthesisGuideBanner() {
       className="w-full bg-[var(--surface-1)] border-b border-[var(--border-subtle)] text-xs font-mono transition-all duration-200"
     >
       <div className="max-w-[1750px] mx-auto px-3 sm:px-6 py-2 flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
               SYNTHESIS E V3 WORKFLOW
             </span>

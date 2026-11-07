@@ -48,9 +48,9 @@ export default function PageIntro({
   return (
     <div
       data-hub-intro={hubId}
-      className={`p-4 md:p-5 rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg ${className}`}
+      className={`p-3 sm:p-4 md:p-5 rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 shadow-lg min-w-0 ${className}`}
     >
-      <div className="space-y-1.5 max-w-3xl">
+      <div className="space-y-1 sm:space-y-1.5 max-w-3xl min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           {badge && (
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/80 border border-cyan-800/80 px-2 py-0.5 rounded">
@@ -85,7 +85,7 @@ export default function PageIntro({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 max-w-full">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 max-w-full min-w-0">
         {children}
 
         {secondaryAction && (
