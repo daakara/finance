@@ -304,6 +304,9 @@ class VCPScannerRunner:
             scanned_successfully_count = 0
             computed_evaluations_count = 0
             uncomputed_evaluations_count = 0
+            stage_2_opportunity_count = 0
+            unresolved_symbol_count = 0
+            latest_observed_trade_date = None
             unavailable_reasons: Dict[str, int] = {}
             adjustment_state_counts: Dict[str, int] = {}
             qualified_candidates: List[Dict[str, Any]] = []
@@ -395,6 +398,9 @@ class VCPScannerRunner:
                     continue
 
                 try:
+                    sym_latest_date = str(db_candles[-1].get("time") or db_candles[-1].get("trade_date"))[:10]
+                    if latest_observed_trade_date is None or sym_latest_date > latest_observed_trade_date:
+                        latest_observed_trade_date = sym_latest_date
                     scanned_successfully_count += 1
                     df = pd.DataFrame([{
                         "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
@@ -495,15 +501,20 @@ class VCPScannerRunner:
                             if vcp_domain_assessment.vcp_classification == "VCP_QUALIFIED"
                             else vcp_domain_assessment.vcp_classification
                         )
+                        stage_cls = getattr(vcp_domain_assessment, "stage_classification", None)
                         stage_status = (
                             "Stage 2 Advancing Growth Phase"
-                            if getattr(vcp_domain_assessment, "stage_classification", None) == "STAGE_2"
-                            else getattr(vcp_domain_assessment, "stage_classification", "Stage Unverified")
+                            if stage_cls == "STAGE_2"
+                            else (stage_cls or "Stage Unverified")
                         )
                         setup_pattern = getattr(vcp_domain_assessment, "authorized_label", None) or (
                             "VCP Setup" if vcp_domain_assessment.vcp_qualified else "Consolidation Setup (Non-VCP)"
                         )
                         computed_evaluations_count += 1
+                        if stage_cls == "STAGE_2":
+                            stage_2_opportunity_count += 1
+                        elif stage_cls in (None, "STAGE_UNRESOLVED", "Stage Unverified"):
+                            unresolved_symbol_count += 1
                     else:
                         # Truthfulness Invariant: OptimalExecutionEngine evaluates tactical execution corridors
                         # (entry/stop/target/ATR) only. A 60-bar window cannot evaluate the 200-session trend
@@ -512,6 +523,7 @@ class VCPScannerRunner:
                         stage_status = "Stage Unverified (Trend Template Uncomputed)"
                         setup_pattern = "Consolidation Setup (Pattern Unverified)"
                         uncomputed_evaluations_count += 1
+                        unresolved_symbol_count += 1
 
                     # Qualification ruleset: Must be authoritatively confirmed VCP in Stage 2 Advancing Growth Phase
                     is_vcp = vcp_authoritative_computed and (vcp_domain_assessment.vcp_qualified is True)
@@ -570,7 +582,9 @@ class VCPScannerRunner:
                 cand["rank"] = rank_idx
 
             matched_count = len(qualified_candidates)
-            data_as_of = time.strftime("%Y-%m-%d", time.gmtime())
+            source_session_date = latest_observed_trade_date or scheduled_for or time.strftime("%Y-%m-%d", time.gmtime())
+            data_as_of = source_session_date
+            scan_execution_instant = generated_at
 
             version_tuple = self.get_version_tuple()
             semantic_fingerprint = ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint()
@@ -646,11 +660,14 @@ class VCPScannerRunner:
                 "scanned_successfully_count": scanned_successfully_count,
                 "matched_count": matched_count,
                 "unavailable_symbol_count": unavailable_count + (scannable_count - scanned_successfully_count),
-                "unresolved_symbol_count": 0,
+                "unresolved_symbol_count": unresolved_symbol_count,
+                "stage_2_opportunity_count": stage_2_opportunity_count,
                 "data_completeness_pct": data_completeness_pct,
                 "scan_coverage_pct": scan_coverage_pct,
                 "unavailable_reasons": unavailable_reasons,
                 "adjustment_state_distribution": adjustment_state_counts,
+                "source_session_date": source_session_date,
+                "scanned_at": scan_execution_instant,
             }
 
             # Optional quorum enforcement check (owner configurable via min_coverage_pct)
@@ -713,6 +730,8 @@ class VCPScannerRunner:
                 "source": "LOCAL_MARKET_DB_SQLITE",
                 "source_contract_version": "1.0.0",
                 "data_as_of": data_as_of,
+                "source_session_date": source_session_date,
+                "scanned_at": scan_execution_instant,
                 "universe_metadata": universe_metadata,
                 "coverage_metadata": coverage_metadata,
                 "invocation_metadata": {
@@ -760,6 +779,8 @@ class VCPScannerRunner:
                     "policy_version": version_tuple.freshness_policy_version,
                     "generated_at": generated_at,
                     "data_as_of": data_as_of,
+                    "source_session_date": source_session_date,
+                    "scanned_at": scan_execution_instant,
                     "evaluated_at": generated_at,
                     "status": FreshnessStatus.LIVE.value,
                 },
@@ -1127,6 +1148,8 @@ class VCPScannerRunner:
                 "policy_version": rec["freshness_policy_version"],
                 "generated_at": rec["generated_at"],
                 "data_as_of": rec["data_as_of"],
+                "source_session_date": rec.get("freshness", {}).get("source_session_date") or rec.get("data_as_of"),
+                "scanned_at": rec.get("freshness", {}).get("scanned_at") or rec.get("generated_at"),
                 "evaluated_at": rec.get("freshness", {}).get("evaluated_at", rec["generated_at"]),
                 "status": freshness_status,
             },

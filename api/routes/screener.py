@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 import datetime as dt_module
 from fastapi import APIRouter, Response, Header, HTTPException, status
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 import time
 import pandas as pd
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
@@ -33,6 +33,8 @@ from analyst_dashboard.analyzers.scanner_contract import (
     RADAR_SCOPE_LABEL,
     ScannerStatus,
 )
+from analyst_dashboard.universe.fixtures import HISTORICAL_VCP_35_REGRESSION_FIXTURE
+from analyst_dashboard.universe.store import UniverseStore
 from analyst_dashboard.analyzers.scanner_publication_integrity import (
     CANONICAL_VCP_RULESET_HASH,
     VCP_RULESET_VERSION,
@@ -493,6 +495,72 @@ def classify_candidate_category_evidence(categories: List[str]) -> Dict[str, str
     return evidence
 
 
+def compute_canonical_stage_classification(
+    symbol: str,
+    candles: List[Dict[str, Any]],
+    eval_as_of: Optional[str] = None,
+) -> Tuple[str, List[str], bool]:
+    """
+    Evaluates authoritative Minervini Stage Classification using VCPClassifier
+    and VCPTemporalCaseCompiler over long-history daily candles.
+    Returns: (stage_classification, reason_codes, vcp_qualified)
+    """
+    if not candles or len(candles) < 50:
+        return "STAGE_UNRESOLVED", ["INSUFFICIENT_HISTORICAL_SESSIONS"], False
+
+    clean_sym = symbol.strip().upper()
+    raw_bars: List[DailyOHLCVBar] = []
+    us_eastern = ZoneInfo("America/New_York")
+
+    for c in candles:
+        b_date_str = str(c.get("time") or c.get("trade_date"))[:10]
+        try:
+            b_d = dt_module.date.fromisoformat(b_date_str)
+            b_close_et = dt_module.datetime(b_d.year, b_d.month, b_d.day, 16, 0, 0, tzinfo=us_eastern)
+            b_close_utc = b_close_et.astimezone(dt_module.timezone.utc)
+            b_known_utc = b_close_utc + dt_module.timedelta(minutes=30)
+            raw_bars.append(
+                DailyOHLCVBar(
+                    symbol=clean_sym,
+                    bar_date=b_date_str,
+                    open=float(c.get("open", c.get("Open", 0.0))),
+                    high=float(c.get("high", c.get("High", 0.0))),
+                    low=float(c.get("low", c.get("Low", 0.0))),
+                    close=float(c.get("close", c.get("Close", 0.0))),
+                    volume=int(c.get("volume", c.get("Volume", 0))),
+                    valid_time=b_close_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    known_at=b_known_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    is_session_closed=True,
+                )
+            )
+        except Exception:
+            continue
+
+    if len(raw_bars) < 50:
+        return "STAGE_UNRESOLVED", ["INSUFFICIENT_HISTORICAL_SESSIONS"], False
+
+    raw_bars.sort(key=lambda b: b.bar_date)
+    latest_date = raw_bars[-1].bar_date
+    effective_cutoff = eval_as_of if (eval_as_of and "T" in str(eval_as_of)) else f"{latest_date}T20:45:00Z"
+
+    try:
+        compiler = VCPTemporalCaseCompiler()
+        package = compiler.compile_case(
+            case_id=f"STAGE-{clean_sym}-{latest_date}",
+            security_id=clean_sym,
+            symbol=clean_sym,
+            evaluation_as_of=effective_cutoff,
+            raw_bars=raw_bars,
+            reference_data={},
+            corporate_actions=[],
+        )
+        classifier = VCPClassifier()
+        assessment = classifier.classify_case(package)
+        return assessment.stage_classification, assessment.classification_reason_codes, assessment.vcp_qualified
+    except Exception as exc:
+        return "STAGE_UNRESOLVED", [f"CLASSIFIER_ERROR: {str(exc)}"], False
+
+
 class ScreenerRequest(BaseModel):
     tickers: Optional[List[str]] = None
     user_role: Optional[str] = "LONG_TERM"
@@ -527,6 +595,7 @@ def run_screener_get(
     user_role: str = "LONG_TERM",
     custom_tickers: Optional[str] = None,
     universe: Optional[str] = None,
+    view: Optional[str] = "stage_2_primary",
 ):
     """GET endpoint supporting live screener execution, archetype filtering, and on-demand custom ticker scanning."""
     if response is not None and hasattr(response, "headers"):
@@ -536,14 +605,40 @@ def run_screener_get(
 
     is_day_trader = (user_role == "DAY_TRADER")
 
-    # On-demand custom watchlist input support
+    # Authoritative active universe resolution (Section 2.C)
+    resolved_universe_id: str = "ARX_US_EQUITIES"
+    resolved_build_id: Optional[str] = None
+
     if custom_tickers and custom_tickers.strip():
         parsed = [t.strip().upper() for t in custom_tickers.replace(",", " ").split() if t.strip()]
         active_universe = parsed if parsed else (DAY_TRADER_CANDIDATES if is_day_trader else LONG_TERM_CANDIDATES)
+        resolved_universe_id = "CUSTOM_WATCHLIST"
     elif universe and universe.strip().upper() in ("ALL_CATALOG", "MASTER_CATALOG", "CATALOG"):
         active_universe = MASTER_CATALOG_CANDIDATES
+        resolved_universe_id = "MASTER_CATALOG"
+    elif universe and universe.strip().upper() in ("PRE_SCREENED", "HISTORICAL_35", "REGRESSION_FIXTURE", "VCP_35"):
+        active_universe = HISTORICAL_VCP_35_REGRESSION_FIXTURE
+        resolved_universe_id = "HISTORICAL_VCP_35_FIXTURE"
+    elif is_day_trader:
+        active_universe = DAY_TRADER_CANDIDATES
+        resolved_universe_id = "DAY_TRADER"
     else:
-        active_universe = DAY_TRADER_CANDIDATES if is_day_trader else LONG_TERM_CANDIDATES
+        # Default Primary Discovery: Resolve latest promoted/published universe build dynamically
+        u_store = getattr(vcp_scanner_runner, "universe_store", None) or UniverseStore()
+        promoted_build = u_store.get_latest_published_universe(universe_id="ARX_US_EQUITIES")
+        if promoted_build and promoted_build.get("universe_build_id"):
+            target_build_id = promoted_build["universe_build_id"]
+            scannable = u_store.get_scannable_membership(target_build_id)
+            if scannable:
+                active_universe = scannable
+                resolved_universe_id = "ARX_US_EQUITIES"
+                resolved_build_id = target_build_id
+            else:
+                active_universe = LONG_TERM_CANDIDATES
+                resolved_universe_id = "HISTORICAL_VCP_35_FIXTURE"
+        else:
+            active_universe = LONG_TERM_CANDIDATES
+            resolved_universe_id = "HISTORICAL_VCP_35_FIXTURE"
 
     try:
         results = screener.evaluate_candidates(active_universe)
@@ -647,6 +742,11 @@ def run_screener_get(
                     from api.routes.analytics import compute_intraday_technicals
                     technicals = compute_intraday_technicals(hist_df) if not hist_df.empty else None
                     execution = optimal_engine.calculate_trade_levels(hist_df, current_price, user_role=user_role, technicals=technicals)
+
+                    # Evaluate Authoritative Minervini Stage Classification via VCPClassifier (Section 2.D)
+                    stage_class, stage_reasons, is_vcp_qual = compute_canonical_stage_classification(
+                        sym, db_candles, eval_as_of=price_date
+                    )
         
         
             except Exception as e:
@@ -682,9 +782,47 @@ def run_screener_get(
             tp1 = execution["take_profit_1"]
             tp2 = execution["take_profit_2"]
             rr_ratio = execution["risk_reward_ratio"]
-            setup_pat = execution["setup_pattern"]
             entry_th = execution["entry_thesis"]
             atr_14 = execution.get("atr_14")
+
+            # Canonical Minervini Stage and Pattern Determination (Section 2.A & 2.D)
+            if "stage_class" not in locals():
+                stage_class = "STAGE_UNRESOLVED"
+                stage_reasons = []
+                is_vcp_qual = False
+
+            if is_delisted:
+                stage_phase = "Delisted / Inactive"
+                setup_pat = "Delisted Security / Ceased Public Trading"
+                vcp_status = "Inactive"
+            elif execution.get("execution_status") == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
+                stage_phase = "Unverified Asset"
+                setup_pat = "Unverified Asset Setup"
+                vcp_status = "Unverified"
+            elif stage_class == "STAGE_2":
+                stage_phase = "Stage 2 Advancing Growth Phase"
+                if is_vcp_qual or (vcp_matched_symbols and sym in vcp_matched_symbols):
+                    setup_pat = "Minervini Volatility Contraction Pattern (VCP)"
+                    vcp_status = "VCP 3-Stage Compression Confirmed"
+                else:
+                    setup_pat = "Stage 2 Advancing Base (Non-VCP Consolidation)"
+                    vcp_status = "Consolidation Setup (Non-VCP)"
+            elif stage_class == "STAGE_4":
+                stage_phase = "Stage 4 Markdown (Awaiting New Base)"
+                setup_pat = "Stage 4 Downtrend Continuation / Base Breakdown"
+                vcp_status = "Stage 4 Ineligible"
+            elif stage_class == "STAGE_1":
+                stage_phase = "Stage 1 Structural Basing Phase"
+                setup_pat = "Stage 1 Structural Accumulation / Early Floor"
+                vcp_status = "Bottom Contraction in Progress"
+            elif stage_class == "STAGE_3":
+                stage_phase = "Stage 3 Distribution Phase"
+                setup_pat = "Stage 3 Distribution Top / Exhaustion"
+                vcp_status = "Distribution Stage Ineligible"
+            else:
+                stage_phase = "Stage Unresolved"
+                setup_pat = "Stage Unresolved (Insufficient History or Mixed Structure)"
+                vcp_status = "Consolidation Unverified"
     
             # Pure Mathematical Execution State Determination
             if is_delisted:
@@ -703,7 +841,7 @@ def run_screener_get(
                 execution_status = "STOPPED_OUT"
                 status_label = "🛑 Below Stop Loss"
                 status_color = "rose"
-            elif execution.get("stage_phase") == "Stage 4 Markdown (Awaiting New Base)":
+            elif stage_class == "STAGE_4" or execution.get("stage_phase") == "Stage 4 Markdown (Awaiting New Base)":
                 execution_status = "WAITING_PULLBACK"
                 status_label = "⏳ Awaiting Base Formation"
                 status_color = "cyan"
@@ -942,6 +1080,17 @@ def run_screener_get(
                     "qualificationState": "INELIGIBLE_INACTIVE" if is_delisted else ("REFERENCE_CRITERIA_MET" if "VALUE_GARP" in cand_categories else ("REFERENCE_CRITERIA_UNMET" if sym in screener.KNOWN_GEMS_DATA else "UNASSESSED_INSUFFICIENT_EVIDENCE")),
                     "sortingBasis": "TECHNICAL_CONFLUENCE_MOMENTUM" if not is_delisted and execution_status != "UNVERIFIED_ASSET" else "UNAVAILABLE",
                 },
+                "stageClassification": stage_class,
+                "stagePhase": stage_phase,
+                "vcpStage": vcp_status,
+                "stageProvenance": {
+                    "classifierAuthority": "VCPClassifier",
+                    "rulesetVersion": VCP_RULESET_VERSION,
+                    "evaluationCutoff": price_date,
+                    "trendTemplatePass": (stage_class == "STAGE_2"),
+                    "rejectionReasons": stage_reasons if stage_class != "STAGE_2" else [],
+                    "isVcpQualified": is_vcp_qual,
+                },
                 "optimalEntryMin": entry_min,
                 "optimalEntryMax": entry_max,
                 "stopLoss": stop_loss,
@@ -1013,8 +1162,22 @@ def run_screener_get(
             filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "VCP" in c["categories"]]
         elif filter_type == "smart_money":
             filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "SMART_MONEY" in c["categories"]]
-        else:
+        elif filter_type == "stage_2":
+            filtered = [c for c in mapped_candidates if c.get("stageClassification") == "STAGE_2" and c["executionStatus"] not in non_tradable]
+        elif filter_type in ["diagnostic", "all_stages", "raw"]:
             filtered = mapped_candidates
+        else:
+            # Primary Radar Discovery ("all" / default):
+            # Enforces Stage 2 opportunity discovery (Section 2.A & 2.B):
+            # Only authoritatively verified Stage 2 equities are admitted to primary discovery.
+            # Non-Stage-2 securities (Stage 1, 3, 4, unresolved) remain accessible via view="diagnostic".
+            # If custom_tickers is explicitly requested or legacy static fixture is screened, all requested assets are preserved.
+            if custom_tickers or (universe and universe.strip().upper() in ("ALL_CATALOG", "MASTER_CATALOG", "CATALOG", "PRE_SCREENED", "HISTORICAL_35")):
+                filtered = mapped_candidates
+            elif view in ("diagnostic", "all_stages", "raw"):
+                filtered = mapped_candidates
+            else:
+                filtered = [c for c in mapped_candidates if c.get("stageClassification") == "STAGE_2" and c["executionStatus"] not in non_tradable]
 
         # Canonical deterministic sorting per ARX Governance Contract & Directive 044R.8
         # Sorting priority:
@@ -1063,9 +1226,14 @@ def run_screener_get(
             "referenceUniverseCount": reference_count,
             "activeScreeningCount": len(active_candidates),
             "currentOpportunityCount": len(opportunity_candidates),
+            "stage2OpportunityCount": sum(1 for c in mapped_candidates if c.get("stageClassification") == "STAGE_2"),
+            "stage1RecordCount": sum(1 for c in mapped_candidates if c.get("stageClassification") == "STAGE_1"),
+            "stage4RecordCount": sum(1 for c in mapped_candidates if c.get("stageClassification") == "STAGE_4"),
+            "stageUnresolvedRecordCount": sum(1 for c in mapped_candidates if c.get("stageClassification") == "STAGE_UNRESOLVED"),
             "delistedRecordCount": len(delisted_candidates),
             "unverifiedRecordCount": len(unverified_candidates),
-            "universeScope": "ALL_CATALOG" if universe and universe.strip().upper() in ("ALL_CATALOG", "MASTER_CATALOG", "CATALOG") else ("DAY_TRADER" if is_day_trader else "LONG_TERM"),
+            "universeScope": resolved_universe_id,
+            "universeBuildId": resolved_build_id,
         }
     
         capabilities_dict = get_radar_capabilities(vcp_snapshot=vcp_snapshot, sm_snapshot=sm_snapshot)
@@ -1101,14 +1269,21 @@ def run_screener_get(
             "partialErrors": partial_errors if partial_errors else None,
             "totalCandidates": reference_count,
             "gemsFound": len(filtered),
+            "totalEvaluated": len(mapped_candidates),
+            "stage2OpportunityCount": sum(1 for c in mapped_candidates if c.get("stageClassification") == "STAGE_2"),
+            "nonStage2DiagnosticCount": sum(1 for c in mapped_candidates if c.get("stageClassification") != "STAGE_2"),
+            "activeUniverseId": resolved_universe_id,
+            "universeScope": resolved_universe_id,
+            "activeUniverseBuildId": resolved_build_id,
             "activeFilter": filter_type,
+            "activeView": "STAGE_2_PRIMARY" if (view != "diagnostic" and not custom_tickers and not (universe and universe.strip().upper() in ("ALL_CATALOG", "MASTER_CATALOG", "CATALOG", "PRE_SCREENED", "HISTORICAL_35"))) else "DIAGNOSTIC_ALL_STAGES",
             "userRole": user_role,
             "capabilities": capabilities_dict,
             "macroContextId": shared_macro_context_id,
             "macroDifficulty": shared_macro,
             "population": population_model,
             "candidates": filtered,
-            "results": results,
+            "results": filtered,
             "evidence": radar_evidence.to_dict(),
         })
     except Exception as e:
