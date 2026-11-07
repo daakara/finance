@@ -15,6 +15,7 @@ export interface MarketObservation {
   newRegime?: string;
   returnPct?: number;
   observedConfidence?: number;
+  observedAt?: string;
 }
 
 export class OutcomeResolver {
@@ -51,9 +52,18 @@ export class OutcomeResolver {
       attributionCategory = AttributionCategory.EXECUTION_SUCCESS;
       explanation = "Partial target objective reached within execution corridor";
     } else {
+      const nowMs = observation.observedAt ? new Date(observation.observedAt).getTime() : Date.now();
+      const expMs = prediction.expirationAt ? new Date(prediction.expirationAt).getTime() : 0;
+
+      if (expMs > 0 && nowMs < expMs) {
+        throw new Error(
+          `Cannot resolve unexpired prediction without terminal observation: horizon is still active until ${prediction.expirationAt}`
+        );
+      }
+
       outcomeClass = OutcomeClass.EXPIRED;
       attributionCategory = AttributionCategory.THESIS_EXPIRED;
-      explanation = "Outcome unobserved: neither target, stop, nor expiration conditions were captured";
+      explanation = "Outcome unobserved: prediction horizon elapsed without captured target, stop, or invalidation";
     }
 
     return validateOutcomeRecord({

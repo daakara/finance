@@ -162,6 +162,71 @@ def test_paper_trading_outcome_evaluator_intrabar_collision_isolation():
     assert result.outcome != "TARGET_1_EXIT"
 
 
+def test_falsification_missing_observation_vs_genuine_horizon_expiration():
+    """FALSIFICATION: Distinguishes missing outcome observations from genuinely expired horizons."""
+    base_signal = {
+        "symbol": "NVDA",
+        "signalDate": "2026-11-01",
+        "corridorMin": 100.0,
+        "corridorMax": 102.0,
+        "stopLoss": 95.0,
+        "takeProfit1": 115.0,
+        "confluenceScore": 90.0,
+        "marketRegime": "BULLISH",
+    }
+
+    # Case 1: Empty observation (0 bars after signal date) -> OUTCOME_DATA_MISSING, never expired
+    empty_bars = pd.DataFrame(columns=["Open", "High", "Low", "Close"], index=pd.DatetimeIndex([]))
+    res_empty = PaperTradingOutcomeEvaluator.evaluate_signal(base_signal, empty_bars)
+    assert res_empty.outcome == "OUTCOME_DATA_MISSING"
+    assert res_empty.exit_reason == "DATA_MISSING"
+    assert res_empty.outcome != "ENTRY_NOT_TRIGGERED"
+    assert res_empty.outcome != "NEUTRAL"
+
+    # Case 2: Incomplete entry window (2 sessions, outside corridor) -> ENTRY_WINDOW_STILL_OPEN, never expired
+    two_days = pd.DataFrame(
+        [
+            {"Open": 105.0, "High": 106.0, "Low": 104.0, "Close": 105.5},
+            {"Open": 105.5, "High": 107.0, "Low": 104.5, "Close": 106.0},
+        ],
+        index=pd.to_datetime(["2026-11-02", "2026-11-03"]),
+    )
+    res_entry_open = PaperTradingOutcomeEvaluator.evaluate_signal(base_signal, two_days)
+    assert res_entry_open.outcome == "ENTRY_WINDOW_STILL_OPEN"
+    assert res_entry_open.exit_reason == "WINDOW_OPEN"
+    assert res_entry_open.outcome != "ENTRY_NOT_TRIGGERED"
+
+    # Case 3: Incomplete holding window (entry on day 1, 3 holding sessions, no TP/stop) -> UNMATURED, never HORIZON_EXIT
+    three_holding_days = pd.DataFrame(
+        [
+            {"Open": 101.0, "High": 103.0, "Low": 100.0, "Close": 102.0},  # Day 1: Enters in corridor
+            {"Open": 102.0, "High": 104.0, "Low": 101.0, "Close": 103.0},  # Day 2
+            {"Open": 103.0, "High": 105.0, "Low": 102.0, "Close": 104.0},  # Day 3
+        ],
+        index=pd.to_datetime(["2026-11-02", "2026-11-03", "2026-11-04"]),
+    )
+    res_unmatured = PaperTradingOutcomeEvaluator.evaluate_signal(base_signal, three_holding_days)
+    assert res_unmatured.outcome == "UNMATURED"
+    assert res_unmatured.exit_reason == "HOLDING_WINDOW_ACTIVE"
+    assert res_unmatured.outcome != "NEUTRAL"
+
+    # Case 4: Genuinely expired holding window (20 complete sessions without TP1/Stop) -> NEUTRAL, HORIZON_EXIT
+    dates_20 = [f"2026-11-{i:02d}" for i in range(2, 22)]
+    twenty_days = pd.DataFrame(
+        {
+            "Open": [101.0] * 20,
+            "High": [104.0] * 20,
+            "Low": [98.0] * 20,
+            "Close": [102.0] * 19 + [103.0],
+        },
+        index=pd.to_datetime(dates_20),
+    )
+    res_genuine_expired = PaperTradingOutcomeEvaluator.evaluate_signal(base_signal, twenty_days)
+    assert res_genuine_expired.outcome == "NEUTRAL"
+    assert res_genuine_expired.exit_reason == "HORIZON_EXIT"
+    assert res_genuine_expired.exit_price == 103.0
+
+
 def test_radar_and_smart_money_invariants_preserved():
     """Verify that all operational safety holds and canonical policies remain strictly intact."""
     # 1. HOLD_SCAN_001, HOLD_SEC_001, HOLD_EXEC_001 defaults

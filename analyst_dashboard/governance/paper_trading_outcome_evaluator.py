@@ -97,6 +97,28 @@ class PaperTradingOutcomeEvaluator:
             )
 
         # Filter subsequent bars strictly after signal date
+        if len(daily_bars) == 0:
+            return EvaluationResult(
+                symbol=sym,
+                engine_version=ver,
+                signal_date=sig_date,
+                entry_state="ENTRY_DATA_UNRESOLVED",
+                entry_date=None,
+                entry_price=None,
+                outcome="OUTCOME_DATA_MISSING",
+                exit_date=None,
+                exit_price=None,
+                exit_reason="DATA_MISSING",
+                gross_return_pct=None,
+                net_simulated_return_pct=None,
+                r_multiple=None,
+                mfe=None,
+                mae=None,
+                confluence_score=score,
+                market_regime=regime,
+                provider=provider,
+            )
+
         subsequent = daily_bars[daily_bars.index > sig_date].copy()
         if len(subsequent) == 0:
             return EvaluationResult(

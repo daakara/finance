@@ -87,6 +87,41 @@ describe("ARX-LEARNING-INTEGRITY-001 Adversarial Suite (Frontend)", () => {
     expect(outcome.explanation).toContain("Outcome unobserved");
   });
 
+  // 3b. FALSIFICATION: Distinguishes missing outcome observations from genuinely expired prediction horizons
+  it("FALSIFICATION: Rejects premature resolution of active predictions when observations are missing", () => {
+    const activeFuturePrediction: PredictionRecord = {
+      ...dummyPrediction,
+      predictionId: "pred-future-001",
+      generatedAt: "2026-11-06T10:00:00Z",
+      expirationAt: "2026-12-31T16:00:00Z", // Future date
+      status: "ACTIVE",
+    };
+
+    // Case A: Missing observation while horizon is still active -> throws, fails closed
+    expect(() => {
+      OutcomeResolver.resolveOutcome(activeFuturePrediction, {
+        observedAt: "2026-11-07T12:00:00Z", // Prior to expiration
+      });
+    }).toThrow("Cannot resolve unexpired prediction without terminal observation");
+
+    // Case B: Terminal trigger present prior to expiration -> resolves immediately to SUCCESS
+    const targetHitOutcome = OutcomeResolver.resolveOutcome(activeFuturePrediction, {
+      observedAt: "2026-11-07T12:00:00Z",
+      targetReached: true,
+      returnPct: 8.5,
+      observedConfidence: 0.95,
+    });
+    expect(targetHitOutcome.outcomeClass).toBe(OutcomeClass.SUCCESS);
+    expect(targetHitOutcome.outcomeReturnPct).toBe(8.5);
+
+    // Case C: Genuinely expired observation after horizon elapsed -> resolves to EXPIRED
+    const expiredOutcome = OutcomeResolver.resolveOutcome(activeFuturePrediction, {
+      observedAt: "2027-01-02T10:00:00Z", // Strictly after expirationAt
+    });
+    expect(expiredOutcome.outcomeClass).toBe(OutcomeClass.EXPIRED);
+    expect(expiredOutcome.attributionCategory).toBe(AttributionCategory.THESIS_EXPIRED);
+  });
+
   // 4. Subthreshold PAR (< 0.5) never gets substituted with 0.62
   it("FAIL-CLOSED: Subthreshold PAR (< 0.5) reports authentic rate and FAIL status, never substituted with 0.62", () => {
     const singleOutcome: OutcomeRecord = {
