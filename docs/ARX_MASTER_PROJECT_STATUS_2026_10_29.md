@@ -1,4 +1,7 @@
 # ARX TERMINAL — MASTER PROJECT STATUS
+
+> **Current operational reconciliation (2026-11-07, production SHA `83bca0b69d2d56d30b4d3157ff492fae260b7f3a`):** See [Active work register](planning/ARX_ACTIVE_WORK_REGISTER_2026_11_07.md) and [latest release reconciliation](releases/2026-11-07_operational_release_reconciliation.md). Older SHAs and pending-Radar statements below are dated historical context, not current status. PR #220 Radar and PR #222 learning integrity are merged; learning calibration, natural scans, SEC recurring ingest and execution remain held.
+
 ## Integrated System State Across Research, Engineering, UX, Governance & Production
 **Status As Of:** 29 October 2026 (22:30 UTC+1)  
 **Mainline Anchor SHA:** `e10de3b2714e7c7cba49c51e0e7a4eb13a7033f6`  

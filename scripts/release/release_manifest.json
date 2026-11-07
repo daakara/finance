@@ -1,65 +1,65 @@
 {
-  "release_candidate_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
-  "base_anchor_commit": "c569e26b1f5059bd659ae68d418e03a6482a132f",
+  "release_candidate_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
+  "base_anchor_commit": "83bca0b69d2d56d30b4d3157ff492fae260b7f3a",
   "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-LEARNING-004",
+  "directive": "ARX-DOCS-2026-11-07-RECONCILIATION",
   "files": {
-    "analyst_dashboard/governance/prospective_capture.py": {
+    "CHANGELOG.md": {
       "operation": "M",
-      "originating_pr_number": 222,
-      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
-      "governing_requirement": "ARX-LEARNING-004: Outcome link idempotency, no hardcoded census fallbacks, immutable settled states",
-      "sha256": "5560eb3b75f5438d67487826151d7a8f14379fe2e2b22e906c967b5002c25ef9",
-      "size_bytes": 72410
+      "originating_pr_number": 224,
+      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
+      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
+      "sha256": "8165349f530a7425f524f1f6fb73850c1bbe64e755a46b4e80f0c562211e870f",
+      "size_bytes": 31950
     },
-    "analyst_dashboard/governance/shadow_replay_runner.py": {
+    "README.md": {
       "operation": "M",
-      "originating_pr_number": 222,
-      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
-      "governing_requirement": "ARX-LEARNING-004: Market data authority and qualification invariants",
-      "sha256": "3aa36f2b57e0e9c6d4c3896b8a5a93200226f8de19b8247e15c74b11f8d6ceb3",
-      "size_bytes": 8704
+      "originating_pr_number": 224,
+      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
+      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
+      "sha256": "7a426ec42d3895855745e5dd3e4646e2bbcfb29b13eb1a15a3c5302978e46daa",
+      "size_bytes": 13360
     },
-    "api/middleware/api_key_auth.py": {
+    "docs/ARX_MASTER_PROJECT_STATUS_2026_10_29.md": {
       "operation": "M",
-      "originating_pr_number": 222,
-      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
-      "governing_requirement": "ARX-LEARNING-004: Delegated auth classification for prospective learning census route",
-      "sha256": "bede42e484899801f9a2cf5bb2703ca23b051f5639846bb7f315f2ab43f05896",
-      "size_bytes": 11673
+      "originating_pr_number": 224,
+      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
+      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
+      "sha256": "0b49c260ab5bae5b516680e2a75881c76e989d4fce083dfe2590acf143b8b864",
+      "size_bytes": 8632
     },
-    "api/routes/governance.py": {
+    "docs/ARX_STATUS_ADDENDUM_2026_11_07.md": {
       "operation": "M",
-      "originating_pr_number": 222,
-      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
-      "governing_requirement": "ARX-LEARNING-004: Authenticated census access and sanitized error handling",
-      "sha256": "2347f1f40295190d4bc9e029f04820c0a5515d1fad2485292cb55fa032a8283b",
-      "size_bytes": 28814
+      "originating_pr_number": 224,
+      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
+      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
+      "sha256": "9d3690cb8e258512a69daeb320bf04bb29ba00b86a4e168d3a817c86d6be773d",
+      "size_bytes": 4476
     },
-    "scripts/replay_prospective_settlement.py": {
-      "operation": "M",
-      "originating_pr_number": 222,
-      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
-      "governing_requirement": "ARX-LEARNING-004: Safe replay defaults with non-persisting dry-run and persistence qualification",
-      "sha256": "475c7273fa7353ab0727f9b84cf7e2c1effc1f3a526b06efb379bb73da0c71d6",
-      "size_bytes": 9714
-    },
-    "tests/test_prospective_learning_corrections.py": {
+    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_07.md": {
       "operation": "A",
-      "originating_pr_number": 222,
-      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
-      "governing_requirement": "ARX-LEARNING-004: Adversarial tests for DB failure, replay idempotency, settled immutability, and API auth",
-      "sha256": "ba65be8078902e852b678af74a61e5f73ed4e6a21222e701657e090c4dff24f1",
-      "size_bytes": 21959
+      "originating_pr_number": 224,
+      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
+      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
+      "sha256": "9fb978c2064b557c292dc7f969dbc7a05b5a9c9ffdf2368a713fdfead68fd5e3",
+      "size_bytes": 8128
     },
-    "tests/test_prospective_shadow_mode.py": {
+    "docs/releases/2026-11-07_operational_release_reconciliation.md": {
+      "operation": "A",
+      "originating_pr_number": 224,
+      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
+      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
+      "sha256": "8350f69ef88f2c99e74e0827f45ce6dc6662ea206e1aa1b650fba59aa38599cf",
+      "size_bytes": 1986
+    },
+    "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 222,
-      "originating_commit": "37afaae322387a88aa9c84ee32c203a41d56683e",
-      "governing_requirement": "ARX-LEARNING-004: Reconciled test assertions for dynamic census",
-      "sha256": "a3db7f93974e69fa8cbb6859441500519657f33ab44a0b2a73c610b199d80bdd",
-      "size_bytes": 20589
+      "originating_pr_number": 224,
+      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
+      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
+      "sha256": "e81c8bac48a694090df45f9434da9e3ad9f8ceeee646cf2f5c3624b5375fa134",
+      "size_bytes": 57881
     }
   },
   "qualification_framework_files": {
@@ -69,9 +69,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "2a5eb97e7146b4e178758478915c4b21f2121ada8a04210110481ee65682706c",
-      "bytes": 57876,
-      "size_bytes": 57876
+      "sha256": "e81c8bac48a694090df45f9434da9e3ad9f8ceeee646cf2f5c3624b5375fa134",
+      "bytes": 57881,
+      "size_bytes": 57881
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
