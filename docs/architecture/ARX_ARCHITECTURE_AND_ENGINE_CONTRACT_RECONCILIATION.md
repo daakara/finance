@@ -8,6 +8,8 @@
 
 ---
 
+> **Dated successor context (2026-11-07):** This October 29 engine reconciliation is preserved as a historical authority snapshot. For the later RADAR-014/015 operational baseline, Stage 2 non-VCP discovery gap, 1.85/2.0 declared reward-to-risk divergence, current research-vs-actionability contract, and release sequencing, read [ARX Radar Investment Research Direction](ARX_RADAR_INVESTMENT_RESEARCH_DIRECTION_2026_11_07.md) and [Integrated Status Addendum](../ARX_STATUS_ADDENDUM_2026_11_07.md). This note does not retroactively change October 29 evidence or authorize held work.
+
 ## 1. Executive Summary & Engine Topology
 
 ARX Terminal coordinates twelve specialized computational engines. To prevent Cross-Boundary Blindness, data contamination, and unauthorized capital allocation, each engine operates under an explicit data contract and strict separation between **Research Observation Authority** and **Financial Execution Authority**.
