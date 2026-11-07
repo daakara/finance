@@ -1,0 +1,178 @@
+{
+  "schema_version": "1.0.0",
+  "document_type": "ARX_NON_ACTIVATING_SPRINT_PORTFOLIO",
+  "created_on": "2026-11-07",
+  "branch_baseline": "086719f87803cb98acbb3666780e20c9f1d88b54",
+  "source_of_truth": "docs/planning/arx_canonical_backlog.json",
+  "github_index_issue": 228,
+  "sprint5_execution_authorized": false,
+  "safety_holds": [
+    "HOLD_SCAN_001",
+    "HOLD_SEC_001",
+    "HOLD_EXEC_001"
+  ],
+  "natural_vcp_scheduler_enabled": false,
+  "scope": "Planning overlay only. Does not mutate canonical task status, execution authority, frozen weights or operational holds.",
+  "canonical_snapshot": {
+    "task_count": 43,
+    "obligation_count": 71,
+    "task_status_counts": {
+      "COMPLETED": 20,
+      "SUPERSEDED": 3,
+      "READY": 10,
+      "BLOCKED": 10
+    }
+  },
+  "lanes": [
+    {
+      "id": "P0",
+      "issue": 228,
+      "title": "Historical reconciliation",
+      "objective": "Triage stale PRs and completed Sprint 3 issues without reimplementing accepted work",
+      "entry": "Read-only evidence reconciliation",
+      "exit": "Each item disposition recorded with evidence and no duplicate active implementation",
+      "gate": "NON_ACTIVATING",
+      "issues": [
+        58,
+        59,
+        63,
+        67,
+        68,
+        69
+      ],
+      "pull_requests": [
+        193,
+        124,
+        109,
+        103,
+        47,
+        40,
+        38
+      ],
+      "canonical_task_ids": [
+        "ARX-S3-016"
+      ]
+    },
+    {
+      "id": "P1",
+      "issue": 229,
+      "title": "Decision integrity and market-data freshness",
+      "objective": "Falsify stale price/live macro, expired UI cache, OHLCV provenance, canonical execution gating and misleading readiness UX",
+      "entry": "PREFLIGHT-001 existing scope, only confirmed defects",
+      "exit": "Tests, scoped PR if necessary, qualified release and updated blockers",
+      "gate": "BOUNDED_ENGINEERING",
+      "issues": [
+        197,
+        198,
+        181
+      ],
+      "pull_requests": [],
+      "canonical_task_ids": []
+    },
+    {
+      "id": "P2",
+      "issue": 230,
+      "title": "Radar discovery reliability",
+      "objective": "Quantify published universe discovery quality, freshness and truthful filters without natural scanner activation",
+      "entry": "Evidence-only qualification and bounded non-activating fixes",
+      "exit": "Source-backed Stage 2/membership evidence, measured category availability",
+      "gate": "NO_SCANNER_ACTIVATION",
+      "issues": [
+        166,
+        61,
+        62,
+        70
+      ],
+      "pull_requests": [
+        128,
+        44,
+        42
+      ],
+      "canonical_task_ids": [
+        "ARX-S4-RADAR-001",
+        "ARX-S2-005",
+        "ARX-S2-007",
+        "ARX-S2-008",
+        "ARX-S2-009",
+        "ARX-S3-004",
+        "ARX-S3-005",
+        "ARX-S3-013"
+      ]
+    },
+    {
+      "id": "P3",
+      "issue": 231,
+      "title": "Smart Money evidence quality",
+      "objective": "Point-in-time NVDA/Form 4 evidence, cohort quality and settlement without recurring egress",
+      "entry": "Read-only audit; independent canary authorization required",
+      "exit": "Source freshness report and prospective cohort quality, not unsupported calibration",
+      "gate": "NO_CONTINUOUS_SEC_EGRESS",
+      "issues": [
+        165
+      ],
+      "pull_requests": [],
+      "canonical_task_ids": []
+    },
+    {
+      "id": "P4",
+      "issue": 232,
+      "title": "Security and architecture hardening",
+      "objective": "Close only confirmed remaining trust-boundary, runtime ownership and build provenance risks after SEC-002",
+      "entry": "Evidence from #203/#204, no repeated SEC-002",
+      "exit": "Distinct verified gaps closed with regression tests or explicitly deferred",
+      "gate": "RISK_BASED",
+      "issues": [
+        203,
+        204
+      ],
+      "pull_requests": [
+        146,
+        142,
+        141
+      ],
+      "canonical_task_ids": []
+    },
+    {
+      "id": "HOLD",
+      "issue": 233,
+      "title": "Owner-gated holding queue",
+      "objective": "Track ten blocked + one authorization-held canonical tasks and dormant activation/research PRs",
+      "entry": "Owner approval separate from planning is mandatory",
+      "exit": "Retain HOLD unless separately authorized; no automatic carryforward into active sprint",
+      "gate": "OWNER_GATE_REQUIRED",
+      "issues": [
+        60,
+        64,
+        65,
+        66
+      ],
+      "pull_requests": [
+        83,
+        78,
+        75,
+        73
+      ],
+      "canonical_task_ids": [
+        "ARX-S1-003",
+        "ARX-S2-002",
+        "ARX-S2-006",
+        "ARX-S2-010",
+        "ARX-S3-003",
+        "ARX-S3-006",
+        "ARX-S3-007",
+        "ARX-S3-008",
+        "ARX-S3-009",
+        "ARX-S3-014",
+        "ARX-S3-015"
+      ]
+    }
+  ],
+  "execution_order": [
+    "P0",
+    "P1",
+    "P2",
+    "P3",
+    "P4"
+  ],
+  "policy": "P0 and P1 can be worked pragmatically under their respective existing approval boundaries. The HOLD lane and Sprint 5 activation remain owner-gated."
+}
