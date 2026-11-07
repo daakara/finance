@@ -42,10 +42,10 @@ class SelfHealingForecastAuditor:
         # Expected breach rate for 95% VaR is ~5.0%
         if actual_breach_rate <= 5.5:
             var_status = "Optimal (Passed Kupiec POF Test)"
-            var_adjustment = "VaR fat-tail multiplier calibrated"
+            var_adjustment = "VaR fat-tail multiplier within historical benchmark (unmodified)"
         else:
             var_status = "Elevated Volatility Regime"
-            var_adjustment = "Auto-widened fat-tail multiplier by +12%"
+            var_adjustment = f"Advisory: Elevated volatility breach rate ({actual_breach_rate}%) suggests widening VaR multiplier (unapplied)"
 
         # 2. 30-Day Walk-Forward Forecast Accuracy & RMSE
         # Ensure safely bounded indices
@@ -75,7 +75,7 @@ class SelfHealingForecastAuditor:
             rmse = round(float(np.sqrt(np.mean(errors))) * 100, 2)
             hit_rate = round((hits / sample_windows) * 100, 1)
             accuracy_score = round(max(0.0, min(100.0, 100.0 - (rmse * 3.5) + (hit_rate * 0.15))), 1)
-            audit_status = "Self-Healed & Auto-Calibrated"
+            audit_status = "Historical Walk-Forward Backtest Audit (Parameters Unmodified)"
         else:
             rmse = None
             hit_rate = None
@@ -90,6 +90,6 @@ class SelfHealingForecastAuditor:
             "varBreachRatePct": actual_breach_rate,
             "varBreachStatus": var_status,
             "autoCalibrationAdjustments": var_adjustment,
-            "confidenceInterval": "95% Statistical Confidence" if accuracy_score is not None else "Insufficient Sample Size",
+            "confidenceInterval": "Historical Backtest Diagnostic Only (No Prospective Confidence Interval)" if accuracy_score is not None else "Insufficient Sample Size",
         }
 

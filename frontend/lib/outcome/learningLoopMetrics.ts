@@ -74,17 +74,21 @@ export class LearningLoopMetrics {
       }
     }
 
-    const topDrivers = [
-      { driver: "Institutional Accumulation", winRate: 0.72 },
-      { driver: "Regime Alignment", winRate: 0.69 },
-      { driver: "Validation Promotion", winRate: 0.67 },
-    ];
+    const topDrivers = Object.entries(driverStats)
+      .filter(([_, stats]) => stats.total > 0)
+      .map(([driver, stats]) => ({
+        driver,
+        winRate: Number((stats.wins / stats.total).toFixed(2)),
+      }))
+      .sort((a, b) => b.winRate - a.winRate);
 
-    const failureDrivers = [
-      { driver: "Regime Deterioration", percentage: 0.42 },
-      { driver: "Flow Reversal", percentage: 0.24 },
-      { driver: "Stop Triggered", percentage: 0.21 },
-    ];
+    const failureDrivers = Object.entries(failureStats)
+      .filter(([_, count]) => count > 0)
+      .map(([driver, count]) => ({
+        driver,
+        percentage: Number((count / Math.max(1, failures)).toFixed(2)),
+      }))
+      .sort((a, b) => b.percentage - a.percentage);
 
     return {
       totalReviewed: total,
@@ -101,9 +105,9 @@ export class LearningLoopMetrics {
       actionability: {
         reviewedPredictions: total,
         displayedPredictions: displayedPredictionsCount,
-        par: par >= 0.5 ? par : 0.62, // Defaults to compliant PAR in sample
+        par,
         target: 0.50,
-        status: "PASS",
+        status: par >= 0.50 ? "PASS" : "FAIL",
       },
     };
   }

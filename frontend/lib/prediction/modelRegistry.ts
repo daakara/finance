@@ -40,11 +40,11 @@ export class ModelRegistry {
       activatedAt: "2026-09-01T00:00:00Z",
       status: ModelStatus.ACTIVE,
       calibration: {
-        ece: 0.034,
-        brierScore: 0.12,
-        samples: 1482,
+        ece: 0,
+        brierScore: 0,
+        samples: 0,
         buckets: [],
-        status: "PASS",
+        status: "FAIL",
       },
     };
     this.models.set(defaultModel.modelId, defaultModel);
@@ -115,26 +115,31 @@ export class ModelRegistry {
       throw new Error("NO_ACTIVE_MODEL_TO_ROLLBACK");
     }
 
-    const currentActive = this.models.get(this.activeModelId);
-    if (currentActive) {
-      currentActive.status = ModelStatus.ROLLED_BACK;
-    }
+    const currentActiveId = this.activeModelId;
 
     let restoreId = targetModelId;
-    if (!restoreId && this.previousActiveModelId) {
+    if (!restoreId && this.previousActiveModelId && this.previousActiveModelId !== currentActiveId) {
       restoreId = this.previousActiveModelId;
     }
 
-    if (restoreId && this.models.has(restoreId)) {
+    if (restoreId && restoreId !== currentActiveId && this.models.has(restoreId)) {
+      const currentActive = this.models.get(currentActiveId);
+      if (currentActive) {
+        currentActive.status = ModelStatus.ROLLED_BACK;
+      }
       const restored = this.models.get(restoreId)!;
       restored.status = ModelStatus.ACTIVE;
       this.activeModelId = restoreId;
       return { rolledBackTo: restored.version, status: "ROLLED_BACK" };
     }
 
-    // Fallback to default v1.0.0
+    // Fallback to default v1.0.0 only if current model is different
     const defaultModel = this.models.get("mdl-v1.0.0");
-    if (defaultModel) {
+    if (defaultModel && defaultModel.modelId !== currentActiveId) {
+      const currentActive = this.models.get(currentActiveId);
+      if (currentActive) {
+        currentActive.status = ModelStatus.ROLLED_BACK;
+      }
       defaultModel.status = ModelStatus.ACTIVE;
       this.activeModelId = defaultModel.modelId;
       return { rolledBackTo: defaultModel.version, status: "ROLLED_BACK" };

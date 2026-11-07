@@ -326,9 +326,20 @@ class HistoryDatabaseEngine:
                     "SELECT COUNT(*), AVG(risk_reward_ratio) FROM trade_recommendation_history WHERE ticker = ?",
                     (ticker.upper(),),
                 )
+                row = cursor.fetchone()
+                cursor.execute(
+                    "SELECT COUNT(*) FROM trade_recommendation_history WHERE ticker = ? AND outcome_status != 'PENDING'",
+                    (ticker.upper(),),
+                )
+                resolved_row = cursor.fetchone()
+                resolved_count = int(resolved_row[0]) if (resolved_row and resolved_row[0] is not None) else 0
             else:
                 cursor.execute("SELECT COUNT(*), AVG(risk_reward_ratio) FROM trade_recommendation_history")
-            row = cursor.fetchone()
+                row = cursor.fetchone()
+                cursor.execute("SELECT COUNT(*) FROM trade_recommendation_history WHERE outcome_status != 'PENDING'")
+                resolved_row = cursor.fetchone()
+                resolved_count = int(resolved_row[0]) if (resolved_row and resolved_row[0] is not None) else 0
+
             total_recommendations = int(row[0]) if (row and row[0] is not None) else 0
             avg_rr = round(float(row[1]), 2) if (row and row[1] is not None) else None
 
@@ -336,19 +347,32 @@ class HistoryDatabaseEngine:
                 return {
                     "available": False,
                     "total_logged_setups": 0,
+                    "resolved_setups": 0,
                     "target_hit_rate_pct": None,
                     "avg_risk_reward": None,
                     "model_calibration_status": "Awaiting Live Observations (0 Logged Setups)",
                     "statistical_confidence": "Insufficient Data (Minimum 30 Required)",
                 }
 
+            if resolved_count == 0:
+                return {
+                    "available": True,
+                    "total_logged_setups": total_recommendations,
+                    "resolved_setups": 0,
+                    "target_hit_rate_pct": None,
+                    "avg_risk_reward": avg_rr,
+                    "model_calibration_status": f"Awaiting Live Observations (0 Resolved Out of {total_recommendations} Logged)",
+                    "statistical_confidence": "Insufficient Resolved Data (0 Resolved Outcomes)",
+                }
+
             return {
                 "available": True,
                 "total_logged_setups": total_recommendations,
+                "resolved_setups": resolved_count,
                 "target_hit_rate_pct": None,
                 "avg_risk_reward": avg_rr,
                 "model_calibration_status": "Active (Persistent SQLite NVMe Ledger)",
-                "statistical_confidence": "95% Statistical Confidence" if total_recommendations >= 30 else "Preliminary Calibration",
+                "statistical_confidence": "95% Statistical Confidence" if resolved_count >= 30 else "Preliminary Calibration",
             }
         finally:
             conn.close()

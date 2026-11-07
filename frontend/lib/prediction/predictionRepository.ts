@@ -67,6 +67,9 @@ export class PredictionRepository {
    */
   public storeOutcome(outcome: PredictionOutcome): void {
     const validated = validateOutcome(outcome);
+    if (!this.predictions.has(validated.predictionId)) {
+      throw new Error("PREDICTION_NOT_FOUND");
+    }
     if (this.outcomes.has(validated.predictionId)) {
       throw new Error("OUTCOME_ALREADY_EXISTS");
     }
