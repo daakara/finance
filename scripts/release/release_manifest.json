@@ -1,57 +1,33 @@
 {
-  "release_candidate_commit": "3857acbf4d0d2bd06a2cecbea8e996787e50cf2f",
-  "base_anchor_commit": "9a4030446caf38f106098e8d3caeec02f733a124",
-  "total_files": 6,
+  "release_candidate_commit": "e0965311d45154fa6ee256292ad02cf7029167eb",
+  "base_anchor_commit": "00a1fc8ad6bc2b8d9fc2f11a0f480065614c960a",
+  "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX_SEC_001_SECURITY_DEBT_REMEDIATION",
+  "directive": "ARX_SEC_001_PRODUCTION_AUTHENTICATION_RECOVERY",
   "files": {
-    "Dockerfile": {
-      "operation": "M",
-      "originating_pr_number": 214,
-      "originating_commit": "3857acbf4d0d2bd06a2cecbea8e996787e50cf2f",
-      "governing_requirement": "SEC-006: eliminate build-essential compilers post-install and configure Python runtime buffering flags",
-      "sha256": "15808647f8793cf6f230e7c7ca0775b0ad1aa62b9b01138b72273695dc62366a",
-      "size_bytes": 964
-    },
-    "api/main.py": {
-      "operation": "M",
-      "originating_pr_number": 214,
-      "originating_commit": "3857acbf4d0d2bd06a2cecbea8e996787e50cf2f",
-      "governing_requirement": "SEC-004: isolate production CORS whitelist from localhost and enforce baseline CSP and Permissions-Policy headers",
-      "sha256": "080e49c7a0d2fbe2d011dcf5f5dfa6308c072031cd14388f3b008d7634ca39ca",
-      "size_bytes": 11115
-    },
     "api/middleware/api_key_auth.py": {
       "operation": "M",
-      "originating_pr_number": 214,
-      "originating_commit": "3857acbf4d0d2bd06a2cecbea8e996787e50cf2f",
-      "governing_requirement": "SEC-001: enforce fail-closed 500 error in production when ARX_API_KEY is missing; 401 on missing key; 403 on invalid key",
-      "sha256": "422d2356372b649352dd7009e7fb2bf2ece97aaa7ee045d2c1feae29bdc4e921",
-      "size_bytes": 4773
-    },
-    "api/middleware/rate_limiter.py": {
-      "operation": "M",
-      "originating_pr_number": 214,
-      "originating_commit": "3857acbf4d0d2bd06a2cecbea8e996787e50cf2f",
-      "governing_requirement": "SEC-003: client-IP anti-spoofing via trusted-proxy boundary validation and rightmost untrusted hop extraction",
-      "sha256": "8066930654e31320453ddfb1328e31e65dccedddd1306cff86867e55bc0a6275",
-      "size_bytes": 9489
+      "originating_pr_number": 215,
+      "originating_commit": "e0965311d45154fa6ee256292ad02cf7029167eb",
+      "governing_requirement": "SEC-001: restore public research route scope, unauthenticated market data access, and fail closed on unknown routes",
+      "sha256": "f2eb896ff0525d6d67b63391edfe272bc570a0cfe7e0ee1cde5a3a3c35048f0f",
+      "size_bytes": 11610
     },
     "api/routes/cache.py": {
       "operation": "M",
-      "originating_pr_number": 214,
-      "originating_commit": "3857acbf4d0d2bd06a2cecbea8e996787e50cf2f",
-      "governing_requirement": "SEC-002: require administrative credentials via X-Admin-Key, Authorization Bearer, or X-API-Key with constant-time verification",
-      "sha256": "83666e7d45e0ef5ba77a6b84a6a04ec0100da8b5667edeb1736add3f1ca6bf7b",
-      "size_bytes": 4685
+      "originating_pr_number": 215,
+      "originating_commit": "e0965311d45154fa6ee256292ad02cf7029167eb",
+      "governing_requirement": "SEC-002: enforce dedicated administrative credential via X-Admin-Key and exclude ordinary API keys from cache purge",
+      "sha256": "d7fb8328dfec343a04707a6157cc90ad6350fde55f9c881ea325d8387616d428",
+      "size_bytes": 4618
     },
     "tests/test_security_hardening.py": {
-      "operation": "A",
-      "originating_pr_number": 214,
-      "originating_commit": "3857acbf4d0d2bd06a2cecbea8e996787e50cf2f",
-      "governing_requirement": "SEC-001..006: 21-test adversarial qualification suite verifying fail-closed auth, cache protection, IP spoofing, and CORS",
-      "sha256": "44030c409ff8a4ce648635585f65ec02a97aaf1be4693a0fd22fc4b05fb8d867",
-      "size_bytes": 12254
+      "operation": "M",
+      "originating_pr_number": 215,
+      "originating_commit": "e0965311d45154fa6ee256292ad02cf7029167eb",
+      "governing_requirement": "SEC-001..002: 26-test adversarial qualification suite verifying public market data, NVDA regression, and admin privilege boundary",
+      "sha256": "6e0d6c0d6dc58bc15dcbe535e98e4663c3348a4bdae806a7105c29b3eafb1da5",
+      "size_bytes": 16821
     }
   },
   "qualification_framework_files": {
@@ -61,9 +37,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "0ac83ea511a1daedfe1a413f2de12d2efc673218a4163f30fabf3cda5dcb6983",
-      "bytes": 57836,
-      "size_bytes": 57836
+      "sha256": "cc5ae3e624188f125b787491e9e3ac27e8023027e6cf911c110e96466392e452",
+      "bytes": 57841,
+      "size_bytes": 57841
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
