@@ -1,89 +1,41 @@
 {
-  "release_candidate_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-  "base_anchor_commit": "086719f87803cb98acbb3666780e20c9f1d88b54",
-  "total_files": 10,
+  "release_candidate_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
+  "base_anchor_commit": "4e084ff999dc4e3c6e2641da5a3a47e2160cf0d4",
+  "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-PREFLIGHT-001",
+  "directive": "ARX-RADAR-P2-STALE-SNAPSHOT-001",
   "files": {
-    "analyst_dashboard/data/market_db.py": {
+    "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 234,
-      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-      "governing_requirement": "ARX-PREFLIGHT-001: Market database candle replacement atomically deletes conflicting provenance",
-      "sha256": "9126b533677754b044bdb5a628809ff115d1e3f06b3fcf66e9c5f889a1e57fe9",
-      "size_bytes": 39323
+      "originating_pr_number": 236,
+      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
+      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
+      "sha256": "57cfb9c47cd458cdfb0e3187bc9b00ac3e8d856b29880771270dd42b9b7275a6",
+      "size_bytes": 112065
     },
-    "frontend/app/page.tsx": {
+    "frontend/lib/api.ts": {
       "operation": "M",
-      "originating_pr_number": 234,
-      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-      "governing_requirement": "ARX-PREFLIGHT-001: Pass canSizeTrade, check observation TTL in cache retrieval, display observation time",
-      "sha256": "c244c0306183f369fde622679f99c3651713025337a0148be24f98961dcf2dba",
-      "size_bytes": 44277
+      "originating_pr_number": 236,
+      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
+      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
+      "sha256": "28edbf080dd7d9b03975fd4c9dd7ff795d61fd85eea8249b8041cf95210c179e",
+      "size_bytes": 186092
     },
-    "frontend/components/OptimalEntryExitCard.tsx": {
-      "operation": "M",
-      "originating_pr_number": 234,
-      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-      "governing_requirement": "ARX-PREFLIGHT-001: Enforce canonical execution eligibility over checklist before displaying Execute Setup",
-      "sha256": "6a4b04513c0206deebdf03d15c4d52758393aa15f358a659fc42cd34f68de79a",
-      "size_bytes": 47964
-    },
-    "frontend/components/PreFlightChecklistModal.tsx": {
-      "operation": "M",
-      "originating_pr_number": 234,
-      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-      "governing_requirement": "ARX-PREFLIGHT-001: Guard analytics idempotency, format factual checks, export research warning, surface multi-blockers, refine Check 1",
-      "sha256": "287975478100d5912c8cb292c63cd16a4165f22295a1e9883234141f06221fa3",
-      "size_bytes": 30911
-    },
-    "frontend/components/PreFlightReadinessBar.tsx": {
-      "operation": "M",
-      "originating_pr_number": 234,
-      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-      "governing_requirement": "ARX-PREFLIGHT-001: Discoverable multi-blockers in readiness bar and telemetry drawer",
-      "sha256": "7e7c9fcc033d0c44c7b6a80921d1954b8b6589e104cd2d20af90ba6f86b4ab95",
-      "size_bytes": 13205
-    },
-    "frontend/lib/preflightEvaluator.ts": {
-      "operation": "M",
-      "originating_pr_number": 234,
-      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-      "governing_requirement": "ARX-PREFLIGHT-001: Independent price vs macro freshness, canSizeTrade gate, multi-blocker collection, Issue 181 Check 1 copy",
-      "sha256": "e8612008e95e720648f3f4164f1e780f569e1764ce38fd6d6833de91434850af",
-      "size_bytes": 41257
-    },
-    "frontend/tests/preflight001Acceptance.test.ts": {
+    "frontend/tests/radarStaleCapabilityTruth.test.ts": {
       "operation": "A",
-      "originating_pr_number": 234,
-      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-      "governing_requirement": "ARX-PREFLIGHT-001: Formal acceptance test suite for price/macro freshness, sizing gate, and multi-blockers",
-      "sha256": "51417a7a2c9e7a6647d46449e93308df73775080564b8a09c8c99fded7ce56b3",
-      "size_bytes": 8846
-    },
-    "tests/test_preflight_001_acceptance.py": {
-      "operation": "A",
-      "originating_pr_number": 234,
-      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-      "governing_requirement": "ARX-PREFLIGHT-001: Backend acceptance test suite for provenance atomicity and decision hierarchy floor",
-      "sha256": "2fb38208c1623d8c0df4327a0b9c75085ba6d2671cc281c6d8bbb0e9152264c8",
-      "size_bytes": 5749
-    },
-    "tests/test_preflight_001_falsification.py": {
-      "operation": "A",
-      "originating_pr_number": 234,
-      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-      "governing_requirement": "ARX-PREFLIGHT-001: Targeted falsification test suite for all 6 preflight vulnerability vectors",
-      "sha256": "72de910b10a8a7a4e9e5d6f36c8a1cd6eea62c7d9e547e7178542746cd5c4396",
-      "size_bytes": 4397
+      "originating_pr_number": 236,
+      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
+      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
+      "sha256": "d895e3919816af22ebd75f15c0e1e88707d2ce7965720f683345c7bf28fc7116",
+      "size_bytes": 1710
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 234,
-      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
-      "governing_requirement": "ARX-PREFLIGHT-001: Register PR #234 in APPROVED_PRS",
-      "sha256": "f13e486a44ff3316c5fcd83141ec288290daa5af4d10c767350ad939eabfb5ec",
-      "size_bytes": 57901
+      "originating_pr_number": 236,
+      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
+      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
+      "sha256": "c3e68fbf5422699ff2005f9c611f888f731ff307d5c7eb674816e45ae9ec68c9",
+      "size_bytes": 57906
     }
   },
   "qualification_framework_files": {
@@ -93,9 +45,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "f13e486a44ff3316c5fcd83141ec288290daa5af4d10c767350ad939eabfb5ec",
-      "bytes": 57901,
-      "size_bytes": 57901
+      "sha256": "c3e68fbf5422699ff2005f9c611f888f731ff307d5c7eb674816e45ae9ec68c9",
+      "bytes": 57906,
+      "size_bytes": 57906
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
