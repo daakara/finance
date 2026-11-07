@@ -428,16 +428,49 @@ class TestProspectiveShadowMode:
         assert summary["status_breakdown"]["SUCCESS"] == 1
         assert summary["status_breakdown"]["ENTRY_NOT_TRIGGERED"] == 1
 
-    def test_07_prospective_learning_census_reconciliation(self, shadow_engine):
-        """Census accurately reconciles 16,093 historical records and AAPL counts."""
-        census = shadow_engine.get_prospective_learning_census()
-        assert census["status"] == "SUCCESS"
-        assert "historicalCensusReconciliation" in census
-        recon = census["historicalCensusReconciliation"]
-        assert recon["globalDatabaseCensus"]["totalLoggedSetups"] == 16093
-        assert recon["globalDatabaseCensus"]["resolvedCount"] == 0
-        assert recon["symbolSpecificCensus"]["AAPL"]["resolvedCount"] == 0
-        assert "16,093" in recon["censusReconciliationExplanation"]
-        assert "2,727" in recon["censusReconciliationExplanation"]
-        assert census["governanceState"]["HOLD_SCAN_001"] == "ACTIVE"
-        assert census["governanceState"]["autonomousRetraining"] == "PROHIBITED"
+    def test_07_prospective_learning_census_reconciliation(self, shadow_engine, tmp_path):
+        """Census reports UNAVAILABLE when database query fails, and reconciles real records when available (Directive ARX-LEARNING-004)."""
+        # Case 1: Database query failure reports UNAVAILABLE with explicit error and sourceIdentity, never hardcoded fallbacks
+        corrupt_db_path = str(tmp_path / "corrupt_history.db")
+        with open(corrupt_db_path, "w") as f:
+            f.write("NOT_A_VALID_SQLITE_DATABASE")
+        census_unavailable = shadow_engine.get_prospective_learning_census(history_db_path=corrupt_db_path)
+        assert census_unavailable["status"] == "UNAVAILABLE"
+        assert "error" in census_unavailable
+        assert census_unavailable["sourceIdentity"] == corrupt_db_path
+        recon_unavail = census_unavailable["historicalCensusReconciliation"]
+        assert recon_unavail["status"] == "UNAVAILABLE"
+        assert recon_unavail["globalDatabaseCensus"]["totalLoggedSetups"] is None
+        assert recon_unavail["symbolSpecificCensus"]["AAPL"]["totalLoggedSetups"] is None
+        # Must never return synthetic substitute counts
+        assert recon_unavail["globalDatabaseCensus"]["totalLoggedSetups"] != 16093
+        assert recon_unavail["symbolSpecificCensus"]["AAPL"]["totalLoggedSetups"] != 2727
+
+        # Case 2: Real historical database provides live authoritative census
+        valid_db_path = str(tmp_path / "valid_history.db")
+        from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
+        hdb = HistoryDatabaseEngine(db_path=valid_db_path)
+        for _ in range(5):
+            hdb.log_trade_recommendation("AAPL", {"current_price": 150.0})
+        for _ in range(3):
+            hdb.log_trade_recommendation("NVDA", {"current_price": 100.0})
+
+        conn = sqlite3.connect(valid_db_path)
+        with conn:
+            # Mark 1 AAPL resolved and 1 NVDA resolved -> 8 total, 2 resolved
+            conn.execute("UPDATE trade_recommendation_history SET outcome_status = 'SUCCESS' WHERE id = 1")
+            conn.execute("UPDATE trade_recommendation_history SET outcome_status = 'STOPPED_OUT' WHERE id = 6")
+        conn.close()
+
+        census_valid = shadow_engine.get_prospective_learning_census(history_db_path=valid_db_path)
+        assert census_valid["status"] == "SUCCESS"
+        assert "historicalCensusReconciliation" in census_valid
+        recon = census_valid["historicalCensusReconciliation"]
+        assert recon["status"] == "AVAILABLE"
+        assert recon["globalDatabaseCensus"]["totalLoggedSetups"] == 8
+        assert recon["globalDatabaseCensus"]["resolvedCount"] == 2
+        assert recon["globalDatabaseCensus"]["pendingCount"] == 6
+        assert recon["symbolSpecificCensus"]["AAPL"]["totalLoggedSetups"] == 5
+        assert recon["symbolSpecificCensus"]["AAPL"]["resolvedCount"] == 1
+        assert census_valid["governanceState"]["HOLD_SCAN_001"] == "ACTIVE"
+        assert census_valid["governanceState"]["autonomousRetraining"] == "PROHIBITED"

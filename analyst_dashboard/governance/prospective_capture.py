@@ -66,6 +66,23 @@ ENGINE_SHA = "7ad44595826c147cc77f93cd676af520764c7442"
 DECISION_ENGINE_SHA = "7ad44595826c147cc77f93cd676af520764c7442"
 DEFAULT_CONFIG_HASH = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
+# Outcome Status Invariants (Directive ARX-LEARNING-004)
+UNRESOLVED_OUTCOME_STATUSES = {
+    "PENDING_UNMATURED",
+    "UNMATURED",
+    "ENTRY_WINDOW_STILL_OPEN",
+    "UNRESOLVED_INTRABAR_SEQUENCE",
+    "UNRESOLVED_DATA_CONFLICT",
+    "OUTCOME_DATA_MISSING",
+}
+
+TERMINAL_SETTLED_STATUSES = {
+    "SUCCESS",
+    "FAILURE",
+    "ENTRY_NOT_TRIGGERED",
+    "HORIZON_EXIT",
+}
+
 # Context Boundary & Execution Firewall
 EXECUTION_CONTEXT_VAR: contextvars.ContextVar[str] = contextvars.ContextVar(
     "prospective_execution_context", default="NATURAL_CLIENT"
@@ -1257,8 +1274,19 @@ class ProspectiveDecisionCaptureEngine:
         realized_r_multiple: Optional[float] = None,
         trade_plan_id: Optional[str] = None,
         recorded_at_utc: Optional[str] = None,
+        correction_reason: Optional[str] = None,
+        authorized_by: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Atomically records or updates a post-hoc settled outcome link for a decision."""
+        """Atomically records or updates a post-hoc settled outcome link for a decision.
+
+        Enforces outcome immutability (Directive ARX-LEARNING-004):
+        1. Idempotent replay: Identical outcome/returns return without mutation.
+        2. Valid forward lifecycle: Unresolved states transition to settled states.
+        3. Settled immutability: Overwriting terminal settled states without explicit
+           correction_reason and authorized_by is strictly prohibited (raises ValueError).
+        4. Traceable corrections: Authorized corrections are recorded to
+           prospective_decision_corrections and the recovery stream.
+        """
         now_utc = recorded_at_utc or datetime.now(timezone.utc).isoformat()
         raw_preimage = f"{decision_id}_{governing_contract_id}_{governing_contract_version}"
         h16 = hashlib.sha256(raw_preimage.encode("utf-8")).hexdigest()[:16]
@@ -1267,6 +1295,155 @@ class ProspectiveDecisionCaptureEngine:
         conn = self.db.get_connection()
         try:
             with conn:
+                cur = conn.execute(
+                    "SELECT * FROM prospective_outcome_links WHERE decision_id = ?",
+                    (decision_id,),
+                )
+                existing = cur.fetchone()
+
+                if existing:
+                    existing_status = existing["outcome_status"]
+                    ex_gross = existing["realized_gross_return_pct"]
+                    ex_net = existing["realized_net_simulated_return_pct"]
+                    ex_r = existing["realized_r_multiple"]
+
+                    def _num_eq(a: Optional[float], b: Optional[float]) -> bool:
+                        if a is None and b is None:
+                            return True
+                        if a is None or b is None:
+                            return False
+                        return abs(float(a) - float(b)) < 1e-6
+
+                    is_identical = (
+                        existing_status == outcome_status
+                        and _num_eq(ex_gross, realized_gross_return_pct)
+                        and _num_eq(ex_net, realized_net_simulated_return_pct)
+                        and _num_eq(ex_r, realized_r_multiple)
+                    )
+
+                    if is_identical:
+                        return {
+                            "outcome_link_id": existing["outcome_link_id"],
+                            "decision_id": decision_id,
+                            "episode_id": existing["episode_id"],
+                            "outcome_status": existing_status,
+                            "realized_gross_return_pct": ex_gross,
+                            "realized_net_simulated_return_pct": ex_net,
+                            "realized_r_multiple": ex_r,
+                            "recorded_at_utc": existing["recorded_at_utc"],
+                            "idempotent_replay": True,
+                        }
+
+                    if existing_status in UNRESOLVED_OUTCOME_STATUSES:
+                        conn.execute(
+                            """
+                            UPDATE prospective_outcome_links
+                            SET outcome_status = ?,
+                                realized_gross_return_pct = ?,
+                                realized_net_simulated_return_pct = ?,
+                                realized_r_multiple = ?,
+                                recorded_at_utc = ?
+                            WHERE decision_id = ?
+                            """,
+                            (
+                                outcome_status,
+                                realized_gross_return_pct,
+                                realized_net_simulated_return_pct,
+                                realized_r_multiple,
+                                now_utc,
+                                decision_id,
+                            ),
+                        )
+                        payload = {
+                            "outcome_link_id": existing["outcome_link_id"],
+                            "decision_id": decision_id,
+                            "episode_id": episode_id,
+                            "outcome_status": outcome_status,
+                            "realized_gross_return_pct": realized_gross_return_pct,
+                            "realized_net_simulated_return_pct": realized_net_simulated_return_pct,
+                            "realized_r_multiple": realized_r_multiple,
+                            "recorded_at_utc": now_utc,
+                            "previous_status": existing_status,
+                        }
+                        self._append_recovery_stream("OUTCOME_LINK_TRANSITIONED", payload)
+                        return payload
+
+                    # Existing status is terminal settled
+                    if not correction_reason or not authorized_by:
+                        raise ValueError(
+                            f"MUTATION_OF_SETTLED_OUTCOME_PROHIBITED: Cannot silently overwrite terminal "
+                            f"settled outcome '{existing_status}' for decision '{decision_id}'. "
+                            f"Explicit correction_reason and authorized_by are required."
+                        )
+
+                    corr_id = f"CORR_{uuid.uuid4().hex[:16]}"
+                    orig_val = {
+                        "outcome_status": existing_status,
+                        "realized_gross_return_pct": ex_gross,
+                        "realized_net_simulated_return_pct": ex_net,
+                        "realized_r_multiple": ex_r,
+                    }
+                    corr_val = {
+                        "outcome_status": outcome_status,
+                        "realized_gross_return_pct": realized_gross_return_pct,
+                        "realized_net_simulated_return_pct": realized_net_simulated_return_pct,
+                        "realized_r_multiple": realized_r_multiple,
+                    }
+                    conn.execute(
+                        """
+                        INSERT INTO prospective_decision_corrections (
+                            correction_event_id, original_decision_id, corrected_field_name,
+                            original_value_json, corrected_value_json, correction_reason,
+                            authorized_by, timestamp_utc
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            corr_id,
+                            decision_id,
+                            "outcome_status",
+                            json.dumps(orig_val),
+                            json.dumps(corr_val),
+                            str(correction_reason).strip(),
+                            str(authorized_by).strip(),
+                            now_utc,
+                        ),
+                    )
+                    conn.execute(
+                        """
+                        UPDATE prospective_outcome_links
+                        SET outcome_status = ?,
+                            realized_gross_return_pct = ?,
+                            realized_net_simulated_return_pct = ?,
+                            realized_r_multiple = ?,
+                            recorded_at_utc = ?
+                        WHERE decision_id = ?
+                        """,
+                        (
+                            outcome_status,
+                            realized_gross_return_pct,
+                            realized_net_simulated_return_pct,
+                            realized_r_multiple,
+                            now_utc,
+                            decision_id,
+                        ),
+                    )
+                    payload = {
+                        "outcome_link_id": existing["outcome_link_id"],
+                        "decision_id": decision_id,
+                        "episode_id": episode_id,
+                        "outcome_status": outcome_status,
+                        "realized_gross_return_pct": realized_gross_return_pct,
+                        "realized_net_simulated_return_pct": realized_net_simulated_return_pct,
+                        "realized_r_multiple": realized_r_multiple,
+                        "recorded_at_utc": now_utc,
+                        "correction_event_id": corr_id,
+                        "correction_reason": correction_reason,
+                        "authorized_by": authorized_by,
+                    }
+                    self._append_recovery_stream("OUTCOME_CORRECTION_RECORDED", payload)
+                    return payload
+
+                # Brand new record
                 conn.execute(
                     """
                     INSERT INTO prospective_outcome_links (
@@ -1275,12 +1452,6 @@ class ProspectiveDecisionCaptureEngine:
                         outcome_status, realized_gross_return_pct, realized_net_simulated_return_pct,
                         realized_r_multiple, recorded_at_utc
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(decision_id) DO UPDATE SET
-                        outcome_status = excluded.outcome_status,
-                        realized_gross_return_pct = excluded.realized_gross_return_pct,
-                        realized_net_simulated_return_pct = excluded.realized_net_simulated_return_pct,
-                        realized_r_multiple = excluded.realized_r_multiple,
-                        recorded_at_utc = excluded.recorded_at_utc
                     """,
                     (
                         outcome_link_id,
@@ -1351,21 +1522,87 @@ class ProspectiveDecisionCaptureEngine:
             conn.close()
 
         # Query historical recommendation census from history db if available
-        from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
+        from analyst_dashboard.data.db_engine import HistoryDatabaseEngine, DB_PATH
+        resolved_hist_path = history_db_path or DB_PATH
+        hist_error: Optional[str] = None
+        hist_total: Optional[int] = None
+        hist_resolved: Optional[int] = None
+        aapl_total: Optional[int] = None
+
         try:
             hdb = HistoryDatabaseEngine(db_path=history_db_path)
             global_summary = hdb.get_setup_accuracy_summary(ticker=None)
             aapl_summary = hdb.get_setup_accuracy_summary(ticker="AAPL")
-            hist_total = global_summary.get("total_recommendations", 0)
-            hist_resolved = global_summary.get("resolved_count", 0)
-            aapl_total = aapl_summary.get("total_recommendations", 0)
-        except Exception:
-            hist_total = 16093
-            hist_resolved = 0
-            aapl_total = 2727
+            hist_total = global_summary.get("total_logged_setups")
+            if hist_total is None:
+                hist_total = global_summary.get("total_recommendations")
+            hist_resolved = global_summary.get("resolved_setups")
+            if hist_resolved is None:
+                hist_resolved = global_summary.get("resolved_count", 0)
+            aapl_total = aapl_summary.get("total_logged_setups")
+            if aapl_total is None:
+                aapl_total = aapl_summary.get("total_recommendations")
 
-        return {
-            "status": "SUCCESS",
+            if hist_total is None or aapl_total is None:
+                raise ValueError(f"Historical query on {resolved_hist_path} returned invalid summary data.")
+            hist_status = "AVAILABLE"
+            overall_status = "SUCCESS"
+        except Exception as e:
+            logger.warning(f"Historical census query failed on {resolved_hist_path}: {e}")
+            hist_error = str(e)
+            hist_status = "UNAVAILABLE"
+            overall_status = "UNAVAILABLE"
+
+        if hist_status == "AVAILABLE":
+            historical_recon = {
+                "status": "AVAILABLE",
+                "sourceIdentity": str(resolved_hist_path),
+                "globalDatabaseCensus": {
+                    "sourceTable": "trade_recommendation_history",
+                    "totalLoggedSetups": hist_total,
+                    "resolvedCount": hist_resolved,
+                    "pendingCount": max(0, hist_total - (hist_resolved or 0)),
+                    "status": "Awaiting Live Observations" if (hist_resolved or 0) == 0 else "PARTIALLY_RESOLVED",
+                },
+                "symbolSpecificCensus": {
+                    "AAPL": {
+                        "totalLoggedSetups": aapl_total,
+                        "resolvedCount": aapl_summary.get("resolved_setups", aapl_summary.get("resolved_count", 0)),
+                        "status": "Awaiting Live Observations" if (aapl_summary.get("resolved_setups", aapl_summary.get("resolved_count", 0)) == 0) else "PARTIALLY_RESOLVED",
+                    }
+                },
+                "censusReconciliationExplanation": (
+                    f"Authoritative historical census queried directly from {resolved_hist_path} table trade_recommendation_history. "
+                    "Synthetic constants are strictly prohibited; counts reflect live database state."
+                ),
+            }
+        else:
+            historical_recon = {
+                "status": "UNAVAILABLE",
+                "sourceIdentity": str(resolved_hist_path),
+                "error": hist_error,
+                "globalDatabaseCensus": {
+                    "sourceTable": "trade_recommendation_history",
+                    "totalLoggedSetups": None,
+                    "resolvedCount": None,
+                    "pendingCount": None,
+                    "status": "UNAVAILABLE",
+                },
+                "symbolSpecificCensus": {
+                    "AAPL": {
+                        "totalLoggedSetups": None,
+                        "resolvedCount": None,
+                        "status": "UNAVAILABLE",
+                    }
+                },
+                "censusReconciliationExplanation": (
+                    f"Historical recommendation census is UNAVAILABLE due to database query failure on {resolved_hist_path}: {hist_error}. "
+                    "Per Directive ARX-LEARNING-004, hardcoded substitute figures (e.g. 16,093 and 2,727) are strictly prohibited."
+                ),
+            }
+
+        response_payload = {
+            "status": overall_status,
             "prospectiveCapture": {
                 "totalDecisionEvents": denoms.get("total_completed_evaluations", 0),
                 "certifiedNaturalProduction": denoms.get("total_certified_natural_production", 0),
@@ -1377,28 +1614,7 @@ class ProspectiveDecisionCaptureEngine:
                 "episodesCount": denoms.get("total_episodes", 0),
             },
             "settledOutcomes": outcomes,
-            "historicalCensusReconciliation": {
-                "globalDatabaseCensus": {
-                    "sourceTable": "trade_recommendation_history",
-                    "totalLoggedSetups": hist_total,
-                    "resolvedCount": hist_resolved,
-                    "pendingCount": hist_total - hist_resolved,
-                    "status": "Awaiting Live Observations",
-                },
-                "symbolSpecificCensus": {
-                    "AAPL": {
-                        "totalLoggedSetups": aapl_total,
-                        "resolvedCount": 0,
-                        "status": "Awaiting Live Observations",
-                    }
-                },
-                "censusReconciliationExplanation": (
-                    "The 16,093 count represents the global database-wide total across all 46 tickers "
-                    "in trade_recommendation_history with outcome_status='PENDING'. The 2,727 count "
-                    "in the production diagnostic represents the AAPL-specific subset queried by "
-                    "/api/v1/analytics/AAPL. Both figures represent unverified historical records with 0 resolved outcomes."
-                ),
-            },
+            "historicalCensusReconciliation": historical_recon,
             "samplingSegregationPolicy": {
                 "userSelectedOpportunityCaptureEligible": False,
                 "userSelectedCoverageAnalysisEligible": False,
@@ -1418,3 +1634,7 @@ class ProspectiveDecisionCaptureEngine:
                 "scoreModification": "PROHIBITED",
             },
         }
+        if hist_error:
+            response_payload["error"] = f"Historical census query failed: {hist_error}"
+            response_payload["sourceIdentity"] = str(resolved_hist_path)
+        return response_payload

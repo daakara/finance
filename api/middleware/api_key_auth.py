@@ -80,6 +80,7 @@ DELEGATED_AUTH_SPECS: List[Tuple[str, str]] = [
     ("POST", "/api/v1/governance/epoch-2/activate"),
     ("POST", "/api/v1/governance/epoch-2/certify-release"),
     ("POST", "/api/v1/governance/epoch-2/revoke-runtime"),
+    ("GET", "/api/v1/governance/prospective-learning/census"),
     # Internal service & background worker operations
     ("POST", "/api/v1/screener/vcp/natural-scan"),
     ("POST", "/api/v1/screener/vcp/scan"),

@@ -194,13 +194,37 @@ class ShadowReplayRunner:
             st = res["outcome_status"]
             counts[st] = counts.get(st, 0) + 1
 
+        has_authoritative_bars = any(
+            isinstance(df, pd.DataFrame) and not df.empty for df in market_data_map.values()
+        )
+        market_data_authority = (
+            "AUTHORITATIVE_BARS_SUPPLIED"
+            if has_authoritative_bars
+            else "UNRESOLVED_ONLY (No authoritative price bars supplied; real settlement barred)"
+        )
+        settlement_eligibility = (
+            "QUALIFIED_FOR_EVALUATION"
+            if has_authoritative_bars
+            else "INELIGIBLE_FOR_REAL_SETTLEMENT"
+        )
+        settlement_qualification = (
+            "OUTCOME_SETTLEMENT_QUALIFIED"
+            if has_authoritative_bars
+            else "UNQUALIFIED"
+        )
+
         return {
             "total_evaluated": len(results),
             "status_counts": counts,
             "resolved_count": counts["SUCCESS"] + counts["FAILURE"] + counts["HORIZON_EXIT"] + counts["ENTRY_NOT_TRIGGERED"],
             "unresolved_count": counts["PENDING_UNMATURED"] + counts["UNRESOLVED_INTRABAR_SEQUENCE"] + counts["UNRESOLVED_DATA_CONFLICT"] + counts["OUTCOME_DATA_MISSING"],
+            "market_data_authority": market_data_authority,
+            "settlement_eligibility": settlement_eligibility,
+            "settlement_qualification": settlement_qualification,
             "results": results,
             "governance_notice": (
-                "Non-production shadow replay settlement. Automatic periodic settlement worker remains disabled per HOLD_SCAN_001."
+                "Non-production shadow replay settlement. Automatic periodic settlement worker remains disabled per HOLD_SCAN_001. "
+                "Per Directive ARX-LEARNING-004, real outcome settlement strictly requires explicitly supplied, authoritative, "
+                "timestamped price bars; evaluations without price bars are strictly classified as unresolved."
             ),
         }
