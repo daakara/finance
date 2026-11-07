@@ -1,6 +1,6 @@
 {
   "release_candidate_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-  "base_anchor_commit": "7ac59a0d82997e07ae4262ae7d1748cefdcfc0db",
+  "base_anchor_commit": "7ac59a0ad530d2256443d41417f87bf4b15bd871",
   "total_files": 12,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX_LEARNING_INTEGRITY_002",
