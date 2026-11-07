@@ -1478,6 +1478,80 @@ def get_asset_analytics(
                         is_actionable=is_actionable,
                         decision_state=decision_state_val,
                     )
+
+            # 2C: Full Prospective Decision Event Shadow Capture (Directive ARX-LEARNING-003)
+            # Passively captures naturally occurring user research into immutable prospective evidence
+            # Invariants: cycle_type = EXPLICIT_USER_REQUEST, population_sampling_mode = USER_SELECTED
+            # eligible_for_opportunity_capture = 0, eligible_for_coverage_analysis = 0
+            # Fail-open: errors are logged and never fail or mutate the analytical response
+            try:
+                from analyst_dashboard.governance.prospective_capture import (
+                    ProspectiveDecisionCaptureEngine,
+                )
+                prospective_eng = ProspectiveDecisionCaptureEngine()
+                now_dt_utc = datetime.now(timezone.utc)
+                cycle_started_utc = f"{now_dt_utc.strftime('%Y-%m-%d')}T00:00:00Z"
+                user_cycle = prospective_eng.create_or_get_evaluation_cycle(
+                    cycle_type="EXPLICIT_USER_REQUEST",
+                    universe_version="2026.1",
+                    cycle_started_at_utc=cycle_started_utc,
+                )
+                cycle_id = user_cycle["evaluation_cycle_id"]
+
+                features_payload = [
+                    {
+                        "featureName": "confluence_score",
+                        "featureValue": float(confluence_output.get("overall_score") or confluence_output.get("confluenceScore") or 0.0),
+                        "source": "ARX_CONFLUENCE_ENGINE",
+                        "sourceTimestampUtc": observed_at or now_dt_utc.isoformat(),
+                        "availabilityStatus": "LIVE_AUTHORITATIVE" if quote_and_session_eligible else "EVALUATED_SNAPSHOT",
+                    },
+                    {
+                        "featureName": "quality_score",
+                        "featureValue": factor_scores.get("quality_score") or factor_scores.get("qualityScore"),
+                        "source": "FACTOR_ENGINE",
+                    },
+                    {
+                        "featureName": "rsi_14",
+                        "featureValue": technicals.get("rsi_14"),
+                        "source": "TECHNICAL_ENGINE",
+                    },
+                    {
+                        "featureName": "sma_50",
+                        "featureValue": technicals.get("sma_50"),
+                        "source": "TECHNICAL_ENGINE",
+                    },
+                ]
+
+                rejection_dict = {
+                    "isRejected": not is_actionable,
+                    "primaryReasonText": decision_trace.get("disqualificationReason") or ("ACTIONABLE_SETUP" if is_actionable else "AWAITING_BREAKOUT"),
+                    "firstBindingRuleId": None,
+                    "firstBindingRuleCategory": None,
+                    "allExecutedFailedRuleIds": [],
+                }
+
+                prospective_eng.record_decision_event(
+                    evaluation_cycle_id=cycle_id,
+                    symbol=upper_sym,
+                    instrument_id=upper_sym,
+                    cycle_type="EXPLICIT_USER_REQUEST",
+                    population_sampling_mode="USER_SELECTED",
+                    scope_status="IN_SCOPE",
+                    decision_state=decision_state_val or "HOLD",
+                    actionability_state="ACTIONABLE" if is_actionable else "NON_ACTIONABLE",
+                    rejection_reason=rejection_dict,
+                    evaluation_completion_state="COMPLETED_EVALUATION",
+                    confluence_score=float(confluence_output.get("overall_score") or confluence_output.get("confluenceScore") or 0.0),
+                    trade_plan_state=optimal_execution_plan if optimal_execution_plan else None,
+                    features=features_payload,
+                    data_provider=provider_source,
+                    provider_source_timestamp_utc=observed_at or now_dt_utc.isoformat(),
+                    freshness_status=freshness_status,
+                    market_session=market_price_state.market_session,
+                )
+            except Exception as shadow_e:
+                logger.debug(f"[PROSPECTIVE_SHADOW_CAPTURE] User query prospective capture skipped fail-open: {shadow_e}")
             else:
                 logger.debug(
                     f"[PASSIVE_CAPTURE] event=EXECUTION_LADDER_CAPTURE_HOOK_SKIPPED symbol={upper_sym} "
