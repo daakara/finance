@@ -759,6 +759,8 @@ class TestTaxWithholdingAndDispositionClassification:
         # 3. Verify Timothy Teter (Open Market Sale)
         teter = obs_by_name["Teter Timothy S."]
         assert teter["transaction_type"] == "Sale (Direct)", f"Expected Sale (Direct), got {teter['transaction_type']}"
+        assert teter["ownership_type"] == "D"
+        assert teter["ownership_nature"] == "DIRECT"
         assert teter["transaction_code"] == "S"
         assert teter["signal_type"] == "OPEN_MARKET_SALE"
         assert teter["is_sell"] is True, "Code S open-market sale must be marked is_sell=True"
@@ -827,4 +829,66 @@ class TestTaxWithholdingAndDispositionClassification:
         assert conf_inputs is not None
         assert conf_inputs["insider_sell_count_90d"] == 0
         assert conf_inputs["insider_buy_count_90d"] == 0
+
+    def test_postgres_indirect_ownership_classification(self, pg_db, monkeypatch):
+        """Verifies that PostgreSQL Form 4 parsed transactions with ownership_type='I' are classified as Indirect."""
+        uri = pg_db["uri"]
+        monkeypatch.setenv("SMART_MONEY_DATABASE_URL", uri)
+        monkeypatch.setenv("ARX_ENVIRONMENT", "rehearsal")
+
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        conn = psycopg2.connect(uri)
+        with conn.cursor() as cur:
+            acc_i = "0001696841-26-000088"
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (acc_i, "0001045810", "NVDA", "NVIDIA CORP", today, now_iso, "<xml/>", "h_ind", "https://sec.gov/ind"))
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source)
+                VALUES (%s, %s, %s);
+            """, (acc_i, now_iso, "SEC_INDEX"))
+            # 1. Indirect open market sale ('S', 'I')
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, 'S', 5000, 200.0, 1000000.0, 'Stevens Trust', 'Director', true, false, false, 'Director', 'I', false, 'OPEN_MARKET_SALE', 'D', false, false);
+            """, (f"{acc_i}:0001199039:NON_DERIVATIVE:0", acc_i, today))
+            # 2. Indirect open market purchase ('P', 'I')
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code,
+                    shares, price_per_share, total_value_usd, reporting_owner_name,
+                    reporting_owner_role, is_director, is_officer, is_ten_percent,
+                    officer_title, ownership_type, is_derivative, signal_type,
+                    acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+                ) VALUES (%s, %s, %s, 'P', 2000, 200.0, 400000.0, 'Huang Family Trust', 'Director', true, false, false, 'Director', 'I', false, 'OPEN_MARKET_PURCHASE', 'A', true, true);
+            """, (f"{acc_i}:0001199039:NON_DERIVATIVE:1", acc_i, today))
+
+        conn.commit()
+        conn.close()
+
+        engine = SmartMoneyEngine()
+        res = engine.evaluate_smart_money_feeds("NVDA", window_days=90)
+
+        sec_feed = res["feeds"]["sec_form4"]
+        obs = sec_feed["observations"]
+        obs_by_id = {o["transaction_type"]: o for o in obs}
+
+        assert "Sale (Indirect)" in obs_by_id
+        assert obs_by_id["Sale (Indirect)"]["ownership_nature"] == "INDIRECT"
+        assert obs_by_id["Sale (Indirect)"]["ownership_type"] == "I"
+
+        assert "Purchase (Indirect Open Market)" in obs_by_id
+        assert obs_by_id["Purchase (Indirect Open Market)"]["ownership_nature"] == "INDIRECT"
+        assert obs_by_id["Purchase (Indirect Open Market)"]["ownership_type"] == "I"
+
 

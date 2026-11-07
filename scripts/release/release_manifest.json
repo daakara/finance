@@ -1,33 +1,33 @@
 {
-  "release_candidate_commit": "e0965311d45154fa6ee256292ad02cf7029167eb",
-  "base_anchor_commit": "00a1fc8ad6bc2b8d9fc2f11a0f480065614c960a",
+  "release_candidate_commit": "564e293f83fdb510bd9759b72e95ffcc813fcbc2",
+  "base_anchor_commit": "22e1d518ffb0f4265ceecf5b552da305bfec80a6",
   "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX_SEC_001_PRODUCTION_AUTHENTICATION_RECOVERY",
+  "directive": "ARX_SM_ACT_027_OWNERSHIP_CLASSIFICATION",
   "files": {
-    "api/middleware/api_key_auth.py": {
+    "analyst_dashboard/analyzers/smart_money.py": {
       "operation": "M",
-      "originating_pr_number": 215,
-      "originating_commit": "e0965311d45154fa6ee256292ad02cf7029167eb",
-      "governing_requirement": "SEC-001: restore public research route scope, unauthenticated market data access, and fail closed on unknown routes",
-      "sha256": "f2eb896ff0525d6d67b63391edfe272bc570a0cfe7e0ee1cde5a3a3c35048f0f",
-      "size_bytes": 11610
+      "originating_pr_number": 216,
+      "originating_commit": "564e293f83fdb510bd9759b72e95ffcc813fcbc2",
+      "governing_requirement": "SM-001: preserve direct vs indirect ownership classification in Form 4 feeds",
+      "sha256": "83f358887d42633bfd30b8fd75491a33eb39a7ce5e2792c7629aea0acd6f49e3",
+      "size_bytes": 181063
     },
-    "api/routes/cache.py": {
+    "tests/test_sm_act_001_falsification.py": {
       "operation": "M",
-      "originating_pr_number": 215,
-      "originating_commit": "e0965311d45154fa6ee256292ad02cf7029167eb",
-      "governing_requirement": "SEC-002: enforce dedicated administrative credential via X-Admin-Key and exclude ordinary API keys from cache purge",
-      "sha256": "d7fb8328dfec343a04707a6157cc90ad6350fde55f9c881ea325d8387616d428",
-      "size_bytes": 4618
+      "originating_pr_number": 216,
+      "originating_commit": "564e293f83fdb510bd9759b72e95ffcc813fcbc2",
+      "governing_requirement": "SM-001: test direct vs indirect ownership classification in Form 4 transactions",
+      "sha256": "973231b29e3f8891bdc8523aec02ce5617e57f0c4f114dd571ab68ea344aff36",
+      "size_bytes": 31975
     },
-    "tests/test_security_hardening.py": {
+    "tests/test_sm_act_004_defects.py": {
       "operation": "M",
-      "originating_pr_number": 215,
-      "originating_commit": "e0965311d45154fa6ee256292ad02cf7029167eb",
-      "governing_requirement": "SEC-001..002: 26-test adversarial qualification suite verifying public market data, NVDA regression, and admin privilege boundary",
-      "sha256": "6e0d6c0d6dc58bc15dcbe535e98e4663c3348a4bdae806a7105c29b3eafb1da5",
-      "size_bytes": 16821
+      "originating_pr_number": 216,
+      "originating_commit": "564e293f83fdb510bd9759b72e95ffcc813fcbc2",
+      "governing_requirement": "SM-001: test PostgreSQL indirect ownership classification in Form 4 transactions",
+      "sha256": "d942c02426c6fedce5fdffe344cea2da2081239f20875e34c8d9da68988763c1",
+      "size_bytes": 45144
     }
   },
   "qualification_framework_files": {
@@ -37,9 +37,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "cc5ae3e624188f125b787491e9e3ac27e8023027e6cf911c110e96466392e452",
-      "bytes": 57841,
-      "size_bytes": 57841
+      "sha256": "7eea63e38fa4e7cf39f8ad7059c7504ea37d701e4e6bae8df3f93b7df81b1ee5",
+      "bytes": 57846,
+      "size_bytes": 57846
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",

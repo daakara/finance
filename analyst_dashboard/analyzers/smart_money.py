@@ -2295,6 +2295,7 @@ class SmartMoneyEngine:
                                        tx.officer_title, tx.is_director, tx.is_officer, tx.is_ten_percent AS is_ten_percent_owner,
                                        f.filing_date, tx.transaction_date, tx.transaction_code,
                                        tx.shares, tx.price_per_share, tx.total_value_usd,
+                                       tx.ownership_type,
                                        av.public_availability_at AS acceptance_datetime,
                                        av.recorded_at AS arx_first_observed_at,
                                        f.created_at AS arx_processed_at,
@@ -2377,17 +2378,24 @@ class SmartMoneyEngine:
 
                     has_deriv_col = False
                     has_created_at_col = False
+                    has_own_col = False
                     try:
                         cur.execute("PRAGMA table_info(form4_parsed_transactions)")
                         cols = [r["name"] for r in cur.fetchall()]
                         has_deriv_col = "is_derivative" in cols
                         has_created_at_col = "created_at" in cols
+                        has_own_col = "ownership_nature" in cols or "ownership_type" in cols
                     except Exception:
                         has_deriv_col = False
                         has_created_at_col = False
+                        has_own_col = False
 
                     deriv_select = "is_derivative" if has_deriv_col else "0 AS is_derivative"
                     created_at_select = "created_at AS arx_first_observed_at" if has_created_at_col else "NULL AS arx_first_observed_at"
+                    if has_own_col:
+                        own_select = "ownership_nature" if "ownership_nature" in cols else "ownership_type AS ownership_nature"
+                    else:
+                        own_select = "'D' AS ownership_nature"
 
                     sqlite_pit = ""
                     sqlite_params = [clean_sym, cutoff_str, cutoff_str]
@@ -2408,6 +2416,7 @@ class SmartMoneyEngine:
                                transaction_date, transaction_code, signal_type, shares, price_per_share, total_value_usd, acquired_disposed,
                                is_positive_buying_conviction, is_open_market_purchase_evidence, acceptance_datetime,
                                {deriv_select},
+                               {own_select},
                                {created_at_select}
                         FROM form4_parsed_transactions
                         WHERE issuer_symbol = ? AND (filing_date >= ? OR transaction_date >= ?)
@@ -2564,6 +2573,20 @@ class SmartMoneyEngine:
                     # issuer dispositions ('D' / ISSUER_DISPOSITION), equity grants ('A'), and option exercises ('M').
                     is_sell = not is_deriv and (t_code == "S" or sig_type == "OPEN_MARKET_SALE") and (acq_disp != "A")
 
+                    if hasattr(r, "get"):
+                        own_raw = str(r.get("ownership_type") or r.get("ownership_nature") or "D").upper().strip()
+                    else:
+                        r_keys = r.keys()
+                        if "ownership_type" in r_keys and r["ownership_type"]:
+                            own_raw = str(r["ownership_type"]).upper().strip()
+                        elif "ownership_nature" in r_keys and r["ownership_nature"]:
+                            own_raw = str(r["ownership_nature"]).upper().strip()
+                        else:
+                            own_raw = "D"
+                    is_indirect = own_raw in ("I", "INDIRECT")
+                    own_nature = "INDIRECT" if is_indirect else "DIRECT"
+                    own_code = "I" if is_indirect else "D"
+
                     if is_deriv:
                         if t_code == "P" or "PURCHASE" in sig_type:
                             tx_type = "Derivative Purchase"
@@ -2574,9 +2597,9 @@ class SmartMoneyEngine:
                         else:
                             tx_type = f"Derivative Transaction ({t_code})" if t_code else "Derivative Transaction"
                     elif is_buy:
-                        tx_type = "Purchase (Direct Open Market)"
+                        tx_type = "Purchase (Indirect Open Market)" if is_indirect else "Purchase (Direct Open Market)"
                     elif is_sell:
-                        tx_type = "Sale (Direct)"
+                        tx_type = "Sale (Indirect)" if is_indirect else "Sale (Direct)"
                     elif t_code == "F" or sig_type == "TAX_WITHHOLDING":
                         tx_type = "Tax Withholding"
                     elif t_code == "G" or sig_type == "GIFT":
@@ -2601,6 +2624,8 @@ class SmartMoneyEngine:
                         "transaction_type": tx_type,
                         "transaction_code": t_code,
                         "signal_type": sig_type,
+                        "ownership_nature": own_nature,
+                        "ownership_type": own_code,
                         "shares_traded": float(r["shares"] or 0) if "shares" in r.keys() else 0.0,
                         "price_per_share": float(r["price_per_share"] or 0.0) if "price_per_share" in r.keys() else 0.0,
                         "total_value_usd": float(r["total_value_usd"] or 0.0) if "total_value_usd" in r.keys() else 0.0,
