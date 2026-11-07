@@ -12,7 +12,7 @@
 ## Consolidated, nonduplicative action queue
 | Order | Owner/reference | State | Pragmatic next action and exit |
 |---|---|---|---|
-| 0 | PR #223 | DUPLICATE of merged #222 | Same nine changed paths and exact Git blob SHAs as #222. Close without merge after noting duplicate; preserve historical PR link. Do not rerun qualification. |
+| 0 | PR #223 | CLOSED UNMERGED as duplicate of #222 | Same nine changed paths and exact Git blob SHAs as #222. Closed with audit comment; preserve historical PR link. Do not rerun qualification. |
 | 1 | Learning: PR #222 / ARX-LEARNING-004 | DEPLOYED; empirical operation NOT PROVEN | One **read-only** authenticated census and capture-storage check, including actual clean prospective counts, source identity, and no model updates. Do not restart replay or build a scheduler. If zero clean matured records, mark `AWAITING_EVIDENCE`, not failure. |
 | 2 | Radar: Issue #166 | SINGLE-UNIVERSE CORRECTION CLOSED; natural scheduling HELD | Update tracker to replace outdated 35/43 assumptions. Preserve 250 dynamic published universe and Stage 2 filter contract. Natural scans remain independently gated; only a concrete freshness/use-case need justifies bounded qualification. |
 | 3 | Smart Money: Issue #165 | BOUNDED NVDA SEC CANARY ACCEPTED; continuous ingestion HELD | Verify most recent evidence freshness and current worker egress state before proposing a limited ingestion window. Avoid conflating SEC Form 4 insiders with separate Congress STOCK Act data. No recurring ingestion or score changes. |
