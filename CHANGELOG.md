@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Documentation governance reconciliation (2026-11-07)
+
+### Documentation only — no feature deployment
+- Added [dated ARX integrated status](docs/ARX_STATUS_ADDENDUM_2026_11_07.md) and [Radar investment research strategy, governance ownership and contract convergence](docs/architecture/ARX_RADAR_INVESTMENT_RESEARCH_DIRECTION_2026_11_07.md).
+- Recorded the reported RADAR-014/015 250-symbol operational baseline, read-only Stage 2 forensic 100/250 observation, zero strict VCP matches, and confirmed pending discovery defects; **no Stage 2 fix is claimed released**.
+- Documented risk/reward declared-policy divergence (1.85 in scanner publication specification vs 2.0 for canonical actionable setup), data-as-of and unresolved history questions, congressional-data unavailability, evidence attribution limits, operational holds, and phased implementation gates.
+- Added [documentation-only release addendum](docs/releases/2026-11-07_radar-governance-documentation-addendum.md). No production deployment or changes to frozen scores or held services.
+
+---
+
 ## [2.12.0] - 2026-08-29
 
 ### Master Catalog Expansion, Crypto Proxy Intelligence & Pre-Rendered Route SSG Consolidation
