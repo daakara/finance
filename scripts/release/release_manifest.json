@@ -1,49 +1,89 @@
 {
-  "release_candidate_commit": "c533061e21eed6dcf672d576e18ac85ca7177042",
-  "base_anchor_commit": "7f16e82e9367940bf02d79e5cb3aab9ec9fd89d1",
-  "total_files": 5,
+  "release_candidate_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+  "base_anchor_commit": "086719f87803cb98acbb3666780e20c9f1d88b54",
+  "total_files": 10,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-IOS-MOBILE-SHELL-001",
+  "directive": "ARX-PREFLIGHT-001",
   "files": {
-    "frontend/components/Navbar.tsx": {
+    "analyst_dashboard/data/market_db.py": {
       "operation": "M",
-      "originating_pr_number": 227,
-      "originating_commit": "c533061e21eed6dcf672d576e18ac85ca7177042",
-      "governing_requirement": "iOS standalone safe-area and fixed navigation clearance PR 227",
-      "sha256": "cdb942a0e01b954d60802cff97968bd3565a7a87672e1aa3c08a00152427b91c",
-      "size_bytes": 38433
+      "originating_pr_number": 234,
+      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+      "governing_requirement": "ARX-PREFLIGHT-001: Market database candle replacement atomically deletes conflicting provenance",
+      "sha256": "9126b533677754b044bdb5a628809ff115d1e3f06b3fcf66e9c5f889a1e57fe9",
+      "size_bytes": 39323
     },
-    "frontend/components/terminal/TerminalShell.tsx": {
+    "frontend/app/page.tsx": {
       "operation": "M",
-      "originating_pr_number": 227,
-      "originating_commit": "c533061e21eed6dcf672d576e18ac85ca7177042",
-      "governing_requirement": "iOS standalone safe-area and fixed navigation clearance PR 227",
-      "sha256": "3598228a663020bf248355c4ef6c19f1df1d819ccba71a0deef0d9b9be2b12d3",
-      "size_bytes": 4604
+      "originating_pr_number": 234,
+      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+      "governing_requirement": "ARX-PREFLIGHT-001: Pass canSizeTrade, check observation TTL in cache retrieval, display observation time",
+      "sha256": "c244c0306183f369fde622679f99c3651713025337a0148be24f98961dcf2dba",
+      "size_bytes": 44277
     },
-    "frontend/app/globals.css": {
+    "frontend/components/OptimalEntryExitCard.tsx": {
       "operation": "M",
-      "originating_pr_number": 227,
-      "originating_commit": "c533061e21eed6dcf672d576e18ac85ca7177042",
-      "governing_requirement": "iOS standalone safe-area and fixed navigation clearance PR 227",
-      "sha256": "67c9da4ac3a5605fb7672dfe2823cd4841a446f389582c14ea796bb0fa9bde73",
-      "size_bytes": 17969
+      "originating_pr_number": 234,
+      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+      "governing_requirement": "ARX-PREFLIGHT-001: Enforce canonical execution eligibility over checklist before displaying Execute Setup",
+      "sha256": "6a4b04513c0206deebdf03d15c4d52758393aa15f358a659fc42cd34f68de79a",
+      "size_bytes": 47964
     },
-    "frontend/components/PageIntro.tsx": {
+    "frontend/components/PreFlightChecklistModal.tsx": {
       "operation": "M",
-      "originating_pr_number": 227,
-      "originating_commit": "c533061e21eed6dcf672d576e18ac85ca7177042",
-      "governing_requirement": "iOS standalone safe-area and fixed navigation clearance PR 227",
-      "sha256": "f6ebad490edc3664e8b6200356593585382053382253f1efddb9b44791372961",
-      "size_bytes": 5093
+      "originating_pr_number": 234,
+      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+      "governing_requirement": "ARX-PREFLIGHT-001: Guard analytics idempotency, format factual checks, export research warning, surface multi-blockers, refine Check 1",
+      "sha256": "287975478100d5912c8cb292c63cd16a4165f22295a1e9883234141f06221fa3",
+      "size_bytes": 30911
+    },
+    "frontend/components/PreFlightReadinessBar.tsx": {
+      "operation": "M",
+      "originating_pr_number": 234,
+      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+      "governing_requirement": "ARX-PREFLIGHT-001: Discoverable multi-blockers in readiness bar and telemetry drawer",
+      "sha256": "7e7c9fcc033d0c44c7b6a80921d1954b8b6589e104cd2d20af90ba6f86b4ab95",
+      "size_bytes": 13205
+    },
+    "frontend/lib/preflightEvaluator.ts": {
+      "operation": "M",
+      "originating_pr_number": 234,
+      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+      "governing_requirement": "ARX-PREFLIGHT-001: Independent price vs macro freshness, canSizeTrade gate, multi-blocker collection, Issue 181 Check 1 copy",
+      "sha256": "e8612008e95e720648f3f4164f1e780f569e1764ce38fd6d6833de91434850af",
+      "size_bytes": 41257
+    },
+    "frontend/tests/preflight001Acceptance.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 234,
+      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+      "governing_requirement": "ARX-PREFLIGHT-001: Formal acceptance test suite for price/macro freshness, sizing gate, and multi-blockers",
+      "sha256": "51417a7a2c9e7a6647d46449e93308df73775080564b8a09c8c99fded7ce56b3",
+      "size_bytes": 8846
+    },
+    "tests/test_preflight_001_acceptance.py": {
+      "operation": "A",
+      "originating_pr_number": 234,
+      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+      "governing_requirement": "ARX-PREFLIGHT-001: Backend acceptance test suite for provenance atomicity and decision hierarchy floor",
+      "sha256": "2fb38208c1623d8c0df4327a0b9c75085ba6d2671cc281c6d8bbb0e9152264c8",
+      "size_bytes": 5749
+    },
+    "tests/test_preflight_001_falsification.py": {
+      "operation": "A",
+      "originating_pr_number": 234,
+      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+      "governing_requirement": "ARX-PREFLIGHT-001: Targeted falsification test suite for all 6 preflight vulnerability vectors",
+      "sha256": "72de910b10a8a7a4e9e5d6f36c8a1cd6eea62c7d9e547e7178542746cd5c4396",
+      "size_bytes": 4397
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 227,
-      "originating_commit": "c533061e21eed6dcf672d576e18ac85ca7177042",
-      "governing_requirement": "iOS standalone safe-area and fixed navigation clearance PR 227",
-      "sha256": "c9f867f051a351ba44ce112d93453da2f84822d3d0a1fbe591c536d29eb27ed1",
-      "size_bytes": 57896
+      "originating_pr_number": 234,
+      "originating_commit": "0ebfa3d0febb43ab489cbf2fc442f2d44cb54146",
+      "governing_requirement": "ARX-PREFLIGHT-001: Register PR #234 in APPROVED_PRS",
+      "sha256": "f13e486a44ff3316c5fcd83141ec288290daa5af4d10c767350ad939eabfb5ec",
+      "size_bytes": 57901
     }
   },
   "qualification_framework_files": {
@@ -53,9 +93,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "c9f867f051a351ba44ce112d93453da2f84822d3d0a1fbe591c536d29eb27ed1",
-      "bytes": 57896,
-      "size_bytes": 57896
+      "sha256": "f13e486a44ff3316c5fcd83141ec288290daa5af4d10c767350ad939eabfb5ec",
+      "bytes": 57901,
+      "size_bytes": 57901
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",

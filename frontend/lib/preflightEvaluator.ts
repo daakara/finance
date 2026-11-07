@@ -59,6 +59,7 @@ export interface PreFlightChecklistInputs {
   vixObservationTime?: string | null;
   macroEvidence?: MacroEvidence | null;
   isActionable?: boolean | null;
+  canSizeTrade?: boolean | null;
   decisionState?: string;
   evidenceStatus?: string;
   // Provenance & Authority Inputs (Gate 2 Invariants)
@@ -115,15 +116,18 @@ export interface PreFlightEvaluationResult {
   passedCount: number;
   convictionPct: number;
   isActionableGranted: boolean;
+  canSizeTradeGranted: boolean;
   mandatoryChecksVerified: boolean;
   isCleared: boolean;
   clearanceStatusLabel: string;
   clearanceStatusBadgeClass: string;
   activeBlocker: string;
+  allBlockers: string[];
   whatNeedsToChange: string;
   evidenceMeta: string;
   provenanceCategory: ProvenanceCategory;
   isSimulatedClearance: boolean;
+  isHistoricalReference: boolean;
   safePrice: number;
   safeStop: number | null;
   safeTarget: number | null;
@@ -275,6 +279,7 @@ export function evaluatePreFlightChecks(
     catalystEvidence,
     vix,
     isActionable = false,
+    canSizeTrade,
     decisionState,
     evidenceStatus,
   } = inputs;
@@ -461,7 +466,7 @@ export function evaluatePreFlightChecks(
   const chk1Item: PreFlightCheckItem = {
     id: "CHK-1",
     tag: "CHK-1 R:R",
-    name: isPlain ? "1. Reward vs Risk Balance" : "1. Asymmetric Payoff",
+    name: isPlain ? "1. Reward vs. Risk" : "1. Reward vs. Risk (Asymmetric Payoff)",
     status: chk1Status,
     badgeClass: isRRPassed
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
@@ -714,31 +719,39 @@ export function evaluatePreFlightChecks(
     isCatalystPassed &&
     isMacroPassed;
 
+  const canSizeTradeGranted = canSizeTrade !== false;
+
+  // Active Blockers Resolution (collecting all active blockers for discoverability)
+  const allBlockers: string[] = [];
+  if (!isActionableGranted) allBlockers.push("CANONICAL SETUP NON-ACTIONABLE");
+  if (!canSizeTradeGranted) allBlockers.push("CANONICAL SIZING PROHIBITED");
+  if (!isPriceValid || !hasExecutionLevels) allBlockers.push("UNVERIFIED EXECUTION LEVELS");
+  if (!isLevelDirectionValid) allBlockers.push("INVERTED EXECUTION BOUNDARIES");
+  if (isStage4) allBlockers.push("STAGE 4 DISTRIBUTION STRUCTURE");
+  if (!isRRPassed) allBlockers.push("REWARD/RISK ASYMMETRY (< 2.0:1)");
+  if (!isTrendPassed) allBlockers.push("TECHNICAL STRUCTURE NOT CONFIRMED");
+  if (!isCapitalRiskPassed) {
+    allBlockers.push(capitalRiskEvidenceState !== "COMPLETE" ? "CAPITAL RISK EVIDENCE INCOMPLETE" : "CAPITAL PRESERVATION DEFENSE");
+  }
+  if (!isCatalystPassed) {
+    if (resolvedCatalystState === "WARN") allBlockers.push("IMMINENT EARNINGS HAZARD (<= 7 DAYS)");
+    else if (resolvedCatalystState === "ERROR") allBlockers.push("CATALYST EVALUATION ERROR");
+    else if (catalystEvidence?.freshnessStatus && catalystEvidence.freshnessStatus !== "LIVE") allBlockers.push("STALE CATALYST COVERAGE");
+    else allBlockers.push("CATALYST COVERAGE UNAVAILABLE");
+  }
+  if (!isMacroPassed) {
+    if (!isVixValid || currentVix === null) allBlockers.push("VIX DATA UNAVAILABLE");
+    else allBlockers.push("MACRO VOLATILITY REGIME (VIX >= 26.0)");
+  }
+  const activeBlocker = allBlockers.length > 0 ? allBlockers[0] : "NONE";
+
   const isCleared =
     isActionableGranted &&
+    canSizeTradeGranted &&
     isPriceValid &&
     isLevelDirectionValid &&
     !isStage4 &&
     mandatoryChecksVerified;
-
-  // Active Blocker Resolution
-  const activeBlocker = (() => {
-    if (!isActionableGranted) return "CANONICAL SETUP NON-ACTIONABLE";
-    if (!isPriceValid || !hasExecutionLevels) return "UNVERIFIED EXECUTION LEVELS";
-    if (!isLevelDirectionValid) return "INVERTED EXECUTION BOUNDARIES";
-    if (isStage4) return "STAGE 4 DISTRIBUTION STRUCTURE";
-    if (!isRRPassed) return "REWARD/RISK ASYMMETRY (< 2.0:1)";
-    if (!isTrendPassed) return "TECHNICAL STRUCTURE NOT CONFIRMED";
-    if (!isCapitalRiskPassed) return capitalRiskEvidenceState !== "COMPLETE" ? "CAPITAL RISK EVIDENCE INCOMPLETE" : "CAPITAL PRESERVATION DEFENSE";
-    if (!isCatalystPassed) {
-      if (resolvedCatalystState === "WARN") return "IMMINENT EARNINGS HAZARD (<= 7 DAYS)";
-      if (resolvedCatalystState === "ERROR") return "CATALYST EVALUATION ERROR";
-      if (catalystEvidence?.freshnessStatus && catalystEvidence.freshnessStatus !== "LIVE") return "STALE CATALYST COVERAGE";
-      return "CATALYST COVERAGE UNAVAILABLE";
-    }
-    if (!isMacroPassed) return !isVixValid || currentVix === null ? "VIX DATA UNAVAILABLE" : "MACRO VOLATILITY REGIME (VIX >= 26.0)";
-    return "NONE";
-  })();
 
   // ── Provenance & Epistemic Authority Classification (Gate 2 Invariants) ──
   const rawDataSource = (inputs.dataSource || "").toLowerCase();
@@ -774,14 +787,17 @@ export function evaluatePreFlightChecks(
     inputs.liveSource === "exchange_feed"
   );
 
+  const hasLivePriceFreshness = Boolean(
+    inputs.liveFreshnessStatus === "LIVE" ||
+    inputs.liveFreshnessStatus === "REALTIME"
+  );
+
   const isLiveObservation = Boolean(
     !isSyntheticFixture &&
     !isHistoricalEOD &&
     isExplicitLiveSource &&
     isPriceValid &&
-    (inputs.liveFreshnessStatus === "LIVE" ||
-     inputs.liveFreshnessStatus === "REALTIME" ||
-     inputs.macroEvidence?.freshnessStatus === "LIVE")
+    hasLivePriceFreshness
   );
 
   const provenanceCategory: ProvenanceCategory = isSyntheticFixture
@@ -793,11 +809,15 @@ export function evaluatePreFlightChecks(
     : "UNVERIFIED";
 
   const isSimulatedClearance = Boolean(isCleared && isSyntheticFixture);
+  const isHistoricalReference = Boolean(isCleared && isHistoricalEOD);
 
   // What Needs to Change Callout
   const whatNeedsToChange = (() => {
     if (!isActionableGranted) {
       return "Wait for price action to confirm the canonical setup trigger within the accumulation corridor before sizing.";
+    }
+    if (!canSizeTradeGranted) {
+      return "Execution eligibility prohibited: Position sizing cannot be authorized until canonical risk gate clears.";
     }
     if (!isPriceValid || !hasExecutionLevels) {
       return "Establish verified spot price and quantitative execution boundaries (stop loss and target levels).";
@@ -910,6 +930,9 @@ export function evaluatePreFlightChecks(
     evidenceMeta,
     provenanceCategory,
     isSimulatedClearance,
+    isHistoricalReference,
+    canSizeTradeGranted,
+    allBlockers,
     safePrice,
     safeStop,
     safeTarget,

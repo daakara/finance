@@ -277,6 +277,10 @@ class MarketDatabaseEngine:
                             round(float(row["Close"]), 2),
                             int(row.get("Volume", 0)),
                         ))
+                        # Prevent contradictory candle provenance after legacy replacement (PREFLIGHT-001 Target 5)
+                        cursor.execute("""
+                            DELETE FROM asset_ohlcv_provenance WHERE symbol = ? AND trade_date = ?
+                        """, (upper, date_str))
                 elif isinstance(data, list):
                     for item in data:
                         date_str = str(item.get("time") or item.get("trade_date") or item.get("date")).split("T")[0]
@@ -292,6 +296,10 @@ class MarketDatabaseEngine:
                             round(float(item.get("close", item.get("Close", 0.0))), 2),
                             int(item.get("volume", item.get("Volume", 0))),
                         ))
+                        # Prevent contradictory candle provenance after legacy replacement (PREFLIGHT-001 Target 5)
+                        cursor.execute("""
+                            DELETE FROM asset_ohlcv_provenance WHERE symbol = ? AND trade_date = ?
+                        """, (upper, date_str))
         finally:
             conn.close()
 

@@ -80,7 +80,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
                 data-testid="inline-blocker-tag"
                 className="text-[9px] font-mono font-bold text-rose-400 bg-rose-950/50 px-1 py-0.5 rounded border border-rose-800/40"
               >
-                BLOCKING
+                {evalResult.allBlockers?.length > 1 ? `${evalResult.allBlockers.length} BLOCKERS` : "BLOCKING"}
               </span>
             )}
           </div>
@@ -92,6 +92,11 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
           >
             {activeBlocker}
           </span>
+          {evalResult.allBlockers?.length > 1 && (
+            <span data-testid="inline-additional-blockers" className="text-[10px] text-amber-400/90 font-normal block mt-0.5">
+              +{evalResult.allBlockers.length - 1} more ({evalResult.allBlockers.slice(1).join(", ")})
+            </span>
+          )}
         </div>
 
         {/* What Needs to Change */}
@@ -258,6 +263,11 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
           className="mt-2.5 pt-3 border-t border-dashed border-[var(--border-subtle)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs font-sans animate-in fade-in duration-150"
         >
           <p className="col-span-full text-xs text-[var(--text-2)]">What Needs to Change: {whatNeedsToChange}{priceContext ? ` ${priceContext}` : " Readiness uses the supplied analysis price; this is not a live quote certification."}</p>
+          {!isCleared && evalResult.allBlockers?.length > 1 && (
+            <div data-testid="inline-all-blockers-drawer" className="col-span-full p-2 rounded bg-amber-950/30 border border-amber-800/40 text-amber-300 font-mono text-[11px]">
+              Active Blockers ({evalResult.allBlockers.length}): {evalResult.allBlockers.join("; ")}
+            </div>
+          )}
           {checks.map((chk: PreFlightCheckItem) => (
             <div
               key={chk.id}

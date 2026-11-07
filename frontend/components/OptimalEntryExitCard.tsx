@@ -446,33 +446,33 @@ export default function OptimalEntryExitCard({
               data-testid="current-action"
               className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold border ${
                 canonicalActionable
-                  ? preflightCleared === true
+                  ? (preflightCleared === true && canSizeTrade !== false)
                     ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
                     : "bg-amber-950/80 text-amber-300 border-amber-700/80"
                   : "bg-amber-950/80 text-amber-300 border-amber-700/80"
               }`}
             >
               {canonicalActionable
-                ? preflightCleared === true
+                ? (preflightCleared === true && canSizeTrade !== false)
                   ? "CURRENT ACTION: Execute Setup"
                   : "CURRENT ACTION: Setup Actionable — Await Execution Clearance"
                 : "CURRENT ACTION: Wait"}
             </span>
-            {canonicalActionable && preflightCleared !== true && (
+            {canonicalActionable && (preflightCleared !== true || canSizeTrade === false) && (
               <span
                 data-testid="preflight-blocker-pill"
                 className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-600/80 inline-flex items-center gap-1"
                 title="Execution clearance is blocked by mandatory Pre-Flight check failure"
               >
                 <span>⚠️ Pre-Flight:</span>
-                <span className="text-white">{activeBlocker || "NOT CLEARED"}</span>
+                <span className="text-white">{activeBlocker || (canSizeTrade === false ? "CANONICAL SIZING PROHIBITED" : "NOT CLEARED")}</span>
               </span>
             )}
             <span
               data-testid="plan-status"
               className="px-2.5 py-1 rounded-md text-xs font-mono bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]"
             >
-              Status: {decisionStateLabel || decisionState || (canonicalActionable ? (preflightCleared === true ? "CONFIRMED_TRIGGER" : "ACTIONABLE_BLOCKED") : "WAIT_FOR_TRIGGER")}
+              Status: {decisionStateLabel || decisionState || (canonicalActionable ? ((preflightCleared === true && canSizeTrade !== false) ? "CONFIRMED_TRIGGER" : "ACTIONABLE_BLOCKED") : "WAIT_FOR_TRIGGER")}
             </span>
           </div>
           <div className="hidden sm:flex flex-wrap items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-400">
