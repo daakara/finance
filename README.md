@@ -15,6 +15,18 @@ A professional-grade quantitative intelligence platform featuring real-time mark
 
 ---
 
+## Current direction and status (2026-11-07)
+
+For the current **Radar Stage 2 discovery**, **investment decision contracts**, **2:1 risk-authority reconciliation**, **Congressional Trades truth-state**, and **outstanding work**, see:
+
+- [Integrated status addendum — 2026-11-07](docs/ARX_STATUS_ADDENDUM_2026_11_07.md) — distinguishes reported production acceptance from pending fixes.
+- [Radar investment research direction and governance decision register](docs/architecture/ARX_RADAR_INVESTMENT_RESEARCH_DIRECTION_2026_11_07.md) — product scope, existing rule owners, Stage 2/VCP separation, data quality, risk, investor journey and wave sequencing.
+- [Documentation-only release addendum](docs/releases/2026-11-07_radar-governance-documentation-addendum.md) — records the documentation change; **not** a product deployment.
+
+The October 29 master status, historic architecture statements and historical releases remain dated records. This newer addendum does **not** silently supersede executable contracts or authorize release activation. Existing operational holds remain in force.
+
+---
+
 ## 🏛️ Authoritative Documentation & System Portal
 
 The ARX Terminal documentation estate is consolidated into a canonical hierarchy. Refer to the master registers below for authoritative specifications, research decisions, and governance ledgers:
