@@ -1,49 +1,81 @@
 {
-  "release_candidate_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
-  "base_anchor_commit": "20bd840e4dfba2e18eebf3bcbc372606dfd2e568",
-  "total_files": 5,
+  "release_candidate_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
+  "base_anchor_commit": "6f6770e0e72f5ca129feafdbee2c2e3932047191",
+  "total_files": 9,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX_RADAR_UNIVERSE_001",
+  "directive": "ARX_LEARNING_003",
   "files": {
-    "api/routes/screener.py": {
+    "analyst_dashboard/governance/governance_db.py": {
       "operation": "M",
-      "originating_pr_number": 220,
-      "originating_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
-      "governing_requirement": "ARX-RADAR-UNIVERSE-001: Sole authoritative universe ARX_US_EQUITIES gating and fail-closed error handling",
-      "sha256": "4ebc9d260b150da5b4f3f457f2a013671faedbc25ac0d0bad453dc7306ebf04b",
-      "size_bytes": 112053
+      "originating_pr_number": 221,
+      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
+      "governing_requirement": "GOV-SHADOW-001: SQLite WAL mode and synchronous=NORMAL optimization",
+      "sha256": "537d70075effdf651bb370109e0e55857b97e1e67ceb875050d7fdedc19c8433",
+      "size_bytes": 43226
     },
-    "frontend/app/radar/page.tsx": {
+    "analyst_dashboard/governance/prospective_capture.py": {
       "operation": "M",
-      "originating_pr_number": 220,
-      "originating_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
-      "governing_requirement": "ARX-RADAR-UNIVERSE-001: Remove curated 35/43 selectors, catalog suggestions, hardcoded counts and display dynamic universe metadata",
-      "sha256": "0b60e9c0386b342e659679494899c6d189b844e0817c8d55813a7964f378d469",
-      "size_bytes": 104939
+      "originating_pr_number": 221,
+      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
+      "governing_requirement": "GOV-SHADOW-001: prospective outcome links, census reporting, and non-blocking recovery stream",
+      "sha256": "00f594ed2b0c6873e8eb5f91c3611d2e4646722287820c82e981ff53cf72e4d6",
+      "size_bytes": 61814
     },
-    "frontend/lib/api.ts": {
-      "operation": "M",
-      "originating_pr_number": 220,
-      "originating_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
-      "governing_requirement": "ARX-RADAR-UNIVERSE-001: CandidatePopulationModel and ScreenerResponse universeScope, universeBuildId, stage2OpportunityCount typing and passthrough",
-      "sha256": "921b2529b9c9ef48faa1a957e55c91eabfe357803c942cf8ec18376dc30740b7",
-      "size_bytes": 185810
-    },
-    "frontend/tests/radarHeroCtaAndCatalogDiscovery.test.ts": {
-      "operation": "M",
-      "originating_pr_number": 220,
-      "originating_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
-      "governing_requirement": "ARX-RADAR-UNIVERSE-001: Assert elimination of curated selectors and catalog matches, assert authoritative universe badge",
-      "sha256": "cb5eb56c8d3912ed0e7a1880943ea44b086b07853bda3b4064760509bedbdceb",
-      "size_bytes": 8741
-    },
-    "tests/test_radar_single_authoritative_universe.py": {
+    "analyst_dashboard/governance/shadow_replay_runner.py": {
       "operation": "A",
-      "originating_pr_number": 220,
-      "originating_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
-      "governing_requirement": "ARX-RADAR-UNIVERSE-001: 10-case verification test suite for single authoritative universe and fail-closed behavior",
-      "sha256": "a002306efbc55559961785fce1a7d13d372dadd99b510eb31e109d4504b45f5a",
-      "size_bytes": 10966
+      "originating_pr_number": 221,
+      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
+      "governing_requirement": "GOV-SHADOW-002: bounded idempotent shadow replay settlement runner",
+      "sha256": "24aa9c4d1d1ab932bb760a511f4ce74ceae752cbca81952d6aca78c6e09d024f",
+      "size_bytes": 7579
+    },
+    "api/routes/analytics.py": {
+      "operation": "M",
+      "originating_pr_number": 221,
+      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
+      "governing_requirement": "GOV-SHADOW-001: passive shadow capture for user-selected analytical research",
+      "sha256": "8a55ca14fbe5276c89eb7d3631ae3f08e7242f24d63db4143076ded3c58b43af",
+      "size_bytes": 79740
+    },
+    "api/routes/governance.py": {
+      "operation": "M",
+      "originating_pr_number": 221,
+      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
+      "governing_requirement": "GOV-SHADOW-003: authoritative prospective learning census endpoint",
+      "sha256": "a9e3bec73ed053b17826e43a952295fed3641348252b0146dfb801fe2cab71a5",
+      "size_bytes": 27433
+    },
+    "scripts/release/rq02_diff_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 221,
+      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
+      "governing_requirement": "GOV-SHADOW-004: add PR 221 to approved PR list",
+      "sha256": "8c8b0ac76a6a81fb748c12bd8d05ae1cb78277b54b8f8e9bfa4885c0da9a8873",
+      "size_bytes": 57871
+    },
+    "scripts/replay_prospective_settlement.py": {
+      "operation": "A",
+      "originating_pr_number": 221,
+      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
+      "governing_requirement": "GOV-SHADOW-002: administrative CLI for bounded prospective settlement replay",
+      "sha256": "dab756990df9f6a163409ea8ea159c0908f305282d8e1d2ad50e1be495df4102",
+      "size_bytes": 3288
+    },
+    "tests/test_prospective_decision_capture.py": {
+      "operation": "M",
+      "originating_pr_number": 221,
+      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
+      "governing_requirement": "GOV-SHADOW-001: warm-up and tolerant latency benchmark for prospective capture",
+      "sha256": "04aceb31832b46923e1925b4227fe1f1c8ed3ed02ceef8115a9a96755d7e0f1a",
+      "size_bytes": 38536
+    },
+    "tests/test_prospective_shadow_mode.py": {
+      "operation": "A",
+      "originating_pr_number": 221,
+      "originating_commit": "3160070c309691ad72ca81a4f75dba4aa21897b3",
+      "governing_requirement": "GOV-SHADOW-001: adversarial test suite for shadow mode timing, provenance, and immutability",
+      "sha256": "4df34be3130f53cc04d7cb098225bffd78bbe1d97f98cbc0ea23c92dd249f928",
+      "size_bytes": 18439
     }
   },
   "qualification_framework_files": {
@@ -53,9 +85,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "55202d23851976f26c753029accd1e987b44254738125088b6cbfefbd05a5328",
-      "bytes": 57866,
-      "size_bytes": 57866
+      "sha256": "8c8b0ac76a6a81fb748c12bd8d05ae1cb78277b54b8f8e9bfa4885c0da9a8873",
+      "bytes": 57871,
+      "size_bytes": 57871
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
