@@ -29,26 +29,26 @@ def _is_production() -> bool:
 
 
 def _get_expected_admin_key() -> str:
-    """Retrieve expected admin key from environment.
+    """Retrieve expected administrative key from environment.
     
     Precedence:
     1. ARX_ADMIN_KEY (dedicated administrative secret)
     2. ARX_CACHE_PURGE_SECRET (dedicated cache operation token)
-    3. ARX_API_KEY (canonical server API key)
+
+    CRITICAL PRIVILEGE BOUNDARY (SEC-002 Recovery):
+    Ordinary API keys (ARX_API_KEY) are strictly excluded from administrative operations.
     """
     return (
         os.getenv("ARX_ADMIN_KEY", "").strip()
         or os.getenv("ARX_CACHE_PURGE_SECRET", "").strip()
-        or os.getenv("ARX_API_KEY", "").strip()
     )
 
 
 def _extract_credential(
     x_admin_key: Optional[str] = None,
-    x_api_key: Optional[str] = None,
     authorization: Optional[str] = None,
 ) -> str:
-    """Extract candidate credential from headers in priority order."""
+    """Extract candidate administrative credential from headers in priority order."""
     if x_admin_key and x_admin_key.strip():
         return x_admin_key.strip()
     if authorization and authorization.strip():
@@ -57,8 +57,6 @@ def _extract_credential(
             return parts[1].strip()
         elif len(parts) == 1:
             return parts[0].strip()
-    if x_api_key and x_api_key.strip():
-        return x_api_key.strip()
     return ""
 
 
@@ -66,13 +64,13 @@ def _extract_credential(
 def clear_all_caches(
     request: Request,
     x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
     authorization: Optional[str] = Header(None, alias="Authorization"),
 ):
     """Purge in-memory and disk pipeline caches upon deployment.
     
     SECURITY: Privileged administrative operation.
-    Requires valid administrative credential via X-Admin-Key, Authorization Bearer, or X-API-Key.
+    Requires valid administrative credential via X-Admin-Key or Authorization Bearer.
+    Ordinary API keys (X-API-Key) are strictly rejected.
     Fails closed in production if no administrative secret is configured.
     """
     expected_key = _get_expected_admin_key()
@@ -88,7 +86,7 @@ def clear_all_caches(
         # In non-production, proceed only if non-production dev bypass is active
         logger.debug("Cache purge executed in dev mode without explicit credential.")
     else:
-        candidate_key = _extract_credential(x_admin_key, x_api_key, authorization)
+        candidate_key = _extract_credential(x_admin_key, authorization)
         if not candidate_key:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
