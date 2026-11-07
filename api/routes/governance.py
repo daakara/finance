@@ -19,7 +19,7 @@ import logging
 import hashlib
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, Header, Response, HTTPException, status, Request, Body
+from fastapi import APIRouter, Header, Response, HTTPException, status, Request, Body, Depends
 from fastapi.responses import JSONResponse
 
 from analyst_dashboard.governance.experiment_ledger import (
@@ -526,7 +526,23 @@ def activate_epoch2(
     }
 
 
-@router.post("/epoch-2/revoke-runtime", tags=["Model Governance & Prospective Evaluation"])
+def verify_epoch2_revocation_auth(
+    authorization: Optional[str] = Header(None),
+    x_arx_revocation_key: Optional[str] = Header(None, alias="X-Arx-Revocation-Key"),
+) -> None:
+    candidate_key = _extract_bearer_or_header(authorization, x_arx_revocation_key)
+    if not _verify_credential(candidate_key, SERVER_REV_KEY):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized: Valid ARX_EPOCH_REVOCATION_KEY required for runtime revocation."
+        )
+
+
+@router.post(
+    "/epoch-2/revoke-runtime",
+    tags=["Model Governance & Prospective Evaluation"],
+    dependencies=[Depends(verify_epoch2_revocation_auth)],
+)
 def revoke_epoch2_runtime(
     request: Request,
     response: Response,
@@ -539,12 +555,6 @@ def revoke_epoch2_runtime(
     Does NOT modify or deactivate the underlying epoch activation boundary.
     """
     _set_security_headers(response)
-    candidate_key = _extract_bearer_or_header(authorization, x_arx_revocation_key)
-    if not _verify_credential(candidate_key, SERVER_REV_KEY):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized: Valid ARX_EPOCH_REVOCATION_KEY required for runtime revocation."
-        )
 
     epoch_id = payload.get("epochId", ExperimentLedger.EPOCH_ID)
     release_sha = payload.get("releaseSha")

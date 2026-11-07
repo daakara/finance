@@ -4,12 +4,34 @@ import time
 import os
 import logging
 import ipaddress
+import urllib.parse
 from typing import Dict, List, Optional, Union
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
+
+
+def sanitize_redis_url(url: str) -> str:
+    """Sanitize Redis URL to redact sensitive passwords from log output (SEC-002 / SEC-05)."""
+    if not url or not isinstance(url, str):
+        return ""
+    try:
+        parsed = urllib.parse.urlsplit(url.strip())
+        if parsed.password:
+            user_part = f"{parsed.username}:***" if parsed.username else "***"
+            host_part = parsed.hostname or ""
+            if parsed.port:
+                host_part = f"{host_part}:{parsed.port}"
+            sanitized_netloc = f"{user_part}@{host_part}"
+            return urllib.parse.urlunsplit(
+                (parsed.scheme, sanitized_netloc, parsed.path, parsed.query, parsed.fragment)
+            )
+        return url.strip()
+    except Exception:
+        return "redis://***:***@redacted"
+
 
 # Try to initialize Redis connection
 REDIS_URL = os.getenv("REDIS_URL", "")
@@ -22,7 +44,19 @@ if REDIS_URL:
         redis_client.ping()
         logger.info("Connected to Redis distributed rate limiter successfully.")
     except Exception as e:
-        logger.warning(f"Failed to connect to Redis at {REDIS_URL}, falling back to in-memory sliding window: {e}")
+        sanitized_url = sanitize_redis_url(REDIS_URL)
+        err_msg = str(e)
+        try:
+            parsed = urllib.parse.urlsplit(REDIS_URL)
+            if parsed.password and parsed.password in err_msg:
+                err_msg = err_msg.replace(parsed.password, "***")
+        except Exception:
+            pass
+        logger.warning(
+            "Failed to connect to Redis at %s, falling back to in-memory sliding window: %s",
+            sanitized_url,
+            err_msg,
+        )
         redis_client = None
 
 # Fallback in-memory store: { client_ip: [timestamp1, timestamp2, ...] }
