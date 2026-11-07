@@ -1,65 +1,41 @@
 {
-  "release_candidate_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
-  "base_anchor_commit": "83bca0b69d2d56d30b4d3157ff492fae260b7f3a",
-  "total_files": 7,
+  "release_candidate_commit": "10718e2867b4397e37375023d7b83e162d48dafc",
+  "base_anchor_commit": "7b976bc91d6c98c14e3c4b48d7d40493bcdf4619",
+  "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-DOCS-2026-11-07-RECONCILIATION",
+  "directive": "ARX-RADAR-MOBILE-UX-001",
   "files": {
-    "CHANGELOG.md": {
+    "frontend/app/radar/page.tsx": {
       "operation": "M",
-      "originating_pr_number": 224,
-      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
-      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
-      "sha256": "8165349f530a7425f524f1f6fb73850c1bbe64e755a46b4e80f0c562211e870f",
-      "size_bytes": 31950
+      "originating_pr_number": 225,
+      "originating_commit": "10718e2867b4397e37375023d7b83e162d48dafc",
+      "governing_requirement": "ARX Radar mobile UI-only overflow and navigation correction (#225)",
+      "sha256": "806ad6bec42505644044e03d6b6341a98e656974d1195134595ffe9fa20b59dd",
+      "size_bytes": 105703
     },
-    "README.md": {
+    "frontend/components/PageIntro.tsx": {
       "operation": "M",
-      "originating_pr_number": 224,
-      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
-      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
-      "sha256": "7a426ec42d3895855745e5dd3e4646e2bbcfb29b13eb1a15a3c5302978e46daa",
-      "size_bytes": 13360
+      "originating_pr_number": 225,
+      "originating_commit": "10718e2867b4397e37375023d7b83e162d48dafc",
+      "governing_requirement": "ARX Radar mobile UI-only overflow and navigation correction (#225)",
+      "sha256": "991136fe11b65495f6658ab2dac3461d56e53a3f59d7d109ef3e9cf2544045a7",
+      "size_bytes": 5080
     },
-    "docs/ARX_MASTER_PROJECT_STATUS_2026_10_29.md": {
+    "frontend/components/synthesis/SynthesisGuideBanner.tsx": {
       "operation": "M",
-      "originating_pr_number": 224,
-      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
-      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
-      "sha256": "0b49c260ab5bae5b516680e2a75881c76e989d4fce083dfe2590acf143b8b864",
-      "size_bytes": 8632
-    },
-    "docs/ARX_STATUS_ADDENDUM_2026_11_07.md": {
-      "operation": "M",
-      "originating_pr_number": 224,
-      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
-      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
-      "sha256": "9d3690cb8e258512a69daeb320bf04bb29ba00b86a4e168d3a817c86d6be773d",
-      "size_bytes": 4476
-    },
-    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_07.md": {
-      "operation": "A",
-      "originating_pr_number": 224,
-      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
-      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
-      "sha256": "9fb978c2064b557c292dc7f969dbc7a05b5a9c9ffdf2368a713fdfead68fd5e3",
-      "size_bytes": 8128
-    },
-    "docs/releases/2026-11-07_operational_release_reconciliation.md": {
-      "operation": "A",
-      "originating_pr_number": 224,
-      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
-      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
-      "sha256": "8350f69ef88f2c99e74e0827f45ce6dc6662ea206e1aa1b650fba59aa38599cf",
-      "size_bytes": 1986
+      "originating_pr_number": 225,
+      "originating_commit": "10718e2867b4397e37375023d7b83e162d48dafc",
+      "governing_requirement": "ARX Radar mobile UI-only overflow and navigation correction (#225)",
+      "sha256": "68ef9ada0706a320321a03003d9601fe089466c0501a7d6e74a6f972e3591067",
+      "size_bytes": 4710
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 224,
-      "originating_commit": "6ebb6c5cba19a84099f71b58e7ae52f777a1e5f0",
-      "governing_requirement": "PR 224: dated operational documentation reconciliation and explicit approved PR registration",
-      "sha256": "e81c8bac48a694090df45f9434da9e3ad9f8ceeee646cf2f5c3624b5375fa134",
-      "size_bytes": 57881
+      "originating_pr_number": 225,
+      "originating_commit": "10718e2867b4397e37375023d7b83e162d48dafc",
+      "governing_requirement": "ARX Radar mobile UI-only overflow and navigation correction (#225)",
+      "sha256": "238185f856a455069416dde876d8ee17f92dd270338bcfb5d40eece17daea2ce",
+      "size_bytes": 57886
     }
   },
   "qualification_framework_files": {
@@ -69,9 +45,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "e81c8bac48a694090df45f9434da9e3ad9f8ceeee646cf2f5c3624b5375fa134",
-      "bytes": 57881,
-      "size_bytes": 57881
+      "sha256": "238185f856a455069416dde876d8ee17f92dd270338bcfb5d40eece17daea2ce",
+      "bytes": 57886,
+      "size_bytes": 57886
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",

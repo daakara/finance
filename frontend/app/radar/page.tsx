@@ -632,7 +632,7 @@ function RadarContent() {
       activeHub="radar"
       activeSymbol={activeCanonicalAsset}
     >
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 min-w-0">
         {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC3) */}
         <PageIntro
           hubId="radar"
@@ -974,15 +974,15 @@ function RadarContent() {
         {/* Search & Filter Toolbar */}
         <div className="space-y-3 border-b border-[var(--border-subtle)] pb-4">
           {/* Authoritative Published Universe & Discovery Policy Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2.5 bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-xl text-xs font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-2.5 bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-xl text-xs font-mono">
             {/* Authoritative Universe Metadata */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[11px] font-bold">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <span className="inline-flex items-center gap-1.5 max-w-full break-all px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[11px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
                 <span>Universe: {population?.universeScope || capabilities.VCP?.universeId || 'ARX_US_EQUITIES'}</span>
               </span>
               {(population?.universeBuildId || capabilities.VCP?.universeBuildId) && (
-                <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]" title="Authoritative published universe build identifier">
+                <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)] max-w-full break-all" title="Authoritative published universe build identifier">
                   Build: <span className="text-[var(--text-1)] font-semibold">{population?.universeBuildId || capabilities.VCP?.universeBuildId}</span>
                 </span>
               )}
@@ -991,21 +991,21 @@ function RadarContent() {
               </span>
               {(capabilities.VCP?.dataAsOf || allAssets[0]?.priceDate) && (
                 <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]" title="Market data freshness timestamp">
-                  As of: <span className="text-[var(--text-1)] font-semibold">{capabilities.VCP?.dataAsOf || allAssets[0]?.priceDate}</span>
+                  Snapshot date: <span className="text-[var(--text-1)] font-semibold">{capabilities.VCP?.dataAsOf || allAssets[0]?.priceDate}</span>
                 </span>
               )}
             </div>
 
             {/* Discovery Policy Badge */}
             <div className="flex items-center gap-2 text-xs">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold" title="Stage 2 growth uptrend template is the sole authoritative eligibility gate for primary discovery">
+              <span className="inline-flex items-center gap-1.5 max-w-full px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold" title="Stage 2 growth uptrend template is the sole authoritative eligibility gate for primary discovery">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                 <span>Stage 2 Primary Discovery ({population?.stage2OpportunityCount ?? filteredAssets.length} Opportunities)</span>
               </span>
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 md:gap-4 min-w-0">
             {/* Category Filter Tabs (WAI-ARIA Tablist) */}
             <div
               className="w-full min-w-0 max-w-full md:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 md:pb-0"
@@ -1115,8 +1115,8 @@ function RadarContent() {
               </div>
             </div>
 
-            {/* Search Input & Sort Controls */}
-            <div className="flex flex-wrap items-center gap-2.5">
+            {/* Search Input & Sort Controls: stack at narrow widths so search is never compressed by sorting. */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 w-full min-w-0">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -1129,7 +1129,7 @@ function RadarContent() {
                 <input
                   type="text"
                   aria-label="Search candidate, ticker, or catalyst"
-                  placeholder="Search candidate, ticker (e.g. NVDA, TSLA)..."
+                  placeholder="Search assets or tickers"
                   value={searchQuery}
                   onChange={(e) => {
                     const nextQ = e.target.value;
@@ -1176,7 +1176,7 @@ function RadarContent() {
                 </span>
               )}
 
-              <div className="flex flex-wrap items-center gap-1 bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-lg p-1 text-xs font-mono max-w-full">
+              <div className="flex flex-wrap items-center gap-1 bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-lg p-1 text-xs font-mono w-full sm:w-auto max-w-full">
                 <span className="text-[10px] text-[var(--text-muted)] px-1.5 uppercase">Sort:</span>
                 <button
                   type="button"
@@ -1205,6 +1205,7 @@ function RadarContent() {
           </div>
 
           {/* Secondary Row: Portfolio Ownership Filter Chips & Degraded Status */}
+          <p className="sm:hidden text-[11px] text-[var(--text-muted)] font-mono" aria-hidden="true">Swipe sideways to view more filters →</p>
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[var(--border-subtle)]">
             <div
               className="w-full min-w-0 max-w-full sm:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 sm:pb-0"
@@ -1448,7 +1449,8 @@ function RadarContent() {
             tabIndex={0}
             className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] overflow-hidden shadow-xl focus-ring"
           >
-            <div className="overflow-x-auto">
+            <p className="sm:hidden px-3 pt-2 text-[11px] text-[var(--text-muted)] font-mono" id="radar-table-scroll-hint">Swipe horizontally for price, score, evidence and actions →</p>
+            <div className="overflow-x-auto overscroll-x-contain touch-pan-x" role="region" aria-label="Radar candidate results, horizontally scrollable" aria-describedby="radar-table-scroll-hint" tabIndex={0} style={{ WebkitOverflowScrolling: "touch" }}>
               <table className="w-full text-left font-mono text-xs">
                 <thead className="bg-[var(--bg-app)] border-b border-[var(--border-subtle)] text-[var(--text-2)] text-[10px] uppercase tracking-wider">
                 <tr>
