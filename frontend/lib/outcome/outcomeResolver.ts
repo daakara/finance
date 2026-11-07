@@ -11,9 +11,11 @@ export interface MarketObservation {
   stopBreached?: boolean;
   isExpired?: boolean;
   regimeShifted?: boolean;
+  isPartialSuccess?: boolean;
   newRegime?: string;
   returnPct?: number;
   observedConfidence?: number;
+  observedAt?: string;
 }
 
 export class OutcomeResolver {
@@ -45,10 +47,23 @@ export class OutcomeResolver {
       outcomeClass = OutcomeClass.EXPIRED;
       attributionCategory = AttributionCategory.THESIS_EXPIRED;
       explanation = "Observation window elapsed without target objective or stop loss being triggered";
-    } else {
+    } else if (observation.isPartialSuccess) {
       outcomeClass = OutcomeClass.PARTIAL_SUCCESS;
       attributionCategory = AttributionCategory.EXECUTION_SUCCESS;
-      explanation = "Favorable execution corridor entered with positive unrealized gain";
+      explanation = "Partial target objective reached within execution corridor";
+    } else {
+      const nowMs = observation.observedAt ? new Date(observation.observedAt).getTime() : Date.now();
+      const expMs = prediction.expirationAt ? new Date(prediction.expirationAt).getTime() : 0;
+
+      if (expMs > 0 && nowMs < expMs) {
+        throw new Error(
+          `Cannot resolve unexpired prediction without terminal observation: horizon is still active until ${prediction.expirationAt}`
+        );
+      }
+
+      outcomeClass = OutcomeClass.EXPIRED;
+      attributionCategory = AttributionCategory.THESIS_EXPIRED;
+      explanation = "Outcome unobserved: prediction horizon elapsed without captured target, stop, or invalidation";
     }
 
     return validateOutcomeRecord({
@@ -59,8 +74,8 @@ export class OutcomeResolver {
       outcomeClass,
       attributionCategory,
       explanation,
-      outcomeReturnPct: observation.returnPct ?? (outcomeClass === "SUCCESS" ? 6.8 : outcomeClass === "FAILURE" ? -3.2 : 0.5),
-      outcomeConfidence: observation.observedConfidence ?? 0.85,
+      outcomeReturnPct: observation.returnPct,
+      outcomeConfidence: observation.observedConfidence ?? 0.0,
       snapshotHash: prediction.currentStateHash,
     });
   }

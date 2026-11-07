@@ -20,7 +20,7 @@ export class CalibrationEngine {
         brierScore: 0,
         samples: 0,
         buckets: [],
-        status: "PASS",
+        status: "FAIL",
       };
     }
 
@@ -80,7 +80,8 @@ export class CalibrationEngine {
     }
 
     ece = Number(ece.toFixed(4));
-    const status = ece <= 0.05 && brierScore <= 0.15 ? "PASS" : "FAIL";
+    // Statistical significance requirement: minimum 30 samples, plus ECE <= 0.05 and Brier <= 0.15
+    const status = pairs.length >= 30 && ece <= 0.05 && brierScore <= 0.15 ? "PASS" : "FAIL";
 
     return {
       ece,

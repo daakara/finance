@@ -75,7 +75,7 @@ export class RollbackController {
     };
   }
 
-  public executeRollback(type: "SOFT" | "HARD"): { success: boolean; state: string; rolledBackTo?: string } {
+  public executeRollback(type: "SOFT" | "HARD"): { success: boolean; state: string; rolledBackTo?: string; reason?: string } {
     if (type === "SOFT") {
       this.isSoftRollbackActive = true;
       return { success: true, state: "SOFT_ROLLBACK_ENABLED" };
@@ -83,14 +83,22 @@ export class RollbackController {
 
     // Hard Rollback: Deactivate active model in registry and restore previous
     const registry = ModelRegistry.getInstance();
-    const result = registry.rollbackModel();
-    this.isSoftRollbackActive = false;
+    try {
+      const result = registry.rollbackModel();
+      this.isSoftRollbackActive = false;
 
-    return {
-      success: true,
-      state: "HARD_ROLLBACK_COMPLETED",
-      rolledBackTo: result.rolledBackTo,
-    };
+      return {
+        success: true,
+        state: "HARD_ROLLBACK_COMPLETED",
+        rolledBackTo: result.rolledBackTo,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        state: "ROLLBACK_FAILED",
+        reason: err?.message || "Failed to rollback model",
+      };
+    }
   }
 
   public isPredictionSurfaceVisible(): boolean {

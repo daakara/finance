@@ -1,89 +1,105 @@
 {
-  "release_candidate_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-  "base_anchor_commit": "1efa2906d81bfaeb0c7e86b7064d0af06b8717ff",
-  "total_files": 10,
+  "release_candidate_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+  "base_anchor_commit": "7ac59a0ad530d2256443d41417f87bf4b15bd871",
+  "total_files": 12,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX_RADAR_INVESTMENT_GOVERNANCE_DOCS",
+  "directive": "ARX_LEARNING_INTEGRITY_002",
   "files": {
-    "CHANGELOG.md": {
+    "analyst_dashboard/analyzers/self_healing_engine.py": {
       "operation": "M",
-      "originating_pr_number": 217,
-      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-      "governing_requirement": "DOCS-001: preserve Nov 7 ARX Radar and investment governance direction changelog",
-      "sha256": "85b19ec0f0ff5f486df342fa91b89425fb75d6d542e136bf8ed2afdfc885d530",
-      "size_bytes": 31067
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: transparent walk-forward backtest audit labeling, zero synthetic claims",
+      "sha256": "8dc0290cb4d80d5a35b7b1bed685af6de5df383a55d549cc05196adc44e6cb7a",
+      "size_bytes": 4205
     },
-    "README.md": {
+    "analyst_dashboard/data/db_engine.py": {
       "operation": "M",
-      "originating_pr_number": 217,
-      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-      "governing_requirement": "DOCS-001: cross-link current investment governance addenda",
-      "sha256": "656bdc84b9750fd81dde44e8f16e2ad115ead6738e97ced5acb285792c87c84e",
-      "size_bytes": 12824
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: transparent reporting of pending vs resolved recommendations",
+      "sha256": "f4e91df9a8a98475d96fc9f49ca031a4d024ca67f7bd7bdd004821329b0359fe",
+      "size_bytes": 89812
     },
-    "docs/ARX_MASTER_PROJECT_STATUS_2026_10_29.md": {
+    "analyst_dashboard/governance/paper_trading_outcome_evaluator.py": {
       "operation": "M",
-      "originating_pr_number": 217,
-      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-      "governing_requirement": "DOCS-001: link current status addendum from master project status",
-      "sha256": "23750c6058f2dd3c1cac8a50742f6983e781f546ccb4718026fc782bd34df9ff",
-      "size_bytes": 8106
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-002: fail-closed empty data handling distinguishing missing observations from expiration",
+      "sha256": "ddb02dc4d786b25233b91944be824964bbe03d47b7b0d2d85dbc7b01a23aa6be",
+      "size_bytes": 22308
     },
-    "docs/ARX_STATUS_ADDENDUM_2026_11_07.md": {
+    "frontend/lib/__tests__/predictionLearningIntegrity.test.ts": {
       "operation": "A",
-      "originating_pr_number": 217,
-      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-      "governing_requirement": "DOCS-001: record Nov 7 ARX Radar project status addendum",
-      "sha256": "90607184c03be2c8504ef8028e6f8b7877d0900752d166751534e0bd3d5daadf",
-      "size_bytes": 3950
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: adversarial and falsification test suite for predictive intelligence",
+      "sha256": "e09ad833b3c65a23b041f77f17708df526621932a47b88d60d4253368ce24ae7",
+      "size_bytes": 10868
     },
-    "docs/architecture/ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md": {
+    "frontend/lib/outcome/learningLoopMetrics.ts": {
       "operation": "M",
-      "originating_pr_number": 217,
-      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-      "governing_requirement": "DOCS-001: cross-link investment research direction in architecture reconciliation",
-      "sha256": "5b179df3178ea54f08b03b11fc565c4fcca4f4e0f21c368d2a074caf70e94500",
-      "size_bytes": 15146
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: authentic PAR computation without 0.62 fallback",
+      "sha256": "0f3e9c45b99dcef185ff60f69fe97a291647fa5681c36c8ff1415125269ac9aa",
+      "size_bytes": 3823
     },
-    "docs/architecture/ARX_RADAR_INVESTMENT_RESEARCH_DIRECTION_2026_11_07.md": {
+    "frontend/lib/outcome/outcomeResolver.ts": {
+      "operation": "M",
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: zero synthetic return or confidence defaults",
+      "sha256": "5eb632653c9cfa0823dd19933201307fcac3e22410c0941bd243056b2acf958b",
+      "size_bytes": 3315
+    },
+    "frontend/lib/prediction/calibrationEngine.ts": {
+      "operation": "M",
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: fail-closed calibration on N=0 or under-sampled data",
+      "sha256": "1deba01a26af81df1bd373a42112018ed7f7e520b74c179721ee8feabe6ec33f",
+      "size_bytes": 2731
+    },
+    "frontend/lib/prediction/modelRegistry.ts": {
+      "operation": "M",
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: baseline model starts at 0 samples with FAIL status",
+      "sha256": "9c5600b3aac296b2d70c76a3efbbc96ce05d8947e800c3fd0bbcd3b3d3eabc7b",
+      "size_bytes": 5325
+    },
+    "frontend/lib/prediction/predictionRepository.ts": {
+      "operation": "M",
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: immutable prediction outcome store and conflict guard",
+      "sha256": "769a4cb00d9a4543e1316c5e066983116734688bb0093eaf49685319e1d3c8b7",
+      "size_bytes": 3541
+    },
+    "frontend/lib/prediction/rollbackController.ts": {
+      "operation": "M",
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: fail-closed error handling during hard rollback",
+      "sha256": "a06d0f58b4857ebf01f61d514a823d01a45724441271663aeef77f48a91477ab",
+      "size_bytes": 2946
+    },
+    "frontend/types/outcome-intelligence.ts": {
+      "operation": "M",
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: preserve optional outcomeReturnPct and 0.0 default confidence",
+      "sha256": "6bbfbfba6c3688c8c047965c5cc8a14c46f3b954fd9e7b9a35edcb991f79284d",
+      "size_bytes": 3724
+    },
+    "tests/test_prediction_learning_integrity.py": {
       "operation": "A",
-      "originating_pr_number": 217,
-      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-      "governing_requirement": "DOCS-001: comprehensive Radar investment research direction and strategy register",
-      "sha256": "735ee792ec98970b04c8fd3213460c4bdc501ea41666bda6932558a8e0efeb4c",
-      "size_bytes": 14065
-    },
-    "docs/governance/ARX_DOMAIN_INVARIANT_REGISTRY.md": {
-      "operation": "M",
-      "originating_pr_number": 217,
-      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-      "governing_requirement": "DOCS-001: cross-link domain invariants with Radar research direction",
-      "sha256": "a010d67ac1e0e3b2549f2bdc12f3be6bdd34fd024028bbccf8c2aa0a58fb424f",
-      "size_bytes": 6262
-    },
-    "docs/planning/ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md": {
-      "operation": "M",
-      "originating_pr_number": 217,
-      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-      "governing_requirement": "DOCS-001: update documentation master inventory with Nov 7 artifacts",
-      "sha256": "bd8dcb7ab1725334fc66f44750ef15852857e713c1d45d1500cff471d67a1fd2",
-      "size_bytes": 12002
-    },
-    "docs/releases/2026-11-07_radar-governance-documentation-addendum.md": {
-      "operation": "A",
-      "originating_pr_number": 217,
-      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-      "governing_requirement": "DOCS-001: formal release addendum for Radar governance documentation",
-      "sha256": "c8e2871afd9dbfd687c8edaf65de80105a49900e19ec3d46a959d23eb6dc2e87",
-      "size_bytes": 1859
-    },
-    "docs/releases/README.md": {
-      "operation": "M",
-      "originating_pr_number": 217,
-      "originating_commit": "17e166692f1a445d119b4a3f4bd0e6a6d5db72a3",
-      "governing_requirement": "DOCS-001: index Nov 7 release documentation addendum",
-      "sha256": "7c263cbd2d0e914bfecb49932124715fc12cbd9a128067cda8d8240f80b911fa",
-      "size_bytes": 1963
+      "originating_pr_number": 219,
+      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
+      "governing_requirement": "GOV-INTEGRITY-001: Python adversarial test suite for learning integrity and invariant preservation",
+      "sha256": "10975ea3b2c81e74afa1a8e78a782484a10d1c41a74f12bd31b5bd425b88c94b",
+      "size_bytes": 10127
     }
   },
   "qualification_framework_files": {
@@ -93,9 +109,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "43f6c3ff527ff1d87e15de2a49b2ac31780b883b5366e6726397e217cdede4d5",
-      "bytes": 57856,
-      "size_bytes": 57856
+      "sha256": "a4f8da4c4d75a62ff14f1158f77e86e1ad6e700b8e42c787500d8737b238f402",
+      "bytes": 57861,
+      "size_bytes": 57861
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",

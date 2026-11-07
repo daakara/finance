@@ -123,8 +123,8 @@ export function validateOutcomeRecord(o: Partial<OutcomeRecord>): OutcomeRecord 
     outcomeClass: o.outcomeClass,
     attributionCategory: o.attributionCategory,
     explanation: o.explanation,
-    outcomeReturnPct: o.outcomeReturnPct ?? 0,
-    outcomeConfidence: o.outcomeConfidence ?? 0.8,
+    outcomeReturnPct: o.outcomeReturnPct,
+    outcomeConfidence: o.outcomeConfidence ?? 0.0,
     snapshotHash: o.snapshotHash,
   };
 }
