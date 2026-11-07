@@ -5,6 +5,8 @@
 
 ---
 
+> **2026-11-07 provenance and application note:** [Radar investment research direction](../architecture/ARX_RADAR_INVESTMENT_RESEARCH_DIRECTION_2026_11_07.md) applies these existing invariants to Stage 2 / VCP research publication, authoritative risk and decision handoff, and optional Congressional/SEC evidence. This cross-reference **adds no new invariant or permission**; executable contracts and approved operational holds retain authority. See also the [dated status addendum](../ARX_STATUS_ADDENDUM_2026_11_07.md).
+
 ### EPISTEMIC & COMPUTATIONAL TRUTH INVARIANTS
 
 #### `ARX_INV_001`: UNKNOWN_NEVER_BECOMES_AUTHENTIC_ZERO
