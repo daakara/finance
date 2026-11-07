@@ -991,7 +991,7 @@ function RadarContent() {
               </span>
               {(capabilities.VCP?.dataAsOf || allAssets[0]?.priceDate) && (
                 <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]" title="Market data freshness timestamp">
-                  As of: <span className="text-[var(--text-1)] font-semibold">{capabilities.VCP?.dataAsOf || allAssets[0]?.priceDate}</span>
+                  Snapshot date: <span className="text-[var(--text-1)] font-semibold">{capabilities.VCP?.dataAsOf || allAssets[0]?.priceDate}</span>
                 </span>
               )}
             </div>
