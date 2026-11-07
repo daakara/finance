@@ -9,6 +9,8 @@
 
 ---
 
+> **Updated historical-context pointer (2026-11-07):** This status report remains an October 29 snapshot, not a current deployment attestation. See the [2026-11-07 integrated status addendum](ARX_STATUS_ADDENDUM_2026_11_07.md) and [Radar investment research/governance direction](architecture/ARX_RADAR_INVESTMENT_RESEARCH_DIRECTION_2026_11_07.md) for later accepted operational receipts, open Stage 2 defects and next actions. Historical figures below are not overwritten.
+
 ## 1. Executive Status Dashboard
 
 | Dimension | Authoritative Status | Key Identity / Version | Operational Meaning & Boundary |
