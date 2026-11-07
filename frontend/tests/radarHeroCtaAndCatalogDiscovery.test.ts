@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 
-describe("Directive RADAR-PROD-002: Radar Hero CTA & Master Catalog Discovery Verification", () => {
+describe("Directive ARX-RADAR-UNIVERSE-001: Radar Hero CTA & Authoritative Single Universe Verification", () => {
   const radarSourcePath = path.resolve(__dirname, "../app/radar/page.tsx");
   const radarSrc = fs.readFileSync(radarSourcePath, "utf8");
 
@@ -33,25 +33,36 @@ describe("Directive RADAR-PROD-002: Radar Hero CTA & Master Catalog Discovery Ve
       );
     });
 
-    it("ensures dual-universe selector (Pre-Screened 35 vs Master Catalog 43) is present", () => {
+    it("ensures dual-universe selector (Pre-Screened 35 vs Master Catalog 43) is eliminated", () => {
       assert.ok(
-        radarSrc.includes("Master Catalog (43)"),
-        "FAIL: Master Catalog (43) discovery selector must be present"
+        !radarSrc.includes("Master Catalog (43)"),
+        "FAIL: Master Catalog (43) discovery selector must be eliminated"
       );
       assert.ok(
-        radarSrc.includes("Pre-Screened VCP (35)"),
-        "FAIL: Pre-Screened VCP (35) discovery selector must be present"
-      );
-    });
-
-    it("ensures Master Catalog search discovery integration is present", () => {
-      assert.ok(
-        radarSrc.includes("Master Catalog Matches"),
-        "FAIL: Master Catalog matches must be surfaced during search"
+        !radarSrc.includes("Pre-Screened VCP (35)"),
+        "FAIL: Pre-Screened VCP (35) discovery selector must be eliminated"
       );
     });
 
-    it("ensures fetchScreenerGems API universe parameter is supported", () => {
+    it("ensures Master Catalog search suggestion banner is eliminated", () => {
+      assert.ok(
+        !radarSrc.includes("Master Catalog Matches"),
+        "FAIL: Master Catalog matches must not be surfaced during search"
+      );
+    });
+
+    it("ensures Authoritative Published Universe metadata header is present", () => {
+      assert.ok(
+        radarSrc.includes("Universe: {population?.universeScope || capabilities.VCP?.universeId || 'ARX_US_EQUITIES'}"),
+        "FAIL: Authoritative universe identifier badge must be present"
+      );
+      assert.ok(
+        radarSrc.includes("Stage 2 Primary Discovery"),
+        "FAIL: Stage 2 Primary Discovery policy badge must be present"
+      );
+    });
+
+    it("ensures fetchScreenerGems API universe parameter is supported for diagnostics/tests", () => {
       assert.ok(
         apiSrc.includes("universe?: string") && apiSrc.includes("&universe="),
         "FAIL: fetchScreenerGems must accept optional universe parameter and pass to backend"
@@ -68,7 +79,7 @@ describe("Directive RADAR-PROD-002: Radar Hero CTA & Master Catalog Discovery Ve
       executionStatus: string;
     }
 
-    const mockPreScreenedUniverse: MockAsset[] = [
+    const mockUniverse: MockAsset[] = [
       { ticker: "LNTH", name: "Lantheus Holdings", confluenceScore: 85.5, executionStatus: "IN_BUY_ZONE", decisionContextId: "dec-lnth-1" },
       { ticker: "MEDP", name: "Medpace Holdings", confluenceScore: 81.5, executionStatus: "IN_BUY_ZONE", decisionContextId: "dec-medp-1" },
       { ticker: "ONON", name: "On Holding AG", confluenceScore: 83.8, executionStatus: "WAITING_PULLBACK", decisionContextId: "dec-onon-1" },
@@ -103,7 +114,7 @@ describe("Directive RADAR-PROD-002: Radar Hero CTA & Master Catalog Discovery Ve
     }
 
     it("Scenario 1: Initial Load (Unselected State) yields neutral Hero CTA", () => {
-      const res = resolveHeroCTA(null, mockPreScreenedUniverse, false, mockPreScreenedUniverse);
+      const res = resolveHeroCTA(null, mockUniverse, false, mockUniverse);
       assert.strictEqual(res.heroAsset, null, "heroAsset must be null when unselected");
       assert.strictEqual(res.primaryAction.label, "Explore Radar Assets →", "Primary action must be neutral");
       assert.strictEqual(res.primaryAction.href, "#radar-candidates-table", "Primary action must link to table");
@@ -112,7 +123,7 @@ describe("Directive RADAR-PROD-002: Radar Hero CTA & Master Catalog Discovery Ve
     });
 
     it("Scenario 2: User selects MEDP updates CTA dynamically", () => {
-      const res = resolveHeroCTA("MEDP", mockPreScreenedUniverse, false, mockPreScreenedUniverse);
+      const res = resolveHeroCTA("MEDP", mockUniverse, false, mockUniverse);
       assert.strictEqual(res.heroAsset?.ticker, "MEDP");
       assert.strictEqual(res.primaryAction.label, "Analyze MEDP →");
       assert.ok(res.primaryAction.href.includes("symbol=MEDP"));
@@ -121,7 +132,7 @@ describe("Directive RADAR-PROD-002: Radar Hero CTA & Master Catalog Discovery Ve
     });
 
     it("Scenario 3: User selects ONON updates CTA dynamically", () => {
-      const res = resolveHeroCTA("ONON", mockPreScreenedUniverse, false, mockPreScreenedUniverse);
+      const res = resolveHeroCTA("ONON", mockUniverse, false, mockUniverse);
       assert.strictEqual(res.heroAsset?.ticker, "ONON");
       assert.strictEqual(res.primaryAction.label, "Analyze ONON →");
       assert.ok(res.primaryAction.href.includes("symbol=ONON"));
@@ -129,13 +140,13 @@ describe("Directive RADAR-PROD-002: Radar Hero CTA & Master Catalog Discovery Ve
       assert.strictEqual(res.secondaryAction.href, "/setups?symbol=ONON");
     });
 
-    it("Scenario 4: User selects NVDA in Master Catalog universe updates CTA dynamically", () => {
-      const catalogUniverse: MockAsset[] = [
-        ...mockPreScreenedUniverse,
+    it("Scenario 4: User selects candidate updates CTA dynamically", () => {
+      const expandedUniverse: MockAsset[] = [
+        ...mockUniverse,
         { ticker: "NVDA", name: "NVIDIA Corp", confluenceScore: 43.8, executionStatus: "WAITING_PULLBACK", decisionContextId: "dec-nvda-1" },
         { ticker: "AAPL", name: "Apple Inc.", confluenceScore: 82.5, executionStatus: "IN_BUY_ZONE", decisionContextId: "dec-aapl-1" },
       ];
-      const res = resolveHeroCTA("NVDA", catalogUniverse, false, catalogUniverse);
+      const res = resolveHeroCTA("NVDA", expandedUniverse, false, expandedUniverse);
       assert.strictEqual(res.heroAsset?.ticker, "NVDA");
       assert.strictEqual(res.primaryAction.label, "Analyze NVDA →");
       assert.ok(res.primaryAction.href.includes("symbol=NVDA"));
@@ -143,50 +154,26 @@ describe("Directive RADAR-PROD-002: Radar Hero CTA & Master Catalog Discovery Ve
     });
 
     it("Scenario 5: User clears selection reverts cleanly to neutral CTA", () => {
-      const res = resolveHeroCTA(null, mockPreScreenedUniverse, false, mockPreScreenedUniverse);
+      const res = resolveHeroCTA(null, mockUniverse, false, mockUniverse);
       assert.strictEqual(res.heroAsset, null);
       assert.strictEqual(res.primaryAction.label, "Explore Radar Assets →");
     });
   });
 
-  describe("PART 3: Master Catalog Discovery Verification", () => {
-    it("contains exactly 43 equity/ETF catalog entries (46 total with crypto pairs)", () => {
+  describe("PART 3: Master Catalog Fixture Preservation for Historical Research & Tests", () => {
+    it("contains exactly 43 equity/ETF catalog entries (46 total with crypto pairs) preserved for research/tests", () => {
       const catalogEntries = Object.values(MASTER_ASSET_CATALOG);
       const equityAndEtfCatalog = catalogEntries.filter((item) => item.type !== "Crypto");
       assert.strictEqual(equityAndEtfCatalog.length, 43, `Expected 43 equity and ETF catalog entries, got ${equityAndEtfCatalog.length}`);
       assert.strictEqual(catalogEntries.length, 46, `Expected 46 total catalog entries, got ${catalogEntries.length}`);
     });
 
-    it("verifies required test assets exist in catalog (LNTH, MEDP, NVDA, AAPL, ONON, MSFT, ULTA)", () => {
+    it("verifies required test assets exist in catalog fixture (LNTH, MEDP, NVDA, AAPL, ONON, MSFT, ULTA)", () => {
       const catalogKeys = Object.keys(MASTER_ASSET_CATALOG);
       const testAssets = ["LNTH", "MEDP", "NVDA", "AAPL", "MSFT", "ULTA"];
       for (const sym of testAssets) {
         assert.ok(catalogKeys.includes(sym), `Master Catalog must contain ${sym}`);
       }
-    });
-
-    it("searching 'NVDA' discovers NVIDIA Corporation from Master Catalog", () => {
-      function findCatalogMatches(query: string, currentAssets: string[]) {
-        const cleanQ = query.trim().toUpperCase();
-        if (!cleanQ) return [];
-        return Object.values(MASTER_ASSET_CATALOG).filter((item) => {
-          if (currentAssets.includes(item.symbol)) return false;
-          return (
-            item.symbol.toUpperCase().includes(cleanQ) ||
-            item.name.toUpperCase().includes(cleanQ) ||
-            item.sector.toUpperCase().includes(cleanQ)
-          );
-        });
-      }
-
-      const nvdaMatches = findCatalogMatches("NVDA", ["LNTH", "MEDP", "ONON"]);
-      assert.strictEqual(nvdaMatches.length, 1);
-      assert.strictEqual(nvdaMatches[0].symbol, "NVDA");
-      assert.strictEqual(nvdaMatches[0].name, "NVIDIA Corporation");
-
-      const appleMatches = findCatalogMatches("Apple", ["LNTH", "MEDP", "ONON"]);
-      assert.strictEqual(appleMatches.length, 1);
-      assert.strictEqual(appleMatches[0].symbol, "AAPL");
     });
   });
 });

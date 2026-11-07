@@ -564,6 +564,7 @@ def compute_canonical_stage_classification(
 class ScreenerRequest(BaseModel):
     tickers: Optional[List[str]] = None
     user_role: Optional[str] = "LONG_TERM"
+    universe: Optional[str] = None
 
 
 @router.post("/run")
@@ -574,8 +575,30 @@ def run_screener(request: ScreenerRequest = None, response: Response = None):
         response.headers["CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
     role = request.user_role if request and request.user_role else "LONG_TERM"
-    default_pool = DAY_TRADER_CANDIDATES if role == "DAY_TRADER" else LONG_TERM_CANDIDATES
-    tickers = (request.tickers if request and request.tickers else default_pool)
+    if request and request.tickers:
+        tickers = request.tickers
+    elif role == "DAY_TRADER":
+        tickers = DAY_TRADER_CANDIDATES
+    else:
+        # Sole authoritative universe: published ARX_US_EQUITIES (curated selectors removed per ARX-RADAR-UNIVERSE-001)
+        u_store = getattr(vcp_scanner_runner, "universe_store", None) or UniverseStore()
+        promoted_build = u_store.get_latest_published_universe(universe_id="ARX_US_EQUITIES")
+        if promoted_build and promoted_build.get("universe_build_id"):
+            target_build_id = promoted_build["universe_build_id"]
+            scannable = u_store.get_scannable_membership(target_build_id)
+            tickers = scannable if scannable else None
+        else:
+            tickers = None
+
+        if not tickers:
+            return _sanitize_floats({
+                "status": "UNPUBLISHED_UNIVERSE_AUTHORITY",
+                "error": "Published universe authority or membership is unavailable. Curated fallback fixtures are prohibited in production discovery.",
+                "total_candidates": 0,
+                "gems_found": 0,
+                "results": [],
+            })
+
     results = screener.evaluate_candidates(tickers)
 
     return _sanitize_floats({
@@ -613,32 +636,111 @@ def run_screener_get(
         parsed = [t.strip().upper() for t in custom_tickers.replace(",", " ").split() if t.strip()]
         active_universe = parsed if parsed else (DAY_TRADER_CANDIDATES if is_day_trader else LONG_TERM_CANDIDATES)
         resolved_universe_id = "CUSTOM_WATCHLIST"
-    elif universe and universe.strip().upper() in ("ALL_CATALOG", "MASTER_CATALOG", "CATALOG"):
-        active_universe = MASTER_CATALOG_CANDIDATES
-        resolved_universe_id = "MASTER_CATALOG"
-    elif universe and universe.strip().upper() in ("PRE_SCREENED", "HISTORICAL_35", "REGRESSION_FIXTURE", "VCP_35"):
-        active_universe = HISTORICAL_VCP_35_REGRESSION_FIXTURE
-        resolved_universe_id = "HISTORICAL_VCP_35_FIXTURE"
-    elif is_day_trader:
+    elif is_day_trader and (not universe or universe.strip().upper() != "ARX_US_EQUITIES"):
         active_universe = DAY_TRADER_CANDIDATES
         resolved_universe_id = "DAY_TRADER"
     else:
         # Default Primary Discovery: Resolve latest promoted/published universe build dynamically
+        # Directive ARX-RADAR-UNIVERSE-001: ARX_US_EQUITIES is the sole authoritative source.
+        # Curated Pre-Screened VCP (35) and Master Catalog (43) selectors are removed.
+        # Fallback to HISTORICAL_VCP_35_REGRESSION_FIXTURE or 43-asset catalog is strictly barred.
         u_store = getattr(vcp_scanner_runner, "universe_store", None) or UniverseStore()
         promoted_build = u_store.get_latest_published_universe(universe_id="ARX_US_EQUITIES")
-        if promoted_build and promoted_build.get("universe_build_id"):
-            target_build_id = promoted_build["universe_build_id"]
-            scannable = u_store.get_scannable_membership(target_build_id)
-            if scannable:
-                active_universe = scannable
-                resolved_universe_id = "ARX_US_EQUITIES"
-                resolved_build_id = target_build_id
-            else:
-                active_universe = LONG_TERM_CANDIDATES
-                resolved_universe_id = "HISTORICAL_VCP_35_FIXTURE"
-        else:
-            active_universe = LONG_TERM_CANDIDATES
-            resolved_universe_id = "HISTORICAL_VCP_35_FIXTURE"
+        if not promoted_build or not promoted_build.get("universe_build_id"):
+            radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            return _sanitize_floats({
+                "status": "ERROR",
+                "scanState": "FAILED",
+                "datasetState": "UNIVERSE_UNAVAILABLE",
+                "error": "UNPUBLISHED_UNIVERSE_BUILD: Authoritative published universe 'ARX_US_EQUITIES' is unavailable. Curated fallback is prohibited.",
+                "partialErrors": [{"ticker": "UNIVERSE", "error": "NO_PUBLISHED_UNIVERSE_BUILD"}],
+                "totalCandidates": 0,
+                "gemsFound": 0,
+                "totalEvaluated": 0,
+                "stage2OpportunityCount": 0,
+                "nonStage2DiagnosticCount": 0,
+                "activeUniverseId": "ARX_US_EQUITIES",
+                "universeScope": "ARX_US_EQUITIES",
+                "activeUniverseBuildId": None,
+                "activeFilter": filter_type,
+                "activeView": "UNIVERSE_UNAVAILABLE",
+                "userRole": user_role,
+                "capabilities": get_radar_capabilities(),
+                "macroContextId": None,
+                "macroDifficulty": None,
+                "population": {
+                    "referenceUniverseCount": 0,
+                    "activeScreeningCount": 0,
+                    "currentOpportunityCount": 0,
+                    "stage2OpportunityCount": 0,
+                    "stage1RecordCount": 0,
+                    "stage4RecordCount": 0,
+                    "stageUnresolvedRecordCount": 0,
+                    "delistedRecordCount": 0,
+                    "unverifiedRecordCount": 0,
+                    "universeScope": "ARX_US_EQUITIES",
+                    "universeBuildId": None,
+                },
+                "candidates": [],
+                "results": [],
+                "evidence": {
+                    "servingSource": "DIRECT_PROVIDER",
+                    "cacheOrigin": "NONE",
+                    "servedAt": radar_now,
+                    "candleCount": 0,
+                },
+            })
+
+        target_build_id = promoted_build["universe_build_id"]
+        scannable = u_store.get_scannable_membership(target_build_id)
+        if not scannable:
+            radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            return _sanitize_floats({
+                "status": "ERROR",
+                "scanState": "FAILED",
+                "datasetState": "UNIVERSE_MEMBERSHIP_EMPTY",
+                "error": f"EMPTY_UNIVERSE_MEMBERSHIP: Authoritative published build '{target_build_id}' has no scannable membership. Curated fallback is prohibited.",
+                "partialErrors": [{"ticker": "UNIVERSE", "error": "EMPTY_UNIVERSE_MEMBERSHIP"}],
+                "totalCandidates": 0,
+                "gemsFound": 0,
+                "totalEvaluated": 0,
+                "stage2OpportunityCount": 0,
+                "nonStage2DiagnosticCount": 0,
+                "activeUniverseId": "ARX_US_EQUITIES",
+                "universeScope": "ARX_US_EQUITIES",
+                "activeUniverseBuildId": target_build_id,
+                "activeFilter": filter_type,
+                "activeView": "UNIVERSE_MEMBERSHIP_EMPTY",
+                "userRole": user_role,
+                "capabilities": get_radar_capabilities(),
+                "macroContextId": None,
+                "macroDifficulty": None,
+                "population": {
+                    "referenceUniverseCount": 0,
+                    "activeScreeningCount": 0,
+                    "currentOpportunityCount": 0,
+                    "stage2OpportunityCount": 0,
+                    "stage1RecordCount": 0,
+                    "stage4RecordCount": 0,
+                    "stageUnresolvedRecordCount": 0,
+                    "delistedRecordCount": 0,
+                    "unverifiedRecordCount": 0,
+                    "universeScope": "ARX_US_EQUITIES",
+                    "universeBuildId": target_build_id,
+                },
+                "candidates": [],
+                "results": [],
+                "evidence": {
+                    "servingSource": "DIRECT_PROVIDER",
+                    "cacheOrigin": "NONE",
+                    "servedAt": radar_now,
+                    "candleCount": 0,
+                },
+            })
+
+        active_universe = scannable
+        resolved_universe_id = "ARX_US_EQUITIES"
+        resolved_build_id = target_build_id
 
     try:
         results = screener.evaluate_candidates(active_universe)
@@ -823,6 +925,25 @@ def run_screener_get(
                 stage_phase = "Stage Unresolved"
                 setup_pat = "Stage Unresolved (Insufficient History or Mixed Structure)"
                 vcp_status = "Consolidation Unverified"
+
+            # Authoritative concise investor-facing explanation (ARX-RADAR-UNIVERSE-001 Section 8)
+            if is_delisted:
+                opp_explanation = f"Security ceased trading pursuant to {corp_action['action_type']} ({corp_action['notes']}). Historical observation retained for audit integrity; trade execution prohibited."
+            elif execution.get("execution_status") == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
+                opp_explanation = "Market pricing and trade tape unavailable from primary data provider. Trade execution and levels suppressed pending authoritative market data."
+            elif stage_class == "STAGE_2":
+                if is_vcp_qual or (vcp_matched_symbols and sym in vcp_matched_symbols):
+                    opp_explanation = "Confirmed Minervini Stage 2 uptrend with active volatility contraction. Volatility tightening within structural consolidation; execution trigger requires single-asset DecisionTrace."
+                else:
+                    opp_explanation = "Confirmed Minervini Stage 2 uptrend (moving average stack aligned). Consolidating in constructive base without confirmed VCP contraction; execution trigger requires single-asset DecisionTrace."
+            elif stage_class == "STAGE_1":
+                opp_explanation = "Stage 1 structural basing phase. Accumulation floor forming; trend template not yet confirmed for Stage 2 growth transition."
+            elif stage_class == "STAGE_3":
+                opp_explanation = "Stage 3 distribution phase. Moving average rollover indicates institutional distribution risk; ineligible for Stage 2 discovery."
+            elif stage_class == "STAGE_4":
+                opp_explanation = "Stage 4 markdown phase. Price below declining key moving averages; ineligible for Stage 2 discovery."
+            else:
+                opp_explanation = "Stage classification unresolved due to mixed technical structure or insufficient trading history (< 50 sessions)."
     
             # Pure Mathematical Execution State Determination
             if is_delisted:
@@ -1080,6 +1201,7 @@ def run_screener_get(
                     "qualificationState": "INELIGIBLE_INACTIVE" if is_delisted else ("REFERENCE_CRITERIA_MET" if "VALUE_GARP" in cand_categories else ("REFERENCE_CRITERIA_UNMET" if sym in screener.KNOWN_GEMS_DATA else "UNASSESSED_INSUFFICIENT_EVIDENCE")),
                     "sortingBasis": "TECHNICAL_CONFLUENCE_MOMENTUM" if not is_delisted and execution_status != "UNVERIFIED_ASSET" else "UNAVAILABLE",
                 },
+                "opportunityExplanation": opp_explanation,
                 "stageClassification": stage_class,
                 "stagePhase": stage_phase,
                 "vcpStage": vcp_status,
@@ -1120,64 +1242,68 @@ def run_screener_get(
                 "liquidityDefense": liq_def,
             })
     
-        # Apply Selected Filter dynamically based on numerical thresholds
+        # Invariant: Establish one canonical Stage 2 primary eligibility set before applying category filters (ARX-RADAR-UNIVERSE-001)
         non_tradable = ["UNVERIFIED_ASSET", "DELISTED_SECURITY"]
+        is_diagnostic_view = (view in ("diagnostic", "all_stages", "raw") or filter_type in ("diagnostic", "all_stages", "raw"))
+
+        if is_diagnostic_view:
+            # Diagnostic view preserves explicit access to all evaluated records across all stages
+            eligibility_pool = mapped_candidates
+        elif custom_tickers:
+            # On-demand custom watchlist input preserves all requested valid symbols
+            eligibility_pool = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable]
+        else:
+            # Normal production discovery: strictly bounded to authoritatively verified Stage 2 equities
+            eligibility_pool = [
+                c for c in mapped_candidates
+                if c.get("stageClassification") == "STAGE_2" and c["executionStatus"] not in non_tradable
+            ]
+
+        # Apply category & tactical discovery filters strictly to the established eligibility set
         if filter_type in ["in_buy_zone", "vwap_pullback"]:
-            filtered = [c for c in mapped_candidates if c["executionStatus"] == "IN_BUY_ZONE"]
+            filtered = [c for c in eligibility_pool if c["executionStatus"] == "IN_BUY_ZONE"]
         elif filter_type in ["approaching_target", "orb_breakout"]:
-            filtered = [c for c in mapped_candidates if c["executionStatus"] == "APPROACHING_TARGET"]
+            filtered = [c for c in eligibility_pool if c["executionStatus"] == "APPROACHING_TARGET"]
         elif filter_type == "high_rr":
             filtered = [
-                c for c in mapped_candidates
-                if c["executionStatus"] not in non_tradable
-                and c.get("riskRewardRatio") is not None and c["riskRewardRatio"] >= 2.0 and (c["executionStatus"] == "IN_BUY_ZONE" or (c.get("optimalEntryMax") is not None and c["currentPrice"] is not None and c["currentPrice"] <= c["optimalEntryMax"] * 1.02))
+                c for c in eligibility_pool
+                if c.get("riskRewardRatio") is not None and c["riskRewardRatio"] >= 2.0 and (c["executionStatus"] == "IN_BUY_ZONE" or (c.get("optimalEntryMax") is not None and c["currentPrice"] is not None and c["currentPrice"] <= c["optimalEntryMax"] * 1.02))
             ]
         elif filter_type == "high_confluence":
-            filtered = [c for c in mapped_candidates if c["confluenceScore"] >= 80.0 and c["executionStatus"] not in non_tradable]
+            filtered = [c for c in eligibility_pool if c.get("confluenceScore") is not None and c["confluenceScore"] >= 80.0]
         elif filter_type == "high_rvol":
-            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and c["rvol"] != "N/A" and float(c["rvol"].replace("x", "")) >= 2.5]
+            filtered = [c for c in eligibility_pool if c.get("rvol") not in [None, "N/A"] and float(str(c["rvol"]).replace("x", "")) >= 2.5]
         elif filter_type == "squeeze":
-            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and c["shortFloat"] != "N/A" and float(c["shortFloat"].replace("%", "")) >= 6.0]
+            filtered = [c for c in eligibility_pool if c.get("shortFloat") not in [None, "N/A"] and float(str(c["shortFloat"]).replace("%", "")) >= 6.0]
         elif filter_type == "lynch":
             filtered = [
-                c for c in mapped_candidates
-                if c["executionStatus"] not in non_tradable
-                and ((c.get("pegRatio") not in [None, "N/A"] and 0 < float(c["pegRatio"]) <= 1.05) or (c.get("expertArchetype") and ("Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"])))
-                and "VALUE_GARP" in c["categories"]
+                c for c in eligibility_pool
+                if ((c.get("pegRatio") not in [None, "N/A"] and 0 < float(c["pegRatio"]) <= 1.05) or (c.get("expertArchetype") and ("Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"])))
+                and "VALUE_GARP" in c.get("categories", [])
             ]
         elif filter_type == "greenblatt":
             filtered = [
-                c for c in mapped_candidates
-                if c["executionStatus"] not in non_tradable
-                and (
-                    (c.get("roic") not in [None, "N/A"] and float(c["roic"].replace("%", "")) >= 28.0)
+                c for c in eligibility_pool
+                if (
+                    (c.get("roic") not in [None, "N/A"] and float(str(c["roic"]).replace("%", "")) >= 28.0)
                     or (c.get("expertArchetype") and ("Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"]))
                 )
             ]
         elif filter_type == "rule_breakers":
-            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and (c.get("grossMargin") not in [None, "N/A"] and float(c["grossMargin"].replace("%", "")) >= 65.0)]
+            filtered = [c for c in eligibility_pool if (c.get("grossMargin") not in [None, "N/A"] and float(str(c["grossMargin"]).replace("%", "")) >= 65.0)]
         elif filter_type == "value_garp":
-            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "VALUE_GARP" in c["categories"]]
+            filtered = [c for c in eligibility_pool if "VALUE_GARP" in c.get("categories", [])]
         elif filter_type == "vcp":
-            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "VCP" in c["categories"]]
+            filtered = [c for c in eligibility_pool if "VCP" in c.get("categories", [])]
         elif filter_type == "smart_money":
-            filtered = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable and "SMART_MONEY" in c["categories"]]
+            filtered = [c for c in eligibility_pool if "SMART_MONEY" in c.get("categories", [])]
         elif filter_type == "stage_2":
-            filtered = [c for c in mapped_candidates if c.get("stageClassification") == "STAGE_2" and c["executionStatus"] not in non_tradable]
-        elif filter_type in ["diagnostic", "all_stages", "raw"]:
+            filtered = [c for c in eligibility_pool if c.get("stageClassification") == "STAGE_2"]
+        elif is_diagnostic_view:
             filtered = mapped_candidates
         else:
             # Primary Radar Discovery ("all" / default):
-            # Enforces Stage 2 opportunity discovery (Section 2.A & 2.B):
-            # Only authoritatively verified Stage 2 equities are admitted to primary discovery.
-            # Non-Stage-2 securities (Stage 1, 3, 4, unresolved) remain accessible via view="diagnostic".
-            # If custom_tickers is explicitly requested or legacy static fixture is screened, all requested assets are preserved.
-            if custom_tickers or (universe and universe.strip().upper() in ("ALL_CATALOG", "MASTER_CATALOG", "CATALOG", "PRE_SCREENED", "HISTORICAL_35")):
-                filtered = mapped_candidates
-            elif view in ("diagnostic", "all_stages", "raw"):
-                filtered = mapped_candidates
-            else:
-                filtered = [c for c in mapped_candidates if c.get("stageClassification") == "STAGE_2" and c["executionStatus"] not in non_tradable]
+            filtered = eligibility_pool
 
         # Canonical deterministic sorting per ARX Governance Contract & Directive 044R.8
         # Sorting priority:
@@ -1222,6 +1348,7 @@ def run_screener_get(
         delisted_candidates = [c for c in mapped_candidates if c["executionStatus"] == "DELISTED_SECURITY"]
         unverified_candidates = [c for c in mapped_candidates if c["executionStatus"] == "UNVERIFIED_ASSET"]
     
+        latest_price_date = max([c["priceDate"] for c in mapped_candidates if c.get("priceDate")] or [None])
         population_model = {
             "referenceUniverseCount": reference_count,
             "activeScreeningCount": len(active_candidates),
@@ -1234,6 +1361,7 @@ def run_screener_get(
             "unverifiedRecordCount": len(unverified_candidates),
             "universeScope": resolved_universe_id,
             "universeBuildId": resolved_build_id,
+            "marketDataAsOf": latest_price_date,
         }
     
         capabilities_dict = get_radar_capabilities(vcp_snapshot=vcp_snapshot, sm_snapshot=sm_snapshot)
@@ -1275,8 +1403,10 @@ def run_screener_get(
             "activeUniverseId": resolved_universe_id,
             "universeScope": resolved_universe_id,
             "activeUniverseBuildId": resolved_build_id,
+            "marketDataAsOf": latest_price_date,
+            "marketDataTimestamp": latest_price_date,
             "activeFilter": filter_type,
-            "activeView": "STAGE_2_PRIMARY" if (view != "diagnostic" and not custom_tickers and not (universe and universe.strip().upper() in ("ALL_CATALOG", "MASTER_CATALOG", "CATALOG", "PRE_SCREENED", "HISTORICAL_35"))) else "DIAGNOSTIC_ALL_STAGES",
+            "activeView": "DIAGNOSTIC_ALL_STAGES" if (is_diagnostic_view or custom_tickers) else "STAGE_2_PRIMARY",
             "userRole": user_role,
             "capabilities": capabilities_dict,
             "macroContextId": shared_macro_context_id,

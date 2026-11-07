@@ -1110,6 +1110,11 @@ export interface GemCandidate {
   allowedActions?: string[];
   disqualificationReason?: string | null;
   decisionContextId?: string;
+  opportunityExplanation?: string;
+  stageClassification?: string;
+  stagePhase?: string;
+  vcpStage?: string;
+  stageProvenance?: any;
 }
 
 export interface CandidatePopulationModel {
@@ -1118,6 +1123,13 @@ export interface CandidatePopulationModel {
   currentOpportunityCount: number;
   delistedRecordCount: number;
   unverifiedRecordCount: number;
+  universeScope?: string;
+  universeBuildId?: string | null;
+  stage2OpportunityCount?: number;
+  stage1RecordCount?: number;
+  stage4RecordCount?: number;
+  stageUnresolvedRecordCount?: number;
+  marketDataAsOf?: string | null;
 }
 
 export interface ScreenerResponse {
@@ -1127,10 +1139,19 @@ export interface ScreenerResponse {
   population?: CandidatePopulationModel;
   results: GemCandidate[];
   error?: string | null;
-  status?: "SUCCESS" | "PARTIAL" | "ERROR" | "TIMEOUT";
+  status?: "SUCCESS" | "PARTIAL" | "ERROR" | "TIMEOUT" | "UNPUBLISHED_UNIVERSE_AUTHORITY";
   scanState?: string;
   datasetState?: string;
   partialErrors?: unknown[];
+  activeUniverseId?: string;
+  universeScope?: string;
+  activeUniverseBuildId?: string | null;
+  stage2OpportunityCount?: number;
+  nonStage2DiagnosticCount?: number;
+  totalEvaluated?: number;
+  marketDataAsOf?: string | null;
+  marketDataTimestamp?: string | null;
+  activeView?: string;
 }
 
 export interface VCPExplainEvaluationContext {
@@ -2076,6 +2097,11 @@ export async function fetchScreenerGems(model: string = "all", universe?: string
             : (Array.isArray(r.allowed_actions) ? r.allowed_actions : []),
           disqualificationReason: r.disqualificationReason ?? "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
           decisionContextId: r.decisionContextId,
+          opportunityExplanation: r.opportunityExplanation || r.entryThesis || r.investment_thesis || "",
+          stageClassification: r.stageClassification,
+          stagePhase: r.stagePhase,
+          vcpStage: r.vcpStage,
+          stageProvenance: r.stageProvenance,
         };
       });
 
@@ -2092,6 +2118,15 @@ export async function fetchScreenerGems(model: string = "all", universe?: string
         datasetState: stateNorm.datasetState,
         partialErrors: Array.isArray(data.partialErrors) ? data.partialErrors : undefined,
         error: stateNorm.normalizedError,
+        activeUniverseId: (data as any)?.activeUniverseId,
+        universeScope: (data as any)?.universeScope,
+        activeUniverseBuildId: (data as any)?.activeUniverseBuildId,
+        stage2OpportunityCount: (data as any)?.stage2OpportunityCount,
+        nonStage2DiagnosticCount: (data as any)?.nonStage2DiagnosticCount,
+        totalEvaluated: (data as any)?.totalEvaluated,
+        marketDataAsOf: (data as any)?.marketDataAsOf,
+        marketDataTimestamp: (data as any)?.marketDataTimestamp,
+        activeView: (data as any)?.activeView,
       };
     } else {
       console.warn(`Screener API HTTP error: ${res.status} ${res.statusText}`);

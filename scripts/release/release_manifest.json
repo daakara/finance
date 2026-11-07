@@ -1,105 +1,49 @@
 {
-  "release_candidate_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-  "base_anchor_commit": "7ac59a0ad530d2256443d41417f87bf4b15bd871",
-  "total_files": 12,
+  "release_candidate_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
+  "base_anchor_commit": "20bd840e4dfba2e18eebf3bcbc372606dfd2e568",
+  "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX_LEARNING_INTEGRITY_002",
+  "directive": "ARX_RADAR_UNIVERSE_001",
   "files": {
-    "analyst_dashboard/analyzers/self_healing_engine.py": {
+    "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: transparent walk-forward backtest audit labeling, zero synthetic claims",
-      "sha256": "8dc0290cb4d80d5a35b7b1bed685af6de5df383a55d549cc05196adc44e6cb7a",
-      "size_bytes": 4205
+      "originating_pr_number": 220,
+      "originating_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
+      "governing_requirement": "ARX-RADAR-UNIVERSE-001: Sole authoritative universe ARX_US_EQUITIES gating and fail-closed error handling",
+      "sha256": "4ebc9d260b150da5b4f3f457f2a013671faedbc25ac0d0bad453dc7306ebf04b",
+      "size_bytes": 112053
     },
-    "analyst_dashboard/data/db_engine.py": {
+    "frontend/app/radar/page.tsx": {
       "operation": "M",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: transparent reporting of pending vs resolved recommendations",
-      "sha256": "f4e91df9a8a98475d96fc9f49ca031a4d024ca67f7bd7bdd004821329b0359fe",
-      "size_bytes": 89812
+      "originating_pr_number": 220,
+      "originating_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
+      "governing_requirement": "ARX-RADAR-UNIVERSE-001: Remove curated 35/43 selectors, catalog suggestions, hardcoded counts and display dynamic universe metadata",
+      "sha256": "0b60e9c0386b342e659679494899c6d189b844e0817c8d55813a7964f378d469",
+      "size_bytes": 104939
     },
-    "analyst_dashboard/governance/paper_trading_outcome_evaluator.py": {
+    "frontend/lib/api.ts": {
       "operation": "M",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-002: fail-closed empty data handling distinguishing missing observations from expiration",
-      "sha256": "ddb02dc4d786b25233b91944be824964bbe03d47b7b0d2d85dbc7b01a23aa6be",
-      "size_bytes": 22308
+      "originating_pr_number": 220,
+      "originating_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
+      "governing_requirement": "ARX-RADAR-UNIVERSE-001: CandidatePopulationModel and ScreenerResponse universeScope, universeBuildId, stage2OpportunityCount typing and passthrough",
+      "sha256": "921b2529b9c9ef48faa1a957e55c91eabfe357803c942cf8ec18376dc30740b7",
+      "size_bytes": 185810
     },
-    "frontend/lib/__tests__/predictionLearningIntegrity.test.ts": {
+    "frontend/tests/radarHeroCtaAndCatalogDiscovery.test.ts": {
+      "operation": "M",
+      "originating_pr_number": 220,
+      "originating_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
+      "governing_requirement": "ARX-RADAR-UNIVERSE-001: Assert elimination of curated selectors and catalog matches, assert authoritative universe badge",
+      "sha256": "cb5eb56c8d3912ed0e7a1880943ea44b086b07853bda3b4064760509bedbdceb",
+      "size_bytes": 8741
+    },
+    "tests/test_radar_single_authoritative_universe.py": {
       "operation": "A",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: adversarial and falsification test suite for predictive intelligence",
-      "sha256": "e09ad833b3c65a23b041f77f17708df526621932a47b88d60d4253368ce24ae7",
-      "size_bytes": 10868
-    },
-    "frontend/lib/outcome/learningLoopMetrics.ts": {
-      "operation": "M",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: authentic PAR computation without 0.62 fallback",
-      "sha256": "0f3e9c45b99dcef185ff60f69fe97a291647fa5681c36c8ff1415125269ac9aa",
-      "size_bytes": 3823
-    },
-    "frontend/lib/outcome/outcomeResolver.ts": {
-      "operation": "M",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: zero synthetic return or confidence defaults",
-      "sha256": "5eb632653c9cfa0823dd19933201307fcac3e22410c0941bd243056b2acf958b",
-      "size_bytes": 3315
-    },
-    "frontend/lib/prediction/calibrationEngine.ts": {
-      "operation": "M",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: fail-closed calibration on N=0 or under-sampled data",
-      "sha256": "1deba01a26af81df1bd373a42112018ed7f7e520b74c179721ee8feabe6ec33f",
-      "size_bytes": 2731
-    },
-    "frontend/lib/prediction/modelRegistry.ts": {
-      "operation": "M",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: baseline model starts at 0 samples with FAIL status",
-      "sha256": "9c5600b3aac296b2d70c76a3efbbc96ce05d8947e800c3fd0bbcd3b3d3eabc7b",
-      "size_bytes": 5325
-    },
-    "frontend/lib/prediction/predictionRepository.ts": {
-      "operation": "M",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: immutable prediction outcome store and conflict guard",
-      "sha256": "769a4cb00d9a4543e1316c5e066983116734688bb0093eaf49685319e1d3c8b7",
-      "size_bytes": 3541
-    },
-    "frontend/lib/prediction/rollbackController.ts": {
-      "operation": "M",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: fail-closed error handling during hard rollback",
-      "sha256": "a06d0f58b4857ebf01f61d514a823d01a45724441271663aeef77f48a91477ab",
-      "size_bytes": 2946
-    },
-    "frontend/types/outcome-intelligence.ts": {
-      "operation": "M",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: preserve optional outcomeReturnPct and 0.0 default confidence",
-      "sha256": "6bbfbfba6c3688c8c047965c5cc8a14c46f3b954fd9e7b9a35edcb991f79284d",
-      "size_bytes": 3724
-    },
-    "tests/test_prediction_learning_integrity.py": {
-      "operation": "A",
-      "originating_pr_number": 219,
-      "originating_commit": "754b3032e5de8c6736fdea6cc5236ea9895c778d",
-      "governing_requirement": "GOV-INTEGRITY-001: Python adversarial test suite for learning integrity and invariant preservation",
-      "sha256": "10975ea3b2c81e74afa1a8e78a782484a10d1c41a74f12bd31b5bd425b88c94b",
-      "size_bytes": 10127
+      "originating_pr_number": 220,
+      "originating_commit": "6be6cd24acfd4bb4fa81dae004f94f4ca0d164c1",
+      "governing_requirement": "ARX-RADAR-UNIVERSE-001: 10-case verification test suite for single authoritative universe and fail-closed behavior",
+      "sha256": "a002306efbc55559961785fce1a7d13d372dadd99b510eb31e109d4504b45f5a",
+      "size_bytes": 10966
     }
   },
   "qualification_framework_files": {
@@ -109,9 +53,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "a4f8da4c4d75a62ff14f1158f77e86e1ad6e700b8e42c787500d8737b238f402",
-      "bytes": 57861,
-      "size_bytes": 57861
+      "sha256": "55202d23851976f26c753029accd1e987b44254738125088b6cbfefbd05a5328",
+      "bytes": 57866,
+      "size_bytes": 57866
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
