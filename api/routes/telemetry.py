@@ -17,7 +17,7 @@ import sqlite3
 import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Query, Header, status
+from fastapi import APIRouter, HTTPException, Query, Header, status, Depends
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger("api.telemetry")
@@ -146,7 +146,11 @@ def verify_internal_telemetry_auth(
         )
 
 
-@router.post("/persist", status_code=status.HTTP_200_OK)
+@router.post(
+    "/persist",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_internal_telemetry_auth)],
+)
 def persist_telemetry_record(
     req: TelemetryPersistRequest,
     db_path: Optional[str] = None,

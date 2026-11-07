@@ -1,41 +1,65 @@
 {
-  "release_candidate_commit": "10718e2867b4397e37375023d7b83e162d48dafc",
-  "base_anchor_commit": "7b976bc91d6c98c14e3c4b48d7d40493bcdf4619",
-  "total_files": 4,
+  "release_candidate_commit": "c08e9cb4c1c0be34eb38f7634bfde9cc92f35019",
+  "base_anchor_commit": "af7283b5b3f024e5b78a76957f0046fcec1ae292",
+  "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-RADAR-MOBILE-UX-001",
+  "directive": "ARX-SEC-002",
   "files": {
-    "frontend/app/radar/page.tsx": {
+    "api/middleware/rate_limiter.py": {
       "operation": "M",
-      "originating_pr_number": 225,
-      "originating_commit": "10718e2867b4397e37375023d7b83e162d48dafc",
-      "governing_requirement": "ARX Radar mobile UI-only overflow and navigation correction (#225)",
-      "sha256": "806ad6bec42505644044e03d6b6341a98e656974d1195134595ffe9fa20b59dd",
-      "size_bytes": 105703
+      "originating_pr_number": 226,
+      "originating_commit": "c08e9cb4c1c0be34eb38f7634bfde9cc92f35019",
+      "governing_requirement": "ARX-SEC-002: Sanitize Redis URL credentials to prevent password exposure in exception logs (SEC-05)",
+      "sha256": "084cb0fcdf56df9be5e6abd0bb14b1110a45ed8ef2e025c9f4d117ff5196b017",
+      "size_bytes": 10688
     },
-    "frontend/components/PageIntro.tsx": {
+    "api/routes/governance.py": {
       "operation": "M",
-      "originating_pr_number": 225,
-      "originating_commit": "10718e2867b4397e37375023d7b83e162d48dafc",
-      "governing_requirement": "ARX Radar mobile UI-only overflow and navigation correction (#225)",
-      "sha256": "991136fe11b65495f6658ab2dac3461d56e53a3f59d7d109ef3e9cf2544045a7",
-      "size_bytes": 5080
+      "originating_pr_number": 226,
+      "originating_commit": "c08e9cb4c1c0be34eb38f7634bfde9cc92f35019",
+      "governing_requirement": "ARX-SEC-002: Defense-in-depth authentication pre-validation for runtime revocation endpoint",
+      "sha256": "5c3adb0e09485f0bc41f61789eb120175eed1d8e2c46ef85bb575dd4029d94db",
+      "size_bytes": 29076
     },
-    "frontend/components/synthesis/SynthesisGuideBanner.tsx": {
+    "api/routes/telemetry.py": {
       "operation": "M",
-      "originating_pr_number": 225,
-      "originating_commit": "10718e2867b4397e37375023d7b83e162d48dafc",
-      "governing_requirement": "ARX Radar mobile UI-only overflow and navigation correction (#225)",
-      "sha256": "68ef9ada0706a320321a03003d9601fe089466c0501a7d6e74a6f972e3591067",
-      "size_bytes": 4710
+      "originating_pr_number": 226,
+      "originating_commit": "c08e9cb4c1c0be34eb38f7634bfde9cc92f35019",
+      "governing_requirement": "ARX-SEC-002: Defense-in-depth internal secret pre-validation on telemetry persistence",
+      "sha256": "4e7ecf4fb74965eccb1872eacfd864e26c9d0a42089ca3c033ecd8543807eb90",
+      "size_bytes": 15541
+    },
+    "api/routes/telemetry_rc5.py": {
+      "operation": "M",
+      "originating_pr_number": 226,
+      "originating_commit": "c08e9cb4c1c0be34eb38f7634bfde9cc92f35019",
+      "governing_requirement": "ARX-SEC-002: Defense-in-depth internal secret pre-validation on corporate event persistence",
+      "sha256": "b76be01e57840b2e9088d36703044d5f44cddbadfbf9cda67785cb34e9e7a2f8",
+      "size_bytes": 30424
+    },
+    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_07.md": {
+      "operation": "M",
+      "originating_pr_number": 226,
+      "originating_commit": "c08e9cb4c1c0be34eb38f7634bfde9cc92f35019",
+      "governing_requirement": "ARX-SEC-002: Update active work register with qualified SEC-002 remediation and Issue #203 disposition",
+      "sha256": "1b86671721751afcebe0816be56d2151d74a7f25e3b3b20213015c41e5904bb8",
+      "size_bytes": 8318
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 225,
-      "originating_commit": "10718e2867b4397e37375023d7b83e162d48dafc",
-      "governing_requirement": "ARX Radar mobile UI-only overflow and navigation correction (#225)",
-      "sha256": "238185f856a455069416dde876d8ee17f92dd270338bcfb5d40eece17daea2ce",
-      "size_bytes": 57886
+      "originating_pr_number": 226,
+      "originating_commit": "c08e9cb4c1c0be34eb38f7634bfde9cc92f35019",
+      "governing_requirement": "ARX-SEC-002: Register PR #226 in approved PR set for release qualification diff integrity",
+      "sha256": "1dda3c710bad5c883e4e748c92eafbead7b77bdf5cbc9f6fc23c0b575508ab26",
+      "size_bytes": 57891
+    },
+    "tests/test_sec002_remediation.py": {
+      "operation": "A",
+      "originating_pr_number": 226,
+      "originating_commit": "c08e9cb4c1c0be34eb38f7634bfde9cc92f35019",
+      "governing_requirement": "ARX-SEC-002: Adversarial regression tests for Redis sanitization, pre-validation auth, and tenancy isolation",
+      "sha256": "d1fd361fe8287d1f04bbd7c610aae5147ae42d9785181988e35bf2e53f7c6d03",
+      "size_bytes": 9315
     }
   },
   "qualification_framework_files": {
@@ -45,9 +69,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "238185f856a455069416dde876d8ee17f92dd270338bcfb5d40eece17daea2ce",
-      "bytes": 57886,
-      "size_bytes": 57886
+      "sha256": "1dda3c710bad5c883e4e748c92eafbead7b77bdf5cbc9f6fc23c0b575508ab26",
+      "bytes": 57891,
+      "size_bytes": 57891
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",

@@ -21,7 +21,7 @@ import sqlite3
 import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Header, Query, status
+from fastapi import APIRouter, HTTPException, Header, Query, status, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -103,8 +103,16 @@ class EnvelopePayloadWrapper(BaseModel):
     synthetic_marker: Optional[bool] = None
 
 
-@router.post("/persist", status_code=status.HTTP_200_OK)
-@router.post("/events", status_code=status.HTTP_200_OK)
+@router.post(
+    "/persist",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_internal_secret_auth)],
+)
+@router.post(
+    "/events",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(verify_internal_secret_auth)],
+)
 def persist_corporate_event(
     body: Dict[str, Any],
     db_path: Optional[str] = None,
