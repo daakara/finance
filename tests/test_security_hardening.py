@@ -1,8 +1,15 @@
-"""Adversarial & Regression Test Suite for ARX Security Hardening.
+"""Adversarial & Regression Test Suite for ARX Security Hardening & Operation Scoping.
 
 Covers:
-1. SEC-001: ApiKeyAuthMiddleware fail-closed in production, public path bypass, constant-time validation.
-2. SEC-002: Privileged cache management authentication & fail-closed behavior.
+1. SEC-001 (Recovery): ApiKeyAuthMiddleware operation scoping:
+   - Public market research operations (NVDA, screener, smart money, health) succeed unauthenticated.
+   - Mandatory regression test for NVDA endpoint with ARX_API_KEY absent and configured.
+   - Unknown/sensitive operations fail closed in production (500 if unset, 401 if missing, 403 if invalid).
+   - Constant-time comparison and CORS preflight bypass.
+2. SEC-002 (Recovery): Privileged administrative authorization:
+   - Cache purge endpoint requires dedicated administrative credential (ARX_ADMIN_KEY).
+   - Ordinary API keys (X-API-Key / ARX_API_KEY) are strictly rejected.
+   - Unconfigured administrative credentials fail closed in production (500).
 3. SEC-003: Rate limiter client IP resolution & anti-spoofing via trusted proxy filtering.
 4. SEC-004: CORS production whitelist integrity & security response headers.
 5. SEC-005: Bandit security reporting & high-severity gate verification.
@@ -14,7 +21,7 @@ from unittest.mock import patch, MagicMock
 from starlette.testclient import TestClient
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 
 import api.main
 from api.middleware.api_key_auth import (
@@ -22,6 +29,8 @@ from api.middleware.api_key_auth import (
     is_production,
     get_configured_api_key,
     _secure_compare,
+    is_public_research_operation,
+    is_delegated_auth_operation,
 )
 from api.middleware.rate_limiter import (
     resolve_client_ip,
@@ -32,7 +41,7 @@ from api.routes.cache import router as cache_router, _is_production, _get_expect
 
 
 class TestApiKeyAuthMiddlewareSecurity(unittest.TestCase):
-    """Adversarial tests for API key authentication middleware (SEC-001)."""
+    """Adversarial & regression tests for operation-scoped API key authentication (SEC-001 Recovery)."""
 
     def setUp(self):
         self.app = FastAPI()
@@ -40,76 +49,127 @@ class TestApiKeyAuthMiddlewareSecurity(unittest.TestCase):
 
         @self.app.get("/health")
         def health_endpoint():
-            return {"status": "ok"}
+            return {"status": "online"}
 
         @self.app.get("/docs")
         def docs_endpoint():
             return {"docs": "swagger"}
 
-        @self.app.get("/api/v1/protected")
-        def protected_endpoint():
-            return {"data": "secret"}
+        # Public research endpoint (matches public pattern)
+        @self.app.get("/api/v1/market/instruments/{symbol}")
+        def market_instrument_endpoint(symbol: str):
+            return {"symbol": symbol, "status": "ACTIVE"}
 
-        @self.app.options("/api/v1/protected")
-        def protected_options():
+        # Public screener explain endpoint
+        @self.app.get("/api/v1/screener/vcp/explain/{symbol}")
+        def screener_explain_endpoint(symbol: str):
+            return {"symbol": symbol, "eligible": True}
+
+        # Public smart money evidence endpoint
+        @self.app.get("/api/v1/smart-money/evidence/{symbol}")
+        def smart_money_evidence_endpoint(symbol: str):
+            return {"symbol": symbol, "evidence_count": 5}
+
+        # Unknown / sensitive protected endpoint
+        @self.app.get("/api/v1/unknown/secret")
+        def unknown_secret_endpoint():
+            return {"data": "classified"}
+
+        @self.app.options("/api/v1/unknown/secret")
+        def unknown_options():
             return {"status": "preflight-ok"}
 
         self.client = TestClient(self.app, raise_server_exceptions=False)
 
-    def test_production_fail_closed_when_server_key_unset(self):
-        """In production, missing ARX_API_KEY must return 500 Misconfiguration (never fail-open)."""
+    # -------------------------------------------------------------------------
+    # MANDATORY REGRESSION TESTS: Public Market Research Endpoints
+    # -------------------------------------------------------------------------
+
+    def test_public_market_instruments_nvda_always_permitted_when_server_key_unset(self):
+        """MANDATORY REGRESSION: NVDA market instruments must return HTTP 200 unauthenticated in production when ARX_API_KEY is unset."""
         with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": ""}):
-            response = self.client.get("/api/v1/protected")
-            self.assertEqual(response.status_code, 500)
-            data = response.json()
-            self.assertEqual(data["error"], "Internal Server Misconfiguration")
-
-    def test_production_rejects_missing_client_key(self):
-        """In production with configured key, missing X-API-Key must return 401."""
-        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": "valid-secret-key-123"}):
-            response = self.client.get("/api/v1/protected")
-            self.assertEqual(response.status_code, 401)
-            data = response.json()
-            self.assertEqual(data["error"], "Unauthorized")
-
-    def test_production_rejects_invalid_client_key(self):
-        """In production with configured key, invalid X-API-Key must return 403."""
-        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": "valid-secret-key-123"}):
-            response = self.client.get("/api/v1/protected", headers={"X-API-Key": "wrong-key"})
-            self.assertEqual(response.status_code, 403)
-            data = response.json()
-            self.assertEqual(data["error"], "Forbidden")
-
-    def test_production_accepts_valid_key(self):
-        """In production with configured key, valid X-API-Key returns 200."""
-        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": "valid-secret-key-123"}):
-            response = self.client.get("/api/v1/protected", headers={"X-API-Key": "valid-secret-key-123"})
+            response = self.client.get("/api/v1/market/instruments/NVDA")
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.json(), {"data": "secret"})
+            self.assertEqual(response.json()["symbol"], "NVDA")
+
+    def test_public_market_instruments_nvda_permitted_when_server_key_configured(self):
+        """MANDATORY REGRESSION: NVDA market instruments must return HTTP 200 unauthenticated even when ARX_API_KEY is configured."""
+        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": "valid-secret-key-123"}):
+            response = self.client.get("/api/v1/market/instruments/NVDA")
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["symbol"], "NVDA")
+
+    def test_public_radar_explain_permitted_unauthenticated(self):
+        """Public Radar/VCP explain endpoint must be accessible unauthenticated."""
+        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": ""}):
+            response = self.client.get("/api/v1/screener/vcp/explain/NVDA")
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.json()["eligible"])
+
+    def test_public_smart_money_evidence_permitted_unauthenticated(self):
+        """Public Smart Money evidence endpoint must be accessible unauthenticated."""
+        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": ""}):
+            response = self.client.get("/api/v1/smart-money/evidence/NVDA")
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["evidence_count"], 5)
 
     def test_health_endpoint_public_in_production(self):
         """Public /health route must always be accessible without authentication."""
-        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": "valid-secret-key-123"}):
+        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": ""}):
             response = self.client.get("/health")
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.json(), {"status": "ok"})
+            self.assertEqual(response.json()["status"], "online")
 
-    def test_docs_endpoint_blocked_in_production_without_auth(self):
-        """In production, /docs is NOT bypassed by API key middleware."""
+    # -------------------------------------------------------------------------
+    # UNKNOWN / SENSITIVE ROUTE FAIL-CLOSED TESTS
+    # -------------------------------------------------------------------------
+
+    def test_production_fail_closed_on_unknown_endpoint_when_server_key_unset(self):
+        """In production, unknown routes fail closed with HTTP 500 when ARX_API_KEY is unset."""
+        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": ""}):
+            response = self.client.get("/api/v1/unknown/secret")
+            self.assertEqual(response.status_code, 500)
+            data = response.json()
+            self.assertEqual(data["error"], "Internal Server Misconfiguration")
+            self.assertEqual(response.headers.get("X-Content-Type-Options"), "nosniff")
+
+    def test_production_rejects_missing_key_on_unknown_endpoint(self):
+        """In production with configured key, unknown route without X-API-Key returns 401."""
         with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": "valid-secret-key-123"}):
-            response = self.client.get("/docs")
+            response = self.client.get("/api/v1/unknown/secret")
             self.assertEqual(response.status_code, 401)
+            self.assertEqual(response.json()["error"], "Unauthorized")
 
-    def test_dev_mode_permits_unauthenticated_access_when_key_unset(self):
-        """In dev mode, if ARX_API_KEY is unset, requests pass through for developer convenience."""
-        with patch.dict(os.environ, {"ENVIRONMENT": "development", "ARX_API_KEY": ""}):
-            response = self.client.get("/api/v1/protected")
+    def test_production_rejects_invalid_key_on_unknown_endpoint(self):
+        """In production with configured key, unknown route with invalid X-API-Key returns 403."""
+        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": "valid-secret-key-123"}):
+            response = self.client.get("/api/v1/unknown/secret", headers={"X-API-Key": "wrong-key"})
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.json()["error"], "Forbidden")
+
+    def test_production_accepts_valid_key_on_unknown_endpoint(self):
+        """In production with configured key, valid X-API-Key admits to endpoint."""
+        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": "valid-secret-key-123"}):
+            response = self.client.get("/api/v1/unknown/secret", headers={"X-API-Key": "valid-secret-key-123"})
             self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["data"], "classified")
 
     def test_cors_options_preflight_always_permitted(self):
         """CORS OPTIONS preflight must bypass authentication."""
         with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": "valid-secret-key-123"}):
-            response = self.client.options("/api/v1/protected")
+            response = self.client.options("/api/v1/unknown/secret")
+            self.assertEqual(response.status_code, 200)
+
+    def test_docs_endpoint_blocked_in_production_without_auth(self):
+        """In production, /docs is NOT bypassed."""
+        with patch.dict(os.environ, {"ENVIRONMENT": "production", "ARX_API_KEY": "valid-secret-key-123"}):
+            response = self.client.get("/docs")
+            self.assertEqual(response.status_code, 401)
+
+    def test_dev_mode_permits_unknown_when_key_unset(self):
+        """In dev mode, if ARX_API_KEY is unset, unknown routes pass through."""
+        with patch.dict(os.environ, {"ENVIRONMENT": "development", "ARX_API_KEY": ""}):
+            response = self.client.get("/api/v1/unknown/secret")
             self.assertEqual(response.status_code, 200)
 
     def test_secure_compare_constant_time(self):
@@ -121,7 +181,7 @@ class TestApiKeyAuthMiddlewareSecurity(unittest.TestCase):
 
 
 class TestPrivilegedCacheClearAuthorization(unittest.TestCase):
-    """Adversarial tests for privileged cache clearing endpoint (SEC-002)."""
+    """Adversarial tests for privileged cache clearing endpoint (SEC-002 Recovery)."""
 
     def setUp(self):
         self.app = FastAPI()
@@ -134,7 +194,7 @@ class TestPrivilegedCacheClearAuthorization(unittest.TestCase):
             "ENVIRONMENT": "production",
             "ARX_ADMIN_KEY": "",
             "ARX_CACHE_PURGE_SECRET": "",
-            "ARX_API_KEY": "",
+            "ARX_API_KEY": "ordinary-api-key",
         }):
             response = self.client.post("/api/v1/cache/clear")
             self.assertEqual(response.status_code, 500)
@@ -146,6 +206,21 @@ class TestPrivilegedCacheClearAuthorization(unittest.TestCase):
             "ARX_ADMIN_KEY": "super-admin-secret-999",
         }):
             response = self.client.post("/api/v1/cache/clear")
+            self.assertEqual(response.status_code, 401)
+
+    def test_production_rejects_ordinary_x_api_key_for_cache_clear(self):
+        """CRITICAL PRIVILEGE BOUNDARY: Ordinary X-API-Key must NOT authorize administrative cache purge."""
+        with patch.dict(os.environ, {
+            "ENVIRONMENT": "production",
+            "ARX_ADMIN_KEY": "super-admin-secret-999",
+            "ARX_API_KEY": "ordinary-api-key",
+        }):
+            # Attempt to authorize using ordinary API key in X-API-Key header
+            response = self.client.post(
+                "/api/v1/cache/clear",
+                headers={"X-API-Key": "ordinary-api-key"}
+            )
+            # Must be rejected because ordinary X-API-Key is not an administrative credential
             self.assertEqual(response.status_code, 401)
 
     def test_production_rejects_invalid_admin_credential(self):
@@ -243,7 +318,6 @@ class TestCORSAndSecurityHeaders(unittest.TestCase):
         """In production, localhost origins must not be in allowed origins."""
         import api.main
         with patch.dict(os.environ, {"ENVIRONMENT": "production"}):
-            # Production allowed origins
             prod_origins = api.main.PROD_ALLOWED_ORIGINS
             for origin in prod_origins:
                 self.assertNotIn("localhost", origin)
