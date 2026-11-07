@@ -102,7 +102,7 @@ export default function TerminalShell({
       </section>
 
       {/* 3. Main Hub Content Canvas */}
-      <main className="flex-1 w-full max-w-[1750px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24 lg:pb-12">
+      <main className="flex-1 w-full max-w-[1750px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6 !pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] lg:!pb-12 scroll-mt-20">
         {children}
       </main>
     </div>

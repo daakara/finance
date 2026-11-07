@@ -585,3 +585,12 @@ textarea:focus-visible {
  [data-synthesis-mobile-dock="true"] { display:none; }
  [data-synthesis-mobile-dock="true"] { padding-bottom:max(0.25rem, env(safe-area-inset-bottom)); }
 }
+
+/* iOS standalone PWAs can report zero top inset during initial viewport layout.
+   Keep the persistent header beneath the status bar / Dynamic Island without
+   changing ordinary Safari or desktop geometry. */
+@media (display-mode: standalone) and (max-width: 1023px) {
+  [data-testid="navbar-safe-area"] {
+    padding-top: max(env(safe-area-inset-top, 0px), 3.5rem);
+  }
+}

@@ -358,7 +358,7 @@ export default function Navbar({
 
   return (
     <>
-      <div className="sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)] bg-[#0c1017]">
+      <div data-testid="navbar-safe-area" className="sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)] bg-[#0c1017]">
         <header
           role="banner"
           data-testid="navbar"
