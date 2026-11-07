@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased] — Operational production reconciliation (2026-11-07)
+
+### Documentation and release identity only
+- Recorded merged production PRs #220 (Radar single universe), #221 (passive prospective learning), and #222 (learning integrity corrections); Railway web and worker at `83bca0b69d2d56d30b4d3157ff492fae260b7f3a`, Cloudflare frontend at `6f6770e`.
+- Linked [current action register](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_07.md) and [release reconciliation](docs/releases/2026-11-07_operational_release_reconciliation.md); separated completed releases from unqualified prospective outcome evidence and held services.
+- Identified open PR #223 as a content-identical duplicate of merged PR #222; no duplicate implementation or deployment requested.
+- No application feature, scanner, SEC egress, model or trading activation in this documentation-only change.
+
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

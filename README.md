@@ -1,5 +1,8 @@
 # 📈 ARX Terminal | Institutional Financial Intelligence & Research Platform
 
+> **Current operational reconciliation (2026-11-07, production SHA `83bca0b69d2d56d30b4d3157ff492fae260b7f3a`):** See [Active work register](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_07.md) and [latest release reconciliation](docs/releases/2026-11-07_operational_release_reconciliation.md). Older SHAs and pending-Radar statements below are dated historical context, not current status. PR #220 Radar and PR #222 learning integrity are merged; learning calibration, natural scans, SEC recurring ingest and execution remain held.
+
+
 A professional-grade quantitative intelligence platform featuring real-time market surveillance, Mark Minervini Volatility Contraction Pattern (VCP) setup detection, dual-horizon candlestick geometry, multi-pillar Confluence scoring, and Cornish-Fisher Modified Value-at-Risk modeling.
 
 **Live Deployment**: [https://www.arxterminal.com/](https://www.arxterminal.com/)  

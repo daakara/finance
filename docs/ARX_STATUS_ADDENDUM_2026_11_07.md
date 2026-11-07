@@ -1,5 +1,8 @@
 # ARX Terminal — Integrated Status Addendum (2026-11-07)
 
+> **Current operational reconciliation (2026-11-07, production SHA `83bca0b69d2d56d30b4d3157ff492fae260b7f3a`):** See [Active work register](planning/ARX_ACTIVE_WORK_REGISTER_2026_11_07.md) and [latest release reconciliation](releases/2026-11-07_operational_release_reconciliation.md). Older SHAs and pending-Radar statements below are dated historical context, not current status. PR #220 Radar and PR #222 learning integrity are merged; learning calibration, natural scans, SEC recurring ingest and execution remain held.
+
+
 **Purpose:** Dated successor addendum to [the 2026-10-29 master project status](ARX_MASTER_PROJECT_STATUS_2026_10_29.md); preserves historical baseline without overwriting it.
 **Reference branch:** `release/production`, SHA `e766cf3c323017989aeda2cbe1a7880ddf4e1bfb` at inspection.
 **Record type:** Repository inspection plus reported production acceptance receipts, distinguished below. Documentation-only; no new product functionality or activation.
