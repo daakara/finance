@@ -129,10 +129,63 @@ export default function EvidenceDomainStatusCard({
         </div>
       </div>
 
-      {/* 📋 Expanded 9-Domain Details Table */}
+      {/* 📋 Expanded 9-Domain Details */}
       {isExpanded && (
         <div className="p-3 sm:p-4 border-t border-[var(--border-subtle)] space-y-3 bg-[var(--surface-1)] animate-fadeIn">
-          <div className="overflow-x-auto -mx-3 sm:mx-0">
+          {/* Mobile High-Density Card List (< 640px / < sm) */}
+          <div className="block sm:hidden space-y-2" data-testid="evidence-domains-mobile-list">
+            {domains.map((d) => (
+              <div
+                key={d.id}
+                data-testid={`domain-card-${d.id}`}
+                className="p-2.5 rounded-lg bg-slate-900/40 border border-slate-800/70 space-y-1.5 hover:border-slate-700/80 transition-colors"
+              >
+                {/* Header: Title & Badges */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-slate-200 text-xs leading-snug">
+                      {d.name}
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-400">
+                      {d.authority}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${getApplicabilityBadge(d.applicability)}`}>
+                      {d.applicability}
+                    </span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border inline-block whitespace-nowrap ${getStatusBadge(d.status, d.statusLabel)}`}>
+                      {d.statusLabel}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Meta Row: Category & Verdict Impact */}
+                <div className="flex items-center justify-between text-[10px] font-mono border-t border-slate-800/50 pt-1">
+                  <span className="text-slate-400">{d.category}</span>
+                  <span className={`font-semibold ${
+                    d.impact === "BLOCKING"
+                      ? (d.status === "VERIFIED" ? "text-slate-400" : "text-amber-400 font-bold")
+                      : "text-slate-500"
+                  }`}>
+                    {d.impact === "BLOCKING" ? "Blocking" : "Advisory (Non-blocking)"}
+                  </span>
+                </div>
+
+                {/* Explanation & Source */}
+                <p className="text-[11px] text-slate-300 leading-snug">
+                  {d.explanation}
+                </p>
+                <div className="text-[10px] font-mono text-slate-500">
+                  Source: {d.provenance}
+                  {d.observationTime ? ` · ${d.observationTime}` : ""}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Compact Table (>= 640px / >= sm) */}
+          <div className="hidden sm:block overflow-x-auto -mx-3 sm:mx-0">
             <table className="w-full text-left text-xs font-sans min-w-[640px]">
               <thead>
                 <tr className="border-b border-slate-800 text-[10px] font-mono uppercase tracking-wider text-slate-400">
@@ -199,7 +252,7 @@ export default function EvidenceDomainStatusCard({
             </table>
           </div>
 
-          <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-[11px] text-slate-400 font-mono">
+          <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-[11px] text-slate-400 font-mono gap-1">
             <span>Asset Scope: <strong className="text-slate-200">{symbol}</strong></span>
             <span>Invariant: Missing advisory enrichment never demotes actionable setups.</span>
           </div>

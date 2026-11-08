@@ -105,6 +105,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     vix,
     preflightCleared,
     activeBlocker,
+    preflightChecksPassed,
     freshness,
     dataSource,
     decisionTrace,
@@ -250,6 +251,25 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
         provenance: "Cryptographic Network",
         explanation: "Decentralized cryptographic protocols do not file statutory corporate SEC disclosures.",
       });
+    } else if (isForeignAdr) {
+      const hasStatements = Boolean(
+        fundPillar && (fundPillar.status === "positive" || fundPillar.score > 0)
+      );
+      domains.push({
+        id: "sec_filings",
+        name: "Foreign Statutory Financials",
+        category: "Regulatory",
+        authority: "SEC Form 20-F / Home Country Exchange",
+        applicability: "REQUIRED",
+        status: hasStatements ? "VERIFIED" : "UNAVAILABLE",
+        statusLabel: hasStatements ? "Verified (20-F / IFRS)" : "Unavailable",
+        impact: "BLOCKING",
+        observationTime: "Latest Statutory Filing",
+        provenance: "SEC Form 20-F / Statutory IFRS Report",
+        explanation: hasStatements
+          ? "Audited foreign statutory financial statements (IFRS / 20-F) verified and parsed."
+          : "Foreign statutory financial statements (20-F / IFRS) unavailable.",
+      });
     } else {
       const hasStatements = Boolean(
         fundPillar && (fundPillar.status === "positive" || fundPillar.score > 0)
@@ -322,7 +342,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
         explanation: hasSolvency
           ? `Balance sheet solvency, capital efficiency, and operating margins scored (${fundPillar?.score ?? 80}/100).`
           : isCaution
-          ? "Fundamental solvency score below target threshold; elevated leverage."
+          ? `Fundamental solvency score below target threshold (${fundPillar?.score ?? 33}/100); elevated capital risk.`
           : "Quarterly fundamental solvency telemetry unassessed for this asset.",
       });
     }
@@ -334,39 +354,37 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     const sweeps = smartMoney?.optionsFlow || [];
     const sub = smartMoney?.subdomains?.options_flow;
     const subStatus = sub?.status || smartMoney?.optionsStatus;
-    const isPending = smartMoney?.status === "PIPELINE_PENDING" || subStatus === "PIPELINE_HELD" || smartMoney?.overallStatus === "PIPELINE_HELD";
-    const isUnavailable = subStatus === "UNAVAILABLE" || smartMoney?.status === "UNAVAILABLE";
-    const isVerifiedEmpty = subStatus === "VERIFIED_NO_ACTIVITY";
+    const isPending =
+      smartMoney?.status === "PIPELINE_PENDING" ||
+      subStatus === "PIPELINE_HELD" ||
+      subStatus === "PIPELINE_PENDING" ||
+      smartMoney?.overallStatus === "PIPELINE_HELD" ||
+      feed?.status === "PIPELINE_HELD" ||
+      feed?.status === "PIPELINE_PENDING";
+    const isUnavailable =
+      subStatus === "UNAVAILABLE" ||
+      smartMoney?.status === "UNAVAILABLE" ||
+      feed?.status === "UNAVAILABLE";
+    const isVerifiedEmpty =
+      subStatus === "VERIFIED_NO_ACTIVITY" ||
+      feed?.status === "VERIFIED_NO_ACTIVITY" ||
+      feed?.status === "NO_OBSERVATIONS";
     const hasSweeps = sweeps.length > 0;
 
-    let status: DomainStatus = "NO_OBSERVATIONS";
-    let statusLabel = "No Observations";
-    let explanation = "0 unusual options sweeps detected in evaluation window (normal retail/institutional balance).";
-    let provenance = sub?.provenance || "OPRA Consolidated Feed";
+    let status: DomainStatus = "UNAVAILABLE";
+    let statusLabel = "Unavailable";
+    let explanation = "Options sweep analytics feed unassessed for this symbol.";
+    let provenance = feed?.provenance || sub?.provenance || "OPRA Consolidated Feed";
+    let observationTime = (feed as any)?.observation_time || (feed as any)?.observed_at || "Intraday Rolling Window";
 
-    if (isCrypto) {
+    if (isCrypto || feed?.status === "INAPPLICABLE" || subStatus === "INAPPLICABLE") {
       status = "INAPPLICABLE";
-      statusLabel = "Inapplicable";
-      explanation = "Equity options flow sweeps inapplicable to digital assets.";
-    } else if (feed) {
-      if (feed.status === "VERIFIED") {
-        status = "VERIFIED";
-        statusLabel = "Verified";
-        explanation = feed.explanation || `${feed.observation_count || sweeps.length} institutional options sweeps evaluated.`;
-      } else if (feed.status === "PIPELINE_PENDING") {
-        status = "UNAVAILABLE";
-        statusLabel = "Pipeline Pending";
-        explanation = feed.explanation || "Options sweep ingestion pipeline pending under governed deployment.";
-      } else if (feed.status === "INAPPLICABLE") {
-        status = "INAPPLICABLE";
-        statusLabel = feed.status_label || "Inapplicable";
-        explanation = feed.explanation || "Options flow inapplicable to this asset class.";
-      } else if (feed.status === "NO_OBSERVATIONS") {
-        status = "NO_OBSERVATIONS";
-        statusLabel = "No Observations";
-        explanation = feed.explanation || "0 unusual options sweeps detected in evaluation window.";
-      }
-      if (feed.provenance) provenance = feed.provenance;
+      statusLabel = feed?.status_label || "Inapplicable";
+      explanation = feed?.explanation || "Equity options flow sweeps inapplicable to digital assets.";
+    } else if (feed && feed.status === "VERIFIED") {
+      status = "VERIFIED";
+      statusLabel = "Verified";
+      explanation = feed.explanation || `${feed.observation_count || sweeps.length} institutional options sweeps evaluated.`;
     } else if (hasSweeps) {
       status = "VERIFIED";
       statusLabel = "Verified";
@@ -374,15 +392,15 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     } else if (isVerifiedEmpty) {
       status = "NO_OBSERVATIONS";
       statusLabel = "No Observations";
-      explanation = "Verified complete scan: 0 unusual options sweeps detected in evaluation window.";
+      explanation = feed?.explanation || "Verified complete scan: 0 unusual options sweeps detected in evaluation window (normal retail/institutional balance).";
     } else if (isPending) {
       status = "UNAVAILABLE";
       statusLabel = "Pipeline Pending";
-      explanation = sub?.disclosure || "Options sweep ingestion pipeline pending under governed deployment.";
+      explanation = feed?.explanation || sub?.disclosure || "Options sweep ingestion pipeline pending under governed deployment.";
     } else if (isUnavailable) {
       status = "UNAVAILABLE";
       statusLabel = "Unavailable";
-      explanation = sub?.disclosure || "Live options tape unavailable (no active stream connection).";
+      explanation = feed?.explanation || sub?.disclosure || "Live options tape unavailable (no active stream connection).";
     }
 
     domains.push({
@@ -394,7 +412,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       status,
       statusLabel,
       impact: "NON_BLOCKING",
-      observationTime: "Intraday Rolling Window",
+      observationTime,
       provenance,
       explanation,
     });
@@ -408,16 +426,29 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       : (smartMoney?.secForm4Trades || []);
     const sub = smartMoney?.subdomains?.sec_form_4;
     const subStatus = sub?.status || smartMoney?.secStatus;
-    const isHeld = smartMoney?.status === "PIPELINE_PENDING" || subStatus === "PIPELINE_HELD" || smartMoney?.overallStatus === "PIPELINE_HELD";
-    const isUnavailable = subStatus === "UNAVAILABLE" || smartMoney?.status === "UNAVAILABLE";
-    const isVerifiedEmpty = subStatus === "VERIFIED_NO_ACTIVITY";
+    const isHeld =
+      smartMoney?.status === "PIPELINE_PENDING" ||
+      subStatus === "PIPELINE_HELD" ||
+      subStatus === "PIPELINE_PENDING" ||
+      smartMoney?.overallStatus === "PIPELINE_HELD" ||
+      feed?.status === "PIPELINE_HELD" ||
+      feed?.status === "PIPELINE_PENDING";
+    const isUnavailable =
+      subStatus === "UNAVAILABLE" ||
+      smartMoney?.status === "UNAVAILABLE" ||
+      feed?.status === "UNAVAILABLE";
+    const isVerifiedEmpty =
+      subStatus === "VERIFIED_NO_ACTIVITY" ||
+      feed?.status === "VERIFIED_NO_ACTIVITY" ||
+      feed?.status === "NO_OBSERVATIONS";
     const hasTrades = trades.length > 0;
 
-    let status: DomainStatus = "NO_OBSERVATIONS";
-    let statusLabel = "No Observations";
-    let explanation = "0 insider open-market transactions in trailing 90 days (routine corporate cadence).";
-    let provenance = sub?.provenance || "SEC EDGAR Disclosures";
-    let applicability: "MANDATORY" | "OPTIONAL" | "INAPPLICABLE" = "OPTIONAL";
+    let status: DomainStatus = "UNAVAILABLE";
+    let statusLabel = "Unavailable";
+    let explanation = "SEC Form 4 insider transaction registry unassessed for this symbol.";
+    let provenance = feed?.provenance || sub?.provenance || "SEC EDGAR Disclosures";
+    let observationTime = (feed as any)?.observation_time || (feed as any)?.observed_at || "Trailing 90 Days";
+    let applicability: DomainApplicability = "OPTIONAL";
 
     if (isEtf || isCrypto) {
       status = "INAPPLICABLE";
@@ -425,27 +456,16 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       applicability = "INAPPLICABLE";
       explanation = "Corporate insider transactions inapplicable to funds and digital assets.";
       provenance = "SEC EDGAR";
-    } else if (isForeignAdr || feed?.coverage === "FOREIGN_FPI_EXEMPT" || feed?.status === "INAPPLICABLE") {
+    } else if (isForeignAdr || feed?.coverage === "FOREIGN_FPI_EXEMPT" || feed?.status === "INAPPLICABLE" || subStatus === "INAPPLICABLE") {
       status = "INAPPLICABLE";
       statusLabel = feed?.status_label || "Exempt (Foreign Issuer)";
       applicability = "INAPPLICABLE";
       explanation = feed?.explanation || "Foreign Private Issuer (FPI) exempt from US SEC Form 4 filings; local regulatory disclosures apply.";
       provenance = feed?.provenance || "Home Country Regulatory Authorities";
-    } else if (feed) {
-      if (feed.status === "VERIFIED") {
-        status = "VERIFIED";
-        statusLabel = "Verified";
-        explanation = feed.explanation || `${feed.observation_count || trades.length} Form 4 insider transactions evaluated.`;
-      } else if (feed.status === "PIPELINE_PENDING") {
-        status = "UNAVAILABLE";
-        statusLabel = "Pipeline Pending";
-        explanation = feed.explanation || "SEC Form 4 continuous ingestion paused under governed operational hold.";
-      } else if (feed.status === "NO_OBSERVATIONS") {
-        status = "NO_OBSERVATIONS";
-        statusLabel = "No Observations";
-        explanation = feed.explanation || "0 insider open-market transactions in trailing 90 days (routine corporate cadence).";
-      }
-      if (feed.provenance) provenance = feed.provenance;
+    } else if (feed && feed.status === "VERIFIED") {
+      status = "VERIFIED";
+      statusLabel = "Verified";
+      explanation = feed.explanation || `${feed.observation_count || trades.length} Form 4 insider transactions evaluated.`;
     } else if (hasTrades) {
       status = "VERIFIED";
       statusLabel = "Verified";
@@ -453,15 +473,15 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     } else if (isVerifiedEmpty) {
       status = "NO_OBSERVATIONS";
       statusLabel = "No Observations";
-      explanation = "Verified complete search: 0 open-market Form 4 transactions filed in trailing 90 days.";
+      explanation = feed?.explanation || "Verified complete search: 0 open-market Form 4 transactions filed in trailing 90 days.";
     } else if (isHeld) {
       status = "UNAVAILABLE";
       statusLabel = "Pipeline Pending";
-      explanation = sub?.disclosure || "SEC Form 4 continuous ingestion paused under governed operational hold.";
+      explanation = feed?.explanation || sub?.disclosure || "SEC Form 4 continuous ingestion paused under governed operational hold (HOLD_SEC_001).";
     } else if (isUnavailable) {
       status = "UNAVAILABLE";
       statusLabel = "Unavailable";
-      explanation = sub?.disclosure || "SEC EDGAR Form 4 feed unavailable.";
+      explanation = feed?.explanation || sub?.disclosure || "SEC EDGAR Form 4 feed unavailable.";
     }
 
     domains.push({
@@ -473,7 +493,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       status,
       statusLabel,
       impact: "NON_BLOCKING",
-      observationTime: "Trailing 90 Days",
+      observationTime,
       provenance,
       explanation,
     });
@@ -485,37 +505,41 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     const trades = smartMoney?.congressTrades || [];
     const sub = smartMoney?.subdomains?.congressional_stock_act;
     const subStatus = sub?.status || smartMoney?.congressStatus;
-    const isHeld = subStatus === "PIPELINE_HELD" || smartMoney?.congressStatus === "PIPELINE_PENDING";
-    const isUnavailable = subStatus === "UNAVAILABLE" || smartMoney?.congressStatus === "UNAVAILABLE";
-    const isVerifiedEmpty = subStatus === "VERIFIED_NO_ACTIVITY";
+    const isHeld =
+      subStatus === "PIPELINE_HELD" ||
+      subStatus === "PIPELINE_PENDING" ||
+      smartMoney?.congressStatus === "PIPELINE_PENDING" ||
+      smartMoney?.status === "PIPELINE_PENDING" ||
+      smartMoney?.overallStatus === "PIPELINE_HELD" ||
+      feed?.status === "PIPELINE_HELD" ||
+      feed?.status === "PIPELINE_PENDING";
+    const isUnavailable =
+      subStatus === "UNAVAILABLE" ||
+      smartMoney?.congressStatus === "UNAVAILABLE" ||
+      smartMoney?.status === "UNAVAILABLE" ||
+      feed?.status === "UNAVAILABLE";
+    const isVerifiedEmpty =
+      subStatus === "VERIFIED_NO_ACTIVITY" ||
+      feed?.status === "VERIFIED_NO_ACTIVITY" ||
+      feed?.status === "NO_OBSERVATIONS";
     const hasTrades = trades.length > 0;
 
-    let status: DomainStatus = "NO_OBSERVATIONS";
-    let statusLabel = "No Observations";
-    let explanation = "0 congressional transactions reported in trailing window.";
-    let provenance = sub?.provenance || "House & Senate Ethics Disclosures";
-    let applicability: "MANDATORY" | "OPTIONAL" | "INAPPLICABLE" = "OPTIONAL";
+    let status: DomainStatus = "UNAVAILABLE";
+    let statusLabel = "Unavailable";
+    let explanation = "Congressional STOCK Act disclosure feed unassessed for this symbol.";
+    let provenance = feed?.provenance || sub?.provenance || "House & Senate Ethics Disclosures";
+    let observationTime = (feed as any)?.observation_time || (feed as any)?.observed_at || "Trailing 180 Days";
+    let applicability: DomainApplicability = "OPTIONAL";
 
     if (isCrypto || feed?.status === "INAPPLICABLE" || subStatus === "INAPPLICABLE") {
       status = "INAPPLICABLE";
       statusLabel = "Inapplicable";
       applicability = "INAPPLICABLE";
       explanation = feed?.explanation || "Congressional STOCK Act single-asset disclosures inapplicable to crypto tokens.";
-    } else if (feed) {
-      if (feed.status === "VERIFIED") {
-        status = "VERIFIED";
-        statusLabel = "Verified";
-        explanation = feed.explanation || `${feed.observation_count || trades.length} congressional disclosures evaluated.`;
-      } else if (feed.status === "PIPELINE_PENDING") {
-        status = "UNAVAILABLE";
-        statusLabel = "Pipeline Pending";
-        explanation = feed.explanation || "Congressional disclosure live sync disconnected; legislative updates pending.";
-      } else if (feed.status === "NO_OBSERVATIONS") {
-        status = "NO_OBSERVATIONS";
-        statusLabel = "No Observations";
-        explanation = feed.explanation || "0 congressional transactions reported in trailing window.";
-      }
-      if (feed.provenance) provenance = feed.provenance;
+    } else if (feed && feed.status === "VERIFIED") {
+      status = "VERIFIED";
+      statusLabel = "Verified";
+      explanation = feed.explanation || `${feed.observation_count || trades.length} congressional disclosures evaluated.`;
     } else if (hasTrades) {
       status = "VERIFIED";
       statusLabel = "Verified";
@@ -523,15 +547,15 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     } else if (isVerifiedEmpty) {
       status = "NO_OBSERVATIONS";
       statusLabel = "No Observations";
-      explanation = "Verified complete search: 0 congressional disclosures filed in trailing window.";
+      explanation = feed?.explanation || "Verified complete search: 0 congressional disclosures filed in trailing window.";
     } else if (isHeld) {
       status = "UNAVAILABLE";
       statusLabel = "Pipeline Pending";
-      explanation = sub?.disclosure || "Congressional STOCK Act continuous sync paused under governed operational hold.";
+      explanation = feed?.explanation || sub?.disclosure || "Congressional STOCK Act continuous sync paused under governed operational hold (HOLD_SEC_001).";
     } else if (isUnavailable) {
       status = "UNAVAILABLE";
       statusLabel = "Unavailable";
-      explanation = sub?.disclosure || "Congressional STOCK Act sync feed disconnected.";
+      explanation = feed?.explanation || sub?.disclosure || "Congressional STOCK Act sync feed disconnected.";
     }
 
     domains.push({
@@ -543,7 +567,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       status,
       statusLabel,
       impact: "NON_BLOCKING",
-      observationTime: "Trailing 180 Days",
+      observationTime,
       provenance,
       explanation,
     });
@@ -552,7 +576,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
   // ── 8. Macroeconomic Regime (FRED / VIX) ──────────────────────────────────
   (() => {
     const resolvedVix = vix ?? macroData?.vix?.value ?? macroData?.vix;
-    const isVixElevated = typeof resolvedVix === "number" && resolvedVix > 30;
+    const isVixElevated = typeof resolvedVix === "number" && resolvedVix >= 26.0;
     const hasMacro = Boolean(macroData || (macroPillar && macroPillar.status !== "unavailable"));
 
     let status: DomainStatus = "VERIFIED";
@@ -562,7 +586,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     if (isVixElevated) {
       status = "CAUTION";
       statusLabel = "Caution (High Vol)";
-      explanation = `Elevated market volatility regime (VIX ${resolvedVix.toFixed(1)} > 30).`;
+      explanation = `Elevated market volatility regime (VIX ${(resolvedVix as number).toFixed(1)} >= 26.0 institutional ceiling).`;
     } else if (!hasMacro) {
       status = "UNAVAILABLE";
       statusLabel = "Unavailable";
@@ -602,6 +626,10 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       status = "AWAITING_TRIGGER";
       statusLabel = "Awaiting Trigger";
       explanation = "Valid setup identified; awaiting accumulation corridor entry or confirmation.";
+    } else if (preflightChecksPassed !== undefined && preflightChecksPassed > 0) {
+      status = "BLOCKED";
+      statusLabel = `${preflightChecksPassed}/5 Cleared`;
+      explanation = activeBlocker ? `Execution blocked: ${activeBlocker}.` : `${preflightChecksPassed} of 5 preflight execution gates cleared.`;
     } else if (activeBlocker) {
       status = "BLOCKED";
       statusLabel = "Blocked";

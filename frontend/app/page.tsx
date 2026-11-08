@@ -372,6 +372,12 @@ function TerminalContent() {
       liveSource: data?.liveSource,
       liveFreshnessStatus: (data?.liveFreshness as any)?.status || ((data?.marketPriceState as any)?.liveFreshness as any)?.status,
       observationTime: data?.liveObservedAt || (data?.marketPriceState as any)?.asOfTimestamp,
+      shortFloat: (data as any)?.shortFloat ?? (data?.optimalExecution as any)?.short_float ?? (data?.factorScores as any)?.shortFloat,
+      qualityScore: (data as any)?.qualityScore ?? (data?.factorScores as any)?.qualityScore ?? (data?.dnaScores as any)?.qualityScore,
+      assetClass: (data as any)?.assetClass ?? (data?.canonicalInstrument as any)?.asset_class,
+      securityType: (data as any)?.securityType ?? (data?.canonicalInstrument as any)?.security_type,
+      verdict: (data?.factorScores as any)?.verdict ?? (data?.dnaScores as any)?.verdict,
+      factorScores: (data as any)?.factorScores,
     };
   }, [selectedSymbol, data, macroData, userRole]);
 
