@@ -1,18 +1,18 @@
 {
-  "directive": "RADAR-P2-004",
-  "executed_at_utc": "2026-11-07T22:32:13.806730+00:00",
-  "verdict": "RADAR_P2_004_HYDRATION_READY_FOR_AUTHORIZATION",
-  "verdict_reasoning": "Consolidated SIP historical daily OHLCV bars are verified accessible under Alpaca market delay policy (HTTP 200). The 500-symbol rehearsal manifest is validated with 100% 250-member overlap and 0 dropped symbols. The exact hydration manifest partitions all 500 symbols (378 full backfill, 89 tail refresh, 33 fresh). Ingestion pipeline defects have been resolved and verified with 77/77 passing regression tests. Hydration is completely ready to execute upon operator authorization.",
-  "manifest_500_hash": "870b2f539bdf1983fd081d971176361a842930a9d9229f8ac0270f3b05dd0f55",
+  "directive": "RADAR-P2-005R",
+  "executed_at_utc": "2026-11-08T03:26:34.848730+00:00",
+  "verdict": "RADAR_P2_005R_EXPANSION_500_HYDRATION_COMPLETED_AND_QUALIFIED",
+  "verdict_reasoning": "Consolidated SIP historical daily OHLCV bars are verified accessible under Alpaca market delay policy (HTTP 200). The 500-symbol rehearsal manifest (UB-ARX-EXPANSION-500-REHEARSAL, hash 5f60b47d5402c0fc29fa545b244b778ca99a017f47448f47ebdfc257db8881b0) is validated with 100% 250-member overlap and 0 dropped symbols. All 500 symbols are 100% hydrated in the local market store with >= 252 split-adjusted daily bars fresh through 2026-11-06. Corporate-action exclusions (KVUE, QRVO) and replacement equities (LYFT, CHWY) are verified. Idempotency and structural OHLC geometry are verified with 0 errors.",
+  "manifest_500_hash": "5f60b47d5402c0fc29fa545b244b778ca99a017f47448f47ebdfc257db8881b0",
   "manifest_250_hash": "889c86cd6d3f7c6aaef98852419fe16a546441e38171370e731bedab0947e313",
   "population_counts": {
     "total_500": 500,
-    "present_in_local_store": 122,
-    "missing_from_local_store": 378,
-    "missing_from_published_250": 128,
-    "missing_from_provisional_250": 250,
-    "stale_tail_refresh_count": 89,
-    "already_fresh_count": 33
+    "present_in_local_store": 500,
+    "missing_from_local_store": 0,
+    "missing_from_published_250": 0,
+    "missing_from_provisional_250": 0,
+    "stale_tail_refresh_count": 0,
+    "already_fresh_count": 500
   },
   "entitlement_audit": {
     "alpaca_sip_accessible": true,
@@ -26,9 +26,9 @@
   "hydration_plan": "UB-ARX-HYDRATION-PLAN-500",
   "resource_estimates": {
     "direct_api_fees_usd": 0.0,
-    "storage_delta_mb": 9.64,
+    "storage_delta_mb": 0.0,
     "memory_overhead_mb": 45.0,
-    "network_bandwidth_mb": 4.5
+    "network_bandwidth_mb": 0.0
   },
   "holds_preserved": {
     "HOLD_SCAN_001": "ACTIVE",

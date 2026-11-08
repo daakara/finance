@@ -123,3 +123,62 @@ def test_dry_run_bounded_execution():
     assert summary.batch_outcome == "SUCCESS"
     assert summary.total_bars_ingested == 0
     assert summary.candidate_dispositions["AAPL"]["status"] == "PREPARED_DRY_RUN"
+
+
+def test_rehearsal_500_excludes_kvue_qrvo_includes_lyft_chwy():
+    """Verify RADAR-P2-005R: KVUE/QRVO excluded and replaced by LYFT/CHWY in 500 rehearsal."""
+    import json
+    p500 = REPO_ROOT / "docs" / "research" / "UB-ARX-EXPANSION-500-REHEARSAL.json"
+    with open(p500, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    symbols = set(data["symbols"])
+    assert len(data["symbols"]) == 500
+    assert len(symbols) == 500, "All 500 symbols must be strictly unique"
+
+    # Excluded corporate action symbols
+    assert "KVUE" not in symbols, "KVUE must be excluded due to corporate action"
+    assert "QRVO" not in symbols, "QRVO must be excluded due to corporate action"
+
+    # Qualified replacement symbols
+    assert "LYFT" in symbols, "LYFT must be included in 500 rehearsal universe"
+    assert "CHWY" in symbols, "CHWY must be included in 500 rehearsal universe"
+
+    # Pre-existing hydrated symbols
+    assert "CAG" in symbols, "CAG must remain in universe"
+    assert "CPB" in symbols, "CPB must remain in universe"
+
+
+def test_exclusions_ledger_corporate_action_audit():
+    """Verify exclusions ledger documents KVUE, QRVO, and FVRR."""
+    import json
+    ex_file = REPO_ROOT / "docs" / "research" / "candidate_exclusions_ledger_500.json"
+    with open(ex_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    breakdown = data["exclusion_breakdown"]
+    assert breakdown.get("EXCLUDED_CORPORATE_ACTION_HALTED_OR_CEASED_TRADING") == 2
+    assert breakdown.get("EXCLUDED_FAILS_LIQUIDITY_CONTRACT") == 1
+
+    corp_and_liq = data.get("corporate_and_liquidity_exclusions", [])
+    sym_to_reason = {item["symbol"]: item["exclusion_reason"] for item in corp_and_liq}
+    assert sym_to_reason.get("KVUE") == "EXCLUDED_CORPORATE_ACTION_HALTED_OR_CEASED_TRADING"
+    assert sym_to_reason.get("QRVO") == "EXCLUDED_CORPORATE_ACTION_HALTED_OR_CEASED_TRADING"
+    assert sym_to_reason.get("FVRR") == "EXCLUDED_FAILS_LIQUIDITY_CONTRACT"
+
+
+def test_replacement_uniqueness_invariance():
+    """Verify replacing KVUE/QRVO with existing members CAG/CPB would violate uniqueness."""
+    import json
+    p500 = REPO_ROOT / "docs" / "research" / "UB-ARX-EXPANSION-500-REHEARSAL.json"
+    with open(p500, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    symbols = list(data["symbols"])
+    # Both CAG and CPB are already distinct members
+    assert "CAG" in symbols
+    assert "CPB" in symbols
+    # Adding them again as replacements would shrink set cardinality
+    hypothetical_with_cag_cpb = symbols + ["CAG", "CPB"]
+    assert len(set(hypothetical_with_cag_cpb)) == len(symbols), "CAG and CPB cannot serve as unique replacements"
+

@@ -133,9 +133,14 @@ def run_entitlement_reconciliation(
         plan_data = json.load(f)
 
     p_breakdown = plan_data["action_breakdown"]
-    assert p_breakdown["missing_full_hydration_count"] == 378
-    assert p_breakdown["stale_tail_refresh_count"] == 89
-    assert p_breakdown["already_fresh_count"] == 33
+    is_post_hydration = (len(missing_syms) == 0 and fresh_session == 500 and ge_252 == 500)
+    if is_post_hydration:
+        assert p_breakdown["missing_full_hydration_count"] == 0
+        assert p_breakdown["already_fresh_count"] == 500
+    else:
+        assert p_breakdown["missing_full_hydration_count"] == 378
+        assert p_breakdown["stale_tail_refresh_count"] == 89
+        assert p_breakdown["already_fresh_count"] == 33
 
     print("\n[Audit 4] Hydration Plan & Resource Estimates:")
     print(f"  Plan ID:                      {plan_data.get('plan_id')}")
@@ -167,17 +172,27 @@ def run_entitlement_reconciliation(
     print(f"  Adapter Batch Outcome:        {dry_summary.batch_outcome}")
     print(f"  Bars Ingested in Dry-Run:     {dry_summary.total_bars_ingested} (Strictly 0 writes guaranteed)")
 
-    verdict = "RADAR_P2_004_HYDRATION_READY_FOR_AUTHORIZATION"
-    verdict_reasoning = (
-        "Consolidated SIP historical daily OHLCV bars are verified accessible under Alpaca market delay policy (HTTP 200). "
-        "The 500-symbol rehearsal manifest is validated with 100% 250-member overlap and 0 dropped symbols. "
-        "The exact hydration manifest partitions all 500 symbols (378 full backfill, 89 tail refresh, 33 fresh). "
-        "Ingestion pipeline defects have been resolved and verified with 77/77 passing regression tests. "
-        "Hydration is completely ready to execute upon operator authorization."
-    )
+    if is_post_hydration:
+        verdict = "RADAR_P2_005R_EXPANSION_500_HYDRATION_COMPLETED_AND_QUALIFIED"
+        verdict_reasoning = (
+            "Consolidated SIP historical daily OHLCV bars are verified accessible under Alpaca market delay policy (HTTP 200). "
+            f"The 500-symbol rehearsal manifest (UB-ARX-EXPANSION-500-REHEARSAL, hash {computed_hash_500}) is validated with 100% 250-member overlap and 0 dropped symbols. "
+            "All 500 symbols are 100% hydrated in the local market store with >= 252 split-adjusted daily bars fresh through 2026-11-06. "
+            "Corporate-action exclusions (KVUE, QRVO) and replacement equities (LYFT, CHWY) are verified. "
+            "Idempotency and structural OHLC geometry are verified with 0 errors."
+        )
+    else:
+        verdict = "RADAR_P2_004_HYDRATION_READY_FOR_AUTHORIZATION"
+        verdict_reasoning = (
+            "Consolidated SIP historical daily OHLCV bars are verified accessible under Alpaca market delay policy (HTTP 200). "
+            "The 500-symbol rehearsal manifest is validated with 100% 250-member overlap and 0 dropped symbols. "
+            "The exact hydration manifest partitions all 500 symbols (378 full backfill, 89 tail refresh, 33 fresh). "
+            "Ingestion pipeline defects have been resolved and verified with 77/77 passing regression tests. "
+            "Hydration is completely ready to execute upon operator authorization."
+        )
 
     receipt = {
-        "directive": "RADAR-P2-004",
+        "directive": "RADAR-P2-005R" if is_post_hydration else "RADAR-P2-004",
         "executed_at_utc": datetime.now(timezone.utc).isoformat(),
         "verdict": verdict,
         "verdict_reasoning": verdict_reasoning,

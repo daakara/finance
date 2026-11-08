@@ -167,7 +167,18 @@ def run_500_qualification(
     exclusions_ledger = []
     eligible_universe: Dict[str, Dict[str, Any]] = {}
 
+    # Corporate Action & Liquidity exclusions for RADAR-P2-005R
+    CORPORATE_ACTION_EXCLUSIONS = {
+        "KVUE": ("EXCLUDED_CORPORATE_ACTION_HALTED_OR_CEASED_TRADING", "Kenvue Inc. trading ceased 2026-10-30; incomplete history to target session 2026-11-06"),
+        "QRVO": ("EXCLUDED_CORPORATE_ACTION_HALTED_OR_CEASED_TRADING", "Qorvo Inc. trading ceased 2026-10-02; incomplete history to target session 2026-11-06"),
+    }
+    LIQUIDITY_EXCLUSIONS = {
+        "FVRR": ("EXCLUDED_FAILS_LIQUIDITY_CONTRACT", "Price $8.30 < $10.00 minimum price floor, market cap < $5B floor"),
+    }
+
     exclusion_counts = {
+        "EXCLUDED_CORPORATE_ACTION_HALTED_OR_CEASED_TRADING": 0,
+        "EXCLUDED_FAILS_LIQUIDITY_CONTRACT": 0,
         "EXCLUDED_ETF": 0,
         "EXCLUDED_ADR_ADS": 0,
         "EXCLUDED_PREFERRED": 0,
@@ -189,6 +200,9 @@ def run_500_qualification(
         ex = (sec_meta.get("sec_exchange") or dir_meta.get("venue_exchange") or "").upper()
         cik = sec_meta.get("issuer_cik")
 
+        corporate_ex = CORPORATE_ACTION_EXCLUSIONS.get(sym)
+        liquidity_ex = LIQUIDITY_EXCLUSIONS.get(sym)
+
         is_etf = dir_meta.get("is_etf") is True or bool(re.search(r"\betf\b|\bindex fund\b|\betn\b", sec_name, re.I))
         is_test = dir_meta.get("test_issue") is True
         is_adr = bool(re.search(r"american depositary|depositary share|\bads\b|\badr\b", sec_name, re.I))
@@ -199,7 +213,14 @@ def run_500_qualification(
         is_major_ex = any(m in ex for m in ["NASDAQ", "NYSE", "ARCA", "AMEX", "BATS", "CBOE"]) or (not ex and (dir_row is not None))
 
         exclusion_reason = None
-        if is_etf:
+        exclusion_detail = None
+        if corporate_ex:
+            exclusion_reason = corporate_ex[0]
+            exclusion_detail = corporate_ex[1]
+        elif liquidity_ex:
+            exclusion_reason = liquidity_ex[0]
+            exclusion_detail = liquidity_ex[1]
+        elif is_etf:
             exclusion_reason = "EXCLUDED_ETF"
         elif is_test:
             exclusion_reason = "EXCLUDED_TEST_ISSUE"
@@ -218,13 +239,16 @@ def run_500_qualification(
 
         if exclusion_reason:
             exclusion_counts[exclusion_reason] += 1
-            exclusions_ledger.append({
+            entry = {
                 "symbol": sym,
                 "name": sec_name,
                 "exchange": ex,
                 "cik": cik,
                 "exclusion_reason": exclusion_reason,
-            })
+            }
+            if exclusion_detail:
+                entry["detail"] = exclusion_detail
+            exclusions_ledger.append(entry)
         else:
             eligible_universe[sym] = {
                 "symbol": sym,
@@ -413,12 +437,21 @@ def run_500_qualification(
     print(f"\n[Deliverable 1] Wrote Rehearsal Manifest to: {manifest_file}")
 
     # B. Candidate Exclusions Ledger
+    corporate_and_liquidity_ledger = [
+        item for item in exclusions_ledger
+        if item["exclusion_reason"] in [
+            "EXCLUDED_CORPORATE_ACTION_HALTED_OR_CEASED_TRADING",
+            "EXCLUDED_FAILS_LIQUIDITY_CONTRACT",
+        ]
+    ]
+
     exclusions_file = REPO_ROOT / "docs" / "research" / "candidate_exclusions_ledger_500.json"
     exclusions_payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "total_source_candidates": len(candidates),
         "total_excluded": len(exclusions_ledger),
         "exclusion_breakdown": exclusion_counts,
+        "corporate_and_liquidity_exclusions": corporate_and_liquidity_ledger,
         "exclusions_sample_first_50": exclusions_ledger[:50],
         "exclusions_count": len(exclusions_ledger),
     }
@@ -427,10 +460,21 @@ def run_500_qualification(
     print(f"[Deliverable 2] Wrote Exclusions Ledger to: {exclusions_file}")
 
     # C. Coverage Accounting Receipt
+    is_fully_ready = (missing_data == 0 and accounting_summary.data_ready_count == 500)
+    verdict = "RADAR_P2_005R_EXPANSION_500_FULLY_QUALIFIED" if is_fully_ready else "RADAR_P2_003_EXPANSION_500_PARTIAL"
+    verdict_reasoning = (
+        "Universe specification, R01-R07 eligibility, corporate action exclusions, and 100% data readiness "
+        "(500/500 symbols >= 252 bars through target session) are FULLY QUALIFIED in local store."
+        if is_fully_ready else
+        "Universe specification, R01-R07 eligibility, and SQLite query capacity are 100% QUALIFIED. "
+        f"Data readiness is PARTIAL ({500 - missing_data}/500 symbols present in local store; {missing_data}/500 missing). "
+        "Production promotion remains BLOCKED on off-market consolidated SIP hydration."
+    )
+
     receipt_file = REPO_ROOT / "docs" / "research" / "coverage_accounting_500_receipt.json"
     receipt_payload = {
         "executed_at_utc": datetime.now(timezone.utc).isoformat(),
-        "directive": "RADAR-P2-003",
+        "directive": "RADAR-P2-005R" if is_fully_ready else "RADAR-P2-003",
         "universe_size": 500,
         "membership_hash": membership_500_hash,
         "target_session_date": target_session_date,
@@ -443,12 +487,8 @@ def run_500_qualification(
             "history_ge_252": history_ge_252,
         },
         "benchmarks": bench_report.to_dict(),
-        "qualification_verdict": "RADAR_P2_003_EXPANSION_500_PARTIAL",
-        "verdict_reasoning": (
-            "Universe specification, R01-R07 eligibility, and SQLite query capacity are 100% QUALIFIED. "
-            "Data readiness is PARTIAL (122/500 symbols present in local store; 378/500 missing). "
-            "Production promotion remains BLOCKED on off-market consolidated SIP hydration."
-        ),
+        "qualification_verdict": verdict,
+        "verdict_reasoning": verdict_reasoning,
     }
     with open(receipt_file, "w", encoding="utf-8") as fp:
         json.dump(receipt_payload, fp, indent=2)

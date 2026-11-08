@@ -18,7 +18,7 @@
       "originating_pr_number": 237,
       "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
       "governing_requirement": "ARX-RADAR-P2-005: 500-equity rehearsal universe manifest and membership hash",
-      "sha256": "5bf0c86c7a7224862427153b9d9d780a19829b81d9d795c261b2180e0c23abb8",
+      "sha256": "cfacda2ca29eb5bf8c4a7604ae3e37f3c368cc1a2a3bbf3c7299840aa0fc0c9a",
       "size_bytes": 7915
     },
     "docs/research/UB-ARX-HYDRATION-PLAN-500.json": {
@@ -26,48 +26,48 @@
       "originating_pr_number": 237,
       "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
       "governing_requirement": "ARX-RADAR-P2-005: Exact symbol batch hydration plan and resource partition",
-      "sha256": "5d298386af19087304251b1b0c2d53b332d1dc34e16830c76f37dc0a62ea3f24",
-      "size_bytes": 9452
+      "sha256": "ddf80914d8528e1897d9605f3d220b2565d740dbaa8aa753a6db6a9a7e652472",
+      "size_bytes": 9566
     },
     "docs/research/candidate_exclusions_ledger_500.json": {
       "operation": "A",
       "originating_pr_number": 237,
       "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
       "governing_requirement": "ARX-RADAR-P2-005: Audited exclusions ledger for 500-equity candidate pool",
-      "sha256": "3d09065cd4585ca8a7689d506d438770c43fa24076872affab0396074e1758bb",
-      "size_bytes": 10126
+      "sha256": "7a0ef7f6b72c05e9fbdcac172fa5e961bde03e14279060b38f81db176cd3cd5d",
+      "size_bytes": 11236
     },
     "docs/research/coverage_accounting_500_receipt.json": {
       "operation": "A",
       "originating_pr_number": 237,
       "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
       "governing_requirement": "ARX-RADAR-P2-005: Formal coverage accounting receipt for candidate population",
-      "sha256": "b1b5cbeb08b89bd8818fb6367ae6ed23cf99de597caf1f2cad535fea070abee3",
-      "size_bytes": 4784
+      "sha256": "4a5bd99903b5acf193175151497af90b3d9ab30ac8417ec9fe131dc812eea079",
+      "size_bytes": 4721
     },
     "docs/research/hydration_readiness_receipt.json": {
       "operation": "A",
       "originating_pr_number": 237,
       "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
       "governing_requirement": "ARX-RADAR-P2-005: Hydration readiness and provider entitlement verdict receipt",
-      "sha256": "4c3beecc38c8371ab99289ca61c931a8985a5220b32553ef94596287e77e45ad",
-      "size_bytes": 1813
+      "sha256": "02fdb8bcdf17ad332402220b009f9b4cb3da1b8977ba93b3db6bb894cec23490",
+      "size_bytes": 1942
     },
     "scripts/diagnostics/qualify_500_universe_expansion.py": {
       "operation": "A",
       "originating_pr_number": 237,
       "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
       "governing_requirement": "ARX-RADAR-P2-005: Bounded 500-universe candidate selection and qualification engine",
-      "sha256": "a94e5755fb98be248fe2594871844f824e67ee6cdf8f6f7f7526d1dd8bffa972",
-      "size_bytes": 23211
+      "sha256": "9e3f02e6fb53b7ce78e7e1e60fd8a613a8890ff716632be25834a64a4ef546a2",
+      "size_bytes": 25256
     },
     "scripts/diagnostics/reconcile_hydration_entitlements.py": {
       "operation": "A",
       "originating_pr_number": 237,
       "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
       "governing_requirement": "ARX-RADAR-P2-005: Market data entitlement and local store reconciliation diagnostic",
-      "sha256": "6eb1ff680680bbac34b4c84c55b9094e6272e1aecda5633db9a6cf637e17bf70",
-      "size_bytes": 11676
+      "sha256": "86cb1dc8e4fcfe13605767dae2079fb0d83492023d68aa6289ddf4849818c87b",
+      "size_bytes": 12802
     },
     "scripts/ingest_alpaca_historical.py": {
       "operation": "M",
@@ -90,8 +90,8 @@
       "originating_pr_number": 237,
       "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
       "governing_requirement": "ARX-RADAR-P2-005: Unit regression suite for Alpaca SIP 500 hydration readiness",
-      "sha256": "012c3760b7706e9206554459239c1b48009263bbbe6ba708410bd516d6ea919e",
-      "size_bytes": 4797
+      "sha256": "d2adc6d426d12e6f0cd05bfb7a74464b8a6f2a0de2f8e47eb6fe5629779673dd",
+      "size_bytes": 7465
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
