@@ -1,41 +1,105 @@
 {
-  "release_candidate_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
-  "base_anchor_commit": "4e084ff999dc4e3c6e2641da5a3a47e2160cf0d4",
-  "total_files": 4,
+  "release_candidate_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+  "base_anchor_commit": "d5a535cee3d9191a00b95bc6d82faed302c62be2",
+  "total_files": 12,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-RADAR-P2-STALE-SNAPSHOT-001",
+  "directive": "ARX-RADAR-P2-005",
   "files": {
-    "api/routes/screener.py": {
-      "operation": "M",
-      "originating_pr_number": 236,
-      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
-      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
-      "sha256": "57cfb9c47cd458cdfb0e3187bc9b00ac3e8d856b29880771270dd42b9b7275a6",
-      "size_bytes": 112065
-    },
-    "frontend/lib/api.ts": {
-      "operation": "M",
-      "originating_pr_number": 236,
-      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
-      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
-      "sha256": "28edbf080dd7d9b03975fd4c9dd7ff795d61fd85eea8249b8041cf95210c179e",
-      "size_bytes": 186092
-    },
-    "frontend/tests/radarStaleCapabilityTruth.test.ts": {
+    "docs/research/UB-ARX-EXPANSION-250-20261107.json": {
       "operation": "A",
-      "originating_pr_number": 236,
-      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
-      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
-      "sha256": "d895e3919816af22ebd75f15c0e1e88707d2ce7965720f683345c7bf28fc7116",
-      "size_bytes": 1710
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Reference published 250 universe ledger",
+      "sha256": "507f6ea9cd6a77d1b773fdcf0578060e33b305db3b1a953f7834f85afe610548",
+      "size_bytes": 4561
+    },
+    "docs/research/UB-ARX-EXPANSION-500-REHEARSAL.json": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: 500-equity rehearsal universe manifest and membership hash",
+      "sha256": "5bf0c86c7a7224862427153b9d9d780a19829b81d9d795c261b2180e0c23abb8",
+      "size_bytes": 7915
+    },
+    "docs/research/UB-ARX-HYDRATION-PLAN-500.json": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Exact symbol batch hydration plan and resource partition",
+      "sha256": "5d298386af19087304251b1b0c2d53b332d1dc34e16830c76f37dc0a62ea3f24",
+      "size_bytes": 9452
+    },
+    "docs/research/candidate_exclusions_ledger_500.json": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Audited exclusions ledger for 500-equity candidate pool",
+      "sha256": "3d09065cd4585ca8a7689d506d438770c43fa24076872affab0396074e1758bb",
+      "size_bytes": 10126
+    },
+    "docs/research/coverage_accounting_500_receipt.json": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Formal coverage accounting receipt for candidate population",
+      "sha256": "b1b5cbeb08b89bd8818fb6367ae6ed23cf99de597caf1f2cad535fea070abee3",
+      "size_bytes": 4784
+    },
+    "docs/research/hydration_readiness_receipt.json": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Hydration readiness and provider entitlement verdict receipt",
+      "sha256": "4c3beecc38c8371ab99289ca61c931a8985a5220b32553ef94596287e77e45ad",
+      "size_bytes": 1813
+    },
+    "scripts/diagnostics/qualify_500_universe_expansion.py": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Bounded 500-universe candidate selection and qualification engine",
+      "sha256": "a94e5755fb98be248fe2594871844f824e67ee6cdf8f6f7f7526d1dd8bffa972",
+      "size_bytes": 23211
+    },
+    "scripts/diagnostics/reconcile_hydration_entitlements.py": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Market data entitlement and local store reconciliation diagnostic",
+      "sha256": "6eb1ff680680bbac34b4c84c55b9094e6272e1aecda5633db9a6cf637e17bf70",
+      "size_bytes": 11676
+    },
+    "scripts/ingest_alpaca_historical.py": {
+      "operation": "M",
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Parameterized max completed session and symbol list manifest support",
+      "sha256": "cfabed64d273ae2593ce21d4fa8e156640b610b6f2f2da05923b7240a7f8d4a9",
+      "size_bytes": 76355
+    },
+    "scripts/push_radar_p2_004_hydration_readiness.py": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Authenticated branch synchronization utility",
+      "sha256": "ff7f87211f924c420d5dedb79134bd70a088142e6675f78f23c612a3aea7aab6",
+      "size_bytes": 1219
+    },
+    "tests/test_alpaca_500_hydration_readiness.py": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Unit regression suite for Alpaca SIP 500 hydration readiness",
+      "sha256": "012c3760b7706e9206554459239c1b48009263bbbe6ba708410bd516d6ea919e",
+      "size_bytes": 4797
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 236,
-      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
-      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
-      "sha256": "c3e68fbf5422699ff2005f9c611f888f731ff307d5c7eb674816e45ae9ec68c9",
-      "size_bytes": 57906
+      "originating_pr_number": 237,
+      "originating_commit": "b0a7c54b554bcb6c1c19e5de859e9902620d0e97",
+      "governing_requirement": "ARX-RADAR-P2-005: Register PR #237 in APPROVED_PRS",
+      "sha256": "f35956ff8d0a14035371218e7525ef7472258ea836ce6aac7689e351f99471ab",
+      "size_bytes": 57911
     }
   },
   "qualification_framework_files": {
@@ -45,9 +109,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "c3e68fbf5422699ff2005f9c611f888f731ff307d5c7eb674816e45ae9ec68c9",
-      "bytes": 57906,
-      "size_bytes": 57906
+      "sha256": "f35956ff8d0a14035371218e7525ef7472258ea836ce6aac7689e351f99471ab",
+      "bytes": 57911,
+      "size_bytes": 57911
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
