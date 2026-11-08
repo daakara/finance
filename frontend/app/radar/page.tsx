@@ -220,6 +220,37 @@ function RadarContent() {
       .then((snap) => {
         if (!isMounted || reqId !== latestRequestIdRef.current || !snap) return;
         setInitialSnapshot(snap);
+        setCapabilities((prev) => {
+          if (prev.VCP.status === "AVAILABLE" && prev.VCP.matchedCount !== null && prev.VCP.publicationIntegrity === "VERIFIED") return prev;
+          const raw = snap.raw;
+          const isVerified = Boolean(
+            (raw?.publicationIntegrity === "VERIFIED" || raw?.publication_integrity === "VERIFIED") &&
+            (raw?.publicationIntegrityVerified === true || raw?.publication_integrity_verified === true) &&
+            snap.status === "AVAILABLE" &&
+            snap.freshnessStatus !== "STALE" &&
+            !raw?.isRollback &&
+            !raw?.is_rollback
+          );
+          return {
+            ...prev,
+            VCP: {
+              ...prev.VCP,
+              status: snap.status,
+              universeScreening: snap.status,
+              matchedCount: snap.matchedCount,
+              populationDenominator: snap.populationDenominator,
+              universeBuildId: snap.universeBuildId,
+              universeId: snap.universeId,
+              dataAsOf: snap.dataAsOf,
+              generatedAt: snap.generatedAt,
+              snapshotId: snap.snapshotId,
+              coverageStatus: snap.coverageStatus,
+              freshnessStatus: snap.freshnessStatus,
+              publicationIntegrity: isVerified ? "VERIFIED" : "NOT_VERIFIED",
+              publicationIntegrityVerified: isVerified,
+            },
+          };
+        });
       })
       .catch(() => {
         // Non-blocking: full screener candidate evaluation proceeds in parallel
@@ -1635,7 +1666,7 @@ function RadarContent() {
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-[var(--text-2)]">
-                <strong className="text-white">{categoryMeta.SMART_MONEY.count ?? 5}</strong> Stage 2 matches from 10 pilot issuers · October 25, 2026 · Ingestion held
+                <strong className="text-white">{capabilities.SMART_MONEY?.displayedStage2IntersectionCount ?? categoryMeta.SMART_MONEY.count ?? 5}</strong> Stage 2 matches from 10 pilot issuers · October 25, 2026 · Ingestion held
               </span>
               {capabilities.SMART_MONEY?.snapshotId && (
                 <>

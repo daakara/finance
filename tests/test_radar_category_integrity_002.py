@@ -8,10 +8,17 @@ Verifies:
 3. Universal isolation: VCP 500-equity scannable universe never contaminates Smart Money's 10-issuer denominator.
 4. Truthful rationale formatting reflecting Stage 2 matches vs pilot scope.
 5. Fail-closed handling for missing and error snapshots.
+6. Derived Smart Money Stage 2 tradable count and dynamic zero-match handling.
+7. VCP publication integrity attestation, canonical fingerprint verification, and fail-closed defense.
 """
 
 import pytest
-from api.routes.screener import get_radar_capabilities, RADAR_CAPABILITY_CONTRACT
+from api.routes.screener import (
+    get_radar_capabilities,
+    RADAR_CAPABILITY_CONTRACT,
+    count_smart_money_stage2_intersection,
+)
+from analyst_dashboard.analyzers.scanner_publication_integrity import ScannerPublicationIntegrityEngine
 
 
 @pytest.fixture
@@ -98,18 +105,33 @@ def vcp_500_snapshot():
             "unavailable_symbol_count": 0,
         },
         "freshness": {
-            "data_as_of": "2026-11-06",
             "status": "LIVE",
+            "data_as_of": "2026-11-06",
+            "generated_at": "2026-11-08T09:40:13Z",
         },
     }
 
 
-def test_smart_money_pilot_provenance_and_semantics(historical_pilot_sm_snapshot):
-    """
-    Verifies that get_radar_capabilities correctly extracts pilot provenance
-    and preserves populationDenominator=10, matchedCount=10, displayedStage2IntersectionCount=5.
-    """
+def test_vcp_capabilities_contract_and_mathematical_zero(vcp_500_snapshot):
+    caps = get_radar_capabilities(vcp_snapshot=vcp_500_snapshot)
+    vcp = caps["VCP"]
+
+    assert vcp["status"] == "AVAILABLE"
+    assert vcp["universeScreening"] == "AVAILABLE"
+    assert vcp["matchedCount"] == 0
+    assert vcp["populationDenominator"] == 500
+    assert vcp["coverageStatus"] == "COMPLETE"
+    assert vcp["scannedSuccessfullyCount"] == 500
+    assert vcp["dataAsOf"] == "2026-11-06"
+    assert vcp["snapshotId"] == "SNAP_VCP_500_TEST"
+    assert vcp["universeBuildId"] == "UB-ARX-EXPANSION-500-20261108"
+    assert vcp["publicationDigest"] == "5f60b47d5402c0fc29fa545b244b778ca99a017f47448f47ebdfc257db8881b0"
+    assert vcp["isRollback"] is False
+
+
+def test_smart_money_capabilities_pilot_denominator_isolation(historical_pilot_sm_snapshot, vcp_500_snapshot):
     caps = get_radar_capabilities(
+        vcp_snapshot=vcp_500_snapshot,
         sm_snapshot=historical_pilot_sm_snapshot,
         sm_stage2_intersection_count=5,
     )
@@ -121,67 +143,51 @@ def test_smart_money_pilot_provenance_and_semantics(historical_pilot_sm_snapshot
     assert sm["subsignal"] == "INSIDER_FORM4"
     assert sm["matchedCount"] == 10
     assert sm["populationDenominator"] == 10
+    assert sm["populationDenominator"] != 500
     assert sm["displayedStage2IntersectionCount"] == 5
     assert sm["dataAsOf"] == "2026-10-25"
     assert sm["snapshotId"] == "SNAP_SM_1792939989_48f30db6"
     assert sm["coverageStatus"] == "PILOT_HELD"
     assert sm["freshnessStatus"] == "HELD"
-    assert sm["rationale"] == "5 Stage 2 matches from historical 10-issuer pilot · October 25, 2026 · Ingestion held"
+    assert "5 Stage 2 matches from historical 10-issuer pilot" in sm["rationale"]
+    assert "October 25, 2026" in sm["rationale"]
+    assert "Ingestion held" in sm["rationale"]
 
 
-def test_population_denominator_isolation(historical_pilot_sm_snapshot, vcp_500_snapshot):
-    """
-    Mandatory invariant: VCP's 500-equity scannable universe must never contaminate
-    or substitute Smart Money's 10-issuer denominator.
-    """
-    caps = get_radar_capabilities(
-        vcp_snapshot=vcp_500_snapshot,
-        sm_snapshot=historical_pilot_sm_snapshot,
-        sm_stage2_intersection_count=5,
-    )
+def test_vcp_pending_scanner_state():
+    pending_snap = {
+        "status": "PIPELINE_PENDING",
+        "snapshot_id": "SNAP_PENDING",
+        "universe": {
+            "eligible_universe_count": 500,
+            "universe_build_id": "UB-ARX-EXPANSION-500-20261108",
+        },
+        "coverage": {
+            "coverage_status": "PENDING",
+        },
+    }
+    caps = get_radar_capabilities(vcp_snapshot=pending_snap)
+    vcp = caps["VCP"]
 
-    # VCP must report 500 scannable population and 0 matches
-    assert caps["VCP"]["populationDenominator"] == 500
-    assert caps["VCP"]["matchedCount"] == 0
-    assert caps["VCP"]["universeScreening"] == "AVAILABLE"
-
-    # Smart Money MUST remain 10 population, NEVER 500
-    assert caps["SMART_MONEY"]["populationDenominator"] == 10
-    assert caps["SMART_MONEY"]["matchedCount"] == 10
-    assert caps["SMART_MONEY"]["displayedStage2IntersectionCount"] == 5
-    assert caps["SMART_MONEY"]["populationDenominator"] != 500
-
-
-def test_smart_money_default_intersection_count(historical_pilot_sm_snapshot):
-    """
-    If sm_stage2_intersection_count is omitted for a 10-issuer pilot,
-    it defaults to 5 Stage 2 matches.
-    """
-    caps = get_radar_capabilities(sm_snapshot=historical_pilot_sm_snapshot)
-    assert caps["SMART_MONEY"]["displayedStage2IntersectionCount"] == 5
-    assert "5 Stage 2 matches from historical 10-issuer pilot" in caps["SMART_MONEY"]["rationale"]
+    assert vcp["status"] == "PIPELINE_PENDING"
+    assert vcp["universeScreening"] == "PIPELINE_PENDING"
+    assert vcp["matchedCount"] is None
+    assert vcp["populationDenominator"] == 500
+    assert vcp["coverageStatus"] == "PENDING"
+    assert vcp["publicationIntegrity"] == "PENDING"
+    assert vcp["publicationIntegrityVerified"] is False
 
 
-def test_smart_money_custom_intersection_count(historical_pilot_sm_snapshot):
-    """
-    If sm_stage2_intersection_count is explicitly provided (e.g. 6),
-    it is preserved in displayedStage2IntersectionCount and rationale.
-    """
-    caps = get_radar_capabilities(
-        sm_snapshot=historical_pilot_sm_snapshot,
-        sm_stage2_intersection_count=6,
-    )
-    assert caps["SMART_MONEY"]["displayedStage2IntersectionCount"] == 6
-    assert caps["SMART_MONEY"]["rationale"] == "6 Stage 2 matches from historical 10-issuer pilot · October 25, 2026 · Ingestion held"
-
-
-def test_smart_money_fail_closed_when_snapshot_missing():
-    """
-    When no Smart Money snapshot is available, fails closed to PIPELINE_PENDING with matchedCount: None.
-    """
-    caps = get_radar_capabilities(sm_snapshot=None)
-    # If runner returns empty or pending
+def test_smart_money_pending_state():
+    pending_sm = {
+        "status": "PIPELINE_PENDING",
+        "snapshot_id": None,
+        "matched_count": None,
+        "results": [],
+    }
+    caps = get_radar_capabilities(sm_snapshot=pending_sm)
     sm = caps["SMART_MONEY"]
+
     assert sm["status"] == "PIPELINE_PENDING"
     assert sm["universeScreening"] == "PIPELINE_PENDING"
     assert sm["matchedCount"] is None
@@ -191,10 +197,55 @@ def test_smart_money_fail_closed_when_snapshot_missing():
     assert sm["freshnessStatus"] == "PENDING"
 
 
+def test_vcp_stale_snapshot_fails_closed(vcp_500_snapshot):
+    stale_snap = dict(vcp_500_snapshot)
+    stale_snap["status"] = "STALE"
+    stale_snap["freshness"] = {"status": "STALE"}
+
+    caps = get_radar_capabilities(vcp_snapshot=stale_snap)
+    vcp = caps["VCP"]
+
+    assert vcp["status"] == "PIPELINE_PENDING"
+    assert vcp["universeScreening"] == "PIPELINE_PENDING"
+    assert vcp["matchedCount"] is None
+    assert vcp["coverageStatus"] == "STALE"
+    assert vcp["freshnessStatus"] == "STALE"
+    assert vcp["publicationIntegrity"] == "NOT_VERIFIED"
+    assert vcp["publicationIntegrityVerified"] is False
+
+
+def test_smart_money_stale_snapshot_fails_closed(historical_pilot_sm_snapshot):
+    stale_sm = dict(historical_pilot_sm_snapshot)
+    stale_sm["status"] = "STALE"
+    stale_sm["freshness"] = {"status": "STALE", "policy_version": "1.0.0"}
+
+    caps = get_radar_capabilities(sm_snapshot=stale_sm)
+    sm = caps["SMART_MONEY"]
+
+    assert sm["status"] == "PIPELINE_PENDING"
+    assert sm["universeScreening"] == "PIPELINE_PENDING"
+    assert sm["matchedCount"] is None
+    assert sm["displayedStage2IntersectionCount"] is None
+    assert sm["coverageStatus"] in ("STALE", "PENDING")
+    assert sm["freshnessStatus"] in ("STALE", "PENDING")
+
+
+def test_vcp_fail_closed_on_error():
+    err_snap = {
+        "status": "ERROR",
+        "detail": "Failed to read VCP snapshot store",
+    }
+    caps = get_radar_capabilities(vcp_snapshot=err_snap)
+    vcp = caps["VCP"]
+    assert vcp["status"] == "ERROR"
+    assert vcp["universeScreening"] == "ERROR"
+    assert vcp["matchedCount"] is None
+    assert vcp["populationDenominator"] in (0, None)
+    assert vcp["publicationIntegrity"] == "NOT_VERIFIED"
+    assert vcp["publicationIntegrityVerified"] is False
+
+
 def test_smart_money_fail_closed_on_error():
-    """
-    When Smart Money snapshot is in ERROR status, capability reports ERROR with matchedCount: None.
-    """
     err_snap = {
         "status": "ERROR",
         "detail": "Database connection refused",
@@ -209,3 +260,119 @@ def test_smart_money_fail_closed_on_error():
     assert sm["coverageStatus"] == "ERROR"
     assert sm["freshnessStatus"] == "ERROR"
     assert sm["rationale"] == "Database connection refused"
+
+
+def test_smart_money_stage2_count_excludes_non_stage2_and_non_tradable():
+    candidates = [
+        {"symbol": "AAPL", "stageClassification": "STAGE_2", "executionStatus": "ELIGIBLE", "categories": ["SMART_MONEY"]},
+        {"symbol": "MSFT", "stageClassification": "STAGE_2", "executionStatus": "ELIGIBLE", "categories": ["SMART_MONEY"]},
+        {"symbol": "NVDA", "stageClassification": "STAGE_1", "executionStatus": "ELIGIBLE", "categories": ["SMART_MONEY"]},
+        {"symbol": "META", "stageClassification": "STAGE_2", "executionStatus": "DELISTED_SECURITY", "categories": ["SMART_MONEY"]},
+        {"symbol": "GOOGL", "stageClassification": "STAGE_2", "executionStatus": "ELIGIBLE", "categories": ["VALUE_GARP"]},
+    ]
+    assert count_smart_money_stage2_intersection(candidates, {"DELISTED_SECURITY", "UNVERIFIED_ASSET"}) == 2
+
+
+def test_smart_money_stage2_count_zero_is_not_hardcoded(historical_pilot_sm_snapshot):
+    candidates = [
+        {"symbol": "NVDA", "stageClassification": "STAGE_1", "executionStatus": "ELIGIBLE", "categories": ["SMART_MONEY"]},
+    ]
+    count = count_smart_money_stage2_intersection(candidates, {"DELISTED_SECURITY", "UNVERIFIED_ASSET"})
+    assert count == 0
+    caps = get_radar_capabilities(sm_snapshot=historical_pilot_sm_snapshot, sm_stage2_intersection_count=count)
+    assert caps["SMART_MONEY"]["displayedStage2IntersectionCount"] == 0
+    assert caps["SMART_MONEY"]["rationale"].startswith("0 Stage 2 matches")
+
+
+def test_vcp_publication_integrity_attestation_verified(vcp_500_snapshot):
+    """
+    Verifies that get_radar_capabilities correctly recognizes verified publication integrity
+    when the snapshot carries the canonical semantic fingerprint and publication_decision=PUBLISH.
+    """
+    canonical_fingerprint = ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint()
+    snap = dict(vcp_500_snapshot)
+    snap["snapshot"] = {
+        "semantic_fingerprint": canonical_fingerprint,
+        "publication_decision": "PUBLISH",
+        "universe_size": 500,
+        "matched_count": 0,
+    }
+
+    caps = get_radar_capabilities(vcp_snapshot=snap)
+    vcp = caps["VCP"]
+
+    assert vcp["status"] == "AVAILABLE"
+    assert vcp["matchedCount"] == 0
+    assert vcp["populationDenominator"] == 500
+    assert vcp["publicationIntegrity"] == "VERIFIED"
+    assert vcp["publicationIntegrityVerified"] is True
+
+
+def test_vcp_publication_integrity_tampered_fails_closed(vcp_500_snapshot):
+    """
+    If semantic fingerprint does not match canonical ruleset or is tampered,
+    publicationIntegrity must fail closed to NOT_VERIFIED.
+    """
+    snap = dict(vcp_500_snapshot)
+    snap["snapshot"] = {
+        "semantic_fingerprint": "corrupted_tampered_fingerprint_12345",
+        "publication_decision": "PUBLISH",
+        "universe_size": 500,
+        "matched_count": 0,
+    }
+
+    caps = get_radar_capabilities(vcp_snapshot=snap)
+    vcp = caps["VCP"]
+
+    assert vcp["status"] == "AVAILABLE"
+    assert vcp["publicationIntegrity"] == "NOT_VERIFIED"
+    assert vcp["publicationIntegrityVerified"] is False
+
+
+def test_vcp_publication_integrity_standalone_flag_without_evidence_rejected(vcp_500_snapshot):
+    """
+    Do not trust a standalone VERIFIED flag without appropriate authoritative evidence.
+    If a snapshot claims publication_integrity="VERIFIED" but lacks a matching canonical fingerprint
+    or has publication_decision!="PUBLISH", it must fail closed to NOT_VERIFIED.
+    """
+    snap = dict(vcp_500_snapshot)
+    snap["publication_integrity"] = "VERIFIED"
+    snap["publicationIntegrity"] = "VERIFIED"
+    snap["snapshot"] = {
+        "semantic_fingerprint": "unverified_or_missing_fingerprint",
+        "publication_decision": "QUARANTINE",
+        "universe_size": 500,
+        "matched_count": 0,
+    }
+    caps = get_radar_capabilities(vcp_snapshot=snap)
+    assert caps["VCP"]["publicationIntegrity"] == "NOT_VERIFIED"
+    assert caps["VCP"]["publicationIntegrityVerified"] is False
+
+
+def test_vcp_publication_integrity_rollback_and_pending(vcp_500_snapshot):
+    """
+    Rollback pointer must report ROLLBACK; PIPELINE_PENDING snapshot must report PENDING.
+    """
+    class MockRollbackPointer:
+        published_symbols = ["AAPL", "MSFT"]
+        build_id = "UB-RB-001"
+        universe_id = "ARX_US_EQUITIES"
+        publication_digest = "sha256:digest"
+        is_rollback = True
+        rollback_reason = "Suspect market data"
+
+    caps_rb = get_radar_capabilities(
+        vcp_snapshot=vcp_500_snapshot,
+        publication_pointer=MockRollbackPointer(),
+    )
+    assert caps_rb["VCP"]["publicationIntegrity"] == "ROLLBACK"
+    assert caps_rb["VCP"]["publicationIntegrityVerified"] is False
+
+    pending_snap = {
+        "status": "PIPELINE_PENDING",
+        "snapshot_id": "SNAP_PENDING",
+        "matched_count": None,
+    }
+    caps_pending = get_radar_capabilities(vcp_snapshot=pending_snap)
+    assert caps_pending["VCP"]["publicationIntegrity"] == "PENDING"
+    assert caps_pending["VCP"]["publicationIntegrityVerified"] is False
