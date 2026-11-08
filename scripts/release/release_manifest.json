@@ -1,49 +1,97 @@
 {
-  "release_candidate_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
-  "base_anchor_commit": "d5a535cee3d9191a00b95bc6d82faed302c62be2",
-  "total_files": 5,
+  "release_candidate_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+  "base_anchor_commit": "f7c8589ab7864cbae2b8639e63a60fbdaca501ea",
+  "total_files": 11,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-PREFLIGHT-EARNINGS-VERIFICATION-001",
+  "directive": "ARX-RADAR-P2-FINAL",
   "files": {
-    "analyst_dashboard/corporate_events.py": {
-      "operation": "M",
-      "originating_pr_number": 238,
-      "originating_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
-      "governing_requirement": "ARX-PREFLIGHT: verify DHLGY official IR calendar and ADR underlying issuer resolution",
-      "sha256": "afb49437fa5a9061479304ef6a237ce540a07a81fd51cd91b037b51596535048",
-      "size_bytes": 18288
-    },
-    "frontend/components/PreFlightChecklistModal.tsx": {
-      "operation": "M",
-      "originating_pr_number": 238,
-      "originating_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
-      "governing_requirement": "ARX-PREFLIGHT: calibrate check 2 plain title to Stage Discipline & Buying Range",
-      "sha256": "9321d8e8821670ed985f77a4c571f1a0c981d5bb755a9da3a5757b7bfe820e3d",
-      "size_bytes": 30918
-    },
-    "frontend/components/__tests__/PreFlightCatalystRisk.test.tsx": {
-      "operation": "M",
-      "originating_pr_number": 238,
-      "originating_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
-      "governing_requirement": "ARX-PREFLIGHT: add regression tests for DHLGY verified calendar and Check 2 label",
-      "sha256": "2fdf919a8352b17c6c28cf2d029e5eaa92b1e6cf46f7388ba42124d003711bfd",
-      "size_bytes": 6466
-    },
-    "scripts/release/rq02_diff_integrity.py": {
-      "operation": "M",
-      "originating_pr_number": 238,
-      "originating_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
-      "governing_requirement": "ARX-PREFLIGHT: qualify release candidate PR 238",
-      "sha256": "16848553e82c80da6be102159445db71ea39a37b3624cd3fcc79f3c0dca116fb",
-      "size_bytes": 57916
-    },
-    "tests/test_corporate_events_dhlgy_verification.py": {
+    "docs/research/UB-ARX-EXPANSION-250-20261107.json": {
       "operation": "A",
-      "originating_pr_number": 238,
-      "originating_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
-      "governing_requirement": "ARX-PREFLIGHT: add deterministic regression tests for DHLGY corporate events",
-      "sha256": "8a954393b44eaf29237766ae55a99b8f3507ce2ee3d6861181fde85df9c025af",
-      "size_bytes": 8961
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: Reference published 250 universe ledger",
+      "sha256": "507f6ea9cd6a77d1b773fdcf0578060e33b305db3b1a953f7834f85afe610548",
+      "size_bytes": 4561
+    },
+    "docs/research/UB-ARX-EXPANSION-500-REHEARSAL.json": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: 500-equity rehearsal universe manifest and membership hash",
+      "sha256": "cfacda2ca29eb5bf8c4a7604ae3e37f3c368cc1a2a3bbf3c7299840aa0fc0c9a",
+      "size_bytes": 7915
+    },
+    "docs/research/UB-ARX-HYDRATION-PLAN-500.json": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: Exact symbol batch hydration plan and resource partition",
+      "sha256": "ddf80914d8528e1897d9605f3d220b2565d740dbaa8aa753a6db6a9a7e652472",
+      "size_bytes": 9566
+    },
+    "docs/research/candidate_exclusions_ledger_500.json": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: Audited exclusions ledger for 500-equity candidate pool",
+      "sha256": "7a0ef7f6b72c05e9fbdcac172fa5e961bde03e14279060b38f81db176cd3cd5d",
+      "size_bytes": 11236
+    },
+    "docs/research/coverage_accounting_500_receipt.json": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: Formal coverage accounting receipt for candidate population",
+      "sha256": "4a5bd99903b5acf193175151497af90b3d9ab30ac8417ec9fe131dc812eea079",
+      "size_bytes": 4721
+    },
+    "docs/research/hydration_readiness_receipt.json": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: Hydration readiness and provider entitlement verdict receipt",
+      "sha256": "02fdb8bcdf17ad332402220b009f9b4cb3da1b8977ba93b3db6bb894cec23490",
+      "size_bytes": 1942
+    },
+    "scripts/diagnostics/qualify_500_universe_expansion.py": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: Bounded 500-universe candidate selection and qualification engine",
+      "sha256": "9e3f02e6fb53b7ce78e7e1e60fd8a613a8890ff716632be25834a64a4ef546a2",
+      "size_bytes": 25256
+    },
+    "scripts/diagnostics/reconcile_hydration_entitlements.py": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: Market data entitlement and local store reconciliation diagnostic",
+      "sha256": "86cb1dc8e4fcfe13605767dae2079fb0d83492023d68aa6289ddf4849818c87b",
+      "size_bytes": 12802
+    },
+    "scripts/ingest_alpaca_historical.py": {
+      "operation": "M",
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: Parameterized max completed session and symbol list manifest support",
+      "sha256": "cfabed64d273ae2593ce21d4fa8e156640b610b6f2f2da05923b7240a7f8d4a9",
+      "size_bytes": 76355
+    },
+    "scripts/push_radar_p2_004_hydration_readiness.py": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: Authenticated branch synchronization utility",
+      "sha256": "ff7f87211f924c420d5dedb79134bd70a088142e6675f78f23c612a3aea7aab6",
+      "size_bytes": 1219
+    },
+    "tests/test_alpaca_500_hydration_readiness.py": {
+      "operation": "A",
+      "originating_pr_number": 237,
+      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
+      "governing_requirement": "ARX-RADAR-P2-005: Unit regression suite for Alpaca SIP 500 hydration readiness",
+      "sha256": "d2adc6d426d12e6f0cd05bfb7a74464b8a6f2a0de2f8e47eb6fe5629779673dd",
+      "size_bytes": 7465
     }
   },
   "qualification_framework_files": {
@@ -54,7 +102,7 @@
     },
     "scripts/release/rq02_diff_integrity.py": {
       "sha256": "16848553e82c80da6be102159445db71ea39a37b3624cd3fcc79f3c0dca116fb",
-      "bytes": 57916,
+      "description": "Release qualification module: rq02_diff_integrity.py",
       "size_bytes": 57916
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -124,17 +172,17 @@
     },
     "scripts/release/test_rq02_adversarial_controls.py": {
       "sha256": "222334cea903614bd9e6e832ebd3840afcc15e1b3352bbe9a5d94feabff1f2e6",
-      "bytes": 16488,
+      "description": "Release qualification module: test_rq02_adversarial_controls.py",
       "size_bytes": 16488
     },
     "scripts/release/test_d12c_workflow_attacks.py": {
       "sha256": "90054e28d133733f4c00c32ce384bc5047172010058898e5875f463ae71a4cc3",
-      "bytes": 20012,
+      "description": "Release qualification module: test_d12c_workflow_attacks.py",
       "size_bytes": 20012
     },
     "scripts/release/test_rq11_adversarial_controls.py": {
       "sha256": "8f4141000511fab66be203043c579bfc409c6130df0735a9238441073f9880cc",
-      "bytes": 12373,
+      "description": "Release qualification module: test_rq11_adversarial_controls.py",
       "size_bytes": 12373
     }
   }

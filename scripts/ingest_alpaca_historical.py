@@ -325,6 +325,7 @@ class AlpacaHistoricalSipIngestionAdapter:
         db_engine: Optional[MarketDatabaseEngine] = None,
         feed: str = "sip",
         adjustment: str = "split",
+        max_completed_session: Optional[date] = None,
     ):
         if feed.lower() != "sip":
             raise ValueError(
@@ -339,6 +340,7 @@ class AlpacaHistoricalSipIngestionAdapter:
         self.adjustment = adjustment.lower()
         self.fetcher = fetcher or AlpacaMarketFetcher(feed=self.feed)
         self.db_engine = db_engine
+        self.max_completed_session = max_completed_session
 
     @staticmethod
     def load_manifest(manifest_path: Path) -> ManifestScopeInfo:
@@ -426,6 +428,22 @@ class AlpacaHistoricalSipIngestionAdapter:
                 symbols.append(clean_sym)
                 per_symbol_parameters[clean_sym] = c
             symbols = sorted(list(set(symbols)))
+        elif isinstance(data, dict) and "symbols" in data:
+            # ARX Universe Manifest format (e.g. UB-ARX-EXPANSION-250 / 500)
+            scope_type = data.get("scope_class") or "UNIVERSE_MANIFEST"
+            for item in data["symbols"]:
+                if isinstance(item, str):
+                    clean = item.strip()
+                    if clean.upper().startswith("SEC_") or not re.match(r"^[A-Za-z]{1,5}$", clean):
+                        raise ValueError(f"NONCANONICAL_IDENTITY_ALIAS_REJECTED: Symbol '{clean}' is a noncanonical alias.")
+                    symbols.append(clean.upper())
+                elif isinstance(item, dict) and "symbol" in item:
+                    raw_sym = item["symbol"].strip()
+                    if raw_sym.upper().startswith("SEC_") or not re.match(r"^[A-Za-z]{1,5}$", raw_sym):
+                        raise ValueError(f"NONCANONICAL_IDENTITY_ALIAS_REJECTED: Symbol '{raw_sym}' is a noncanonical alias.")
+                    symbols.append(raw_sym.upper())
+                    per_symbol_parameters[raw_sym.upper()] = item
+            symbols = sorted(list(set(symbols)))
         elif isinstance(data, list):
             # Plain list of symbols or dicts
             scope_type = "SYMBOL_LIST"
@@ -498,6 +516,7 @@ class AlpacaHistoricalSipIngestionAdapter:
         bars: List[Dict[str, Any]],
         start_date: str,
         end_date: str,
+        max_completed_session: Optional[date] = None,
     ) -> BarValidationResult:
         """
         Validates individual bars and overall series consistency per Package B
@@ -538,12 +557,13 @@ class AlpacaHistoricalSipIngestionAdapter:
                 structural_quality=StructuralQuality.CORRUPT,
             )
 
-        if end_d > MAX_COMPLETED_SESSION:
+        effective_max = max_completed_session or MAX_COMPLETED_SESSION
+        if end_d > effective_max:
             return BarValidationResult(
                 is_valid=False,
                 rejection_reason=(
                     f"FUTURE_OR_INCOMPLETE_SESSION_BOUND: Requested end date '{end_d.isoformat()}' "
-                    f"exceeds maximum allowed completed session '{MAX_COMPLETED_SESSION.isoformat()}'."
+                    f"exceeds maximum allowed completed session '{effective_max.isoformat()}'."
                 ),
                 validated_bars=[],
                 bar_count=len(bars),
@@ -610,8 +630,8 @@ class AlpacaHistoricalSipIngestionAdapter:
                 )
 
             # Window check: check against maximum completed session and requested date range
-            if session_d > MAX_COMPLETED_SESSION:
-                out_of_window.append(f"{date_str} exceeds max completed session {MAX_COMPLETED_SESSION.isoformat()}")
+            if session_d > effective_max:
+                out_of_window.append(f"{date_str} exceeds max completed session {effective_max.isoformat()}")
             elif session_d > end_d:
                 out_of_window.append(f"{date_str} > {end_d.isoformat()}")
             elif session_d < start_d:
@@ -953,6 +973,7 @@ class AlpacaHistoricalSipIngestionAdapter:
         apply_writes: bool = False,
         db_path: Optional[str] = None,
         max_candidates: Optional[int] = None,
+        max_completed_session: Optional[date] = None,
     ) -> IngestionBatchSummary:
         """
         Executes bounded ingestion workflow across candidates.
@@ -960,6 +981,8 @@ class AlpacaHistoricalSipIngestionAdapter:
         candidate symbol validation against manifest, adjustment compatibility inspection,
         and honest batch outcome calculation.
         """
+        effective_max = max_completed_session or self.max_completed_session or MAX_COMPLETED_SESSION
+
         # Validate dates against maximum completed session
         try:
             d_start = date.fromisoformat(str(start_date)[:10])
@@ -967,10 +990,10 @@ class AlpacaHistoricalSipIngestionAdapter:
         except Exception as e:
             raise ValueError(f"INVALID_REQUEST_DATES: Could not parse dates: {e}")
 
-        if d_end > MAX_COMPLETED_SESSION:
+        if d_end > effective_max:
             raise ValueError(
                 f"INVALID_END_DATE: Requested end date '{end_date}' exceeds maximum completed session "
-                f"'{MAX_COMPLETED_SESSION.isoformat()}'."
+                f"'{effective_max.isoformat()}'."
             )
         if d_start > d_end:
             raise ValueError(f"INVALID_DATE_ORDER: start_date '{start_date}' cannot be after end_date '{end_date}'.")
@@ -1250,7 +1273,9 @@ class AlpacaHistoricalSipIngestionAdapter:
                 continue
 
             # Validate bar series
-            val_res = self.validate_bar_series(sym, raw_bars, sym_start, end_date)
+            val_res = self.validate_bar_series(
+                sym, raw_bars, sym_start, end_date, max_completed_session=effective_max
+            )
             if not val_res.is_valid:
                 disp = CandidateIngestionDisposition(
                     symbol=sym,
@@ -1526,6 +1551,12 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         default=None,
         help="Path to write execution summary JSON artifact.",
     )
+    parser.add_argument(
+        "--max-completed-session",
+        type=str,
+        default=None,
+        help="Optional upper bound for completed session (YYYY-MM-DD). Defaults to 2026-10-19.",
+    )
     return parser.parse_args(args)
 
 
@@ -1540,7 +1571,16 @@ def main(args: Optional[List[str]] = None) -> int:
     parsed = parse_args(args)
 
     symbols_list = [s.strip().upper() for s in parsed.symbols.split(",")] if parsed.symbols else None
-    adapter = AlpacaHistoricalSipIngestionAdapter(feed=parsed.feed, adjustment=parsed.adjustment)
+    max_session = (
+        date.fromisoformat(parsed.max_completed_session)
+        if parsed.max_completed_session
+        else None
+    )
+    adapter = AlpacaHistoricalSipIngestionAdapter(
+        feed=parsed.feed,
+        adjustment=parsed.adjustment,
+        max_completed_session=max_session,
+    )
 
     try:
         summary = adapter.execute_bounded_ingestion(
@@ -1551,6 +1591,7 @@ def main(args: Optional[List[str]] = None) -> int:
             apply_writes=parsed.apply,
             db_path=parsed.db_path,
             max_candidates=parsed.max_candidates,
+            max_completed_session=max_session,
         )
 
         out_json = json.dumps(summary.to_dict(), indent=2)

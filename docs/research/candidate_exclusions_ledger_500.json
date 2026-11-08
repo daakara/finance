@@ -1,0 +1,396 @@
+{
+  "generated_at_utc": "2026-11-08T03:26:12.661605+00:00",
+  "total_source_candidates": 16448,
+  "total_excluded": 10378,
+  "exclusion_breakdown": {
+    "EXCLUDED_CORPORATE_ACTION_HALTED_OR_CEASED_TRADING": 2,
+    "EXCLUDED_FAILS_LIQUIDITY_CONTRACT": 1,
+    "EXCLUDED_ETF": 5803,
+    "EXCLUDED_ADR_ADS": 1042,
+    "EXCLUDED_PREFERRED": 668,
+    "EXCLUDED_WARRANT": 529,
+    "EXCLUDED_UNIT": 145,
+    "EXCLUDED_RIGHT": 54,
+    "EXCLUDED_TEST_ISSUE": 35,
+    "EXCLUDED_NON_MAJOR_EXCHANGE": 2099
+  },
+  "corporate_and_liquidity_exclusions": [
+    {
+      "symbol": "FVRR",
+      "name": "FIVERR INTERNATIONAL LTD. ORDINARY SHARES, NO PAR VALUE",
+      "exchange": "NYSE",
+      "cik": "0001762301",
+      "exclusion_reason": "EXCLUDED_FAILS_LIQUIDITY_CONTRACT",
+      "detail": "Price $8.30 < $10.00 minimum price floor, market cap < $5B floor"
+    },
+    {
+      "symbol": "KVUE",
+      "name": "KENVUE INC. COMMON STOCK",
+      "exchange": "NYSE",
+      "cik": "0001944048",
+      "exclusion_reason": "EXCLUDED_CORPORATE_ACTION_HALTED_OR_CEASED_TRADING",
+      "detail": "Kenvue Inc. trading ceased 2026-10-30; incomplete history to target session 2026-11-06"
+    },
+    {
+      "symbol": "QRVO",
+      "name": "QORVO, INC.",
+      "exchange": "NASDAQ",
+      "cik": "0001604778",
+      "exclusion_reason": "EXCLUDED_CORPORATE_ACTION_HALTED_OR_CEASED_TRADING",
+      "detail": "Qorvo Inc. trading ceased 2026-10-02; incomplete history to target session 2026-11-06"
+    }
+  ],
+  "exclusions_sample_first_50": [
+    {
+      "symbol": "AAA",
+      "name": "ALTERNATIVE ACCESS FIRST PRIORITY CLO BOND ETF",
+      "exchange": "P",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAAA",
+      "name": "AMPLIUS AGGRESSIVE ASSET ALLOCATION ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAAB",
+      "name": "CORGI FTSE AAA-A INTERMEDIATE CORPORATE BOND ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAAC",
+      "name": "COLUMBIA AAA CLO ETF",
+      "exchange": "P",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAAD",
+      "name": "PGIM AAA CLO AGGREGATE DURATION ETF",
+      "exchange": "P",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAAP",
+      "name": "PACER BARINGS CLO MARKET FLEX ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAAU",
+      "name": "GOLDMAN SACHS PHYSICAL GOLD ETF SHARES",
+      "exchange": "CBOE",
+      "cik": "0001708646",
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAC-UN",
+      "name": "ARES ACQUISITION CORP III",
+      "exchange": "NYSE",
+      "cik": "0002128115",
+      "exclusion_reason": "EXCLUDED_UNIT"
+    },
+    {
+      "symbol": "AAC-WT",
+      "name": "ARES ACQUISITION CORP III",
+      "exchange": "NYSE",
+      "cik": "0002128115",
+      "exclusion_reason": "EXCLUDED_WARRANT"
+    },
+    {
+      "symbol": "AAC.U",
+      "name": "ARES ACQUISITION CORPORATION III UNITS, EACH CONSISTING OF ONE CLASS A ORDINARY SHARE AND ONE-TENTH OF ONE REDEEMABLE WARRANT",
+      "exchange": "N",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_WARRANT"
+    },
+    {
+      "symbol": "AAC.W",
+      "name": "ARES ACQUISITION CORPORATION III REDEEMABLE WARRANTS, EACH WHOLE WARRANT EXERCISABLE FOR ONE CLASS A ORDINARY SHARE AT AN EXERCISE PRICE OF $11.50",
+      "exchange": "N",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_WARRANT"
+    },
+    {
+      "symbol": "AACG",
+      "name": "ATA CREATIVITY GLOBAL - AMERICAN DEPOSITARY SHARES, EACH REPRESENTING TWO COMMON SHARES",
+      "exchange": "NASDAQ",
+      "cik": "0001420529",
+      "exclusion_reason": "EXCLUDED_ADR_ADS"
+    },
+    {
+      "symbol": "AACIW",
+      "name": "ARMADA ACQUISITION CORP. III - WARRANT",
+      "exchange": "NASDAQ",
+      "cik": "0002092897",
+      "exclusion_reason": "EXCLUDED_WARRANT"
+    },
+    {
+      "symbol": "AACOW",
+      "name": "ABONY ACQUISITION CORP. I - WARRANTS",
+      "exchange": "NASDAQ",
+      "cik": "0002099906",
+      "exclusion_reason": "EXCLUDED_WARRANT"
+    },
+    {
+      "symbol": "AACPW",
+      "name": "APOGEE ACQUISITION CORP - WARRANT",
+      "exchange": "NASDAQ",
+      "cik": "0002102123",
+      "exclusion_reason": "EXCLUDED_WARRANT"
+    },
+    {
+      "symbol": "AADR",
+      "name": "ADVISORSHARES DORSEY WRIGHT ADR ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAEQ",
+      "name": "ALPHA ARCHITECT US EQUITY 2 ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAGH",
+      "name": "AMERICA GREAT HEALTH",
+      "exchange": "OTC",
+      "cik": "0001098009",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "AALG",
+      "name": "LEVERAGE SHARES 2X LONG AAL DAILY ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAOG",
+      "name": "LEVERAGE SHARES 2X LONG AAOI DAILY ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAOX",
+      "name": "TRADR 2X LONG AAOI DAILY ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAOZ",
+      "name": "TRADR 2X SHORT AAOI DAILY ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAPB",
+      "name": "GRANITESHARES 2X LONG AAPL DAILY ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAPD",
+      "name": "DIREXION DAILY AAPL BEAR 1X ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAPE",
+      "name": "LEVERAGE SHARES 2X LONG AAPL DAILY ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAPI",
+      "name": "APPLE ISPORTS GROUP, INC.",
+      "exchange": "OTC",
+      "cik": "0001134982",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "AAPR",
+      "name": "INNOVATOR EQUITY DEFINED PROTECTION ETF - 2 YR TO APRIL 2028",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAPU",
+      "name": "DIREXION DAILY AAPL BULL 2X ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAPW",
+      "name": "ROUNDHILL AAPL WEEKLYPAY ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAPX",
+      "name": "T-REX 2X LONG APPLE DAILY TARGET ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAPY",
+      "name": "KURV YIELD PREMIUM STRATEGY APPLE (AAPL) ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAQL",
+      "name": "ANTIAGING QUANTUM LIVING INC.",
+      "exchange": "OTC",
+      "cik": "0001672571",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "AASP",
+      "name": "AGASSI SPORTS ENTERTAINMENT CORP.",
+      "exchange": "OTC",
+      "cik": "0000930245",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "AATC",
+      "name": "AUTOSCOPE TECHNOLOGIES CORP",
+      "exchange": "OTC",
+      "cik": "0000943034",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "AAUA",
+      "name": "ALPHA ARCHITECT US EQUITY 3 ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAUAF",
+      "name": "ALMADEN MINERALS LTD",
+      "exchange": "OTC",
+      "cik": "0001015647",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "AAUB",
+      "name": "ALPHA ARCHITECT US EQUITY 4 ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAUS",
+      "name": "ALPHA ARCHITECT US EQUITY ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAVM",
+      "name": "ALPHA ARCHITECT GLOBAL FACTOR EQUITY ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "AAVXF",
+      "name": "ABIVAX S.A.",
+      "exchange": "OTC",
+      "cik": "0001956827",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "AAWH",
+      "name": "ASCEND WELLNESS HOLDINGS, INC.",
+      "exchange": "OTC",
+      "cik": "0001756390",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "AAXJ",
+      "name": "ISHARES MSCI ALL COUNTRY ASIA EX JAPAN ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "ABAKF",
+      "name": "ABRDN ASIA-PACIFIC INCOME FUND, INC.",
+      "exchange": "OTC",
+      "cik": "0000790500",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "ABBNY",
+      "name": "ABB LTD",
+      "exchange": "OTC",
+      "cik": "0001091587",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "ABCFF",
+      "name": "ABACUS MINING & EXPLORATION CORP",
+      "exchange": "OTC",
+      "cik": "0001284237",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "ABCP",
+      "name": "AMBASE CORP",
+      "exchange": "OTC",
+      "cik": "0000020639",
+      "exclusion_reason": "EXCLUDED_NON_MAJOR_EXCHANGE"
+    },
+    {
+      "symbol": "ABCS",
+      "name": "ALPHA BLUE CAPITAL US SMALL-MID CAP DYNAMIC ETF",
+      "exchange": "NASDAQ",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "ABEQ",
+      "name": "ABSOLUTE SELECT VALUE ETF",
+      "exchange": "P",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    },
+    {
+      "symbol": "ABEV",
+      "name": "AMBEV S.A. AMERICAN DEPOSITARY SHARES (EACH REPRESENTING 1 COMMON SHARE)",
+      "exchange": "NYSE",
+      "cik": "0001565025",
+      "exclusion_reason": "EXCLUDED_ADR_ADS"
+    },
+    {
+      "symbol": "ABFL",
+      "name": "ABACUS FCF LEADERS ETF",
+      "exchange": "Z",
+      "cik": null,
+      "exclusion_reason": "EXCLUDED_ETF"
+    }
+  ],
+  "exclusions_count": 10378
+}
