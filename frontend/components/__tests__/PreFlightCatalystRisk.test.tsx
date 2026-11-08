@@ -157,4 +157,40 @@ describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed St
     expect(screen.getByText("ERROR")).toBeDefined();
     expect(screen.getByText(/Technical error retrieving corporate earnings schedule/i)).toBeDefined();
   });
+
+  it("8. DHLGY confirmed calendar: Forward date (2027-03-05) renders PASS with verified runway copy and Check 2 label", () => {
+    render(
+      <PreFlightChecklistModal
+        {...baseProps}
+        symbol="DHLGY"
+        currentPrice={31.96}
+        stopLoss={29.50}
+        takeProfit1={37.00}
+        riskRewardRatio={2.05}
+        catalystState="PASS"
+        catalystEvidence={{
+          state: "PASS",
+          daysToEarnings: 117.1,
+          eventDate: "2027-03-05",
+          callTimeEt: "04:00",
+          resultsReleaseTimeEt: "01:00",
+          sourceName: "DHL Group Investor Relations / Financial Calendar",
+          confirmationStatus: "CONFIRMED",
+          coverageStatus: "CONFIRMED_UPCOMING",
+          freshnessStatus: "LIVE",
+          riskTier: "NORMAL_RUNWAY",
+          isEstimate: false,
+        }}
+      />
+    );
+
+    const passBadges = screen.getAllByText("PASS");
+    expect(passBadges.length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/Verified event runway: Confirmed earnings announcement scheduled beyond the 7-day trade window \(117.1d DTE\)/i)
+    ).toBeDefined();
+    expect(
+      screen.getByText(/2\. Trend & Moving Averages \(Stage Discipline & Buying Range\)/i)
+    ).toBeDefined();
+  });
 });
