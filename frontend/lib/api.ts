@@ -818,6 +818,7 @@ export interface RadarCapabilityDetail {
   countAuthority?: "DYNAMIC_CATALOG" | "PUBLICATION_SNAPSHOT" | string | null;
   sortingSemantics?: string | null;
   matchedCount?: number | null;
+  displayedStage2IntersectionCount?: number | null;
   dataAsOf?: string;
   generatedAt?: string;
   snapshotId?: string;
@@ -871,6 +872,7 @@ export const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
     singleAssetAnalysis: "AVAILABLE",
     rationale: "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
     matchedCount: null,
+    displayedStage2IntersectionCount: null,
     populationDenominator: null,
     universeBuildId: null,
     publicationDigest: null,
@@ -987,6 +989,7 @@ export function normalizeRadarCapabilities(
         countAuthority: raw.countAuthority || DEFAULT_RADAR_CAPABILITIES[cat].countAuthority || null,
         sortingSemantics: raw.sortingSemantics || DEFAULT_RADAR_CAPABILITIES[cat].sortingSemantics || null,
         matchedCount: null,
+        displayedStage2IntersectionCount: null,
         populationDenominator: typeof raw.populationDenominator === "number" ? raw.populationDenominator : null,
         universeBuildId: raw.universeBuildId ?? null,
         universeId: raw.universeId ?? null,
@@ -1058,6 +1061,8 @@ export function normalizeRadarCapabilities(
       sortingSemantics: raw.sortingSemantics || DEFAULT_RADAR_CAPABILITIES[cat].sortingSemantics || null,
       rationale: raw.rationale || DEFAULT_RADAR_CAPABILITIES[cat].rationale,
       matchedCount: isStaleSnapshot ? null : (hasValidMatchedCount ? raw.matchedCount : null),
+      displayedStage2IntersectionCount: typeof raw.displayedStage2IntersectionCount === "number" ? raw.displayedStage2IntersectionCount : null,
+      coverageStatus: raw.coverageStatus || null,
       dataAsOf: raw.dataAsOf,
       generatedAt: raw.generatedAt,
       snapshotId: raw.snapshotId,

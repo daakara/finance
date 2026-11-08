@@ -1,57 +1,81 @@
 {
-  "release_candidate_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
-  "base_anchor_commit": "b2175572ba608dd1f32b62432040353bd288b10a",
-  "total_files": 6,
+  "release_candidate_commit": "01eca03bfd921f48a534581b2965b9cb931e5535",
+  "base_anchor_commit": "c138280ee2a988accc4ba935657759d60aeceda8",
+  "total_files": 9,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001",
+  "directive": "ARX-RADAR-CATEGORY-INTEGRITY-002",
   "files": {
     "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 243,
-      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
-      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Radar in-memory response cache and stage evaluation memoization",
-      "sha256": "de0506f68c1d84872c957964a65cf5c2a88c65035572d217a61f41b0da187817",
-      "size_bytes": 115083
+      "originating_pr_number": 244,
+      "originating_commit": "01eca03bfd921f48a534581b2965b9cb931e5535",
+      "governing_requirement": "ARX-RADAR-CATEGORY-INTEGRITY-002: Distinguish populationDenominator, matchedCount, displayedStage2IntersectionCount, dataAsOf, snapshotId, coverageStatus, and freshnessStatus",
+      "sha256": "7b92c1d2f1ce627ed332e93def899e40ed1a9793465243550b92b5ba16ea9832",
+      "size_bytes": 117601
     },
     "frontend/app/radar/page.tsx": {
       "operation": "M",
-      "originating_pr_number": 243,
-      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
-      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Fast snapshot read, bounded retry backoff, retained verified snapshot banner, and anti-false-zero error state",
-      "sha256": "0cff61a9e057ac88f9330cfafcf0548450e41f4cc94014098f583a31a1ce73e9",
-      "size_bytes": 114913
+      "originating_pr_number": 244,
+      "originating_commit": "01eca03bfd921f48a534581b2965b9cb931e5535",
+      "governing_requirement": "ARX-RADAR-CATEGORY-INTEGRITY-002: Smart Money tab badge and dot formatting, dedicated pilot scope banner, VCP mathematical zero banner with Stage 2 disclaimer, and refined empty states",
+      "sha256": "dc70be09d00def086e738cdf4bc0981d6b4b2db5c6a7fcda70dc53932101eecf",
+      "size_bytes": 117958
     },
     "frontend/lib/api.ts": {
       "operation": "M",
-      "originating_pr_number": 243,
-      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
-      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Governed timeout headroom, createTimeoutSignal, combineAbortSignals, transient error classification, and fetchRadarSnapshot",
-      "sha256": "5ec21c0b8b88643a467ac46a3e1682a6c598642ec5019cea97cf5e972329bbe6",
-      "size_bytes": 192635
+      "originating_pr_number": 244,
+      "originating_commit": "01eca03bfd921f48a534581b2965b9cb931e5535",
+      "governing_requirement": "ARX-RADAR-CATEGORY-INTEGRITY-002: Model RadarCapabilityDetail displayedStage2IntersectionCount, coverageStatus, and default normalization",
+      "sha256": "df23bbe302f0593a4d50b95f1438adadc41d82f5a70320c40eae2ec9307d3595",
+      "size_bytes": 192973
     },
     "frontend/package.json": {
       "operation": "M",
-      "originating_pr_number": 243,
-      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
-      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Wire radarFirstLoadReliability.test.ts into architectural test runner",
-      "sha256": "d129b2d9135edc93733c71d86796566cc048ec9b26e6a3d282ee40d344439286",
-      "size_bytes": 3507
+      "originating_pr_number": 244,
+      "originating_commit": "01eca03bfd921f48a534581b2965b9cb931e5535",
+      "governing_requirement": "ARX-RADAR-CATEGORY-INTEGRITY-002: Wire radarCategoryIntegrity002.test.ts into architectural test runner",
+      "sha256": "f3bf63f6d98c309c8a1c4ad4f06fed61cd61b4f931f7b79a139620d955e89407",
+      "size_bytes": 3558
     },
-    "frontend/tests/radarFirstLoadReliability.test.ts": {
+    "frontend/tests/preflightRadarCopyRemediation.test.ts": {
+      "operation": "M",
+      "originating_pr_number": 244,
+      "originating_commit": "01eca03bfd921f48a534581b2965b9cb931e5535",
+      "governing_requirement": "ARX-RADAR-CATEGORY-INTEGRITY-002: Reconcile tab tooltip assertion for active pilot and pending states",
+      "sha256": "817520d5ede2b14cb8d903d13a5c8ef66d7bf77e68ccb99c8282408cede792f1",
+      "size_bytes": 9040
+    },
+    "frontend/tests/radarCategoryIntegrity002.test.ts": {
       "operation": "A",
-      "originating_pr_number": 243,
-      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
-      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Targeted 10-check architectural test suite for first-load reliability remediation",
-      "sha256": "20ac288ab5193a87c8e7f99d5f1126f4237fad7423f09fdd11286a4b9527642b",
-      "size_bytes": 16495
+      "originating_pr_number": 244,
+      "originating_commit": "01eca03bfd921f48a534581b2965b9cb931e5535",
+      "governing_requirement": "ARX-RADAR-CATEGORY-INTEGRITY-002: Targeted architectural test suite verifying tab badge, scope banner, VCP zero semantics, and population reconciliation",
+      "sha256": "ebb7a4d243eeae19f3374c6371b100dce5dc98e5362fcb6f5ed51f65d2da03a1",
+      "size_bytes": 10250
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 243,
-      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
-      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Register PR #243 in release qualification diff integrity validator",
-      "sha256": "df6334ffd05b7b86f7db24d96adabd7fea437b99d67061b99042f4c716acc3ac",
-      "size_bytes": 57941
+      "originating_pr_number": 244,
+      "originating_commit": "01eca03bfd921f48a534581b2965b9cb931e5535",
+      "governing_requirement": "ARX-RADAR-CATEGORY-INTEGRITY-002: Register PR #244 in release qualification diff integrity validator",
+      "sha256": "adfb62c6a182c67863714a1f75730610d88008646dfad1e9227fe4bc0153ffde",
+      "size_bytes": 57946
+    },
+    "tests/test_radar_category_integrity_002.py": {
+      "operation": "A",
+      "originating_pr_number": 244,
+      "originating_commit": "01eca03bfd921f48a534581b2965b9cb931e5535",
+      "governing_requirement": "ARX-RADAR-CATEGORY-INTEGRITY-002: Pytest regression suite verifying backend capability fields, population denominator isolation, and fail-closed handling",
+      "sha256": "3c98009f96cd9b2d65c08a6e459c7f9f95aa26c2d1c849cb0c4ee1fd0bac3236",
+      "size_bytes": 8268
+    },
+    "tests/test_radar_coverage_disclosure_semantics.py": {
+      "operation": "M",
+      "originating_pr_number": 244,
+      "originating_commit": "01eca03bfd921f48a534581b2965b9cb931e5535",
+      "governing_requirement": "ARX-RADAR-CATEGORY-INTEGRITY-002: Align stale snapshot test assertion to fail-closed PIPELINE_PENDING contract",
+      "sha256": "c873e914f47fbe290f98478c2d527fe91126ab0f2edc3a37dfa8e20c7f96f18d",
+      "size_bytes": 26945
     }
   },
   "qualification_framework_files": {
@@ -61,8 +85,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "df6334ffd05b7b86f7db24d96adabd7fea437b99d67061b99042f4c716acc3ac",
-      "size_bytes": 57941,
+      "sha256": "adfb62c6a182c67863714a1f75730610d88008646dfad1e9227fe4bc0153ffde",
+      "size_bytes": 57946,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
