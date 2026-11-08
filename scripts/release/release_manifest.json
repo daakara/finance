@@ -1,41 +1,49 @@
 {
-  "release_candidate_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
-  "base_anchor_commit": "4e084ff999dc4e3c6e2641da5a3a47e2160cf0d4",
-  "total_files": 4,
+  "release_candidate_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
+  "base_anchor_commit": "d5a535cee3d9191a00b95bc6d82faed302c62be2",
+  "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-RADAR-P2-STALE-SNAPSHOT-001",
+  "directive": "ARX-PREFLIGHT-EARNINGS-VERIFICATION-001",
   "files": {
-    "api/routes/screener.py": {
+    "analyst_dashboard/corporate_events.py": {
       "operation": "M",
-      "originating_pr_number": 236,
-      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
-      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
-      "sha256": "57cfb9c47cd458cdfb0e3187bc9b00ac3e8d856b29880771270dd42b9b7275a6",
-      "size_bytes": 112065
+      "originating_pr_number": 238,
+      "originating_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
+      "governing_requirement": "ARX-PREFLIGHT: verify DHLGY official IR calendar and ADR underlying issuer resolution",
+      "sha256": "afb49437fa5a9061479304ef6a237ce540a07a81fd51cd91b037b51596535048",
+      "size_bytes": 18288
     },
-    "frontend/lib/api.ts": {
+    "frontend/components/PreFlightChecklistModal.tsx": {
       "operation": "M",
-      "originating_pr_number": 236,
-      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
-      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
-      "sha256": "28edbf080dd7d9b03975fd4c9dd7ff795d61fd85eea8249b8041cf95210c179e",
-      "size_bytes": 186092
+      "originating_pr_number": 238,
+      "originating_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
+      "governing_requirement": "ARX-PREFLIGHT: calibrate check 2 plain title to Stage Discipline & Buying Range",
+      "sha256": "9321d8e8821670ed985f77a4c571f1a0c981d5bb755a9da3a5757b7bfe820e3d",
+      "size_bytes": 30918
     },
-    "frontend/tests/radarStaleCapabilityTruth.test.ts": {
-      "operation": "A",
-      "originating_pr_number": 236,
-      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
-      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
-      "sha256": "d895e3919816af22ebd75f15c0e1e88707d2ce7965720f683345c7bf28fc7116",
-      "size_bytes": 1710
+    "frontend/components/__tests__/PreFlightCatalystRisk.test.tsx": {
+      "operation": "M",
+      "originating_pr_number": 238,
+      "originating_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
+      "governing_requirement": "ARX-PREFLIGHT: add regression tests for DHLGY verified calendar and Check 2 label",
+      "sha256": "2fdf919a8352b17c6c28cf2d029e5eaa92b1e6cf46f7388ba42124d003711bfd",
+      "size_bytes": 6466
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 236,
-      "originating_commit": "54d52a5197bddc2cf75cd727e150b3cce413448b",
-      "governing_requirement": "ARX-RADAR-P2: fail closed for stale VCP snapshot availability and preserve observation identity",
-      "sha256": "c3e68fbf5422699ff2005f9c611f888f731ff307d5c7eb674816e45ae9ec68c9",
-      "size_bytes": 57906
+      "originating_pr_number": 238,
+      "originating_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
+      "governing_requirement": "ARX-PREFLIGHT: qualify release candidate PR 238",
+      "sha256": "16848553e82c80da6be102159445db71ea39a37b3624cd3fcc79f3c0dca116fb",
+      "size_bytes": 57916
+    },
+    "tests/test_corporate_events_dhlgy_verification.py": {
+      "operation": "A",
+      "originating_pr_number": 238,
+      "originating_commit": "7a4b81d09e530fa6dc7cb5fcaffe178f9314f1ff",
+      "governing_requirement": "ARX-PREFLIGHT: add deterministic regression tests for DHLGY corporate events",
+      "sha256": "8a954393b44eaf29237766ae55a99b8f3507ce2ee3d6861181fde85df9c025af",
+      "size_bytes": 8961
     }
   },
   "qualification_framework_files": {
@@ -45,9 +53,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "c3e68fbf5422699ff2005f9c611f888f731ff307d5c7eb674816e45ae9ec68c9",
-      "bytes": 57906,
-      "size_bytes": 57906
+      "sha256": "16848553e82c80da6be102159445db71ea39a37b3624cd3fcc79f3c0dca116fb",
+      "bytes": 57916,
+      "size_bytes": 57916
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
