@@ -22,6 +22,14 @@ ADR_TO_UNDERLYING_ISSUER: Dict[str, Dict[str, Any]] = {
     },
 }
 
+# Authoritative list of widely recognized Exchange-Traded Funds (ETFs)
+# ETFs represent pooled index/sector vehicles that do not report single-stock corporate earnings.
+KNOWN_ETF_SYMBOLS = {
+    "SPY", "QQQ", "IWM", "DIA", "XLK", "XLF", "XLE", "XLV", "XLI", "XLP",
+    "XLU", "XLB", "XLRE", "XLC", "SOXX", "SMH", "VNQ", "VTI", "VOO", "VEA",
+    "VWO", "BND", "TLT", "IEF", "SHY", "GLD", "SLV", "USO", "UNG", "ARKK",
+}
+
 # Known primary-source verified corporate schedules
 VERIFIED_PRIMARY_SCHEDULES: Dict[str, Dict[str, Any]] = {
     "AXP": {
@@ -80,6 +88,48 @@ def normalize_corporate_event(
     clean_sym = symbol.upper().replace("-USD", "").strip()
     if now_utc is None:
         now_utc = datetime.now(timezone.utc)
+
+    # Check if security is an Exchange-Traded Fund (ETF)
+    info_dict = info or {}
+    quote_type = str(info_dict.get("quoteType", "")).upper()
+    asset_class = str(info_dict.get("assetClass", "")).upper()
+    sec_type = str(info_dict.get("securityType", "")).upper()
+    is_etf = (
+        quote_type == "ETF"
+        or asset_class == "ETF"
+        or sec_type == "ETF"
+        or clean_sym in KNOWN_ETF_SYMBOLS
+    )
+    if is_etf:
+        return {
+            "symbol": clean_sym,
+            "event_type": "NONE_ETF",
+            "event_timestamp_utc": None,
+            "event_date_et": None,
+            "event_time_et": None,
+            "time_zone": "America/New_York",
+            "results_release_time_et": None,
+            "conference_call_time_et": None,
+            "days_to_earnings": None,
+            "has_imminent_earnings": False,
+            "has_exact_time": False,
+            "is_estimate": False,
+            "confirmation_status": "NOT_APPLICABLE",
+            "coverage_status": "NOT_APPLICABLE",
+            "freshness_status": "NOT_APPLICABLE",
+            "news_sentiment_status": "NOT_APPLICABLE",
+            "risk_tier": "NO_EARNINGS_HAZARD",
+            "source_name": "ETF Portfolio Structure",
+            "source_url": None,
+            "last_verified_at": now_utc.isoformat(),
+            "preflight_state": "PASS",
+            "preflight_summary": {
+                "plain_english": "Exchange-Traded Fund (ETF): Does not report single-stock corporate earnings. Event runway clear.",
+                "pro_quant": "Asset Class ETF: Pooled vehicle exempt from single-issuer corporate earnings calendar hazard.",
+            },
+            "last_reported_date": None,
+            "underlying_symbol": None,
+        }
 
     # Cross-reference ADR to underlying issuer if applicable
     underlying_sym = None

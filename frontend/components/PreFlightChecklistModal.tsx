@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import { trackPreFlightOutcome, trackTradePlanCopied } from "../lib/matomo";
 import { evaluatePreFlightChecks, PreFlightChecklistInputs } from "../lib/preflightEvaluator";
@@ -47,7 +47,6 @@ export default function PreFlightChecklistModal({
   assetClass,
   securityType,
   verdict,
-  factorScores,
 }: PreFlightChecklistModalProps) {
   const [copied, setCopied] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -142,7 +141,6 @@ export default function PreFlightChecklistModal({
       assetClass,
       securityType,
       verdict,
-      factorScores,
     },
     vernacularMode
   );
@@ -189,18 +187,31 @@ export default function PreFlightChecklistModal({
   const isBelowCorridor = Boolean(safeEntryMin && safePrice < safeEntryMin);
   const isCapitalRiskPassed = checks[2].passed;
   const isCapitalRiskFailed = checks[2].status === "CAPITAL RISK";
-  const hasShortFloat = catalogItem !== undefined && catalogItem.shortFloat !== undefined && catalogItem.shortFloat !== null;
-  const hasQualityScore = catalogItem !== undefined && catalogItem.qualityScore !== undefined && catalogItem.qualityScore !== null;
-  const capitalRiskEvidenceState: "COMPLETE" | "PARTIAL" | "UNAVAILABLE" =
-    hasShortFloat && hasQualityScore
-      ? "COMPLETE"
-      : hasShortFloat || hasQualityScore
-      ? "PARTIAL"
-      : "UNAVAILABLE";
+  const resolvedShortFloat = (shortFloat !== undefined && shortFloat !== null)
+    ? Number(shortFloat)
+    : (catalogItem?.shortFloat !== undefined && catalogItem.shortFloat !== null)
+    ? Number(catalogItem.shortFloat)
+    : null;
+  const resolvedQualityScore = (qualityScore !== undefined && qualityScore !== null)
+    ? Number(qualityScore)
+    : (catalogItem?.qualityScore !== undefined && catalogItem.qualityScore !== null)
+    ? Number(catalogItem.qualityScore)
+    : null;
+  const isEtf = assetClass === "ETF" || securityType === "ETF" || catalystEvidence?.coverageStatus === "NOT_APPLICABLE";
+  const hasShortFloat = resolvedShortFloat !== null && !isNaN(resolvedShortFloat);
+  const hasQualityScore = resolvedQualityScore !== null && !isNaN(resolvedQualityScore);
+  const capitalRiskEvidenceState: "COMPLETE" | "PARTIAL" | "UNAVAILABLE" = isEtf
+    ? "COMPLETE"
+    : hasShortFloat && hasQualityScore
+    ? "COMPLETE"
+    : hasShortFloat || hasQualityScore
+    ? "PARTIAL"
+    : "UNAVAILABLE";
   const isCatalystPassed = checks[3].passed;
   const isMacroPassed = checks[4].passed;
 
   const isVixValid = typeof vix === "number" && !isNaN(vix) && vix > 0;
+  const isVixElevated = isMacroPassed && currentVix !== null && currentVix >= 20.0;
 
   const renderCheck2Detail = () => {
     if (isStage4) {
@@ -232,6 +243,11 @@ export default function PreFlightChecklistModal({
   };
 
   const renderCheck4Detail = () => {
+    if (isEtf || catalystEvidence?.coverageStatus === "NOT_APPLICABLE") {
+      return isPlain
+        ? "Exchange-Traded Fund (ETF): Does not report single-stock corporate earnings. Event runway clear."
+        : "Asset Class ETF: Pooled vehicle exempt from single-issuer corporate earnings calendar hazard.";
+    }
     if (resolvedCatalystState === "PASS") {
       const isConfirmed = catalystEvidence?.confirmationStatus === "CONFIRMED";
       const dteStr = catalystEvidence?.daysToEarnings ? ` (${catalystEvidence.daysToEarnings.toFixed(1)}d DTE)` : "";
@@ -476,14 +492,30 @@ export default function PreFlightChecklistModal({
                   <span>{isPlain ? "3. Capital Health & Squeeze Risk (Manageable short float & solvent balance sheet)" : "3. Structural Capital Risk (Short Interest Floor & Quality Rating)"}</span>
                 </div>
                 <p className="text-[11px] text-[var(--text-2)] pl-5">
-                  {isCapitalRiskPassed
+                  {isEtf
                     ? (isPlain
-                        ? "Short interest is moderate (<12%) and financial quality metrics indicate stable balance sheet health."
-                        : "Capital Risk Guard: Short float (<12%) and fundamental solvency score confirm absence of acute balance sheet distress.")
+                        ? "Exchange-Traded Fund (ETF): Diversified pooled capital structure. Single-stock solvency and squeeze risk not applicable."
+                        : "ETF Capital Structure: Index/basket vehicle exempt from single-issuer solvency and short-squeeze constraints.")
+                    : isCapitalRiskPassed
+                    ? (hasShortFloat
+                        ? (isPlain
+                            ? `Short interest is moderate (${resolvedShortFloat?.toFixed(1)}% < 12%) and financial quality score (${resolvedQualityScore}/100) indicates stable balance sheet health.`
+                            : `Capital Risk Guard: Short float (${resolvedShortFloat?.toFixed(1)}% < 12%) and fundamental quality score (${resolvedQualityScore} >= 60) confirm balance sheet health.`)
+                        : (isPlain
+                            ? `Financial quality score (${resolvedQualityScore}/100) indicates stable balance sheet health.`
+                            : `Capital Risk Guard: Fundamental quality score (${resolvedQualityScore} >= 60) confirms balance sheet health.`))
                     : isCapitalRiskFailed
-                    ? (isPlain
-                        ? "⚠️ Warning: Elevated short interest (>12%) or turnaround rating indicates potential capital distress."
-                        : "⚠️ Capital Risk Warning: Elevated short interest (>12%), turnaround status, or sub-60 quality score detected.")
+                    ? (resolvedQualityScore !== null && resolvedQualityScore < 60
+                        ? (isPlain
+                            ? `⚠️ Warning: Low financial quality score (${resolvedQualityScore}/100 < 60) indicates fundamental balance sheet distress.`
+                            : `Capital Risk Warning: Fundamental quality score (${resolvedQualityScore} < 60 threshold) indicates financial distress.`)
+                        : resolvedShortFloat !== null && resolvedShortFloat > 12.0
+                        ? (isPlain
+                            ? `⚠️ Warning: High short float (${resolvedShortFloat?.toFixed(1)}% > 12.0%) creates squeeze and volatility vulnerability.`
+                            : `Capital Risk Warning: Elevated short interest (${resolvedShortFloat?.toFixed(1)}% > 12.0% threshold).`)
+                        : (isPlain
+                            ? "⚠️ Warning: Capital risk guard tripped. Fundamental distress, turnaround, or distribution trap detected."
+                            : "Capital Risk Warning: Structural capital risk constraints violated."))
                     : capitalRiskEvidenceState === "PARTIAL"
                     ? (isPlain
                         ? "Capital risk evidence partial: Short interest or solvency rating unverified. Cannot certify capital safety."
@@ -546,25 +578,41 @@ export default function PreFlightChecklistModal({
             <div className="p-3 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] flex items-start justify-between gap-3">
               <div className="space-y-0.5">
                 <div className="font-bold text-[var(--text-1)] flex items-center gap-1.5">
-                  <span>{isMacroPassed ? "✅" : "⚠️"}</span>
-                  <span>{isPlain ? "5. Overall Market Weather (VIX normal, market calm)" : "5. Macro Regime Guard (VIX Volatility Guardrails Safe)"}</span>
+                  <span>{isMacroPassed ? (isVixElevated ? "⚠️" : "✅") : "⚠️"}</span>
+                  <span>
+                    {isPlain
+                      ? (isVixElevated
+                          ? "5. Overall Market Weather (VIX elevated, caution warranted)"
+                          : isMacroPassed
+                          ? "5. Overall Market Weather (VIX normal, market calm)"
+                          : !isVixValid
+                          ? "5. Overall Market Weather (VIX unavailable)"
+                          : "5. Overall Market Weather (VIX high, risk blocked)")
+                      : "5. Macro Regime Guard (VIX Volatility Guardrails Safe)"}
+                  </span>
                 </div>
                 <p className="text-[11px] text-[var(--text-2)] pl-5">
                   {isMacroPassed
-                    ? (isPlain
-                        ? `Market volatility is within standard parameters (VIX ${currentVix?.toFixed(1)}).`
-                        : `Macro Guard: Normal volatility regime (VIX ${currentVix?.toFixed(1)} < 26.0).`)
+                    ? (isVixElevated
+                        ? (isPlain
+                            ? `Elevated market volatility (VIX ${currentVix?.toFixed(1)}). Below 26.0 defensive cutoff, but macro caution warranted.`
+                            : `Macro Guard: Elevated volatility regime (20.0 <= VIX ${currentVix?.toFixed(1)} < 26.0). Permitted within defensive ceiling, elevated caution required.`)
+                        : (isPlain
+                            ? `Broad market volatility is calm (VIX ${currentVix?.toFixed(1)} < 20.0). Standard position risk permitted.`
+                            : `Macro Guard: Normal volatility regime (VIX ${currentVix?.toFixed(1)} < 20.0). Guardrails cleared.`))
                     : !isVixValid
                     ? (isPlain
                         ? "Market volatility reading (VIX) is currently unavailable. Macro guard uncertified."
                         : "Market Volatility: Volatility evidence unavailable from live exchange feed. Macro guard cannot be certified.")
                     : (isPlain
-                        ? `⚠️ High Volatility: Market VIX (${currentVix?.toFixed(1)}) indicates elevated systemic turbulence.`
+                        ? `⚠️ High Volatility: Market VIX (${currentVix?.toFixed(1)}) exceeds 26.0 defensive threshold. Risk deployment blocked.`
                         : `⚠️ Elevated Macro Risk: VIX (${currentVix?.toFixed(1)}) exceeds 26.0 threshold.`)}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
-                isMacroPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-amber-950 text-amber-300 border-amber-800"
+                isMacroPassed
+                  ? (isVixElevated ? "bg-amber-950 text-amber-300 border-amber-800" : "bg-emerald-950 text-emerald-300 border-emerald-800")
+                  : "bg-rose-950 text-rose-300 border-rose-800"
               }`}>{isMacroPassed ? "PASS" : isVixValid ? "HIGH VIX" : "UNAVAILABLE"}</span>
             </div>
           </div>
