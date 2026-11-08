@@ -38,6 +38,7 @@ from analyst_dashboard.analyzers.scanner_contract import (
 from analyst_dashboard.universe.fixtures import HISTORICAL_VCP_35_REGRESSION_FIXTURE
 from analyst_dashboard.universe.store import UniverseStore
 from analyst_dashboard.analyzers.scanner_publication_integrity import (
+    ScannerPublicationIntegrityEngine,
     CANONICAL_VCP_RULESET_HASH,
     VCP_RULESET_VERSION,
 )
@@ -184,6 +185,8 @@ RADAR_CAPABILITY_CONTRACT = {
         "universeScreening": "AVAILABLE",
         "singleAssetAnalysis": "AVAILABLE",
         "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
+        "publicationIntegrity": "NOT_VERIFIED",
+        "publicationIntegrityVerified": False,
     },
     "SMART_MONEY": {
         "status": "PIPELINE_PENDING",
@@ -210,7 +213,6 @@ def count_smart_money_stage2_intersection(candidates, non_tradable):
         and candidate.get("executionStatus") not in non_tradable
         and "SMART_MONEY" in candidate.get("categories", [])
     )
-
 
 def get_radar_capabilities(
     *args,
@@ -285,6 +287,8 @@ def get_radar_capabilities(
             "lifecycleState": "STALE_OR_ROLLED_BACK_PUBLICATION",
             "reason": "ROLLED_BACK_PUBLICATION_POINTER",
             "rationale": f"Publication build '{build_id}' was rolled back ({rollback_reason or 'No reason specified'}). Scanner execution is suspended.",
+            "publicationIntegrity": "ROLLBACK",
+            "publicationIntegrityVerified": False,
         }
     elif vcp_snapshot:
         snap_status = vcp_snapshot.get("status")
@@ -302,6 +306,46 @@ def get_radar_capabilities(
             raw_matched = vcp_snapshot.get("matched_count")
             is_valid_op = type(raw_matched) is int and raw_matched >= 0
             matched_count = raw_matched if is_valid_op else None
+
+            # Verify deterministic publication integrity attestation
+            snap_obj = vcp_snapshot.get("snapshot", {}) if isinstance(vcp_snapshot.get("snapshot"), dict) else {}
+            snap_fingerprint = snap_obj.get("semantic_fingerprint") or vcp_snapshot.get("semantic_fingerprint")
+            canonical_fingerprint = ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint()
+            pub_decision = snap_obj.get("publication_decision") or vcp_snapshot.get("publication_decision", "PUBLISH")
+            eval_rep = vcp_snapshot.get("publication_eval_report") or vcp_snapshot.get("publicationEvalReport") or (
+                vcp_snapshot.get("provenance", {}) if isinstance(vcp_snapshot.get("provenance"), dict) else {}
+            ).get("publication_eval_report")
+            eval_decision = eval_rep.get("decision") if isinstance(eval_rep, dict) else None
+            eval_rejected = eval_decision in ("QUARANTINE", "REJECT", "HOLD")
+
+            # Authoritative publication verification requirements:
+            # 1. Operational non-negative integer matched count
+            # 2. Not rolled back
+            # 3. Not rejected/quarantined by evaluation report
+            # 4. Freshness status is not STALE
+            # 5. Publication decision is explicitly PUBLISH
+            # 6. Semantic fingerprint exists and strictly matches canonical VCP fingerprint
+            # 7. Discredited flags (e.g. NOT_VERIFIED, ROLLBACK, REJECTED) are absent
+            fingerprint_matches = bool(
+                snap_fingerprint is not None
+                and snap_fingerprint == canonical_fingerprint
+            )
+            has_valid_decision = (pub_decision == "PUBLISH")
+            flag_not_discredited = (
+                vcp_snapshot.get("publication_integrity") not in ("NOT_VERIFIED", "REJECTED", "QUARANTINE", "ROLLBACK")
+                and vcp_snapshot.get("publicationIntegrity") not in ("NOT_VERIFIED", "REJECTED", "QUARANTINE", "ROLLBACK")
+            )
+
+            is_verified = bool(
+                is_valid_op
+                and not is_rollback
+                and not eval_rejected
+                and freshness_info.get("status") != "STALE"
+                and has_valid_decision
+                and fingerprint_matches
+                and flag_not_discredited
+            )
+
             caps["VCP"] = {
                 "status": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
                 "universeScreening": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
@@ -323,6 +367,9 @@ def get_radar_capabilities(
                 "membershipStatus": membership_status,
                 "lifecycleState": "SCANNER_OPERATIONAL" if is_valid_op else "SCANNER_OUTPUT_INCOMPLETE",
                 "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
+                "publicationIntegrity": "VERIFIED" if is_verified else "NOT_VERIFIED",
+                "publicationIntegrityVerified": is_verified,
+                "publicationEvalReport": eval_rep,
             }
         elif snap_status == "PIPELINE_PENDING":
             reason = vcp_snapshot.get("reason", "UNCOMPUTED_CLASSIFICATION" if vcp_snapshot.get("snapshot_id") else "NO_ACTIVE_SNAPSHOT")
@@ -348,6 +395,8 @@ def get_radar_capabilities(
                 "membershipStatus": membership_status,
                 "lifecycleState": "COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED" if pop_denom else "NO_COMMITTED_PUBLICATION",
                 "rationale": vcp_snapshot.get("detail") or "Automated market-wide volatility contraction screening is pending authoritative classifier integration.",
+                "publicationIntegrity": "PENDING",
+                "publicationIntegrityVerified": False,
             }
         elif snap_status == "ERROR":
             fail_reason = cov_info.get("failure_reason") or vcp_snapshot.get("reason", "STORAGE_ERROR")
@@ -382,6 +431,8 @@ def get_radar_capabilities(
                     if fail_reason != "STORAGE_ERROR"
                     else "VCP scanner snapshot store error."
                 ),
+                "publicationIntegrity": "NOT_VERIFIED",
+                "publicationIntegrityVerified": False,
             }
         elif snap_status == "STALE":
             # A historical non-negative match count cannot certify current scanner
@@ -409,6 +460,8 @@ def get_radar_capabilities(
                 "lifecycleState": "STALE_SNAPSHOT",
                 "reason": "STALE_SNAPSHOT",
                 "rationale": "Historical VCP scan result is stale. Refresh through an independently authorized scan before claiming current universe availability.",
+                "publicationIntegrity": "NOT_VERIFIED",
+                "publicationIntegrityVerified": False,
             }
     elif pop_denom:
         # No active scanner snapshot, but publication pointer exists at membership layer
@@ -430,6 +483,8 @@ def get_radar_capabilities(
             "lifecycleState": "COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED",
             "reason": "SCANNER_NOT_ENROLLED",
             "rationale": f"Universe publication '{build_id}' active with {pop_denom} scannable symbols; batch scanner pipeline is pending operational activation.",
+            "publicationIntegrity": "PENDING",
+            "publicationIntegrityVerified": False,
         }
 
     # Evaluate SMART_MONEY capability from authoritative snapshot
@@ -461,8 +516,10 @@ def get_radar_capabilities(
 
         # Determine displayed Stage 2 intersection count
         disp_intersection = kwargs.get("sm_stage2_intersection_count")
-        if disp_intersection is None:
-            disp_intersection = 5 if (sm_pop_denom == 10 and matched_cnt == 10) else matched_cnt
+        if disp_intersection is not None and isinstance(disp_intersection, int):
+            eff_intersection = max(0, disp_intersection)
+        else:
+            eff_intersection = 5 if (sm_pop_denom == 10 and matched_cnt == 10) else (matched_cnt if matched_cnt is not None else 0)
 
         cov_status = "PILOT_HELD" if sm_pop_denom == 10 else cov_obj.get("coverage_status", "AVAILABLE")
         fresh_status = "HELD" if sm_pop_denom == 10 else fresh_obj.get("status", "LIVE")
@@ -474,15 +531,15 @@ def get_radar_capabilities(
             "subsignal": "INSIDER_FORM4",
             "matchedCount": matched_cnt,
             "populationDenominator": sm_pop_denom,
-            "displayedStage2IntersectionCount": disp_intersection,
+            "displayedStage2IntersectionCount": eff_intersection,
             "dataAsOf": data_as_of,
             "snapshotId": sm_snapshot_id,
             "coverageStatus": cov_status,
             "freshnessStatus": fresh_status,
             "rationale": (
-                f"{disp_intersection} Stage 2 matches from historical {sm_pop_denom}-issuer pilot · October 25, 2026 · Ingestion held"
+                f"{eff_intersection} Stage 2 matches from historical {sm_pop_denom}-issuer pilot · October 25, 2026 · Ingestion held"
                 if sm_pop_denom == 10 or cov_status == "PILOT_HELD" or fresh_status == "HELD"
-                else f"{disp_intersection} Stage 2 matches from {matched_cnt} scannable matches ({sm_pop_denom} evaluated) · SEC Form 4 insider flow"
+                else f"{eff_intersection} Stage 2 matches from {matched_cnt} scannable matches ({sm_pop_denom} evaluated) · SEC Form 4 insider flow"
             ),
         }
     elif sm_snapshot and sm_snapshot.get("status") == "ERROR":
@@ -1398,7 +1455,7 @@ def run_screener_get(
             filtered = [c for c in eligibility_pool if "VCP" in c.get("categories", [])]
         elif filter_type == "smart_money":
             filtered = [c for c in eligibility_pool if "SMART_MONEY" in c.get("categories", [])]
-        elif filter_type == "stage_2":
+        elif filter_type in ("stage_2", "stage2"):
             filtered = [c for c in eligibility_pool if c.get("stageClassification") == "STAGE_2"]
         elif is_diagnostic_view:
             filtered = mapped_candidates

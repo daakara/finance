@@ -1091,6 +1091,7 @@ class VCPScannerRunner:
                 "universe_size": len(CANONICAL_VCP_UNIVERSE),
                 "matched_count": None,
                 "semantic_fingerprint": None,
+                "publication_decision": "QUARANTINE",
             },
             "universe": {
                 "scope_class": "US_EQUITIES",
@@ -1113,6 +1114,10 @@ class VCPScannerRunner:
                 "scan_coverage_pct": 0.0,
                 "unavailable_reasons": {},
             },
+            "publication_decision": "QUARANTINE",
+            "publication_integrity": "PENDING" if status == ScannerStatus.PIPELINE_PENDING else "NOT_VERIFIED",
+            "publicationIntegrity": "PENDING" if status == ScannerStatus.PIPELINE_PENDING else "NOT_VERIFIED",
+            "publicationIntegrityVerified": False,
             "results": [],
         }
 
@@ -1125,6 +1130,17 @@ class VCPScannerRunner:
         status = rec["status_at_publication"]
         if freshness_status == FreshnessStatus.STALE.value and status == ScannerStatus.AVAILABLE.value:
             status = ScannerStatus.STALE.value
+        snap_fingerprint = rec.get("semantic_fingerprint")
+        canonical_fingerprint = ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint()
+        pub_decision = rec.get("publication_decision", "PUBLISH")
+        eval_report_data = rec.get("publication_eval_report") or prov.get("publication_eval_report")
+        is_integrity_verified = bool(
+            status == ScannerStatus.AVAILABLE.value
+            and snap_fingerprint
+            and snap_fingerprint == canonical_fingerprint
+            and pub_decision == "PUBLISH"
+            and freshness_status != FreshnessStatus.STALE.value
+        )
         return {
             "scanner_id": rec["scanner_id"],
             "api_contract_version": rec["api_contract_version"],
@@ -1159,6 +1175,7 @@ class VCPScannerRunner:
                 "universe_size": u_size,
                 "matched_count": rec["matched_count"],
                 "semantic_fingerprint": rec["semantic_fingerprint"],
+                "publication_decision": pub_decision,
             },
             "universe": {
                 "scope_class": u_meta.get("scope_class", "US_EQUITIES"),
@@ -1177,6 +1194,12 @@ class VCPScannerRunner:
                 c_meta=c_meta,
                 failure_reason_fallback=c_meta.get("failure_reason"),
             ),
+            "publication_decision": pub_decision,
+            "publication_eval_report": eval_report_data,
+            "publicationEvalReport": eval_report_data,
+            "publication_integrity": "VERIFIED" if is_integrity_verified else "NOT_VERIFIED",
+            "publicationIntegrity": "VERIFIED" if is_integrity_verified else "NOT_VERIFIED",
+            "publicationIntegrityVerified": is_integrity_verified,
             "results": rec.get("results", []),
         }
 
@@ -1287,6 +1310,10 @@ class SmartMoneyScannerRunner:
                 "universe_size": len(CANONICAL_VCP_UNIVERSE),
                 "matched_count": None,  # Invariant: matched_count is NOT_APPLICABLE when PIPELINE_PENDING
             },
+            "publication_decision": "QUARANTINE",
+            "publication_integrity": "PENDING",
+            "publicationIntegrity": "PENDING",
+            "publicationIntegrityVerified": False,
             "results": [],
         }
 
@@ -1296,6 +1323,9 @@ class SmartMoneyScannerRunner:
         c_meta = rec.get("coverage_metadata") or prov.get("coverage_metadata", {})
         u_size = rec.get("universe_size", 0)
         status = rec.get("status_at_publication", ScannerStatus.AVAILABLE.value)
+        pub_decision = rec.get("publication_decision", "PUBLISH")
+        eval_report_data = rec.get("publication_eval_report") or prov.get("publication_eval_report")
+        is_integrity_verified = bool(status == ScannerStatus.AVAILABLE.value and pub_decision == "PUBLISH")
         return {
             "scanner_id": "SMART_MONEY",
             "api_contract_version": rec.get("api_contract_version", SMART_MONEY_API_CONTRACT_VERSION),
@@ -1338,6 +1368,12 @@ class SmartMoneyScannerRunner:
                 c_meta=c_meta,
                 failure_reason_fallback=c_meta.get("failure_reason"),
             ),
+            "publication_decision": pub_decision,
+            "publication_eval_report": eval_report_data,
+            "publicationEvalReport": eval_report_data,
+            "publication_integrity": "VERIFIED" if is_integrity_verified else "NOT_VERIFIED",
+            "publicationIntegrity": "VERIFIED" if is_integrity_verified else "NOT_VERIFIED",
+            "publicationIntegrityVerified": is_integrity_verified,
             "results": rec.get("results", []),
         }
 
