@@ -987,7 +987,7 @@ function RadarContent() {
                 </span>
               )}
               <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]" title="Total evaluated membership in active published universe">
-                Evaluated: <span className="text-[var(--text-1)] font-semibold">{population?.referenceUniverseCount ?? capabilities.VCP?.populationDenominator ?? allAssets.length} Assets</span>
+                Evaluated: <span className="text-[var(--text-1)] font-semibold">{fetchError ? 'Unavailable' : `${population?.referenceUniverseCount ?? capabilities.VCP?.populationDenominator ?? allAssets.length} Assets` }</span>
               </span>
               {(capabilities.VCP?.dataAsOf || allAssets[0]?.priceDate) && (
                 <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]" title="Market data freshness timestamp">
@@ -1000,7 +1000,7 @@ function RadarContent() {
             <div className="flex items-center gap-2 text-xs">
               <span className="inline-flex items-center gap-1.5 max-w-full px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold" title="Stage 2 growth uptrend template is the sole authoritative eligibility gate for primary discovery">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                <span>Stage 2 Primary Discovery ({population?.stage2OpportunityCount ?? filteredAssets.length} Opportunities)</span>
+                <span>Stage 2 Primary Discovery ({fetchError ? 'Unavailable' : `${population?.stage2OpportunityCount ?? filteredAssets.length} Opportunities` })</span>
               </span>
             </div>
           </div>
