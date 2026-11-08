@@ -1775,7 +1775,12 @@ def explain_vcp_classification(
     # 3. Resolve authenticated evaluation cutoff timestamp via session guard
     try:
         from analyst_dashboard.vcp.session_guard import get_session_bounds, get_settlement_buffer_minutes, is_us_equity_trading_session
-        _, s_close_utc, _ = get_session_bounds(auth_as_of[:10], allow_rulebook_fallback=True)
+        eff_session_date = auth_as_of[:10]
+        # Resolve effective trading session date (step back over weekends/holidays if snapshot data_as_of was off-session)
+        while not is_us_equity_trading_session(eff_session_date, allow_rulebook_fallback=True):
+            eff_dt = dt_module.date.fromisoformat(eff_session_date) - dt_module.timedelta(days=1)
+            eff_session_date = eff_dt.isoformat()
+        _, s_close_utc, _ = get_session_bounds(eff_session_date, allow_rulebook_fallback=True)
         settlement_dt = s_close_utc + dt_module.timedelta(minutes=get_settlement_buffer_minutes())
         eval_as_of = settlement_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
     except Exception as exc:

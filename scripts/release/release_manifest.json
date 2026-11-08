@@ -1,73 +1,49 @@
 {
-  "release_candidate_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
-  "base_anchor_commit": "b716fd5c683ddd64b7011192c1147730b7753655",
-  "total_files": 8,
+  "release_candidate_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
+  "base_anchor_commit": "03dd86cb53f60314aba4314f35b5cd3988eb1acd",
+  "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-CROSS-ASSET-PREFLIGHT-001",
+  "directive": "ARX-VCP-WEEKEND-RESILIENCE-001",
   "files": {
-    "analyst_dashboard/corporate_events.py": {
+    "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 240,
-      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
-      "governing_requirement": "ARX-PREFLIGHT: cross-asset corporate events and ETF calendar hazard exemption",
-      "sha256": "0ebb0d00eed141de1fd04e16451e70b132739b076e0f8c5730fc6e49a6802dd9",
-      "size_bytes": 20512
+      "originating_pr_number": 241,
+      "originating_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
+      "governing_requirement": "ARX-VCP-WEEKEND-RESILIENCE-001: Step back off-session snapshot dates to latest valid trading session in VCP explain",
+      "sha256": "3923c45ef45f8e4035477bfcada80bd179e1a29eafb33adbdb3edebb29e03cfb",
+      "size_bytes": 112481
     },
-    "api/routes/analytics.py": {
+    "frontend/lib/evidenceDomains.ts": {
       "operation": "M",
-      "originating_pr_number": 240,
-      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
-      "governing_requirement": "ARX-PREFLIGHT: expose short float and quality score telemetry in analytics payloads",
-      "sha256": "57c1e940dc901eb164edb969ccf93bebed37668047416c8d4b710634e66178cb",
-      "size_bytes": 80453
+      "originating_pr_number": 241,
+      "originating_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
+      "governing_requirement": "ARX-VCP-WEEKEND-RESILIENCE-001: Add 20.0-26.0 elevated caution volatility tier to Evidence Domain 8",
+      "sha256": "1b08f78df4776f571258009dabdadabc3a583e6557fe1bf331f666b0be2e949d",
+      "size_bytes": 26464
     },
-    "frontend/components/PreFlightChecklistModal.tsx": {
+    "frontend/tests/crossAssetEvidenceAndMobileIntegrity.test.ts": {
       "operation": "M",
-      "originating_pr_number": 240,
-      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
-      "governing_requirement": "ARX-PREFLIGHT: cross-asset capital risk and dynamic VIX caution labels in preflight modal",
-      "sha256": "97ffe8751ce9a9b80aed3250037c0871ea7747f38fe92b4760eb171a2f28d0f2",
-      "size_bytes": 34706
-    },
-    "frontend/components/__tests__/PreFlightCatalystRisk.test.tsx": {
-      "operation": "M",
-      "originating_pr_number": 240,
-      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
-      "governing_requirement": "ARX-PREFLIGHT: add regression tests for corporate events fail-closed state model",
-      "sha256": "6671ea15cf8ce6cbbeb5234a95afbf8835176a8fe92d7bc7d3b3e3ce81e27926",
-      "size_bytes": 6557
-    },
-    "frontend/lib/preflightEvaluator.ts": {
-      "operation": "M",
-      "originating_pr_number": 240,
-      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
-      "governing_requirement": "ARX-PREFLIGHT: universal cross-asset preflight decision evaluator with ETF exemption and VIX tiers",
-      "sha256": "6a1887f80244518f8a368f1d3db2cd47b191f4b4edf6707c7945abbf5a71d713",
-      "size_bytes": 44942
-    },
-    "frontend/tests/crossAssetPreflightIntegrity.test.ts": {
-      "operation": "A",
-      "originating_pr_number": 240,
-      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
-      "governing_requirement": "ARX-PREFLIGHT: cross-asset preflight decision integrity vitest regression suite",
-      "sha256": "88f62e3cd618ce29d8f6c72e1e50c1ecc27f15dc86d66dcebd72961bdeb335ad",
-      "size_bytes": 8964
+      "originating_pr_number": 241,
+      "originating_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
+      "governing_requirement": "ARX-VCP-WEEKEND-RESILIENCE-001: Add regression tests for VIX 25.64 elevated caution consistency",
+      "sha256": "d30939218b52e6a01804b29624b5f77487c34c0c2ffbccbaf4fafc985b3c4f48",
+      "size_bytes": 19913
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 240,
-      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
-      "governing_requirement": "ARX-PREFLIGHT: register PR #240 in release qualification diff integrity validator",
-      "sha256": "5ac6b324d66dd446ee4f533e276848aa1331ee2a71af75a870ff1654e205b321",
-      "size_bytes": 57926
+      "originating_pr_number": 241,
+      "originating_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
+      "governing_requirement": "ARX-VCP-WEEKEND-RESILIENCE-001: Register PR #241 in release qualification diff integrity validator",
+      "sha256": "15677917c0282bdae38a0ad384f79457e225395a06998b8109a52da2219755d6",
+      "size_bytes": 57931
     },
-    "tests/test_cross_asset_preflight_integrity.py": {
+    "tests/test_vcp_explain_weekend_resilience.py": {
       "operation": "A",
-      "originating_pr_number": 240,
-      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
-      "governing_requirement": "ARX-PREFLIGHT: cross-asset preflight decision integrity python pytest regression suite",
-      "sha256": "dc17ab9de96a189800c3728bb388b4b5d2560587bb98d94f6bbec0af04580e3a",
-      "size_bytes": 4998
+      "originating_pr_number": 241,
+      "originating_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
+      "governing_requirement": "ARX-VCP-WEEKEND-RESILIENCE-001: Unit test suite for VCP explain weekend session normalization and 422 prevention",
+      "sha256": "ec506fc4f37853402ce5d6b4131fdbc2e0832c1225b687204a560156e977ea0a",
+      "size_bytes": 1525
     }
   },
   "qualification_framework_files": {
@@ -77,8 +53,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "5ac6b324d66dd446ee4f533e276848aa1331ee2a71af75a870ff1654e205b321",
-      "size_bytes": 57926,
+      "sha256": "15677917c0282bdae38a0ad384f79457e225395a06998b8109a52da2219755d6",
+      "size_bytes": 57931,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {

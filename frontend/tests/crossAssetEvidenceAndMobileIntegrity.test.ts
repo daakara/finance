@@ -379,7 +379,37 @@ console.log("Test 3: Macro VIX institutional threshold (26.0) consistency...");
   assert.strictEqual(domain8.statusLabel, "Caution (High Vol)");
   assert.ok(domain8.explanation.includes(">= 26.0 institutional ceiling"));
 
-  console.log("  ✓ Test 3 Passed: VIX threshold (26.0) produces consistent blocker across Pre-Flight and Evidence Domain 8.\n");
+  // Elevated caution tier: VIX at 25.64 (20.0 <= VIX < 26.0)
+  const cautionVixPreflight = evaluatePreFlightChecks({
+    symbol: "AAPL",
+    currentPrice: 225,
+    stopLoss: 215,
+    takeProfit1: 250,
+    riskRewardRatio: 2.5,
+    optimalEntryMin: 220,
+    optimalEntryMax: 228,
+    breakoutPivot: 230,
+    qualityScore: 85,
+    shortFloat: 1.5,
+    vix: 25.64,
+    vixObservationTime: new Date().toISOString(),
+  });
+
+  const cautionVixDomains = resolveNineEvidenceDomains({
+    symbol: "AAPL",
+    candles: createMockCandles(60),
+    vix: 25.64,
+  });
+
+  assert.strictEqual(cautionVixPreflight.checks[4].passed, true);
+  assert.ok(cautionVixPreflight.checks[4].summary.includes("Elevated Caution"));
+
+  const cautionDomain8 = cautionVixDomains.find(d => d.id === "macro_regime")!;
+  assert.strictEqual(cautionDomain8.status, "VERIFIED");
+  assert.strictEqual(cautionDomain8.statusLabel, "Elevated Caution");
+  assert.ok(cautionDomain8.explanation.includes("Elevated market volatility"));
+
+  console.log("  ✓ Test 3 Passed: VIX threshold (26.0) and elevated caution band (20.0-26.0) produce consistent evidence across Pre-Flight and Evidence Domain 8.\n");
 }
 
 // ── Test 4: Mobile Analysis Evidence Card Responsiveness (<640px viewport) ──

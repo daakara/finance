@@ -577,6 +577,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
   (() => {
     const resolvedVix = vix ?? macroData?.vix?.value ?? macroData?.vix;
     const isVixElevated = typeof resolvedVix === "number" && resolvedVix >= 26.0;
+    const isVixCaution = typeof resolvedVix === "number" && resolvedVix >= 20.0 && resolvedVix < 26.0;
     const hasMacro = Boolean(macroData || (macroPillar && macroPillar.status !== "unavailable"));
 
     let status: DomainStatus = "VERIFIED";
@@ -587,6 +588,10 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       status = "CAUTION";
       statusLabel = "Caution (High Vol)";
       explanation = `Elevated market volatility regime (VIX ${(resolvedVix as number).toFixed(1)} >= 26.0 institutional ceiling).`;
+    } else if (isVixCaution) {
+      status = "VERIFIED";
+      statusLabel = "Elevated Caution";
+      explanation = `Elevated market volatility (VIX ${(resolvedVix as number).toFixed(1)}). Below 26.0 defensive cutoff, but macro caution warranted.`;
     } else if (!hasMacro) {
       status = "UNAVAILABLE";
       statusLabel = "Unavailable";
