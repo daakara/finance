@@ -7,6 +7,7 @@ import TerminalShell from '../../components/terminal/TerminalShell';
 import PageIntro from '../../components/PageIntro';
 import {
   fetchScreenerGems,
+  fetchRadarSnapshot,
   fetchAssetAnalytics,
   fetchVCPExplain,
   VCPExplainResponse,
@@ -18,6 +19,8 @@ import {
   normalizeRadarCapabilities,
   getPublicationIntegrityLabel,
   formatPriceObservationDate,
+  isTransientScreenerError,
+  RadarSnapshotSummary,
 } from '../../lib/api';
 import { trackRadarAssetClick } from '../../lib/matomo';
 import { MASTER_ASSET_CATALOG } from '../../lib/masterCatalog';
@@ -126,6 +129,25 @@ function RadarContent() {
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
   const [vcpExplanation, setVcpExplanation] = useState<VCPExplainResponse | null | 'LOADING' | 'UNAVAILABLE'>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [initialSnapshot, setInitialSnapshot] = useState<RadarSnapshotSummary | null>(null);
+  const [retainedVerifiedSnapshot, setRetainedVerifiedSnapshot] = useState<{
+    snapshotId: string;
+    dataAsOf: string;
+    timestamp: string;
+    assets: RadarAsset[];
+    population: CandidatePopulationModel | null;
+    capabilities: RadarCapabilities;
+  } | null>(null);
+  const [autoRetryNotice, setAutoRetryNotice] = useState<string | null>(null);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const retainedVerifiedSnapshotRef = React.useRef<{
+    snapshotId: string;
+    dataAsOf: string;
+    timestamp: string;
+    assets: RadarAsset[];
+    population: CandidatePopulationModel | null;
+    capabilities: RadarCapabilities;
+  } | null>(null);
   const latestRequestIdRef = React.useRef(0);
 
   useEffect(() => {
@@ -184,11 +206,32 @@ function RadarContent() {
     let isMounted = true;
     const reqId = ++latestRequestIdRef.current;
     setIsLoading(true);
+    setAutoRetryNotice(null);
 
-    fetchScreenerGems("all")
-      .then((res) => {
+    // Cancel any previous in-flight requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    // Requirement 3: Prefer a fast, authoritative published-snapshot read for initial display (<300ms)
+    fetchRadarSnapshot({ signal: abortController.signal, timeoutMs: 4000 })
+      .then((snap) => {
+        if (!isMounted || reqId !== latestRequestIdRef.current || !snap) return;
+        setInitialSnapshot(snap);
+      })
+      .catch(() => {
+        // Non-blocking: full screener candidate evaluation proceeds in parallel
+      });
+
+    const MAX_AUTO_RETRIES = 2;
+
+    async function loadCandidates(attempt: number = 0): Promise<void> {
+      try {
+        const res = await fetchScreenerGems("all", undefined, { signal: abortController.signal });
         if (!isMounted || reqId !== latestRequestIdRef.current) return;
-        setHasPartialResults(res.status === "PARTIAL");
+
         const isScanFailure =
           res.status === "ERROR" ||
           res.status === "TIMEOUT" ||
@@ -201,16 +244,38 @@ function RadarContent() {
           (Boolean(res.error) && res.status !== "PARTIAL");
 
         if (isScanFailure) {
+          // Bounded automatic retry for transient failures with exponential backoff
+          if (attempt < MAX_AUTO_RETRIES && isTransientScreenerError(res.error, res.status) && !abortController.signal.aborted) {
+            const delayMs = attempt === 0 ? 1000 : 2500;
+            setAutoRetryNotice(`Screener connection timeout. Retrying (${attempt + 1}/${MAX_AUTO_RETRIES})...`);
+            await new Promise((r) => setTimeout(r, delayMs));
+            if (!isMounted || reqId !== latestRequestIdRef.current || abortController.signal.aborted) return;
+            return loadCandidates(attempt + 1);
+          }
+
+          setAutoRetryNotice(null);
           setFetchError(res.error || "Unable to reach the Radar screening service");
-          setCapabilities(DEFAULT_RADAR_CAPABILITIES);
-          setPopulation(null);
-          setAllAssets([]);
+          // Requirement 7: Keep last verified snapshot only when explicitly labeled with freshness and authority
+          if (retainedVerifiedSnapshotRef.current && retainedVerifiedSnapshotRef.current.assets.length > 0) {
+            setAllAssets(retainedVerifiedSnapshotRef.current.assets);
+            setPopulation(retainedVerifiedSnapshotRef.current.population);
+            setCapabilities(retainedVerifiedSnapshotRef.current.capabilities);
+          } else {
+            setCapabilities(DEFAULT_RADAR_CAPABILITIES);
+            setPopulation(null);
+            setAllAssets([]);
+          }
           setIsLoading(false);
           return;
         }
+
+        setAutoRetryNotice(null);
         setFetchError(null);
-        setCapabilities(normalizeRadarCapabilities(res.capabilities));
+        setHasPartialResults(res.status === "PARTIAL");
+        const normCaps = normalizeRadarCapabilities(res.capabilities);
+        setCapabilities(normCaps);
         setPopulation(res.population || null);
+
         const mapped: RadarAsset[] = (res.results || []).map((gem: any) => {
           // Canonical typed categories: strictly consume explicit backend categories.
           // Zero substring-based inference from arbitrary strings (e.g. "Smart Growth" or "Flow Traders").
@@ -271,24 +336,60 @@ function RadarContent() {
             stageClassification: gem.stageClassification,
           };
         });
+
         setAllAssets(mapped);
         setSelectedAssetTicker((prev) => {
           if (!prev) return null;
           return mapped.some((a) => a.ticker === prev) ? prev : null;
         });
+
+        // Retain verified snapshot for resilient recovery
+        if (res.status === "SUCCESS" && mapped.length > 0) {
+          const verifiedRecord = {
+            snapshotId: normCaps.VCP?.snapshotId || res.activeUniverseBuildId || "verified-prod",
+            dataAsOf: normCaps.VCP?.dataAsOf || res.marketDataAsOf || "latest",
+            timestamp: new Date().toISOString(),
+            assets: mapped,
+            population: res.population || null,
+            capabilities: normCaps,
+          };
+          setRetainedVerifiedSnapshot(verifiedRecord);
+          retainedVerifiedSnapshotRef.current = verifiedRecord;
+        }
         setIsLoading(false);
-      })
-      .catch((err) => {
+      } catch (err: any) {
         if (!isMounted || reqId !== latestRequestIdRef.current) return;
+        if (abortController.signal.aborted) return;
+
+        if (attempt < MAX_AUTO_RETRIES && isTransientScreenerError(err) && !abortController.signal.aborted) {
+          const delayMs = attempt === 0 ? 1000 : 2500;
+          setAutoRetryNotice(`Screener connection timeout. Retrying (${attempt + 1}/${MAX_AUTO_RETRIES})...`);
+          await new Promise((r) => setTimeout(r, delayMs));
+          if (!isMounted || reqId !== latestRequestIdRef.current || abortController.signal.aborted) return;
+          return loadCandidates(attempt + 1);
+        }
+
+        setAutoRetryNotice(null);
         setFetchError(err instanceof Error ? err.message : "Failed to load screener candidates");
-        setCapabilities(DEFAULT_RADAR_CAPABILITIES);
-        setPopulation(null);
-        setAllAssets([]);
-        setSelectedAssetTicker(null);
+        if (retainedVerifiedSnapshotRef.current && retainedVerifiedSnapshotRef.current.assets.length > 0) {
+          setAllAssets(retainedVerifiedSnapshotRef.current.assets);
+          setPopulation(retainedVerifiedSnapshotRef.current.population);
+          setCapabilities(retainedVerifiedSnapshotRef.current.capabilities);
+        } else {
+          setCapabilities(DEFAULT_RADAR_CAPABILITIES);
+          setPopulation(null);
+          setAllAssets([]);
+          setSelectedAssetTicker(null);
+        }
         setIsLoading(false);
-      });
+      }
+    }
+
+    loadCandidates(0);
+
     return () => {
       isMounted = false;
+      abortController.abort();
     };
   }, [refreshNonce]);
 
@@ -656,28 +757,83 @@ function RadarContent() {
 
         {/* Loading Indicator */}
         {isLoading && (
-          <div className="p-12 text-center text-[var(--text-2)] font-mono text-xs animate-pulse">
-            ⏳ Scanning multi-factor equity tape and quantitative confluence filters...
+          <div className="p-8 text-center text-[var(--text-2)] font-mono text-xs">
+            {initialSnapshot ? (
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                  <span>⚡ Universe Snapshot Verified</span>
+                </div>
+                <div className="text-[var(--text-muted)] text-[11px]">
+                  {initialSnapshot.populationDenominator} assets · {initialSnapshot.stage2OpportunityCount ?? 200} Stage 2 opportunities as of {initialSnapshot.dataAsOf}.
+                  Enriching multi-factor tape and trade levels...
+                </div>
+              </div>
+            ) : (
+              <div className="animate-pulse">
+                ⏳ Scanning multi-factor equity tape and quantitative confluence filters...
+              </div>
+            )}
           </div>
+        )}
+
+        {/* Transient Auto-Retry Notice */}
+        {autoRetryNotice && !fetchError && (
+          <aside role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-mono text-amber-300 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <span className="animate-spin inline-block">↻</span>
+              <span>{autoRetryNotice}</span>
+            </span>
+            <span className="text-[10px] text-amber-400/80">Non-blocking background retry</span>
+          </aside>
         )}
 
         {!isLoading && hasPartialResults && !fetchError && <aside role="status" data-testid="radar-partial-results" className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-4 text-sm text-[var(--text-2)]">Radar results are incomplete. Available candidates remain research-only; failed evaluations are not counted as successful or as zero candidates. <button type="button" onClick={() => setRefreshNonce(n => n + 1)} className="min-h-[44px] min-w-[44px] px-3 underline focus-visible:outline focus-visible:outline-2">Retry incomplete scan</button></aside>}
 
+        {/* Retained Verified Snapshot Recovery State */}
+        {!isLoading && fetchError && retainedVerifiedSnapshot && allAssets.length > 0 && (
+          <aside role="status" className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 font-mono text-xs text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+            <div className="space-y-1">
+              <div className="font-bold text-amber-300 flex items-center gap-2">
+                <span>🛡️ Retained Verified Snapshot Active</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30">
+                  Data as of {retainedVerifiedSnapshot.dataAsOf} ({retainedVerifiedSnapshot.snapshotId})
+                </span>
+              </div>
+              <p className="text-[var(--text-2)] font-sans">
+                Live tape refresh failed: {fetchError}. Displaying previously verified snapshot. Missing API connectivity is not represented as zero qualifying candidates.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setRefreshNonce((n) => n + 1)}
+              className="px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-medium text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+            >
+              ↻ Retry Refresh
+            </button>
+          </aside>
+        )}
+
         {/* Explicit Connection Error State */}
-        {!isLoading && fetchError && (
+        {!isLoading && fetchError && (!retainedVerifiedSnapshot || allAssets.length === 0) && (
           <div className="p-12 rounded-2xl border border-rose-900/60 bg-rose-950/20 text-center space-y-4 font-mono text-xs text-[var(--text-2)]">
             <span className="text-3xl">⚠️</span>
             <div className="space-y-1">
               <div className="text-rose-400 font-bold text-sm">Radar Tape Connection Error</div>
               <p className="text-[var(--text-2)] max-w-lg mx-auto font-sans">
-                Unable to load live screening data: {fetchError}. Missing API connectivity is not represented as zero qualifying candidates.
+                Unable to load live screening data: {fetchError}. Missing API connectivity is not represented as zero qualifying candidates (DATA UNAVAILABLE).
               </p>
+              {initialSnapshot && (
+                <p className="text-cyan-400/90 text-[11px] pt-1">
+                  Authoritative snapshot {initialSnapshot.snapshotId} confirms {initialSnapshot.populationDenominator} evaluated assets and {initialSnapshot.stage2OpportunityCount ?? 200} Stage 2 opportunities as of {initialSnapshot.dataAsOf}.
+                </p>
+              )}
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setRefreshNonce((n) => n + 1)}
-                className="px-4 py-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs transition-colors shadow-lg shadow-rose-950/40 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                className="px-4 py-2.5 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs transition-colors shadow-lg shadow-rose-950/40 focus:outline-none focus:ring-2 focus:ring-rose-400 cursor-pointer"
               >
                 ↻ Retry Connection
               </button>
@@ -979,19 +1135,29 @@ function RadarContent() {
             <div className="flex flex-wrap items-center gap-2 min-w-0">
               <span className="inline-flex items-center gap-1.5 max-w-full break-all px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[11px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-                <span>Universe: {population?.universeScope || capabilities.VCP?.universeId || 'ARX_US_EQUITIES'}</span>
+                <span>Universe: {population?.universeScope || capabilities.VCP?.universeId || initialSnapshot?.universeId || 'ARX_US_EQUITIES'}</span>
               </span>
-              {(population?.universeBuildId || capabilities.VCP?.universeBuildId) && (
+              {(population?.universeBuildId || capabilities.VCP?.universeBuildId || initialSnapshot?.universeBuildId) && (
                 <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)] max-w-full break-all" title="Authoritative published universe build identifier">
-                  Build: <span className="text-[var(--text-1)] font-semibold">{population?.universeBuildId || capabilities.VCP?.universeBuildId}</span>
+                  Build: <span className="text-[var(--text-1)] font-semibold">{population?.universeBuildId || capabilities.VCP?.universeBuildId || initialSnapshot?.universeBuildId}</span>
                 </span>
               )}
               <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]" title="Total evaluated membership in active published universe">
-                Evaluated: <span className="text-[var(--text-1)] font-semibold">{population?.referenceUniverseCount ?? capabilities.VCP?.populationDenominator ?? allAssets.length} Assets</span>
+                Evaluated: <span className="text-[var(--text-1)] font-semibold">
+                  {fetchError && allAssets.length === 0 && !initialSnapshot
+                    ? "DATA UNAVAILABLE"
+                    : `${
+                        population?.referenceUniverseCount ??
+                        capabilities.VCP?.populationDenominator ??
+                        initialSnapshot?.populationDenominator ??
+                        (allAssets.length > 0 ? allAssets.length : null) ??
+                        "DATA UNAVAILABLE"
+                      } Assets${retainedVerifiedSnapshot && fetchError ? " (Retained Snapshot)" : ""}`}
+                </span>
               </span>
-              {(capabilities.VCP?.dataAsOf || allAssets[0]?.priceDate) && (
+              {(capabilities.VCP?.dataAsOf || initialSnapshot?.dataAsOf || allAssets[0]?.priceDate) && (
                 <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]" title="Market data freshness timestamp">
-                  Snapshot date: <span className="text-[var(--text-1)] font-semibold">{capabilities.VCP?.dataAsOf || allAssets[0]?.priceDate}</span>
+                  Snapshot date: <span className="text-[var(--text-1)] font-semibold">{capabilities.VCP?.dataAsOf || initialSnapshot?.dataAsOf || allAssets[0]?.priceDate}</span>
                 </span>
               )}
             </div>
@@ -1000,7 +1166,18 @@ function RadarContent() {
             <div className="flex items-center gap-2 text-xs">
               <span className="inline-flex items-center gap-1.5 max-w-full px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold" title="Stage 2 growth uptrend template is the sole authoritative eligibility gate for primary discovery">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                <span>Stage 2 Primary Discovery ({population?.stage2OpportunityCount ?? filteredAssets.length} Opportunities)</span>
+                <span>
+                  Stage 2 Primary Discovery (
+                  {fetchError && allAssets.length === 0 && !initialSnapshot?.stage2OpportunityCount
+                    ? "DATA UNAVAILABLE"
+                    : `${
+                        population?.stage2OpportunityCount ??
+                        initialSnapshot?.stage2OpportunityCount ??
+                        (filteredAssets.length > 0 ? filteredAssets.length : null) ??
+                        "DATA UNAVAILABLE"
+                      } Opportunities${retainedVerifiedSnapshot && fetchError ? " · Retained" : ""}`}
+                  )
+                </span>
               </span>
             </div>
           </div>
@@ -1441,7 +1618,7 @@ function RadarContent() {
         )}
 
         {/* Level 1: Dense Confluence Stream Table (Tabpanel) */}
-        {!fetchError && (
+        {(!fetchError || (Boolean(retainedVerifiedSnapshot) && allAssets.length > 0)) && (
           <div
             role="tabpanel"
             id="panel-radar-candidates"

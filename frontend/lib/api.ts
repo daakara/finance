@@ -2027,13 +2027,190 @@ export function normalizeRadarEnvelopeState(data: any): {
   };
 }
 
-export async function fetchScreenerGems(model: string = "all", universe?: string): Promise<ScreenerResponse> {
+/**
+ * Governed timeout for full-universe Radar screener candidate evaluation.
+ * Measured production p95 is ~7.8s uncached, ~5ms cached; boundary enforced: [6250, 30000] ms.
+ * Defaults to 15000 ms matching TACTICAL_SETUPS_TIMEOUT_MS and cold P95 execution budget.
+ */
+export const SCREENER_TIMEOUT_MS: number = (() => {
+  const envVal = process.env.NEXT_PUBLIC_SCREENER_TIMEOUT_MS;
+  if (envVal) {
+    const parsed = parseInt(envVal, 10);
+    if (!isNaN(parsed) && parsed >= 6250 && parsed <= 30000) {
+      return parsed;
+    }
+  }
+  return 15000;
+})();
+
+/**
+ * Creates an AbortSignal tied to a timer with explicit cleanup.
+ * Guarantees referenced timer retention across browser and Node.js environments.
+ */
+export function createTimeoutSignal(timeoutMs: number): { signal: AbortSignal; cleanup: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    const err = new Error(`The operation was aborted due to timeout (${timeoutMs}ms exceeded)`);
+    err.name = "TimeoutError";
+    controller.abort(err);
+  }, timeoutMs);
+  return {
+    signal: controller.signal,
+    cleanup: () => clearTimeout(timer),
+  };
+}
+
+/**
+ * Combines multiple AbortSignal instances into a single signal that aborts
+ * when any of the input signals aborts. Falls back gracefully when AbortSignal.any is unavailable.
+ */
+export function combineAbortSignals(signals: (AbortSignal | undefined | null)[]): AbortSignal {
+  const validSignals = signals.filter((s): s is AbortSignal => Boolean(s));
+  if (validSignals.length === 0) {
+    return new AbortController().signal;
+  }
+  if (validSignals.length === 1) {
+    return validSignals[0];
+  }
+  if (typeof AbortSignal !== "undefined" && typeof (AbortSignal as any).any === "function") {
+    return (AbortSignal as any).any(validSignals);
+  }
+  const controller = new AbortController();
+  for (const sig of validSignals) {
+    if (sig.aborted) {
+      controller.abort(sig.reason);
+      return controller.signal;
+    }
+    sig.addEventListener("abort", () => controller.abort(sig.reason), { once: true });
+  }
+  return controller.signal;
+}
+
+/**
+ * Determines whether a screener failure is transient (timeout, network drop, 499/502/503/504),
+ * rendering it eligible for bounded exponential-backoff retry.
+ */
+export function isTransientScreenerError(error: any, status?: string): boolean {
+  if (status === "TIMEOUT") return true;
+  if (!error) return false;
+  const msg = typeof error === "string" ? error : (error?.message || "");
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes("timeout") ||
+    lower.includes("deadline") ||
+    lower.includes("abort") ||
+    lower.includes("network") ||
+    lower.includes("econnrefused") ||
+    lower.includes("fetch failed") ||
+    lower.includes("502") ||
+    lower.includes("503") ||
+    lower.includes("504") ||
+    lower.includes("499")
+  );
+}
+
+export interface RadarSnapshotSummary {
+  scannerId: string;
+  status: RadarCapabilityStatus;
+  snapshotId: string;
+  matchedCount: number;
+  dataAsOf: string;
+  generatedAt: string;
+  populationDenominator: number;
+  universeBuildId: string;
+  universeId: string;
+  scannedSuccessfullyCount: number;
+  stage2OpportunityCount?: number;
+  coverageStatus: string;
+  freshnessStatus: string;
+  raw?: any;
+}
+
+/**
+ * Fast, authoritative published-snapshot read for initial Radar display (<300ms).
+ * Reuses active snapshot metadata (universe size, Stage 2 opportunities, market data freshness,
+ * and provenance) without waiting for full 500-candidate multi-factor evaluation.
+ */
+export async function fetchRadarSnapshot(options?: {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}): Promise<RadarSnapshotSummary | null> {
+  const effectiveTimeout = options?.timeoutMs ?? 4000;
+  const { signal: timeoutSignal, cleanup: cleanupTimeout } = createTimeoutSignal(effectiveTimeout);
+  const fetchSignal = combineAbortSignals([options?.signal, timeoutSignal]);
+
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/screener/vcp/snapshot`, {
+      headers: ARX_API_HEADERS,
+      signal: fetchSignal,
+    });
+    if (!res.ok) {
+      console.warn(`VCP snapshot fetch failed: HTTP ${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    if (!data || typeof data !== "object") return null;
+
+    const snapshotId = data.snapshot_id || data.snapshot?.snapshot_id || "";
+    const status: RadarCapabilityStatus = data.status || "AVAILABLE";
+    const popDenom =
+      data.coverage?.scanned_successfully_count ||
+      data.snapshot?.universe_size ||
+      data.universe?.source_population_count ||
+      500;
+    const buildId =
+      data.universe?.universe_build_id ||
+      data.provenance?.universe_metadata?.universe_build_id ||
+      "";
+    const univId =
+      data.provenance?.universe_metadata?.display_name ||
+      data.universe?.scope_class ||
+      "ARX_US_EQUITIES";
+    const stage2Count =
+      typeof data.coverage?.stage_2_opportunity_count === "number"
+        ? data.coverage.stage_2_opportunity_count
+        : undefined;
+
+    return {
+      scannerId: data.scanner_id || "MINERVINI_VCP",
+      status,
+      snapshotId,
+      matchedCount: typeof data.matched_count === "number" ? data.matched_count : 0,
+      dataAsOf: data.data_as_of || data.freshness?.data_as_of || "",
+      generatedAt: data.generated_at || data.freshness?.generated_at || "",
+      populationDenominator: popDenom,
+      universeBuildId: buildId,
+      universeId: univId,
+      scannedSuccessfullyCount: data.coverage?.scanned_successfully_count || popDenom,
+      stage2OpportunityCount: stage2Count,
+      coverageStatus: data.coverage?.coverage_status || "COMPLETE",
+      freshnessStatus: data.freshness?.status || "LIVE",
+      raw: data,
+    };
+  } catch (err) {
+    console.warn("fetchRadarSnapshot error:", err);
+    return null;
+  } finally {
+    cleanupTimeout();
+  }
+}
+
+export async function fetchScreenerGems(
+  model: string = "all",
+  universe?: string,
+  options?: { signal?: AbortSignal; timeoutMs?: number }
+): Promise<ScreenerResponse> {
+  const effectiveTimeout = options?.timeoutMs ?? SCREENER_TIMEOUT_MS;
+  const { signal: timeoutSignal, cleanup: cleanupTimeout } = createTimeoutSignal(effectiveTimeout);
+  const combinedSignal = combineAbortSignals([options?.signal, timeoutSignal]);
+
   try {
     const baseUrl = getApiBaseUrl();
     const univParam = universe ? `&universe=${encodeURIComponent(universe)}` : "";
     const res = await fetch(`${baseUrl}/screener/run?filter_type=${encodeURIComponent(model)}${univParam}`, {
       headers: ARX_API_HEADERS,
-      signal: AbortSignal.timeout(6000),
+      signal: combinedSignal,
     });
     if (res.ok) {
       const data = await res.json();
@@ -2143,9 +2320,17 @@ export async function fetchScreenerGems(model: string = "all", universe?: string
       };
     }
   } catch (err: any) {
-    const isTimeout = err?.name === "AbortError" || (err instanceof Error && err.name === "AbortError");
-    const errMsg = isTimeout
-      ? "Screener API request timed out (deadline 6000ms exceeded)"
+    const isCallerAborted = Boolean(options?.signal?.aborted);
+    const isTimeout =
+      !isCallerAborted &&
+      (timeoutSignal.aborted ||
+        err?.name === "AbortError" ||
+        (err instanceof Error && err.name === "AbortError") ||
+        (typeof err?.message === "string" && err.message.toLowerCase().includes("timeout")));
+    const errMsg = isCallerAborted
+      ? "Screener request cancelled"
+      : isTimeout
+      ? `Screener API request timed out (deadline ${effectiveTimeout}ms exceeded)`
       : (err instanceof Error ? err.message : "Failed to connect to screener service");
     console.warn("Screener API error:", errMsg);
     return {
@@ -2155,6 +2340,8 @@ export async function fetchScreenerGems(model: string = "all", universe?: string
       status: isTimeout ? "TIMEOUT" : "ERROR",
       error: errMsg,
     };
+  } finally {
+    cleanupTimeout();
   }
 
   // Epistemic Invariant: Zero synthetic fallback catalog data

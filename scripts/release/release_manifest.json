@@ -1,41 +1,57 @@
 {
-  "release_candidate_commit": "087b385af68828dee31f7b9f27bb0fba18a1a1c2",
-  "base_anchor_commit": "46b0c6579940e8d152b844b0d1168851e57e09d0",
-  "total_files": 4,
+  "release_candidate_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
+  "base_anchor_commit": "b2175572ba608dd1f32b62432040353bd288b10a",
+  "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-PREFLIGHT-ELEVATED-VOLATILITY-001",
+  "directive": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001",
   "files": {
-    "frontend/components/PreFlightChecklistModal.tsx": {
+    "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 242,
-      "originating_commit": "087b385af68828dee31f7b9f27bb0fba18a1a1c2",
-      "governing_requirement": "ARX-PREFLIGHT-ELEVATED-VOLATILITY-001: Pre-Flight risk presentation, amber barometer and trade plan elevated volatility caution",
-      "sha256": "c979d8ef84e5b8cc849cc6f76178caa8d325c5e8b35290afa759ef83829b84cd",
-      "size_bytes": 35991
+      "originating_pr_number": 243,
+      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
+      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Radar in-memory response cache and stage evaluation memoization",
+      "sha256": "de0506f68c1d84872c957964a65cf5c2a88c65035572d217a61f41b0da187817",
+      "size_bytes": 115083
     },
-    "frontend/lib/preflightEvaluator.ts": {
+    "frontend/app/radar/page.tsx": {
       "operation": "M",
-      "originating_pr_number": 242,
-      "originating_commit": "087b385af68828dee31f7b9f27bb0fba18a1a1c2",
-      "governing_requirement": "ARX-PREFLIGHT-ELEVATED-VOLATILITY-001: PreFlightEvaluationResult isVixElevated calibration and amber badge class binding",
-      "sha256": "b972cf3ec4c98fc232dff224066aa50153f0bf746a42710d630692270d44e3f7",
-      "size_bytes": 45175
+      "originating_pr_number": 243,
+      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
+      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Fast snapshot read, bounded retry backoff, retained verified snapshot banner, and anti-false-zero error state",
+      "sha256": "0cff61a9e057ac88f9330cfafcf0548450e41f4cc94014098f583a31a1ce73e9",
+      "size_bytes": 114913
     },
-    "frontend/tests/preflightClearanceElevatedVix.test.ts": {
+    "frontend/lib/api.ts": {
+      "operation": "M",
+      "originating_pr_number": 243,
+      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
+      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Governed timeout headroom, createTimeoutSignal, combineAbortSignals, transient error classification, and fetchRadarSnapshot",
+      "sha256": "5ec21c0b8b88643a467ac46a3e1682a6c598642ec5019cea97cf5e972329bbe6",
+      "size_bytes": 192635
+    },
+    "frontend/package.json": {
+      "operation": "M",
+      "originating_pr_number": 243,
+      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
+      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Wire radarFirstLoadReliability.test.ts into architectural test runner",
+      "sha256": "d129b2d9135edc93733c71d86796566cc048ec9b26e6a3d282ee40d344439286",
+      "size_bytes": 3507
+    },
+    "frontend/tests/radarFirstLoadReliability.test.ts": {
       "operation": "A",
-      "originating_pr_number": 242,
-      "originating_commit": "087b385af68828dee31f7b9f27bb0fba18a1a1c2",
-      "governing_requirement": "ARX-PREFLIGHT-ELEVATED-VOLATILITY-001: Targeted regression test suite for elevated volatility clearance and export warnings",
-      "sha256": "eb15e85b039c3d2722bc26c1d8551210db50c7067db4ccbb3cd02c553a586555",
-      "size_bytes": 6419
+      "originating_pr_number": 243,
+      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
+      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Targeted 10-check architectural test suite for first-load reliability remediation",
+      "sha256": "20ac288ab5193a87c8e7f99d5f1126f4237fad7423f09fdd11286a4b9527642b",
+      "size_bytes": 16495
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 242,
-      "originating_commit": "087b385af68828dee31f7b9f27bb0fba18a1a1c2",
-      "governing_requirement": "ARX-PREFLIGHT-ELEVATED-VOLATILITY-001: Register PR #242 in release qualification diff integrity validator",
-      "sha256": "3250252b4f206863f349432b9fd2faddf42109a25e76fcaa55df314798deddbe",
-      "size_bytes": 57936
+      "originating_pr_number": 243,
+      "originating_commit": "c087c640b8470e3aa7faf0fa8492491ca4fe94ee",
+      "governing_requirement": "ARX-RADAR-FIRST-LOAD-RELIABILITY-001: Register PR #243 in release qualification diff integrity validator",
+      "sha256": "df6334ffd05b7b86f7db24d96adabd7fea437b99d67061b99042f4c716acc3ac",
+      "size_bytes": 57941
     }
   },
   "qualification_framework_files": {
@@ -45,8 +61,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "3250252b4f206863f349432b9fd2faddf42109a25e76fcaa55df314798deddbe",
-      "size_bytes": 57936,
+      "sha256": "df6334ffd05b7b86f7db24d96adabd7fea437b99d67061b99042f4c716acc3ac",
+      "size_bytes": 57941,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
