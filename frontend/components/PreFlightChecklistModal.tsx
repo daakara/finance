@@ -211,7 +211,7 @@ export default function PreFlightChecklistModal({
   const isMacroPassed = checks[4].passed;
 
   const isVixValid = typeof vix === "number" && !isNaN(vix) && vix > 0;
-  const isVixElevated = isMacroPassed && currentVix !== null && currentVix >= 20.0;
+  const isVixElevated = Boolean(evalResult?.isVixElevated ?? (isMacroPassed && currentVix !== null && currentVix >= 20.0 && currentVix < 26.0));
 
   const renderCheck2Detail = () => {
     if (isStage4) {
@@ -298,7 +298,7 @@ export default function PreFlightChecklistModal({
 
   // Trade plan markdown — differentiated by vernacularMode
   const tradePlanMarkdown = isPlain
-    ? `${!isCleared ? `> ⚠️ **RESEARCH / JOURNAL ONLY — NOT EXECUTABLE**\n> Clearance Blockers: ${evalResult.allBlockers.join("; ") || activeBlocker}\n\n` : ""}### 📋 ARX Terminal Trade Plan: ${symbol}
+    ? `${!isCleared ? `> ⚠️ **RESEARCH / JOURNAL ONLY — NOT EXECUTABLE**\n> Clearance Blockers: ${evalResult.allBlockers.join("; ") || activeBlocker}\n\n` : isVixElevated ? `> ⚠️ **CAUTION: ELEVATED MARKET VOLATILITY (VIX ${currentVix?.toFixed(1)})**\n> Volatility regime elevated (20.0–26.0) — exercise caution on position sizing.\n\n` : ""}### 📋 ARX Terminal Trade Plan: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "⚡ Day Trader" : "🏛️ Swing / Long-Term Compounder"}
 - **Current Price**: $${safePrice.toFixed(2)}
@@ -308,9 +308,9 @@ export default function PreFlightChecklistModal({
 - **Profit Goal 2 (TP2 Runner)**: ${target2Str}
 - **Tactical Rule (Protected Trailing Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a protected trade.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
-- **Pre-Flight Score**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) · ${isCleared ? "🟢 CLEARED" : `⚠️ NOT CLEARED — ${activeBlocker}`}
+- **Pre-Flight Score**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) · ${isCleared ? (isVixElevated ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION" : "🟢 CLEARED") : `⚠️ NOT CLEARED — ${activeBlocker}`}
 `
-    : `${!isCleared ? `> ⚠️ **RESEARCH / JOURNAL ONLY — NOT EXECUTABLE**\n> Clearance Blockers: ${evalResult.allBlockers.join("; ") || activeBlocker}\n\n` : ""}### 📋 ARX Institutional Execution Brief: ${symbol}
+    : `${!isCleared ? `> ⚠️ **RESEARCH / JOURNAL ONLY — NOT EXECUTABLE**\n> Clearance Blockers: ${evalResult.allBlockers.join("; ") || activeBlocker}\n\n` : isVixElevated ? `> ⚠️ **CAUTION: ELEVATED MARKET VOLATILITY (VIX ${currentVix?.toFixed(1)})**\n> Volatility regime elevated (20.0–26.0) — exercise caution on position sizing.\n\n` : ""}### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "Intraday Momentum Pullback" : "Swing / Compounder Accumulation"}
 - **Readiness input**: $${safePrice.toFixed(2)} | **Optimal Entry**: ${entryZoneStr}
@@ -320,8 +320,8 @@ export default function PreFlightChecklistModal({
 - **Execution Rule (Protected Trailing Ratchet)**: ${safeTarget !== null ? `Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure protected runner convexity.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Risk/Reward**: ${isRRValid ? `${safeRR.toFixed(2)}:1 (Required: 2:1)` : "Unavailable"}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
-- **Pre-Flight Clearance**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : `⚠️ NOT CLEARED (${activeBlocker})`}
-- **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "HAZARD" : resolvedCatalystState}
+- **Pre-Flight Clearance**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) — ${isCleared ? (isVixElevated ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION" : "🟢 CLEARED FOR EXECUTION") : `⚠️ NOT CLEARED (${activeBlocker})`}
+- **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"}${isVixElevated ? " (ELEVATED CAUTION)" : ""} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "HAZARD" : resolvedCatalystState}
 `;
 
   const handleCopy = async () => {
@@ -415,7 +415,9 @@ export default function PreFlightChecklistModal({
           {/* Clearance Conviction Barometer */}
           <div className={`p-3.5 rounded-xl border flex items-center justify-between ${
             isCleared
-              ? "bg-emerald-950/40 border-emerald-700/80 text-emerald-300"
+              ? (isVixElevated
+                  ? "bg-amber-950/40 border-amber-700/80 text-amber-300"
+                  : "bg-emerald-950/40 border-emerald-700/80 text-emerald-300")
               : "bg-amber-950/40 border-amber-700/80 text-amber-300"
           }`}>
             <div>
@@ -423,7 +425,13 @@ export default function PreFlightChecklistModal({
                 {isPlain ? "Trade Readiness Score" : "Quantitative Clearance Status"}
               </span>
               <div className="text-base sm:text-lg font-extrabold flex items-center gap-1.5">
-                <span>{isCleared ? "🟢 CLEARED TO EXECUTE" : `⚠️ NOT CLEARED — ${activeBlocker}`}</span>
+                <span>
+                  {isCleared
+                    ? (isVixElevated
+                        ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION"
+                        : "🟢 CLEARED TO EXECUTE")
+                    : `⚠️ NOT CLEARED — ${activeBlocker}`}
+                </span>
                 <span className="text-xs font-mono font-normal">({convictionPct}% Checklist)</span>
               </div>
             </div>
@@ -588,7 +596,13 @@ export default function PreFlightChecklistModal({
                           : !isVixValid
                           ? "5. Overall Market Weather (VIX unavailable)"
                           : "5. Overall Market Weather (VIX high, risk blocked)")
-                      : "5. Macro Regime Guard (VIX Volatility Guardrails Safe)"}
+                      : (isVixElevated
+                          ? "5. Macro Regime Guard (VIX Elevated, Caution Warranted)"
+                          : isMacroPassed
+                          ? "5. Macro Regime Guard (VIX Volatility Guardrails Safe)"
+                          : !isVixValid
+                          ? "5. Macro Regime Guard (VIX Unavailable)"
+                          : "5. Macro Regime Guard (VIX High, Risk Blocked)")}
                   </span>
                 </div>
                 <p className="text-[11px] text-[var(--text-2)] pl-5">

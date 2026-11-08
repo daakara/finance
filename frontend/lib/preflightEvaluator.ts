@@ -125,6 +125,7 @@ export interface PreFlightEvaluationResult {
   canSizeTradeGranted: boolean;
   mandatoryChecksVerified: boolean;
   isCleared: boolean;
+  isVixElevated: boolean;
   clearanceStatusLabel: string;
   clearanceStatusBadgeClass: string;
   activeBlocker: string;
@@ -756,7 +757,7 @@ export function evaluatePreFlightChecks(
 
   // ── Check 5: Macro Regime Guard ──────────────────────────────────────────
   const isMacroPassed = isPriceValid && isVixValid && currentVix !== null && currentVix < 26.0;
-  const isVixElevated = isMacroPassed && currentVix !== null && currentVix >= 20.0;
+  const isVixElevated = isMacroPassed && currentVix !== null && currentVix >= 20.0 && currentVix < 26.0;
   const chk5Status: CheckStatus = isMacroPassed ? "PASS" : isVixValid ? "HIGH VIX" : "UNAVAILABLE";
 
   const chk5Summary = isMacroPassed
@@ -965,7 +966,9 @@ export function evaluatePreFlightChecks(
   })();
 
   const clearanceStatusLabel = isCleared
-    ? "CLEARED"
+    ? (isVixElevated
+        ? "CLEARED — ELEVATED VOLATILITY CAUTION"
+        : "CLEARED")
     : passedCount === 5 && !isActionableGranted
     ? "NOT CLEARED · 5/5 PASS (AWAITING CONFIRMATION)"
     : isStage4
@@ -973,7 +976,9 @@ export function evaluatePreFlightChecks(
     : `NOT CLEARED (${passedCount}/5)`;
 
   const clearanceStatusBadgeClass = isCleared
-    ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+    ? (isVixElevated
+        ? "bg-amber-950/80 text-amber-300 border-amber-700/80"
+        : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80")
     : "bg-amber-950/80 text-amber-300 border-amber-700/80";
 
   // Formatted Trade Plan Elements
@@ -1022,6 +1027,7 @@ export function evaluatePreFlightChecks(
     isActionableGranted,
     mandatoryChecksVerified,
     isCleared,
+    isVixElevated,
     clearanceStatusLabel,
     clearanceStatusBadgeClass,
     activeBlocker,
