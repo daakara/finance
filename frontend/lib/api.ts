@@ -2027,13 +2027,17 @@ export function normalizeRadarEnvelopeState(data: any): {
   };
 }
 
+// The published 500-equity evaluation can exceed 6 seconds on a cold request.
+// Keep a bounded deadline while the snapshot-first read path is separately optimized.
+const RADAR_SCREENER_REQUEST_TIMEOUT_MS = 15000;
+
 export async function fetchScreenerGems(model: string = "all", universe?: string): Promise<ScreenerResponse> {
   try {
     const baseUrl = getApiBaseUrl();
     const univParam = universe ? `&universe=${encodeURIComponent(universe)}` : "";
     const res = await fetch(`${baseUrl}/screener/run?filter_type=${encodeURIComponent(model)}${univParam}`, {
       headers: ARX_API_HEADERS,
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(RADAR_SCREENER_REQUEST_TIMEOUT_MS),
     });
     if (res.ok) {
       const data = await res.json();
@@ -2143,9 +2147,9 @@ export async function fetchScreenerGems(model: string = "all", universe?: string
       };
     }
   } catch (err: any) {
-    const isTimeout = err?.name === "AbortError" || (err instanceof Error && err.name === "AbortError");
+    const isTimeout = err?.name === "TimeoutError" || err?.name === "AbortError";
     const errMsg = isTimeout
-      ? "Screener API request timed out (deadline 6000ms exceeded)"
+      ? `Screener API request timed out (deadline ${RADAR_SCREENER_REQUEST_TIMEOUT_MS}ms exceeded)`
       : (err instanceof Error ? err.message : "Failed to connect to screener service");
     console.warn("Screener API error:", errMsg);
     return {
