@@ -1,97 +1,73 @@
 {
-  "release_candidate_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-  "base_anchor_commit": "f7c8589ab7864cbae2b8639e63a60fbdaca501ea",
-  "total_files": 11,
+  "release_candidate_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
+  "base_anchor_commit": "868b460d6d14b4879b839bf43bf0fa64ff62b571",
+  "total_files": 8,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-RADAR-P2-FINAL",
+  "directive": "ARX-EVIDENCE-REGISTRY-001",
   "files": {
-    "docs/research/UB-ARX-EXPANSION-250-20261107.json": {
-      "operation": "A",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: Reference published 250 universe ledger",
-      "sha256": "507f6ea9cd6a77d1b773fdcf0578060e33b305db3b1a953f7834f85afe610548",
-      "size_bytes": 4561
-    },
-    "docs/research/UB-ARX-EXPANSION-500-REHEARSAL.json": {
-      "operation": "A",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: 500-equity rehearsal universe manifest and membership hash",
-      "sha256": "cfacda2ca29eb5bf8c4a7604ae3e37f3c368cc1a2a3bbf3c7299840aa0fc0c9a",
-      "size_bytes": 7915
-    },
-    "docs/research/UB-ARX-HYDRATION-PLAN-500.json": {
-      "operation": "A",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: Exact symbol batch hydration plan and resource partition",
-      "sha256": "ddf80914d8528e1897d9605f3d220b2565d740dbaa8aa753a6db6a9a7e652472",
-      "size_bytes": 9566
-    },
-    "docs/research/candidate_exclusions_ledger_500.json": {
-      "operation": "A",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: Audited exclusions ledger for 500-equity candidate pool",
-      "sha256": "7a0ef7f6b72c05e9fbdcac172fa5e961bde03e14279060b38f81db176cd3cd5d",
-      "size_bytes": 11236
-    },
-    "docs/research/coverage_accounting_500_receipt.json": {
-      "operation": "A",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: Formal coverage accounting receipt for candidate population",
-      "sha256": "4a5bd99903b5acf193175151497af90b3d9ab30ac8417ec9fe131dc812eea079",
-      "size_bytes": 4721
-    },
-    "docs/research/hydration_readiness_receipt.json": {
-      "operation": "A",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: Hydration readiness and provider entitlement verdict receipt",
-      "sha256": "02fdb8bcdf17ad332402220b009f9b4cb3da1b8977ba93b3db6bb894cec23490",
-      "size_bytes": 1942
-    },
-    "scripts/diagnostics/qualify_500_universe_expansion.py": {
-      "operation": "A",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: Bounded 500-universe candidate selection and qualification engine",
-      "sha256": "9e3f02e6fb53b7ce78e7e1e60fd8a613a8890ff716632be25834a64a4ef546a2",
-      "size_bytes": 25256
-    },
-    "scripts/diagnostics/reconcile_hydration_entitlements.py": {
-      "operation": "A",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: Market data entitlement and local store reconciliation diagnostic",
-      "sha256": "86cb1dc8e4fcfe13605767dae2079fb0d83492023d68aa6289ddf4849818c87b",
-      "size_bytes": 12802
-    },
-    "scripts/ingest_alpaca_historical.py": {
+    "frontend/app/page.tsx": {
       "operation": "M",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: Parameterized max completed session and symbol list manifest support",
-      "sha256": "cfabed64d273ae2593ce21d4fa8e156640b610b6f2f2da05923b7240a7f8d4a9",
-      "size_bytes": 76355
+      "originating_pr_number": 239,
+      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
+      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Pass dynamic quality score and factor scores to canonical Pre-Flight inputs",
+      "sha256": "7506b81563363d87431793b3ef380d9078178cf79d903ad33f5b7da990b79e9f",
+      "size_bytes": 44886
     },
-    "scripts/push_radar_p2_004_hydration_readiness.py": {
-      "operation": "A",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: Authenticated branch synchronization utility",
-      "sha256": "ff7f87211f924c420d5dedb79134bd70a088142e6675f78f23c612a3aea7aab6",
-      "size_bytes": 1219
+    "frontend/components/PreFlightChecklistModal.tsx": {
+      "operation": "M",
+      "originating_pr_number": 239,
+      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
+      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Destructure and forward factor scores to evaluatePreFlightChecks",
+      "sha256": "68f580611045d2999d4809c679528044478d04afc74544901fe3121de029cd60",
+      "size_bytes": 31116
     },
-    "tests/test_alpaca_500_hydration_readiness.py": {
+    "frontend/components/terminal/EvidenceDomainStatusCard.tsx": {
+      "operation": "M",
+      "originating_pr_number": 239,
+      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
+      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: High-density responsive mobile card view (<640px) eliminating clipping and row bloat",
+      "sha256": "a4d6324ec330ce4077a523bec9e0ef9fb6b6c3e8bdacb13acdd522077445dd29",
+      "size_bytes": 11815
+    },
+    "frontend/lib/evidenceDomains.ts": {
+      "operation": "M",
+      "originating_pr_number": 239,
+      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
+      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Epistemic separation of zero observations vs held/unavailable, Foreign ADR statutory filings, VIX 26.0 ceiling, and multi-blocker counts",
+      "sha256": "6a47aee0fd23ee00b6f991c47b05f77aa9ad4e32b8151be24bf40c3049ec268f",
+      "size_bytes": 26110
+    },
+    "frontend/lib/preflightEvaluator.ts": {
+      "operation": "M",
+      "originating_pr_number": 239,
+      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
+      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: CHK-3 capital risk dynamic quality score evaluation, Foreign ADR pass, ETF solvency and earnings exemptions",
+      "sha256": "732e0f796743df466e071884a883ccb4779ac7647fd77f85af250ce394610bf4",
+      "size_bytes": 42975
+    },
+    "frontend/package.json": {
+      "operation": "M",
+      "originating_pr_number": 239,
+      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
+      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Register crossAssetEvidenceAndMobileIntegrity.test.ts in test:arch",
+      "sha256": "cddeb13a13a327ca3c7dacd489897af40157f12a3b6fc17fbcb1986d36af0984",
+      "size_bytes": 3456
+    },
+    "frontend/tests/crossAssetEvidenceAndMobileIntegrity.test.ts": {
       "operation": "A",
-      "originating_pr_number": 237,
-      "originating_commit": "7ffacd92905c2602d90cac73d48d4762b63b4ad1",
-      "governing_requirement": "ARX-RADAR-P2-005: Unit regression suite for Alpaca SIP 500 hydration readiness",
-      "sha256": "d2adc6d426d12e6f0cd05bfb7a74464b8a6f2a0de2f8e47eb6fe5629779673dd",
-      "size_bytes": 7465
+      "originating_pr_number": 239,
+      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
+      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Comprehensive cross-asset regression suite for NVDA, DHLGY, NAUT, SPY and mobile layout",
+      "sha256": "cd0c93f09de2b2d7dfaf67bd7c4dde2b76b2098bf1ee8759ba88b584ca3ed448",
+      "size_bytes": 18883
+    },
+    "frontend/tests/evidenceDomainAuthority.test.ts": {
+      "operation": "M",
+      "originating_pr_number": 239,
+      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
+      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Aligned congressional disclosures assertion under HOLD_SEC_001 to UNAVAILABLE",
+      "sha256": "3710df0eb70f58f342a211c0327290ea9a59f65314652f770be484c64bc8f895",
+      "size_bytes": 13676
     }
   },
   "qualification_framework_files": {
@@ -101,9 +77,9 @@
       "size_bytes": 8414
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "16848553e82c80da6be102159445db71ea39a37b3624cd3fcc79f3c0dca116fb",
+      "sha256": "b8a2a058331ac1d82544e152e51a31e69abd0941a02195a1d21653e94fa0eb27",
       "description": "Release qualification module: rq02_diff_integrity.py",
-      "size_bytes": 57916
+      "size_bytes": 57921
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",

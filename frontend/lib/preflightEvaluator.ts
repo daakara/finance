@@ -71,6 +71,18 @@ export interface PreFlightChecklistInputs {
   liveFreshnessStatus?: string | null;
   marketSession?: string | null;
   observationTime?: string | number | null;
+  // Cross-Asset Capital & Classification Inputs
+  shortFloat?: number | null;
+  qualityScore?: number | null;
+  assetClass?: "EQUITY" | "ETF" | "CRYPTO" | string | null;
+  securityType?: string | null;
+  verdict?: string | null;
+  factorScores?: {
+    qualityScore?: number | null;
+    piotroskiFScore?: number | null;
+    shortFloat?: number | null;
+    verdict?: string | null;
+  } | null;
 }
 
 export type ProvenanceCategory =
@@ -521,33 +533,73 @@ export function evaluatePreFlightChecks(
     icon: isTrendPassed ? "✓" : isStage4 ? "⏳" : "⚠️",
   };
 
+  // Detect ETF / Fund Asset Class
+  const isEtf =
+    inputs.assetClass?.toUpperCase() === "ETF" ||
+    inputs.securityType?.toUpperCase() === "ETF" ||
+    cleanSym === "SPY" ||
+    cleanSym === "QQQ" ||
+    cleanSym === "IWM" ||
+    cleanSym === "DIA" ||
+    cleanSym === "XLK" ||
+    cleanSym === "XLF" ||
+    cleanSym === "XLE" ||
+    cleanSym === "VTI" ||
+    cleanSym === "VOO" ||
+    catalystEvidence?.coverageStatus === "NOT_APPLICABLE" ||
+    (catalystEvidence as any)?.event_type === "NONE_ETF";
+
   // ── Check 3: CHK-3 CAPITAL-RISK ──────────────────────────────────────────
-  const hasShortFloat = catalogItem !== undefined && catalogItem.shortFloat !== undefined && catalogItem.shortFloat !== null;
-  const hasQualityScore = catalogItem !== undefined && catalogItem.qualityScore !== undefined && catalogItem.qualityScore !== null;
-  const capitalRiskEvidenceState: "COMPLETE" | "PARTIAL" | "UNAVAILABLE" =
-    hasShortFloat && hasQualityScore
-      ? "COMPLETE"
-      : hasShortFloat || hasQualityScore
-      ? "PARTIAL"
-      : "UNAVAILABLE";
+  const resolvedShortFloat = (inputs.shortFloat !== undefined && inputs.shortFloat !== null)
+    ? Number(inputs.shortFloat)
+    : (inputs.factorScores?.shortFloat !== undefined && inputs.factorScores?.shortFloat !== null)
+    ? Number(inputs.factorScores.shortFloat)
+    : (catalogItem?.shortFloat !== undefined && catalogItem.shortFloat !== null)
+    ? Number(catalogItem.shortFloat)
+    : null;
 
-  const shortFloatNum = Number(catalogItem?.shortFloat) || 0;
-  const qualityScoreNum = Number(catalogItem?.qualityScore) || 0;
-  const isTurnaround = String(catalogItem?.verdict || "").toLowerCase().includes("turnaround");
+  const resolvedQualityScore = (inputs.qualityScore !== undefined && inputs.qualityScore !== null)
+    ? Number(inputs.qualityScore)
+    : (inputs.factorScores?.qualityScore !== undefined && inputs.factorScores?.qualityScore !== null)
+    ? Number(inputs.factorScores.qualityScore)
+    : (catalogItem?.qualityScore !== undefined && catalogItem.qualityScore !== null)
+    ? Number(catalogItem.qualityScore)
+    : null;
 
-  const isCapitalRiskFailed = isPriceValid && (
-    (capitalRiskEvidenceState === "COMPLETE" && (shortFloatNum > 12.0 || isTurnaround || qualityScoreNum < 60)) ||
+  const resolvedVerdict = inputs.verdict ?? inputs.factorScores?.verdict ?? catalogItem?.verdict ?? "";
+  const isTurnaround = String(resolvedVerdict).toLowerCase().includes("turnaround");
+
+  const hasShortFloat = resolvedShortFloat !== null && !isNaN(resolvedShortFloat);
+  const hasQualityScore = resolvedQualityScore !== null && !isNaN(resolvedQualityScore);
+
+  const capitalRiskEvidenceState: "COMPLETE" | "PARTIAL" | "UNAVAILABLE" = isEtf
+    ? "COMPLETE"
+    : hasShortFloat && hasQualityScore
+    ? "COMPLETE"
+    : hasShortFloat || hasQualityScore
+    ? "PARTIAL"
+    : "UNAVAILABLE";
+
+  const shortFloatNum = hasShortFloat ? resolvedShortFloat! : 0;
+  const qualityScoreNum = hasQualityScore ? resolvedQualityScore! : 0;
+
+  const isCapitalRiskFailed = isPriceValid && !isEtf && (
+    (hasQualityScore && qualityScoreNum < 60) ||
+    (hasShortFloat && shortFloatNum > 12.0) ||
+    isTurnaround ||
     isDistributionTrap === true
   );
 
-  const isCapitalRiskPassed = isPriceValid && capitalRiskEvidenceState === "COMPLETE" && !isCapitalRiskFailed && isDistributionTrap !== true;
+  const isCapitalRiskPassed = isPriceValid && !isCapitalRiskFailed && (
+    isEtf || (hasQualityScore && qualityScoreNum >= 60 && (!hasShortFloat || shortFloatNum <= 12.0))
+  );
+
   const chk3Status: CheckStatus = isCapitalRiskPassed
     ? "PASS"
     : isCapitalRiskFailed
     ? "CAPITAL RISK"
-    : capitalRiskEvidenceState === "PARTIAL"
-    ? "UNAVAILABLE"
     : "UNAVAILABLE";
+
   const chk3Item: PreFlightCheckItem = {
     id: "CHK-3",
     tag: "CHK-3 CAPITAL",
@@ -560,14 +612,14 @@ export function evaluatePreFlightChecks(
       : "bg-amber-950/80 text-amber-300 border-amber-700/80",
     passed: isCapitalRiskPassed,
     summary: isCapitalRiskPassed
-      ? `Float ${shortFloatNum.toFixed(1)}% | Q-Score ${qualityScoreNum}`
+      ? (isEtf ? "Fund Structure | Solvency Exempt" : hasShortFloat ? `Float ${shortFloatNum.toFixed(1)}% | Q-Score ${qualityScoreNum}` : `Q-Score ${qualityScoreNum} | Solvency Verified`)
       : isCapitalRiskFailed
-      ? "Elevated Capital Distress"
+      ? (hasQualityScore && qualityScoreNum < 60 ? `Elevated Capital Distress (Q-Score ${qualityScoreNum})` : (hasShortFloat && shortFloatNum > 12.0) ? `Elevated Short Float (${shortFloatNum.toFixed(1)}%)` : "Elevated Capital Distress")
       : "Evidence Incomplete",
     detail: isCapitalRiskPassed
-      ? "Short interest is moderate (<12%) and fundamental solvency confirms absence of balance sheet distress."
+      ? (isEtf ? "Fund structures (ETFs) do not carry corporate balance sheet insolvency risk." : "Short interest is moderate (<12%) and fundamental solvency confirms absence of balance sheet distress.")
       : isCapitalRiskFailed
-      ? "Elevated short interest (>12%), turnaround status, or sub-60 quality score detected."
+      ? (hasQualityScore && qualityScoreNum < 60 ? `Fundamental quality score (${qualityScoreNum}/100) below institutional safety floor (60). High solvency/dilution risk.` : (hasShortFloat && shortFloatNum > 12.0) ? `Short float (${shortFloatNum.toFixed(1)}%) exceeds maximum 12% institutional threshold. Elevated squeeze volatility.` : "Elevated short interest (>12%), turnaround status, or sub-60 quality score detected.")
       : capitalRiskEvidenceState === "PARTIAL"
       ? "Fundamental quality score or short interest input missing. Pre-Flight cannot certify capital risk."
       : "Capital risk evidence unavailable: Financial quality metrics unverified.",
@@ -576,6 +628,10 @@ export function evaluatePreFlightChecks(
 
   // ── Check 4: Catalyst Hazard Buffer ──────────────────────────────────────
   const resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" = (() => {
+    if (isEtf) {
+      return "PASS";
+    }
+
     if (
       catalystState === "ERROR" ||
       catalystEvidence?.state === "ERROR" ||
@@ -635,7 +691,9 @@ export function evaluatePreFlightChecks(
     ? "ERROR"
     : "UNAVAILABLE";
 
-  const chk4Summary = resolvedCatalystState === "PASS"
+  const chk4Summary = isEtf
+    ? "Fund Structure | Earnings Exempt"
+    : resolvedCatalystState === "PASS"
     ? (isCatalystConfirmed
         ? `Runway > 7d (${catalystEvidence?.daysToEarnings?.toFixed(1) || ">7"}d)`
         : `Runway > 7d (Unconfirmed)`)
@@ -643,7 +701,9 @@ export function evaluatePreFlightChecks(
     ? "Imminent Earnings Event"
     : "Coverage Unavailable";
 
-  const chk4Detail = resolvedCatalystState === "PASS"
+  const chk4Detail = isEtf
+    ? "Fund structures (ETFs) do not carry binary single-stock quarterly earnings events."
+    : resolvedCatalystState === "PASS"
     ? (isCatalystConfirmed
         ? `Clean runway verified (>7 days to confirmed binary earnings event${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}).`
         : `Clean runway indicated (>7 days to estimated earnings${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}), but event confirmation is unverified by primary source.`)

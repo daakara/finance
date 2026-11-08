@@ -42,6 +42,12 @@ export default function PreFlightChecklistModal({
   liveFreshnessStatus,
   marketSession,
   observationTime,
+  shortFloat,
+  qualityScore,
+  assetClass,
+  securityType,
+  verdict,
+  factorScores,
 }: PreFlightChecklistModalProps) {
   const [copied, setCopied] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -131,6 +137,12 @@ export default function PreFlightChecklistModal({
       liveFreshnessStatus,
       marketSession,
       observationTime,
+      shortFloat,
+      qualityScore,
+      assetClass,
+      securityType,
+      verdict,
+      factorScores,
     },
     vernacularMode
   );

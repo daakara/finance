@@ -183,7 +183,7 @@ console.log("Test 2: Unavailable smart money under HOLD_SEC_001 preserves ELIGIB
 
   assert.strictEqual(congress.applicability, "OPTIONAL");
   assert.strictEqual(congress.impact, "NON_BLOCKING");
-  assert.strictEqual(congress.status, "NO_OBSERVATIONS");
+  assert.strictEqual(congress.status, "UNAVAILABLE"); // Held under HOLD_SEC_001
 
   assert.strictEqual(macro.status, "VERIFIED");
   assert.strictEqual(macro.impact, "BLOCKING");
