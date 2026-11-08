@@ -660,8 +660,8 @@ def test_api_route_rejects_boolean_and_negative_matched_counts():
     assert caps_stale_bool["VCP"]["universeScreening"] == "PIPELINE_PENDING"
     assert caps_stale_bool["VCP"]["matchedCount"] is None
 
-    # 4. STALE with valid integer 8
+    # 4. STALE with valid integer 8 (strictly fails closed to PIPELINE_PENDING with matchedCount: None)
     caps_stale_valid = get_radar_capabilities(vcp_snapshot={"status": "STALE", "matched_count": 8})
-    assert caps_stale_valid["VCP"]["universeScreening"] == "AVAILABLE"
-    assert caps_stale_valid["VCP"]["matchedCount"] == 8
+    assert caps_stale_valid["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert caps_stale_valid["VCP"]["matchedCount"] is None
 

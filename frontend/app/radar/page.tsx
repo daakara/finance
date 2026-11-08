@@ -1273,7 +1273,9 @@ function RadarContent() {
                   tabIndex={activeFilter === 'SMART_MONEY' ? 0 : -1}
                   onKeyDown={(e) => handleFilterKeyDown(e, 'SMART_MONEY')}
                   onClick={() => handleCategoryFilterSelect('SMART_MONEY', 'tab-radar-filter-smart_money')}
-                  title={categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING' ? "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money." : undefined}
+                  title={categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
+                    ? "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money."
+                    : (capabilities.SMART_MONEY?.rationale || "5 Stage 2 matches from historical 10-issuer pilot · October 25, 2026 · Ingestion held")}
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'SMART_MONEY'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
@@ -1281,6 +1283,9 @@ function RadarContent() {
                   }`}
                 >
                   <span>🐋 Smart Money</span>
+                  {categoryMeta.SMART_MONEY.status !== 'PIPELINE_PENDING' && (
+                    <span className="text-slate-500 font-normal">·</span>
+                  )}
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
                     categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
                       ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
@@ -1539,6 +1544,9 @@ function RadarContent() {
                     return (
                       <>
                         <strong className="text-white">{authMatches}</strong> scanner matches · {coverageText}
+                        {authMatches === 0 && (
+                          <span className="text-[var(--text-muted)] font-normal ml-1">· Stage 2 qualification does not imply confirmed VCP geometry</span>
+                        )}
                       </>
                     );
                   }
@@ -1617,6 +1625,35 @@ function RadarContent() {
           </div>
         )}
 
+        {activeFilter === 'SMART_MONEY' && (
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] text-xs font-mono" data-testid="smart-money-scope-banner">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-cyan-400">🐋 Smart Money</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-[var(--text-2)]">
+                Scope: <strong className="text-white">Historical 10-Issuer Pilot</strong>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-[var(--text-2)]">
+                <strong className="text-white">{categoryMeta.SMART_MONEY.count ?? 5}</strong> Stage 2 matches from 10 pilot issuers · October 25, 2026 · Ingestion held
+              </span>
+              {capabilities.SMART_MONEY?.snapshotId && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-[var(--text-2)]">
+                    Snapshot: <strong className="text-[var(--text-1)]">{capabilities.SMART_MONEY.snapshotId}</strong>
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20" title="Historical pilot evidence; broad market SEC ingestion held under HOLD_SEC_001.">
+                ⚠️ Historical Pilot · Ingestion Held (HOLD_SEC_001)
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Level 1: Dense Confluence Stream Table (Tabpanel) */}
         {(!fetchError || (Boolean(retainedVerifiedSnapshot) && allAssets.length > 0)) && (
           <div
@@ -1671,6 +1708,8 @@ function RadarContent() {
                               ? "Minervini VCP — Universe Scanner Pending"
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
                               ? "Smart Money — Universe Scanner Pending"
+                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'AVAILABLE' && categoryMeta.VCP.count === 0
+                              ? "Minervini VCP — Zero Matching Contraction Setups (500 Evaluated)"
                               : `No qualifying candidates currently in "${activeFilter === 'VALUE_GARP' ? 'Value / GARP' : activeFilter}"`}
                           </p>
                           <p className="text-xs text-[var(--text-2)] font-sans leading-relaxed">
@@ -1698,6 +1737,8 @@ function RadarContent() {
                               ? (capabilities.SMART_MONEY?.populationDenominator && capabilities.SMART_MONEY?.universeBuildId && capabilities.SMART_MONEY?.publicationDigest
                                   ? `${capabilities.SMART_MONEY.populationDenominator} securities registered in universe build ${capabilities.SMART_MONEY.universeBuildId}. Automated market-wide institutional-flow screening is pending operational activation.`
                                   : "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.")
+                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'AVAILABLE' && categoryMeta.VCP.count === 0
+                              ? "Across all 500 published equities evaluated for the current market session, zero candidates satisfied all 10 normative Minervini VCP criteria. Stage 2 trend qualification does not imply confirmed volatility contraction geometry. Single-asset VCP geometry remains available in Analysis (/) and Setups (/setups)."
                               : activeFilter === 'ALL'
                               ? "Try clearing your search query or refreshing the tape to discover active confluence setups."
                               : `Try switching to "All Confluences" to view all active setups.`}

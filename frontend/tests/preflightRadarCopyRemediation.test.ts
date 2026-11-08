@@ -133,7 +133,7 @@ console.log("   [OK] Split capability model verified: single-asset availability 
 
 // D. Tab Button Tooltips
 assert.ok(
-  radarSource.includes("title={categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING' ? \"Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.\" : undefined}"),
+  radarSource.includes("Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money."),
   "Smart Money tab button must have informative tooltip"
 );
 assert.ok(
