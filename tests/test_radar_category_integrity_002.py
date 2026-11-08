@@ -11,7 +11,7 @@ Verifies:
 """
 
 import pytest
-from api.routes.screener import get_radar_capabilities, RADAR_CAPABILITY_CONTRACT
+from api.routes.screener import get_radar_capabilities, RADAR_CAPABILITY_CONTRACT, count_smart_money_stage2_intersection
 
 
 @pytest.fixture
@@ -209,3 +209,25 @@ def test_smart_money_fail_closed_on_error():
     assert sm["coverageStatus"] == "ERROR"
     assert sm["freshnessStatus"] == "ERROR"
     assert sm["rationale"] == "Database connection refused"
+
+
+def test_smart_money_stage2_count_excludes_non_stage2_and_non_tradable():
+    candidates = [
+        {"symbol": "AAPL", "stageClassification": "STAGE_2", "executionStatus": "ELIGIBLE", "categories": ["SMART_MONEY"]},
+        {"symbol": "MSFT", "stageClassification": "STAGE_2", "executionStatus": "ELIGIBLE", "categories": ["SMART_MONEY"]},
+        {"symbol": "NVDA", "stageClassification": "STAGE_1", "executionStatus": "ELIGIBLE", "categories": ["SMART_MONEY"]},
+        {"symbol": "META", "stageClassification": "STAGE_2", "executionStatus": "DELISTED_SECURITY", "categories": ["SMART_MONEY"]},
+        {"symbol": "GOOGL", "stageClassification": "STAGE_2", "executionStatus": "ELIGIBLE", "categories": ["VALUE_GARP"]},
+    ]
+    assert count_smart_money_stage2_intersection(candidates, {"DELISTED_SECURITY", "UNVERIFIED_ASSET"}) == 2
+
+
+def test_smart_money_stage2_count_zero_is_not_hardcoded(historical_pilot_sm_snapshot):
+    candidates = [
+        {"symbol": "NVDA", "stageClassification": "STAGE_1", "executionStatus": "ELIGIBLE", "categories": ["SMART_MONEY"]},
+    ]
+    count = count_smart_money_stage2_intersection(candidates, {"DELISTED_SECURITY", "UNVERIFIED_ASSET"})
+    assert count == 0
+    caps = get_radar_capabilities(sm_snapshot=historical_pilot_sm_snapshot, sm_stage2_intersection_count=count)
+    assert caps["SMART_MONEY"]["displayedStage2IntersectionCount"] == 0
+    assert caps["SMART_MONEY"]["rationale"].startswith("0 Stage 2 matches")
