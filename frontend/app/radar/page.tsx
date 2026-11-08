@@ -1635,7 +1635,7 @@ function RadarContent() {
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-[var(--text-2)]">
-                <strong className="text-white">{categoryMeta.SMART_MONEY.count ?? 5}</strong> Stage 2 matches from 10 pilot issuers · October 25, 2026 · Ingestion held
+                <strong className="text-white">{capabilities.SMART_MONEY?.displayedStage2IntersectionCount ?? categoryMeta.SMART_MONEY.count ?? 5}</strong> Stage 2 matches from 10 pilot issuers · October 25, 2026 · Ingestion held
               </span>
               {capabilities.SMART_MONEY?.snapshotId && (
                 <>
