@@ -8,6 +8,8 @@ from fastapi import APIRouter, Response, Header, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any, Tuple
 import time
+import threading
+import copy
 import pandas as pd
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
@@ -220,6 +222,20 @@ def get_radar_capabilities(
             sm_snapshot = first_arg
 
     caps = {k: dict(v) for k, v in RADAR_CAPABILITY_CONTRACT.items()}
+
+    # Resolve authoritative active snapshots from runners if not explicitly provided
+    if vcp_snapshot is None and "vcp_scanner_runner" in globals() and vcp_scanner_runner is not None:
+        try:
+            vcp_snapshot = vcp_scanner_runner.get_active_or_latest_snapshot()
+        except Exception:
+            pass
+
+    if sm_snapshot is None:
+        try:
+            sm_runner = get_smart_money_scanner_runner()
+            sm_snapshot = sm_runner.get_active_or_latest_snapshot()
+        except Exception:
+            pass
 
     # Resolve publication identity & population denominator if pointer or snapshot provided
     pop_denom = None
@@ -496,6 +512,9 @@ def classify_candidate_category_evidence(categories: List[str]) -> Dict[str, str
     return evidence
 
 
+_STAGE_CLASSIFICATION_CACHE: Dict[Tuple[str, str, int], Tuple[str, List[str], bool]] = {}
+
+
 def compute_canonical_stage_classification(
     symbol: str,
     candles: List[Dict[str, Any]],
@@ -510,6 +529,11 @@ def compute_canonical_stage_classification(
         return "STAGE_UNRESOLVED", ["INSUFFICIENT_HISTORICAL_SESSIONS"], False
 
     clean_sym = symbol.strip().upper()
+    latest_candle_date = str(candles[-1].get("time") or candles[-1].get("trade_date"))[:10]
+    cutoff_key = str(eval_as_of)[:10] if eval_as_of else latest_candle_date
+    cache_key = (clean_sym, cutoff_key, len(candles))
+    if cache_key in _STAGE_CLASSIFICATION_CACHE:
+        return _STAGE_CLASSIFICATION_CACHE[cache_key]
     raw_bars: List[DailyOHLCVBar] = []
     us_eastern = ZoneInfo("America/New_York")
 
@@ -557,7 +581,9 @@ def compute_canonical_stage_classification(
         )
         classifier = VCPClassifier()
         assessment = classifier.classify_case(package)
-        return assessment.stage_classification, assessment.classification_reason_codes, assessment.vcp_qualified
+        res = (assessment.stage_classification, assessment.classification_reason_codes, assessment.vcp_qualified)
+        _STAGE_CLASSIFICATION_CACHE[cache_key] = res
+        return res
     except Exception as exc:
         return "STAGE_UNRESOLVED", [f"CLASSIFIER_ERROR: {str(exc)}"], False
 
@@ -610,6 +636,11 @@ def run_screener(request: ScreenerRequest = None, response: Response = None):
 
 
 run_screener_post = run_screener
+
+
+_RADAR_CACHE_LOCK = threading.Lock()
+_RADAR_RUN_CACHE: Dict[str, Tuple[float, str, Optional[str], Dict[str, Any]]] = {}
+_RADAR_CACHE_TTL_SECONDS = 120.0
 
 
 @router.get("/run")
@@ -742,6 +773,19 @@ def run_screener_get(
         active_universe = scannable
         resolved_universe_id = "ARX_US_EQUITIES"
         resolved_build_id = target_build_id
+
+    if not custom_tickers and resolved_build_id:
+        cache_key = f"{resolved_build_id}:{filter_type}:{user_role}:{view}"
+        with _RADAR_CACHE_LOCK:
+            if cache_key in _RADAR_RUN_CACHE:
+                cached_time, cached_build, cached_snap, cached_data = _RADAR_RUN_CACHE[cache_key]
+                if cached_build == resolved_build_id and (time.time() - cached_time) < _RADAR_CACHE_TTL_SECONDS:
+                    response_copy = copy.deepcopy(cached_data)
+                    radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                    if "evidence" in response_copy and isinstance(response_copy["evidence"], dict):
+                        response_copy["evidence"]["servedAt"] = radar_now
+                        response_copy["evidence"]["cacheOrigin"] = "IN_MEMORY"
+                    return _sanitize_floats(response_copy)
 
     try:
         results = screener.evaluate_candidates(active_universe)
@@ -1390,7 +1434,7 @@ def run_screener_get(
             dataset_state = "PIPELINE_PENDING" if is_pipeline_pending_filter else ("CANDIDATES_AVAILABLE" if len(filtered) > 0 else "GENUINELY_EMPTY")
             overall_error = None
     
-        return _sanitize_floats({
+        final_response = _sanitize_floats({
             "status": status_val,
             "scanState": scan_state,
             "datasetState": dataset_state,
@@ -1417,6 +1461,16 @@ def run_screener_get(
             "results": filtered,
             "evidence": radar_evidence.to_dict(),
         })
+
+        if not custom_tickers and resolved_build_id and status_val in ("SUCCESS", "PARTIAL"):
+            with _RADAR_CACHE_LOCK:
+                _RADAR_RUN_CACHE[cache_key] = (
+                    time.time(),
+                    resolved_build_id,
+                    vcp_snapshot.get("snapshot_id") if isinstance(vcp_snapshot, dict) else None,
+                    final_response,
+                )
+        return final_response
     except Exception as e:
         radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         ref_count = len(active_universe) if "active_universe" in locals() and active_universe else 0
