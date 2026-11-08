@@ -1,49 +1,41 @@
 {
-  "release_candidate_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
-  "base_anchor_commit": "03dd86cb53f60314aba4314f35b5cd3988eb1acd",
-  "total_files": 5,
+  "release_candidate_commit": "087b385af68828dee31f7b9f27bb0fba18a1a1c2",
+  "base_anchor_commit": "46b0c6579940e8d152b844b0d1168851e57e09d0",
+  "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-VCP-WEEKEND-RESILIENCE-001",
+  "directive": "ARX-PREFLIGHT-ELEVATED-VOLATILITY-001",
   "files": {
-    "api/routes/screener.py": {
+    "frontend/components/PreFlightChecklistModal.tsx": {
       "operation": "M",
-      "originating_pr_number": 241,
-      "originating_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
-      "governing_requirement": "ARX-VCP-WEEKEND-RESILIENCE-001: Step back off-session snapshot dates to latest valid trading session in VCP explain",
-      "sha256": "3923c45ef45f8e4035477bfcada80bd179e1a29eafb33adbdb3edebb29e03cfb",
-      "size_bytes": 112481
+      "originating_pr_number": 242,
+      "originating_commit": "087b385af68828dee31f7b9f27bb0fba18a1a1c2",
+      "governing_requirement": "ARX-PREFLIGHT-ELEVATED-VOLATILITY-001: Pre-Flight risk presentation, amber barometer and trade plan elevated volatility caution",
+      "sha256": "c979d8ef84e5b8cc849cc6f76178caa8d325c5e8b35290afa759ef83829b84cd",
+      "size_bytes": 35991
     },
-    "frontend/lib/evidenceDomains.ts": {
+    "frontend/lib/preflightEvaluator.ts": {
       "operation": "M",
-      "originating_pr_number": 241,
-      "originating_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
-      "governing_requirement": "ARX-VCP-WEEKEND-RESILIENCE-001: Add 20.0-26.0 elevated caution volatility tier to Evidence Domain 8",
-      "sha256": "1b08f78df4776f571258009dabdadabc3a583e6557fe1bf331f666b0be2e949d",
-      "size_bytes": 26464
+      "originating_pr_number": 242,
+      "originating_commit": "087b385af68828dee31f7b9f27bb0fba18a1a1c2",
+      "governing_requirement": "ARX-PREFLIGHT-ELEVATED-VOLATILITY-001: PreFlightEvaluationResult isVixElevated calibration and amber badge class binding",
+      "sha256": "b972cf3ec4c98fc232dff224066aa50153f0bf746a42710d630692270d44e3f7",
+      "size_bytes": 45175
     },
-    "frontend/tests/crossAssetEvidenceAndMobileIntegrity.test.ts": {
-      "operation": "M",
-      "originating_pr_number": 241,
-      "originating_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
-      "governing_requirement": "ARX-VCP-WEEKEND-RESILIENCE-001: Add regression tests for VIX 25.64 elevated caution consistency",
-      "sha256": "d30939218b52e6a01804b29624b5f77487c34c0c2ffbccbaf4fafc985b3c4f48",
-      "size_bytes": 19913
+    "frontend/tests/preflightClearanceElevatedVix.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 242,
+      "originating_commit": "087b385af68828dee31f7b9f27bb0fba18a1a1c2",
+      "governing_requirement": "ARX-PREFLIGHT-ELEVATED-VOLATILITY-001: Targeted regression test suite for elevated volatility clearance and export warnings",
+      "sha256": "eb15e85b039c3d2722bc26c1d8551210db50c7067db4ccbb3cd02c553a586555",
+      "size_bytes": 6419
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 241,
-      "originating_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
-      "governing_requirement": "ARX-VCP-WEEKEND-RESILIENCE-001: Register PR #241 in release qualification diff integrity validator",
-      "sha256": "15677917c0282bdae38a0ad384f79457e225395a06998b8109a52da2219755d6",
-      "size_bytes": 57931
-    },
-    "tests/test_vcp_explain_weekend_resilience.py": {
-      "operation": "A",
-      "originating_pr_number": 241,
-      "originating_commit": "b3d337cbba6412f11f2fdf191dd7cc3ac906935e",
-      "governing_requirement": "ARX-VCP-WEEKEND-RESILIENCE-001: Unit test suite for VCP explain weekend session normalization and 422 prevention",
-      "sha256": "ec506fc4f37853402ce5d6b4131fdbc2e0832c1225b687204a560156e977ea0a",
-      "size_bytes": 1525
+      "originating_pr_number": 242,
+      "originating_commit": "087b385af68828dee31f7b9f27bb0fba18a1a1c2",
+      "governing_requirement": "ARX-PREFLIGHT-ELEVATED-VOLATILITY-001: Register PR #242 in release qualification diff integrity validator",
+      "sha256": "3250252b4f206863f349432b9fd2faddf42109a25e76fcaa55df314798deddbe",
+      "size_bytes": 57936
     }
   },
   "qualification_framework_files": {
@@ -53,8 +45,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "15677917c0282bdae38a0ad384f79457e225395a06998b8109a52da2219755d6",
-      "size_bytes": 57931,
+      "sha256": "3250252b4f206863f349432b9fd2faddf42109a25e76fcaa55df314798deddbe",
+      "size_bytes": 57936,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
