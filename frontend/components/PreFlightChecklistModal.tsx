@@ -443,7 +443,7 @@ export default function PreFlightChecklistModal({
               <div className="space-y-0.5">
                 <div className="font-bold text-[var(--text-1)] flex items-center gap-1.5">
                   <span>{isTrendPassed ? "✅" : (isStage4 ? "⏳" : "⚠️")}</span>
-                  <span>{isPlain ? "2. Trend & Moving Averages (Price in upward corridor)" : "2. Technical Structure (Above 20 EMA / 50 SMA Pivot)"}</span>
+                  <span>{isPlain ? "2. Trend & Moving Averages (Stage Discipline & Buying Range)" : "2. Technical Structure (Above 20 EMA / 50 SMA Pivot)"}</span>
                 </div>
                 <p className="text-[11px] text-[var(--text-2)] pl-5">
                   {renderCheck2Detail()}
