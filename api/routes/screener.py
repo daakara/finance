@@ -202,6 +202,16 @@ VALUE_GARP_MODELS = {
 }
 
 
+def count_smart_money_stage2_intersection(candidates, non_tradable):
+    """Count Smart Money tags only in the primary Radar Stage 2 tradable pool."""
+    return sum(
+        1 for candidate in candidates
+        if candidate.get("stageClassification") == "STAGE_2"
+        and candidate.get("executionStatus") not in non_tradable
+        and "SMART_MONEY" in candidate.get("categories", [])
+    )
+
+
 def get_radar_capabilities(
     *args,
     vcp_snapshot: Optional[Dict[str, Any]] = None,
@@ -1455,7 +1465,9 @@ def run_screener_get(
             "marketDataAsOf": latest_price_date,
         }
     
-        sm_stage2_cnt = sum(1 for c in mapped_candidates if "SMART_MONEY" in c.get("categories", []))
+        # Match the canonical primary Radar Stage 2 tradable population.
+        # Pilot membership does not imply Stage 2 visibility.
+        sm_stage2_cnt = count_smart_money_stage2_intersection(mapped_candidates, non_tradable)
         capabilities_dict = get_radar_capabilities(
             vcp_snapshot=vcp_snapshot,
             sm_snapshot=sm_snapshot,
