@@ -48,7 +48,7 @@ export interface PreFlightChecklistInputs {
     callTimeEt?: string | null;
     resultsReleaseTimeEt?: string | null;
     sourceName?: string | null;
-    confirmationStatus?: "CONFIRMED" | "ESTIMATED" | "UNVERIFIED" | null;
+    confirmationStatus?: "CONFIRMED" | "ESTIMATED" | "UNVERIFIED" | "NOT_APPLICABLE" | null;
     coverageStatus?: string | null;
     freshnessStatus?: "LIVE" | "STALE" | "EXPIRED" | string | null;
     riskTier?: string | null;
@@ -77,12 +77,6 @@ export interface PreFlightChecklistInputs {
   assetClass?: "EQUITY" | "ETF" | "CRYPTO" | string | null;
   securityType?: string | null;
   verdict?: string | null;
-  factorScores?: {
-    qualityScore?: number | null;
-    piotroskiFScore?: number | null;
-    shortFloat?: number | null;
-    verdict?: string | null;
-  } | null;
 }
 
 export type ProvenanceCategory =
@@ -533,40 +527,27 @@ export function evaluatePreFlightChecks(
     icon: isTrendPassed ? "✓" : isStage4 ? "⏳" : "⚠️",
   };
 
-  // Detect ETF / Fund Asset Class
+  // Detect ETF asset class
   const isEtf =
-    inputs.assetClass?.toUpperCase() === "ETF" ||
-    inputs.securityType?.toUpperCase() === "ETF" ||
-    cleanSym === "SPY" ||
-    cleanSym === "QQQ" ||
-    cleanSym === "IWM" ||
-    cleanSym === "DIA" ||
-    cleanSym === "XLK" ||
-    cleanSym === "XLF" ||
-    cleanSym === "XLE" ||
-    cleanSym === "VTI" ||
-    cleanSym === "VOO" ||
+    inputs.assetClass === "ETF" ||
+    inputs.securityType === "ETF" ||
     catalystEvidence?.coverageStatus === "NOT_APPLICABLE" ||
     (catalystEvidence as any)?.event_type === "NONE_ETF";
 
   // ── Check 3: CHK-3 CAPITAL-RISK ──────────────────────────────────────────
   const resolvedShortFloat = (inputs.shortFloat !== undefined && inputs.shortFloat !== null)
     ? Number(inputs.shortFloat)
-    : (inputs.factorScores?.shortFloat !== undefined && inputs.factorScores?.shortFloat !== null)
-    ? Number(inputs.factorScores.shortFloat)
     : (catalogItem?.shortFloat !== undefined && catalogItem.shortFloat !== null)
     ? Number(catalogItem.shortFloat)
     : null;
 
   const resolvedQualityScore = (inputs.qualityScore !== undefined && inputs.qualityScore !== null)
     ? Number(inputs.qualityScore)
-    : (inputs.factorScores?.qualityScore !== undefined && inputs.factorScores?.qualityScore !== null)
-    ? Number(inputs.factorScores.qualityScore)
     : (catalogItem?.qualityScore !== undefined && catalogItem.qualityScore !== null)
     ? Number(catalogItem.qualityScore)
     : null;
 
-  const resolvedVerdict = inputs.verdict ?? inputs.factorScores?.verdict ?? catalogItem?.verdict ?? "";
+  const resolvedVerdict = inputs.verdict ?? catalogItem?.verdict ?? "";
   const isTurnaround = String(resolvedVerdict).toLowerCase().includes("turnaround");
 
   const hasShortFloat = resolvedShortFloat !== null && !isNaN(resolvedShortFloat);
@@ -580,18 +561,15 @@ export function evaluatePreFlightChecks(
     ? "PARTIAL"
     : "UNAVAILABLE";
 
-  const shortFloatNum = hasShortFloat ? resolvedShortFloat! : 0;
-  const qualityScoreNum = hasQualityScore ? resolvedQualityScore! : 0;
-
   const isCapitalRiskFailed = isPriceValid && !isEtf && (
-    (hasQualityScore && qualityScoreNum < 60) ||
-    (hasShortFloat && shortFloatNum > 12.0) ||
+    (hasQualityScore && resolvedQualityScore! < 60) ||
+    (hasShortFloat && resolvedShortFloat! > 12.0) ||
     isTurnaround ||
     isDistributionTrap === true
   );
 
   const isCapitalRiskPassed = isPriceValid && !isCapitalRiskFailed && (
-    isEtf || (hasQualityScore && qualityScoreNum >= 60 && (!hasShortFloat || shortFloatNum <= 12.0))
+    isEtf || (hasQualityScore && resolvedQualityScore! >= 60 && (!hasShortFloat || resolvedShortFloat! <= 12.0))
   );
 
   const chk3Status: CheckStatus = isCapitalRiskPassed
@@ -599,6 +577,48 @@ export function evaluatePreFlightChecks(
     : isCapitalRiskFailed
     ? "CAPITAL RISK"
     : "UNAVAILABLE";
+
+  const chk3Summary = isEtf
+    ? "Fund Structure | Solvency Exempt"
+    : isCapitalRiskPassed
+    ? (hasShortFloat
+        ? `Float ${resolvedShortFloat!.toFixed(1)}% | Q-Score ${resolvedQualityScore}`
+        : `Q-Score ${resolvedQualityScore} (Solvent)`)
+    : isCapitalRiskFailed
+    ? (hasQualityScore && resolvedQualityScore! < 60
+        ? `Elevated Capital Distress (Q-Score ${resolvedQualityScore})`
+        : hasShortFloat && resolvedShortFloat! > 12.0
+        ? `Elevated Short Float (${resolvedShortFloat!.toFixed(1)}%)`
+        : "Elevated Capital Distress")
+    : "Evidence Incomplete";
+
+  const chk3Detail = isEtf
+    ? (isPlain
+        ? "Exchange-Traded Fund (ETF): Diversified pooled capital structure. Single-stock solvency and squeeze risk not applicable."
+        : "ETF Capital Structure: Index/basket vehicle exempt from single-issuer solvency and short-squeeze constraints.")
+    : isCapitalRiskPassed
+    ? (hasShortFloat
+        ? "Short interest is moderate (<12%) and fundamental solvency confirms absence of balance sheet distress."
+        : "Fundamental solvency score confirms absence of balance sheet distress. Short float data unlisted for instrument.")
+    : isCapitalRiskFailed
+    ? (hasQualityScore && resolvedQualityScore! < 60
+        ? (isPlain
+            ? `⚠️ Warning: Low financial quality score (${resolvedQualityScore}/100 < 60) indicates fundamental balance sheet distress.`
+            : `Capital Risk Warning: Fundamental quality score (${resolvedQualityScore} < 60 threshold) indicates financial distress.`)
+        : hasShortFloat && resolvedShortFloat! > 12.0
+        ? (isPlain
+            ? `⚠️ Warning: High short float (${resolvedShortFloat!.toFixed(1)}% > 12.0%) creates squeeze and volatility vulnerability.`
+            : `Capital Risk Warning: Elevated short interest (${resolvedShortFloat!.toFixed(1)}% > 12.0% threshold).`)
+        : isTurnaround
+        ? (isPlain
+            ? "⚠️ Warning: Turnaround profile indicates unproven fundamental recovery."
+            : "Capital Risk Warning: Speculative turnaround profile detected.")
+        : (isPlain
+            ? "⚠️ Warning: Capital risk guard tripped. Fundamental distress or distribution trap detected."
+            : "Capital Risk Warning: Structural capital risk constraints violated."))
+    : capitalRiskEvidenceState === "PARTIAL"
+    ? "Fundamental quality score or short interest input missing. Pre-Flight cannot certify capital risk."
+    : "Capital risk evidence unavailable: Financial quality metrics unverified.";
 
   const chk3Item: PreFlightCheckItem = {
     id: "CHK-3",
@@ -611,24 +631,21 @@ export function evaluatePreFlightChecks(
       ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
       : "bg-amber-950/80 text-amber-300 border-amber-700/80",
     passed: isCapitalRiskPassed,
-    summary: isCapitalRiskPassed
-      ? (isEtf ? "Fund Structure | Solvency Exempt" : hasShortFloat ? `Float ${shortFloatNum.toFixed(1)}% | Q-Score ${qualityScoreNum}` : `Q-Score ${qualityScoreNum} | Solvency Verified`)
-      : isCapitalRiskFailed
-      ? (hasQualityScore && qualityScoreNum < 60 ? `Elevated Capital Distress (Q-Score ${qualityScoreNum})` : (hasShortFloat && shortFloatNum > 12.0) ? `Elevated Short Float (${shortFloatNum.toFixed(1)}%)` : "Elevated Capital Distress")
-      : "Evidence Incomplete",
-    detail: isCapitalRiskPassed
-      ? (isEtf ? "Fund structures (ETFs) do not carry corporate balance sheet insolvency risk." : "Short interest is moderate (<12%) and fundamental solvency confirms absence of balance sheet distress.")
-      : isCapitalRiskFailed
-      ? (hasQualityScore && qualityScoreNum < 60 ? `Fundamental quality score (${qualityScoreNum}/100) below institutional safety floor (60). High solvency/dilution risk.` : (hasShortFloat && shortFloatNum > 12.0) ? `Short float (${shortFloatNum.toFixed(1)}%) exceeds maximum 12% institutional threshold. Elevated squeeze volatility.` : "Elevated short interest (>12%), turnaround status, or sub-60 quality score detected.")
-      : capitalRiskEvidenceState === "PARTIAL"
-      ? "Fundamental quality score or short interest input missing. Pre-Flight cannot certify capital risk."
-      : "Capital risk evidence unavailable: Financial quality metrics unverified.",
+    summary: chk3Summary,
+    detail: chk3Detail,
     icon: isCapitalRiskPassed ? "✓" : isCapitalRiskFailed ? "✕" : "⚠️",
   };
 
   // ── Check 4: Catalyst Hazard Buffer ──────────────────────────────────────
   const resolvedCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" = (() => {
-    if (isEtf) {
+    if (
+      catalystEvidence?.coverageStatus === "ABSENT" ||
+      catalystEvidence?.coverageStatus === "UNSUPPORTED"
+    ) {
+      return "UNAVAILABLE";
+    }
+
+    if (isEtf || catalystEvidence?.coverageStatus === "NOT_APPLICABLE") {
       return "PASS";
     }
 
@@ -640,7 +657,7 @@ export function evaluatePreFlightChecks(
       return "ERROR";
     }
 
-    if (catalystEvidence?.freshnessStatus && catalystEvidence.freshnessStatus !== "LIVE") {
+    if (catalystEvidence?.freshnessStatus && catalystEvidence.freshnessStatus !== "LIVE" && catalystEvidence.freshnessStatus !== "CACHED_FRESH") {
       return "UNAVAILABLE";
     }
 
@@ -648,7 +665,7 @@ export function evaluatePreFlightChecks(
       hasImminentEarnings === true ||
       catalystEvidence?.state === "WARN" ||
       catalystEvidence?.preflightState === "WARN" ||
-      (catalystEvidence?.riskTier && catalystEvidence.riskTier !== "NORMAL_RUNWAY" && catalystEvidence.riskTier !== "UNVERIFIED_RISK")
+      (catalystEvidence?.riskTier && catalystEvidence.riskTier !== "NORMAL_RUNWAY" && catalystEvidence.riskTier !== "UNVERIFIED_RISK" && catalystEvidence.riskTier !== "NO_EARNINGS_HAZARD")
     ) {
       return "WARN";
     }
@@ -661,7 +678,7 @@ export function evaluatePreFlightChecks(
 
         const validStatuses = new Set(["CONFIRMED_UPCOMING", "ESTIMATED_UPCOMING", "COVERED"]);
         const isCoverageValid = Boolean(catalystEvidence.coverageStatus && validStatuses.has(catalystEvidence.coverageStatus));
-        const isFresh = catalystEvidence.freshnessStatus === "LIVE";
+        const isFresh = catalystEvidence.freshnessStatus === "LIVE" || catalystEvidence.freshnessStatus === "CACHED_FRESH";
 
         if (!isCoverageValid || !isFresh) {
           return "UNAVAILABLE";
@@ -681,7 +698,7 @@ export function evaluatePreFlightChecks(
     return "UNAVAILABLE";
   })();
 
-  const isCatalystConfirmed = catalystEvidence?.confirmationStatus === "CONFIRMED";
+  const isCatalystConfirmed = isEtf || catalystEvidence?.confirmationStatus === "CONFIRMED";
   const isCatalystPassed = isPriceValid && resolvedCatalystState === "PASS";
   const chk4Status: CheckStatus = resolvedCatalystState === "PASS"
     ? "PASS"
@@ -692,7 +709,7 @@ export function evaluatePreFlightChecks(
     : "UNAVAILABLE";
 
   const chk4Summary = isEtf
-    ? "Fund Structure | Earnings Exempt"
+    ? "ETF: Earnings N/A"
     : resolvedCatalystState === "PASS"
     ? (isCatalystConfirmed
         ? `Runway > 7d (${catalystEvidence?.daysToEarnings?.toFixed(1) || ">7"}d)`
@@ -702,7 +719,9 @@ export function evaluatePreFlightChecks(
     : "Coverage Unavailable";
 
   const chk4Detail = isEtf
-    ? "Fund structures (ETFs) do not carry binary single-stock quarterly earnings events."
+    ? (isPlain
+        ? "Exchange-Traded Fund (ETF): Does not report single-stock corporate earnings. Event runway clear."
+        : "Asset Class ETF: Pooled vehicle exempt from single-issuer corporate earnings calendar hazard.")
     : resolvedCatalystState === "PASS"
     ? (isCatalystConfirmed
         ? `Clean runway verified (>7 days to confirmed binary earnings event${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}).`
@@ -732,32 +751,52 @@ export function evaluatePreFlightChecks(
     passed: isCatalystPassed,
     summary: chk4Summary,
     detail: chk4Detail,
-    icon: resolvedCatalystState === "PASS" ? (isCatalystConfirmed ? "✓" : "✓") : resolvedCatalystState === "WARN" ? "⚠️" : "⚪",
+    icon: resolvedCatalystState === "PASS" ? "✓" : resolvedCatalystState === "WARN" ? "⚠️" : "⚪",
   };
 
   // ── Check 5: Macro Regime Guard ──────────────────────────────────────────
   const isMacroPassed = isPriceValid && isVixValid && currentVix !== null && currentVix < 26.0;
+  const isVixElevated = isMacroPassed && currentVix !== null && currentVix >= 20.0;
   const chk5Status: CheckStatus = isMacroPassed ? "PASS" : isVixValid ? "HIGH VIX" : "UNAVAILABLE";
+
+  const chk5Summary = isMacroPassed
+    ? (isVixElevated
+        ? `VIX ${currentVix?.toFixed(1)} (Elevated Caution)`
+        : `VIX ${currentVix?.toFixed(1)} (Normal)`)
+    : isVixValid
+    ? `VIX ${currentVix?.toFixed(1)} (High Volatility)`
+    : "VIX Unavailable";
+
+  const chk5Detail = isMacroPassed
+    ? (isVixElevated
+        ? (isPlain
+            ? `Elevated market volatility (VIX ${currentVix?.toFixed(1)}). Below 26.0 defensive cutoff, but macro caution warranted.`
+            : `Macro Guard: Elevated volatility regime (20.0 <= VIX ${currentVix?.toFixed(1)} < 26.0). Permitted within defensive ceiling, elevated caution required.`)
+        : (isPlain
+            ? `Broad market volatility is calm (VIX ${currentVix?.toFixed(1)} < 20.0). Standard position risk permitted.`
+            : `Macro Guard: Normal volatility regime (VIX ${currentVix?.toFixed(1)} < 20.0). Guardrails cleared.`))
+    : !isVixValid
+    ? (isPlain
+        ? "Market volatility reading (VIX) unavailable from exchange feed. Macro guard cannot be certified."
+        : "Market Volatility: Volatility evidence unavailable from live exchange feed. Macro guard cannot be certified.")
+    : (isPlain
+        ? `⚠️ High Volatility: Market VIX (${currentVix?.toFixed(1)}) exceeds 26.0 defensive threshold. Risk deployment blocked.`
+        : `Macro Blocker: High volatility regime (VIX ${currentVix?.toFixed(1)} >= 26.0). Macro guard tripped.`);
+
   const chk5Item: PreFlightCheckItem = {
     id: "CHK-5",
     tag: "CHK-5 MACRO",
     name: isPlain ? "5. Overall Market Weather" : "5. Macro Regime Guard",
     status: chk5Status,
     badgeClass: isMacroPassed
-      ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
-      : "bg-amber-950/80 text-amber-300 border-amber-700/80",
+      ? (isVixElevated
+          ? "bg-amber-950/80 text-amber-300 border-amber-700/80"
+          : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80")
+      : "bg-rose-950/80 text-rose-300 border-rose-700/80",
     passed: isMacroPassed,
-    summary: isMacroPassed
-      ? `VIX ${currentVix?.toFixed(1)} (Normal)`
-      : isVixValid
-      ? `VIX ${currentVix?.toFixed(1)} (Elevated)`
-      : "VIX Unavailable",
-    detail: isMacroPassed
-      ? `Market volatility is within standard parameters (VIX ${currentVix?.toFixed(1)} < 26.0).`
-      : !isVixValid
-      ? "Market volatility reading (VIX) unavailable from exchange feed. Macro guard cannot be certified."
-      : `Elevated macro volatility: VIX (${currentVix?.toFixed(1)}) exceeds 26.0 threshold.`,
-    icon: isMacroPassed ? "✓" : "⚠️",
+    summary: chk5Summary,
+    detail: chk5Detail,
+    icon: isMacroPassed ? (isVixElevated ? "⚠️" : "✓") : "⚠️",
   };
 
   const checks: [

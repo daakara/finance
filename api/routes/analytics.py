@@ -1307,6 +1307,12 @@ def get_asset_analytics(
             optimal_execution_plan["days_to_earnings"] = corporate_event.get("days_to_earnings")
             optimal_execution_plan["has_imminent_earnings"] = corporate_event.get("has_imminent_earnings", False)
             optimal_execution_plan["catalyst_report"] = catalyst_report
+            # Cross-Asset capital risk telemetry
+            raw_spf = info.get("shortPercentOfFloat")
+            short_float = round(float(raw_spf) * 100.0, 2) if (raw_spf is not None and isinstance(raw_spf, (int, float))) else None
+            quality_score = factor_scores.get("qualityScore") if isinstance(factor_scores, dict) else None
+            optimal_execution_plan["short_float"] = short_float
+            optimal_execution_plan["quality_score"] = quality_score
 
         # Log recommendation into persistent History SQLite
         try:
@@ -1615,6 +1621,8 @@ def get_asset_analytics(
             "technicals": technicals,
             "factorScores": factor_scores,
             "dnaScores": factor_scores,
+            "shortFloat": optimal_execution_plan.get("short_float") if isinstance(optimal_execution_plan, dict) else None,
+            "qualityScore": factor_scores.get("qualityScore") if isinstance(factor_scores, dict) else None,
             "macroDifficulty": macro_difficulty,
             "vix": vix_val,
             "macroEvidence": macro_evidence_payload,

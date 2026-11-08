@@ -1,165 +1,165 @@
 {
-  "release_candidate_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
-  "base_anchor_commit": "868b460d6d14b4879b839bf43bf0fa64ff62b571",
+  "release_candidate_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
+  "base_anchor_commit": "b716fd5c683ddd64b7011192c1147730b7753655",
   "total_files": 8,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-EVIDENCE-REGISTRY-001",
+  "directive": "ARX-CROSS-ASSET-PREFLIGHT-001",
   "files": {
-    "frontend/app/page.tsx": {
+    "analyst_dashboard/corporate_events.py": {
       "operation": "M",
-      "originating_pr_number": 239,
-      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
-      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Pass dynamic quality score and factor scores to canonical Pre-Flight inputs",
-      "sha256": "7506b81563363d87431793b3ef380d9078178cf79d903ad33f5b7da990b79e9f",
-      "size_bytes": 44886
+      "originating_pr_number": 240,
+      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
+      "governing_requirement": "ARX-PREFLIGHT: cross-asset corporate events and ETF calendar hazard exemption",
+      "sha256": "0ebb0d00eed141de1fd04e16451e70b132739b076e0f8c5730fc6e49a6802dd9",
+      "size_bytes": 20512
+    },
+    "api/routes/analytics.py": {
+      "operation": "M",
+      "originating_pr_number": 240,
+      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
+      "governing_requirement": "ARX-PREFLIGHT: expose short float and quality score telemetry in analytics payloads",
+      "sha256": "57c1e940dc901eb164edb969ccf93bebed37668047416c8d4b710634e66178cb",
+      "size_bytes": 80453
     },
     "frontend/components/PreFlightChecklistModal.tsx": {
       "operation": "M",
-      "originating_pr_number": 239,
-      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
-      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Destructure and forward factor scores to evaluatePreFlightChecks",
-      "sha256": "68f580611045d2999d4809c679528044478d04afc74544901fe3121de029cd60",
-      "size_bytes": 31116
+      "originating_pr_number": 240,
+      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
+      "governing_requirement": "ARX-PREFLIGHT: cross-asset capital risk and dynamic VIX caution labels in preflight modal",
+      "sha256": "97ffe8751ce9a9b80aed3250037c0871ea7747f38fe92b4760eb171a2f28d0f2",
+      "size_bytes": 34706
     },
-    "frontend/components/terminal/EvidenceDomainStatusCard.tsx": {
+    "frontend/components/__tests__/PreFlightCatalystRisk.test.tsx": {
       "operation": "M",
-      "originating_pr_number": 239,
-      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
-      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: High-density responsive mobile card view (<640px) eliminating clipping and row bloat",
-      "sha256": "a4d6324ec330ce4077a523bec9e0ef9fb6b6c3e8bdacb13acdd522077445dd29",
-      "size_bytes": 11815
-    },
-    "frontend/lib/evidenceDomains.ts": {
-      "operation": "M",
-      "originating_pr_number": 239,
-      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
-      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Epistemic separation of zero observations vs held/unavailable, Foreign ADR statutory filings, VIX 26.0 ceiling, and multi-blocker counts",
-      "sha256": "6a47aee0fd23ee00b6f991c47b05f77aa9ad4e32b8151be24bf40c3049ec268f",
-      "size_bytes": 26110
+      "originating_pr_number": 240,
+      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
+      "governing_requirement": "ARX-PREFLIGHT: add regression tests for corporate events fail-closed state model",
+      "sha256": "6671ea15cf8ce6cbbeb5234a95afbf8835176a8fe92d7bc7d3b3e3ce81e27926",
+      "size_bytes": 6557
     },
     "frontend/lib/preflightEvaluator.ts": {
       "operation": "M",
-      "originating_pr_number": 239,
-      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
-      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: CHK-3 capital risk dynamic quality score evaluation, Foreign ADR pass, ETF solvency and earnings exemptions",
-      "sha256": "732e0f796743df466e071884a883ccb4779ac7647fd77f85af250ce394610bf4",
-      "size_bytes": 42975
+      "originating_pr_number": 240,
+      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
+      "governing_requirement": "ARX-PREFLIGHT: universal cross-asset preflight decision evaluator with ETF exemption and VIX tiers",
+      "sha256": "6a1887f80244518f8a368f1d3db2cd47b191f4b4edf6707c7945abbf5a71d713",
+      "size_bytes": 44942
     },
-    "frontend/package.json": {
-      "operation": "M",
-      "originating_pr_number": 239,
-      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
-      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Register crossAssetEvidenceAndMobileIntegrity.test.ts in test:arch",
-      "sha256": "cddeb13a13a327ca3c7dacd489897af40157f12a3b6fc17fbcb1986d36af0984",
-      "size_bytes": 3456
-    },
-    "frontend/tests/crossAssetEvidenceAndMobileIntegrity.test.ts": {
+    "frontend/tests/crossAssetPreflightIntegrity.test.ts": {
       "operation": "A",
-      "originating_pr_number": 239,
-      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
-      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Comprehensive cross-asset regression suite for NVDA, DHLGY, NAUT, SPY and mobile layout",
-      "sha256": "cd0c93f09de2b2d7dfaf67bd7c4dde2b76b2098bf1ee8759ba88b584ca3ed448",
-      "size_bytes": 18883
+      "originating_pr_number": 240,
+      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
+      "governing_requirement": "ARX-PREFLIGHT: cross-asset preflight decision integrity vitest regression suite",
+      "sha256": "88f62e3cd618ce29d8f6c72e1e50c1ecc27f15dc86d66dcebd72961bdeb335ad",
+      "size_bytes": 8964
     },
-    "frontend/tests/evidenceDomainAuthority.test.ts": {
+    "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 239,
-      "originating_commit": "2e5fbb0715b7d5d924f8793fdc50b38d166b8300",
-      "governing_requirement": "ARX-EVIDENCE-REGISTRY-001: Aligned congressional disclosures assertion under HOLD_SEC_001 to UNAVAILABLE",
-      "sha256": "3710df0eb70f58f342a211c0327290ea9a59f65314652f770be484c64bc8f895",
-      "size_bytes": 13676
+      "originating_pr_number": 240,
+      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
+      "governing_requirement": "ARX-PREFLIGHT: register PR #240 in release qualification diff integrity validator",
+      "sha256": "5ac6b324d66dd446ee4f533e276848aa1331ee2a71af75a870ff1654e205b321",
+      "size_bytes": 57926
+    },
+    "tests/test_cross_asset_preflight_integrity.py": {
+      "operation": "A",
+      "originating_pr_number": 240,
+      "originating_commit": "fdf7d33b89ca4ea628ec7e4b903fd363156df13f",
+      "governing_requirement": "ARX-PREFLIGHT: cross-asset preflight decision integrity python pytest regression suite",
+      "sha256": "dc17ab9de96a189800c3728bb388b4b5d2560587bb98d94f6bbec0af04580e3a",
+      "size_bytes": 4998
     }
   },
   "qualification_framework_files": {
     "scripts/release/rq01_candidate_identity.py": {
       "sha256": "af311f7b4048cfe147d22840b85b157506bef73ea96de6fa30875459fec8154b",
-      "description": "Release qualification module: rq01_candidate_identity.py",
-      "size_bytes": 8414
+      "size_bytes": 8414,
+      "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "b8a2a058331ac1d82544e152e51a31e69abd0941a02195a1d21653e94fa0eb27",
-      "description": "Release qualification module: rq02_diff_integrity.py",
-      "size_bytes": 57921
+      "sha256": "5ac6b324d66dd446ee4f533e276848aa1331ee2a71af75a870ff1654e205b321",
+      "size_bytes": 57926,
+      "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
       "sha256": "e48cce05b8ea9bbc4316d1b47cc0127b6fe41309977bb71f9fc0ba17385c8459",
-      "description": "Release qualification module: rq03_backend_regression.py",
-      "size_bytes": 3330
+      "size_bytes": 3330,
+      "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
       "sha256": "0e46eff7498448b20491bb0b65cb5f3e85403cc5575642c6bd251b9a2e806a1e",
-      "description": "Release qualification module: rq04_frontend_regression.py",
-      "size_bytes": 4013
+      "size_bytes": 4013,
+      "description": "Release qualification module: rq04_frontend_regression.py"
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
       "sha256": "f3f1039896aa258834f24144d69c5b42552df7b5173a09f09833ff46b6e3be0a",
-      "description": "Release qualification module: rq05_cross_engine_invariants.py",
-      "size_bytes": 6936
+      "size_bytes": 6936,
+      "description": "Release qualification module: rq05_cross_engine_invariants.py"
     },
     "scripts/release/rq06_governance_invariants.py": {
       "sha256": "4ef2f0c3c77df2fcf4b3036e3f8b55c97691675c14bced1b6c5313300a6cf496",
-      "description": "Release qualification module: rq06_governance_invariants.py",
-      "size_bytes": 3883
+      "size_bytes": 3883,
+      "description": "Release qualification module: rq06_governance_invariants.py"
     },
     "scripts/release/rq07_deployment_safety.py": {
       "sha256": "2f1f3a7ed08901e6c4f4fba111a441c297e9697220a62fd0556be587790974e0",
-      "description": "Release qualification module: rq07_deployment_safety.py",
-      "size_bytes": 6327
+      "size_bytes": 6327,
+      "description": "Release qualification module: rq07_deployment_safety.py"
     },
     "scripts/release/rq08_artifact_provenance.py": {
       "sha256": "afbb648917e49ea9f7e474f563548aea6bce2ae57d7e96a56f93b15b9578f9b8",
-      "description": "Release qualification module: rq08_artifact_provenance.py",
-      "size_bytes": 4868
+      "size_bytes": 4868,
+      "description": "Release qualification module: rq08_artifact_provenance.py"
     },
     "scripts/release/rq09_compatibility_suite.py": {
       "sha256": "ffaca6ea222948ee9e4c83e57162d280e79c8cc3277d9706438544cfc6d1cedb",
-      "description": "Release qualification module: rq09_compatibility_suite.py",
-      "size_bytes": 12677
+      "size_bytes": 12677,
+      "description": "Release qualification module: rq09_compatibility_suite.py"
     },
     "scripts/release/rq10_config_integrity.py": {
       "sha256": "6ef2de812ab6e61fc66c8d225a8ae255735a850a72dbbfc08b9426293dee017a",
-      "description": "Release qualification module: rq10_config_integrity.py",
-      "size_bytes": 7459
+      "size_bytes": 7459,
+      "description": "Release qualification module: rq10_config_integrity.py"
     },
     "scripts/release/rq11_rollback_readiness.py": {
       "sha256": "37edf0c509b2f5116d8fa2cdf5e0e47faccedadc4add1c26165be2d8cfb3ff06",
-      "description": "Release qualification module: rq11_rollback_readiness.py",
-      "size_bytes": 23633
+      "size_bytes": 23633,
+      "description": "Release qualification module: rq11_rollback_readiness.py"
     },
     "scripts/release/rq12_qualification_summary.py": {
       "sha256": "eb6fa07022544ad745584c94dfb21623a89abca8935fd8bb355d155e0c88082f",
-      "description": "Release qualification module: rq12_qualification_summary.py",
-      "size_bytes": 15833
+      "size_bytes": 15833,
+      "description": "Release qualification module: rq12_qualification_summary.py"
     },
     "scripts/release/run_release_ci_suite.py": {
       "sha256": "a32d607071d5123fd3d772793afdf540ba83f15e30778685fcbf630d791d3a38",
-      "description": "Release qualification module: run_release_ci_suite.py",
-      "size_bytes": 4173
+      "size_bytes": 4173,
+      "description": "Release qualification module: run_release_ci_suite.py"
     },
     "scripts/release/test_release_ci_negative_cases.py": {
       "sha256": "d4f35186a78ea0610326cc6609cd54a721983a9443c077e62b0232693dc2f792",
-      "description": "Release qualification module: test_release_ci_negative_cases.py",
-      "size_bytes": 49519
+      "size_bytes": 49519,
+      "description": "Release qualification module: test_release_ci_negative_cases.py"
     },
     "scripts/release/test_synthetic_merge_reproduction.py": {
       "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246",
-      "description": "Release qualification module: test_synthetic_merge_reproduction.py",
-      "size_bytes": 10113
+      "size_bytes": 10113,
+      "description": "Release qualification module: test_synthetic_merge_reproduction.py"
     },
     "scripts/release/test_rq02_adversarial_controls.py": {
       "sha256": "222334cea903614bd9e6e832ebd3840afcc15e1b3352bbe9a5d94feabff1f2e6",
-      "description": "Release qualification module: test_rq02_adversarial_controls.py",
-      "size_bytes": 16488
+      "size_bytes": 16488,
+      "description": "Release qualification module: test_rq02_adversarial_controls.py"
     },
     "scripts/release/test_d12c_workflow_attacks.py": {
       "sha256": "90054e28d133733f4c00c32ce384bc5047172010058898e5875f463ae71a4cc3",
-      "description": "Release qualification module: test_d12c_workflow_attacks.py",
-      "size_bytes": 20012
+      "size_bytes": 20012,
+      "description": "Release qualification module: test_d12c_workflow_attacks.py"
     },
     "scripts/release/test_rq11_adversarial_controls.py": {
       "sha256": "8f4141000511fab66be203043c579bfc409c6130df0735a9238441073f9880cc",
-      "description": "Release qualification module: test_rq11_adversarial_controls.py",
-      "size_bytes": 12373
+      "size_bytes": 12373,
+      "description": "Release qualification module: test_rq11_adversarial_controls.py"
     }
   }
 }
