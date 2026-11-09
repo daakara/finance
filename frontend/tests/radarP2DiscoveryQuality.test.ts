@@ -16,6 +16,8 @@ describe("ARX Sprint P2: Radar Discovery Quality & Evidence Verification Suite (
     it("preserves displayedStage2IntersectionCount in normalizeRadarCapabilities", () => {
       const rawPayload = {
         VCP: {
+          status: "AVAILABLE",
+          singleAssetAnalysis: "AVAILABLE",
           universeScreening: "AVAILABLE",
           matchedCount: 0,
           populationDenominator: 500,
@@ -25,6 +27,8 @@ describe("ARX Sprint P2: Radar Discovery Quality & Evidence Verification Suite (
           dataAsOf: "2026-11-06",
         },
         SMART_MONEY: {
+          status: "AVAILABLE",
+          singleAssetAnalysis: "AVAILABLE",
           universeScreening: "AVAILABLE",
           matchedCount: 10,
           populationDenominator: 10,
@@ -37,7 +41,7 @@ describe("ARX Sprint P2: Radar Discovery Quality & Evidence Verification Suite (
         },
       };
 
-      const normalized = normalizeRadarCapabilities(rawPayload);
+      const normalized = normalizeRadarCapabilities(rawPayload as unknown as Partial<RadarCapabilities>);
       assert.strictEqual(
         normalized.SMART_MONEY?.displayedStage2IntersectionCount,
         5,
@@ -58,7 +62,7 @@ describe("ARX Sprint P2: Radar Discovery Quality & Evidence Verification Suite (
     it("verifies CandidatePopulationModel supports extended population telemetry", () => {
       const model: CandidatePopulationModel = {
         referenceUniverseCount: 500,
-        activeScreeningDenominator: 500,
+        activeScreeningCount: 500,
         currentOpportunityCount: 132,
         delistedRecordCount: 0,
         unverifiedRecordCount: 0,
