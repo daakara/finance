@@ -221,8 +221,9 @@ assert.strictEqual(allClear.isExecutionReady, true);
 assert.strictEqual(allClear.primaryAction.actionType, "SIZE_POSITION");
 console.log("   [PASS] 3.4 All 3 Gates Passed -> isExecutionReady = true, Blocker = NONE, Action = SIZE_POSITION");
 
-// 3.5 Historical Point-in-Time Qualification (P1-F02)
-const uncertifiedPIT = resolveDecisionReadiness({
+// 3.5 Historical Point-in-Time Qualification & Provenance Invariants
+// 3.5.1 Live Context Certification Matrix (true, false, null, undefined)
+const liveBase = {
   currentPrice: 100,
   optimalEntryMin: 98,
   optimalEntryMax: 102,
@@ -232,15 +233,81 @@ const uncertifiedPIT = resolveDecisionReadiness({
   stopLoss: 95,
   takeProfit1: 112.5,
   vix: 17.5,
-  historicalPointInTimeCertified: false,
+  freshnessStatus: "LIVE",
+};
+
+// Live + true -> EXECUTION_READY
+const liveTrue = resolveDecisionReadiness({ ...liveBase, historicalPointInTimeCertified: true });
+assert.strictEqual(liveTrue.isExecutionReady, true);
+assert.strictEqual(liveTrue.readinessVerdict, "EXECUTION_READY");
+console.log("   [PASS] 3.5.1a Live + certified:true -> isExecutionReady = true");
+
+// Live + false -> AWAITING_CANONICAL_CLEARANCE (synthetic/uncertified fixture)
+const liveFalse = resolveDecisionReadiness({ ...liveBase, historicalPointInTimeCertified: false });
+assert.strictEqual(liveFalse.isExecutionReady, false);
+assert.strictEqual(liveFalse.readinessVerdict, "AWAITING_CANONICAL_CLEARANCE");
+assert.strictEqual(liveFalse.readinessVerdictLabel, "HISTORICAL EVIDENCE — UNCERTIFIED FOR LIVE EXECUTION");
+console.log("   [PASS] 3.5.1b Live + certified:false -> isExecutionReady = false (fails closed)");
+
+// Live + null -> AWAITING_CANONICAL_CLEARANCE (unverified provenance)
+const liveNull = resolveDecisionReadiness({ ...liveBase, historicalPointInTimeCertified: null });
+assert.strictEqual(liveNull.isExecutionReady, false);
+assert.strictEqual(liveNull.readinessVerdict, "AWAITING_CANONICAL_CLEARANCE");
+assert.strictEqual(liveNull.readinessVerdictLabel, "HISTORICAL EVIDENCE — UNCERTIFIED FOR LIVE EXECUTION");
+console.log("   [PASS] 3.5.1c Live + certified:null -> isExecutionReady = false (fails closed)");
+
+// Live + undefined -> EXECUTION_READY (legitimate live market observation)
+const liveUndefined = resolveDecisionReadiness({ ...liveBase, historicalPointInTimeCertified: undefined });
+assert.strictEqual(liveUndefined.isExecutionReady, true);
+assert.strictEqual(liveUndefined.readinessVerdict, "EXECUTION_READY");
+console.log("   [PASS] 3.5.1d Live + certified:undefined -> isExecutionReady = true (live market readiness)");
+
+// 3.5.2 Historical Context Certification Matrix (true, false, null, undefined)
+const histBase = {
+  currentPrice: 100,
+  optimalEntryMin: 98,
+  optimalEntryMax: 102,
+  candleCount: 100,
+  isConfirmed: true,
+  riskRewardRatio: 2.5,
+  stopLoss: 95,
+  takeProfit1: 112.5,
+  vix: 17.5,
+  freshnessStatus: "CACHED",
+};
+
+// Historical + true -> EXECUTION_READY (point-in-time certified backtest)
+const histTrue = resolveDecisionReadiness({ ...histBase, historicalPointInTimeCertified: true });
+assert.strictEqual(histTrue.isExecutionReady, true);
+assert.strictEqual(histTrue.readinessVerdict, "EXECUTION_READY");
+console.log("   [PASS] 3.5.2a Historical + certified:true -> isExecutionReady = true");
+
+// Historical + false -> AWAITING_CANONICAL_CLEARANCE
+const histFalse = resolveDecisionReadiness({ ...histBase, historicalPointInTimeCertified: false });
+assert.strictEqual(histFalse.isExecutionReady, false);
+assert.strictEqual(histFalse.readinessVerdict, "AWAITING_CANONICAL_CLEARANCE");
+console.log("   [PASS] 3.5.2b Historical + certified:false -> isExecutionReady = false");
+
+// Historical + null -> AWAITING_CANONICAL_CLEARANCE (missing certification fails closed)
+const histNull = resolveDecisionReadiness({ ...histBase, historicalPointInTimeCertified: null });
+assert.strictEqual(histNull.isExecutionReady, false);
+assert.strictEqual(histNull.readinessVerdict, "AWAITING_CANONICAL_CLEARANCE");
+console.log("   [PASS] 3.5.2c Historical + certified:null -> isExecutionReady = false (fails closed)");
+
+// Historical + undefined -> AWAITING_CANONICAL_CLEARANCE (missing certification CANNOT satisfy qualification)
+const histUndefined = resolveDecisionReadiness({ ...histBase, historicalPointInTimeCertified: undefined });
+assert.strictEqual(histUndefined.isExecutionReady, false);
+assert.strictEqual(histUndefined.readinessVerdict, "AWAITING_CANONICAL_CLEARANCE");
+assert.ok(histUndefined.nextRequiredCondition.includes("Point-in-time historical certification required"));
+console.log("   [PASS] 3.5.2d Historical + certified:undefined -> isExecutionReady = false (missing PIT fails closed)");
+
+// 3.5.3 Explicit Null Tape Freshness (Fail-Closed to UNAVAILABLE)
+const nullTapeRun = resolveDecisionReadiness({
+  ...liveBase,
+  freshnessStatus: null,
 });
-assert.strictEqual(uncertifiedPIT.gates[0].state, "PASSED");
-assert.strictEqual(uncertifiedPIT.gates[1].state, "PASSED");
-assert.strictEqual(uncertifiedPIT.gates[2].state, "PASSED");
-assert.strictEqual(uncertifiedPIT.isExecutionReady, false);
-assert.strictEqual(uncertifiedPIT.readinessVerdict, "AWAITING_CANONICAL_CLEARANCE");
-assert.strictEqual(uncertifiedPIT.readinessVerdictLabel, "HISTORICAL EVIDENCE — UNCERTIFIED FOR LIVE EXECUTION");
-assert.ok(uncertifiedPIT.nextRequiredCondition.includes("Point-in-time historical certification required"));
-console.log("   [PASS] 3.5 Uncertified PIT -> isExecutionReady = false, Verdict = AWAITING_CANONICAL_CLEARANCE");
+assert.strictEqual(nullTapeRun.gates[0].state, "UNAVAILABLE");
+assert.strictEqual(nullTapeRun.isExecutionReady, false);
+console.log("   [PASS] 3.5.3 Explicit null freshness -> Gate 1 UNAVAILABLE (fails closed)");
 
 console.log("\nALL DECISION READINESS TESTS PASSED (100% COVERAGE)!\n");

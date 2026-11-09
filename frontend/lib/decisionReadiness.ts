@@ -119,7 +119,7 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
   if (freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "STALE") {
     gate1State = "BLOCKING";
     gate1Explanation = "Market data tape is stale (> 4 sessions). Live pre-flight trade clearance suspended (fail-closed).";
-  } else if (freshnessStatus === "UNAVAILABLE" || freshnessStatus === "UNKNOWN") {
+  } else if (freshnessStatus === "UNAVAILABLE" || freshnessStatus === "UNKNOWN" || freshnessStatus === null) {
     gate1State = "UNAVAILABLE";
     gate1Explanation = "Exchange market tape is unavailable. Pre-flight clearance requires verified price feed.";
   } else if (corridorLocation.isValid && hasSufficientHistory) {
@@ -214,7 +214,28 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     ? validateCanonicalActionable(inputs.isActionable)
     : true; // Backward compatibility with unit tests when isActionable is omitted
 
-  const isPointInTimeCertified = historicalPointInTimeCertified !== false;
+  // ── Historical Point-in-Time Certification Guard ──────────────────────────
+  // Distinguish verified live market observations from historical point-in-time evidence.
+  // In historical context (CACHED, HISTORICAL, STALE_HISTORICAL, or isHistorical = true):
+  //   Explicit point-in-time certification is strictly required (fail-closed).
+  //   Missing (null / undefined) or false certification CANNOT satisfy qualification.
+  // In live context:
+  //   Observations are live market data; undefined preserves live-market readiness.
+  //   Explicit false (synthetic/uncertified fixture) or null (unverified provenance) fails closed.
+  const isHistoricalContext = Boolean(
+    freshnessStatus === "CACHED" ||
+    freshnessStatus === "HISTORICAL" ||
+    freshnessStatus === "STALE_HISTORICAL" ||
+    (inputs as any).isHistorical === true
+  );
+
+  let isPointInTimeCertified: boolean;
+  if (isHistoricalContext) {
+    isPointInTimeCertified = historicalPointInTimeCertified === true;
+  } else {
+    isPointInTimeCertified = historicalPointInTimeCertified !== false && historicalPointInTimeCertified !== null;
+  }
+
   const isExecutionReady = technicalGatesPassed && canonicalActionable && isPointInTimeCertified;
 
   let readinessVerdict: ReadinessVerdict;
