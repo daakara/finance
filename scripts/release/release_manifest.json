@@ -1,57 +1,81 @@
 {
-  "release_candidate_commit": "9ab5da6f361d02df31ff8a2d6dce5362d8496e7a",
-  "base_anchor_commit": "59e4eaacaa4bd07a9249593d76ec717e69d46c3d",
-  "total_files": 6,
+  "release_candidate_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+  "base_anchor_commit": "08ea1acd61ec0931aa9c5ad251dbf5875033ece1",
+  "total_files": 9,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-RADAR-RELEASE-GOVERNANCE-RECONCILIATION-001",
+  "directive": "ARX-PROD-P1-SAFETY-INTEGRATION-012",
   "files": {
-    "analyst_dashboard/analyzers/scanner_runner.py": {
+    "frontend/components/OptimalEntryExitCard.tsx": {
       "operation": "M",
-      "originating_pr_number": 245,
-      "originating_commit": "9ab5da6f361d02df31ff8a2d6dce5362d8496e7a",
-      "governing_requirement": "ARX-RADAR-RELEASE-GOVERNANCE-RECONCILIATION-001: Propagate canonical publication attestation envelope in VCPScannerRunner and fix NameError in SmartMoneyScannerRunner",
-      "sha256": "2aca05a57d4a36c3afaacd0d5e597d0de2d75167231afa2838fdf38bcea605d2",
-      "size_bytes": 82010
+      "originating_pr_number": 246,
+      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
+      "sha256": "9abf6ac4999c570d3a5c9f4bcecb422ba4319da14704ce2181cf39b011966d7d",
+      "size_bytes": 48474
     },
-    "api/routes/screener.py": {
+    "frontend/components/PreFlightChecklistModal.tsx": {
       "operation": "M",
-      "originating_pr_number": 245,
-      "originating_commit": "9ab5da6f361d02df31ff8a2d6dce5362d8496e7a",
-      "governing_requirement": "ARX-RADAR-RELEASE-GOVERNANCE-RECONCILIATION-001: Authoritative Smart Money Stage 2 count derivation from tradable candidates and hardened VCP publication integrity verification",
-      "sha256": "36614548e653bd3488cf71e823d41f4120653e9be0024345e19ad301733df3cc",
-      "size_bytes": 121533
+      "originating_pr_number": 246,
+      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
+      "sha256": "b3e819556197530197fe4b41f76b006566e6f0a299a3124afb1e1ab6597e675d",
+      "size_bytes": 36777
     },
-    "frontend/app/radar/page.tsx": {
+    "frontend/lib/decisionReadiness.ts": {
       "operation": "M",
-      "originating_pr_number": 245,
-      "originating_commit": "9ab5da6f361d02df31ff8a2d6dce5362d8496e7a",
-      "governing_requirement": "ARX-RADAR-RELEASE-GOVERNANCE-RECONCILIATION-001: Radar scope banner authoritative Stage 2 count integration and fast snapshot publication attestation verification",
-      "sha256": "18aeb7f53a72ebc367b118f838cdbbc7bf4b83d101c9b7f202fe114eb6b979f4",
-      "size_bytes": 119425
+      "originating_pr_number": 246,
+      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
+      "sha256": "2b58685fdcb934fb4b7a4861f74d84e972ce47532ad88bbaf9cf920a4536081d",
+      "size_bytes": 22711
     },
-    "frontend/tests/radarCountAuthority.test.ts": {
+    "frontend/tests/decisionReadiness.test.ts": {
       "operation": "M",
-      "originating_pr_number": 245,
-      "originating_commit": "9ab5da6f361d02df31ff8a2d6dce5362d8496e7a",
-      "governing_requirement": "ARX-RADAR-RELEASE-GOVERNANCE-RECONCILIATION-001: Align test assertions to standardized design tokens, dynamic price observation date, and mobile touch targets",
-      "sha256": "57fbfbe04a703ced3e42e7d0099b3112830635681d6d5d4355f203465ec0c9be",
-      "size_bytes": 46864
+      "originating_pr_number": 246,
+      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
+      "sha256": "44300e566d1adb75da2b24dd4bce0d81fc9f3fbf21d2d7e19bd9ca579c494187",
+      "size_bytes": 9962
+    },
+    "frontend/tests/evidenceWiringGate2.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 246,
+      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
+      "sha256": "7cd5b94691e17f5b0ed797c56d71554bae5e4fae3f02cd4d3d1914f5f87abdae",
+      "size_bytes": 7660
+    },
+    "frontend/tests/p1Falsification.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 246,
+      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
+      "sha256": "90438b2e26d0211fae3bd0ee29f7266ee759e10613d3e32f49736547c02e07d1",
+      "size_bytes": 4831
+    },
+    "frontend/tests/p1Verification.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 246,
+      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
+      "sha256": "7ab182836a51cef08028ba442afece19a86e41902ce102eda3a637bfcc8f04b4",
+      "size_bytes": 4629
+    },
+    "frontend/tests/telemetryLifecycle.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 246,
+      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
+      "sha256": "ce653a8530e55ed9aab0af3c91d7bb154465fb1ffbb5c2829e99a8ccf0e0f342",
+      "size_bytes": 4976
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 245,
-      "originating_commit": "9ab5da6f361d02df31ff8a2d6dce5362d8496e7a",
-      "governing_requirement": "ARX-RADAR-RELEASE-GOVERNANCE-RECONCILIATION-001: Register approved PR #245 in release qualification diff integrity validator",
-      "sha256": "a748189c5ecc5615093eef94ce72228a6d0a229ae8fd0d0ce9f3f54c090064a8",
-      "size_bytes": 57951
-    },
-    "tests/test_radar_category_integrity_002.py": {
-      "operation": "M",
-      "originating_pr_number": 245,
-      "originating_commit": "9ab5da6f361d02df31ff8a2d6dce5362d8496e7a",
-      "governing_requirement": "ARX-RADAR-RELEASE-GOVERNANCE-RECONCILIATION-001: Unit and regression suite for Stage 2 intersection derivation, zero-match semantics, and VCP publication integrity attestation",
-      "sha256": "2143e4047f059f6eceb146d07afde3d9f03bbe628f599101e861a3cb8f2c6068",
-      "size_bytes": 15234
+      "originating_pr_number": 246,
+      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
+      "sha256": "4f608776ad5fa88f1d5ba368a0db7cc7106299c7437421de34b58dc37e30af6a",
+      "size_bytes": 57961
     }
   },
   "qualification_framework_files": {
@@ -61,8 +85,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "a748189c5ecc5615093eef94ce72228a6d0a229ae8fd0d0ce9f3f54c090064a8",
-      "size_bytes": 57951,
+      "sha256": "4f608776ad5fa88f1d5ba368a0db7cc7106299c7437421de34b58dc37e30af6a",
+      "size_bytes": 57961,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
