@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+  "release_candidate_commit": "0aad15dfb7bb6fabe29ba32b3e01c89515128597",
   "base_anchor_commit": "08ea1acd61ec0931aa9c5ad251dbf5875033ece1",
   "total_files": 9,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -8,7 +8,7 @@
     "frontend/components/OptimalEntryExitCard.tsx": {
       "operation": "M",
       "originating_pr_number": 246,
-      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "originating_commit": "0aad15dfb7bb6fabe29ba32b3e01c89515128597",
       "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
       "sha256": "9abf6ac4999c570d3a5c9f4bcecb422ba4319da14704ce2181cf39b011966d7d",
       "size_bytes": 48474
@@ -16,7 +16,7 @@
     "frontend/components/PreFlightChecklistModal.tsx": {
       "operation": "M",
       "originating_pr_number": 246,
-      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "originating_commit": "0aad15dfb7bb6fabe29ba32b3e01c89515128597",
       "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
       "sha256": "b3e819556197530197fe4b41f76b006566e6f0a299a3124afb1e1ab6597e675d",
       "size_bytes": 36777
@@ -24,23 +24,23 @@
     "frontend/lib/decisionReadiness.ts": {
       "operation": "M",
       "originating_pr_number": 246,
-      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "originating_commit": "0aad15dfb7bb6fabe29ba32b3e01c89515128597",
       "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
-      "sha256": "2b58685fdcb934fb4b7a4861f74d84e972ce47532ad88bbaf9cf920a4536081d",
-      "size_bytes": 22711
+      "sha256": "6a0a4cdff949b090db12e75294a67ef8533994fccbc398457b0c13c504c8fae1",
+      "size_bytes": 23833
     },
     "frontend/tests/decisionReadiness.test.ts": {
       "operation": "M",
       "originating_pr_number": 246,
-      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "originating_commit": "0aad15dfb7bb6fabe29ba32b3e01c89515128597",
       "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
-      "sha256": "44300e566d1adb75da2b24dd4bce0d81fc9f3fbf21d2d7e19bd9ca579c494187",
-      "size_bytes": 9962
+      "sha256": "646e437f17fbc3c623c170af7e4fa467f913ebc70e80cf0ce489f5dde9a00072",
+      "size_bytes": 13601
     },
     "frontend/tests/evidenceWiringGate2.test.ts": {
       "operation": "A",
       "originating_pr_number": 246,
-      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "originating_commit": "0aad15dfb7bb6fabe29ba32b3e01c89515128597",
       "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
       "sha256": "7cd5b94691e17f5b0ed797c56d71554bae5e4fae3f02cd4d3d1914f5f87abdae",
       "size_bytes": 7660
@@ -48,7 +48,7 @@
     "frontend/tests/p1Falsification.test.ts": {
       "operation": "A",
       "originating_pr_number": 246,
-      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "originating_commit": "0aad15dfb7bb6fabe29ba32b3e01c89515128597",
       "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
       "sha256": "90438b2e26d0211fae3bd0ee29f7266ee759e10613d3e32f49736547c02e07d1",
       "size_bytes": 4831
@@ -56,7 +56,7 @@
     "frontend/tests/p1Verification.test.ts": {
       "operation": "A",
       "originating_pr_number": 246,
-      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "originating_commit": "0aad15dfb7bb6fabe29ba32b3e01c89515128597",
       "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
       "sha256": "7ab182836a51cef08028ba442afece19a86e41902ce102eda3a637bfcc8f04b4",
       "size_bytes": 4629
@@ -64,7 +64,7 @@
     "frontend/tests/telemetryLifecycle.test.ts": {
       "operation": "A",
       "originating_pr_number": 246,
-      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "originating_commit": "0aad15dfb7bb6fabe29ba32b3e01c89515128597",
       "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
       "sha256": "ce653a8530e55ed9aab0af3c91d7bb154465fb1ffbb5c2829e99a8ccf0e0f342",
       "size_bytes": 4976
@@ -72,7 +72,7 @@
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
       "originating_pr_number": 246,
-      "originating_commit": "18afa7a23bdce90f69e5d3cd65fa79cae27531ca",
+      "originating_commit": "0aad15dfb7bb6fabe29ba32b3e01c89515128597",
       "governing_requirement": "ARX-PROD-P1-SAFETY-INTEGRATION-012: Port decision safety improvements from PR #246 to release/production (#166)",
       "sha256": "4f608776ad5fa88f1d5ba368a0db7cc7106299c7437421de34b58dc37e30af6a",
       "size_bytes": 57961
