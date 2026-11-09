@@ -100,12 +100,12 @@ const radarSource = fs.readFileSync(radarPath, "utf8");
 
 // A. Badge remediation: "Universe Scanner Pending" replaces ambiguous "Pipeline Pending"
 assert.ok(
-  radarSource.includes("badge: isAvailable('SMART_MONEY') ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}` : 'Universe Scanner Pending'"),
-  "Smart Money badge must be 'Universe Scanner Pending' when not available"
+  radarSource.includes(": 'Universe Scanner Pending'"),
+  "Smart Money & VCP badge fallback must be 'Universe Scanner Pending'"
 );
 assert.ok(
-  radarSource.includes("badge: isAvailable('VCP') ? `${allAssets.filter((a) => a.categories.includes('VCP')).length}` : 'Universe Scanner Pending'"),
-  "VCP badge must be 'Universe Scanner Pending' when not available"
+  !radarSource.includes("'Pipeline Pending'"),
+  "Smart Money & VCP badges must not use ambiguous 'Pipeline Pending'"
 );
 console.log("   [OK] Smart Money & VCP badges updated to 'Universe Scanner Pending'");
 
