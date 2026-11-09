@@ -5,6 +5,10 @@ Token: ARX_RADAR_S3_CANDIDATE_TRUTH_REMEDIATION_AUTHORIZED
 """
 
 import pytest
+
+# Include candidate truth acceptance in the existing backend CI tier-2b gate.
+pytestmark = pytest.mark.tier2b
+
 from starlette.responses import Response
 from api.routes.screener import (
     run_screener_get,
@@ -181,6 +185,7 @@ def test_gate_h_21_value_garp_matches_and_reference_catalog_evaluation():
     assert len(vg_candidates) == 16, "Must identify exactly 16 Value / GARP matches from 35 evaluated"
 
     # Current opportunities (IN_BUY_ZONE setups) must match population.currentOpportunityCount
-    buy_zone_candidates = [c for c in candidates if c.get("executionStatus") == "IN_BUY_ZONE"]
-    assert pop["currentOpportunityCount"] == len(buy_zone_candidates)
+    eligible_candidates = [c for c in candidates if c.get("screeningEligible") is True]
+    assert pop["currentOpportunityCount"] == len(eligible_candidates)
+    assert all(c.get("executionStatus") == "IN_BUY_ZONE" for c in eligible_candidates)
     assert pop["currentOpportunityCount"] >= 1
