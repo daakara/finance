@@ -1,0 +1,32 @@
+name: Smart Money Evidence Truth Regression
+
+on:
+  pull_request:
+    branches: [release/production]
+    paths:
+      - "analyst_dashboard/analyzers/smart_money.py"
+      - "tests/test_sm_act_027_advisory_truth.py"
+      - ".github/workflows/smart-money-evidence-truth.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  advisory_truth:
+    name: SM-ACT-027 Focused Evidence Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pytest
+        run: python -m pip install pytest
+      - name: Syntax-check advisory engine and test
+        run: python -m py_compile analyst_dashboard/analyzers/smart_money.py tests/test_sm_act_027_advisory_truth.py
+      - name: Run SM-ACT-027 source-contract regression
+        run: python -m pytest tests/test_sm_act_027_advisory_truth.py -q
