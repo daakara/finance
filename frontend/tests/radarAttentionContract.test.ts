@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-describe("ARX Sprint P2: Radar Investor Attention Contract Suite (#230 / ARX-P2-ATTENTION-CONTRACT-009)", () => {
+describe("ARX Sprint P2: Radar Investor Attention Contract Suite (#230 / ARX-P2-PR249-FINALIZE-010)", () => {
   const radarPath = path.resolve(__dirname, "../app/radar/page.tsx");
   const radarSrc = fs.readFileSync(radarPath, "utf8");
 
@@ -20,7 +20,7 @@ describe("ARX Sprint P2: Radar Investor Attention Contract Suite (#230 / ARX-P2-
       );
       assert.ok(
         radarSrc.includes(
-          "const matchesExperience =\n          experienceMode === 'ALL_RESEARCH'\n            ? true\n            : (ownState === 'HELD' ? true : isCandidateEligibleOpportunity(asset));"
+          "const matchesExperience =\n          experienceMode === 'ALL_RESEARCH' || ownershipFilter === 'MY_HOLDINGS'\n            ? true\n            : isCandidateEligibleOpportunity(asset);"
         ),
         "FAIL: matchesExperience must strictly enforce candidate eligibility in QUALIFIED_OPPORTUNITIES"
       );
@@ -71,7 +71,7 @@ describe("ARX Sprint P2: Radar Investor Attention Contract Suite (#230 / ARX-P2-
     it("preserves research access across multi-strategy categories in ALL_RESEARCH", () => {
       // In ALL_RESEARCH mode, matchesExperience is true regardless of executionStatus
       assert.ok(
-        radarSrc.includes("experienceMode === 'ALL_RESEARCH'\n            ? true"),
+        radarSrc.includes("experienceMode === 'ALL_RESEARCH' || ownershipFilter === 'MY_HOLDINGS'\n            ? true"),
         "FAIL: ALL_RESEARCH mode must allow discovery across all catalog assets"
       );
     });
@@ -84,16 +84,26 @@ describe("ARX Sprint P2: Radar Investor Attention Contract Suite (#230 / ARX-P2-
     });
   });
 
-  describe("4. Portfolio Holdings Access Preservation", () => {
-    it("preserves access to HELD portfolio positions in QUALIFIED_OPPORTUNITIES even if not in buy zone", () => {
+  describe("4. Portfolio Holdings & Opportunity Separation Contract", () => {
+    it("excludes non-qualified held positions from QUALIFIED_OPPORTUNITIES when not in My Holdings filter", () => {
+      // In QUALIFIED_OPPORTUNITIES with default ownershipFilter === 'ALL', non-qualified held setups do not leak
       assert.ok(
-        radarSrc.includes("ownState === 'HELD' ? true : isCandidateEligibleOpportunity(asset)"),
-        "FAIL: HELD positions must remain visible to the investor"
+        radarSrc.includes(
+          "const matchesExperience =\n          experienceMode === 'ALL_RESEARCH' || ownershipFilter === 'MY_HOLDINGS'\n            ? true\n            : isCandidateEligibleOpportunity(asset);"
+        ),
+        "FAIL: Non-qualified held positions must not leak into Qualified Opportunities list"
+      );
+    });
+
+    it("permits access to all held positions (including invalidated setups) when My Holdings is explicitly selected", () => {
+      assert.ok(
+        radarSrc.includes("ownershipFilter === 'MY_HOLDINGS'"),
+        "FAIL: Must support explicit My Holdings view"
       );
     });
   });
 
-  describe("5. Behavioral Simulation: Eligibility & Experience Mode Filtering", () => {
+  describe("5. Behavioral Simulation: 6 Contract Scenarios", () => {
     interface MockAsset {
       ticker: string;
       executionStatus: string;
@@ -115,15 +125,26 @@ describe("ARX Sprint P2: Radar Investor Attention Contract Suite (#230 / ARX-P2-
     const filterMock = (
       assets: MockAsset[],
       experienceMode: 'QUALIFIED_OPPORTUNITIES' | 'ALL_RESEARCH',
+      ownershipFilter: 'ALL' | 'NEW_OPPORTUNITIES' | 'MY_HOLDINGS',
       getOwnershipState: (ticker: string) => 'HELD' | 'NOT_HELD' | 'UNKNOWN'
     ) => {
       return assets.filter((asset) => {
         const ownState = getOwnershipState(asset.ticker);
-        const matchesExperience =
-          experienceMode === 'ALL_RESEARCH'
+        const matchesOwnership =
+          ownershipFilter === 'ALL'
             ? true
-            : (ownState === 'HELD' ? true : isCandidateEligibleOpportunity(asset));
-        return matchesExperience;
+            : (ownershipFilter === 'NEW_OPPORTUNITIES' || (ownershipFilter as any) === 'NOT_HELD')
+            ? ownState === 'NOT_HELD' && isCandidateEligibleOpportunity(asset)
+            : ownershipFilter === 'MY_HOLDINGS' || (ownershipFilter as any) === 'HELD'
+            ? ownState === 'HELD'
+            : true;
+
+        const matchesExperience =
+          experienceMode === 'ALL_RESEARCH' || ownershipFilter === 'MY_HOLDINGS'
+            ? true
+            : isCandidateEligibleOpportunity(asset);
+
+        return matchesOwnership && matchesExperience;
       });
     };
 
@@ -135,45 +156,72 @@ describe("ARX Sprint P2: Radar Investor Attention Contract Suite (#230 / ARX-P2-
       { ticker: "TSLA", executionStatus: "APPROACHING_TARGET", screeningEligible: false, marketStage: "STAGE_2", isBullishEligible: true },
     ];
 
-    it("correctly identifies active eligible opportunities", () => {
-      assert.strictEqual(isCandidateEligibleOpportunity(sampleAssets[0]), true); // NVDA
-      assert.strictEqual(isCandidateEligibleOpportunity(sampleAssets[1]), false); // AAPL (WAITING_PULLBACK)
-      assert.strictEqual(isCandidateEligibleOpportunity(sampleAssets[2]), false); // MSFT (STOPPED_OUT)
-      assert.strictEqual(isCandidateEligibleOpportunity(sampleAssets[3]), false); // CPRX (DELISTED_SECURITY)
-      assert.strictEqual(isCandidateEligibleOpportunity(sampleAssets[4]), false); // TSLA (APPROACHING_TARGET)
+    it("1. Held and qualified: appears in Qualified Opportunities AND in My Holdings", () => {
+      const getOwnState = (ticker: string) => ticker === "NVDA" ? "HELD" : "NOT_HELD";
+      // In default Qualified Opportunities (ownershipFilter = 'ALL')
+      const inQualified = filterMock(sampleAssets, 'QUALIFIED_OPPORTUNITIES', 'ALL', getOwnState);
+      assert.ok(inQualified.some(a => a.ticker === "NVDA"), "Held qualified asset must appear in Qualified Opportunities");
+
+      // In My Holdings (ownershipFilter = 'MY_HOLDINGS')
+      const inHoldings = filterMock(sampleAssets, 'QUALIFIED_OPPORTUNITIES', 'MY_HOLDINGS', getOwnState);
+      assert.ok(inHoldings.some(a => a.ticker === "NVDA"), "Held qualified asset must appear in My Holdings");
     });
 
-    it("renders authentic zero candidates when totalActive === 0 and no held assets", () => {
-      // Suppose only AAPL, MSFT, CPRX, TSLA exist (0 in buy zone)
-      const inactivePool = sampleAssets.slice(1);
-      const ownershipMap: Record<string, 'HELD' | 'NOT_HELD'> = {
-        AAPL: 'NOT_HELD',
-        MSFT: 'NOT_HELD',
-        CPRX: 'NOT_HELD',
-        TSLA: 'NOT_HELD',
-      };
-      const getOwnState = (ticker: string) => ownershipMap[ticker] || 'NOT_HELD';
+    it("2. Held and invalidated: does NOT appear in Qualified Opportunities, but DOES appear in My Holdings and All Research", () => {
+      // MSFT is STOPPED_OUT and HELD
+      const getOwnState = (ticker: string) => ticker === "MSFT" ? "HELD" : "NOT_HELD";
 
-      const qualified = filterMock(inactivePool, 'QUALIFIED_OPPORTUNITIES', getOwnState);
-      assert.strictEqual(qualified.length, 0, "Must be honest zero candidates");
+      // Must NOT appear in default Qualified Opportunities
+      const inQualified = filterMock(sampleAssets, 'QUALIFIED_OPPORTUNITIES', 'ALL', getOwnState);
+      assert.strictEqual(
+        inQualified.some(a => a.ticker === "MSFT"),
+        false,
+        "Held stopped-out asset must NOT appear in Qualified Opportunities"
+      );
 
-      const research = filterMock(inactivePool, 'ALL_RESEARCH', getOwnState);
-      assert.strictEqual(research.length, 4, "ALL_RESEARCH preserves all 4 research candidates");
+      // DOES appear in My Holdings
+      const inHoldings = filterMock(sampleAssets, 'QUALIFIED_OPPORTUNITIES', 'MY_HOLDINGS', getOwnState);
+      assert.ok(inHoldings.some(a => a.ticker === "MSFT"), "Held stopped-out asset MUST appear in My Holdings");
+
+      // DOES appear in All Research
+      const inResearch = filterMock(sampleAssets, 'ALL_RESEARCH', 'ALL', getOwnState);
+      assert.ok(inResearch.some(a => a.ticker === "MSFT"), "Held stopped-out asset MUST appear in All Research");
     });
 
-    it("keeps portfolio holdings visible in QUALIFIED_OPPORTUNITIES even if not in buy zone", () => {
-      const inactivePool = sampleAssets.slice(1);
-      const ownershipMap: Record<string, 'HELD' | 'NOT_HELD'> = {
-        AAPL: 'HELD', // Held position awaiting pullback
-        MSFT: 'NOT_HELD',
-        CPRX: 'NOT_HELD',
-        TSLA: 'NOT_HELD',
-      };
-      const getOwnState = (ticker: string) => ownershipMap[ticker] || 'NOT_HELD';
+    it("3. Unheld and qualified: appears in Qualified Opportunities, does NOT appear in My Holdings", () => {
+      const getOwnState = () => "NOT_HELD";
+      const inQualified = filterMock(sampleAssets, 'QUALIFIED_OPPORTUNITIES', 'ALL', getOwnState);
+      assert.ok(inQualified.some(a => a.ticker === "NVDA"), "Unheld qualified asset must appear in Qualified Opportunities");
 
-      const qualified = filterMock(inactivePool, 'QUALIFIED_OPPORTUNITIES', getOwnState);
-      assert.strictEqual(qualified.length, 1, "Held position remains visible");
-      assert.strictEqual(qualified[0].ticker, "AAPL");
+      const inHoldings = filterMock(sampleAssets, 'QUALIFIED_OPPORTUNITIES', 'MY_HOLDINGS', getOwnState);
+      assert.strictEqual(inHoldings.length, 0, "Unheld asset must not appear in My Holdings");
+    });
+
+    it("4. Zero qualified candidates: renders 0 candidates in Qualified Opportunities even if some are held", () => {
+      // Suppose only AAPL (pullback), MSFT (stopped out, held), CPRX (delisted), TSLA (target) exist
+      const inactivePool = sampleAssets.slice(1);
+      const getOwnState = (ticker: string) => ticker === "MSFT" ? "HELD" : "NOT_HELD";
+
+      const inQualified = filterMock(inactivePool, 'QUALIFIED_OPPORTUNITIES', 'ALL', getOwnState);
+      assert.strictEqual(
+        inQualified.length,
+        0,
+        "Qualified Opportunities must display exactly 0 when no candidate is qualified, even if non-qualified assets are held"
+      );
+    });
+
+    it("5. Explicit My Holdings selection: displays all held securities in portfolio context", () => {
+      const getOwnState = (ticker: string) => ticker === "MSFT" || ticker === "AAPL" ? "HELD" : "NOT_HELD";
+      const inHoldings = filterMock(sampleAssets, 'QUALIFIED_OPPORTUNITIES', 'MY_HOLDINGS', getOwnState);
+      assert.strictEqual(inHoldings.length, 2, "My Holdings must show both held positions");
+      assert.ok(inHoldings.some(a => a.ticker === "MSFT"));
+      assert.ok(inHoldings.some(a => a.ticker === "AAPL"));
+    });
+
+    it("6. All Research accessibility: displays all research candidates regardless of qualification or execution status", () => {
+      const getOwnState = () => "NOT_HELD";
+      const inResearch = filterMock(sampleAssets, 'ALL_RESEARCH', 'ALL', getOwnState);
+      assert.strictEqual(inResearch.length, sampleAssets.length, "All Research must display all candidates");
     });
   });
 });

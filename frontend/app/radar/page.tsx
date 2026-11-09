@@ -437,9 +437,9 @@ function RadarContent() {
             : true;
 
         const matchesExperience =
-          experienceMode === 'ALL_RESEARCH'
+          experienceMode === 'ALL_RESEARCH' || ownershipFilter === 'MY_HOLDINGS'
             ? true
-            : (ownState === 'HELD' ? true : isCandidateEligibleOpportunity(asset));
+            : isCandidateEligibleOpportunity(asset);
 
         return matchesCategory && matchesQuery && matchesOwnership && matchesExperience;
       })
