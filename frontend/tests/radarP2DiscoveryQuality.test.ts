@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 import {
   normalizeRadarCapabilities,
   type RadarCapabilityDetail,
+  type RadarCapabilities,
   type CandidatePopulationModel,
 } from "../lib/api";
 
