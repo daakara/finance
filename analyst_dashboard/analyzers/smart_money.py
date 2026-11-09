@@ -3,6 +3,7 @@
 import os
 import sqlite3
 import logging
+from analyst_dashboard.analyzers.evidence_timestamp_projection import evidence_row_value
 from typing import List, Dict, Any, Optional, Union
 from enum import Enum
 from datetime import datetime, timezone, timedelta
@@ -2632,10 +2633,10 @@ class SmartMoneyEngine:
                         "filing_date": r["filing_date"],
                         "transaction_date": r["transaction_date"] or r["filing_date"],
                         "acceptance_datetime": acc_dt,
-                        "ingestion_timestamp": (r["arx_first_observed_at"] if "arx_first_observed_at" in r.keys() else None) or (r["arx_processed_at"] if "arx_processed_at" in r.keys() else None),
-                        "arx_first_observed_at": r.get("arx_first_observed_at") if hasattr(r, "get") else None,
-                        "arx_processed_at": r.get("arx_processed_at") if hasattr(r, "get") else None,
-                        "sec_accepted_at": r.get("sec_accepted_at") if hasattr(r, "get") else None,
+                        "ingestion_timestamp": evidence_row_value(r, "arx_first_observed_at") or evidence_row_value(r, "arx_processed_at"),
+                        "arx_first_observed_at": evidence_row_value(r, "arx_first_observed_at"),
+                        "arx_processed_at": evidence_row_value(r, "arx_processed_at"),
+                        "sec_accepted_at": evidence_row_value(r, "sec_accepted_at"),
                         "availability_uncertain": bool(not acc_dt),
                         "acquired_disposed": acq_disp,
                         "is_positive_buying_conviction": is_pos_conviction,
