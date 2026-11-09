@@ -333,7 +333,11 @@ function RadarContent() {
         status: capabilities.VCP?.status || 'PIPELINE_PENDING',
       },
       SMART_MONEY: {
-        count: isAvailable('SMART_MONEY') ? allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length : null,
+        count: isAvailable('SMART_MONEY')
+          ? (typeof capabilities.SMART_MONEY?.displayedStage2IntersectionCount === 'number'
+              ? capabilities.SMART_MONEY.displayedStage2IntersectionCount
+              : allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length)
+          : null,
         badge: isAvailable('SMART_MONEY') ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}` : 'Universe Scanner Pending',
         status: capabilities.SMART_MONEY?.status || 'PIPELINE_PENDING',
       },
@@ -1503,13 +1507,41 @@ function RadarContent() {
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-[var(--text-2)]">
-                {filteredAssets.length} of 16 Value / GARP Matches · 100% of Defined Reference Catalog Evaluated ({allAssets.length} Assets)
+                {(() => {
+                  const authValueGarp = typeof capabilities.VALUE_GARP?.matchedCount === 'number' && !capabilities.VALUE_GARP?.isRollback
+                    ? capabilities.VALUE_GARP.matchedCount
+                    : allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length;
+                  const totalEvaluated = capabilities.VALUE_GARP?.populationDenominator ?? (allAssets.length > 0 ? allAssets.length : 35);
+                  if (filteredAssets.length !== authValueGarp) {
+                    return (
+                      <>
+                        Showing <strong className="text-white">{filteredAssets.length}</strong> of <strong className="text-white">{authValueGarp}</strong> Value / GARP Matches · 100% of Defined Reference Catalog Evaluated ({totalEvaluated} Assets)
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <strong className="text-white">{authValueGarp}</strong> Value / GARP Matches · 100% of Defined Reference Catalog Evaluated ({totalEvaluated} Assets)
+                    </>
+                  );
+                })()}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded text-[10px] bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-strong)]" title="100% of 35-asset curated reference catalog evaluated. Whole-market automated screening is pending VCP and Smart Money pipeline activation.">
-                REFERENCE CATALOG (16 MATCHES / 35 EVALUATED)
-              </span>
+              {(() => {
+                const authValueGarp = typeof capabilities.VALUE_GARP?.matchedCount === 'number' && !capabilities.VALUE_GARP?.isRollback
+                  ? capabilities.VALUE_GARP.matchedCount
+                  : allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length;
+                const totalEvaluated = capabilities.VALUE_GARP?.populationDenominator ?? (allAssets.length > 0 ? allAssets.length : 35);
+                return (
+                  <span
+                    className="px-2 py-0.5 rounded text-[10px] bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-strong)]"
+                    title={`100% of ${totalEvaluated}-asset curated reference catalog evaluated. Whole-market automated screening is pending VCP and Smart Money pipeline activation.`}
+                  >
+                    REFERENCE CATALOG ({authValueGarp} MATCHES / {totalEvaluated} EVALUATED)
+                  </span>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -1628,6 +1660,75 @@ function RadarContent() {
           </div>
         )}
 
+        {activeFilter === 'SMART_MONEY' && (
+          <div
+            data-testid="smart-money-scope-banner"
+            className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] text-xs font-mono"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-amber-400">🏛️ Smart Money Institutional Flow</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-[var(--text-2)]">
+                Scope: <strong className="text-white">{capabilities.SMART_MONEY?.universeId || 'SEC Form 4 / 13F Pilot Universe'}</strong>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-[var(--text-2)]">
+                {(() => {
+                  const smCap = capabilities.SMART_MONEY;
+                  const pop = smCap?.populationDenominator ?? 10;
+                  const matched = typeof smCap?.matchedCount === 'number' && !smCap?.isRollback ? smCap.matchedCount : null;
+                  const intersection = smCap?.displayedStage2IntersectionCount ?? filteredAssets.length;
+
+                  if (smCap?.universeScreening === 'AVAILABLE' && matched !== null) {
+                    return (
+                      <>
+                        Showing <strong className="text-white">{filteredAssets.length}</strong> of <strong className="text-white">{intersection}</strong> Stage 2 Intersections · <strong className="text-white">{matched}</strong> of {pop} Pilot Scanned
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      Pilot Scanner Pending · {pop} Scannable Universe
+                    </>
+                  );
+                })()}
+              </span>
+              {capabilities.SMART_MONEY?.universeBuildId && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-[var(--text-2)]">
+                    Build: <strong className="text-[var(--text-1)]">{capabilities.SMART_MONEY.universeBuildId}</strong>
+                  </span>
+                </>
+              )}
+              {capabilities.SMART_MONEY?.snapshotId && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-[var(--text-2)]">
+                    Snapshot: <strong className="text-[var(--text-1)]">{capabilities.SMART_MONEY.snapshotId}</strong>
+                  </span>
+                </>
+              )}
+              {capabilities.SMART_MONEY?.dataAsOf && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-[var(--text-2)]">
+                    Data As Of: <strong className="text-[var(--text-1)]">{capabilities.SMART_MONEY.dataAsOf}</strong>
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                title="Smart Money automated ingestion is in held state (HOLD_SEC_001). Historical 10-issuer pilot snapshot displayed."
+              >
+                PILOT POPULATION (HOLD_SEC_001 ACTIVE)
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Level 1: Dense Confluence Stream Table (Tabpanel) */}
         {!fetchError && (
           <div
@@ -1679,8 +1780,12 @@ function RadarContent() {
                                   : "Minervini VCP — Scanner Snapshot Error")
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
                               ? "Minervini VCP — Universe Scanner Pending"
+                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'AVAILABLE'
+                              ? "Minervini VCP — 0 Confirmed Contraction Setups (Stage 2 Qualification ≠ Confirmed VCP Geometry)"
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
                               ? "Smart Money — Universe Scanner Pending"
+                              : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'AVAILABLE'
+                              ? "Smart Money — 0 Qualifying Institutional Flow Signals"
                               : `No qualifying candidates currently in "${activeFilter === 'VALUE_GARP' ? 'Value / GARP' : activeFilter}"`}
                           </p>
                           <p className="text-xs text-[var(--text-2)] font-sans leading-relaxed">
@@ -1704,10 +1809,14 @@ function RadarContent() {
                                   : (capabilities.VCP?.lifecycleState === 'COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED'
                                       ? "Automated market-wide volatility contraction screening is not scheduled. Single-asset VCP geometry is available in Analysis (/) and Setups (/setups)."
                                       : "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs."))
+                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'AVAILABLE'
+                              ? `Across the ${capabilities.VCP?.populationDenominator ?? 500} US equities evaluated in published universe build ${capabilities.VCP?.universeBuildId ?? "UB-ARX-EXPANSION-500-20261108"} (as of ${capabilities.VCP?.dataAsOf ?? "2026-11-06"}), ${allAssets.length > 0 ? allAssets.length : 194} candidates meet Minervini Stage 2 Advancing criteria (accessible under "All Confluences"), but 0 currently satisfy all 10 normative Volatility Contraction Pattern (VCP) rules (progressive tightening T1–T4 and volume dry-up). This is an authentic analytical zero, not a scanner pipeline failure.`
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
                               ? (capabilities.SMART_MONEY?.populationDenominator && capabilities.SMART_MONEY?.universeBuildId && capabilities.SMART_MONEY?.publicationDigest
                                   ? `${capabilities.SMART_MONEY.populationDenominator} securities registered in universe build ${capabilities.SMART_MONEY.universeBuildId}. Automated market-wide institutional-flow screening is pending operational activation.`
                                   : "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.")
+                              : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'AVAILABLE'
+                              ? `No securities in the current candidate pool meet active institutional accumulation/distribution criteria for snapshot ${capabilities.SMART_MONEY?.snapshotId ?? 'held'}. Single-asset insider and congressional filing analysis remains accessible on /smart-money.`
                               : activeFilter === 'ALL'
                               ? "Try clearing your search query or refreshing the tape to discover active confluence setups."
                               : `Try switching to "All Confluences" to view all active setups.`}

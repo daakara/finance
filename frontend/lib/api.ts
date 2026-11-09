@@ -826,6 +826,7 @@ export interface RadarCapabilityDetail {
   freshnessStatus?: string;
   subsignal?: string;
   populationDenominator?: number | null;
+  displayedStage2IntersectionCount?: number | null;
   universeBuildId?: string | null;
   universeId?: string | null;
   publicationDigest?: string | null;
@@ -1062,6 +1063,7 @@ export function normalizeRadarCapabilities(
       freshnessStatus: raw.freshnessStatus,
       subsignal: raw.subsignal,
       populationDenominator: typeof raw.populationDenominator === "number" ? raw.populationDenominator : null,
+      displayedStage2IntersectionCount: typeof raw.displayedStage2IntersectionCount === "number" ? raw.displayedStage2IntersectionCount : null,
       universeBuildId: raw.universeBuildId ?? null,
       universeId: raw.universeId ?? null,
       publicationDigest: raw.publicationDigest ?? null,
@@ -1124,6 +1126,13 @@ export interface CandidatePopulationModel {
   currentOpportunityCount: number;
   delistedRecordCount: number;
   unverifiedRecordCount: number;
+  stage2OpportunityCount?: number;
+  stage1RecordCount?: number;
+  stage4RecordCount?: number;
+  stageUnresolvedRecordCount?: number;
+  universeScope?: string;
+  universeBuildId?: string;
+  marketDataAsOf?: string;
 }
 
 export interface ScreenerResponse {
