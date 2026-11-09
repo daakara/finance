@@ -2632,7 +2632,7 @@ class SmartMoneyEngine:
                         "filing_date": r["filing_date"],
                         "transaction_date": r["transaction_date"] or r["filing_date"],
                         "acceptance_datetime": acc_dt,
-                        "ingestion_timestamp": (r.get("arx_first_observed_at") or r.get("arx_processed_at")) if hasattr(r, "get") else None,
+                        "ingestion_timestamp": (r["arx_first_observed_at"] if "arx_first_observed_at" in r.keys() else None) or (r["arx_processed_at"] if "arx_processed_at" in r.keys() else None),
                         "arx_first_observed_at": r.get("arx_first_observed_at") if hasattr(r, "get") else None,
                         "arx_processed_at": r.get("arx_processed_at") if hasattr(r, "get") else None,
                         "sec_accepted_at": r.get("sec_accepted_at") if hasattr(r, "get") else None,
