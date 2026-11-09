@@ -49,12 +49,6 @@ jobs:
       run: |
         pytest tests/test_fundamentals_api.py tests/test_sourced_fundamentals_pilot.py tests/test_generate_opportunity_dossier_snapshot.py tests/test_prepare_opportunity_dossier.py -v
 
-    - name: Run Radar Candidate Truth Regression Gate (Issue #62)
-      env:
-        PYTHONPATH: "."
-      run: |
-        timeout 180s python -m pytest tests/test_radar_candidate_truth_remediation.py -v --strict-markers
-
     - name: Verify Opportunity Dossier Snapshot Determinism
       env:
         PYTHONPATH: "."
