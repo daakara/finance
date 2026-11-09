@@ -73,6 +73,8 @@ export interface DecisionReadinessInputs {
   takeProfit1?: number | null;
   vix?: number | null;
   isActionable?: boolean | string | null;
+  freshnessStatus?: "LIVE" | "CACHED" | "STALE_HISTORICAL" | "UNAVAILABLE" | string | null;
+  historicalPointInTimeCertified?: boolean | null;
 }
 
 export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): DecisionReadinessResult {
@@ -88,6 +90,8 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     stopLoss,
     takeProfit1,
     vix,
+    freshnessStatus,
+    historicalPointInTimeCertified,
   } = inputs;
 
   // ── Helper: Stage 4 Detection ─────────────────────────────────────────────
@@ -112,7 +116,13 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
 
   const hasSufficientHistory = candleCount == null || candleCount >= 50;
 
-  if (corridorLocation.isValid && hasSufficientHistory) {
+  if (freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "STALE") {
+    gate1State = "BLOCKING";
+    gate1Explanation = "Market data tape is stale (> 4 sessions). Live pre-flight trade clearance suspended (fail-closed).";
+  } else if (freshnessStatus === "UNAVAILABLE" || freshnessStatus === "UNKNOWN") {
+    gate1State = "UNAVAILABLE";
+    gate1Explanation = "Exchange market tape is unavailable. Pre-flight clearance requires verified price feed.";
+  } else if (corridorLocation.isValid && hasSufficientHistory) {
     if (isStage4) {
       gate1State = "BLOCKING";
       gate1Explanation = "Asset is in Stage 4 distribution. Structural base required before accumulation corridor applies.";
@@ -204,7 +214,8 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     ? validateCanonicalActionable(inputs.isActionable)
     : true; // Backward compatibility with unit tests when isActionable is omitted
 
-  const isExecutionReady = technicalGatesPassed && canonicalActionable;
+  const isPointInTimeCertified = historicalPointInTimeCertified !== false;
+  const isExecutionReady = technicalGatesPassed && canonicalActionable && isPointInTimeCertified;
 
   let readinessVerdict: ReadinessVerdict;
   let readinessVerdictLabel: string;
@@ -212,6 +223,9 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
   if (isExecutionReady) {
     readinessVerdict = "EXECUTION_READY";
     readinessVerdictLabel = "EXECUTION READY";
+  } else if (technicalGatesPassed && !isPointInTimeCertified) {
+    readinessVerdict = "AWAITING_CANONICAL_CLEARANCE";
+    readinessVerdictLabel = "HISTORICAL EVIDENCE — UNCERTIFIED FOR LIVE EXECUTION";
   } else if (technicalGatesPassed) {
     readinessVerdict = "AWAITING_CANONICAL_CLEARANCE";
     readinessVerdictLabel = "TECHNICAL CHECKS PASSED — AWAITING CANONICAL CLEARANCE";
@@ -223,7 +237,11 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
   // ── Next Required Condition ───────────────────────────────────────────────
   let nextRequiredCondition = "Setup is execution ready. Capital allocation cleared.";
   if (activeBlockingGate === "GATE_1_LOCATION") {
-    if (isStage4) {
+    if (freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "STALE") {
+      nextRequiredCondition = "Live tape observation required. Refresh market feed before pre-flight evaluation.";
+    } else if (freshnessStatus === "UNAVAILABLE" || freshnessStatus === "UNKNOWN") {
+      nextRequiredCondition = "Verified exchange feed required before pre-flight evaluation.";
+    } else if (isStage4) {
       nextRequiredCondition = "Wait for structural floor formation and 50-day moving average breakout pivot reclaim.";
     } else if (corridorLocation.spatialRelation === "ABOVE") {
       nextRequiredCondition = "Wait for pullback into optimal accumulation corridor without chasing.";
@@ -240,6 +258,8 @@ export function resolveDecisionReadiness(inputs: DecisionReadinessInputs): Decis
     } else {
       nextRequiredCondition = "Execution levels must offer at least a 2:1 prospective reward-to-risk asymmetry.";
     }
+  } else if (technicalGatesPassed && !isPointInTimeCertified) {
+    nextRequiredCondition = "Point-in-time historical certification required before live execution clearance.";
   } else if (!isExecutionReady) {
     nextRequiredCondition = "Technical checks passed — awaiting canonical clearance. Canonical action posture is Wait; entry remains conditional.";
   }
