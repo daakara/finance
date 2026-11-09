@@ -53,6 +53,7 @@ export default function PreFlightChecklistModal({
 
   const modalRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const lastEvaluatedKeyRef = useRef<string | null>(null);
 
   // Consolidated effect — active only while modal is open.
   // Handles: localStorage read, vernacular listener, Escape key, Tab focus trap.
@@ -280,21 +281,24 @@ export default function PreFlightChecklistModal({
       : "Catalyst Telemetry Unavailable: Corporate event schedule unverified from primary source.";
   };
 
-  // Analytics — Idempotent execution guarded by modal open lifecycle (PREFLIGHT-001)
-  const hasTrackedRef = useRef<boolean>(false);
+  // Analytics — strictly single dispatch per unique evaluation event via useEffect (P1-F04 / PREFLIGHT-001)
   useEffect(() => {
-    if (isOpen && !hasTrackedRef.current) {
-      hasTrackedRef.current = true;
+    if (!isOpen) {
+      lastEvaluatedKeyRef.current = null;
+      return;
+    }
+
+    // Evaluation event identity incorporates asset, observation timestamp / price, and outcome
+    const evaluationEventKey = `${symbol}:${observationTime ?? safePrice}:${passedCount}:${isCleared}`;
+    if (lastEvaluatedKeyRef.current !== evaluationEventKey) {
       try {
         trackPreFlightOutcome(symbol, passedCount, isCleared);
+        lastEvaluatedKeyRef.current = evaluationEventKey;
       } catch (err) {
         console.warn("Analytics error in PreFlightChecklistModal:", err);
       }
     }
-    if (!isOpen) {
-      hasTrackedRef.current = false;
-    }
-  }, [isOpen, symbol, passedCount, isCleared]);
+  }, [isOpen, symbol, observationTime, safePrice, passedCount, isCleared]);
 
   // Trade plan markdown — differentiated by vernacularMode
   const tradePlanMarkdown = isPlain
@@ -309,6 +313,8 @@ export default function PreFlightChecklistModal({
 - **Tactical Rule (Protected Trailing Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a protected trade.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
 - **Pre-Flight Score**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) · ${isCleared ? (isVixElevated ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION" : "🟢 CLEARED") : `⚠️ NOT CLEARED — ${activeBlocker}`}
+
+> ⚠️ **PLATFORM HOLD NOTICE (HOLD_EXEC_001)**: Simulation and institutional quantitative research only. Zero live order execution or capital commitment authorized. All levels require live session confirmation before execution.
 `
     : `${!isCleared ? `> ⚠️ **RESEARCH / JOURNAL ONLY — NOT EXECUTABLE**\n> Clearance Blockers: ${evalResult.allBlockers.join("; ") || activeBlocker}\n\n` : isVixElevated ? `> ⚠️ **CAUTION: ELEVATED MARKET VOLATILITY (VIX ${currentVix?.toFixed(1)})**\n> Volatility regime elevated (20.0–26.0) — exercise caution on position sizing.\n\n` : ""}### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
@@ -322,6 +328,8 @@ export default function PreFlightChecklistModal({
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
 - **Pre-Flight Clearance**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) — ${isCleared ? (isVixElevated ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION" : "🟢 CLEARED FOR EXECUTION") : `⚠️ NOT CLEARED (${activeBlocker})`}
 - **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"}${isVixElevated ? " (ELEVATED CAUTION)" : ""} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "HAZARD" : resolvedCatalystState}
+
+> ⚠️ **PLATFORM HOLD NOTICE (HOLD_EXEC_001)**: Simulation and institutional quantitative research only. Zero live order execution or capital commitment authorized. All levels require live session confirmation before execution.
 `;
 
   const handleCopy = async () => {
