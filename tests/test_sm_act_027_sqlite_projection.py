@@ -40,10 +40,10 @@ def _fixture(tmp_path, monkeypatch, filing_date, observation_date):
     monkeypatch.setitem(sys.modules, ingest_mod.__name__, ingest_mod)
 
 
-def _evaluate():
+def _evaluate(*, as_of="2026-11-10T12:00:00Z", replay_mode="ARX_OBSERVED"):
     return SmartMoneyEngine.evaluate_smart_money_feeds(
         symbol="NVDA", window_days=90, include_curated=False,
-        as_of="2026-11-10T12:00:00Z", replay_mode="ARX_OBSERVED",
+        as_of=as_of, replay_mode=replay_mode,
     )
 
 
@@ -73,3 +73,16 @@ def test_sqlite_real_engine_retains_observation_not_sec_acceptance(tmp_path, mon
     assert record["acceptance_datetime"] == "2026-10-02T21:13:29Z"
     assert sec["latest_successful_ingestion"] == "2026-10-03T10:20:00Z"
     assert sec["latest_successful_sec_source_check"] is None
+
+
+def test_publicly_available_does_not_mean_already_observed_by_arx(tmp_path, monkeypatch):
+    _fixture(tmp_path, monkeypatch, "2026-10-01", "2026-10-03T10:20:00Z")
+    cutoff = "2026-10-02T23:00:00Z"
+    public = _evaluate(as_of=cutoff, replay_mode="PUBLIC_AVAILABLE")
+    observed = _evaluate(as_of=cutoff, replay_mode="ARX_OBSERVED")
+    assert public["feeds"]["sec_form4"]["status"] == "VERIFIED"
+    assert public["feeds"]["sec_form4"]["observation_count"] == 1
+    assert observed["feeds"]["sec_form4"]["status"] == "PIPELINE_PENDING"
+    assert observed["feeds"]["sec_form4"]["observation_count"] == 0
+    assert observed["overall_status"] == "PIPELINE_PENDING"
+    assert observed["confluence_inputs"] is None
