@@ -8,7 +8,7 @@ from pathlib import Path
 SOURCE = (Path(__file__).resolve().parents[1] / "analyst_dashboard" / "analyzers" / "smart_money.py").read_text(encoding="utf-8")
 
 def _form4_projection():
-    start = SOURCE.index('            if sec_rows:')
+    start = SOURCE.index('            if sec_rows:\n                for r in sec_rows:')
     end = SOURCE.index('        # ── FEED 2: OPTIONS FLOW SWEEPS')
     return SOURCE[start:end]
 
