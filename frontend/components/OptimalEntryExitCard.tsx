@@ -199,6 +199,8 @@ export default function OptimalEntryExitCard({
       stopLoss: stop_loss,
       takeProfit1: take_profit_1,
       vix: resolvedVix,
+      freshnessStatus: resolvedLiveFreshness === "STALE" ? "STALE_HISTORICAL" : resolvedLiveFreshness,
+      historicalPointInTimeCertified: (executionPlan as any)?.historicalPointInTimeCertified ?? (executionPlan as any)?.historical_pit_certified ?? null,
     });
 
     return (
@@ -385,6 +387,8 @@ export default function OptimalEntryExitCard({
     takeProfit1: take_profit_1,
     vix: resolvedVix,
     isActionable: canonicalActionable,
+    freshnessStatus: resolvedLiveFreshness === "STALE" ? "STALE_HISTORICAL" : resolvedLiveFreshness,
+    historicalPointInTimeCertified: (executionPlan as any)?.historicalPointInTimeCertified ?? (executionPlan as any)?.historical_pit_certified ?? null,
   });
 
   const presentation = resolvePresentationState({

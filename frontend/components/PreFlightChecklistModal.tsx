@@ -47,6 +47,7 @@ export default function PreFlightChecklistModal({
 
   const modalRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const lastEvaluatedKeyRef = useRef<string | null>(null);
 
   // Consolidated effect — active only while modal is open.
   // Handles: localStorage read, vernacular listener, Escape key, Tab focus trap.
@@ -97,8 +98,6 @@ export default function PreFlightChecklistModal({
       triggerRef.current?.focus();
     };
   }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
   const evalResult = evaluatePreFlightChecks(
@@ -162,6 +161,27 @@ export default function PreFlightChecklistModal({
 
   const isActionableGranted = isActionable === true;
   const isCleared = isActionableGranted && evalResult.isCleared;
+
+  // Analytics — strictly single dispatch per unique evaluation event via useEffect (P1-F04 / PREFLIGHT-001)
+  useEffect(() => {
+    if (!isOpen) {
+      lastEvaluatedKeyRef.current = null;
+      return;
+    }
+
+    // Evaluation event identity incorporates asset, observation timestamp / price, and outcome
+    const evaluationEventKey = `${symbol}:${observationTime ?? safePrice}:${passedCount}:${isCleared}`;
+    if (lastEvaluatedKeyRef.current !== evaluationEventKey) {
+      try {
+        trackPreFlightOutcome(symbol, passedCount, isCleared);
+        lastEvaluatedKeyRef.current = evaluationEventKey;
+      } catch (err) {
+        console.warn("Analytics error in PreFlightChecklistModal:", err);
+      }
+    }
+  }, [isOpen, symbol, observationTime, safePrice, passedCount, isCleared]);
+
+  if (!isOpen) return null;
   const isCatalystConfirmed = catalystEvidence?.confirmationStatus === "CONFIRMED";
 
   const cleanSym = (symbol || "ASSET").toUpperCase().replace("-USD", "");
@@ -252,13 +272,6 @@ export default function PreFlightChecklistModal({
       : "Catalyst Telemetry Unavailable: Corporate event schedule unverified from primary source.";
   };
 
-  // Analytics — inline try/catch, no useEffect needed (stable values within a single open session)
-  try {
-    trackPreFlightOutcome(symbol, passedCount, isCleared);
-  } catch (err) {
-    console.warn("Analytics error in PreFlightChecklistModal:", err);
-  }
-
   // Trade plan markdown — differentiated by vernacularMode
   const tradePlanMarkdown = isPlain
     ? `### 📋 ARX Terminal Trade Plan: ${symbol}
@@ -272,6 +285,8 @@ export default function PreFlightChecklistModal({
 - **Tactical Rule (Protected Trailing Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a protected trade.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
 - **Pre-Flight Score**: ${convictionPct}% Checklist (${isCleared ? "🟢 CLEARED" : `⚠️ NOT CLEARED — ${activeBlocker}`})
+
+> ⚠️ **PLATFORM HOLD NOTICE (HOLD_EXEC_001)**: Simulation and institutional quantitative research only. Zero live order execution or capital commitment authorized. All levels require live session confirmation before execution.
 `
     : `### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
@@ -285,6 +300,8 @@ export default function PreFlightChecklistModal({
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
 - **Pre-Flight Clearance**: ${convictionPct}% Checklist — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : `⚠️ NOT CLEARED (${activeBlocker})`}
 - **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "HAZARD" : resolvedCatalystState}
+
+> ⚠️ **PLATFORM HOLD NOTICE (HOLD_EXEC_001)**: Simulation and institutional quantitative research only. Zero live order execution or capital commitment authorized. All levels require live session confirmation before execution.
 `;
 
   const handleCopy = async () => {

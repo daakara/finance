@@ -81,6 +81,38 @@ assert.strictEqual(g1NoData.gates[0].state, "UNAVAILABLE");
 assert.strictEqual(g1NoData.activeBlockingGate, "GATE_1_LOCATION");
 console.log("   [PASS] 1.5 Candle History < 50 -> Gate 1 UNAVAILABLE");
 
+// 1.6 Stale Tape (Blocking Fail-Closed — P1-F01)
+const g1StaleTape = resolveDecisionReadiness({
+  currentPrice: 100,
+  optimalEntryMin: 98,
+  optimalEntryMax: 102,
+  candleCount: 100,
+  isConfirmed: true,
+  riskRewardRatio: 2.5,
+  stopLoss: 95,
+  takeProfit1: 112.5,
+  vix: 16.2,
+  freshnessStatus: "STALE_HISTORICAL",
+});
+assert.strictEqual(g1StaleTape.gates[0].state, "BLOCKING");
+assert.strictEqual(g1StaleTape.activeBlockingGate, "GATE_1_LOCATION");
+assert.strictEqual(g1StaleTape.isExecutionReady, false);
+assert.ok(g1StaleTape.gates[0].explanation.includes("tape is stale"));
+console.log("   [PASS] 1.6 Stale Tape -> Gate 1 BLOCKING (Fail-closed)");
+
+// 1.7 Unavailable Tape (Unavailable Fail-Closed)
+const g1UnavailableTape = resolveDecisionReadiness({
+  currentPrice: 100,
+  optimalEntryMin: 98,
+  optimalEntryMax: 102,
+  candleCount: 100,
+  freshnessStatus: "UNAVAILABLE",
+});
+assert.strictEqual(g1UnavailableTape.gates[0].state, "UNAVAILABLE");
+assert.strictEqual(g1UnavailableTape.activeBlockingGate, "GATE_1_LOCATION");
+assert.strictEqual(g1UnavailableTape.isExecutionReady, false);
+console.log("   [PASS] 1.7 Unavailable Tape -> Gate 1 UNAVAILABLE");
+
 // ── 2. Gate 2: Dynamic Trigger & Dependency Cascade ─────────────────────────
 console.log("\n2. Verifying Gate 2 Dynamic Trigger & Dependency Cascade...");
 
@@ -188,5 +220,27 @@ assert.strictEqual(allClear.activeBlockingGate, "NONE");
 assert.strictEqual(allClear.isExecutionReady, true);
 assert.strictEqual(allClear.primaryAction.actionType, "SIZE_POSITION");
 console.log("   [PASS] 3.4 All 3 Gates Passed -> isExecutionReady = true, Blocker = NONE, Action = SIZE_POSITION");
+
+// 3.5 Historical Point-in-Time Qualification (P1-F02)
+const uncertifiedPIT = resolveDecisionReadiness({
+  currentPrice: 100,
+  optimalEntryMin: 98,
+  optimalEntryMax: 102,
+  candleCount: 100,
+  isConfirmed: true,
+  riskRewardRatio: 2.5,
+  stopLoss: 95,
+  takeProfit1: 112.5,
+  vix: 17.5,
+  historicalPointInTimeCertified: false,
+});
+assert.strictEqual(uncertifiedPIT.gates[0].state, "PASSED");
+assert.strictEqual(uncertifiedPIT.gates[1].state, "PASSED");
+assert.strictEqual(uncertifiedPIT.gates[2].state, "PASSED");
+assert.strictEqual(uncertifiedPIT.isExecutionReady, false);
+assert.strictEqual(uncertifiedPIT.readinessVerdict, "AWAITING_CANONICAL_CLEARANCE");
+assert.strictEqual(uncertifiedPIT.readinessVerdictLabel, "HISTORICAL EVIDENCE — UNCERTIFIED FOR LIVE EXECUTION");
+assert.ok(uncertifiedPIT.nextRequiredCondition.includes("Point-in-time historical certification required"));
+console.log("   [PASS] 3.5 Uncertified PIT -> isExecutionReady = false, Verdict = AWAITING_CANONICAL_CLEARANCE");
 
 console.log("\nALL DECISION READINESS TESTS PASSED (100% COVERAGE)!\n");
