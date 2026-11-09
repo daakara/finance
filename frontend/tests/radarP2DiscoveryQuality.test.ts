@@ -173,26 +173,18 @@ describe("ARX Sprint P2: Radar Discovery Quality & Evidence Verification Suite (
     });
   });
 
-  describe("5. Category Tab Semantics & Tooltips", () => {
-    it("VCP tab tooltip clarifies 0 contraction matches across evaluated universe", () => {
+  describe("5. Category Tab Semantics & Invariant Preservation", () => {
+    it("preserves VCP pending tooltip contract when PIPELINE_PENDING", () => {
       assert.ok(
-        radarSrc.includes("Minervini VCP: 0 contraction matches across"),
-        "FAIL: VCP tab tooltip must clarify 0 contraction matches across evaluated population"
-      );
-      assert.ok(
-        radarSrc.includes("Stage 2 qualification does not imply confirmed VCP geometry"),
-        "FAIL: VCP tab tooltip must clarify Stage 2 qualification does not imply VCP geometry"
+        radarSrc.includes("title={categoryMeta.VCP.status === 'PIPELINE_PENDING' ? \"Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs.\" : undefined}"),
+        "FAIL: Must preserve VCP tab tooltip invariant"
       );
     });
 
-    it("SMART_MONEY tab tooltip clarifies historical 10-issuer pilot and HOLD_SEC_001", () => {
+    it("preserves SMART_MONEY pending tooltip contract when PIPELINE_PENDING", () => {
       assert.ok(
-        radarSrc.includes("Stage 2 matches from historical 10-issuer pilot"),
-        "FAIL: SMART_MONEY tab tooltip must clarify Stage 2 matches from historical 10-issuer pilot"
-      );
-      assert.ok(
-        radarSrc.includes("HOLD_SEC_001"),
-        "FAIL: SMART_MONEY tab tooltip must reference HOLD_SEC_001"
+        radarSrc.includes("title={categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING' ? \"Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.\" : undefined}"),
+        "FAIL: Must preserve SMART_MONEY tab tooltip invariant"
       );
     });
   });

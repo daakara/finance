@@ -338,11 +338,7 @@ function RadarContent() {
               ? capabilities.SMART_MONEY.displayedStage2IntersectionCount
               : allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length)
           : null,
-        badge: isAvailable('SMART_MONEY')
-          ? `${typeof capabilities.SMART_MONEY?.displayedStage2IntersectionCount === 'number'
-              ? capabilities.SMART_MONEY.displayedStage2IntersectionCount
-              : allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}`
-          : 'Universe Scanner Pending',
+        badge: isAvailable('SMART_MONEY') ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}` : 'Universe Scanner Pending',
         status: capabilities.SMART_MONEY?.status || 'PIPELINE_PENDING',
       },
     };
@@ -1223,9 +1219,7 @@ function RadarContent() {
                   tabIndex={activeFilter === 'VCP' ? 0 : -1}
                   onKeyDown={(e) => handleFilterKeyDown(e, 'VCP')}
                   onClick={() => handleCategoryFilterSelect('VCP', 'tab-radar-filter-vcp')}
-                  title={categoryMeta.VCP.status === 'PIPELINE_PENDING'
-                    ? "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs."
-                    : `Minervini VCP: 0 contraction matches across ${capabilities.VCP?.populationDenominator ?? 500} evaluated equities (${capabilities.VCP?.universeBuildId ?? "UB-ARX-EXPANSION-500-20261108"}). Stage 2 qualification does not imply confirmed VCP geometry.`}
+                  title={categoryMeta.VCP.status === 'PIPELINE_PENDING' ? "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs." : undefined}
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'VCP'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
@@ -1253,9 +1247,7 @@ function RadarContent() {
                   tabIndex={activeFilter === 'SMART_MONEY' ? 0 : -1}
                   onKeyDown={(e) => handleFilterKeyDown(e, 'SMART_MONEY')}
                   onClick={() => handleCategoryFilterSelect('SMART_MONEY', 'tab-radar-filter-smart_money')}
-                  title={categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
-                    ? "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money."
-                    : `${categoryMeta.SMART_MONEY.badge} Stage 2 matches from historical 10-issuer pilot · ${capabilities.SMART_MONEY?.dataAsOf || "October 25, 2026"} · Ingestion held (HOLD_SEC_001)`}
+                  title={categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING' ? "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money." : undefined}
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'SMART_MONEY'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
