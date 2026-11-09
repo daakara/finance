@@ -47,6 +47,7 @@ export default function PreFlightChecklistModal({
 
   const modalRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const lastEvaluatedKeyRef = useRef<string | null>(null);
 
   // Consolidated effect — active only while modal is open.
   // Handles: localStorage read, vernacular listener, Escape key, Tab focus trap.
@@ -97,8 +98,6 @@ export default function PreFlightChecklistModal({
       triggerRef.current?.focus();
     };
   }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
   const evalResult = evaluatePreFlightChecks(
@@ -162,6 +161,27 @@ export default function PreFlightChecklistModal({
 
   const isActionableGranted = isActionable === true;
   const isCleared = isActionableGranted && evalResult.isCleared;
+
+  // Analytics — strictly single dispatch per unique evaluation event via useEffect (P1-F04 / PREFLIGHT-001)
+  useEffect(() => {
+    if (!isOpen) {
+      lastEvaluatedKeyRef.current = null;
+      return;
+    }
+
+    // Evaluation event identity incorporates asset, observation timestamp / price, and outcome
+    const evaluationEventKey = `${symbol}:${observationTime ?? safePrice}:${passedCount}:${isCleared}`;
+    if (lastEvaluatedKeyRef.current !== evaluationEventKey) {
+      try {
+        trackPreFlightOutcome(symbol, passedCount, isCleared);
+        lastEvaluatedKeyRef.current = evaluationEventKey;
+      } catch (err) {
+        console.warn("Analytics error in PreFlightChecklistModal:", err);
+      }
+    }
+  }, [isOpen, symbol, observationTime, safePrice, passedCount, isCleared]);
+
+  if (!isOpen) return null;
   const isCatalystConfirmed = catalystEvidence?.confirmationStatus === "CONFIRMED";
 
   const cleanSym = (symbol || "ASSET").toUpperCase().replace("-USD", "");
@@ -251,26 +271,6 @@ export default function PreFlightChecklistModal({
       ? "Earnings calendar coverage unavailable: Event runway cannot be certified."
       : "Catalyst Telemetry Unavailable: Corporate event schedule unverified from primary source.";
   };
-
-  // Analytics — strictly single dispatch per unique evaluation event via useEffect (P1-F04 / PREFLIGHT-001)
-  const lastEvaluatedKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!isOpen) {
-      lastEvaluatedKeyRef.current = null;
-      return;
-    }
-
-    // Evaluation event identity incorporates asset, observation timestamp / price, and outcome
-    const evaluationEventKey = `${symbol}:${observationTime ?? safePrice}:${passedCount}:${isCleared}`;
-    if (lastEvaluatedKeyRef.current !== evaluationEventKey) {
-      try {
-        trackPreFlightOutcome(symbol, passedCount, isCleared);
-        lastEvaluatedKeyRef.current = evaluationEventKey;
-      } catch (err) {
-        console.warn("Analytics error in PreFlightChecklistModal:", err);
-      }
-    }
-  }, [isOpen, symbol, observationTime, safePrice, passedCount, isCleared]);
 
   // Trade plan markdown — differentiated by vernacularMode
   const tradePlanMarkdown = isPlain
