@@ -94,7 +94,7 @@ function formatRadarExecutionStatus(status: ExecutionStatus): string {
     case 'WAITING_PULLBACK':
       return 'PULLBACK PENDING';
     case 'STOPPED_OUT':
-      return 'STOPPED OUT';
+      return 'SETUP INVALIDATED (STOP)';
     case 'INSUFFICIENT_HISTORY':
       return 'INSUFFICIENT HISTORY';
     case 'UNVERIFIED_ASSET':
@@ -371,6 +371,7 @@ function RadarContent() {
     if (asset.executionStatus === 'DELISTED_SECURITY') return false;
     if (asset.executionStatus === 'UNVERIFIED_ASSET') return false;
     if (asset.executionStatus === 'UNKNOWN') return false;
+    if (asset.executionStatus === 'STOPPED_OUT') return false;
     if (asset.marketStage && asset.marketStage !== 'STAGE_2') return false;
     if (asset.isBullishEligible === false) return false;
     return Boolean(asset.screeningEligible);
@@ -436,7 +437,7 @@ function RadarContent() {
             : true;
 
         const matchesExperience =
-          experienceMode === 'ALL_RESEARCH' || ownershipCounts.totalActive === 0
+          experienceMode === 'ALL_RESEARCH'
             ? true
             : (ownState === 'HELD' ? true : isCandidateEligibleOpportunity(asset));
 
@@ -1808,6 +1809,8 @@ function RadarContent() {
                                   : "No active Radar candidates currently held in portfolio")
                               : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
                               ? "Portfolio sync unavailable (Ownership UNKNOWN)"
+                              : experienceMode === 'QUALIFIED_OPPORTUNITIES' && ownershipCounts.totalActive === 0 && activeFilter === 'ALL'
+                              ? "No Active Qualified Opportunities (0 Candidates in Buy Zone)"
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'ERROR'
                               ? (capabilities.VCP?.reason === 'BUILD_MEMBERSHIP_EMPTY'
                                   ? "Minervini VCP — Universe Membership Empty"
@@ -1820,6 +1823,8 @@ function RadarContent() {
                               ? "Smart Money — Universe Scanner Pending"
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'AVAILABLE'
                               ? "Smart Money — 0 Qualifying Institutional Flow Signals"
+                              : activeFilter === 'ALL'
+                              ? "No matching market candidates found"
                               : `No qualifying candidates currently in "${activeFilter === 'VALUE_GARP' ? 'Value / GARP' : activeFilter}"`}
                           </p>
                           <p className="text-xs text-[var(--text-2)] font-sans leading-relaxed">
@@ -1863,8 +1868,12 @@ function RadarContent() {
                                   : "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.")
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'AVAILABLE'
                               ? `No securities in the current candidate pool meet active institutional accumulation/distribution criteria for snapshot ${capabilities.SMART_MONEY?.snapshotId ?? 'held'}. Single-asset insider and congressional filing analysis remains accessible on /smart-money.`
+                              : experienceMode === 'QUALIFIED_OPPORTUNITIES' && ownershipCounts.totalActive === 0
+                              ? "No market assets currently meet all active Stage 2 Advancing and buy-zone criteria. Switch to 'All Research / Catalog' to review reference setups."
                               : activeFilter === 'ALL'
-                              ? "Try clearing your search query or refreshing the tape to discover active confluence setups."
+                              ? (searchQuery
+                                  ? "Try clearing your search query or refreshing the tape to discover active confluence setups."
+                                  : "No market assets currently meet active confluence thresholds.")
                               : `Try switching to "All Confluences" to view all active setups.`}
                           </p>
                         </div>
@@ -1953,16 +1962,28 @@ function RadarContent() {
                             </Link>
                           )}
 
+                          {experienceMode === 'QUALIFIED_OPPORTUNITIES' && ownershipCounts.totalActive === 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setExperienceMode('ALL_RESEARCH')}
+                              className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold font-mono transition-transform active:scale-95 shadow-lg shadow-blue-950/50 inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              📚 View All Research Assets ({allAssets.length}) →
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => {
                               setSearchQuery('');
                               setSelectedAssetTicker(null);
                               setOnDemandError(null);
+                              setActiveFilter('ALL');
+                              setOwnershipFilter('ALL');
                             }}
                             className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] hover:text-[var(--text-1)] text-xs font-bold font-mono border border-[var(--border-strong)] inline-flex items-center justify-center cursor-pointer"
                           >
-                            ✕ Clear Filter (Show All {allAssets.length})
+                            ✕ Reset Filters (Show All {allAssets.length})
                           </button>
                         </div>
                       </div>
@@ -2011,8 +2032,15 @@ function RadarContent() {
                               ? 'bg-amber-950 text-amber-300 border border-amber-800'
                               : isTarget
                               ? 'bg-blue-950 text-blue-300 border border-blue-800'
+                              : asset.executionStatus === 'STOPPED_OUT'
+                              ? 'bg-rose-950/70 text-rose-300 border border-rose-700/60'
                               : 'bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]'
-                          }`}>
+                          }`}
+                          title={
+                            asset.executionStatus === 'STOPPED_OUT'
+                              ? "Analytical setup invalidated (price below technical stop). This indicates model invalidation, not a portfolio position exit."
+                              : undefined
+                          }>
                             {screeningLabel}
                           </span>
                         </td>
