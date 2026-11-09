@@ -327,18 +327,40 @@ function RadarContent() {
       },
       VCP: {
         count: isAvailable('VCP')
-          ? (typeof capabilities.VCP?.matchedCount === 'number' ? capabilities.VCP.matchedCount : allAssets.filter((a) => a.categories.includes('VCP')).length)
+          ? (typeof capabilities.VCP?.matchedCount === 'number' && !capabilities.VCP?.isRollback
+              ? capabilities.VCP.matchedCount
+              : allAssets.filter((a) => a.categories.includes('VCP')).length)
           : null,
-        badge: isAvailable('VCP') ? `${allAssets.filter((a) => a.categories.includes('VCP')).length}` : 'Universe Scanner Pending',
+        badge: fetchError
+          ? '—'
+          : capabilities.VCP?.status === 'ERROR'
+          ? 'Snapshot Error'
+          : isAvailable('VCP')
+          ? `${typeof capabilities.VCP?.matchedCount === 'number' && !capabilities.VCP?.isRollback
+              ? capabilities.VCP.matchedCount
+              : allAssets.filter((a) => a.categories.includes('VCP')).length}`
+          : 'Universe Scanner Pending',
         status: capabilities.VCP?.status || 'PIPELINE_PENDING',
       },
       SMART_MONEY: {
         count: isAvailable('SMART_MONEY')
           ? (typeof capabilities.SMART_MONEY?.displayedStage2IntersectionCount === 'number'
               ? capabilities.SMART_MONEY.displayedStage2IntersectionCount
-              : allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length)
+              : (typeof capabilities.SMART_MONEY?.matchedCount === 'number' && !capabilities.SMART_MONEY?.isRollback
+                  ? capabilities.SMART_MONEY.matchedCount
+                  : allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length))
           : null,
-        badge: isAvailable('SMART_MONEY') ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}` : 'Universe Scanner Pending',
+        badge: fetchError
+          ? '—'
+          : capabilities.SMART_MONEY?.status === 'ERROR'
+          ? 'Snapshot Error'
+          : isAvailable('SMART_MONEY')
+          ? `${typeof capabilities.SMART_MONEY?.displayedStage2IntersectionCount === 'number'
+              ? capabilities.SMART_MONEY.displayedStage2IntersectionCount
+              : (typeof capabilities.SMART_MONEY?.matchedCount === 'number' && !capabilities.SMART_MONEY?.isRollback
+                  ? capabilities.SMART_MONEY.matchedCount
+                  : allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length)}`
+          : 'Universe Scanner Pending',
         status: capabilities.SMART_MONEY?.status || 'PIPELINE_PENDING',
       },
     };
@@ -1511,17 +1533,25 @@ function RadarContent() {
                   const authValueGarp = typeof capabilities.VALUE_GARP?.matchedCount === 'number' && !capabilities.VALUE_GARP?.isRollback
                     ? capabilities.VALUE_GARP.matchedCount
                     : allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length;
-                  const totalEvaluated = capabilities.VALUE_GARP?.populationDenominator ?? (allAssets.length > 0 ? allAssets.length : 35);
+                  const totalEvaluated = capabilities.VALUE_GARP?.populationDenominator ?? (allAssets.length > 0 ? allAssets.length : null);
+                  const isVerifiedComplete = typeof totalEvaluated === 'number' && totalEvaluated > 0 && !fetchError && capabilities.VALUE_GARP?.status === 'AVAILABLE';
+
+                  const coverageText = isVerifiedComplete
+                    ? `100% of Defined Reference Catalog Evaluated (${totalEvaluated} Assets)`
+                    : (typeof totalEvaluated === 'number' && totalEvaluated > 0
+                        ? `Reference Catalog (${totalEvaluated} Assets Evaluated)`
+                        : 'Catalog Coverage Pending');
+
                   if (filteredAssets.length !== authValueGarp) {
                     return (
                       <>
-                        Showing <strong className="text-white">{filteredAssets.length}</strong> of <strong className="text-white">{authValueGarp}</strong> Value / GARP Matches · 100% of Defined Reference Catalog Evaluated ({totalEvaluated} Assets)
+                        Showing <strong className="text-white">{filteredAssets.length}</strong> of <strong className="text-white">{authValueGarp}</strong> Value / GARP Matches · {coverageText}
                       </>
                     );
                   }
                   return (
                     <>
-                      <strong className="text-white">{authValueGarp}</strong> Value / GARP Matches · 100% of Defined Reference Catalog Evaluated ({totalEvaluated} Assets)
+                      <strong className="text-white">{authValueGarp}</strong> Value / GARP Matches · {coverageText}
                     </>
                   );
                 })()}
@@ -1532,13 +1562,17 @@ function RadarContent() {
                 const authValueGarp = typeof capabilities.VALUE_GARP?.matchedCount === 'number' && !capabilities.VALUE_GARP?.isRollback
                   ? capabilities.VALUE_GARP.matchedCount
                   : allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length;
-                const totalEvaluated = capabilities.VALUE_GARP?.populationDenominator ?? (allAssets.length > 0 ? allAssets.length : 35);
+                const totalEvaluated = capabilities.VALUE_GARP?.populationDenominator ?? (allAssets.length > 0 ? allAssets.length : null);
+                const evalLabel = typeof totalEvaluated === 'number' && totalEvaluated > 0 ? `${totalEvaluated} EVALUATED` : 'COVERAGE PENDING';
+                const tooltipText = typeof totalEvaluated === 'number' && totalEvaluated > 0
+                  ? `${totalEvaluated}-asset curated reference catalog evaluated. Whole-market automated screening is pending VCP and Smart Money pipeline activation.`
+                  : 'Curated reference catalog evaluation pending. Whole-market automated screening is pending VCP and Smart Money pipeline activation.';
                 return (
                   <span
                     className="px-2 py-0.5 rounded text-[10px] bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-strong)]"
-                    title={`100% of ${totalEvaluated}-asset curated reference catalog evaluated. Whole-market automated screening is pending VCP and Smart Money pipeline activation.`}
+                    title={tooltipText}
                   >
-                    REFERENCE CATALOG ({authValueGarp} MATCHES / {totalEvaluated} EVALUATED)
+                    REFERENCE CATALOG ({authValueGarp} MATCHES / {evalLabel})
                   </span>
                 );
               })()}
@@ -1810,7 +1844,19 @@ function RadarContent() {
                                       ? "Automated market-wide volatility contraction screening is not scheduled. Single-asset VCP geometry is available in Analysis (/) and Setups (/setups)."
                                       : "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs."))
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'AVAILABLE'
-                              ? `Across the ${capabilities.VCP?.populationDenominator ?? 500} US equities evaluated in published universe build ${capabilities.VCP?.universeBuildId ?? "UB-ARX-EXPANSION-500-20261108"} (as of ${capabilities.VCP?.dataAsOf ?? "2026-11-06"}), ${allAssets.length > 0 ? allAssets.length : 194} candidates meet Minervini Stage 2 Advancing criteria (accessible under "All Confluences"), but 0 currently satisfy all 10 normative Volatility Contraction Pattern (VCP) rules (progressive tightening T1–T4 and volume dry-up). This is an authentic analytical zero, not a scanner pipeline failure.`
+                              ? (() => {
+                                  const popText = typeof capabilities.VCP?.populationDenominator === 'number' && capabilities.VCP.populationDenominator > 0
+                                    ? `Across the ${capabilities.VCP.populationDenominator} US equities evaluated`
+                                    : "Across the evaluated US equity population";
+                                  const buildText = capabilities.VCP?.universeBuildId
+                                    ? ` in published universe build ${capabilities.VCP.universeBuildId}`
+                                    : "";
+                                  const asOfText = capabilities.VCP?.dataAsOf
+                                    ? ` (as of ${capabilities.VCP.dataAsOf})`
+                                    : "";
+                                  const meetingText = allAssets.length > 0 ? `${allAssets.length} ` : "";
+                                  return `${popText}${buildText}${asOfText}, ${meetingText}candidates meet Minervini Stage 2 Advancing criteria (accessible under "All Confluences"), but 0 currently satisfy all 10 normative Volatility Contraction Pattern (VCP) rules (progressive tightening T1–T4 and volume dry-up). This is an authentic analytical zero, not a scanner pipeline failure.`;
+                                })()
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
                               ? (capabilities.SMART_MONEY?.populationDenominator && capabilities.SMART_MONEY?.universeBuildId && capabilities.SMART_MONEY?.publicationDigest
                                   ? `${capabilities.SMART_MONEY.populationDenominator} securities registered in universe build ${capabilities.SMART_MONEY.universeBuildId}. Automated market-wide institutional-flow screening is pending operational activation.`
