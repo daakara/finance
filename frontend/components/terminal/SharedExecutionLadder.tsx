@@ -368,7 +368,7 @@ export function SharedExecutionLadder({
             href="#preflight-readiness-bar"
             className="text-[11px] font-mono font-bold text-amber-300 underline hover:text-white shrink-0"
           >
-            Inspect Clearance Checklist ({passedCount !== undefined ? `${passedCount}/4 Checks` : "Pre-Flight"}) →
+            Inspect Clearance Checklist ({passedCount !== undefined ? `${passedCount}/5 Checks` : "Pre-Flight"}) →
           </a>
         </div>
       )}
