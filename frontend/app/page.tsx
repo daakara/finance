@@ -177,8 +177,31 @@ function TerminalContent() {
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.set("symbol", clean);
-      window.history.replaceState({}, "", url.toString());
+      window.history.pushState({}, "", url.toString());
     }
+  }, []);
+
+  // Listen to browser Back/Forward (popstate) navigation to restore Discovery / Cockpit state
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const sym = params.get("symbol");
+      if (sym && sym.trim()) {
+        const clean = sym.trim().toUpperCase();
+        setHasExplicitSymbol(true);
+        setSelectedSymbol(clean);
+      } else {
+        setHasExplicitSymbol(false);
+        setSelectedSymbol("");
+        setData(null);
+        setLoading(false);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   const aliasRecommendation = selectedSymbol ? resolveAssetAlias(selectedSymbol) : null;
