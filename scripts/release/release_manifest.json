@@ -1,7 +1,7 @@
 {
   "release_candidate_commit": "d65d7a1544d519b7921e46866165ed649d1e64c2",
   "base_anchor_commit": "09108745ee546775a125dfdfdac6fb47b07f1e9a",
-  "total_files": 6,
+  "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-SM-ACT-027-OWNER-PREAPPROVED-RELEASE-CANDIDATE",
   "files": {
@@ -52,6 +52,14 @@
       "governing_requirement": "SM-ACT-027: SEC Form 4 advisory source/observed time integrity, PIT replay and unknown-coverage fail-closed (#165 / #253), owner-preapproved, release governance admission still pending",
       "sha256": "ba7671044fb52fac07363be1e7c693ea9a74e266df178f99fd834441f1aa04a5",
       "size_bytes": 4317
+    },
+    "scripts/release/rq02_diff_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 253,
+      "originating_commit": "52538ea56f992be48e660c72e3185a567eb138fe",
+      "governing_requirement": "ARX-SM-ACT-027: owner-authenticated PR #253 RQ-02 release admission (GitHub comment 6760307021); no qualification bypass",
+      "sha256": "832e3989b4aaddb24157fced9cd656ea950be8017734455f0218fea5bb39db48",
+      "size_bytes": 57971
     }
   },
   "qualification_framework_files": {
@@ -61,8 +69,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "9ee7411cb2c99c74e2741d2bab7f6a2d9f80e93ba78320c7c50d73ae3487864e",
-      "size_bytes": 57966,
+      "sha256": "832e3989b4aaddb24157fced9cd656ea950be8017734455f0218fea5bb39db48",
+      "size_bytes": 57971,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
