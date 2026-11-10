@@ -124,27 +124,22 @@ flowchart TD
 
 ---
 
-### Phase 4: Landing Page Dual-Route Decoupling
-**Goal:** Deliver a purposeful, clean landing experience on `/` while preserving the deep-dive cockpit on `/?symbol=XYZ`.
+### Phase 4: Landing Page Dual-Route Decoupling (Option A: Discovery-First)
+**Goal:** Deliver a purposeful, clean discovery experience on bare `/` while preserving the complete analytical cockpit on `/?symbol=XYZ`.
 
-- **WP 4.1: Root Route (`/`) Architecture Options (Product Decision)**
-  - **Current Behavior:** Bare `/` renders `AAPL` as an implicit default fallback ticker.
-  - **Architecture Decision Required:**
-    - **Option A (Discovery-First Showcase):**
-      - High-visibility Universal OmniSearch with recent searches and sector quick-filters.
-      - Macro Regime Overview (S&P 500, Nasdaq 100, 10Y-2Y Spread, VIX status).
-      - Transparently labeled Alpha Spotlight / Screened candidates with clear disclosure of criteria.
-      - No ticker auto-loaded; user explicitly chooses or searches an asset.
-    - **Option B (Benchmark Reference Ticker):**
-      - Explicitly and transparently load the broad-market benchmark (`SPY`) with a visible banner indicating benchmark context.
-      - Clear CTA inviting user to enter their target ticker.
-  - *Constraint:* Never silently manufacture an artificial "actionable" stock fallback.
+- **WP 4.1: Root Route (`/`) Architecture (Adopted Option A: Discovery-First)**
+  - **Elimination of Silent Fallback:** Bare `/` eliminates the implicit `AAPL` default (`selectedSymbol = ""`, `hasExplicitSymbol = false`).
+  - **Suppression of Background Ingestion:** Background analytics fetching (`fetchAssetAnalytics`) is strictly suppressed on bare `/`, eliminating unnecessary network payloads.
+  - **High-Visibility OmniSearch & Quick-Picks:** Hero search input with $\ge 48\text{px}$ touch height and hotkey guide (`/`), plus 6 verified institutional quick-picks (`NVDA`, `AAPL`, `MSFT`, `SPY`, `QQQ`, `TSLA`) with verified $\ge 44\text{px}$ touch floor.
+  - **Verified Macroeconomic Regime Overview:** CBOE & FRED-grounded macroeconomic regime cards (`10Y-2Y Yield Curve`, `10Y Real Rate`, `High-Yield Spread`, `VIX Status`). Feeds report unassessed when missing, never manufactured.
+  - **Roadmap & Governed Spotlight:** Re-uses canonical `IntentHero` and `WeeklyConfluenceSpotlight` without duplicating discovery engines.
 
 - **WP 4.2: Structured Asset Cockpit (`/?symbol=XYZ`)**
-  - When `symbol` is present, render the full decision cockpit:
-    - Tier 1: Asset Header, Price Authority, Bottom-Line Verdict, Key Levels Cockpit HUD.
-    - Tier 2: Interactive Chart + Unified Risk Clearance Deck.
-    - Tier 3: Confluence Breakdown, Fundamental Solvency, Smart Money Coverage, Execution Desk.
+  - When `symbol` is present in query parameters, renders the full analytical cockpit (`AdaptiveTerminal`, chart, preflight bar, domain workspaces).
+  - Mode preservation: query parameter `mode=standard` and `mode=guided` is passed directly to `AdaptiveTerminal`.
+  - Zero regression on existing deep links or bookmarked URLs.
+
+*Status:* **IMPLEMENTED & VERIFIED** in [PR #260](https://github.com/daakara/finance/pull/260) (Branch `feat/ui-execution-presentation-consolidation`, Commit `ece33bf8`).
 
 ---
 
@@ -155,7 +150,7 @@ flowchart TD
 | **Phase 1** | `feat/ui-execution-presentation-consolidation` | **Execution Presentation Consolidation**: Unified `onOpenSizer` handler propagation, internal duplicate modal suppression, fallback prop correction, `min-h-[44px]` touch targets, and mobile container overflow protection. | **[PR #260](https://github.com/daakara/finance/pull/260) (Implemented - Commit `1cad6e5f`)** |
 | **Phase 2** | `feat/ui-execution-presentation-consolidation` | **De-Slop & Measured Accessibility**: Retire top onboarding banner across 4 hubs, sanitize decorative emojis with Lucide icons, normalize institutional nomenclature, and audit typography/touch targets. | **[PR #260](https://github.com/daakara/finance/pull/260) (Implemented - Commit `60f8cd13`)** |
 | **Phase 3** | `feat/ui-execution-presentation-consolidation` | **Governance & Unified Risk Clearance Presentation**: Three-tier separation (Data Availability vs Factor Confluence vs Execution Clearance), consolidated provenance & eligibility alert into `EvidenceDomainStatusCard`, fail-closed actionability (`isActionable = isExecutionReady && !hasActiveBlockers`), and verified 6 canonical decision states. | **[PR #260](https://github.com/daakara/finance/pull/260) (Implemented - Commit `fff7caeb`)** |
-| **Phase 4** | `feat/ui-execution-presentation-consolidation` | **Landing Page Decoupling**: Implement approved landing architecture (Discovery-first vs Benchmark), eliminate silent `AAPL` default, and isolate deep-dive cockpit on `/?symbol=X`. | Scheduled |
+| **Phase 4** | `feat/ui-execution-presentation-consolidation` | **Landing Page Decoupling (Option A: Discovery-First)**: Decouple bare `/` into dedicated `DiscoveryLandingView`, eliminate silent `AAPL` default, preserve deep link `/?symbol=X` cockpit, embed verified macroeconomic overview and tactical candidate spotlight, verify zero horizontal overflow and $\ge 44\text{px}$ touch targets. | **[PR #260](https://github.com/daakara/finance/pull/260) (Implemented - Commit `ece33bf8`)** |
 
 ---
 
