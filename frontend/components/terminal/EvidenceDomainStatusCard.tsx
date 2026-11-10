@@ -2,17 +2,27 @@
 
 import React, { useState } from "react";
 import { EvidenceDomainItem, DomainStatus, DomainApplicability } from "../../lib/evidenceDomains";
+import { OverallEvidenceBadge } from "../../lib/dataProvenance";
 
-interface EvidenceDomainStatusCardProps {
+export interface EligibilityNotice {
+  overallEligibility: "ELIGIBLE" | "INELIGIBLE" | "PARTIAL" | string;
+  headlineExplanation: string;
+}
+
+export interface EvidenceDomainStatusCardProps {
   symbol: string;
   domains: EvidenceDomainItem[];
   defaultExpanded?: boolean;
+  evidenceBadge?: OverallEvidenceBadge;
+  eligibilityNotice?: EligibilityNotice;
 }
 
 export default function EvidenceDomainStatusCard({
   symbol,
   domains,
   defaultExpanded = false,
+  evidenceBadge,
+  eligibilityNotice,
 }: EvidenceDomainStatusCardProps) {
   const [isExpanded, setIsExpanded] = useState<boolean>(defaultExpanded);
 
@@ -94,7 +104,18 @@ export default function EvidenceDomainStatusCard({
         </div>
 
         {/* Quick Summary Badges & Toggle */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {evidenceBadge && (
+            <div
+              data-testid="evidence-provenance-badge"
+              title={evidenceBadge.tooltip}
+              className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-xs font-mono font-semibold cursor-help transition-colors ${evidenceBadge.badgeClass}`}
+            >
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-current" />
+              <span>{evidenceBadge.label}</span>
+            </div>
+          )}
+
           <div className="flex items-center gap-1.5 text-[11px] font-mono">
             <span
               data-testid="evidence-summary-verified"
@@ -128,6 +149,27 @@ export default function EvidenceDomainStatusCard({
           </button>
         </div>
       </div>
+
+      {/* ⚠️ Integrated Eligibility / Limited Evidence Notice */}
+      {eligibilityNotice && eligibilityNotice.overallEligibility !== "ELIGIBLE" && (
+        <div
+          data-testid="evidence-eligibility-notice"
+          className="mx-3 mt-2 sm:mx-4 sm:mt-2.5 p-2.5 sm:p-3 rounded-lg bg-[var(--status-caution-bg)] border border-[var(--status-caution-border)] flex items-start gap-2 sm:gap-2.5 text-xs text-[var(--status-caution)] font-sans"
+          role="alert"
+        >
+          <span className="text-base shrink-0" aria-hidden="true">⚠️</span>
+          <div className="space-y-0.5 sm:space-y-1">
+            <strong className="font-mono font-bold block text-amber-300 text-xs">
+              {eligibilityNotice.overallEligibility === "INELIGIBLE"
+                ? "Insufficient Evidence to Derive Confident Posture"
+                : "Partial Evidence: Reduced Domain Confidence"}
+            </strong>
+            <p className="text-[var(--text-2)] text-xs font-sans leading-snug sm:leading-relaxed">
+              {eligibilityNotice.headlineExplanation} Some model inputs (e.g. quarterly SEC filings or options flow) are unavailable. Missing data is treated as unassessed, not negative.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 📋 Expanded 9-Domain Details Table */}
       {isExpanded && (

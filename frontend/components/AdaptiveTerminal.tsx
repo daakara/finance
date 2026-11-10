@@ -227,39 +227,19 @@ export default function AdaptiveTerminal({
         </div>
       )}
 
-      {/* 🛡️ Evidence State Provenance Bar */}
-      <div className="flex items-center justify-end bg-[var(--surface-2)] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] text-xs font-mono">
-        {/* 🛡️ Evidence State Provenance Badge */}
-        <div
-          title={evidenceBadge.tooltip}
-          className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-xs font-mono font-semibold cursor-help transition-colors ${evidenceBadge.badgeClass}`}
-        >
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-current" />
-          <span>{evidenceBadge.label}</span>
-        </div>
-      </div>
-
-      {/* ⚠️ Ineligible / Limited Evidence Notice */}
-      {insight.terminalState.overallEligibility !== "ELIGIBLE" && (
-        <div className="bg-[var(--status-caution-bg)] border border-[var(--status-caution-border)] p-2.5 sm:p-3 rounded-xl flex items-start gap-2 sm:gap-2.5 text-xs text-[var(--status-caution)]" role="alert">
-          <span className="text-base shrink-0">⚠️</span>
-          <div className="space-y-0.5 sm:space-y-1">
-            <strong className="font-mono font-bold block text-amber-300">
-              {insight.terminalState.overallEligibility === "INELIGIBLE"
-                ? "Insufficient Evidence to Derive Confident Posture"
-                : "Partial Evidence: Reduced Domain Confidence"}
-            </strong>
-            <p className="text-[var(--text-2)] text-xs font-sans leading-snug sm:leading-relaxed">
-              {insight.terminalState.headlineExplanation} Some model inputs (e.g. quarterly SEC filings or options flow) are unavailable. Missing data is treated as unassessed, not negative.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* 🛡️ Compact Expandable Evidence Domain Status (9 Domains) */}
+      {/* 🛡️ Consolidated Evidence Domain Status & Provenance (9 Domains) */}
       <EvidenceDomainStatusCard
         symbol={symbol}
         domains={nineDomains}
+        evidenceBadge={evidenceBadge}
+        eligibilityNotice={
+          insight.terminalState.overallEligibility !== "ELIGIBLE"
+            ? {
+                overallEligibility: insight.terminalState.overallEligibility,
+                headlineExplanation: insight.terminalState.headlineExplanation,
+              }
+            : undefined
+        }
       />
 
       {/* 3 Presentation Lenses — Unblocked Initial Assessment */}
