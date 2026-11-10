@@ -86,6 +86,7 @@ class FakeAdapter:
 def test_success_runs_exactly_once_without_globals_or_retention(monkeypatch, safe_env):
     for k, v in safe_env.items():
         monkeypatch.setenv(k, v)
+    monkeypatch.setattr(backup_once, "verify_backup_database_identity", lambda: None)
     monkeypatch.setattr(backup_once, "get_backup_storage_adapter", FakeAdapter)
     calls = []
 
@@ -125,6 +126,7 @@ def test_success_runs_exactly_once_without_globals_or_retention(monkeypatch, saf
 def test_false_success_receipt_is_rejected(monkeypatch, safe_env, field, value):
     for k, v in safe_env.items():
         monkeypatch.setenv(k, v)
+    monkeypatch.setattr(backup_once, "verify_backup_database_identity", lambda: None)
     monkeypatch.setattr(backup_once, "get_backup_storage_adapter", FakeAdapter)
 
     class FakeEngine:
@@ -160,6 +162,7 @@ def test_local_adapter_never_executes_backup(monkeypatch, safe_env):
         def is_external(self):
             return False
 
+    monkeypatch.setattr(backup_once, "verify_backup_database_identity", lambda: None)
     monkeypatch.setattr(backup_once, "get_backup_storage_adapter", FakeLocal)
     monkeypatch.setattr(backup_once, "SmartMoneyBackupEngine", lambda **_: pytest.fail("must not construct engine"))
     with pytest.raises(RuntimeError, match="EXTERNAL_CUSTODY"):
@@ -174,3 +177,81 @@ def test_cli_redacts_underlying_error(monkeypatch, capsys):
     stderr = capsys.readouterr().err
     assert "secret://" not in stderr
     assert "BACKUP_ONLY_FAILED" in stderr
+
+
+def test_verified_db_identity_matches_real_session_user(monkeypatch):
+    monkeypatch.setattr(backup_once, "get_database_url", lambda: "postgresql://fake@localhost/fake")
+    events = []
+    class Cursor:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def execute(self, sql):
+            assert sql == "SELECT session_user, current_user"
+            events.append("query")
+        def fetchone(self):
+            return ("smart_money_backup", "smart_money_backup")
+    class Connection:
+        def set_session(self, readonly):
+            assert readonly is True
+            events.append("readonly")
+        def cursor(self):
+            return Cursor()
+        def close(self):
+            events.append("close")
+    monkeypatch.setattr(backup_once.psycopg2, "connect", lambda *_args, **_kwargs: Connection())
+    backup_once.verify_backup_database_identity()
+    assert events == ["readonly", "query", "close"]
+
+
+@pytest.mark.parametrize("identity", [
+    ("smart_money_ingestion", "smart_money_ingestion"),
+    ("postgres", "smart_money_backup"),
+    ("smart_money_backup", "postgres"),
+    None,
+])
+def test_actual_database_principal_is_fail_closed(monkeypatch, identity):
+    monkeypatch.setattr(backup_once, "get_database_url", lambda: "postgresql://fake@localhost/fake")
+    events = []
+    class Cursor:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def execute(self, sql):
+            events.append("queried")
+        def fetchone(self):
+            return identity
+    class Connection:
+        def set_session(self, readonly):
+            assert readonly
+        def cursor(self):
+            return Cursor()
+        def close(self):
+            events.append("closed")
+    monkeypatch.setattr(backup_once.psycopg2, "connect", lambda *_a, **_k: Connection())
+    with pytest.raises(RuntimeError, match="DATABASE_PRINCIPAL_MISMATCH"):
+        backup_once.verify_backup_database_identity()
+    assert events == ["queried", "closed"]
+
+
+def test_database_connection_error_redacted_and_fail_closed(monkeypatch):
+    monkeypatch.setattr(backup_once, "get_database_url", lambda: "postgresql://secret@localhost/fake")
+    def fails(*_args, **_kwargs):
+        raise RuntimeError("postgresql://secret@localhost/fake")
+    monkeypatch.setattr(backup_once.psycopg2, "connect", fails)
+    with pytest.raises(RuntimeError, match="BACKUP_ONLY_DATABASE_PRINCIPAL_UNVERIFIABLE") as exc:
+        backup_once.verify_backup_database_identity()
+    assert "secret@" not in str(exc.value)
+
+
+def test_database_principal_denial_blocks_storage(monkeypatch, safe_env):
+    for k, v in safe_env.items():
+        monkeypatch.setenv(k, v)
+    def deny():
+        raise RuntimeError("BACKUP_ONLY_DATABASE_PRINCIPAL_MISMATCH")
+    monkeypatch.setattr(backup_once, "verify_backup_database_identity", deny)
+    monkeypatch.setattr(backup_once, "get_backup_storage_adapter", lambda: pytest.fail("R2 must not be initialized"))
+    with pytest.raises(RuntimeError, match="PRINCIPAL_MISMATCH"):
+        backup_once.run_backup_once(SHA)
