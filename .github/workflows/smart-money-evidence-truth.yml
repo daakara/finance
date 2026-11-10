@@ -48,4 +48,4 @@ jobs:
       - name: Syntax-check advisory engine and test
         run: python -m py_compile analyst_dashboard/analyzers/smart_money.py analyst_dashboard/analyzers/evidence_timestamp_projection.py tests/test_sm_act_027_advisory_truth.py tests/test_sm_act_027_sqlite_projection.py tests/test_sm_act_027_postgres_projection.py
       - name: Run SM-ACT-027 source-contract regression
-        run: python -m pytest tests/test_sm_act_027_advisory_truth.py tests/test_sm_act_027_sqlite_projection.py -q
+        run: python -m pytest tests/test_sm_act_027_advisory_truth.py tests/test_sm_act_027_sqlite_projection.py tests/test_sm_act_027_postgres_projection.py -q
