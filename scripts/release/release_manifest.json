@@ -1,25 +1,33 @@
 {
-  "release_candidate_commit": "3ac5caf6d44b558613ef228dbd87a120a821d805",
-  "base_anchor_commit": "a77154facfc352ee44303456bf3538f2480bf8b2",
-  "total_files": 2,
+  "release_candidate_commit": "ee9fdd68b363e4339358598677a3e44a31e950b8",
+  "base_anchor_commit": "ecdb81776ef99690b862384deab5928ea4faf905",
+  "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-BACKUP-ROLE-ATTESTATION-OWNER-ADMITTED",
+  "directive": "ARX-SM-ACT-020-RESTORE-FAIL-CLOSED-OWNER-ADMITTED",
   "files": {
-    "analyst_dashboard/smart_money/storage/backup/backup_once.py": {
+    "analyst_dashboard/smart_money/storage/backup/restore_verifier.py": {
       "operation": "M",
-      "originating_pr_number": 258,
-      "originating_commit": "3ac5caf6d44b558613ef228dbd87a120a821d805",
-      "governing_requirement": "SM-ACT-020 Phase 3: authenticated PostgreSQL backup role verification; owner admission https://github.com/daakara/finance/pull/258#issuecomment-6772217787",
-      "sha256": "f3a4ce0caa98eed5097353b9222d0ec948a0235b34f350d81e6265aa2b52a5af",
-      "size_bytes": 5396
+      "originating_pr_number": 259,
+      "originating_commit": "ee9fdd68b363e4339358598677a3e44a31e950b8",
+      "governing_requirement": "SM-ACT-020: fail-closed isolated restore verification; PR #259 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/259#issuecomment-6779408534",
+      "sha256": "819e3c5ac2a3e2e5b408f741be916ecf336340e147873a819e2976a5b92f0715",
+      "size_bytes": 14560
     },
-    "tests/test_sm_act_020_backup_only_runner.py": {
+    "tests/test_smart_money_restore_rehearsal_adversarial.py": {
       "operation": "M",
-      "originating_pr_number": 258,
-      "originating_commit": "3ac5caf6d44b558613ef228dbd87a120a821d805",
-      "governing_requirement": "SM-ACT-020 Phase 3: authenticated PostgreSQL backup role verification; owner admission https://github.com/daakara/finance/pull/258#issuecomment-6772217787",
-      "sha256": "57e01ed390839e00fa7aeb66acb8cfaa357bce7a9c913d1ceec78fb6df9403c1",
-      "size_bytes": 9767
+      "originating_pr_number": 259,
+      "originating_commit": "ee9fdd68b363e4339358598677a3e44a31e950b8",
+      "governing_requirement": "SM-ACT-020: fail-closed isolated restore verification; PR #259 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/259#issuecomment-6779408534",
+      "sha256": "0442540932824f099ab6e1d1d755eb2dc601db34f7d67e955cc24e5dc9834f00",
+      "size_bytes": 22165
+    },
+    "docs/reports/SM_ACT_020_RESTORE_FAIL_CLOSED_REVIEW.md": {
+      "operation": "A",
+      "originating_pr_number": 259,
+      "originating_commit": "ee9fdd68b363e4339358598677a3e44a31e950b8",
+      "governing_requirement": "SM-ACT-020: fail-closed isolated restore verification; PR #259 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/259#issuecomment-6779408534",
+      "sha256": "67853852d335e2d1153e260f8d4587a74defd37f6ffa6082a02578d228577043",
+      "size_bytes": 2433
     }
   },
   "qualification_framework_files": {
@@ -29,8 +37,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "0889f3ea307ecffe323b500894cc8a5ed3c850db488aea7e6b761e15110ad91c",
-      "size_bytes": 57991,
+      "sha256": "52395fc17cf6735b13f1982ed3fd603dfae55aea21eb5fd0da146cec3e98c82b",
+      "size_bytes": 57996,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {

@@ -5,8 +5,8 @@ Executes automated end-to-end restore validation against an isolated PostgreSQL 
 1. Downloads artifacts and validates SHA-256 digests;
 2. Restores cluster globals via psql;
 3. Restores database schema and data via pg_restore;
-4. Verifies structural parity (table counts, triggers, indexes);
-5. Computes canonical row digests across business tables;
+4. Verifies canonical table presence and enabled immutability triggers;
+5. Records restored row counts (source-to-target parity is not established);
 6. Validates active snapshot pointer and application read contract;
 7. Emits machine-readable validation receipt.
 """
@@ -18,10 +18,12 @@ import logging
 import tempfile
 import subprocess
 from typing import Dict, Any, Optional, List
-from urllib.parse import urlparse
+from ipaddress import ip_address
 
 try:
     import psycopg2
+    from psycopg2.extensions import parse_dsn
+    from psycopg2 import sql
     from psycopg2.extras import RealDictCursor
     PSYCOPG2_AVAILABLE = True
 except ImportError:
@@ -45,7 +47,55 @@ CANONICAL_REQUIRED_TABLES = [
     "scanner_snapshots",
     "form4_raw_filings",
     "sm_run_requests",
+    "form4_parsed_transactions",
+    "governed_issuers",
+    "sm_amendments",
+    "sm_audit_events",
+    "sm_reconciliation_receipts",
+    "sm_schema_migrations",
+    "sm_source_availability_ledger",
+    "sm_source_gaps",
 ]
+
+REQUIRED_IMMUTABILITY_TRIGGERS = {
+    "trg_raw_filings_immutable": "form4_raw_filings",
+    "trg_receipts_append_only": "sm_reconciliation_receipts",
+    "trg_snapshots_append_only": "scanner_snapshots",
+    "trg_audit_append_only": "sm_audit_events",
+}
+
+
+def _target_identity(dsn):
+    """Ignore credentials and URL spelling when comparing database destinations."""
+    parts = parse_dsn(dsn)
+    host = parts.get("hostaddr") or parts.get("host", "")
+    if host in ("localhost", "127.0.0.1", "::1"):
+        host = "loopback"
+    return (host.rstrip(".").lower(), parts.get("port", "5432"),
+            parts.get("dbname") or parts.get("user", ""))
+
+
+def _check_destination(target_dsn, primary_dsn, override):
+    if override:
+        return
+    if primary_dsn and _target_identity(target_dsn) == _target_identity(primary_dsn):
+        raise RuntimeError("DESTINATION_SAFETY_VIOLATION: Target matches primary database.")
+    parts = parse_dsn(target_dsn)
+    host = parts.get("host", "")
+    # Only explicit local rehearsal targets are accepted without an override.
+    # Do not inherit PGHOST, service files, or multi-host failover destinations.
+    hosts = [host]
+    if parts.get("hostaddr"):
+        hosts.append(parts["hostaddr"])
+    for endpoint in hosts:
+        local = endpoint == "localhost" or endpoint.startswith("/")
+        try:
+            local = local or ip_address(endpoint).is_loopback
+        except ValueError:
+            pass
+        if not local or "," in endpoint or "service" in parts:
+            raise RuntimeError("DESTINATION_SAFETY_VIOLATION: Explicit local target required.")
+
 
 
 class BackupRestoreVerifier:
@@ -65,28 +115,15 @@ class BackupRestoreVerifier:
         """
         Executes complete verification of a backup against target_dsn.
         Enforces destination safety fencing, cryptographic integrity,
-        and post-restore structural and semantic parity.
+        and post-restore structural and application-read checks.
         Returns machine-readable verification receipt.
         """
         start_time = time.time()
 
-        # Gate 0: Destination Safety Fencing
-        # Prevent accidental restore over the configured primary production database
-        primary_dsn = get_database_url()
-        if primary_dsn and target_dsn.strip() == primary_dsn.strip() and not allow_production_override:
-            raise RuntimeError(
-                "DESTINATION_SAFETY_VIOLATION: Restoring directly into active primary database "
-                "is strictly forbidden without allow_production_override=True."
-            )
-
-        parsed = urlparse(target_dsn)
-        conn_info = {
-            "user": parsed.username or "postgres",
-            "password": parsed.password or "",
-            "host": parsed.hostname or "127.0.0.1",
-            "port": str(parsed.port or 5432),
-            "dbname": parsed.path.lstrip("/") or "postgres",
-        }
+        # Check before any download or destructive PostgreSQL command.
+        if not PSYCOPG2_AVAILABLE:
+            raise RuntimeError("CANONICAL_POSTGRES_DRIVER_UNAVAILABLE: psycopg2 is required.")
+        _check_destination(target_dsn, get_database_url(), allow_production_override)
 
         with tempfile.TemporaryDirectory(prefix="arx_restore_verify_") as tmp_dir:
             # 1. Download manifest
@@ -102,6 +139,9 @@ class BackupRestoreVerifier:
 
             if not isinstance(manifest, dict) or "backup_id" not in manifest:
                 raise ValueError("MANIFEST_INVALID: Manifest missing required 'backup_id' field.")
+
+            if manifest["backup_id"] != backup_id:
+                raise ValueError("MANIFEST_INVALID: Backup identity mismatch.")
 
             # 2. Download dump (and globals if present)
             globals_name = manifest.get("globals_filename") or manifest.get("globals_artifact")
@@ -134,8 +174,6 @@ class BackupRestoreVerifier:
                     )
 
             env = os.environ.copy()
-            if conn_info["password"]:
-                env["PGPASSWORD"] = conn_info["password"]
 
             # Gate: Target Connection & Version Verification Pre-check
             if not PSYCOPG2_AVAILABLE:
@@ -163,54 +201,19 @@ class BackupRestoreVerifier:
             # 3. Restore Globals via psql (only if present)
             if local_globals:
                 psql_bin = find_pg_binary("psql")
-                if target_dsn.startswith("postgres://") or target_dsn.startswith("postgresql://"):
-                    cmd_globals = [
-                        psql_bin,
-                        "-d", target_dsn,
-                        "-f", local_globals,
-                    ]
-                else:
-                    cmd_globals = [
-                        psql_bin,
-                        "-h", conn_info["host"],
-                        "-p", conn_info["port"],
-                        "-U", conn_info["user"],
-                        "-d", conn_info["dbname"],
-                        "-f", local_globals,
-                    ]
+                cmd_globals = [psql_bin, "-X", "-v", "ON_ERROR_STOP=1",
+                               "-d", target_dsn, "-f", local_globals]
                 proc_globals = subprocess.run(cmd_globals, env=env, capture_output=True, text=True)
                 if proc_globals.returncode != 0:
-                    logger.warning(f"psql globals restore warnings: {proc_globals.stderr}")
+                    raise RuntimeError("GLOBALS_RESTORE_FAILED: psql returned nonzero status.")
 
             # 4. Restore Database via pg_restore
             pg_restore_bin = find_pg_binary("pg_restore")
-            if target_dsn.startswith("postgres://") or target_dsn.startswith("postgresql://"):
-                cmd_restore = [
-                    pg_restore_bin,
-                    "-d", target_dsn,
-                    "--clean",
-                    "--if-exists",
-                    "--no-owner",
-                    "--no-privileges",
-                    local_dump,
-                ]
-            else:
-                cmd_restore = [
-                    pg_restore_bin,
-                    "-h", conn_info["host"],
-                    "-p", conn_info["port"],
-                    "-U", conn_info["user"],
-                    "-d", conn_info["dbname"],
-                    "--clean",
-                    "--if-exists",
-                    "--no-owner",
-                    "--no-privileges",
-                    local_dump,
-                ]
+            cmd_restore = [pg_restore_bin, "-d", target_dsn, "--clean", "--if-exists",
+                           "--no-owner", "--no-privileges", "--exit-on-error", local_dump]
             proc_restore = subprocess.run(cmd_restore, env=env, capture_output=True, text=True)
-            # pg_restore returns 0 on success, or 1 if non-fatal warnings (e.g. drop table if not exists)
-            if proc_restore.returncode not in (0, 1):
-                raise RuntimeError(f"PG_RESTORE_FAILED: {proc_restore.stderr}")
+            if proc_restore.returncode != 0:
+                raise RuntimeError("PG_RESTORE_FAILED: pg_restore returned nonzero status.")
 
             # 5. Connect and Verify Structural and Semantic Parity
             conn = psycopg2.connect(target_dsn)
@@ -225,25 +228,41 @@ class BackupRestoreVerifier:
                     table_count = len(present_tables)
 
                     # Verify required tables
-                    required = required_tables or CANONICAL_REQUIRED_TABLES
+                    required = list(dict.fromkeys(CANONICAL_REQUIRED_TABLES + (required_tables or [])))
                     missing = [t for t in required if t not in present_tables]
                     if missing:
                         raise RuntimeError(
                             f"PARTIAL_RESTORE_DETECTED: Restored database missing required tables: {missing}"
                         )
 
-                    # Count immutable triggers
+                    # Validate named triggers on the correct public tables, enabled for
+                    # normal writes, BEFORE UPDATE and DELETE, using the expected function.
                     cur.execute("""
-                        SELECT count(*) FROM pg_trigger
-                        WHERE tgname LIKE 'trg_%_immutable' OR tgname LIKE 'trg_%_append_only';
+                        SELECT t.tgname, c.relname, t.tgenabled, t.tgtype, p.proname,
+                               pn.nspname AS function_schema
+                        FROM pg_trigger t
+                        JOIN pg_class c ON c.oid = t.tgrelid
+                        JOIN pg_namespace n ON n.oid = c.relnamespace
+                        JOIN pg_proc p ON p.oid = t.tgfoid
+                        JOIN pg_namespace pn ON pn.oid = p.pronamespace
+                        WHERE n.nspname = 'public' AND NOT t.tgisinternal;
                     """)
-                    trigger_count = cur.fetchone()["count"]
+                    triggers = {row["tgname"]: row for row in cur.fetchall()}
+                    for name, table in REQUIRED_IMMUTABILITY_TRIGGERS.items():
+                        row = triggers.get(name)
+                        if (not row or row["relname"] != table
+                                or row["tgenabled"] not in ("O", "A")
+                                or row["tgtype"] != 27
+                                or row["proname"] != "abort_immutable_record"
+                                or row["function_schema"] != "public"):
+                            raise RuntimeError("IMMUTABILITY_TRIGGER_INVALID: " + name)
+                    trigger_count = len(REQUIRED_IMMUTABILITY_TRIGGERS)
 
                     # Count rows per core table
                     row_counts = {}
                     for t in required:
                         if t in present_tables:
-                            cur.execute(f"SELECT count(*) FROM {t};")
+                            cur.execute(sql.SQL("SELECT count(*) FROM public.{};").format(sql.Identifier(t)))
                             row_counts[t] = cur.fetchone()["count"]
 
                     # Active pointer
@@ -260,7 +279,16 @@ class BackupRestoreVerifier:
                     repo = PostgresSmartMoneyRepository(dsn=target_dsn)
                     active_snap = repo.get_latest_active_snapshot("SMART_MONEY")
 
+                    if require_active_snapshot and (
+                        active_snap is None or active_snap.get("snapshot_id") != active_snap_id
+                    ):
+                        raise RuntimeError("APPLICATION_READ_FAILED: Active snapshot cannot be read consistently.")
+
                     receipt = {
+                        "verification_scope": "ISOLATED_RESTORE_STRUCTURE_AND_APPLICATION_READ",
+                        "source_data_parity_verified": False,
+                        "roles_and_grants_verified": False,
+                        "trigger_behavior_verified": False,
                         "backup_id": backup_id,
                         "status": "VERIFIED_RECOVERABLE",
                         "tables_count": table_count,
