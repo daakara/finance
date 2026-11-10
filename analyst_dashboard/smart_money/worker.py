@@ -275,6 +275,7 @@ class SmartMoneyIngestionWorker:
         self.state = WorkerHealthState.STARTING
         self.worker_id = f"worker-{os.getpid()}-{int(time.time())}"
         self._owner_conn = None
+        self._owner_lock_acquired = False
         self._running = False
         self.lease_duration_sec = int(os.environ.get("SMART_MONEY_LEASE_DURATION_SEC", "60"))
         self.heartbeat_interval_sec = int(os.environ.get("SMART_MONEY_HEARTBEAT_INTERVAL_SEC", "10"))
@@ -314,6 +315,43 @@ class SmartMoneyIngestionWorker:
                 )
         return True
 
+    def _has_verified_owner_lock(self) -> bool:
+        """Read-only proof that THIS worker session currently holds the SEC advisory lock.
+
+        A healthy STANDBY loop is never evidence of ownership. Fail closed when
+        the session disappears, a query fails, or the lock has been lost.
+        """
+        conn = getattr(self, "_owner_conn", None)
+        if not getattr(self, "_owner_lock_acquired", False) or conn is None:
+            return False
+        if getattr(conn, "closed", True):
+            return False
+        # A bigint advisory lock uses the high and low 32-bit words in
+        # pg_locks.classid and .objid, with objsubid=1.
+        lock_hi = (LOCK_SEC_EGRESS_OWNER >> 32) & 0xFFFFFFFF
+        lock_lo = LOCK_SEC_EGRESS_OWNER & 0xFFFFFFFF
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1 FROM pg_locks
+                        WHERE locktype = 'advisory'
+                          AND pid = pg_backend_pid()
+                          AND granted
+                          AND classid::bigint = %s
+                          AND objid::bigint = %s
+                          AND objsubid = 1
+                    )
+                    """,
+                    (lock_hi, lock_lo),
+                )
+                row = cur.fetchone()
+                return bool(row and row[0])
+        except Exception:
+            logger.warning("Unable to verify SEC owner advisory lock; reporting no ownership.")
+            return False
+
     def acquire_egress_authority(self, max_attempts: int = 5, retry_interval_sec: float = 2.0) -> bool:
         """
         Acquires dedicated PostgreSQL session-level advisory lock.
@@ -329,6 +367,7 @@ class SmartMoneyIngestionWorker:
         for attempt in range(1, max_attempts + 1):
             acquired = acquire_sec_owner_lock(self._owner_conn)
             if acquired:
+                self._owner_lock_acquired = True
                 self.state = WorkerHealthState.OWNER_LOCK_ACQUIRED
                 logger.info(f"Worker {self.worker_id} acquired exclusive SEC_EGRESS_OWNER advisory lock.")
                 return True
@@ -339,6 +378,7 @@ class SmartMoneyIngestionWorker:
                 )
                 time.sleep(retry_interval_sec)
 
+        self._owner_lock_acquired = False
         self.state = WorkerHealthState.OWNER_LOCK_LOST
         logger.error(
             "DUPLICATE_OWNER_REJECTED: Another worker currently holds SEC_EGRESS_OWNER lock. "
@@ -350,6 +390,7 @@ class SmartMoneyIngestionWorker:
 
     def release_egress_authority(self) -> None:
         """Releases session advisory lock on shutdown."""
+        self._owner_lock_acquired = False
         if self._owner_conn and not self._owner_conn.closed:
             try:
                 release_sec_owner_lock(self._owner_conn)
@@ -658,7 +699,7 @@ class SmartMoneyIngestionWorker:
             "overall_healthy": overall_healthy,
             "worker_subsystem_healthy": worker_subsystem_healthy,
             "backup_subsystem_healthy": backup_subsystem_healthy,
-            "has_owner_lock": worker_subsystem_healthy,
+            "has_owner_lock": self._has_verified_owner_lock(),
             "degradation_reasons": degradation_reasons,
             "backup_scheduler": scheduler_envelope,
             "containment": containment_envelope,
