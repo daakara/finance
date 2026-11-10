@@ -1,49 +1,33 @@
 {
-  "release_candidate_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
-  "base_anchor_commit": "61cbb6c064d140bad021af2e788f66cac481d2ea",
-  "total_files": 5,
+  "release_candidate_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
+  "base_anchor_commit": "1dc7c05dae82d6f0d4941ecf9e186e2cb798b850",
+  "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-028-OWNER-REVIEW-PENDING",
+  "directive": "ARX-SM-ACT-020-WORKER-LOCK-HEALTH-OWNER-ADMITTED",
   "files": {
-    "analyst_dashboard/analyzers/smart_money.py": {
+    "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
-      "originating_pr_number": 254,
-      "originating_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
-      "governing_requirement": "SM-ACT-028: Public Smart Money PIT ledger visibility without live feed promotion, issue #165, owner-authenticated PR #254 admission pending",
-      "sha256": "8adc77ed28a0376470fd9d5e5aac4dfedf60db20cf04b9183b23ceb07b19a554",
-      "size_bytes": 182070
+      "originating_pr_number": 255,
+      "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
+      "governing_requirement": "SM-ACT-020: correct worker has_owner_lock to verified session-level PostgreSQL SEC lock, issue #165; owner admission https://github.com/daakara/finance/pull/255#issuecomment-6768115270",
+      "sha256": "3d76ca37693747f454bafb7de414a68657c56f206a85c296eb6be029e6ac891e",
+      "size_bytes": 33928
     },
-    "tests/test_sm_act_027_advisory_truth.py": {
-      "operation": "M",
-      "originating_pr_number": 254,
-      "originating_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
-      "governing_requirement": "SM-ACT-028: Public Smart Money PIT ledger visibility without live feed promotion, issue #165, owner-authenticated PR #254 admission pending",
-      "sha256": "eaac3916ea223afa386a2e8a18ac21a7cb2699f296c0d2fe3bb72e293d1169b9",
-      "size_bytes": 4873
+    "tests/test_sm_act_020_owner_lock_health.py": {
+      "operation": "A",
+      "originating_pr_number": 255,
+      "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
+      "governing_requirement": "SM-ACT-020: isolated standby, concurrent-owner, failed query, lost-session and teardown health regressions, issue #165; owner admission https://github.com/daakara/finance/pull/255#issuecomment-6768115270",
+      "sha256": "bc1696d499588609fc0efab2fc45e25e1959e6b50845aba75ae75f6abd72a887",
+      "size_bytes": 5103
     },
-    "tests/test_sm_act_027_sqlite_projection.py": {
-      "operation": "M",
-      "originating_pr_number": 254,
-      "originating_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
-      "governing_requirement": "SM-ACT-028: Public Smart Money PIT ledger visibility without live feed promotion, issue #165, owner-authenticated PR #254 admission pending",
-      "sha256": "130ef9f974e3e7029455d0eb58163eeeb49f3779307b9d2a8c63a1c8a7f3c50f",
-      "size_bytes": 5858
-    },
-    "tests/test_sm_act_027_postgres_projection.py": {
-      "operation": "M",
-      "originating_pr_number": 254,
-      "originating_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
-      "governing_requirement": "SM-ACT-028: held public PIT evidence endpoint regression using isolated PostgreSQL, issue #165, owner admission pending",
-      "sha256": "9a2cb7941e900cfd372531446d8e234ca9c5c754a849538f5135efcbd0d869f2",
-      "size_bytes": 7781
-    },
-    "scripts/release/rq02_diff_integrity.py": {
-      "operation": "M",
-      "originating_pr_number": 254,
-      "originating_commit": "8db96903dd9693141b4b944ab768dfbc05595c5b",
-      "governing_requirement": "SM-ACT-028: owner-authenticated PR #254 release attribution admission (GitHub issuecomment-6765363120); no RQ-02 override",
-      "sha256": "22d72333b87c770e9d74e074942d1585a31f1d9ca07d4ab04279738512c05f96",
-      "size_bytes": 57976
+    ".github/workflows/sm-act-020-worker-lock-health.yml": {
+      "operation": "A",
+      "originating_pr_number": 255,
+      "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
+      "governing_requirement": "SM-ACT-020: focused hosted lock ownership health regression with no production credentials or SEC egress",
+      "sha256": "5b6e62281c8e2273473f1969bc52c15ffb8e0321a764b70bea2078f70598df2f",
+      "size_bytes": 1053
     }
   },
   "qualification_framework_files": {
@@ -53,8 +37,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "22d72333b87c770e9d74e074942d1585a31f1d9ca07d4ab04279738512c05f96",
-      "size_bytes": 57976,
+      "sha256": "9298525de4887cdb9b0e32d4fd9e77240d7df9c17c1ba30840f01086ec440555",
+      "size_bytes": 57981,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
