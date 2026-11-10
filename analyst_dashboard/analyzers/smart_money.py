@@ -3,6 +3,7 @@
 import os
 import sqlite3
 import logging
+from analyst_dashboard.analyzers.evidence_timestamp_projection import evidence_row_value
 from typing import List, Dict, Any, Optional, Union
 from enum import Enum
 from datetime import datetime, timezone, timedelta
@@ -2632,10 +2633,10 @@ class SmartMoneyEngine:
                         "filing_date": r["filing_date"],
                         "transaction_date": r["transaction_date"] or r["filing_date"],
                         "acceptance_datetime": acc_dt,
-                        "ingestion_timestamp": acc_dt,
-                        "arx_first_observed_at": r.get("arx_first_observed_at") if hasattr(r, "get") else None,
-                        "arx_processed_at": r.get("arx_processed_at") if hasattr(r, "get") else None,
-                        "sec_accepted_at": r.get("sec_accepted_at") if hasattr(r, "get") else None,
+                        "ingestion_timestamp": evidence_row_value(r, "arx_first_observed_at") or evidence_row_value(r, "arx_processed_at"),
+                        "arx_first_observed_at": evidence_row_value(r, "arx_first_observed_at"),
+                        "arx_processed_at": evidence_row_value(r, "arx_processed_at"),
+                        "sec_accepted_at": evidence_row_value(r, "sec_accepted_at"),
                         "availability_uncertain": bool(not acc_dt),
                         "acquired_disposed": acq_disp,
                         "is_positive_buying_conviction": is_pos_conviction,
@@ -2662,7 +2663,7 @@ class SmartMoneyEngine:
                 sec_distinct_dates = {
                     "latest_transaction_date": sec_observations[0].get("transaction_date"),
                     "latest_filing_date": sec_observations[0].get("filing_date"),
-                    "latest_ingestion_date": sec_observations[0].get("acceptance_datetime"),
+                    "latest_ingestion_date": sec_observations[0].get("arx_first_observed_at") or sec_observations[0].get("arx_processed_at"),
                 }
 
                 sec_feed = {
@@ -2680,25 +2681,25 @@ class SmartMoneyEngine:
                     "provenance": "SEC EDGAR Form 4 (Local Verified Store)",
                     "distinct_dates": sec_distinct_dates,
                     "latest_filing_date": sec_observations[0].get("filing_date") if sec_observations else None,
-                    "latest_successful_sec_source_check": (sec_observations[0].get("acceptance_datetime") or sec_observations[0].get("filing_date")) if sec_observations else None,
-                    "latest_successful_ingestion": (sec_observations[0].get("acceptance_datetime") or sec_observations[0].get("filing_date")) if sec_observations else None,
+                    "latest_successful_sec_source_check": None,  # Acceptance time is SEC publication, not proof of a successful source health check.
+                    "latest_successful_ingestion": (sec_observations[0].get("arx_first_observed_at") or sec_observations[0].get("arx_processed_at")) if sec_observations else None,
                     "unresolved_failures_count": 0,
                     "replay_mode": replay_mode,
                     "as_of_watermark": as_of_watermark,
                 }
             elif has_older_in_db:
                 sec_feed = {
-                    "status": "NO_OBSERVATIONS",
-                    "status_label": "No Observations",
+                    "status": "PIPELINE_PENDING",
+                    "status_label": "Coverage Unverified",
                     "coverage": "SUPPORTED_SEC_ISSUER",
                     "coverage_status": "SUPPORTED_SEC_ISSUER",
-                    "evidence_status": "NO_OBSERVATIONS",
+                    "evidence_status": "PIPELINE_PENDING",
                     "cik": sec_cik,
                     "observations": [],
                     "observation_count": 0,
-                    "direction": "NEUTRAL",
-                    "confidence": "MEDIUM",
-                    "explanation": f"0 insider transactions filed in trailing {window_days} days (routine corporate cadence).",
+                    "direction": "UNVERIFIED",
+                    "confidence": "NONE",
+                    "explanation": f"Older Form 4 records are present, but complete SEC coverage of the trailing {window_days}d window is not certified. An empty local query is not evidence of zero filings.",
                     "provenance": "SEC EDGAR Form 4 (Local Verified Store)",
                     "distinct_dates": None,
                     "latest_filing_date": None,
