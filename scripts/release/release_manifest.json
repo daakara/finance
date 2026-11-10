@@ -1,33 +1,33 @@
 {
-  "release_candidate_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
-  "base_anchor_commit": "1dc7c05dae82d6f0d4941ecf9e186e2cb798b850",
+  "release_candidate_commit": "3329db579007232356f86f8c92ec04260951fbb5",
+  "base_anchor_commit": "ba041b6d4e764f6450acb111f09ad056ed45cbb8",
   "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-WORKER-LOCK-HEALTH-OWNER-ADMITTED",
+  "directive": "ARX-SM-ACT-020-BACKUP-ONLY-RUNNER-OWNER-ADMITTED",
   "files": {
-    "analyst_dashboard/smart_money/worker.py": {
-      "operation": "M",
-      "originating_pr_number": 255,
-      "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
-      "governing_requirement": "SM-ACT-020: correct worker has_owner_lock to verified session-level PostgreSQL SEC lock, issue #165; owner admission https://github.com/daakara/finance/pull/255#issuecomment-6768115270",
-      "sha256": "3d76ca37693747f454bafb7de414a68657c56f206a85c296eb6be029e6ac891e",
-      "size_bytes": 33928
-    },
-    "tests/test_sm_act_020_owner_lock_health.py": {
+    "analyst_dashboard/smart_money/storage/backup/backup_once.py": {
       "operation": "A",
-      "originating_pr_number": 255,
-      "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
-      "governing_requirement": "SM-ACT-020: isolated standby, concurrent-owner, failed query, lost-session and teardown health regressions, issue #165; owner admission https://github.com/daakara/finance/pull/255#issuecomment-6768115270",
-      "sha256": "bc1696d499588609fc0efab2fc45e25e1959e6b50845aba75ae75f6abd72a887",
-      "size_bytes": 5103
+      "originating_pr_number": 257,
+      "originating_commit": "3329db579007232356f86f8c92ec04260951fbb5",
+      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; owner admission https://github.com/daakara/finance/pull/257#issuecomment-6770042573",
+      "sha256": "02038ce9ecfc076d4aeb0a8e8dbbd05c9a8fe4914d7511e4ea4dadc31fb49ca2",
+      "size_bytes": 4121
     },
-    ".github/workflows/sm-act-020-worker-lock-health.yml": {
+    "tests/test_sm_act_020_backup_only_runner.py": {
       "operation": "A",
-      "originating_pr_number": 255,
-      "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
-      "governing_requirement": "SM-ACT-020: focused hosted lock ownership health regression with no production credentials or SEC egress",
-      "sha256": "5b6e62281c8e2273473f1969bc52c15ffb8e0321a764b70bea2078f70598df2f",
-      "size_bytes": 1053
+      "originating_pr_number": 257,
+      "originating_commit": "3329db579007232356f86f8c92ec04260951fbb5",
+      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; owner admission https://github.com/daakara/finance/pull/257#issuecomment-6770042573",
+      "sha256": "7027b5f585276fbd4d5c6829ace0207e413ae4989e0cb3db5055e64b9a7a1633",
+      "size_bytes": 6361
+    },
+    ".github/workflows/sm-act-020-backup-only.yml": {
+      "operation": "A",
+      "originating_pr_number": 257,
+      "originating_commit": "3329db579007232356f86f8c92ec04260951fbb5",
+      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; owner admission https://github.com/daakara/finance/pull/257#issuecomment-6770042573",
+      "sha256": "bb09f98490c98bf6dacee23d347e746cbaa179204865975e514bcb2ccaa08ac8",
+      "size_bytes": 1126
     }
   },
   "qualification_framework_files": {
@@ -37,8 +37,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "9298525de4887cdb9b0e32d4fd9e77240d7df9c17c1ba30840f01086ec440555",
-      "size_bytes": 57981,
+      "sha256": "b51127b1d5ceba25f898562d61fce3f233d58fcf7b3493aacfc86a49b1f69eef",
+      "size_bytes": 57986,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
