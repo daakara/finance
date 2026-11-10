@@ -1,14 +1,14 @@
 {
-  "release_candidate_commit": "8785707adb2bbac0851d8f0d686facfce475d80b",
+  "release_candidate_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
   "base_anchor_commit": "1dc7c05dae82d6f0d4941ecf9e186e2cb798b850",
-  "total_files": 2,
+  "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-SM-ACT-020-WORKER-LOCK-HEALTH-OWNER-REVIEW-PENDING",
   "files": {
     "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
       "originating_pr_number": 255,
-      "originating_commit": "8785707adb2bbac0851d8f0d686facfce475d80b",
+      "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
       "governing_requirement": "SM-ACT-020: correct worker has_owner_lock to verified session-level PostgreSQL SEC lock, issue #165; RQ-02 owner admission pending",
       "sha256": "3d76ca37693747f454bafb7de414a68657c56f206a85c296eb6be029e6ac891e",
       "size_bytes": 33928
@@ -16,10 +16,18 @@
     "tests/test_sm_act_020_owner_lock_health.py": {
       "operation": "A",
       "originating_pr_number": 255,
-      "originating_commit": "8785707adb2bbac0851d8f0d686facfce475d80b",
+      "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
       "governing_requirement": "SM-ACT-020: isolated standby, concurrent-owner, failed query, lost-session and teardown health regressions, issue #165; RQ-02 owner admission pending",
       "sha256": "bc1696d499588609fc0efab2fc45e25e1959e6b50845aba75ae75f6abd72a887",
       "size_bytes": 5103
+    },
+    ".github/workflows/sm-act-020-worker-lock-health.yml": {
+      "operation": "A",
+      "originating_pr_number": 255,
+      "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
+      "governing_requirement": "SM-ACT-020: focused hosted lock ownership health regression with no production credentials or SEC egress",
+      "sha256": "5b6e62281c8e2273473f1969bc52c15ffb8e0321a764b70bea2078f70598df2f",
+      "size_bytes": 1053
     }
   },
   "qualification_framework_files": {
