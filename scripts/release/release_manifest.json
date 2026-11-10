@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "1d48c370b994de2073908a67cccd9c2d383962c3",
+  "release_candidate_commit": "8785707adb2bbac0851d8f0d686facfce475d80b",
   "base_anchor_commit": "1dc7c05dae82d6f0d4941ecf9e186e2cb798b850",
   "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -8,18 +8,18 @@
     "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
       "originating_pr_number": 255,
-      "originating_commit": "1d48c370b994de2073908a67cccd9c2d383962c3",
+      "originating_commit": "8785707adb2bbac0851d8f0d686facfce475d80b",
       "governing_requirement": "SM-ACT-020: correct worker has_owner_lock to verified session-level PostgreSQL SEC lock, issue #165; RQ-02 owner admission pending",
-      "sha256": "4c24f49f7d8b2447ad8a8b111298a2a7ee3c078ba6d5dcd1b23f0b2d587d1de8",
-      "size_bytes": 33764
+      "sha256": "3d76ca37693747f454bafb7de414a68657c56f206a85c296eb6be029e6ac891e",
+      "size_bytes": 33928
     },
     "tests/test_sm_act_020_owner_lock_health.py": {
       "operation": "A",
       "originating_pr_number": 255,
-      "originating_commit": "1d48c370b994de2073908a67cccd9c2d383962c3",
+      "originating_commit": "8785707adb2bbac0851d8f0d686facfce475d80b",
       "governing_requirement": "SM-ACT-020: isolated standby, concurrent-owner, failed query, lost-session and teardown health regressions, issue #165; RQ-02 owner admission pending",
-      "sha256": "a649ad45a6268403bc1a3c72cf4a44ce41f4e9625cd71ee592f69adda12cc19d",
-      "size_bytes": 4446
+      "sha256": "bc1696d499588609fc0efab2fc45e25e1959e6b50845aba75ae75f6abd72a887",
+      "size_bytes": 5103
     }
   },
   "qualification_framework_files": {
