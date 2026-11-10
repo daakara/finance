@@ -125,3 +125,23 @@ def test_competing_session_not_reported_as_ownership():
     # backend's lock does not make this worker an OWNER.
     worker = make_worker(WorkerHealthState.HEALTHY, conn=FakeConnection(result=(False,)), acquired=True)
     assert worker._has_verified_owner_lock() is False
+
+
+def test_standby_never_claims_owner_even_with_stale_connection_flag():
+    worker = make_worker(
+        WorkerHealthState.STANDBY,
+        conn=FakeConnection(result=(True,)),
+        acquired=True,
+    )
+    assert worker.get_health_envelope()["has_owner_lock"] is False
+    assert worker._owner_conn.cursor_count == 0
+
+
+def test_lost_state_never_claims_owner_even_with_stale_connection_flag():
+    worker = make_worker(
+        WorkerHealthState.OWNER_LOCK_LOST,
+        conn=FakeConnection(result=(True,)),
+        acquired=True,
+    )
+    assert worker.get_health_envelope()["has_owner_lock"] is False
+    assert worker._owner_conn.cursor_count == 0
