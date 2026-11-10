@@ -3550,6 +3550,21 @@ class SmartMoneyEngine:
             except Exception as e:
                 raise ValueError(f"Invalid as_of timestamp '{as_of}': must be valid ISO 8601 string.") from e
 
+        # The legacy public composite is intentionally held while SEC egress is disabled.
+        # Historical PIT evidence is an explicitly separate, read-only projection.
+        # Never promote its retrospectively available records into live scoring.
+        pit_evidence = None
+        if as_of is not None:
+            pit_evidence = cls.evaluate_smart_money_feeds(
+                symbol=clean_sym,
+                window_days=cls.LOOKBACK_DAYS_INSIDER,
+                include_curated=False,
+                asset_class=asset_class,
+                security_type=security_type,
+                as_of=as_of,
+                replay_mode=replay_mode,
+            )
+
         options_sub = cls.assess_options_flow(
             symbol=clean_sym,
             live_options=live_options,
@@ -3728,9 +3743,11 @@ class SmartMoneyEngine:
             "congressTrades": cong_records,
             "as_of": as_of or datetime.now(timezone.utc).isoformat(),
             "replay_mode": replay_mode,
+            # Historical evidence is non-live and must not imply SEC egress is on.
+            "pit_evidence": pit_evidence,
             "coverage_status": overall_status,
             "latest_filing_date": sec_sub.get("records", [{}])[0].get("filing_date") if sec_sub.get("records") else None,
-            "latest_successful_ingestion": sec_sub.get("records", [{}])[0].get("acceptance_datetime") if sec_sub.get("records") else None,
+            "latest_successful_ingestion": None,  # Legacy composite has no certified ARX ingestion ledger.
             "unresolved_failures_count": 0,
         }
 
