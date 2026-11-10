@@ -152,3 +152,19 @@ def test_postgres_old_records_do_not_certify_current_zero(pg_fixture):
     assert sec["direction"] == "UNVERIFIED"
     assert sec["confidence"] == "NONE"
     assert sec["observation_count"] == 0
+
+
+def test_public_assessment_postgres_pit_modes_remain_separate_from_live_hold(pg_fixture):
+    """The public-assessment wrapper must invoke the real PostgreSQL PIT ledger."""
+    _insert_filing(pg_fixture)
+    cutoff = "2026-10-02T23:00:00+00:00"
+    public = SmartMoneyEngine.assess_symbol("NVDA", as_of=cutoff, replay_mode="PUBLIC_AVAILABLE")
+    observed = SmartMoneyEngine.assess_symbol("NVDA", as_of=cutoff, replay_mode="ARX_OBSERVED")
+    assert public["pit_evidence"]["feeds"]["sec_form4"]["status"] == "VERIFIED"
+    assert public["pit_evidence"]["feeds"]["sec_form4"]["observation_count"] == 1
+    assert observed["pit_evidence"]["feeds"]["sec_form4"]["status"] == "PIPELINE_PENDING"
+    assert observed["pit_evidence"]["feeds"]["sec_form4"]["observation_count"] == 0
+    assert public["overall_status"] == observed["overall_status"] == "PIPELINE_HELD"
+    assert public["active_holds"] == observed["active_holds"] == ["HOLD_SEC_001"]
+    assert public["latest_successful_ingestion"] is None
+    assert observed["latest_successful_ingestion"] is None
