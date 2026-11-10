@@ -93,3 +93,23 @@ def test_missing_observation_never_becomes_sec_acceptance_time():
         evidence_row_value(row, "arx_first_observed_at")
         or evidence_row_value(row, "arx_processed_at")
     ) is None
+
+
+def test_public_route_forwards_watermark_and_mode_to_evidence_assessment():
+    route_source = (
+        Path(__file__).resolve().parents[1] / "api" / "routes" / "smart_money.py"
+    ).read_text(encoding="utf-8")
+    route = route_source.split('def get_smart_money_evidence(', 1)[1].split(
+        '\n@router.get("/filings/{symbol}")', 1
+    )[0]
+    assert 'as_of=as_of_val' in route
+    assert 'replay_mode=mode_val' in route
+
+    wrapper = SOURCE.split('def assess_symbol(', 1)[1].split(
+        'def get_smart_money_overview(', 1
+    )[0]
+    assert 'pit_evidence = cls.evaluate_smart_money_feeds(' in wrapper
+    assert 'as_of=as_of' in wrapper
+    assert 'replay_mode=replay_mode' in wrapper
+    assert '"pit_evidence": pit_evidence' in wrapper
+    assert '"latest_successful_ingestion": None' in wrapper
