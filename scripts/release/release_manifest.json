@@ -1,7 +1,7 @@
 {
   "release_candidate_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
   "base_anchor_commit": "61cbb6c064d140bad021af2e788f66cac481d2ea",
-  "total_files": 4,
+  "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-SM-ACT-028-OWNER-REVIEW-PENDING",
   "files": {
@@ -36,6 +36,14 @@
       "governing_requirement": "SM-ACT-028: held public PIT evidence endpoint regression using isolated PostgreSQL, issue #165, owner admission pending",
       "sha256": "9a2cb7941e900cfd372531446d8e234ca9c5c754a849538f5135efcbd0d869f2",
       "size_bytes": 7781
+    },
+    "scripts/release/rq02_diff_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 254,
+      "originating_commit": "8db96903dd9693141b4b944ab768dfbc05595c5b",
+      "governing_requirement": "SM-ACT-028: owner-authenticated PR #254 release attribution admission (GitHub issuecomment-6765363120); no RQ-02 override",
+      "sha256": "22d72333b87c770e9d74e074942d1585a31f1d9ca07d4ab04279738512c05f96",
+      "size_bytes": 57976
     }
   },
   "qualification_framework_files": {
@@ -45,8 +53,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "832e3989b4aaddb24157fced9cd656ea950be8017734455f0218fea5bb39db48",
-      "size_bytes": 57971,
+      "sha256": "22d72333b87c770e9d74e074942d1585a31f1d9ca07d4ab04279738512c05f96",
+      "size_bytes": 57976,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
