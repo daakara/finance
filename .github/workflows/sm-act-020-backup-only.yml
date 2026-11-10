@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install isolated testing dependencies
-        run: python -m pip install pytest psycopg2-binary boto3
+        run: python -m pip install -r requirements.txt pytest psycopg2-binary boto3
       - name: Syntax check
         run: python -m py_compile analyst_dashboard/smart_money/storage/backup/backup_once.py tests/test_sm_act_020_backup_only_runner.py
       - name: Run synthetic fail-closed regression without production credentials
