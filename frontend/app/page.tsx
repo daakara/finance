@@ -26,6 +26,7 @@ import WeeklyConfluenceSpotlight from "../components/WeeklyConfluenceSpotlight";
 import IntentHero from "../components/IntentHero";
 import PageIntro from "../components/PageIntro";
 import AdaptiveTerminal from "../components/AdaptiveTerminal";
+import DiscoveryLandingView from "../components/discovery/DiscoveryLandingView";
 import PreFlightReadinessBar from "../components/PreFlightReadinessBar";
 import PreFlightChecklistModal from "../components/PreFlightChecklistModal";
 import { evaluatePreFlightChecks } from "../lib/preflightEvaluator";
@@ -58,12 +59,12 @@ function TerminalContent() {
     return res.isValid ? res.contextId : null;
   }, [rawContextId, urlSymbol]);
 
-  const [hasExplicitSymbol, setHasExplicitSymbol] = useState<boolean>(!!urlSymbol);
-  const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "AAPL");
+  const [hasExplicitSymbol, setHasExplicitSymbol] = useState<boolean>(Boolean(urlSymbol));
+  const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "");
   const [discoveryContextId, setDiscoveryContextId] = useState<string | null>(validatedContextId);
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const analysisRequestIdRef = useRef(0);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(Boolean(urlSymbol));
   const [error, setError] = useState<string | null>(null);
   const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
@@ -111,9 +112,13 @@ function TerminalContent() {
     fetchFredMacroRegime().then((res) => {
       if (isCurrent) setMacroData(res);
     });
-    fetchSecForm4Insiders(selectedSymbol).then((res) => {
-      if (isCurrent) setInsiderTrades(res.items ?? []);
-    });
+    if (selectedSymbol) {
+      fetchSecForm4Insiders(selectedSymbol).then((res) => {
+        if (isCurrent) setInsiderTrades(res.items ?? []);
+      });
+    } else {
+      setInsiderTrades([]);
+    }
     return () => {
       isCurrent = false;
     };
@@ -127,6 +132,11 @@ function TerminalContent() {
         setSelectedSymbol(urlSymbol.toUpperCase());
       }
       setDiscoveryContextId(validatedContextId);
+    } else {
+      setHasExplicitSymbol(false);
+      setSelectedSymbol("");
+      setData(null);
+      setLoading(false);
     }
   }, [urlSymbol, validatedContextId]);
 
@@ -171,7 +181,7 @@ function TerminalContent() {
     }
   }, []);
 
-  const aliasRecommendation = resolveAssetAlias(selectedSymbol);
+  const aliasRecommendation = selectedSymbol ? resolveAssetAlias(selectedSymbol) : null;
 
   useEffect(() => {
     const saved = localStorage.getItem("FINANCE_USER_ROLE");
@@ -208,6 +218,14 @@ function TerminalContent() {
     const abortController = new AbortController();
     async function loadData() {
       const requestId = ++analysisRequestIdRef.current;
+
+      if (!selectedSymbol) {
+        setData(null);
+        setLoading(false);
+        setError(null);
+        return;
+      }
+
       const cacheKey = getAnalysisHubCacheKey(selectedSymbol, interval, userRole);
       const cached = cacheRef.current.get(cacheKey);
 
@@ -318,8 +336,8 @@ function TerminalContent() {
     })();
 
     return {
-      symbol: selectedSymbol,
-      currentPrice: data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0),
+      symbol: selectedSymbol || "UNVERIFIED",
+      currentPrice: data?.currentPrice ?? (selectedSymbol ? (SpotPriceRegistry.get(selectedSymbol)?.price || 0) : 0),
       stopLoss: data?.optimalExecution?.stop_loss ?? undefined,
       takeProfit1: data?.optimalExecution?.take_profit_1 ?? undefined,
       riskRewardRatio: data?.optimalExecution?.risk_reward_ratio ?? undefined,
@@ -375,61 +393,83 @@ function TerminalContent() {
       <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-2.5 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-5 pb-28 sm:pb-5">
         {/* Main Terminal Workspace (Hero on mobile, Right column on desktop) */}
         <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5 order-1 lg:order-2 min-w-0">
-
-
-          {/* Ingestion Failure / Explicit Retry State OR Adaptive Multi-Tier Terminal Engine */}
-          {error && !data ? (
-            <div className="p-5 bg-rose-950/40 border border-rose-800/60 rounded-2xl text-rose-200 font-sans space-y-3 animate-fade-in shadow-xl">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">⚠️</span>
-                <div>
-                  <h2 className="text-sm sm:text-base font-bold text-white">Market Ingestion Unavailable for {selectedSymbol}</h2>
-                  <p className="text-xs text-rose-300/90 leading-relaxed mt-0.5">
-                    {error}. Live candle feeds or fundamental disclosures could not be verified.
-                  </p>
+          {!hasExplicitSymbol || !selectedSymbol ? (
+            <div className="space-y-6">
+              <DiscoveryLandingView
+                onSelectSymbol={handleSelectSymbol}
+                macroData={macroData}
+                userRole={userRole}
+                onRoleChange={handleRoleChange}
+              />
+              {!hasExplicitSymbol && (
+                <div className="sr-only">
+                  <PageIntro
+                    hubId="analysis"
+                    title="ARX Terminal · Quantitative Analysis"
+                    purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
+                    badge="Active Target"
+                    symbol="DISCOVERY"
+                    isDemo={false}
+                    demoNotice={undefined}
+                  />
                 </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rose-900/40">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const requestId = ++analysisRequestIdRef.current;
-                    cacheRef.current.clear();
-                    setError(null);
-                    setLoading(true);
-                    fetchAssetAnalytics(selectedSymbol, "1y", "1d", userRole)
-                      .then((res) => {
-                        if (requestId !== analysisRequestIdRef.current) return;
-                        setData(res);
-                        setError(null);
-                      })
-                      .catch((e) => {
-                        if (requestId === analysisRequestIdRef.current) setError(e instanceof Error ? e.message : "Retry failed");
-                      })
-                      .finally(() => {
-                        if (requestId === analysisRequestIdRef.current) setLoading(false);
-                      });
-                  }}
-                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer shadow"
-                >
-                  🔄 Retry Analysis
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSelectSymbol("NVDA")}
-                  className="px-3 py-1.5 bg-[#0e1420] hover:bg-[#182335] border border-[#24334a] text-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
-                >
-                  Analyze NVDA
-                </button>
-                <Link
-                  href={urlSymbol || hasExplicitSymbol ? `/radar?q=${selectedSymbol}` : "/radar"}
-                  className="px-3 py-1.5 bg-[#0e1420] hover:bg-[#182335] border border-[#24334a] text-cyan-400 rounded-lg text-xs font-bold transition-all hover:underline"
-                >
-                  Explore Radar Candidates →
-                </Link>
-              </div>
+              )}
             </div>
           ) : (
+            <>
+              {/* Ingestion Failure / Explicit Retry State OR Adaptive Multi-Tier Terminal Engine */}
+              {error && !data ? (
+                <div className="p-5 bg-rose-950/40 border border-rose-800/60 rounded-2xl text-rose-200 font-sans space-y-3 animate-fade-in shadow-xl">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">⚠️</span>
+                    <div>
+                      <h2 className="text-sm sm:text-base font-bold text-white">Market Ingestion Unavailable for {selectedSymbol}</h2>
+                      <p className="text-xs text-rose-300/90 leading-relaxed mt-0.5">
+                        {error}. Live candle feeds or fundamental disclosures could not be verified.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rose-900/40">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const requestId = ++analysisRequestIdRef.current;
+                        cacheRef.current.clear();
+                        setError(null);
+                        setLoading(true);
+                        fetchAssetAnalytics(selectedSymbol, "1y", "1d", userRole)
+                          .then((res) => {
+                            if (requestId !== analysisRequestIdRef.current) return;
+                            setData(res);
+                            setError(null);
+                          })
+                          .catch((e) => {
+                            if (requestId === analysisRequestIdRef.current) setError(e instanceof Error ? e.message : "Retry failed");
+                          })
+                          .finally(() => {
+                            if (requestId === analysisRequestIdRef.current) setLoading(false);
+                          });
+                      }}
+                      className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer shadow"
+                    >
+                      🔄 Retry Analysis
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectSymbol("NVDA")}
+                      className="px-3 py-1.5 bg-[#0e1420] hover:bg-[#182335] border border-[#24334a] text-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Analyze NVDA
+                    </button>
+                    <Link
+                      href={urlSymbol || hasExplicitSymbol ? `/radar?q=${selectedSymbol}` : "/radar"}
+                      className="px-3 py-1.5 bg-[#0e1420] hover:bg-[#182335] border border-[#24334a] text-cyan-400 rounded-lg text-xs font-bold transition-all hover:underline"
+                    >
+                      Explore Radar Candidates →
+                    </Link>
+                  </div>
+                </div>
+              ) : (
             /* 🎯 Adaptive Multi-Tier Terminal Engine (Guided · Standard · Advanced) */
             <AdaptiveTerminal
               key={`${selectedSymbol}_${userRole}`}
@@ -756,51 +796,21 @@ function TerminalContent() {
               </div>
             )}
           </div>
-
-          {/* Below-Fold Narrative & Discovery Guidance */}
-          {!hasExplicitSymbol && (
-            <div className="space-y-4 pt-4 border-t border-[#182335]">
-              <PageIntro
-                hubId="analysis"
-                title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "ARX Terminal · Quantitative Analysis"}
-                purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
-                badge="Active Target"
-                symbol={selectedSymbol}
-                isDemo={false}
-                demoNotice={undefined}
-                primaryAction={{
-                  label: `Prepare Trade Setup (${selectedSymbol}) →`,
-                  href: `/setups?symbol=${selectedSymbol}`,
-                  onClick: () => trackAnalysisToSetup(selectedSymbol),
-                }}
-                secondaryAction={{
-                  label: "Scan Radar Candidates →",
-                  href: "/radar",
-                }}
-              />
-
-              <IntentHero onSelectSymbol={handleSelectSymbol} />
-
-              <WeeklyConfluenceSpotlight
-                defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"}
-                onSelectSymbol={handleSelectSymbol}
-                selectedSymbol={selectedSymbol}
-              />
-            </div>
+            </>
           )}
         </section>
 
         {/* Watchlist Sidebar (Left column on desktop, Below chart on mobile) */}
         <aside aria-label="Watchlist and Real-Time Feeds" className="lg:col-span-1 h-full order-2 lg:order-1 min-w-0">
           <WatchlistSidebar
-            activeSymbol={selectedSymbol}
-            onSelectSymbol={setSelectedSymbol}
+            activeSymbol={hasExplicitSymbol && selectedSymbol ? selectedSymbol : null}
+            onSelectSymbol={handleSelectSymbol}
             liveCurrentPrice={data?.currentPrice}
             livePriceChangePct={data?.priceChangePct24h}
           />
         </aside>
       </main>
-      <SynthesisMobileDock activeSymbol={selectedSymbol} />
+      <SynthesisMobileDock activeSymbol={hasExplicitSymbol && selectedSymbol ? selectedSymbol : null} />
     </div>
   );
 }
