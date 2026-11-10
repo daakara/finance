@@ -341,7 +341,9 @@ export default function StandardTerminalView({
         {/* 5. CONDITIONAL TRADE PLAN */}
         {planSlot && (
           <div className="order-3 lg:order-3 xl:order-3 lg:col-span-12 xl:col-span-12 space-y-2 w-full">
-            {planSlot}
+            {React.isValidElement(planSlot)
+              ? React.cloneElement(planSlot as React.ReactElement<any>, { onOpenSizer })
+              : planSlot}
           </div>
         )}
 
