@@ -91,6 +91,8 @@ flowchart TD
   - **Contrast Floor:** Measure dark-mode contrast ratios to guarantee $\ge 4.5:1$ on text against surface backgrounds (`#0b1019`, `#111827`).
   - **Keyboard Focus Rings:** Ensure all interactive elements expose visible, high-contrast focus rings (`focus-visible:ring-2 focus-visible:ring-cyan-500`).
 
+*Status:* **IMPLEMENTED & VERIFIED** in [PR #260](https://github.com/daakara/finance/pull/260) (Branch `feat/ui-execution-presentation-consolidation`, Commit `60f8cd13`).
+
 ---
 
 ### Phase 3: Governance & Unified Risk Clearance Presentation
@@ -151,7 +153,7 @@ flowchart TD
 | Phase | Branch Target | Scope & Primary Deliverables | Status |
 | :---: | :---: | :--- | :---: |
 | **Phase 1** | `feat/ui-execution-presentation-consolidation` | **Execution Presentation Consolidation**: Unified `onOpenSizer` handler propagation, internal duplicate modal suppression, fallback prop correction, `min-h-[44px]` touch targets, and mobile container overflow protection. | **[PR #260](https://github.com/daakara/finance/pull/260) (Draft Opened)** |
-| **Phase 2** | `feat/ui-deslop-accessibility` | **De-Slop & Measured Accessibility**: Retire top onboarding banner, sanitize decorative emojis, normalize institutional nomenclature, audit contrast ratios, and verify keyboard navigation. | Scheduled |
+| **Phase 2** | `feat/ui-execution-presentation-consolidation` | **De-Slop & Measured Accessibility**: Retire top onboarding banner across 4 hubs, sanitize decorative emojis with Lucide icons, normalize institutional nomenclature, and audit typography/touch targets. | **[PR #260](https://github.com/daakara/finance/pull/260) (Implemented - Commit `60f8cd13`)** |
 | **Phase 3** | `feat/ui-unified-risk-clearance` | **Risk Clearance Presentation**: Unified risk clearance deck, binary fail-closed status presentation, explicit operational holds (`HOLD_SEC_001`), and preservation of 9-domain provenance. | Scheduled |
 | **Phase 4** | `feat/ui-landing-route-decoupling` | **Landing Page Decoupling**: Implement approved landing architecture (Discovery-first vs Benchmark), eliminate silent `AAPL` default, and isolate deep-dive cockpit on `/?symbol=X`. | Scheduled |
 
