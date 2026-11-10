@@ -1,33 +1,25 @@
 {
-  "release_candidate_commit": "3329db579007232356f86f8c92ec04260951fbb5",
-  "base_anchor_commit": "ba041b6d4e764f6450acb111f09ad056ed45cbb8",
-  "total_files": 3,
+  "release_candidate_commit": "3ac5caf6d44b558613ef228dbd87a120a821d805",
+  "base_anchor_commit": "a77154facfc352ee44303456bf3538f2480bf8b2",
+  "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-BACKUP-ONLY-RUNNER-OWNER-ADMITTED",
+  "directive": "ARX-SM-ACT-020-BACKUP-ROLE-ATTESTATION-OWNER-ADMITTED",
   "files": {
     "analyst_dashboard/smart_money/storage/backup/backup_once.py": {
-      "operation": "A",
-      "originating_pr_number": 257,
-      "originating_commit": "3329db579007232356f86f8c92ec04260951fbb5",
-      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; owner admission https://github.com/daakara/finance/pull/257#issuecomment-6770042573",
-      "sha256": "02038ce9ecfc076d4aeb0a8e8dbbd05c9a8fe4914d7511e4ea4dadc31fb49ca2",
-      "size_bytes": 4121
+      "operation": "M",
+      "originating_pr_number": 258,
+      "originating_commit": "3ac5caf6d44b558613ef228dbd87a120a821d805",
+      "governing_requirement": "SM-ACT-020 Phase 3: authenticated PostgreSQL backup role verification; owner admission https://github.com/daakara/finance/pull/258#issuecomment-6772217787",
+      "sha256": "f3a4ce0caa98eed5097353b9222d0ec948a0235b34f350d81e6265aa2b52a5af",
+      "size_bytes": 5396
     },
     "tests/test_sm_act_020_backup_only_runner.py": {
-      "operation": "A",
-      "originating_pr_number": 257,
-      "originating_commit": "3329db579007232356f86f8c92ec04260951fbb5",
-      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; owner admission https://github.com/daakara/finance/pull/257#issuecomment-6770042573",
-      "sha256": "7027b5f585276fbd4d5c6829ace0207e413ae4989e0cb3db5055e64b9a7a1633",
-      "size_bytes": 6361
-    },
-    ".github/workflows/sm-act-020-backup-only.yml": {
-      "operation": "A",
-      "originating_pr_number": 257,
-      "originating_commit": "3329db579007232356f86f8c92ec04260951fbb5",
-      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; owner admission https://github.com/daakara/finance/pull/257#issuecomment-6770042573",
-      "sha256": "bb09f98490c98bf6dacee23d347e746cbaa179204865975e514bcb2ccaa08ac8",
-      "size_bytes": 1126
+      "operation": "M",
+      "originating_pr_number": 258,
+      "originating_commit": "3ac5caf6d44b558613ef228dbd87a120a821d805",
+      "governing_requirement": "SM-ACT-020 Phase 3: authenticated PostgreSQL backup role verification; owner admission https://github.com/daakara/finance/pull/258#issuecomment-6772217787",
+      "sha256": "57e01ed390839e00fa7aeb66acb8cfaa357bce7a9c913d1ceec78fb6df9403c1",
+      "size_bytes": 9767
     }
   },
   "qualification_framework_files": {
@@ -37,8 +29,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "b51127b1d5ceba25f898562d61fce3f233d58fcf7b3493aacfc86a49b1f69eef",
-      "size_bytes": 57986,
+      "sha256": "0889f3ea307ecffe323b500894cc8a5ed3c850db488aea7e6b761e15110ad91c",
+      "size_bytes": 57991,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {

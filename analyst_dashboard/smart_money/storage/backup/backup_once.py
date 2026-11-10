@@ -10,6 +10,9 @@ import os
 import re
 import sys
 
+import psycopg2
+
+from analyst_dashboard.smart_money.storage.config import get_database_url
 from analyst_dashboard.smart_money.storage.backup.backup_engine import SmartMoneyBackupEngine
 from analyst_dashboard.smart_money.storage.backup.storage_adapter import get_backup_storage_adapter
 
@@ -39,8 +42,36 @@ def preflight(expected_release_sha: str, env: dict[str, str]) -> None:
         raise RuntimeError("BACKUP_ONLY_WRONG_PREFIX")
 
 
+def verify_backup_database_identity() -> None:
+    """Read-only attestation of the *authenticated* database principal.
+
+    An environment role label is not authoritative evidence of PostgreSQL access.
+    Verify session_user and effective current_user before any dump or R2 operation.
+    """
+    dsn = get_database_url()
+    if not dsn or not dsn.startswith(("postgres://", "postgresql://")):
+        raise RuntimeError("BACKUP_ONLY_INVALID_DATABASE_URL")
+    conn = None
+    try:
+        conn = psycopg2.connect(dsn, connect_timeout=5)
+        conn.set_session(readonly=True)
+        with conn.cursor() as cur:
+            cur.execute("SELECT session_user, current_user")
+            row = cur.fetchone()
+        if row != ("smart_money_backup", "smart_money_backup"):
+            raise RuntimeError("BACKUP_ONLY_DATABASE_PRINCIPAL_MISMATCH")
+    except Exception as exc:
+        if isinstance(exc, RuntimeError) and str(exc) == "BACKUP_ONLY_DATABASE_PRINCIPAL_MISMATCH":
+            raise
+        raise RuntimeError("BACKUP_ONLY_DATABASE_PRINCIPAL_UNVERIFIABLE") from None
+    finally:
+        if conn is not None:
+            conn.close()
+
+
 def run_backup_once(expected_release_sha: str) -> dict:
     preflight(expected_release_sha, dict(os.environ))
+    verify_backup_database_identity()
     adapter = get_backup_storage_adapter()
     if (not adapter.is_external()
             or getattr(adapter, "provider_name", None) != "cloudflare_r2"
