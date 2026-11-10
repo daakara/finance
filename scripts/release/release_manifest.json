@@ -3,13 +3,13 @@
   "base_anchor_commit": "5f9f17ac284a844e25abf39325a6a7c6a78f37ad",
   "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-SCHEDULED-BACKUP-ENTRYPOINT-REVIEW-CANDIDATE",
+  "directive": "ARX-SM-ACT-020-SCHEDULED-BACKUP-ENTRYPOINT-OWNER-ADMITTED",
   "files": {
     "analyst_dashboard/smart_money/storage/backup/backup_scheduled.py": {
       "operation": "A",
       "originating_pr_number": 261,
       "originating_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
-      "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved.",
+      "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/261#issuecomment-6781775816",
       "sha256": "bdf74b3324aeef4d182f817c4feb5bbee0e8536b6467f0740df1cb1b150c093c",
       "size_bytes": 7109
     },
@@ -17,7 +17,7 @@
       "operation": "A",
       "originating_pr_number": 261,
       "originating_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
-      "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved.",
+      "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/261#issuecomment-6781775816",
       "sha256": "e8c036599e989368cdac4dafb3848758232591840ffe640a56f8386b1e923322",
       "size_bytes": 14018
     },
@@ -25,7 +25,7 @@
       "operation": "A",
       "originating_pr_number": 261,
       "originating_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
-      "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved.",
+      "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/261#issuecomment-6781775816",
       "sha256": "37b7fa1aa266c60fd1c5940f6c85d3e0e37047e0a54c240a58f8a95cc8ff452d",
       "size_bytes": 2539
     }
@@ -37,8 +37,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "52395fc17cf6735b13f1982ed3fd603dfae55aea21eb5fd0da146cec3e98c82b",
-      "size_bytes": 57996,
+      "sha256": "338df673d01d79ab68f4521965bb41e4320fae1e0432d4940ed9e49c17203b6f",
+      "size_bytes": 58001,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
