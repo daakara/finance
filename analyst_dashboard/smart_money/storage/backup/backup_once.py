@@ -29,6 +29,8 @@ def preflight(expected_release_sha: str, env: dict[str, str]) -> None:
         raise RuntimeError("BACKUP_ONLY_INVALID_EXPECTED_RELEASE")
     if env.get("ARX_RELEASE_SHA") != expected_release_sha:
         raise RuntimeError("BACKUP_ONLY_RELEASE_IDENTITY_MISMATCH")
+    if env.get("SMART_MONEY_DATABASE_ROLE") != "smart_money_backup":
+        raise RuntimeError("BACKUP_ONLY_REQUIRES_BACKUP_DATABASE_ROLE")
     if env.get("ARX_BACKUP_PROVIDER") != "cloudflare_r2":
         raise RuntimeError("BACKUP_ONLY_REQUIRES_CLOUDFLARE_R2")
     if env.get("ARX_BACKUP_BUCKET") != "arx-smart-money-backups":
