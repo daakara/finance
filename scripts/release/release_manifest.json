@@ -3,13 +3,13 @@
   "base_anchor_commit": "1dc7c05dae82d6f0d4941ecf9e186e2cb798b850",
   "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-WORKER-LOCK-HEALTH-OWNER-REVIEW-PENDING",
+  "directive": "ARX-SM-ACT-020-WORKER-LOCK-HEALTH-OWNER-ADMITTED",
   "files": {
     "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
       "originating_pr_number": 255,
       "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
-      "governing_requirement": "SM-ACT-020: correct worker has_owner_lock to verified session-level PostgreSQL SEC lock, issue #165; RQ-02 owner admission pending",
+      "governing_requirement": "SM-ACT-020: correct worker has_owner_lock to verified session-level PostgreSQL SEC lock, issue #165; owner admission https://github.com/daakara/finance/pull/255#issuecomment-6768115270",
       "sha256": "3d76ca37693747f454bafb7de414a68657c56f206a85c296eb6be029e6ac891e",
       "size_bytes": 33928
     },
@@ -17,7 +17,7 @@
       "operation": "A",
       "originating_pr_number": 255,
       "originating_commit": "5da4ae335b64ba92ef907ca264e3acc63f714101",
-      "governing_requirement": "SM-ACT-020: isolated standby, concurrent-owner, failed query, lost-session and teardown health regressions, issue #165; RQ-02 owner admission pending",
+      "governing_requirement": "SM-ACT-020: isolated standby, concurrent-owner, failed query, lost-session and teardown health regressions, issue #165; owner admission https://github.com/daakara/finance/pull/255#issuecomment-6768115270",
       "sha256": "bc1696d499588609fc0efab2fc45e25e1959e6b50845aba75ae75f6abd72a887",
       "size_bytes": 5103
     },
@@ -37,8 +37,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "22d72333b87c770e9d74e074942d1585a31f1d9ca07d4ab04279738512c05f96",
-      "size_bytes": 57976,
+      "sha256": "9298525de4887cdb9b0e32d4fd9e77240d7df9c17c1ba30840f01086ec440555",
+      "size_bytes": 57981,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
