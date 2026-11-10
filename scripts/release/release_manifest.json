@@ -1,41 +1,57 @@
 {
-  "release_candidate_commit": "9a3caf7a9616d69c7f18ae528fe985e4fd59512f",
-  "base_anchor_commit": "669df295e6c213b5ae0b2cc92abca9de1ce21d3a",
-  "total_files": 4,
+  "release_candidate_commit": "d65d7a1544d519b7921e46866165ed649d1e64c2",
+  "base_anchor_commit": "09108745ee546775a125dfdfdac6fb47b07f1e9a",
+  "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-PROD-CONTROLLED-RELEASE-014",
+  "directive": "ARX-SM-ACT-027-OWNER-PREAPPROVED-RELEASE-CANDIDATE",
   "files": {
-    "frontend/components/SmartMoneyDivergenceRadar.tsx": {
-      "operation": "M",
-      "originating_pr_number": 252,
-      "originating_commit": "9a3caf7a9616d69c7f18ae528fe985e4fd59512f",
-      "governing_requirement": "ARX-PROD-CONTROLLED-RELEASE-014: Smart Money evidence-truth remediation (#67 / #252)",
-      "sha256": "8f08cb5f1614f9db4a918e842d69dded5bc055511856b85086deac41612024a9",
-      "size_bytes": 2506
-    },
-    "frontend/package.json": {
-      "operation": "M",
-      "originating_pr_number": 252,
-      "originating_commit": "9a3caf7a9616d69c7f18ae528fe985e4fd59512f",
-      "governing_requirement": "ARX-PROD-CONTROLLED-RELEASE-014: Smart Money evidence-truth remediation (#67 / #252)",
-      "sha256": "ff158c8d27d386e432ea13414b9ca934724abcafee93236648851bf848c497f6",
-      "size_bytes": 3609
-    },
-    "frontend/tests/smartMoneyDivergenceTruth.test.ts": {
+    ".github/workflows/smart-money-evidence-truth.yml": {
       "operation": "A",
-      "originating_pr_number": 252,
-      "originating_commit": "9a3caf7a9616d69c7f18ae528fe985e4fd59512f",
-      "governing_requirement": "ARX-PROD-CONTROLLED-RELEASE-014: Smart Money evidence-truth remediation (#67 / #252)",
-      "sha256": "778f67ed39d55d12322f830ce725c858fe5f26d3bd0cda1857bfefad1cd2a5ac",
-      "size_bytes": 1725
+      "originating_pr_number": 253,
+      "originating_commit": "d65d7a1544d519b7921e46866165ed649d1e64c2",
+      "governing_requirement": "SM-ACT-027: SEC Form 4 advisory source/observed time integrity, PIT replay and unknown-coverage fail-closed (#165 / #253), owner-preapproved, release governance admission still pending",
+      "sha256": "7e2c618b6e1e88472ffdbb8d07b0613330387336c69ac72d722fba8954bae962",
+      "size_bytes": 1953
     },
-    "scripts/release/rq02_diff_integrity.py": {
+    "analyst_dashboard/analyzers/evidence_timestamp_projection.py": {
+      "operation": "A",
+      "originating_pr_number": 253,
+      "originating_commit": "d65d7a1544d519b7921e46866165ed649d1e64c2",
+      "governing_requirement": "SM-ACT-027: SEC Form 4 advisory source/observed time integrity, PIT replay and unknown-coverage fail-closed (#165 / #253), owner-preapproved, release governance admission still pending",
+      "sha256": "1b89bdf7ab371f0802c641e653a7c151d92c96876aa7ad7b529e1481680bd998",
+      "size_bytes": 565
+    },
+    "analyst_dashboard/analyzers/smart_money.py": {
       "operation": "M",
-      "originating_pr_number": 252,
-      "originating_commit": "9a3caf7a9616d69c7f18ae528fe985e4fd59512f",
-      "governing_requirement": "ARX-PROD-CONTROLLED-RELEASE-014: Smart Money evidence-truth remediation (#67 / #252)",
-      "sha256": "9ee7411cb2c99c74e2741d2bab7f6a2d9f80e93ba78320c7c50d73ae3487864e",
-      "size_bytes": 57966
+      "originating_pr_number": 253,
+      "originating_commit": "d65d7a1544d519b7921e46866165ed649d1e64c2",
+      "governing_requirement": "SM-ACT-027: SEC Form 4 advisory source/observed time integrity, PIT replay and unknown-coverage fail-closed (#165 / #253), owner-preapproved, release governance admission still pending",
+      "sha256": "ccd6b2766ae7a1b1236fd472aecd2eb7df66eb2aff04783834adddb28cc063a0",
+      "size_bytes": 181306
+    },
+    "tests/test_sm_act_027_advisory_truth.py": {
+      "operation": "A",
+      "originating_pr_number": 253,
+      "originating_commit": "d65d7a1544d519b7921e46866165ed649d1e64c2",
+      "governing_requirement": "SM-ACT-027: SEC Form 4 advisory source/observed time integrity, PIT replay and unknown-coverage fail-closed (#165 / #253), owner-preapproved, release governance admission still pending",
+      "sha256": "d3a71764d24e1bd999dfd14ddfba7b79f60fb360e168c604de5187f35b03b97c",
+      "size_bytes": 4060
+    },
+    "tests/test_sm_act_027_postgres_projection.py": {
+      "operation": "A",
+      "originating_pr_number": 253,
+      "originating_commit": "d65d7a1544d519b7921e46866165ed649d1e64c2",
+      "governing_requirement": "SM-ACT-027: SEC Form 4 advisory source/observed time integrity, PIT replay and unknown-coverage fail-closed (#165 / #253), owner-preapproved, release governance admission still pending",
+      "sha256": "bcd42163d1b5799f3403f91a5931961f2b1edf2c4412009f64f811b92c175b9f",
+      "size_bytes": 6720
+    },
+    "tests/test_sm_act_027_sqlite_projection.py": {
+      "operation": "A",
+      "originating_pr_number": 253,
+      "originating_commit": "d65d7a1544d519b7921e46866165ed649d1e64c2",
+      "governing_requirement": "SM-ACT-027: SEC Form 4 advisory source/observed time integrity, PIT replay and unknown-coverage fail-closed (#165 / #253), owner-preapproved, release governance admission still pending",
+      "sha256": "ba7671044fb52fac07363be1e7c693ea9a74e266df178f99fd834441f1aa04a5",
+      "size_bytes": 4317
     }
   },
   "qualification_framework_files": {
