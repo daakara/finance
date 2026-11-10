@@ -1,33 +1,33 @@
 {
-  "release_candidate_commit": "ee9fdd68b363e4339358598677a3e44a31e950b8",
-  "base_anchor_commit": "ecdb81776ef99690b862384deab5928ea4faf905",
+  "release_candidate_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
+  "base_anchor_commit": "5f9f17ac284a844e25abf39325a6a7c6a78f37ad",
   "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-RESTORE-FAIL-CLOSED-OWNER-ADMITTED",
+  "directive": "ARX-SM-ACT-020-SCHEDULED-BACKUP-ENTRYPOINT-OWNER-ADMITTED",
   "files": {
-    "analyst_dashboard/smart_money/storage/backup/restore_verifier.py": {
-      "operation": "M",
-      "originating_pr_number": 259,
-      "originating_commit": "ee9fdd68b363e4339358598677a3e44a31e950b8",
-      "governing_requirement": "SM-ACT-020: fail-closed isolated restore verification; PR #259 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/259#issuecomment-6779408534",
-      "sha256": "819e3c5ac2a3e2e5b408f741be916ecf336340e147873a819e2976a5b92f0715",
-      "size_bytes": 14560
-    },
-    "tests/test_smart_money_restore_rehearsal_adversarial.py": {
-      "operation": "M",
-      "originating_pr_number": 259,
-      "originating_commit": "ee9fdd68b363e4339358598677a3e44a31e950b8",
-      "governing_requirement": "SM-ACT-020: fail-closed isolated restore verification; PR #259 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/259#issuecomment-6779408534",
-      "sha256": "0442540932824f099ab6e1d1d755eb2dc601db34f7d67e955cc24e5dc9834f00",
-      "size_bytes": 22165
-    },
-    "docs/reports/SM_ACT_020_RESTORE_FAIL_CLOSED_REVIEW.md": {
+    "analyst_dashboard/smart_money/storage/backup/backup_scheduled.py": {
       "operation": "A",
-      "originating_pr_number": 259,
-      "originating_commit": "ee9fdd68b363e4339358598677a3e44a31e950b8",
-      "governing_requirement": "SM-ACT-020: fail-closed isolated restore verification; PR #259 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/259#issuecomment-6779408534",
-      "sha256": "67853852d335e2d1153e260f8d4587a74defd37f6ffa6082a02578d228577043",
-      "size_bytes": 2433
+      "originating_pr_number": 261,
+      "originating_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
+      "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/261#issuecomment-6781775816",
+      "sha256": "bdf74b3324aeef4d182f817c4feb5bbee0e8536b6467f0740df1cb1b150c093c",
+      "size_bytes": 7109
+    },
+    "tests/test_sm_act_020_backup_scheduled_runner.py": {
+      "operation": "A",
+      "originating_pr_number": 261,
+      "originating_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
+      "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/261#issuecomment-6781775816",
+      "sha256": "e8c036599e989368cdac4dafb3848758232591840ffe640a56f8386b1e923322",
+      "size_bytes": 14018
+    },
+    "docs/reports/SM_ACT_020_SCHEDULED_BACKUP_ENTRYPOINT_REVIEW.md": {
+      "operation": "A",
+      "originating_pr_number": 261,
+      "originating_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
+      "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/261#issuecomment-6781775816",
+      "sha256": "37b7fa1aa266c60fd1c5940f6c85d3e0e37047e0a54c240a58f8a95cc8ff452d",
+      "size_bytes": 2539
     }
   },
   "qualification_framework_files": {
@@ -37,8 +37,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "52395fc17cf6735b13f1982ed3fd603dfae55aea21eb5fd0da146cec3e98c82b",
-      "size_bytes": 57996,
+      "sha256": "338df673d01d79ab68f4521965bb41e4320fae1e0432d4940ed9e49c17203b6f",
+      "size_bytes": 58001,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
