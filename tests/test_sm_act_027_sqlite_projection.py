@@ -86,3 +86,28 @@ def test_publicly_available_does_not_mean_already_observed_by_arx(tmp_path, monk
     assert observed["feeds"]["sec_form4"]["observation_count"] == 0
     assert observed["overall_status"] == "PIPELINE_PENDING"
     assert observed["confluence_inputs"] is None
+
+
+def test_public_assessment_exposes_real_pit_projection_without_unlocking_live_status(tmp_path, monkeypatch):
+    """The API's assess_symbol call must pass both PIT parameters to the real SQLite query."""
+    _fixture(tmp_path, monkeypatch, "2026-10-01", "2026-10-03T10:20:00Z")
+    cutoff = "2026-10-02T23:00:00Z"
+    public = SmartMoneyEngine.assess_symbol("NVDA", as_of=cutoff, replay_mode="PUBLIC_AVAILABLE")
+    observed = SmartMoneyEngine.assess_symbol("NVDA", as_of=cutoff, replay_mode="ARX_OBSERVED")
+    assert public["pit_evidence"]["feeds"]["sec_form4"]["observation_count"] == 1
+    assert observed["pit_evidence"]["feeds"]["sec_form4"]["observation_count"] == 0
+    assert observed["pit_evidence"]["feeds"]["sec_form4"]["status"] == "PIPELINE_PENDING"
+    assert public["overall_status"] == observed["overall_status"] == "PIPELINE_HELD"
+    assert public["active_holds"] == observed["active_holds"] == ["HOLD_SEC_001"]
+    assert public["latest_successful_ingestion"] is None
+    assert observed["latest_successful_ingestion"] is None
+    assert public["pillar_eligibility"] is False
+    assert observed["pit_evidence"]["confluence_inputs"] is None
+
+
+def test_public_assessment_without_watermark_cannot_claim_arx_ingestion(tmp_path, monkeypatch):
+    _fixture(tmp_path, monkeypatch, "2026-10-01", "2026-10-03T10:20:00Z")
+    result = SmartMoneyEngine.assess_symbol("NVDA")
+    assert result["pit_evidence"] is None
+    assert result["latest_successful_ingestion"] is None
+    assert result["overall_status"] == "PIPELINE_HELD"
