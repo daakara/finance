@@ -108,7 +108,7 @@ class TestRestoreRehearsalPositiveAndMetrics:
 
     def test_positive_restore_rehearsal_and_metrics(self, pg_source, storage_adapter, clean_restore_target):
         engine = SmartMoneyBackupEngine(dsn=pg_source["uri"], storage_adapter=storage_adapter)
-        manifest = engine.create_backup(include_globals=True)
+        manifest = engine.create_backup(include_globals=False)
         backup_id = manifest["backup_id"]
 
         verifier = BackupRestoreVerifier(storage_adapter=storage_adapter)
@@ -119,6 +119,9 @@ class TestRestoreRehearsalPositiveAndMetrics:
         assert receipt["triggers_count"] == 4
         assert receipt["active_snapshot_id"] == "SNAP-REHEARSAL-20261026-001"
         assert receipt["application_read_successful"] is True
+        assert receipt["source_data_parity_verified"] is False
+        assert receipt["roles_and_grants_verified"] is False
+        assert len(receipt["row_counts"]) == 12
         assert receipt["sha256_overhead_sec"] >= 0.0
         assert receipt["verification_duration_sec"] > 0.0
 
@@ -329,3 +332,90 @@ class TestRestoreRehearsalAdversarialFailureModes:
         with pytest.raises(ConnectionError) as exc:
             verifier.verify_backup(manifest["backup_id"], invalid_dsn)
         assert "DATABASE_CONNECTION_FAILED" in str(exc.value)
+
+
+class TestRestoreFailClosedRegression:
+    @pytest.mark.parametrize('code', [1, 2, -15])
+    def test_restore_errors_never_pass(self, pg_source, storage_adapter, clean_restore_target, monkeypatch, code):
+        import subprocess
+        from analyst_dashboard.smart_money.storage.backup import restore_verifier as module
+        manifest = SmartMoneyBackupEngine(dsn=pg_source['uri'], storage_adapter=storage_adapter).create_backup(include_globals=False)
+        monkeypatch.setattr(module.subprocess, 'run', lambda *a, **kw: subprocess.CompletedProcess(a[0], code, stderr='restore failed'))
+        with pytest.raises(RuntimeError, match='PG_RESTORE_FAILED'):
+            BackupRestoreVerifier(storage_adapter).verify_backup(manifest['backup_id'], clean_restore_target['uri'])
+
+    def test_application_read_failure_rejected(self, pg_source, storage_adapter, clean_restore_target, monkeypatch):
+        manifest = SmartMoneyBackupEngine(dsn=pg_source['uri'], storage_adapter=storage_adapter).create_backup(include_globals=False)
+        monkeypatch.setattr(PostgresSmartMoneyRepository, 'get_latest_active_snapshot', lambda *a: None)
+        with pytest.raises(RuntimeError, match='APPLICATION_READ_FAILED'):
+            BackupRestoreVerifier(storage_adapter).verify_backup(manifest['backup_id'], clean_restore_target['uri'])
+
+    def test_application_pointer_mismatch_rejected(self, pg_source, storage_adapter, clean_restore_target, monkeypatch):
+        manifest = SmartMoneyBackupEngine(dsn=pg_source['uri'], storage_adapter=storage_adapter).create_backup(include_globals=False)
+        monkeypatch.setattr(PostgresSmartMoneyRepository, 'get_latest_active_snapshot', lambda *a: {'snapshot_id': 'wrong'})
+        with pytest.raises(RuntimeError, match='APPLICATION_READ_FAILED'):
+            BackupRestoreVerifier(storage_adapter).verify_backup(manifest['backup_id'], clean_restore_target['uri'])
+
+    @pytest.mark.parametrize('damage', ['disabled', 'missing', 'wrong_events', 'missing_table'])
+    def test_partial_structure_rejected(self, pg_source, storage_adapter, clean_restore_target, monkeypatch, damage):
+        import subprocess
+        real_run = subprocess.run
+        manifest = SmartMoneyBackupEngine(dsn=pg_source['uri'], storage_adapter=storage_adapter).create_backup(include_globals=False)
+        def restore_then_damage(*args, **kwargs):
+            result = real_run(*args, **kwargs)
+            if 'pg_restore' in args[0][0] and result.returncode == 0:
+                with psycopg2.connect(clean_restore_target['uri']) as conn:
+                    with conn.cursor() as cur:
+                        if damage == 'disabled':
+                            cur.execute('ALTER TABLE form4_raw_filings DISABLE TRIGGER trg_raw_filings_immutable')
+                        elif damage == 'missing':
+                            cur.execute('DROP TRIGGER trg_raw_filings_immutable ON form4_raw_filings')
+                        elif damage == 'wrong_events':
+                            cur.execute('DROP TRIGGER trg_raw_filings_immutable ON form4_raw_filings')
+                            cur.execute('CREATE TRIGGER trg_raw_filings_immutable BEFORE UPDATE ON form4_raw_filings FOR EACH ROW EXECUTE FUNCTION abort_immutable_record()')
+                        else:
+                            cur.execute('DROP TABLE form4_parsed_transactions')
+            return result
+        monkeypatch.setattr(subprocess, 'run', restore_then_damage)
+        error = 'PARTIAL_RESTORE_DETECTED' if damage == 'missing_table' else 'IMMUTABILITY_TRIGGER_INVALID'
+        with pytest.raises(RuntimeError, match=error):
+            BackupRestoreVerifier(storage_adapter).verify_backup(manifest['backup_id'], clean_restore_target['uri'])
+
+    @pytest.mark.parametrize('target', [
+        'postgres://different:password@127.0.0.1/finance?sslmode=disable',
+        'host=localhost port=5432 dbname=finance user=other',
+    ])
+    def test_primary_alias_blocked_before_download(self, storage_adapter, monkeypatch, target):
+        monkeypatch.setenv('SMART_MONEY_DATABASE_URL', 'postgresql://owner:secret@localhost:5432/finance')
+        monkeypatch.setattr(storage_adapter, 'download_file', lambda *a: pytest.fail('unsafe target reached storage'))
+        with pytest.raises(RuntimeError, match='DESTINATION_SAFETY_VIOLATION'):
+            BackupRestoreVerifier(storage_adapter).verify_backup('unused', target)
+
+    @pytest.mark.parametrize('target', [
+        'postgresql://user@remote.example/db',
+        'dbname=db',
+        'host=localhost,remote.example dbname=db',
+        'host=localhost hostaddr=203.0.113.1 dbname=db',
+    ])
+    def test_implicit_or_remote_target_blocked(self, storage_adapter, target):
+        with pytest.raises(RuntimeError, match='DESTINATION_SAFETY_VIOLATION'):
+            BackupRestoreVerifier(storage_adapter).verify_backup('unused', target)
+
+    def test_globals_sql_error_aborts_before_database_restore(self, pg_source, storage_adapter, backup_dir, clean_restore_target, monkeypatch):
+        import subprocess
+        from analyst_dashboard.smart_money.storage.backup.storage_adapter import compute_sha256
+        manifest = SmartMoneyBackupEngine(dsn=pg_source['uri'], storage_adapter=storage_adapter).create_backup(include_globals=False)
+        globals_path = os.path.join(backup_dir, 'globals.sql')
+        with open(globals_path, 'w') as f:
+            f.write('SELECT 1;\nSELECT missing_function_for_restore_test();\n')
+        manifest['globals_filename'] = 'globals.sql'
+        manifest['globals_artifact_sha256'] = compute_sha256(globals_path)
+        with open(os.path.join(backup_dir, f"manifest_{manifest['backup_id']}.json"), 'w') as f:
+            json.dump(manifest, f)
+        real_run = subprocess.run
+        def assert_no_restore(*args, **kwargs):
+            assert 'pg_restore' not in args[0][0], 'database restore followed failed globals'
+            return real_run(*args, **kwargs)
+        monkeypatch.setattr(subprocess, 'run', assert_no_restore)
+        with pytest.raises(RuntimeError, match='GLOBALS_RESTORE_FAILED'):
+            BackupRestoreVerifier(storage_adapter).verify_backup(manifest['backup_id'], clean_restore_target['uri'])
