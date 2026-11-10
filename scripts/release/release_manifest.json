@@ -1,49 +1,25 @@
 {
-  "release_candidate_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
-  "base_anchor_commit": "61cbb6c064d140bad021af2e788f66cac481d2ea",
-  "total_files": 5,
+  "release_candidate_commit": "1d48c370b994de2073908a67cccd9c2d383962c3",
+  "base_anchor_commit": "1dc7c05dae82d6f0d4941ecf9e186e2cb798b850",
+  "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-028-OWNER-REVIEW-PENDING",
+  "directive": "ARX-SM-ACT-020-WORKER-LOCK-HEALTH-OWNER-REVIEW-PENDING",
   "files": {
-    "analyst_dashboard/analyzers/smart_money.py": {
+    "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
-      "originating_pr_number": 254,
-      "originating_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
-      "governing_requirement": "SM-ACT-028: Public Smart Money PIT ledger visibility without live feed promotion, issue #165, owner-authenticated PR #254 admission pending",
-      "sha256": "8adc77ed28a0376470fd9d5e5aac4dfedf60db20cf04b9183b23ceb07b19a554",
-      "size_bytes": 182070
+      "originating_pr_number": 255,
+      "originating_commit": "1d48c370b994de2073908a67cccd9c2d383962c3",
+      "governing_requirement": "SM-ACT-020: correct worker has_owner_lock to verified session-level PostgreSQL SEC lock, issue #165; RQ-02 owner admission pending",
+      "sha256": "4c24f49f7d8b2447ad8a8b111298a2a7ee3c078ba6d5dcd1b23f0b2d587d1de8",
+      "size_bytes": 33764
     },
-    "tests/test_sm_act_027_advisory_truth.py": {
-      "operation": "M",
-      "originating_pr_number": 254,
-      "originating_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
-      "governing_requirement": "SM-ACT-028: Public Smart Money PIT ledger visibility without live feed promotion, issue #165, owner-authenticated PR #254 admission pending",
-      "sha256": "eaac3916ea223afa386a2e8a18ac21a7cb2699f296c0d2fe3bb72e293d1169b9",
-      "size_bytes": 4873
-    },
-    "tests/test_sm_act_027_sqlite_projection.py": {
-      "operation": "M",
-      "originating_pr_number": 254,
-      "originating_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
-      "governing_requirement": "SM-ACT-028: Public Smart Money PIT ledger visibility without live feed promotion, issue #165, owner-authenticated PR #254 admission pending",
-      "sha256": "130ef9f974e3e7029455d0eb58163eeeb49f3779307b9d2a8c63a1c8a7f3c50f",
-      "size_bytes": 5858
-    },
-    "tests/test_sm_act_027_postgres_projection.py": {
-      "operation": "M",
-      "originating_pr_number": 254,
-      "originating_commit": "b518799b592e4c659bd20cd54f2e34cc7dbbf855",
-      "governing_requirement": "SM-ACT-028: held public PIT evidence endpoint regression using isolated PostgreSQL, issue #165, owner admission pending",
-      "sha256": "9a2cb7941e900cfd372531446d8e234ca9c5c754a849538f5135efcbd0d869f2",
-      "size_bytes": 7781
-    },
-    "scripts/release/rq02_diff_integrity.py": {
-      "operation": "M",
-      "originating_pr_number": 254,
-      "originating_commit": "8db96903dd9693141b4b944ab768dfbc05595c5b",
-      "governing_requirement": "SM-ACT-028: owner-authenticated PR #254 release attribution admission (GitHub issuecomment-6765363120); no RQ-02 override",
-      "sha256": "22d72333b87c770e9d74e074942d1585a31f1d9ca07d4ab04279738512c05f96",
-      "size_bytes": 57976
+    "tests/test_sm_act_020_owner_lock_health.py": {
+      "operation": "A",
+      "originating_pr_number": 255,
+      "originating_commit": "1d48c370b994de2073908a67cccd9c2d383962c3",
+      "governing_requirement": "SM-ACT-020: isolated standby, concurrent-owner, failed query, lost-session and teardown health regressions, issue #165; RQ-02 owner admission pending",
+      "sha256": "a649ad45a6268403bc1a3c72cf4a44ce41f4e9625cd71ee592f69adda12cc19d",
+      "size_bytes": 4446
     }
   },
   "qualification_framework_files": {
