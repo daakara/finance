@@ -321,6 +321,8 @@ class SmartMoneyIngestionWorker:
         A healthy STANDBY loop is never evidence of ownership. Fail closed when
         the session disappears, a query fails, or the lock has been lost.
         """
+        if self.state not in (WorkerHealthState.OWNER_LOCK_ACQUIRED, WorkerHealthState.HEALTHY, WorkerHealthState.BLOCKED_DATA_INTEGRITY):
+            return False
         conn = getattr(self, "_owner_conn", None)
         if not getattr(self, "_owner_lock_acquired", False) or conn is None:
             return False
