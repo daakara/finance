@@ -275,6 +275,7 @@ class SmartMoneyIngestionWorker:
         self.state = WorkerHealthState.STARTING
         self.worker_id = f"worker-{os.getpid()}-{int(time.time())}"
         self._owner_conn = None
+        self._has_owner_lock = False
         self._running = False
         self.lease_duration_sec = int(os.environ.get("SMART_MONEY_LEASE_DURATION_SEC", "60"))
         self.heartbeat_interval_sec = int(os.environ.get("SMART_MONEY_HEARTBEAT_INTERVAL_SEC", "10"))
@@ -326,10 +327,12 @@ class SmartMoneyIngestionWorker:
             cur.execute("SET TIME ZONE 'GMT';")
             cur.execute("SET application_name = %s;", (f"sm_worker_{self.worker_id}",))
 
+        self._has_owner_lock = False
         for attempt in range(1, max_attempts + 1):
             acquired = acquire_sec_owner_lock(self._owner_conn)
             if acquired:
                 self.state = WorkerHealthState.OWNER_LOCK_ACQUIRED
+                self._has_owner_lock = True
                 logger.info(f"Worker {self.worker_id} acquired exclusive SEC_EGRESS_OWNER advisory lock.")
                 return True
             if attempt < max_attempts:
@@ -340,6 +343,7 @@ class SmartMoneyIngestionWorker:
                 time.sleep(retry_interval_sec)
 
         self.state = WorkerHealthState.OWNER_LOCK_LOST
+        self._has_owner_lock = False
         logger.error(
             "DUPLICATE_OWNER_REJECTED: Another worker currently holds SEC_EGRESS_OWNER lock. "
             "Failing closed to prevent aggregate rate violation."
@@ -350,15 +354,45 @@ class SmartMoneyIngestionWorker:
 
     def release_egress_authority(self) -> None:
         """Releases session advisory lock on shutdown."""
-        if self._owner_conn and not self._owner_conn.closed:
+        self._has_owner_lock = False
+        if self._owner_conn and not getattr(self._owner_conn, "closed", True):
             try:
                 release_sec_owner_lock(self._owner_conn)
             except Exception as e:
                 logger.warning(f"Error releasing SEC owner lock: {e}")
             finally:
-                self._owner_conn.close()
+                try:
+                    self._owner_conn.close()
+                except Exception:
+                    pass
                 self._owner_conn = None
         self.state = WorkerHealthState.OWNER_LOCK_LOST
+
+    @property
+    def has_owner_lock(self) -> bool:
+        """
+        Represents actual verified PostgreSQL advisory-lock ownership.
+        STANDBY, STARTING, FATAL, unacquired, or closed connection states strictly return False.
+        """
+        if self.state in {
+            WorkerHealthState.STANDBY,
+            WorkerHealthState.STARTING,
+            WorkerHealthState.FATAL,
+            WorkerHealthState.OWNER_LOCK_LOST,
+        }:
+            self._has_owner_lock = False
+            return False
+
+        if not getattr(self, "_has_owner_lock", False):
+            return False
+
+        conn = getattr(self, "_owner_conn", None)
+        if not conn or getattr(conn, "closed", 1) != 0:
+            self._has_owner_lock = False
+            self.state = WorkerHealthState.OWNER_LOCK_LOST
+            return False
+
+        return True
 
     def _handle_shutdown_signal(self, signum: int, frame: Any) -> None:
         """
@@ -484,6 +518,12 @@ class SmartMoneyIngestionWorker:
 
     def run_cycle(self) -> None:
         """Executes a single operational work cycle."""
+        # 0. Invariant: Must hold exclusive advisory lock to execute work cycle
+        if not self.has_owner_lock:
+            self.state = WorkerHealthState.OWNER_LOCK_LOST
+            logger.error("Work cycle suspended: SEC_EGRESS_OWNER advisory lock is not held.")
+            return
+
         # 1. Evaluate Backup Freshness Containment Gate
         if not self.containment_gate.check_ingestion_eligibility():
             self.state = WorkerHealthState.BLOCKED_DATA_INTEGRITY
@@ -658,7 +698,7 @@ class SmartMoneyIngestionWorker:
             "overall_healthy": overall_healthy,
             "worker_subsystem_healthy": worker_subsystem_healthy,
             "backup_subsystem_healthy": backup_subsystem_healthy,
-            "has_owner_lock": worker_subsystem_healthy,
+            "has_owner_lock": self.has_owner_lock,
             "degradation_reasons": degradation_reasons,
             "backup_scheduler": scheduler_envelope,
             "containment": containment_envelope,
