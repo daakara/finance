@@ -853,3 +853,138 @@ class TestProspectiveDecisionCapture:
         )
         assert id1 != id2, f"Tuple-boundary collision detected: {id1} == {id2}"
 
+    def test_18_concurrent_decision_capture_attempts_idempotency(self, capture_engine):
+        """Scenario 18 / ARX-TERMINAL-44 Regression:
+        Verifies that concurrent requests or retries recording attempts for the same decision_id
+        serialize cleanly under SQLite BEGIN IMMEDIATE without UNIQUE constraint collisions.
+        """
+        import concurrent.futures
+
+        cycle = capture_engine.create_or_get_evaluation_cycle(
+            cycle_type="EXPLICIT_USER_REQUEST",
+            universe_version="2026.1",
+        )
+        cycle_id = cycle["evaluation_cycle_id"]
+
+        # Initial attempt
+        initial_res = capture_engine.record_decision_event(
+            evaluation_cycle_id=cycle_id,
+            symbol="NVDA",
+            instrument_id="NVDA",
+            cycle_type="EXPLICIT_USER_REQUEST",
+            population_sampling_mode="USER_SELECTED",
+            evidence_origin="NATURAL_PRODUCTION",
+            scope_status="IN_SCOPE",
+            decision_state="HOLD",
+            actionability_state="NON_ACTIONABLE",
+            confluence_score=75.0,
+            rejection_reason={"isRejected": True, "firstBindingRuleId": None, "firstBindingRuleCategory": None, "primaryReasonText": "NONE", "allExecutedFailedRuleIds": []},
+        )
+        assert initial_res["success"] is True
+        dec_id = initial_res["decision_id"]
+
+        # Concurrently dispatch 10 attempts for the same decision_id
+        def record_attempt(thread_idx):
+            return capture_engine.record_decision_event(
+                evaluation_cycle_id=cycle_id,
+                symbol="NVDA",
+                instrument_id="NVDA",
+                cycle_type="EXPLICIT_USER_REQUEST",
+                population_sampling_mode="USER_SELECTED",
+                evidence_origin="NATURAL_PRODUCTION",
+                scope_status="IN_SCOPE",
+                decision_state="HOLD",
+                actionability_state="NON_ACTIONABLE",
+                confluence_score=75.0,
+                rejection_reason={"isRejected": True, "firstBindingRuleId": None, "firstBindingRuleCategory": None, "primaryReasonText": f"THREAD_{thread_idx}", "allExecutedFailedRuleIds": []},
+            )
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(record_attempt, i) for i in range(10)]
+            results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+        for res in results:
+            assert res["success"] is True, f"Concurrent attempt failed: {res.get('error')}"
+            assert res["decision_id"] == dec_id
+            assert res["is_retry"] is True
+
+        conn = capture_engine.db.get_connection()
+        try:
+            # Exactly 1 decision event preserved
+            cur = conn.execute("SELECT COUNT(*) FROM prospective_decision_events WHERE decision_id = ?", (dec_id,))
+            assert cur.fetchone()[0] == 1
+
+            # Exactly 11 attempts (1 initial + 10 concurrent)
+            cur_att = conn.execute(
+                "SELECT evaluation_attempt_id, attempt_number FROM prospective_evaluation_attempts WHERE decision_id = ? ORDER BY attempt_number",
+                (dec_id,),
+            )
+            attempts = cur_att.fetchall()
+            assert len(attempts) == 11
+            attempt_numbers = [row["attempt_number"] for row in attempts]
+            assert attempt_numbers == list(range(1, 12))
+
+            # All attempt IDs are unique and non-empty
+            attempt_ids = [row["evaluation_attempt_id"] for row in attempts]
+            assert len(set(attempt_ids)) == 11
+        finally:
+            conn.close()
+
+    def test_19_concurrent_fresh_decision_capture(self, capture_engine):
+        """Scenario 19:
+        Verifies that multiple concurrent threads attempting to record the initial decision event
+        for the same symbol/cycle concurrently serialize safely: 1 creates the decision event,
+        the remaining cleanly record forensic retry attempts with zero unhandled UNIQUE errors.
+        """
+        import concurrent.futures
+
+        cycle = capture_engine.create_or_get_evaluation_cycle(
+            cycle_type="EXPLICIT_USER_REQUEST",
+            universe_version="2026.1",
+        )
+        cycle_id = cycle["evaluation_cycle_id"]
+
+        def record_fresh(thread_idx):
+            return capture_engine.record_decision_event(
+                evaluation_cycle_id=cycle_id,
+                symbol="AAPL",
+                instrument_id="AAPL",
+                cycle_type="EXPLICIT_USER_REQUEST",
+                population_sampling_mode="USER_SELECTED",
+                evidence_origin="NATURAL_PRODUCTION",
+                scope_status="IN_SCOPE",
+                decision_state="HOLD",
+                actionability_state="NON_ACTIONABLE",
+                confluence_score=80.0,
+                rejection_reason={"isRejected": True, "firstBindingRuleId": None, "firstBindingRuleCategory": None, "primaryReasonText": f"FRESH_THREAD_{thread_idx}", "allExecutedFailedRuleIds": []},
+            )
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(record_fresh, i) for i in range(8)]
+            results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+        for res in results:
+            assert res["success"] is True, f"Concurrent fresh record failed: {res.get('error')}"
+
+        dec_ids = {res["decision_id"] for res in results}
+        assert len(dec_ids) == 1
+        dec_id = dec_ids.pop()
+
+        conn = capture_engine.db.get_connection()
+        try:
+            cur = conn.execute("SELECT COUNT(*) FROM prospective_decision_events WHERE decision_id = ?", (dec_id,))
+            assert cur.fetchone()[0] == 1
+
+            cur_att = conn.execute(
+                "SELECT evaluation_attempt_id, attempt_number FROM prospective_evaluation_attempts WHERE decision_id = ? ORDER BY attempt_number",
+                (dec_id,),
+            )
+            attempts = cur_att.fetchall()
+            assert len(attempts) == 8
+            attempt_numbers = [row["attempt_number"] for row in attempts]
+            assert attempt_numbers == list(range(1, 9))
+            attempt_ids = [row["evaluation_attempt_id"] for row in attempts]
+            assert len(set(attempt_ids)) == 8
+        finally:
+            conn.close()
+

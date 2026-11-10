@@ -463,65 +463,74 @@ class ProspectiveDecisionCaptureEngine:
             )
 
         conn = self.db.get_connection()
+        conn.isolation_level = None
         try:
-            with conn:
-                cur = conn.execute(
-                    """
-                    SELECT evaluation_cycle_id, cycle_type, cycle_started_at_utc,
-                           cycle_completed_at_utc, universe_version, universe_snapshot_id,
-                           engine_version, engine_sha, expected_evaluations_count,
-                           completed_evaluations_count, failed_before_model_evaluations_count,
-                           failed_during_model_evaluations_count, missing_evaluations_count,
-                           created_at_utc
-                    FROM prospective_evaluation_cycles
-                    WHERE evaluation_cycle_id = ?
-                    """,
-                    (evaluation_cycle_id,),
-                )
-                row = cur.fetchone()
-                if row:
-                    return dict(row)
+            conn.execute("BEGIN IMMEDIATE;")
+            cur = conn.execute(
+                """
+                SELECT evaluation_cycle_id, cycle_type, cycle_started_at_utc,
+                       cycle_completed_at_utc, universe_version, universe_snapshot_id,
+                       engine_version, engine_sha, expected_evaluations_count,
+                       completed_evaluations_count, failed_before_model_evaluations_count,
+                       failed_during_model_evaluations_count, missing_evaluations_count,
+                       created_at_utc
+                FROM prospective_evaluation_cycles
+                WHERE evaluation_cycle_id = ?
+                """,
+                (evaluation_cycle_id,),
+            )
+            row = cur.fetchone()
+            if row:
+                conn.execute("COMMIT;")
+                return dict(row)
 
-                conn.execute(
-                    """
-                    INSERT INTO prospective_evaluation_cycles (
-                        evaluation_cycle_id, cycle_type, cycle_started_at_utc,
-                        universe_version, universe_snapshot_id, engine_version,
-                        engine_sha, expected_evaluations_count, completed_evaluations_count,
-                        failed_before_model_evaluations_count, failed_during_model_evaluations_count,
-                        missing_evaluations_count, created_at_utc
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, ?)
-                    """,
-                    (
-                        evaluation_cycle_id,
-                        cycle_type,
-                        cycle_started,
-                        universe_version,
-                        universe_snapshot_id,
-                        engine_version,
-                        engine_sha,
-                        now_utc,
-                    ),
-                )
+            conn.execute(
+                """
+                INSERT INTO prospective_evaluation_cycles (
+                    evaluation_cycle_id, cycle_type, cycle_started_at_utc,
+                    universe_version, universe_snapshot_id, engine_version,
+                    engine_sha, expected_evaluations_count, completed_evaluations_count,
+                    failed_before_model_evaluations_count, failed_during_model_evaluations_count,
+                    missing_evaluations_count, created_at_utc
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, ?)
+                """,
+                (
+                    evaluation_cycle_id,
+                    cycle_type,
+                    cycle_started,
+                    universe_version,
+                    universe_snapshot_id,
+                    engine_version,
+                    engine_sha,
+                    now_utc,
+                ),
+            )
+            conn.execute("COMMIT;")
 
-                created_record = {
-                    "evaluation_cycle_id": evaluation_cycle_id,
-                    "cycle_type": cycle_type,
-                    "cycle_started_at_utc": cycle_started,
-                    "cycle_completed_at_utc": None,
-                    "universe_version": universe_version,
-                    "universe_snapshot_id": universe_snapshot_id,
-                    "engine_version": engine_version,
-                    "engine_sha": engine_sha,
-                    "expected_evaluations_count": 0,
-                    "completed_evaluations_count": 0,
-                    "failed_before_model_evaluations_count": 0,
-                    "failed_during_model_evaluations_count": 0,
-                    "missing_evaluations_count": 0,
-                    "created_at_utc": now_utc,
-                }
-                self._append_recovery_stream("EVALUATION_CYCLE_CREATED", created_record)
-                return created_record
+            created_record = {
+                "evaluation_cycle_id": evaluation_cycle_id,
+                "cycle_type": cycle_type,
+                "cycle_started_at_utc": cycle_started,
+                "cycle_completed_at_utc": None,
+                "universe_version": universe_version,
+                "universe_snapshot_id": universe_snapshot_id,
+                "engine_version": engine_version,
+                "engine_sha": engine_sha,
+                "expected_evaluations_count": 0,
+                "completed_evaluations_count": 0,
+                "failed_before_model_evaluations_count": 0,
+                "failed_during_model_evaluations_count": 0,
+                "missing_evaluations_count": 0,
+                "created_at_utc": now_utc,
+            }
+            self._append_recovery_stream("EVALUATION_CYCLE_CREATED", created_record)
+            return created_record
+        except Exception:
+            try:
+                conn.execute("ROLLBACK;")
+            except Exception:
+                pass
+            raise
         finally:
             conn.close()
 
@@ -617,60 +626,69 @@ class ProspectiveDecisionCaptureEngine:
         current_plan_hash = compute_trade_plan_hash(trade_plan)
 
         conn = self.db.get_connection()
+        conn.isolation_level = None
         try:
-            with conn:
-                cur = conn.execute(
-                    """
-                    SELECT episode_id, episode_start_utc, episode_status,
-                           sessions_observed_count, initial_trade_plan_hash
-                    FROM prospective_episodes
-                    WHERE symbol = ? AND episode_status = 'ACTIVE_CONTINUATION'
-                    ORDER BY created_at_utc DESC LIMIT 1
-                    """,
-                    (symbol,),
-                )
-                existing = cur.fetchone()
+            conn.execute("BEGIN IMMEDIATE;")
+            cur = conn.execute(
+                """
+                SELECT episode_id, episode_start_utc, episode_status,
+                       sessions_observed_count, initial_trade_plan_hash
+                FROM prospective_episodes
+                WHERE symbol = ? AND episode_status = 'ACTIVE_CONTINUATION'
+                ORDER BY created_at_utc DESC LIMIT 1
+                """,
+                (symbol,),
+            )
+            existing = cur.fetchone()
 
-                if existing:
-                    # Check if trade plan price levels altered
-                    if existing["initial_trade_plan_hash"] != current_plan_hash and current_plan_hash != "NO_TRADE_PLAN":
-                        # Invalidate existing episode as RESET_PRICE_LEVEL_ALTERED
-                        conn.execute(
-                            """
-                            UPDATE prospective_episodes
-                            SET episode_status = 'RESET_PRICE_LEVEL_ALTERED',
-                                episode_last_evaluated_utc = ?
-                            WHERE episode_id = ?
-                            """,
-                            (now_utc, existing["episode_id"]),
-                        )
-                    else:
-                        # Continue existing episode
-                        new_count = existing["sessions_observed_count"] + 1
-                        conn.execute(
-                            """
-                            UPDATE prospective_episodes
-                            SET sessions_observed_count = ?,
-                                episode_last_evaluated_utc = ?
-                            WHERE episode_id = ?
-                            """,
-                            (new_count, now_utc, existing["episode_id"]),
-                        )
-                        return existing["episode_id"]
+            if existing:
+                # Check if trade plan price levels altered
+                if existing["initial_trade_plan_hash"] != current_plan_hash and current_plan_hash != "NO_TRADE_PLAN":
+                    # Invalidate existing episode as RESET_PRICE_LEVEL_ALTERED
+                    conn.execute(
+                        """
+                        UPDATE prospective_episodes
+                        SET episode_status = 'RESET_PRICE_LEVEL_ALTERED',
+                            episode_last_evaluated_utc = ?
+                        WHERE episode_id = ?
+                        """,
+                        (now_utc, existing["episode_id"]),
+                    )
+                else:
+                    # Continue existing episode
+                    new_count = existing["sessions_observed_count"] + 1
+                    conn.execute(
+                        """
+                        UPDATE prospective_episodes
+                        SET sessions_observed_count = ?,
+                            episode_last_evaluated_utc = ?
+                        WHERE episode_id = ?
+                        """,
+                        (new_count, now_utc, existing["episode_id"]),
+                    )
+                    conn.execute("COMMIT;")
+                    return existing["episode_id"]
 
-                # Create fresh episode
-                ep_id = compute_episode_id(symbol, now_utc, current_plan_hash)
-                conn.execute(
-                    """
-                    INSERT INTO prospective_episodes (
-                        episode_id, symbol, episode_start_utc, episode_last_evaluated_utc,
-                        episode_status, sessions_observed_count, initial_trade_plan_hash,
-                        created_at_utc
-                    ) VALUES (?, ?, ?, ?, 'ACTIVE_CONTINUATION', 1, ?, ?)
-                    """,
-                    (ep_id, symbol, now_utc, now_utc, current_plan_hash, now_utc),
-                )
-                return ep_id
+            # Create fresh episode
+            ep_id = compute_episode_id(symbol, now_utc, current_plan_hash)
+            conn.execute(
+                """
+                INSERT INTO prospective_episodes (
+                    episode_id, symbol, episode_start_utc, episode_last_evaluated_utc,
+                    episode_status, sessions_observed_count, initial_trade_plan_hash,
+                    created_at_utc
+                ) VALUES (?, ?, ?, ?, 'ACTIVE_CONTINUATION', 1, ?, ?)
+                """,
+                (ep_id, symbol, now_utc, now_utc, current_plan_hash, now_utc),
+            )
+            conn.execute("COMMIT;")
+            return ep_id
+        except Exception:
+            try:
+                conn.execute("ROLLBACK;")
+            except Exception:
+                pass
+            raise
         finally:
             conn.close()
 
@@ -778,215 +796,232 @@ class ProspectiveDecisionCaptureEngine:
             )
 
             conn = self.db.get_connection()
+            conn.isolation_level = None
             try:
-                with conn:
-                    # Check if decision_id already exists (RETRY ADVERSARIAL TEST A)
-                    cur = conn.execute(
-                        "SELECT decision_id, current_attempt_id, attempt_count FROM prospective_decision_events WHERE decision_id = ?",
-                        (dec_id,),
-                    )
-                    existing = cur.fetchone()
+                conn.execute("BEGIN IMMEDIATE;")
+                # Check if decision_id already exists (RETRY ADVERSARIAL TEST A)
+                cur = conn.execute(
+                    "SELECT decision_id, current_attempt_id, attempt_count FROM prospective_decision_events WHERE decision_id = ?",
+                    (dec_id,),
+                )
+                existing = cur.fetchone()
 
-                    if existing:
-                        # Existing decision event found!
-                        # Do NOT mutate prospective_decision_events (prohibited by immutability trigger).
-                        # Insert a new attempt record into prospective_evaluation_attempts.
+                if existing:
+                    # Existing decision event found!
+                    # Do NOT mutate prospective_decision_events (prohibited by immutability trigger).
+                    # Insert a new attempt record into prospective_evaluation_attempts.
+                    max_attempts_retries = 5
+                    new_attempt_number = None
+                    new_attempt_id = None
+                    for _ in range(max_attempts_retries):
                         cur_attempts = conn.execute(
-                            "SELECT COUNT(*) FROM prospective_evaluation_attempts WHERE decision_id = ?",
+                            "SELECT COALESCE(MAX(attempt_number), 0) FROM prospective_evaluation_attempts WHERE decision_id = ?",
                             (dec_id,),
                         )
-                        prior_attempts_count = cur_attempts.fetchone()[0]
-                        new_attempt_number = prior_attempts_count + 1
+                        prior_max_attempt = cur_attempts.fetchone()[0]
+                        new_attempt_number = prior_max_attempt + 1
                         new_attempt_id = compute_attempt_id(dec_id, new_attempt_number)
 
+                        try:
+                            conn.execute(
+                                """
+                                INSERT INTO prospective_evaluation_attempts (
+                                    evaluation_attempt_id, decision_id, evaluation_cycle_id,
+                                    attempt_number, attempt_started_at_utc, attempt_completed_at_utc,
+                                    attempt_status, failure_details
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                """,
+                                (
+                                    new_attempt_id,
+                                    dec_id,
+                                    evaluation_cycle_id,
+                                    new_attempt_number,
+                                    started_at,
+                                    completed_at,
+                                    attempt_status,
+                                    attempt_failure_details,
+                                ),
+                            )
+                            break
+                        except sqlite3.IntegrityError as ie:
+                            if "evaluation_attempt_id" in str(ie) or "UNIQUE" in str(ie):
+                                continue
+                            raise
+                    else:
+                        raise RuntimeError(f"Failed to allocate unique evaluation_attempt_id for {dec_id} after {max_attempts_retries} attempts")
+
+                    conn.execute("COMMIT;")
+
+                    retry_payload = {
+                        "decision_id": dec_id,
+                        "evaluation_attempt_id": new_attempt_id,
+                        "attempt_number": new_attempt_number,
+                        "attempt_status": attempt_status,
+                        "is_retry": True,
+                    }
+                    self._append_recovery_stream("EVALUATION_ATTEMPT_RECORDED", retry_payload)
+                    return {
+                        "decision_id": dec_id,
+                        "attempt_id": new_attempt_id,
+                        "attempt_number": new_attempt_number,
+                        "empirical_certification_state": cert_state,
+                        "is_retry": True,
+                        "success": True,
+                    }
+
+                # Fresh Decision Event
+                att_id = compute_attempt_id(dec_id, 1)
+
+                first_rule_id = rejection_reason.get("firstBindingRuleId")
+                first_rule_cat = rejection_reason.get("firstBindingRuleCategory")
+
+                rejection_json = json.dumps(rejection_reason, sort_keys=True)
+                trade_plan_json = json.dumps(trade_plan_state, sort_keys=True) if trade_plan_state else None
+                infra_json = json.dumps(infrastructure_failure, sort_keys=True) if infrastructure_failure else None
+
+                conn.execute(
+                    """
+                    INSERT INTO prospective_decision_events (
+                        decision_id, evaluation_cycle_id, current_attempt_id,
+                        attempt_count, episode_id, symbol, instrument_id, cycle_type,
+                        population_sampling_mode, evidence_origin, scope_status,
+                        evaluation_completion_state, empirical_certification_state,
+                        eligible_for_decision_quality, eligible_for_coverage_analysis,
+                        eligible_for_ranking_analysis, eligible_for_opportunity_capture,
+                        evaluation_started_at_utc, evaluation_completed_at_utc,
+                        capture_written_at_utc, market_session, engine_version,
+                        engine_sha, decision_engine_sha, decision_schema_version,
+                        config_hash, universe_version, universe_snapshot_id,
+                        data_provider, provider_source_timestamp_utc,
+                        ingestion_timestamp_utc, freshness_status, market_regime,
+                        decision_state, actionability_state, confluence_score,
+                        cross_sectional_rank, cross_sectional_population_size,
+                        first_binding_rule_id, first_binding_rule_category,
+                        rejection_reason_json, trade_plan_json, infrastructure_failure_json,
+                        created_at_utc
+                    ) VALUES (
+                        ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    )
+                    """,
+                    (
+                        dec_id,
+                        evaluation_cycle_id,
+                        att_id,
+                        active_episode_id,
+                        symbol,
+                        instrument_id,
+                        cycle_type,
+                        population_sampling_mode,
+                        origin,
+                        scope_status,
+                        evaluation_completion_state,
+                        cert_state,
+                        eligible_quality,
+                        eligible_coverage,
+                        eligible_ranking,
+                        eligible_opportunity,
+                        started_at,
+                        completed_at,
+                        now_utc,
+                        market_session,
+                        engine_version,
+                        engine_sha,
+                        decision_engine_sha,
+                        decision_schema_version,
+                        config_hash,
+                        universe_version,
+                        universe_snapshot_id,
+                        data_provider,
+                        src_ts,
+                        ingest_ts,
+                        freshness_status,
+                        market_regime,
+                        decision_state,
+                        actionability_state,
+                        confluence_score,
+                        cross_sectional_rank,
+                        cross_sectional_population_size,
+                        first_rule_id,
+                        first_rule_cat,
+                        rejection_json,
+                        trade_plan_json,
+                        infra_json,
+                        now_utc,
+                    ),
+                )
+
+                # Initial Attempt Record
+                conn.execute(
+                    """
+                    INSERT INTO prospective_evaluation_attempts (
+                        evaluation_attempt_id, decision_id, evaluation_cycle_id,
+                        attempt_number, attempt_started_at_utc, attempt_completed_at_utc,
+                        attempt_status, failure_details
+                    ) VALUES (?, ?, ?, 1, ?, ?, ?, ?)
+                    """,
+                    (
+                        att_id,
+                        dec_id,
+                        evaluation_cycle_id,
+                        started_at,
+                        completed_at,
+                        attempt_status,
+                        attempt_failure_details,
+                    ),
+                )
+
+                # Feature Snapshot if present
+                if features:
+                    feat_json = json.dumps(features, sort_keys=True)
+                    feat_hash = hashlib.sha256(feat_json.encode("utf-8")).hexdigest()
+                    conn.execute(
+                        """
+                        INSERT OR REPLACE INTO prospective_feature_snapshots (
+                            decision_id, feature_snapshot_hash, timestamp_utc, features_json
+                        ) VALUES (?, ?, ?, ?)
+                        """,
+                        (dec_id, feat_hash, started_at, feat_json),
+                    )
+
+                # Rule Evaluations if present
+                if rule_evaluations:
+                    for rule in rule_evaluations:
                         conn.execute(
                             """
-                            INSERT INTO prospective_evaluation_attempts (
-                                evaluation_attempt_id, decision_id, evaluation_cycle_id,
-                                attempt_number, attempt_started_at_utc, attempt_completed_at_utc,
-                                attempt_status, failure_details
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO prospective_rule_evaluations (
+                                decision_id, rule_id, rule_version, rule_category,
+                                actual_execution_order, evaluation_state,
+                                input_values_json, threshold_value, is_binding,
+                                failure_message
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                             """,
                             (
-                                new_attempt_id,
                                 dec_id,
-                                evaluation_cycle_id,
-                                new_attempt_number,
-                                started_at,
-                                completed_at,
-                                attempt_status,
-                                attempt_failure_details,
+                                rule["ruleId"],
+                                rule.get("ruleVersion", "1.0.0"),
+                                rule["ruleCategory"],
+                                rule["actualExecutionOrder"],
+                                rule["evaluationState"],
+                                json.dumps(rule.get("inputValues", {}), sort_keys=True),
+                                str(rule.get("thresholdValue")) if rule.get("thresholdValue") is not None else None,
+                                1 if rule.get("isBinding", False) else 0,
+                                rule.get("failureMessage"),
                             ),
                         )
 
-                        retry_payload = {
-                            "decision_id": dec_id,
-                            "evaluation_attempt_id": new_attempt_id,
-                            "attempt_number": new_attempt_number,
-                            "attempt_status": attempt_status,
-                            "is_retry": True,
-                        }
-                        self._append_recovery_stream("EVALUATION_ATTEMPT_RECORDED", retry_payload)
-                        return {
-                            "decision_id": dec_id,
-                            "attempt_id": new_attempt_id,
-                            "attempt_number": new_attempt_number,
-                            "empirical_certification_state": cert_state,
-                            "is_retry": True,
-                            "success": True,
-                        }
+                # Update reconciliation state in prospective_expected_evaluations
+                conn.execute(
+                    """
+                    UPDATE prospective_expected_evaluations
+                    SET terminal_reconciliation_state = ?,
+                        decision_id = ?
+                    WHERE evaluation_cycle_id = ? AND symbol = ?
+                    """,
+                    (evaluation_completion_state, dec_id, evaluation_cycle_id, symbol),
+                )
 
-                    # Fresh Decision Event
-                    att_id = compute_attempt_id(dec_id, 1)
-
-                    first_rule_id = rejection_reason.get("firstBindingRuleId")
-                    first_rule_cat = rejection_reason.get("firstBindingRuleCategory")
-
-                    rejection_json = json.dumps(rejection_reason, sort_keys=True)
-                    trade_plan_json = json.dumps(trade_plan_state, sort_keys=True) if trade_plan_state else None
-                    infra_json = json.dumps(infrastructure_failure, sort_keys=True) if infrastructure_failure else None
-
-                    conn.execute(
-                        """
-                        INSERT INTO prospective_decision_events (
-                            decision_id, evaluation_cycle_id, current_attempt_id,
-                            attempt_count, episode_id, symbol, instrument_id, cycle_type,
-                            population_sampling_mode, evidence_origin, scope_status,
-                            evaluation_completion_state, empirical_certification_state,
-                            eligible_for_decision_quality, eligible_for_coverage_analysis,
-                            eligible_for_ranking_analysis, eligible_for_opportunity_capture,
-                            evaluation_started_at_utc, evaluation_completed_at_utc,
-                            capture_written_at_utc, market_session, engine_version,
-                            engine_sha, decision_engine_sha, decision_schema_version,
-                            config_hash, universe_version, universe_snapshot_id,
-                            data_provider, provider_source_timestamp_utc,
-                            ingestion_timestamp_utc, freshness_status, market_regime,
-                            decision_state, actionability_state, confluence_score,
-                            cross_sectional_rank, cross_sectional_population_size,
-                            first_binding_rule_id, first_binding_rule_category,
-                            rejection_reason_json, trade_plan_json, infrastructure_failure_json,
-                            created_at_utc
-                        ) VALUES (
-                            ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                        )
-                        """,
-                        (
-                            dec_id,
-                            evaluation_cycle_id,
-                            att_id,
-                            active_episode_id,
-                            symbol,
-                            instrument_id,
-                            cycle_type,
-                            population_sampling_mode,
-                            origin,
-                            scope_status,
-                            evaluation_completion_state,
-                            cert_state,
-                            eligible_quality,
-                            eligible_coverage,
-                            eligible_ranking,
-                            eligible_opportunity,
-                            started_at,
-                            completed_at,
-                            now_utc,
-                            market_session,
-                            engine_version,
-                            engine_sha,
-                            decision_engine_sha,
-                            decision_schema_version,
-                            config_hash,
-                            universe_version,
-                            universe_snapshot_id,
-                            data_provider,
-                            src_ts,
-                            ingest_ts,
-                            freshness_status,
-                            market_regime,
-                            decision_state,
-                            actionability_state,
-                            confluence_score,
-                            cross_sectional_rank,
-                            cross_sectional_population_size,
-                            first_rule_id,
-                            first_rule_cat,
-                            rejection_json,
-                            trade_plan_json,
-                            infra_json,
-                            now_utc,
-                        ),
-                    )
-
-                    # Initial Attempt Record
-                    conn.execute(
-                        """
-                        INSERT INTO prospective_evaluation_attempts (
-                            evaluation_attempt_id, decision_id, evaluation_cycle_id,
-                            attempt_number, attempt_started_at_utc, attempt_completed_at_utc,
-                            attempt_status, failure_details
-                        ) VALUES (?, ?, ?, 1, ?, ?, ?, ?)
-                        """,
-                        (
-                            att_id,
-                            dec_id,
-                            evaluation_cycle_id,
-                            started_at,
-                            completed_at,
-                            attempt_status,
-                            attempt_failure_details,
-                        ),
-                    )
-
-                    # Feature Snapshot if present
-                    if features:
-                        feat_json = json.dumps(features, sort_keys=True)
-                        feat_hash = hashlib.sha256(feat_json.encode("utf-8")).hexdigest()
-                        conn.execute(
-                            """
-                            INSERT OR REPLACE INTO prospective_feature_snapshots (
-                                decision_id, feature_snapshot_hash, timestamp_utc, features_json
-                            ) VALUES (?, ?, ?, ?)
-                            """,
-                            (dec_id, feat_hash, started_at, feat_json),
-                        )
-
-                    # Rule Evaluations if present
-                    if rule_evaluations:
-                        for rule in rule_evaluations:
-                            conn.execute(
-                                """
-                                INSERT INTO prospective_rule_evaluations (
-                                    decision_id, rule_id, rule_version, rule_category,
-                                    actual_execution_order, evaluation_state,
-                                    input_values_json, threshold_value, is_binding,
-                                    failure_message
-                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                """,
-                                (
-                                    dec_id,
-                                    rule["ruleId"],
-                                    rule.get("ruleVersion", "1.0.0"),
-                                    rule["ruleCategory"],
-                                    rule["actualExecutionOrder"],
-                                    rule["evaluationState"],
-                                    json.dumps(rule.get("inputValues", {}), sort_keys=True),
-                                    str(rule.get("thresholdValue")) if rule.get("thresholdValue") is not None else None,
-                                    1 if rule.get("isBinding", False) else 0,
-                                    rule.get("failureMessage"),
-                                ),
-                            )
-
-                    # Update reconciliation state in prospective_expected_evaluations
-                    conn.execute(
-                        """
-                        UPDATE prospective_expected_evaluations
-                        SET terminal_reconciliation_state = ?,
-                            decision_id = ?
-                        WHERE evaluation_cycle_id = ? AND symbol = ?
-                        """,
-                        (evaluation_completion_state, dec_id, evaluation_cycle_id, symbol),
-                    )
+                conn.execute("COMMIT;")
 
                 # Write to append-only JSONL recovery stream
                 self._append_recovery_stream(
@@ -1013,6 +1048,12 @@ class ProspectiveDecisionCaptureEngine:
                     "is_retry": False,
                     "success": True,
                 }
+            except Exception:
+                try:
+                    conn.execute("ROLLBACK;")
+                except Exception:
+                    pass
+                raise
             finally:
                 conn.close()
 
