@@ -1,0 +1,32 @@
+name: SM-ACT-020 Backup-Only Runner Regression
+
+'on':
+  pull_request:
+    branches: [release/production]
+    paths:
+      - 'analyst_dashboard/smart_money/storage/backup/backup_once.py'
+      - 'tests/test_sm_act_020_backup_only_runner.py'
+      - '.github/workflows/sm-act-020-backup-only.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup_only_fail_closed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated testing dependencies
+        run: python -m pip install pytest psycopg2-binary boto3
+      - name: Syntax check
+        run: python -m py_compile analyst_dashboard/smart_money/storage/backup/backup_once.py tests/test_sm_act_020_backup_only_runner.py
+      - name: Run synthetic fail-closed regression without production credentials
+        env:
+          ARX_BACKUP_ONESHOT_AUTHORIZED: 'false'
+          ARX_SEC_EGRESS_ROLE: 'DISABLED'
+        run: python -m pytest -q tests/test_sm_act_020_backup_only_runner.py
