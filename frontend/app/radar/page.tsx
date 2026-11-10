@@ -24,7 +24,6 @@ import { MASTER_ASSET_CATALOG } from '../../lib/masterCatalog';
 import { usePortfolioContext, OwnershipFilter } from '../../hooks/usePortfolioContext';
 import { RadarPortfolioBadge } from '../../components/radar/RadarPortfolioBadge';
 import { ExecutionStatus } from '../../types/decisionContract';
-import SynthesisGuideBanner from '../../components/synthesis/SynthesisGuideBanner';
 import SynthesisMobileDock from '../../components/synthesis/SynthesisMobileDock';
 import { isCanonicalSecurityIdentifier, resolveCanonicalSecurity } from '../../lib/assetRegistry';
 
@@ -705,7 +704,6 @@ function RadarContent() {
           }}
         />
 
-        <SynthesisGuideBanner />
 
         {/* Loading Indicator */}
         {isLoading && (

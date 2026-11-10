@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import React, { useState } from "react";
+import { ShieldCheck } from "lucide-react";
 import {
   evaluatePreFlightChecks,
   PreFlightChecklistInputs,
@@ -242,7 +243,8 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
               onClick={onOpenModal}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/80 transition-colors cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
             >
-              <span>✈️ Full Checklist & Plan</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span>Pre-Flight Checklist & Plan</span>
             </button>
           )}
         </div>

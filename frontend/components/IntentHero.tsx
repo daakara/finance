@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Search, LineChart, Target, ShieldCheck } from "lucide-react";
 
 interface IntentHeroProps {
   onSelectSymbol?: (sym: string) => void;
@@ -48,8 +49,8 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
         >
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-lg sm:text-2xl">🔎</span>
-              <span className="text-[9px] sm:text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/50 px-1.5 py-0.5 rounded">
+              <Search className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/70 border border-cyan-800/60 px-2 py-0.5 rounded">
                 Step 1
               </span>
             </div>
@@ -57,12 +58,12 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
               <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
                 Find opportunities
               </h3>
-              <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed pt-0.5">
+              <p className="text-xs text-slate-400 leading-relaxed pt-0.5">
                 Scan setups, compounders, and value candidates
               </p>
             </div>
           </div>
-          <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
+          <span className="text-xs font-mono text-slate-400 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
             Radar
           </span>
         </Link>
@@ -75,8 +76,8 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
         >
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-lg sm:text-2xl">📊</span>
-              <span className="text-[9px] sm:text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/50 px-1.5 py-0.5 rounded">
+              <LineChart className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/70 border border-cyan-800/60 px-2 py-0.5 rounded">
                 Step 2
               </span>
             </div>
@@ -84,12 +85,12 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
               <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
                 Understand one
               </h3>
-              <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed pt-0.5">
+              <p className="text-xs text-slate-400 leading-relaxed pt-0.5">
                 Confluence, thesis health, and invalidation levels
               </p>
             </div>
           </div>
-          <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2 w-full">
+          <span className="text-xs font-mono text-slate-400 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2 w-full">
             Analysis
           </span>
         </button>
@@ -101,8 +102,8 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
         >
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-lg sm:text-2xl">🎯</span>
-              <span className="text-[9px] sm:text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/50 px-1.5 py-0.5 rounded">
+              <Target className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/70 border border-cyan-800/60 px-2 py-0.5 rounded">
                 Step 3
               </span>
             </div>
@@ -110,12 +111,12 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
               <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
                 Decide whether/how
               </h3>
-              <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed pt-0.5">
+              <p className="text-xs text-slate-400 leading-relaxed pt-0.5">
                 Position sizing, entry rules, and risk parameters
               </p>
             </div>
           </div>
-          <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
+          <span className="text-xs font-mono text-slate-400 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
             Trade Plan
           </span>
         </Link>
@@ -127,8 +128,8 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
         >
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-lg sm:text-2xl">🛡️</span>
-              <span className="text-[9px] sm:text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/50 px-1.5 py-0.5 rounded">
+              <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/70 border border-cyan-800/60 px-2 py-0.5 rounded">
                 Step 4
               </span>
             </div>
@@ -136,12 +137,12 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
               <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
                 Manage what I own
               </h3>
-              <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed pt-0.5">
+              <p className="text-xs text-slate-400 leading-relaxed pt-0.5">
                 Concentration, VaR, and cash reserve monitoring
               </p>
             </div>
           </div>
-          <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
+          <span className="text-xs font-mono text-slate-400 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
             Portfolio
           </span>
         </Link>

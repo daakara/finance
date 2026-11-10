@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ShieldCheck } from "lucide-react";
 import {
   DecisionReadinessResult,
   DecisionReadinessGate,
@@ -99,7 +100,6 @@ export default function DecisionReadinessCard({
       <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 border-b border-[#1b263b] pb-1.5 sm:pb-3">
         <div className="space-y-0.5">
           <div className="flex items-center space-x-1.5 sm:space-x-2">
-            <span className="text-sm sm:text-base" aria-hidden="true">🚦</span>
             <h3 id="readiness-heading" className="text-xs sm:text-sm font-bold tracking-tight text-white uppercase font-mono">
               Decision Readiness Progression
             </h3>
@@ -271,7 +271,7 @@ export default function DecisionReadinessCard({
               data-testid="readiness-preflight-btn"
               className="min-h-[44px] px-3 py-2 rounded-lg text-xs font-bold transition-all border border-slate-700 bg-slate-800/60 hover:bg-slate-700 text-slate-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
             >
-              <span>✈️ Pre-Flight</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Pre-Flight</span>
             </button>
           )}
 
