@@ -1,0 +1,32 @@
+name: SM-ACT-020 Worker Lock Health Regression
+
+on:
+  pull_request:
+    branches: [release/production]
+    paths:
+      - "analyst_dashboard/smart_money/worker.py"
+      - "tests/test_sm_act_020_owner_lock_health.py"
+      - ".github/workflows/sm-act-020-worker-lock-health.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  owner_lock_health:
+    name: SM-ACT-020 Isolated Owner Lock Health
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt pytest
+      - name: Syntax-check worker and regression
+        run: python -m py_compile analyst_dashboard/smart_money/worker.py tests/test_sm_act_020_owner_lock_health.py
+      - name: Run synthetic session and safety regression
+        run: python -m pytest tests/test_sm_act_020_owner_lock_health.py -q
