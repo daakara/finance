@@ -152,10 +152,10 @@ flowchart TD
 
 | Phase | Branch Target | Scope & Primary Deliverables | Status |
 | :---: | :---: | :--- | :---: |
-| **Phase 1** | `feat/ui-execution-presentation-consolidation` | **Execution Presentation Consolidation**: Unified `onOpenSizer` handler propagation, internal duplicate modal suppression, fallback prop correction, `min-h-[44px]` touch targets, and mobile container overflow protection. | **[PR #260](https://github.com/daakara/finance/pull/260) (Draft Opened)** |
+| **Phase 1** | `feat/ui-execution-presentation-consolidation` | **Execution Presentation Consolidation**: Unified `onOpenSizer` handler propagation, internal duplicate modal suppression, fallback prop correction, `min-h-[44px]` touch targets, and mobile container overflow protection. | **[PR #260](https://github.com/daakara/finance/pull/260) (Implemented - Commit `1cad6e5f`)** |
 | **Phase 2** | `feat/ui-execution-presentation-consolidation` | **De-Slop & Measured Accessibility**: Retire top onboarding banner across 4 hubs, sanitize decorative emojis with Lucide icons, normalize institutional nomenclature, and audit typography/touch targets. | **[PR #260](https://github.com/daakara/finance/pull/260) (Implemented - Commit `60f8cd13`)** |
-| **Phase 3** | `feat/ui-unified-risk-clearance` | **Risk Clearance Presentation**: Unified risk clearance deck, binary fail-closed status presentation, explicit operational holds (`HOLD_SEC_001`), and preservation of 9-domain provenance. | Scheduled |
-| **Phase 4** | `feat/ui-landing-route-decoupling` | **Landing Page Decoupling**: Implement approved landing architecture (Discovery-first vs Benchmark), eliminate silent `AAPL` default, and isolate deep-dive cockpit on `/?symbol=X`. | Scheduled |
+| **Phase 3** | `feat/ui-execution-presentation-consolidation` | **Governance & Unified Risk Clearance Presentation**: Three-tier separation (Data Availability vs Factor Confluence vs Execution Clearance), consolidated provenance & eligibility alert into `EvidenceDomainStatusCard`, fail-closed actionability (`isActionable = isExecutionReady && !hasActiveBlockers`), and verified 6 canonical decision states. | **[PR #260](https://github.com/daakara/finance/pull/260) (Implemented - Commit `fff7caeb`)** |
+| **Phase 4** | `feat/ui-execution-presentation-consolidation` | **Landing Page Decoupling**: Implement approved landing architecture (Discovery-first vs Benchmark), eliminate silent `AAPL` default, and isolate deep-dive cockpit on `/?symbol=X`. | Scheduled |
 
 ---
 
