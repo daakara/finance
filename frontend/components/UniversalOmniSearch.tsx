@@ -4,6 +4,7 @@ import { trackSearchResolve } from "../lib/matomo";
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 import { SHARED_WATCHLIST_ITEMS } from "../lib/constants";
 import { prefetchAssetAnalytics, SpotPriceRegistry } from "../lib/api";
 import { resolveAssetAlias } from "../lib/assetRegistry";
@@ -223,7 +224,8 @@ export default function UniversalOmniSearch() {
                     </div>
                     <div>
                       <div className="text-xs font-bold text-cyan-200 flex items-center gap-1.5">
-                        <span>💡 Did you mean:</span>
+                        <Search className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <span>Did you mean:</span>
                         <span className="text-white underline decoration-cyan-400">{aliasMatch.companyName}</span>
                       </div>
                       <div className="text-[10px] text-cyan-300/80 font-mono mt-0.5">

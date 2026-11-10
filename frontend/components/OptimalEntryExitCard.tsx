@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ShieldCheck, Scale, Bell, Briefcase } from "lucide-react";
 import { isUxReviewOnly } from "../lib/uxReviewBoundary";
 import { useUxReviewOnly } from "../hooks/useUxReviewOnly";
 import { OptimalExecutionPlan } from "../lib/api";
@@ -220,7 +221,7 @@ export default function OptimalEntryExitCard({
       >
         <div className="flex items-center space-x-2 text-[var(--text-muted)]">
           <span className="w-2 h-2 rounded-full bg-[var(--text-muted)]"></span>
-          <h3 className="text-sm font-bold text-[var(--text-1)]">🎯 {symbol} Execution Setup Unavailable</h3>
+          <h3 className="text-sm font-bold text-[var(--text-1)]">{symbol} Execution Setup Unavailable</h3>
         </div>
         <p className="text-xs text-[var(--text-2)] leading-relaxed">
           {entry_thesis || "Historical candlestick depth is insufficient (< 50 trading sessions) or asset identity is unverified. Under Phase 18 quantitative integrity invariants, the platform strictly refuses to synthesize hypothetical entry ranges, stop-loss levels, or asymmetric profit targets."}
@@ -443,7 +444,7 @@ export default function OptimalEntryExitCard({
               }`}
             ></span>
             <h3 className="text-sm sm:text-base font-bold text-[var(--text-1)] tracking-tight flex items-center gap-2">
-              <span>{isPlain ? `🎯 ${symbol} Conditional Trade Plan` : `🎯 ${symbol} Conditional Execution Ladder`}</span>
+              <span>{isPlain ? `${symbol} Conditional Trade Plan` : `${symbol} Conditional Execution Ladder`}</span>
             </h3>
           </div>
           <p className="text-xs text-[var(--text-2)] mt-0.5 font-normal hidden sm:block">
@@ -856,7 +857,7 @@ export default function OptimalEntryExitCard({
             onClick={() => onOpenPreFlight?.()}
             className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-emerald-600/20 hover:bg-emerald-500 hover:text-slate-950 border-emerald-500/60 text-emerald-300 flex items-center gap-1.5 shadow min-h-[44px]"
           >
-            <span>✈️</span>
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
             <span>Pre-Flight Checklist</span>
           </button>
 
@@ -865,7 +866,7 @@ export default function OptimalEntryExitCard({
             onClick={handleOpenSizer}
             className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300 flex items-center gap-1.5 shadow min-h-[44px]"
           >
-            <span>⚖️</span>
+            <Scale className="w-3.5 h-3.5 shrink-0" />
             <span>Size Position</span>
           </button>
 
@@ -874,7 +875,7 @@ export default function OptimalEntryExitCard({
             onClick={() => setIsAlertOpen(true)}
             className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-amber-600/20 hover:bg-amber-500 hover:text-slate-950 border-amber-500/50 text-amber-300 flex items-center gap-1.5 shadow min-h-[44px]"
           >
-            <span>🔔</span>
+            <Bell className="w-3.5 h-3.5 shrink-0" />
             <span>Set Trigger Alert</span>
           </button>
 
@@ -885,7 +886,7 @@ export default function OptimalEntryExitCard({
             title={reviewOnly ? "Owner review preview: paper recording is locked while financial authority is unresolved" : undefined}
             className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/50 text-indigo-300 flex items-center gap-1.5 shadow min-h-[44px]"
           >
-            <span>💼</span>
+            <Briefcase className="w-3.5 h-3.5 shrink-0" />
             <span>{logStatus ? logStatus : (isPlain ? "Add to Paper Portfolio" : "Log Plan to Portfolio")}</span>
           </button>
         </div>

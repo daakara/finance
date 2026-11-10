@@ -473,35 +473,35 @@ export default function StandardTerminalView({
                   onClick={onOpenSizer}
                   className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold font-mono rounded-xl text-xs transition-all active:scale-95 cursor-pointer shadow-md min-h-[44px]"
                 >
-                  ⚖️ Size Position (Buy Zone)
+                  Size Position (Buy Zone)
                 </button>
               ) : insight.terminalState.posture === "EXIT_REVIEW" ? (
                 <button
                   onClick={onOpenWhy}
                   className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold font-mono rounded-xl text-xs transition-all active:scale-95 cursor-pointer shadow-md min-h-[44px]"
                 >
-                  🚨 Review Invalidation & Exit Triggers
+                  Review Invalidation & Exit Triggers
                 </button>
               ) : insight.terminalState.posture === "RESEARCH" ? (
                 <button
                   onClick={onOpenWhy}
                   className="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold font-mono rounded-xl text-xs transition-all active:scale-95 cursor-pointer shadow-md min-h-[44px]"
                 >
-                  📋 Open Research & Evidence Ledger
+                  Open Research & Evidence Ledger
                 </button>
               ) : insight.terminalState.posture === "AVOID" ? (
                 <Link
                   href="/radar"
                   className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-[var(--text-1)] font-bold font-mono rounded-xl text-xs transition-all active:scale-95 block text-center shadow-md cursor-pointer min-h-[44px] flex items-center justify-center"
                 >
-                  🔎 Explore Screened Alternatives
+                  Explore Screened Alternatives
                 </Link>
               ) : (
                 <button
                   onClick={onOpenWhy}
                   className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold font-mono rounded-xl text-xs transition-all active:scale-95 cursor-pointer shadow-md min-h-[44px]"
                 >
-                  ⏳ Inspect Trigger & Milestone Criteria
+                  Inspect Trigger & Milestone Criteria
                 </button>
               )}
             </div>

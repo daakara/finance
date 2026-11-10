@@ -35,7 +35,6 @@ import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
 import { resolveAssetAlias, getCanonicalAssetName } from "../../lib/assetRegistry";
 import { trackMatomoEvent } from "../../lib/matomo";
 import MacroStressTestSimulator from "../../components/MacroStressTestSimulator";
-import SynthesisGuideBanner from "../../components/synthesis/SynthesisGuideBanner";
 import SynthesisMobileDock from "../../components/synthesis/SynthesisMobileDock";
 
 export default function PortfolioPage() {
@@ -623,7 +622,6 @@ export default function PortfolioPage() {
 
   return (
     <TerminalShell activeHub="portfolio" activeSymbol={activeSymbol}>
-      <SynthesisGuideBanner />
       <div role="region" aria-label="Portfolio Risk Ledger" className="max-w-[1450px] mx-auto p-4 sm:p-6 space-y-6 pb-28 sm:pb-8">
         {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC6, Finding T02) */}
         <PageIntro
