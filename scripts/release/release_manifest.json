@@ -3,13 +3,13 @@
   "base_anchor_commit": "ba041b6d4e764f6450acb111f09ad056ed45cbb8",
   "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-BACKUP-ONLY-RUNNER-OWNER-REVIEW-PENDING",
+  "directive": "ARX-SM-ACT-020-BACKUP-ONLY-RUNNER-OWNER-ADMITTED",
   "files": {
     "analyst_dashboard/smart_money/storage/backup/backup_once.py": {
       "operation": "A",
       "originating_pr_number": 257,
       "originating_commit": "3329db579007232356f86f8c92ec04260951fbb5",
-      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; RQ-02 owner admission pending",
+      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; owner admission https://github.com/daakara/finance/pull/257#issuecomment-6770042573",
       "sha256": "02038ce9ecfc076d4aeb0a8e8dbbd05c9a8fe4914d7511e4ea4dadc31fb49ca2",
       "size_bytes": 4121
     },
@@ -17,7 +17,7 @@
       "operation": "A",
       "originating_pr_number": 257,
       "originating_commit": "3329db579007232356f86f8c92ec04260951fbb5",
-      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; RQ-02 owner admission pending",
+      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; owner admission https://github.com/daakara/finance/pull/257#issuecomment-6770042573",
       "sha256": "7027b5f585276fbd4d5c6829ace0207e413ae4989e0cb3db5055e64b9a7a1633",
       "size_bytes": 6361
     },
@@ -25,7 +25,7 @@
       "operation": "A",
       "originating_pr_number": 257,
       "originating_commit": "3329db579007232356f86f8c92ec04260951fbb5",
-      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; RQ-02 owner admission pending",
+      "governing_requirement": "SM-ACT-020 Phase 3: scoped backup-only readiness, no SEC role promotion; owner admission https://github.com/daakara/finance/pull/257#issuecomment-6770042573",
       "sha256": "bb09f98490c98bf6dacee23d347e746cbaa179204865975e514bcb2ccaa08ac8",
       "size_bytes": 1126
     }
@@ -37,8 +37,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "9298525de4887cdb9b0e32d4fd9e77240d7df9c17c1ba30840f01086ec440555",
-      "size_bytes": 57981,
+      "sha256": "b51127b1d5ceba25f898562d61fce3f233d58fcf7b3493aacfc86a49b1f69eef",
+      "size_bytes": 57986,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
