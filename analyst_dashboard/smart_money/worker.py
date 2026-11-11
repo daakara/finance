@@ -54,7 +54,8 @@ from analyst_dashboard.smart_money.storage.backup.containment_gate import (
     ContainmentState,
     BackupAgeContainmentViolationException,
 )
-from analyst_dashboard.smart_money.continuous_pipeline import SmartMoneyContinuousPipeline
+from analyst_dashboard.smart_money.continuous_pipeline import SmartMoneyContinuousPipeline, DEFAULT_GOVERNED_ISSUERS
+from analyst_dashboard.smart_money.continuous_authorization import require_continuous_authorization
 import threading
 
 logger = logging.getLogger("smart_money.worker")
@@ -299,6 +300,8 @@ class SmartMoneyIngestionWorker:
                 f"UNAUTHORIZED_WORKER_ROLE: Worker requires ARX_SEC_EGRESS_ROLE=OWNER. Active role is '{role}'."
             )
 
+        # Require an unexpired, release- and universe-bound grant before any OWNER lock.
+        require_continuous_authorization(issuers=DEFAULT_GOVERNED_ISSUERS)
         validate_storage_configuration()
         if not self.dsn:
             self.state = WorkerHealthState.FATAL
@@ -527,6 +530,9 @@ class SmartMoneyIngestionWorker:
 
     def run_cycle(self) -> None:
         """Executes a single operational work cycle."""
+        # Revalidate per cycle: an expired grant terminates the OWNER loop and
+        # the finally block releases its session-level advisory lock.
+        require_continuous_authorization(issuers=DEFAULT_GOVERNED_ISSUERS)
         # 1. Evaluate Backup Freshness Containment Gate
         if not self.containment_gate.check_ingestion_eligibility():
             self.state = WorkerHealthState.BLOCKED_DATA_INTEGRITY
