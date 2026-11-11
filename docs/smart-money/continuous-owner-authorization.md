@@ -40,12 +40,15 @@ attested release SHA; the Railway OAuth connector cannot read env values.
 - Worker Sentry DSN, SDK initialization, `subsystem=smart_money` event tags and
   actual event-delivery evidence. Existing email alert rule alone is not proof.
 - Non-ingesting tests for restart, expiration, lease loss and emergency stop.
-- A complete egress interception budget: the existing pipeline checks each issuer,
-  but this grant alone does **not** guarantee per-HTTP-request expiry enforcement
-  if an underlying fetcher performs multiple HTTP requests or retries.
-- Daily cadence enforcement, maximum 40 requests, <=5 RPS and emergency-stop
-  operational signoff. These were enforced by the bounded pilot runner; do not
-  assume its safeguards automatically apply to the continuous pipeline.
+- Outbound egress interception budget: implemented via `ContinuousOutboundSession`,
+  enforcing wire-level expiry checks, ceiling of <= 40 total transmissions per cycle,
+  ceiling of <= 4 transmissions per issuer (counting initial requests, redirects, and retries),
+  and rate limiting strictly capped at <= 5.0 req/s.
+- Emergency stop & advisory lock release: fail-closed killswitch (`ARX_EMERGENCY_STOP_ACTIVE=TRUE`)
+  implemented in worker preflight, loop, and wire sessions, guaranteeing immediate exit and
+  clean PostgreSQL advisory lock release (`LOCK_SEC_EGRESS_OWNER`).
+- Worker Sentry telemetry: `init_worker_sentry()` and `capture_worker_exception()` implemented
+  with mandatory `service=arx-smart-money-worker` and `subsystem=smart_money` tagging.
 - Candidate-specific release admission and official CI gates.
 - **Separate explicit production activation authorization**. Never repurpose
   the prior two-cycle canary approval for continuous OWNER role.

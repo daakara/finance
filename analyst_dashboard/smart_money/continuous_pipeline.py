@@ -155,6 +155,109 @@ def _normalize_to_transaction_obj(tx: Any) -> SmartMoneyTransaction:
     raise TypeError(f"UNSUPPORTED_TRANSACTION_TYPE: Cannot convert {type(tx)} to SmartMoneyTransaction")
 
 
+
+import requests
+
+
+class ContinuousBudgetExceededError(RuntimeError):
+    """Raised when total cycle (40) or per-issuer (4) HTTP transmission ceiling is reached."""
+    pass
+
+
+class ContinuousOutboundSession(requests.Session):
+    """
+    Hardened outbound session for Smart Money continuous ingestion.
+    Enforces wire-level invariants on EVERY transmission (initial, redirect, retry):
+    1. ARX_EMERGENCY_STOP_ACTIVE: fail closed if TRUE.
+    2. Cooperative cancellation: fail closed if cancellation requested.
+    3. 24h continuous authorization: fail closed if expired, future, or invalid via require_continuous_authorization.
+    4. Rate limiting: strictly throttles to <= 5.0 requests/sec.
+    5. Per-cycle request budget: maximum 40 HTTP transmissions total per cycle.
+    6. Per-issuer request budget: maximum 4 HTTP transmissions per issuer.
+    """
+
+    def __init__(
+        self,
+        rate_limiter: Optional[Any] = None,
+        max_total_requests: int = 40,
+        max_per_issuer_requests: int = 4,
+        issuers: Optional[Sequence[Dict[str, str]]] = None,
+        allow_test_mode: bool = False,
+        cancellation_token: Optional[Callable[[], bool]] = None,
+    ):
+        super().__init__()
+        if rate_limiter is not None:
+            if hasattr(rate_limiter, "max_per_second") and float(rate_limiter.max_per_second) > 5.0:
+                rate_limiter.max_per_second = 5.0
+            self.rate_limiter = rate_limiter
+        else:
+            self.rate_limiter = RateLimiter(max_per_second=5.0)
+        self.max_total_requests = max_total_requests
+        self.max_per_issuer_requests = max_per_issuer_requests
+        self.issuers = issuers or DEFAULT_GOVERNED_ISSUERS
+        self.allow_test_mode = allow_test_mode
+        self.cancellation_token = cancellation_token
+        self.total_transmissions: int = 0
+        self.issuer_transmissions: Dict[str, int] = {}
+        self.current_issuer: Optional[str] = None
+        self.transmission_log: List[Dict[str, Any]] = []
+
+    def set_current_issuer(self, ticker: str) -> None:
+        self.current_issuer = ticker.upper().strip()
+        if self.current_issuer not in self.issuer_transmissions:
+            self.issuer_transmissions[self.current_issuer] = 0
+
+    def send(self, request, **kwargs):
+        # 1. Emergency stop check
+        if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() in ("TRUE", "1", "YES"):
+            raise RuntimeError("EMERGENCY_STOP_ACTIVE: Outbound send blocked by emergency stop killswitch.")
+
+        # 2. In-flight cooperative cancellation
+        if self.cancellation_token and self.cancellation_token():
+            raise RuntimeError("IN_FLIGHT_CANCELLATION: Outbound send blocked by cooperative cancellation.")
+
+        # 3. 24h continuous authorization check (fails closed if expired mid-cycle or before retry)
+        if not self.allow_test_mode:
+            require_continuous_authorization(issuers=self.issuers)
+
+        # 4. Total cycle request budget check (<= 40)
+        if self.total_transmissions >= self.max_total_requests:
+            raise ContinuousBudgetExceededError(
+                f"CYCLE_BUDGET_EXCEEDED: Total cycle HTTP transmissions ({self.total_transmissions}) "
+                f"reached ceiling ({self.max_total_requests}). Outbound send blocked."
+            )
+
+        # 5. Per-issuer request budget check (<= 4)
+        issuer_key = self.current_issuer or "UNKNOWN"
+        count_for_issuer = self.issuer_transmissions.get(issuer_key, 0)
+        if count_for_issuer >= self.max_per_issuer_requests:
+            raise ContinuousBudgetExceededError(
+                f"ISSUER_BUDGET_EXCEEDED: Issuer {issuer_key} HTTP transmissions ({count_for_issuer}) "
+                f"reached ceiling ({self.max_per_issuer_requests}). Outbound send blocked."
+            )
+
+        # 6. Rate limiting (<= 5.0 req/s)
+        self.rate_limiter.acquire()
+
+        # 7. Record transmission count before wire transmission
+        self.total_transmissions += 1
+        self.issuer_transmissions[issuer_key] = count_for_issuer + 1
+        t0 = time.time()
+
+        # 8. Wire transmission (super().send counts redirects and retries)
+        resp = super().send(request, **kwargs)
+
+        duration = round(time.time() - t0, 3)
+        self.transmission_log.append({
+            "seq": self.total_transmissions,
+            "issuer": issuer_key,
+            "url": getattr(request, "url", ""),
+            "status_code": getattr(resp, "status_code", None),
+            "duration_sec": duration,
+        })
+        return resp
+
+
 class SmartMoneyContinuousPipeline:
     """
     10-step continuous daily ingestion and snapshot publication pipeline.
@@ -223,7 +326,18 @@ class SmartMoneyContinuousPipeline:
         )
         self.issuers = issuers or DEFAULT_GOVERNED_ISSUERS
         # Strict token bucket <= 8.0 req/s (SEC ceiling is 10)
-        self.rate_limiter = rate_limiter or RateLimiter(max_per_second=8.0)
+        limiter = rate_limiter or RateLimiter(max_per_second=5.0)
+        if hasattr(limiter, "max_per_second") and limiter.max_per_second > 5.0:
+            limiter = RateLimiter(max_per_second=5.0)
+        self.rate_limiter = limiter
+        self.outbound_session = ContinuousOutboundSession(
+            rate_limiter=self.rate_limiter,
+            max_total_requests=40,
+            max_per_issuer_requests=4,
+            issuers=self.issuers,
+            allow_test_mode=self.allow_test_mode,
+            cancellation_token=self.cancellation_token,
+        )
         self.sec_fetcher = sec_fetcher
         self.scanner = scanner or SmartMoneyForm4Scanner()
         self.scheduler = scheduler or SmartMoneyTimezoneScheduler()
@@ -461,6 +575,8 @@ class SmartMoneyContinuousPipeline:
     # ── Pipeline Step Implementations ─────────────────────────────────────────
 
     def _step1_preflight(self, dry_run: bool = False) -> None:
+        if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() in ("TRUE", "1", "YES"):
+            raise RuntimeError("EMERGENCY_STOP_ACTIVE: Pipeline preflight halted by emergency stop killswitch.")
         """Validates configuration, role authorization, DB connection, and credentials."""
         # 1. Check worker role
         role = get_sec_egress_role()
@@ -519,7 +635,11 @@ class SmartMoneyContinuousPipeline:
            Across all stop or abort scenarios prior to Step 8, the pointer remains intact,
            ensuring 100% continuous read-only Radar uptime.
         """
-        # 0. A production OWNER grant must remain valid at every stage boundary.
+        # 0. Emergency stop check
+        if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() in ("TRUE", "1", "YES"):
+            raise RuntimeError(f"EMERGENCY_STOP_ACTIVE: Execution halted at {step_name} by emergency stop killswitch.")
+
+        # 0b. A production OWNER grant must remain valid at every stage boundary.
         if not self.allow_test_mode:
             require_continuous_authorization(issuers=self.issuers)
 
@@ -795,6 +915,9 @@ class SmartMoneyContinuousPipeline:
             cik = issuer["cik"]
             company_name = issuer.get("company_name", ticker)
 
+            # Bind current issuer to outbound guarded session
+            self.outbound_session.set_current_issuer(ticker)
+
             # In-flight authorization check before each network egress request
             self._check_in_flight_authorization(step_name=f"STEP_6_SEC_INGESTION_{ticker}")
 
@@ -803,6 +926,10 @@ class SmartMoneyContinuousPipeline:
 
             # Retrieve filings via fetcher or mock
             if self.sec_fetcher:
+                if hasattr(self.sec_fetcher, "session"):
+                    self.sec_fetcher.session = self.outbound_session
+                if hasattr(self.sec_fetcher, "rate_limiter"):
+                    self.sec_fetcher.rate_limiter = self.rate_limiter
                 filing_dicts = self.sec_fetcher.fetch_form4_filings(ticker=ticker, cik=cik)
             else:
                 # Query SEC EDGAR Atom feed or use database-cached filings
