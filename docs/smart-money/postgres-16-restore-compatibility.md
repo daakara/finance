@@ -8,6 +8,7 @@ archive format 1.16, and a PostgreSQL 17 `pg_restore` can emit
 `SET transaction_timeout = 0`, which is unsupported by PostgreSQL 16.
 
 **Required for production promotion:**
+- Dedicated candidate image: `Dockerfile.smart-money-backup` builds from official `postgres:16-bookworm`, with a Python virtual environment, and validates pg_dump/pg_restore major 16 at image build. It is **not active** until Railway's backup-only service is deliberately pointed at it.
 - Install and pin official, **unmodified PostgreSQL 16** client binaries in the backup-service image.
 - Confirm `pg_dump --version` reports PostgreSQL 16 and the runtime can resolve that binary on PATH.
 - A normal PG16 custom archive must have format **1.15**. The backup engine rejects other archive formats and records generating client/version metadata.
