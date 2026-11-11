@@ -1,49 +1,57 @@
 {
-  "release_candidate_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
-  "base_anchor_commit": "a54a234422d8cdfcd6902f290a9ef7329ed0f131",
-  "total_files": 5,
+  "release_candidate_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+  "base_anchor_commit": "cb7f73000000dcbfba12a0ee3410c8272c91b2a3",
+  "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-UX-PHASE5-POST-LAUNCH-REFINEMENT-OWNER-PREAPPROVED",
+  "directive": "ARX-SM-ACT-020-PG16-RESTORE-COMPAT-OWNER-PREAPPROVED",
   "files": {
-    ".gitignore": {
-      "operation": "M",
-      "originating_pr_number": 264,
-      "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
-      "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
-      "sha256": "2dd011e38055c20221aee8c342be5f4a776dcd1ad78cf1d021aa691d40cdbefe",
-      "size_bytes": 901
-    },
-    "frontend/components/IntentHero.tsx": {
-      "operation": "M",
-      "originating_pr_number": 264,
-      "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
-      "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
-      "sha256": "3c54ec6c9054cbcca52c54adb0981359f1560ff60aa8036c6151bd2841b18c1e",
-      "size_bytes": 9788
-    },
-    "frontend/components/discovery/DiscoveryLandingView.tsx": {
-      "operation": "M",
-      "originating_pr_number": 264,
-      "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
-      "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
-      "sha256": "15f45da9d0cab8f23cad5d6eeec2e4461a179cba57dfa53aa79d54b59db2577b",
-      "size_bytes": 13638
-    },
-    "frontend/next.config.mjs": {
-      "operation": "M",
-      "originating_pr_number": 264,
-      "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
-      "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
-      "sha256": "9969a67cfe9bff23c571485db6b8a1996377839f4a63a09908fe0ac2b229d74b",
-      "size_bytes": 3373
-    },
-    "frontend/tests/uxPhase5RefinementAndWorkflow.test.ts": {
+    ".github/workflows/sm-backup-pg16-compat.yml": {
       "operation": "A",
-      "originating_pr_number": 264,
-      "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
-      "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
-      "sha256": "96c1d7b10e588bb932b1c0a25ab58aa11f19ed8c910e581801825e47e1477596",
-      "size_bytes": 6066
+      "originating_pr_number": 266,
+      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+      "sha256": "eccfb2e372118b70eb39cfb3ecfa9ea0f519040d10fdde76a815fd1b4b15d4ba",
+      "size_bytes": 1602
+    },
+    "Dockerfile.smart-money-backup": {
+      "operation": "A",
+      "originating_pr_number": 266,
+      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+      "sha256": "0c85bf519a8b91d3389e4c005f33000099be3aef990043d2cdafc7996f746aab",
+      "size_bytes": 1339
+    },
+    "analyst_dashboard/smart_money/storage/backup/backup_engine.py": {
+      "operation": "M",
+      "originating_pr_number": 266,
+      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+      "sha256": "f028ac56d7a7c978110331446d608caddd62472c1ecd9abd98aeb39ec2f28f45",
+      "size_bytes": 13642
+    },
+    "analyst_dashboard/smart_money/storage/backup/pg_client_compat.py": {
+      "operation": "A",
+      "originating_pr_number": 266,
+      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+      "sha256": "8572b5c763520b694ff7a23ddf0eb0df3ebcf4f19d387d5521cf388a74dc073c",
+      "size_bytes": 3389
+    },
+    "docs/smart-money/postgres-16-restore-compatibility.md": {
+      "operation": "A",
+      "originating_pr_number": 266,
+      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+      "sha256": "5ae5dc27f264b893550154810110ecd1e423dea8a213993b6f8f0f28fa32dae7",
+      "size_bytes": 3161
+    },
+    "tests/test_sm_act_020_pg_client_compat.py": {
+      "operation": "A",
+      "originating_pr_number": 266,
+      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+      "sha256": "ae728bca3839180f1b1e1b7abd453155a177f92b9dbab350c4eb21fd635f2a2e",
+      "size_bytes": 3921
     }
   },
   "qualification_framework_files": {
@@ -53,8 +61,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "d1c98cf1bcb793a56f51d6473b479a3cac9403b1e37d7a5cabb0ebf990ecd532",
-      "size_bytes": 58016,
+      "sha256": "db732ab9cb3640410f866f9ae03cb7c835fcc363d0b707f2c0c87c12695eb9ce",
+      "size_bytes": 58021,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -620,6 +628,62 @@
           "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
           "sha256": "96c1d7b10e588bb932b1c0a25ab58aa11f19ed8c910e581801825e47e1477596",
           "size_bytes": 6066
+        }
+      }
+    },
+    "c3e07c089999cbf377ec4866d4a1fad33757c43f": {
+      "release_candidate_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+      "base_anchor_commit": "cb7f73000000dcbfba12a0ee3410c8272c91b2a3",
+      "total_files": 6,
+      "directive": "ARX-SM-ACT-020-PG16-RESTORE-COMPAT-OWNER-PREAPPROVED",
+      "files": {
+        ".github/workflows/sm-backup-pg16-compat.yml": {
+          "operation": "A",
+          "originating_pr_number": 266,
+          "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+          "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+          "sha256": "eccfb2e372118b70eb39cfb3ecfa9ea0f519040d10fdde76a815fd1b4b15d4ba",
+          "size_bytes": 1602
+        },
+        "Dockerfile.smart-money-backup": {
+          "operation": "A",
+          "originating_pr_number": 266,
+          "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+          "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+          "sha256": "0c85bf519a8b91d3389e4c005f33000099be3aef990043d2cdafc7996f746aab",
+          "size_bytes": 1339
+        },
+        "analyst_dashboard/smart_money/storage/backup/backup_engine.py": {
+          "operation": "M",
+          "originating_pr_number": 266,
+          "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+          "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+          "sha256": "f028ac56d7a7c978110331446d608caddd62472c1ecd9abd98aeb39ec2f28f45",
+          "size_bytes": 13642
+        },
+        "analyst_dashboard/smart_money/storage/backup/pg_client_compat.py": {
+          "operation": "A",
+          "originating_pr_number": 266,
+          "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+          "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+          "sha256": "8572b5c763520b694ff7a23ddf0eb0df3ebcf4f19d387d5521cf388a74dc073c",
+          "size_bytes": 3389
+        },
+        "docs/smart-money/postgres-16-restore-compatibility.md": {
+          "operation": "A",
+          "originating_pr_number": 266,
+          "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+          "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+          "sha256": "5ae5dc27f264b893550154810110ecd1e423dea8a213993b6f8f0f28fa32dae7",
+          "size_bytes": 3161
+        },
+        "tests/test_sm_act_020_pg_client_compat.py": {
+          "operation": "A",
+          "originating_pr_number": 266,
+          "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
+          "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
+          "sha256": "ae728bca3839180f1b1e1b7abd453155a177f92b9dbab350c4eb21fd635f2a2e",
+          "size_bytes": 3921
         }
       }
     }
