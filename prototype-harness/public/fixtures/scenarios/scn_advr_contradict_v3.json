@@ -1,0 +1,41 @@
+{
+  "asset_class": "COMMON_STOCK",
+  "canonical_cm_codes": [
+    "CM-02"
+  ],
+  "company_name": "Super Micro Computer, Inc. (Contradiction Test)",
+  "expected_evaluations": {
+    "authorized_decision": "DISQUALIFIED_REJECT_ENTRY",
+    "primary_rationale": "High confluence score cannot override breached invalidation floor and imminent earnings binary risk."
+  },
+  "filename": "scn_advr_contradict_v3.json",
+  "fixture_id": "SCN-ADVR-CONTRADICT",
+  "heuristic_context": {
+    "confluence_label": "EXCELLENT CONFLUENCE (88/100)",
+    "confluence_score": 88,
+    "corporate_event_alert": "Binary Q1 Earnings Announcement scheduled at 16:01 EST (in 2.0 hours)."
+  },
+  "market_data": {
+    "display_label": "SIMULATED_RESEARCH_FEED",
+    "is_stale": false,
+    "quote_timestamp": "2026-10-23T14:00:00Z",
+    "spot_price": 842.0
+  },
+  "market_data_provenance": "DETERMINISTIC_SIMULATED_RESEARCH_FIXTURE",
+  "primary_exchange": "NASDAQ",
+  "provenance_reference": "ARX_UX_CANONICAL_CM_TAXONOMY_RECONCILIATION.md:Section 5",
+  "supplemental_sm_codes": [
+    "SM-04"
+  ],
+  "technical_context": {
+    "is_actionable": false,
+    "planned_entry_pivot": 860.0,
+    "reason_suppressed": "Current spot ($842.00) is below structural invalidation floor ($860.00).",
+    "spot_relative_to_invalidation": -18.0,
+    "structural_invalidation_floor": 860.0
+  },
+  "ticker": "TEST_BIAS",
+  "type": "ADVERSARIAL_TRAP",
+  "underlying_reference": "SMCI",
+  "version": "3.0.0"
+}

@@ -1,0 +1,53 @@
+{
+  "asset_class": "COMMON_STOCK",
+  "canonical_cm_codes": [],
+  "company_name": "Pulse Biosciences, Inc.",
+  "expected_evaluations": {
+    "authorized_decision": "APPROVE_EXECUTION_PLAN",
+    "authorized_shares": 1492,
+    "authorized_stop_price": 6.83,
+    "primary_rationale": "Valid breakout base in buy zone with verified structural stop floor at $6.83."
+  },
+  "filename": "scn_norm_plse_v3.json",
+  "fixture_id": "SCN-NORM-PLSE-SWING",
+  "market_data": {
+    "display_label": "HISTORICAL_GOLDEN_RECORD_PLAYBACK",
+    "is_stale": false,
+    "latency_seconds": 4,
+    "quote_timestamp": "2026-10-23T14:15:00Z",
+    "spot_price": 7.5
+  },
+  "market_data_provenance": "HISTORICAL_PRODUCTION_GOLDEN_RECORD",
+  "primary_exchange": "NASDAQ",
+  "provenance_reference": "docs/governance/EXECUTION_LADDER_REMEDIATION_SPECIFICATION.md:196",
+  "sizing_context": {
+    "capital_committed": 11190.0,
+    "maximum_modeled_loss": 999.64,
+    "portfolio_equity": 100000.0,
+    "portfolio_exposure_pct": 11.19,
+    "recommended_shares": 1492,
+    "risk_budget_dollar": 1000.0,
+    "risk_budget_pct": 0.01
+  },
+  "supplemental_sm_codes": [
+    "SM-01",
+    "SM-02"
+  ],
+  "technical_context": {
+    "distance_to_invalidation_dollar": 0.67,
+    "distance_to_invalidation_pct": -8.93,
+    "entry_corridor": [
+      7.1,
+      7.6
+    ],
+    "execution_readiness": "IN_BUY_ZONE",
+    "is_actionable": true,
+    "planned_entry_pivot": 7.5,
+    "structural_invalidation_floor": 6.83,
+    "take_profit_1": 8.74,
+    "take_profit_2": 9.49
+  },
+  "ticker": "PLSE",
+  "type": "NORMATIVE",
+  "version": "3.0.0"
+}

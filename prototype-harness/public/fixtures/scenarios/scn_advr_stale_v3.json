@@ -1,0 +1,37 @@
+{
+  "asset_class": "COMMON_STOCK",
+  "canonical_cm_codes": [
+    "CM-05"
+  ],
+  "company_name": "Apple Inc. (Stale Tape Test)",
+  "expected_evaluations": {
+    "authorized_decision": "REJECT_OR_REFRESH",
+    "primary_rationale": "Quote is 18m 33s stale; tight execution brackets cannot be formulated against stale market data."
+  },
+  "filename": "scn_advr_stale_v3.json",
+  "fixture_id": "SCN-ADVR-STALE-TAPE",
+  "market_data": {
+    "display_label": "SIMULATED_STALE_TAPE",
+    "is_stale": true,
+    "latency_seconds": 1113,
+    "quote_timestamp": "2026-10-23T10:48:12Z",
+    "session_current_timestamp": "2026-10-23T11:06:45Z",
+    "spot_price": 224.5
+  },
+  "market_data_provenance": "DETERMINISTIC_SIMULATED_RESEARCH_FIXTURE",
+  "primary_exchange": "NASDAQ",
+  "provenance_reference": "ARX_UX_CANONICAL_CM_TAXONOMY_RECONCILIATION.md:Section 5",
+  "supplemental_sm_codes": [
+    "SM-06"
+  ],
+  "technical_context": {
+    "is_actionable": false,
+    "planned_entry_pivot": 224.5,
+    "reason_suppressed": "Market data stale (>15 minutes latency); execution triggers suspended.",
+    "structural_invalidation_floor": 212.0
+  },
+  "ticker": "TEST_STALE",
+  "type": "ADVERSARIAL_TRAP",
+  "underlying_reference": "AAPL",
+  "version": "3.0.0"
+}

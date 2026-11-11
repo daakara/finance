@@ -1,0 +1,29 @@
+{
+  "manifest_version": "1.0.0",
+  "governance_standard": "ARX Closure Model v2 \u2014 Synthetic Scoring Benchmark Isolation",
+  "disclaimer": "Synthetic software benchmarks do NOT constitute independent human observer evidence. Agreement is intentionally constructed for software verification.",
+  "fixtures": {
+    "observer_gamma_v1_gold_concordant.synthetic.json": {
+      "fixture_id": "SYNTHETIC_GAMMA_GOLD_CONCORDANT_V1",
+      "classification": "SYNTHETIC_SCORING_REGRESSION",
+      "observer_evidence": false,
+      "human_observer_qualified": false,
+      "benchmark_type": "POSITIVE_CONTROL",
+      "gold_derived": true,
+      "source_gold_key": "gold_key_gamma_v1.json",
+      "trial_count": 10,
+      "sha256": "83c5f960b488672cc9a7eac05557f6d64020fdd9e834f8dd2bae0def49594f2b"
+    },
+    "observer_consolidated_30_gold_concordant.synthetic.json": {
+      "fixture_id": "SYNTHETIC_CONSOLIDATED_30_GOLD_CONCORDANT_V2",
+      "classification": "SYNTHETIC_SCORING_REGRESSION",
+      "observer_evidence": false,
+      "human_observer_qualified": false,
+      "benchmark_type": "POSITIVE_CONTROL",
+      "gold_derived": true,
+      "source_gold_key": "gold_key_consolidated_30.json",
+      "trial_count": 30,
+      "sha256": "fa3fe82c1afdea529941ac9a8e175e5f2d34ceb254db4323d285dc4a9e378228"
+    }
+  }
+}

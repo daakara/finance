@@ -1,0 +1,499 @@
+{
+  "transcript_id": "TRANS-GAMMA-CALIBRATION-V1",
+  "protocol_version": "2.2.0",
+  "instructions": "Evaluate each trial independently using ARX_UX_OBSERVER_SCORING_HANDBOOK_V2.md. These are synthetic calibration transcripts developed to evaluate observer scoring consistency. They are not recordings of actual ARX Terminal research participants. Do not communicate with other observers.",
+  "trials": [
+    {
+      "trial_id": "GAMMA-01",
+      "scenario_id": "SCN-SUPP-FAIL-CLOSED-ADR",
+      "ticker": "CYATY",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Inspect security profile, check asset eligibility, and determine execution clearance.",
+      "duration_sec": 145,
+      "think_aloud_dialogue": [
+        "[00:15] Participant: 'Looking at CYATY here. Security profile indicates it is an ADR trading on OTC.'",
+        "[00:45] Participant: 'I know it says ADR, but all tickers rendered in the terminal can be traded directly on the US book.'",
+        "[01:20] Participant: 'Setting up trade execution for 500 shares at market price.'",
+        "[02:10] Participant: 'Staged order for 500 shares. cleared to execute.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "ticker": "CYATY",
+            "variant": "CONCEPT_B"
+          }
+        },
+        {
+          "timestamp": "00:40",
+          "event": "BADGE_NOTED",
+          "details": {
+            "badge": "FAIL_CLOSED_RESTRICTED (ADR)"
+          }
+        },
+        {
+          "timestamp": "01:25",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "shares": 500
+          }
+        },
+        {
+          "timestamp": "02:15",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 500,
+            "status": "STAGED"
+          }
+        },
+        {
+          "timestamp": "02:20",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Stage 500 shares of CYATY for execution"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "GAMMA-02",
+      "scenario_id": "SCN-SUPP-EXTENDED-MISINTERPRETED",
+      "ticker": "TEST_EXT",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Evaluate technical status badge and determine whether to stage purchase.",
+      "duration_sec": 135,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'Looking at TEST_EXT. There is a prominent badge here: NOT_ACTIONABLE: EXTENDED.'",
+        "[00:50] Participant: 'The badge is highlighted in yellow, which means it has passed pre-screening and the system has cleared it for immediate entry.'",
+        "[01:30] Participant: 'Staging market buy order since the system approved the setup.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "ticker": "TEST_EXT",
+            "variant": "CONCEPT_B"
+          }
+        },
+        {
+          "timestamp": "00:25",
+          "event": "BADGE_NOTED",
+          "details": {
+            "badge": "NOT_ACTIONABLE: EXTENDED"
+          }
+        },
+        {
+          "timestamp": "01:35",
+          "event": "ORDER_COPIED",
+          "details": {
+            "orderType": "MARKET_BUY",
+            "shares": 100
+          }
+        },
+        {
+          "timestamp": "01:40",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Approved market buy because system cleared setup"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "GAMMA-03",
+      "scenario_id": "SCN-SUPP-EXTENDED-OVERRIDE",
+      "ticker": "TEST_MOM_CHASE",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Review setup readiness status and execute according to platform rules.",
+      "duration_sec": 160,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'Checking TEST_MOM_CHASE. The badge clearly states NOT_ACTIONABLE: EXTENDED.'",
+        "[00:50] Participant: 'I know platform policy strictly prohibits entering when extended more than 5% beyond the pivot.'",
+        "[01:25] Participant: 'However, the volume is massive and I don't care about the 5% rule in this market regime. I am deliberately overriding the platform limit.'",
+        "[02:10] Participant: 'Executing market buy despite the restriction.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "ticker": "TEST_MOM_CHASE",
+            "variant": "CONCEPT_B"
+          }
+        },
+        {
+          "timestamp": "00:30",
+          "event": "BADGE_NOTED",
+          "details": {
+            "badge": "NOT_ACTIONABLE: EXTENDED"
+          }
+        },
+        {
+          "timestamp": "01:30",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "policy_override": true
+          }
+        },
+        {
+          "timestamp": "02:15",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 150,
+            "overrideAcknowledged": true
+          }
+        },
+        {
+          "timestamp": "02:20",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Deliberately override policy to chase momentum"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "GAMMA-04",
+      "scenario_id": "SCN-SUPP-STOP-FLOOR-AS-TARGET",
+      "ticker": "TEST_FLOOR",
+      "variant": "CONCEPT_A",
+      "task_prompt": "Configure risk floor and upside objectives for TEST_FLOOR.",
+      "duration_sec": 150,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'Looking at TEST_FLOOR. Entry pivot is $155.00.'",
+        "[00:50] Participant: 'I see the floor level marked at $140.00.'",
+        "[01:25] Participant: 'When the stock reaches $140.00, that is our upside profit goal where we will take profits.'",
+        "[02:15] Participant: 'Staging limit sell order at $140.00 to lock in upside gain.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "ticker": "TEST_FLOOR",
+            "variant": "CONCEPT_A"
+          }
+        },
+        {
+          "timestamp": "01:30",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "profit_target": 140.0
+          }
+        },
+        {
+          "timestamp": "02:20",
+          "event": "ORDER_COPIED",
+          "details": {
+            "target": 140.0,
+            "entry": 155.0
+          }
+        },
+        {
+          "timestamp": "02:25",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Take profit at $140.00 price goal"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "GAMMA-05",
+      "scenario_id": "SCN-SUPP-STALE-BELIEVED-FRESH",
+      "ticker": "TEST_STALE_TAPE",
+      "variant": "CONCEPT_C",
+      "task_prompt": "Audit quote freshness, market data timestamp, and stage trade.",
+      "duration_sec": 140,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'Reviewing TEST_STALE_TAPE quote.'",
+        "[00:45] Participant: 'The live price ticker shows $310.20 right now on the active market tape.'",
+        "[01:15] Participant: 'Everything is updated in real time. Executing long at the live spot price.'",
+        "[02:00] Participant: 'Staged 50 shares on the live feed.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "ticker": "TEST_STALE_TAPE",
+            "variant": "CONCEPT_C"
+          }
+        },
+        {
+          "timestamp": "00:50",
+          "event": "UI_GLANCE",
+          "details": {
+            "element": "SPOT_QUOTE_TAPE"
+          }
+        },
+        {
+          "timestamp": "01:20",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "shares": 50
+          }
+        },
+        {
+          "timestamp": "02:05",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 50,
+            "assumed_tape": "LIVE_REALTIME"
+          }
+        },
+        {
+          "timestamp": "02:10",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Executed 50 shares on live $310.20 tape"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "GAMMA-06",
+      "scenario_id": "SCN-SUPP-STALE-RECOGNIZED",
+      "ticker": "TEST_STALE_AWARE",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Evaluate quote latency and order readiness.",
+      "duration_sec": 155,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'Looking at TEST_STALE_AWARE. Alert banner says STALE / DELAYED DATA 1800s.'",
+        "[00:50] Participant: 'I recognize this quote is 30 minutes delayed, not real time.'",
+        "[01:25] Participant: 'However, I think the stock hasn\\'t moved much today, so I am going to submit the trade anyway despite the delayed tape.'",
+        "[02:10] Participant: 'Staging order on delayed quote.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "ticker": "TEST_STALE_AWARE",
+            "variant": "CONCEPT_B"
+          }
+        },
+        {
+          "timestamp": "00:30",
+          "event": "ALERT_NOTED",
+          "details": {
+            "alert": "STALE / DELAYED DATA [\u26a0]"
+          }
+        },
+        {
+          "timestamp": "01:30",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "bypass_stale_warning": true
+          }
+        },
+        {
+          "timestamp": "02:15",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 40,
+            "acknowledged_stale": true
+          }
+        },
+        {
+          "timestamp": "02:20",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Submit 40 shares despite knowing tape is 30m delayed"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "GAMMA-07",
+      "scenario_id": "SCN-SUPP-UNKNOWN-ASSET-COMMON",
+      "ticker": "TEST_UNMAPPED",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Audit security master resolution and proceed with order staging.",
+      "duration_sec": 165,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'Checking TEST_UNMAPPED. Banner says UNRESOLVED SECURITY MASTER CUSIP.'",
+        "[00:50] Participant: 'This is just standard NASDAQ common stock, I trade these all the time.'",
+        "[01:30] Participant: 'Bypassing the unverified asset warning and staging standard equity size.'",
+        "[02:15] Participant: 'Staged order for 100 shares.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "ticker": "TEST_UNMAPPED",
+            "variant": "CONCEPT_B"
+          }
+        },
+        {
+          "timestamp": "00:35",
+          "event": "ALERT_NOTED",
+          "details": {
+            "alert": "UNRESOLVED SECURITY MASTER CUSIP"
+          }
+        },
+        {
+          "timestamp": "01:35",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "bypass_security_master": true
+          }
+        },
+        {
+          "timestamp": "02:20",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 100
+          }
+        },
+        {
+          "timestamp": "02:25",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Buy 100 shares assuming standard common stock"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "GAMMA-08",
+      "scenario_id": "SCN-SUPP-STAGING-AS-LIVE",
+      "ticker": "TEST_STAGE_LIVE",
+      "variant": "CONCEPT_A",
+      "task_prompt": "Complete sizing and authorize order staging.",
+      "duration_sec": 140,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'Ready to trade TEST_STAGE_LIVE. Sizing confirms 75 shares.'",
+        "[00:50] Participant: 'Clicking \\'Copy Order\\' to execute.'",
+        "[01:25] Participant: 'Order submitted to the live broker gateway! My broker account is now holding 75 shares.'",
+        "[02:00] Participant: 'Trade execution confirmed complete in market.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "ticker": "TEST_STAGE_LIVE",
+            "variant": "CONCEPT_A"
+          }
+        },
+        {
+          "timestamp": "00:55",
+          "event": "BUTTON_CLICKED",
+          "details": {
+            "action": "Copy Order"
+          }
+        },
+        {
+          "timestamp": "01:30",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "execution_status": "FILLED_AT_BROKER"
+          }
+        },
+        {
+          "timestamp": "02:05",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Order copied and holding live position at broker"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "GAMMA-09",
+      "scenario_id": "SCN-SUPP-ADR-RECOGNIZED-HALTED",
+      "ticker": "BABA",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Audit security classification and check execution eligibility.",
+      "duration_sec": 130,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'Evaluating BABA. Security profile shows ADR / FAIL_CLOSED.'",
+        "[00:50] Participant: 'Platform policy strictly forbids trading ADRs and foreign non-common equity.'",
+        "[01:25] Participant: 'Halting trade formulation. Asset is not cleared for platform trading.'",
+        "[02:00] Participant: 'Ticket rejected.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "ticker": "BABA",
+            "variant": "CONCEPT_B"
+          }
+        },
+        {
+          "timestamp": "00:30",
+          "event": "BADGE_NOTED",
+          "details": {
+            "badge": "FAIL_CLOSED_RESTRICTED (ADR)"
+          }
+        },
+        {
+          "timestamp": "01:30",
+          "event": "BUTTON_CLICKED",
+          "details": {
+            "action": "REJECT_TRADE"
+          }
+        },
+        {
+          "timestamp": "02:05",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Reject trade: ADR restricted under fail-closed policy"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "GAMMA-10",
+      "scenario_id": "SCN-SUPP-NORMATIVE-SWING",
+      "ticker": "PLSE",
+      "variant": "CONCEPT_A",
+      "task_prompt": "Formulate normative swing size for PLSE using approved budget.",
+      "duration_sec": 135,
+      "think_aloud_dialogue": [
+        "[00:15] Participant: 'Normative swing setup on PLSE. Spot is $7.50, structural stop floor is $6.83.'",
+        "[00:45] Participant: 'Risk per share is $0.67. With $1,000 risk budget, canonical size is 1,492 shares.'",
+        "[01:30] Participant: 'Staging 1,492 shares without overrides.'",
+        "[02:05] Participant: 'Task submitted.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "ticker": "PLSE",
+            "variant": "CONCEPT_A"
+          }
+        },
+        {
+          "timestamp": "00:50",
+          "event": "TAB_CHANGED",
+          "details": {
+            "tab": "SIZING"
+          }
+        },
+        {
+          "timestamp": "01:35",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 1492,
+            "stop": 6.83
+          }
+        },
+        {
+          "timestamp": "02:10",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Stage 1,492 shares at $7.50 with stop at $6.83"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance_disclosure": "These are synthetic calibration transcripts developed to evaluate observer scoring consistency. They are not recordings of actual ARX Terminal research participants."
+}

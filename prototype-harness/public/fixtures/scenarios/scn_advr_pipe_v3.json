@@ -1,0 +1,35 @@
+{
+  "asset_class": "COMMON_STOCK",
+  "canonical_cm_codes": [
+    "CM-05"
+  ],
+  "company_name": "NVIDIA Corporation (Pipeline Degradation Test)",
+  "expected_evaluations": {
+    "authorized_decision": "HALT_SUSPEND_TRADING",
+    "primary_rationale": "Quantitative pipeline is degraded; cached execution models cannot be relied upon for capital allocation."
+  },
+  "filename": "scn_advr_pipe_v3.json",
+  "fixture_id": "SCN-ADVR-PIPE-FAIL",
+  "market_data": {
+    "display_label": "SIMULATED_RESEARCH_FEED",
+    "is_stale": false,
+    "quote_timestamp": "2026-10-23T11:00:00Z",
+    "spot_price": 125.0
+  },
+  "market_data_provenance": "DETERMINISTIC_SIMULATED_RESEARCH_FIXTURE",
+  "pipeline_health": {
+    "failure_reason": "CALCULATION_WORKER_TIMEOUT",
+    "is_safe_for_trading": false,
+    "last_successful_batch_run": "2026-10-23T06:45:00Z",
+    "status": "DEGRADED"
+  },
+  "primary_exchange": "NASDAQ",
+  "provenance_reference": "ARX_UX_CANONICAL_CM_TAXONOMY_RECONCILIATION.md:Section 5",
+  "supplemental_sm_codes": [
+    "SM-06"
+  ],
+  "ticker": "TEST_PIPE",
+  "type": "ADVERSARIAL_TRAP",
+  "underlying_reference": "NVDA",
+  "version": "3.0.0"
+}

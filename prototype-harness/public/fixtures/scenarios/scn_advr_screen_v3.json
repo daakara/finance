@@ -1,0 +1,36 @@
+{
+  "asset_class": "COMMON_STOCK",
+  "canonical_cm_codes": [
+    "CM-09"
+  ],
+  "company_name": "Tesla, Inc. (Radar Screening Test)",
+  "expected_evaluations": {
+    "authorized_decision": "WATCHLIST_ONLY",
+    "primary_rationale": "Asset meets universe screening criteria but breakout pivot ($255.00) has not triggered; market execution prohibited."
+  },
+  "filename": "scn_advr_screen_v3.json",
+  "fixture_id": "SCN-ADVR-SCREEN-ONLY",
+  "market_data": {
+    "display_label": "SIMULATED_RESEARCH_FEED",
+    "is_stale": false,
+    "quote_timestamp": "2026-10-23T14:45:00Z",
+    "spot_price": 245.0
+  },
+  "market_data_provenance": "DETERMINISTIC_SIMULATED_RESEARCH_FIXTURE",
+  "primary_exchange": "NASDAQ",
+  "provenance_reference": "ARX_UX_CANONICAL_CM_TAXONOMY_RECONCILIATION.md:Section 5",
+  "supplemental_sm_codes": [
+    "SM-05"
+  ],
+  "technical_context": {
+    "breakout_pivot_trigger": 255.0,
+    "is_actionable": false,
+    "radar_screening_badge": "ELIGIBLE",
+    "setup_state": "FORMING_UNTRIGGERED",
+    "structural_invalidation_floor": 238.0
+  },
+  "ticker": "TEST_RADAR",
+  "type": "ADVERSARIAL_TRAP",
+  "underlying_reference": "TSLA",
+  "version": "3.0.0"
+}

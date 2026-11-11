@@ -1,0 +1,60 @@
+{
+  "asset_class": "COMMON_STOCK",
+  "canonical_cm_codes": [],
+  "company_name": "Comfort Systems USA, Inc.",
+  "expected_evaluations": {
+    "authorized_decision": "APPROVE_STRUCTURAL_PLAN",
+    "authorized_shares": 28,
+    "authorized_stop_price": 395.0,
+    "primary_rationale": "Multi-day swing hold must utilize structural VCP pivot floor ($395.00); intraday statistical bracket is quarantined.",
+    "rejected_stop_price": 418.02
+  },
+  "filename": "scn_norm_fix_v3.json",
+  "fixture_id": "SCN-NORM-FIX-VCP",
+  "market_data": {
+    "display_label": "SIMULATED_RESEARCH_FEED",
+    "is_stale": false,
+    "latency_seconds": 6,
+    "quote_timestamp": "2026-10-23T15:00:00Z",
+    "spot_price": 430.5
+  },
+  "market_data_provenance": "DETERMINISTIC_SIMULATED_RESEARCH_FIXTURE",
+  "primary_exchange": "NYSE",
+  "provenance_reference": "ARX_UX_FIXTURE_NUMERICAL_VALIDATION.md:Section 2",
+  "sizing_context": {
+    "authorized_engine": "governorSizingEngine.ts",
+    "capital_committed": 12054.0,
+    "maximum_modeled_loss": 994.0,
+    "portfolio_equity": 100000.0,
+    "portfolio_exposure_pct": 12.05,
+    "recommended_shares": 28,
+    "risk_budget_dollar": 1000.0,
+    "risk_budget_pct": 0.01
+  },
+  "statistical_context": {
+    "effective_stop_distance_pct": 2.9,
+    "effective_stop_dollar": 12.48,
+    "effective_stop_price": 418.02,
+    "engine": "DayTraderPositionSizer.tsx",
+    "engine_multiplier": 0.65,
+    "raw_mvar_95_pct": 4.4615,
+    "statistical_capital_committed": 34440.0,
+    "statistical_shares_per_1000_risk": 80
+  },
+  "supplemental_sm_codes": [
+    "SM-01",
+    "SM-02"
+  ],
+  "technical_context": {
+    "contractions": 3,
+    "distance_to_invalidation_dollar": 35.5,
+    "distance_to_invalidation_pct": -8.25,
+    "is_actionable": true,
+    "pattern": "VCP",
+    "planned_entry_pivot": 430.5,
+    "structural_invalidation_floor": 395.0
+  },
+  "ticker": "FIX",
+  "type": "NORMATIVE",
+  "version": "3.0.0"
+}

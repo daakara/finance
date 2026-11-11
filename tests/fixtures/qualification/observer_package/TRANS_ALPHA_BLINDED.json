@@ -1,0 +1,448 @@
+{
+  "transcript_id": "TRANS-ALPHA-CALIBRATION-V2",
+  "protocol_version": "2.2.0",
+  "instructions": "Evaluate each trial independently using ARX_UX_OBSERVER_SCORING_HANDBOOK_V2.md. These are synthetic calibration transcripts developed to evaluate observer scoring consistency. They are not recordings of actual ARX Terminal research participants. Do not communicate with other observers.",
+  "trials": [
+    {
+      "trial_id": "ALPHA-01",
+      "scenario_id": "SCN-NORM-PLSE-SWING",
+      "ticker": "PLSE",
+      "variant": "CONCEPT_A",
+      "task_prompt": "Evaluate spot price, market data status, and quote freshness for PLSE.",
+      "duration_sec": 142,
+      "think_aloud_dialogue": [
+        "[00:15] Participant: 'Looking at PLSE here. The spot price shows $7.50.'",
+        "[00:40] Participant: 'The data banner says SIMULATED_RESEARCH_FEED. Freshness is verified.'",
+        "[01:10] Participant: 'Sizing tab shows structural stop at $6.83. Risk per share is $0.67.'",
+        "[02:15] Participant: 'For a $1,000 risk budget, that's exactly 1,492 shares. Staging the order now.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_A",
+            "ticker": "PLSE"
+          }
+        },
+        {
+          "timestamp": "00:45",
+          "event": "TAB_CHANGED",
+          "details": {
+            "tab": "SIZING"
+          }
+        },
+        {
+          "timestamp": "01:20",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "budgetInput": 1000
+          }
+        },
+        {
+          "timestamp": "02:18",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 1492,
+            "stop": 6.83
+          }
+        },
+        {
+          "timestamp": "02:22",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Stage 1,492 shares at $7.50 with stop at $6.83"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "ALPHA-02",
+      "scenario_id": "SCN-ADVR-STALE-TAPE",
+      "ticker": "TEST_STALE",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Evaluate market data status, quote timestamp, and order readiness.",
+      "duration_sec": 165,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'Okay, looking at TEST_STALE. We have a breakout trigger at $224.50.'",
+        "[00:50] Participant: 'I see a warning indicator: DELAYED DATA 1800s. But the chart pattern looks great.'",
+        "[01:30] Participant: 'The price is right at the breakout pivot. I think we should execute now before it runs away.'",
+        "[02:40] Participant: 'Submitting 83 shares now based on the $224.50 spot quote.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_B",
+            "ticker": "TEST_STALE"
+          }
+        },
+        {
+          "timestamp": "00:55",
+          "event": "ALERT_NOTED",
+          "details": {
+            "alert": "STALE / DELAYED DATA [\u26a0]"
+          }
+        },
+        {
+          "timestamp": "02:35",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 83,
+            "entry": 224.5
+          }
+        },
+        {
+          "timestamp": "02:45",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Approve purchase of 83 shares at $224.50"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "ALPHA-03",
+      "scenario_id": "SCN-NORM-FIX-VCP",
+      "ticker": "FIX",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Examine position sizing calculations and risk parameters for FIX.",
+      "duration_sec": 195,
+      "think_aloud_dialogue": [
+        "[00:30] Participant: 'FIX shows spot $430.50. Structural stop is $395.00, which gives 28 shares.'",
+        "[01:10] Participant: 'Opening Technical Proof drawer. Oh, wait! Look at the Quarantined Intraday Sizer.'",
+        "[01:45] Participant: 'It says 80 shares with a 0.65x multiplier and stop at $418.00.'",
+        "[02:20] Participant: 'Why should I only take 28 shares when the volatility model says I can safely take 80 shares?'",
+        "[03:05] Participant: 'I am going to override the 28 shares and enter 80 shares into my order string.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_B",
+            "ticker": "FIX"
+          }
+        },
+        {
+          "timestamp": "01:05",
+          "event": "SECTION_TOGGLED",
+          "details": {
+            "section": "TECHNICAL_PROOF",
+            "expanded": true
+          }
+        },
+        {
+          "timestamp": "02:30",
+          "event": "INPUT_CHANGED",
+          "details": {
+            "customShareOverride": 80
+          }
+        },
+        {
+          "timestamp": "03:10",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Approve 80 shares based on intraday mVaR bracket stop"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "ALPHA-04",
+      "scenario_id": "SCN-NORM-DUOL-FUND",
+      "ticker": "DUOL",
+      "variant": "CONCEPT_C",
+      "task_prompt": "Review the fundamental underwriting memo and research points for DUOL.",
+      "duration_sec": 170,
+      "think_aloud_dialogue": [
+        "[00:25] Participant: 'DUOL shows revenue growth of 41% and net cash balance sheet. Growth looks stellar.'",
+        "[00:55] Participant: 'I see an accordion item 2 is open: Material Bearish Dissent about Generative AI LLM commoditization.'",
+        "[01:25] Participant: 'I am going to collapse that dissent drawer. Every tech company has AI risk, it's just noise.'",
+        "[02:10] Participant: 'Since revenue is up 41%, I am completely bullish. Underwrite full position immediately without any caveats.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_C",
+            "ticker": "DUOL"
+          }
+        },
+        {
+          "timestamp": "01:20",
+          "event": "MEMO_ITEM_TOGGLED",
+          "details": {
+            "itemIndex": 2,
+            "open": false
+          }
+        },
+        {
+          "timestamp": "02:40",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Strong Buy: Ignore bear case, underwrite full position based on 41% growth"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "ALPHA-05",
+      "scenario_id": "SCN-NORM-ALAB-MOM",
+      "ticker": "ALAB",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Evaluate consolidation structure, volume pattern, and entry trigger for ALAB.",
+      "duration_sec": 130,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'ALAB spot $98.40. Base pattern shows contraction.'",
+        "[00:45] Participant: 'Invalidation floor is at $88.50. Risk per share is $9.90.'",
+        "[01:15] Participant: 'Calculated shares for $1,000 risk is 101 shares.'",
+        "[02:00] Participant: 'Technical setup is fully verified and actionable. Staging 101 shares at breakout.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_B",
+            "ticker": "ALAB"
+          }
+        },
+        {
+          "timestamp": "01:20",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 101,
+            "stop": 88.5
+          }
+        },
+        {
+          "timestamp": "02:05",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Stage 101 shares ALAB at $98.40 with $88.50 invalidation stop"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "ALPHA-06",
+      "scenario_id": "SCN-ADVR-PHANTOM",
+      "ticker": "TEST_EXEC",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Inspect technical base pattern and verify structural pivot anchors.",
+      "duration_sec": 185,
+      "think_aloud_dialogue": [
+        "[00:30] Participant: 'TEST_EXEC shows spot $420.00 with stop at $398.00.'",
+        "[01:05] Participant: 'Looking at the base consolidation... wait, the pivot trigger is marked as unanchored.'",
+        "[01:40] Participant: 'The base contraction has only 1 contraction cycle and volume expanded on the pullback.'",
+        "[02:30] Participant: 'This is a phantom base pattern. Rejecting entry until a genuine structural handle forms.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_B",
+            "ticker": "TEST_EXEC"
+          }
+        },
+        {
+          "timestamp": "01:45",
+          "event": "SECTION_TOGGLED",
+          "details": {
+            "section": "TECHNICAL_PROOF",
+            "expanded": true
+          }
+        },
+        {
+          "timestamp": "02:55",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Reject trade: Phantom base with unanchored pivot and invalid volume signature"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "ALPHA-07",
+      "scenario_id": "SCN-ADVR-PIPE-FAIL",
+      "ticker": "TEST_PIPE",
+      "variant": "CONCEPT_C",
+      "task_prompt": "Inspect system telemetry and batch pipeline indicators.",
+      "duration_sec": 160,
+      "think_aloud_dialogue": [
+        "[00:25] Participant: 'Looking at TEST_PIPE. Spot price is $125.00.'",
+        "[00:50] Participant: 'Header provenance says PIPELINE_FAILURE: CRITICAL_BATCH_RUN_INTERRUPTED.'",
+        "[01:20] Participant: 'Well, the price is shown on screen, so I am just going to copy the order anyway.'",
+        "[02:25] Participant: 'Clicked Copy Order. It gave me an offline string. I consider this order submitted to the exchange!'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_C",
+            "ticker": "TEST_PIPE"
+          }
+        },
+        {
+          "timestamp": "00:55",
+          "event": "ALERT_NOTED",
+          "details": {
+            "status": "PIPELINE_FAILURE"
+          }
+        },
+        {
+          "timestamp": "02:20",
+          "event": "ORDER_COPIED",
+          "details": {
+            "ticker": "TEST_PIPE"
+          }
+        },
+        {
+          "timestamp": "02:35",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Order successfully routed to market via broker gateway"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "ALPHA-08",
+      "scenario_id": "SCN-NORM-FIX-VCP",
+      "ticker": "FIX",
+      "variant": "CONCEPT_C",
+      "task_prompt": "Examine verdict presentation, sizing parameters, and invalidation rules for FIX.",
+      "duration_sec": 150,
+      "think_aloud_dialogue": [
+        "[00:25] Participant: 'Reviewing FIX under Concept C evidence workspace.'",
+        "[00:55] Participant: 'Examining bear thesis: high valuation multiple and cycle peak concerns.'",
+        "[01:30] Participant: 'Opening Technical Console: Planned entry $430.50, stop $395.00, shares 28.'",
+        "[02:15] Participant: 'Approving 28 shares with documented risk awareness.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_C",
+            "ticker": "FIX"
+          }
+        },
+        {
+          "timestamp": "01:00",
+          "event": "MEMO_ITEM_TOGGLED",
+          "details": {
+            "itemIndex": 2,
+            "open": true
+          }
+        },
+        {
+          "timestamp": "01:35",
+          "event": "TECH_CONSOLE_TOGGLED",
+          "details": {
+            "open": true
+          }
+        },
+        {
+          "timestamp": "02:20",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 28,
+            "stop": 395.0
+          }
+        },
+        {
+          "timestamp": "02:25",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Approve 28 shares at $430.50 with $395.00 structural stop"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "ALPHA-09",
+      "scenario_id": "SCN-ADVR-CONTRADICT",
+      "ticker": "TEST_BIAS",
+      "variant": "CONCEPT_C",
+      "task_prompt": "Evaluate company disclosures and corporate action evidence for consistency.",
+      "duration_sec": 175,
+      "think_aloud_dialogue": [
+        "[00:30] Participant: 'TEST_BIAS shows score 88/100 and buy verdict.'",
+        "[01:00] Participant: 'In the memo, Item 3 notes pending shareholder vote on dilutive buyout.'",
+        "[01:35] Participant: 'Wait, the technical prompt says actionable breakout at $860.00, but the buyout caps upside at $840.00.'",
+        "[02:30] Participant: 'The fundamental disclosure contradicts the technical breakout setup. Halting trade.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_C",
+            "ticker": "TEST_BIAS"
+          }
+        },
+        {
+          "timestamp": "01:05",
+          "event": "MEMO_ITEM_TOGGLED",
+          "details": {
+            "itemIndex": 3,
+            "open": true
+          }
+        },
+        {
+          "timestamp": "02:40",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Halt trade: Conflicting corporate action caps valuation below breakout pivot"
+          }
+        }
+      ]
+    },
+    {
+      "trial_id": "ALPHA-10",
+      "scenario_id": "SCN-NORM-PLSE-SWING",
+      "ticker": "PLSE",
+      "variant": "CONCEPT_B",
+      "task_prompt": "Identify invalidation level and determine position sizing for $1,000 risk budget.",
+      "duration_sec": 140,
+      "think_aloud_dialogue": [
+        "[00:20] Participant: 'PLSE under Concept B. Spot $7.50, stop $6.83.'",
+        "[00:50] Participant: 'Risk per share is $0.67. Calculated shares: 1,492.'",
+        "[01:25] Participant: 'Committed capital is $11,190. Portfolio exposure is 11.2%.'",
+        "[02:05] Participant: 'Everything matches canonical parameters. Order ready.'"
+      ],
+      "ui_interaction_events": [
+        {
+          "timestamp": "00:05",
+          "event": "SCREEN_LOADED",
+          "details": {
+            "variant": "CONCEPT_B",
+            "ticker": "PLSE"
+          }
+        },
+        {
+          "timestamp": "01:30",
+          "event": "ORDER_COPIED",
+          "details": {
+            "shares": 1492,
+            "stop": 6.83
+          }
+        },
+        {
+          "timestamp": "02:10",
+          "event": "TASK_SUBMITTED",
+          "details": {
+            "statedDecision": "Stage 1,492 shares PLSE at $7.50 with $6.83 invalidation floor"
+          }
+        }
+      ]
+    }
+  ],
+  "provenance_disclosure": "These are synthetic calibration transcripts developed to evaluate observer scoring consistency. They are not recordings of actual ARX Terminal research participants."
+}
