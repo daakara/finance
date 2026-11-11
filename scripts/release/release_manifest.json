@@ -1,57 +1,57 @@
 {
-  "release_candidate_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
-  "base_anchor_commit": "cb7f73000000dcbfba12a0ee3410c8272c91b2a3",
+  "release_candidate_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+  "base_anchor_commit": "88eeccfad0636ed29cf9807a68a63cdf69772ec4",
   "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-PG16-RESTORE-COMPAT-OWNER-PREAPPROVED",
+  "directive": "ARX-SM-ACT-020-CONTINUOUS-HARDENING-002",
   "files": {
-    ".github/workflows/sm-backup-pg16-compat.yml": {
+    ".github/workflows/sm-continuous-authorization.yml": {
       "operation": "A",
-      "originating_pr_number": 266,
-      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
-      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
-      "sha256": "eccfb2e372118b70eb39cfb3ecfa9ea0f519040d10fdde76a815fd1b4b15d4ba",
-      "size_bytes": 1602
+      "originating_pr_number": 268,
+      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+      "sha256": "b8e825f545b65c07166f363d2add0eeecfc6a9dbe37058ec6573f1a9dd48031c",
+      "size_bytes": 1011
     },
-    "Dockerfile.smart-money-backup": {
+    "analyst_dashboard/smart_money/continuous_authorization.py": {
       "operation": "A",
-      "originating_pr_number": 266,
-      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
-      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
-      "sha256": "0c85bf519a8b91d3389e4c005f33000099be3aef990043d2cdafc7996f746aab",
-      "size_bytes": 1339
+      "originating_pr_number": 268,
+      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+      "sha256": "f0503d21d5b64f8ed48edec9081235939d733c8140028071a1c0031285e07a96",
+      "size_bytes": 3435
     },
-    "analyst_dashboard/smart_money/storage/backup/backup_engine.py": {
+    "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
-      "originating_pr_number": 266,
-      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
-      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
-      "sha256": "f028ac56d7a7c978110331446d608caddd62472c1ecd9abd98aeb39ec2f28f45",
-      "size_bytes": 13642
+      "originating_pr_number": 268,
+      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+      "sha256": "872e99e536ac0f744a3d75bef4f7ee698cce6c31026269953288807efeb3ab7c",
+      "size_bytes": 64831
     },
-    "analyst_dashboard/smart_money/storage/backup/pg_client_compat.py": {
-      "operation": "A",
-      "originating_pr_number": 266,
-      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
-      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
-      "sha256": "8572b5c763520b694ff7a23ddf0eb0df3ebcf4f19d387d5521cf388a74dc073c",
-      "size_bytes": 3389
+    "analyst_dashboard/smart_money/worker.py": {
+      "operation": "M",
+      "originating_pr_number": 268,
+      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+      "sha256": "6c51fc05bd422732332f05b0eb81bfe96fce49000eb09ed467b9261d5e2fbb0e",
+      "size_bytes": 37135
     },
-    "docs/smart-money/postgres-16-restore-compatibility.md": {
+    "docs/smart-money/continuous-owner-authorization.md": {
       "operation": "A",
-      "originating_pr_number": 266,
-      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
-      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
-      "sha256": "5ae5dc27f264b893550154810110ecd1e423dea8a213993b6f8f0f28fa32dae7",
-      "size_bytes": 3161
+      "originating_pr_number": 268,
+      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+      "sha256": "fb5f0c1be80e149ea46a7284e320af3a71f2751998b7ce68bcc2c79a71c62759",
+      "size_bytes": 3405
     },
-    "tests/test_sm_act_020_pg_client_compat.py": {
+    "tests/test_sm_act_020_continuous_authorization.py": {
       "operation": "A",
-      "originating_pr_number": 266,
-      "originating_commit": "c3e07c089999cbf377ec4866d4a1fad33757c43f",
-      "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
-      "sha256": "ae728bca3839180f1b1e1b7abd453155a177f92b9dbab350c4eb21fd635f2a2e",
-      "size_bytes": 3921
+      "originating_pr_number": 268,
+      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+      "sha256": "b3e362fca2d65942fdc96fa31549b66b9532a5e54d5ab9b40c5bd6ea079893c9",
+      "size_bytes": 10366
     }
   },
   "qualification_framework_files": {
@@ -61,8 +61,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "db732ab9cb3640410f866f9ae03cb7c835fcc363d0b707f2c0c87c12695eb9ce",
-      "size_bytes": 58021,
+      "sha256": "be26c53d7fd309af83664843e0afe0b28ca21ddb50c8afad1947251fe36dab2c",
+      "size_bytes": 58026,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -684,6 +684,62 @@
           "governing_requirement": "ARX-SM-ACT-020: Pin dedicated PostgreSQL 16 client tools and archive header compatibility for smart-money backups (Issue #265 / PR #266). Operational holds preserved.",
           "sha256": "ae728bca3839180f1b1e1b7abd453155a177f92b9dbab350c4eb21fd635f2a2e",
           "size_bytes": 3921
+        }
+      }
+    },
+    "7cc28f2fabce804985304c690b5f312db44847c2": {
+      "release_candidate_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "base_anchor_commit": "88eeccfad0636ed29cf9807a68a63cdf69772ec4",
+      "total_files": 6,
+      "directive": "ARX-SM-ACT-020-CONTINUOUS-HARDENING-002",
+      "files": {
+        ".github/workflows/sm-continuous-authorization.yml": {
+          "operation": "A",
+          "originating_pr_number": 268,
+          "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+          "sha256": "b8e825f545b65c07166f363d2add0eeecfc6a9dbe37058ec6573f1a9dd48031c",
+          "size_bytes": 1011
+        },
+        "analyst_dashboard/smart_money/continuous_authorization.py": {
+          "operation": "A",
+          "originating_pr_number": 268,
+          "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+          "sha256": "f0503d21d5b64f8ed48edec9081235939d733c8140028071a1c0031285e07a96",
+          "size_bytes": 3435
+        },
+        "analyst_dashboard/smart_money/continuous_pipeline.py": {
+          "operation": "M",
+          "originating_pr_number": 268,
+          "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+          "sha256": "872e99e536ac0f744a3d75bef4f7ee698cce6c31026269953288807efeb3ab7c",
+          "size_bytes": 64831
+        },
+        "analyst_dashboard/smart_money/worker.py": {
+          "operation": "M",
+          "originating_pr_number": 268,
+          "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+          "sha256": "6c51fc05bd422732332f05b0eb81bfe96fce49000eb09ed467b9261d5e2fbb0e",
+          "size_bytes": 37135
+        },
+        "docs/smart-money/continuous-owner-authorization.md": {
+          "operation": "A",
+          "originating_pr_number": 268,
+          "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+          "sha256": "fb5f0c1be80e149ea46a7284e320af3a71f2751998b7ce68bcc2c79a71c62759",
+          "size_bytes": 3405
+        },
+        "tests/test_sm_act_020_continuous_authorization.py": {
+          "operation": "A",
+          "originating_pr_number": 268,
+          "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
+          "sha256": "b3e362fca2d65942fdc96fa31549b66b9532a5e54d5ab9b40c5bd6ea079893c9",
+          "size_bytes": 10366
         }
       }
     }
