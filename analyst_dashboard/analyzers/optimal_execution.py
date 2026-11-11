@@ -493,7 +493,10 @@ class OptimalExecutionEngine:
             "distance_to_entry_pct": distance_to_entry,
             "distance_to_stop_pct": distance_to_stop,
             "distance_to_tp1_pct": distance_to_tp1,
-            "risk_reward_ratio": max(1.85, rr_ratio),
+            # ARX-CONFLUENCE-INTEGRITY-001: emit actual computed R:R; _enforce_execution_invariants
+            # will clamp/recompute to >= 1.85 only after verifying TP1 geometry satisfies the floor.
+            # Do NOT pre-clamp here with max(1.85, rr_ratio) — that obscures true R:R below threshold.
+            "risk_reward_ratio": rr_ratio,
             "execution_status": exec_status,
             "market_location": market_location,
             "is_in_buy_zone": exec_status in ACTIONABLE_EXECUTION_STATUSES,

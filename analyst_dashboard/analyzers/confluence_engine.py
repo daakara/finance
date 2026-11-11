@@ -254,12 +254,19 @@ class ConfluenceEngine:
         # dynamically re-weight across the verified pillars so missing disclosures do not act as an artificial penalty ceiling.
         # Note: If fundamentals are missing/unverified, standard 4-pillar weighting applies (with unavailable pillars at 0)
         # to strictly preserve mathematical compression below 50.0 (defensive posture for unverified assets).
+        #
+        # ARX-CONFLUENCE-INTEGRITY-001: Score cap when coverage is partial (< 4 pillars verified).
+        # 2-pillar coverage (smart+macro both unavailable): cap at 72.0 to prevent HIGH-CONVICTION
+        # badge from being awarded without regulatory filing or macro evidence.
+        # 3-pillar coverage (one of smart or macro unavailable): cap at 84.0.
+        # Full 4-pillar coverage: cap at 96.0 (unchanged).
         if smart_status == "unavailable" and macro_status == "unavailable" and has_fundamentals:
             raw_composite = (
                 0.50 * tech_score +
                 0.50 * fund_score +
                 catalyst_mod
             )
+            coverage_cap = 72.0  # 2 verified pillars — cap below HIGH-CONVICTION threshold (80.0)
         elif smart_status == "unavailable" and has_fundamentals:
             raw_composite = (
                 0.35 * tech_score +
@@ -267,6 +274,7 @@ class ConfluenceEngine:
                 0.30 * macro_score +
                 catalyst_mod
             )
+            coverage_cap = 84.0  # 3 verified pillars
         elif macro_status == "unavailable" and has_fundamentals:
             raw_composite = (
                 0.35 * tech_score +
@@ -274,6 +282,7 @@ class ConfluenceEngine:
                 0.30 * smart_score +
                 catalyst_mod
             )
+            coverage_cap = 84.0  # 3 verified pillars
         else:
             raw_composite = (
                 0.25 * tech_score +
@@ -282,8 +291,9 @@ class ConfluenceEngine:
                 0.25 * macro_score +
                 catalyst_mod
             )
+            coverage_cap = 96.0  # Full 4-pillar coverage
 
-        final_score = max(0.0, min(96.0, round(raw_composite, 1)))
+        final_score = max(0.0, min(coverage_cap, round(raw_composite, 1)))
 
         pillars = [
             {
@@ -389,6 +399,10 @@ class ConfluenceEngine:
             risk_floor_str = f"near ${stop_loss:.2f}" if stop_loss is not None else "pending price discovery"
             bottom_line = f"Disciplined trade structure with {positives}/4 supporting pillars. Favorable risk floor {risk_floor_str}. Execute inside buy zones."
 
+        verified_pillars = sum(1 for p in [tech_status, fund_status, smart_status, macro_status] if p != "unavailable")
+        coverage_ratio = round(verified_pillars / 4.0, 2)
+        incomplete_coverage = verified_pillars < 4
+
         return {
             "symbol": clean_sym,
             "confluenceScore": final_score,
@@ -404,7 +418,11 @@ class ConfluenceEngine:
             "positivesCount": positives,
             "warningsCount": warns,
             "warnings": warnings,
-            "coverageRatio": round(sum(1 for p in [tech_status, fund_status, smart_status, macro_status] if p != "unavailable") / 4.0, 2),
+            "coverageRatio": coverage_ratio,
+            # ARX-CONFLUENCE-INTEGRITY-001: explicit incomplete-evidence flag for UI and eligibility gates
+            "incompleteCoverage": incomplete_coverage,
+            "verifiedPillarCount": verified_pillars,
+            "coverageCap": coverage_cap,
         }
 
     @staticmethod

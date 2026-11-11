@@ -590,6 +590,12 @@ export default function WeeklyConfluenceSpotlight({
         telemetryStatus: priceResult.telemetryStatus,
         setupValidity: "VALID",
         canExecuteLive: priceResult.canExecuteLive,
+        // ARX-CONFLUENCE-INTEGRITY-001: score provenance passthrough
+        reasonSuppressed: (setup as any).reasonSuppressed ?? null,
+        confluenceIncompleteCoverage: (setup as any).confluenceIncompleteCoverage ?? false,
+        confluenceVerifiedPillarCount: (setup as any).confluenceVerifiedPillarCount ?? null,
+        confluenceCoverageRatio: (setup as any).confluenceCoverageRatio ?? null,
+        riskRewardActual: (setup as any).riskRewardActual ?? null,
         // Backward compatibility
         livePrice: priceResult.displayPrice,
         liveChangePct: priceResult.displayChangePct,
@@ -985,6 +991,24 @@ export default function WeeklyConfluenceSpotlight({
                       {cand.rewardRiskRatio} : 1.0 R:R
                     </span>
                   </div>
+
+                  {/* ARX-CONFLUENCE-INTEGRITY-001: suppression and coverage provenance disclosure */}
+                  {!cand.canExecuteLive && (cand as any).reasonSuppressed && (
+                    <div
+                      className="text-[9px] font-mono px-2 py-1 rounded bg-amber-950/30 border border-amber-800/40 text-amber-300 leading-snug"
+                      aria-label={`Setup suppressed: ${(cand as any).reasonSuppressed}`}
+                    >
+                      ⏸ {isPlain ? "Not yet actionable" : (cand as any).reasonSuppressed}
+                    </div>
+                  )}
+                  {(cand as any).confluenceIncompleteCoverage && (
+                    <div
+                      className="text-[9px] font-mono px-2 py-1 rounded bg-slate-800/60 border border-slate-700/40 text-slate-400 leading-snug"
+                      title={`Score based on ${(cand as any).confluenceVerifiedPillarCount ?? 2}/4 verified evidence pillars. Smart Money and/or Macro data unavailable.`}
+                    >
+                      📋 {(cand as any).confluenceVerifiedPillarCount ?? 2}/4 pillars verified — partial evidence
+                    </div>
+                  )}
 
                   {/* Mathematical Execution Price Ladder */}
                   <div className="bg-[#090d14] p-2.5 rounded-lg border border-[#1e293b] space-y-1.5 font-mono text-xs">

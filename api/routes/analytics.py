@@ -405,6 +405,8 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         else:
             disqualification_reason = plan.get("entry_thesis", "Technical structure does not meet risk/reward criteria")
 
+    # ARX-CONFLUENCE-INTEGRITY-001: surface score provenance fields for UI and eligibility tracing
+    _rr_actual = plan.get("risk_reward_ratio")
     return {
         "symbol": sym,
         "ticker": sym,
@@ -419,6 +421,12 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         "target1": round(target1, 2) if target1 else None,
         "target2": round(target2, 2) if target2 else None,
         "confluenceScore": round(float(conf_score), 1) if conf_score is not None else 0.0,
+        # Score provenance: pillar coverage, cap applied, actual R:R (pre-floor)
+        "confluenceCoverageRatio": conf_output.get("coverageRatio", 0.0),
+        "confluenceVerifiedPillarCount": conf_output.get("verifiedPillarCount", 0),
+        "confluenceIncompleteCoverage": conf_output.get("incompleteCoverage", False),
+        "confluenceCoverageCap": conf_output.get("coverageCap", 96.0),
+        "riskRewardActual": round(float(_rr_actual), 2) if _rr_actual is not None else None,
         "executionStatus": exec_status,
         "decisionState": decision_state,
         "isActionable": is_actionable,
