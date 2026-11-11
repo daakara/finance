@@ -33,6 +33,7 @@ from analyst_dashboard.smart_money.storage.config import (
     validate_storage_configuration,
 )
 from analyst_dashboard.smart_money.storage.postgres_connection import get_connection
+from analyst_dashboard.smart_money.continuous_authorization import require_continuous_authorization
 from analyst_dashboard.smart_money.storage.postgres_coordination import (
     acquire_sec_owner_lock,
     release_sec_owner_lock,
@@ -464,6 +465,8 @@ class SmartMoneyContinuousPipeline:
         # 1. Check worker role
         role = get_sec_egress_role()
         # In non-dry-run environments, worker must have OWNER role
+        if not dry_run and not self.allow_test_mode:
+            require_continuous_authorization(issuers=self.issuers)
         if not dry_run and role != "OWNER":
             raise RuntimeError(
                 f"UNAUTHORIZED_WORKER_ROLE: Worker requires ARX_SEC_EGRESS_ROLE=OWNER. Active: '{role}'."
@@ -516,6 +519,10 @@ class SmartMoneyContinuousPipeline:
            Across all stop or abort scenarios prior to Step 8, the pointer remains intact,
            ensuring 100% continuous read-only Radar uptime.
         """
+        # 0. A production OWNER grant must remain valid at every stage boundary.
+        if not self.allow_test_mode:
+            require_continuous_authorization(issuers=self.issuers)
+
         # 1. Cooperative in-process cancellation
         if self._cancelled or (self.cancellation_token and self.cancellation_token()):
             raise RuntimeError(
