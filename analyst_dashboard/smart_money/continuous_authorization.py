@@ -11,8 +11,6 @@ import re
 from datetime import datetime, timezone
 from typing import Mapping, Sequence
 
-from analyst_dashboard.smart_money.storage.config import SMART_MONEY_POSTGRES_MAJOR
-
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 _ID = re.compile(r"^[a-f0-9]{32}$")
 _SCOPE = "DAILY_10_ISSUER_FORM4"
