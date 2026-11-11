@@ -1,0 +1,31 @@
+# Dedicated ARX Smart Money scheduled backup image (issue #265).
+# A PostgreSQL 16 official image provides unmodified PG16 pg_dump/pg_restore.
+# This Dockerfile is NOT active until Railway backup service is explicitly
+# qualified and configured to use /Dockerfile.smart-money-backup.
+FROM postgres:16-bookworm
+
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/arx-venv/bin:/usr/lib/postgresql/16/bin:${PATH}"
+
+# Only the backup job uses this image; the default web/worker Dockerfile is unchanged.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-venv python3-pip build-essential libpq-dev ca-certificates \
+    && python3 -m venv /opt/arx-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN /opt/arx-venv/bin/pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y --auto-remove build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+# Fail the image build if the path unexpectedly resolves to a non-PG16 client.
+RUN pg_dump --version | grep -E '^pg_dump \(PostgreSQL\) 16\.' \
+    && pg_restore --version | grep -E '^pg_restore \(PostgreSQL\) 16\.'
+
+# Override the postgres server entrypoint; one-shot backup job only.
+ENTRYPOINT []
+CMD ["python", "-m", "analyst_dashboard.smart_money.storage.backup.backup_scheduled"]
