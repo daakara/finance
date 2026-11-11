@@ -41,6 +41,10 @@ from analyst_dashboard.smart_money.storage.postgres_coordination import (
     acquire_backup_lock,
     release_backup_lock,
 )
+from analyst_dashboard.smart_money.storage.backup.pg_client_compat import (
+    validate_backup_toolchain,
+    inspect_custom_archive,
+)
 from analyst_dashboard.smart_money.storage.backup.storage_adapter import (
     BackupStorageAdapter,
     get_backup_storage_adapter,
@@ -133,6 +137,14 @@ class SmartMoneyBackupEngine:
                 cur.execute("SHOW server_version;")
                 pg_version_str = str(cur.fetchone()[0])
 
+            # Pin and validate all native client tools BEFORE creating/uploading a dump.
+            # A PG17 custom archive cannot be assumed safely restorable to PG16.
+            pg_dump_bin = find_pg_binary("pg_dump")
+            pg_dumpall_bin = find_pg_binary("pg_dumpall") if include_globals else None
+            client_details = validate_backup_toolchain(
+                pg_version_str, pg_dump_bin, globals_binary=pg_dumpall_bin,
+            )
+
             # 2. Setup isolated temporary directory for raw capture
             with tempfile.TemporaryDirectory(prefix="arx_backup_tmp_") as tmp_dir:
                 globals_filename = f"globals_{backup_id}.sql" if include_globals else None
@@ -154,7 +166,6 @@ class SmartMoneyBackupEngine:
                 globals_size = 0
                 receipt_globals = None
                 if include_globals:
-                    pg_dumpall_bin = find_pg_binary("pg_dumpall")
                     if self.dsn.startswith("postgres://") or self.dsn.startswith("postgresql://"):
                         cmd_globals = [
                             pg_dumpall_bin,
@@ -180,7 +191,6 @@ class SmartMoneyBackupEngine:
                     receipt_globals = self.storage_adapter.upload_file(globals_local_path, globals_filename)
 
                 # 4. Capture Database Custom Dump via pg_dump -Fc
-                pg_dump_bin = find_pg_binary("pg_dump")
                 if self.dsn.startswith("postgres://") or self.dsn.startswith("postgresql://"):
                     cmd_dump = [
                         pg_dump_bin,
@@ -206,6 +216,7 @@ class SmartMoneyBackupEngine:
                 if proc_dump.returncode != 0:
                     raise RuntimeError(f"PG_DUMP_FAILED: {proc_dump.stderr}")
 
+                archive_format_version = inspect_custom_archive(dump_local_path)
                 dump_sha = compute_sha256(dump_local_path)
                 dump_size = os.path.getsize(dump_local_path)
 
@@ -226,8 +237,12 @@ class SmartMoneyBackupEngine:
                     "source_environment": os.environ.get("ARX_ENVIRONMENT", "rehearsal"),
                     "source_database": conn_info["dbname"],
                     "source_release_sha": os.environ.get("ARX_RELEASE_SHA", "c8cc1cda0be5a2a62816d3024b6499515e97101a"),
-                    "postgres_major_version": 16,
+                    "postgres_major_version": SMART_MONEY_POSTGRES_MAJOR,
                     "postgres_version": pg_version_str,
+                    "pg_dump_client_version": client_details["pg_dump_client_version"],
+                    "pg_dump_client_major": client_details["pg_dump_client_major"],
+                    "pg_dumpall_client_version": client_details["pg_dumpall_client_version"],
+                    "archive_format_version": archive_format_version,
                     "schema_version": ACTIVE_SCHEMA_VERSION,
                     "started_at": started_at,
                     "completed_at": completed_at,
