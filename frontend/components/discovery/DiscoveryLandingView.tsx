@@ -82,24 +82,24 @@ export default function DiscoveryLandingView({
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search ticker, company name, or ETF (e.g. NVDA, SPY, Apple)..."
               aria-label="Search ticker, company name, or ETF"
-              className="w-full pl-12 pr-28 py-3.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 text-sm font-sans text-white placeholder-slate-400 transition-all shadow-inner outline-none min-h-[48px]"
+              className="w-full pl-12 pr-32 py-3.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 text-sm font-sans text-white placeholder-slate-400 transition-all shadow-inner outline-none min-h-[48px]"
             />
-            <div className="absolute right-2 flex items-center gap-1.5">
+            <div className="absolute right-1.5 flex items-center gap-1.5">
               <button
                 type="submit"
                 disabled={!searchInput.trim()}
-                className="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:hover:bg-cyan-500 text-slate-950 font-bold text-xs transition-all cursor-pointer min-h-[36px]"
+                className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:hover:bg-cyan-500 text-slate-950 font-bold text-xs transition-all cursor-pointer min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
               >
                 Analyze
               </button>
             </div>
           </div>
-          <div className="flex items-center justify-between mt-2 text-[11px] font-mono text-slate-400 px-1">
+          <div className="flex items-center justify-between mt-2.5 text-xs font-mono text-slate-400 px-1">
             <span>Tip: Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 font-bold border border-slate-700">/</kbd> anywhere to open Universal OmniSearch</span>
             <button
               type="button"
               onClick={handleOpenGlobalOmni}
-              className="text-cyan-400 hover:underline cursor-pointer"
+              className="text-cyan-400 hover:text-cyan-300 hover:underline cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded px-1.5 py-1 min-h-[32px] inline-flex items-center"
             >
               Advanced Search (⌘K) →
             </button>
@@ -108,7 +108,7 @@ export default function DiscoveryLandingView({
 
         {/* Fast Market Leader Quick Access */}
         <div className="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
-          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 block">
             Popular Institutional Candidates & Benchmarks
           </span>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -118,17 +118,18 @@ export default function DiscoveryLandingView({
                 type="button"
                 onClick={() => onSelectSymbol(asset.symbol)}
                 data-testid={`quick-pick-${asset.symbol}`}
+                aria-label={`Analyze ${asset.symbol} - ${asset.name}`}
                 className="p-2.5 rounded-xl bg-[var(--surface-2)] hover:bg-[#1a2436] border border-[var(--border-subtle)] hover:border-cyan-500/60 text-left transition-all group cursor-pointer flex flex-col justify-between min-h-[56px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-black text-xs text-white group-hover:text-cyan-300 transition-colors">
                     {asset.symbol}
                   </span>
-                  <span className="text-[9px] font-mono font-bold px-1 py-0.5 rounded bg-slate-800 text-slate-400">
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/60">
                     {asset.type}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 truncate mt-0.5 group-hover:text-slate-300">
+                <div className="text-[11px] text-slate-400 truncate mt-0.5 group-hover:text-slate-300 font-sans">
                   {asset.name}
                 </div>
               </button>
@@ -212,21 +213,21 @@ export default function DiscoveryLandingView({
           </div>
         )}
 
-        <div className="p-3 rounded-xl bg-[#090d16] border border-[#1b2537] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-          <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-mono font-bold text-slate-400 block">
+        <div className="p-3.5 rounded-xl bg-[#090d16] border border-[#1b2537] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="space-y-1">
+            <span className="text-xs uppercase font-mono font-bold text-slate-400 block tracking-wide">
               Current Macro Posture Assessment:
             </span>
-            <span className="font-bold text-slate-200">
+            <span className="font-bold text-white text-sm">
               {macroData?.regimeTitle || "Macroeconomic Baseline Active"}
             </span>
-            <span className="text-slate-400 block text-[11px] font-sans">
+            <span className="text-slate-400 block text-xs font-sans leading-relaxed">
               {macroData?.regimeSubtitle || "Position sizing scales proportionally with broad market liquidity and credit spreads."}
             </span>
           </div>
           <Link
             href="/radar?filter=macro_aligned"
-            className="text-xs font-mono font-bold text-cyan-400 hover:text-cyan-300 underline shrink-0 min-h-[44px] flex items-center"
+            className="text-xs font-mono font-bold text-cyan-400 hover:text-cyan-300 underline shrink-0 min-h-[44px] inline-flex items-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded px-2"
           >
             Scan Macro-Aligned Candidates →
           </Link>
