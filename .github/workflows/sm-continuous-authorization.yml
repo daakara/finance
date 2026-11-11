@@ -1,0 +1,32 @@
+name: SM-ACT-020 Continuous Authorization Guard
+
+on:
+  pull_request:
+    paths:
+      - "analyst_dashboard/smart_money/continuous_authorization.py"
+      - "analyst_dashboard/smart_money/continuous_pipeline.py"
+      - "analyst_dashboard/smart_money/worker.py"
+      - "tests/test_sm_act_020_continuous_authorization.py"
+      - ".github/workflows/sm-continuous-authorization.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authorization-regression:
+    name: Expiry & scope fail-closed synthetic tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest
+      - name: Run fail-closed authorization tests
+        run: python -m pytest tests/test_sm_act_020_continuous_authorization.py -q
