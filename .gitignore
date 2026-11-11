@@ -57,6 +57,8 @@ sample_data.py
 # OS
 .DS_Store
 Thumbs.db
+.nosync
+*.nosync
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -68,6 +70,7 @@ Thumbs.db
 frontend/.next/
 frontend/out/
 frontend/node_modules/
+frontend/node_modules
 *.tsbuildinfo
 frontend/screenshots/
 

@@ -35,6 +35,7 @@ export function resolveUxPreviewDeployment(env = process.env) {
 const nextConfig = {
   output: "export",
   trailingSlash: true,
+  staticPageGenerationTimeout: 180,
   images: {
     unoptimized: true,
   },

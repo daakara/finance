@@ -1,185 +1,49 @@
 {
-  "release_candidate_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-  "base_anchor_commit": "428fd636062d96ab45651dc51233648ccf31d862",
-  "total_files": 22,
+  "release_candidate_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+  "base_anchor_commit": "a54a234422d8cdfcd6902f290a9ef7329ed0f131",
+  "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SPRINT-UI-DISTILL-015-UX-OWNER-ADMITTED",
+  "directive": "ARX-UX-PHASE5-POST-LAUNCH-REFINEMENT-OWNER-PREAPPROVED",
   "files": {
-    "docs/ux/ARX_SPRINT_UI_DISTILL_015_PLAN.md": {
-      "operation": "A",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "c336e3e9d71b28ddb63fd78ca2fe002e78eb0bf539dc78bcb84fe9a82383887d",
-      "size_bytes": 15653
-    },
-    "frontend/app/page.tsx": {
+    ".gitignore": {
       "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "a1cc4b11445ef2b1642d6b53cf149f200bcd7b9dbe0fcb8cbc2866f8b0aefae3",
-      "size_bytes": 45873
-    },
-    "frontend/app/portfolio/page.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "2a4db6ef4f60c31087f8f85949e9e377a6562a6e410554a25deb6793008fc679",
-      "size_bytes": 77211
-    },
-    "frontend/app/radar/page.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "e1f5e9bc2e70f55db8ab9d75ec49ead771d6624eee8cfa3cc4056ffb33dbbfee",
-      "size_bytes": 119308
-    },
-    "frontend/app/setups/page.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "5e8fcbf342fd7bf697fa11c58f827d67246acc4f3610feeba5aa14b85f892f1f",
-      "size_bytes": 61547
-    },
-    "frontend/components/AdaptiveTerminal.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "4e7d50d2517c0087c2970615d660a23fd4195748f81f4c337da06f7efca44cbc",
-      "size_bytes": 13033
-    },
-    "frontend/components/DecisionReadinessCard.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "20b09c8608e736c81e23ca4e27fd158b141af0cf8dbfaa28628c8d51d268dcb3",
-      "size_bytes": 12028
+      "originating_pr_number": 264,
+      "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+      "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
+      "sha256": "2dd011e38055c20221aee8c342be5f4a776dcd1ad78cf1d021aa691d40cdbefe",
+      "size_bytes": 901
     },
     "frontend/components/IntentHero.tsx": {
       "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "079caf2cb9314596b8e133697068387b558e7dbe68e6844ab1f4133d9aeb308b",
-      "size_bytes": 8002
-    },
-    "frontend/components/OptimalEntryExitCard.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "c706c8ef827ff73251013420f8df7db830a96c79f8c4bbd0fb98afc52261519b",
-      "size_bytes": 49189
-    },
-    "frontend/components/PreFlightReadinessBar.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "eaff469b90bc8169842f3bc2b0983de2103cb323fe29a3546f117d387cc9e366",
-      "size_bytes": 13325
-    },
-    "frontend/components/UniversalOmniSearch.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "de611650c040036676ffb184ac17a290c6416b66fd9efac1f2336ebb43fb8fcf",
-      "size_bytes": 15634
-    },
-    "frontend/components/WatchlistSidebar.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "b313178c96a9b59d468a3ad6b21e3cc80436773ad1c49485bfbcdca1e54ca094",
-      "size_bytes": 18454
+      "originating_pr_number": 264,
+      "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+      "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
+      "sha256": "3c54ec6c9054cbcca52c54adb0981359f1560ff60aa8036c6151bd2841b18c1e",
+      "size_bytes": 9788
     },
     "frontend/components/discovery/DiscoveryLandingView.tsx": {
-      "operation": "A",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "4a381fe858e8f2b1f43801c1ce0f3cbe0848a863cf130ebd3ce1bfaae38a4183",
-      "size_bytes": 13150
-    },
-    "frontend/components/terminal/EvidenceDomainStatusCard.tsx": {
       "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "4903277bbceb9cd5856551697256ce09b74eecdf114fd4fedd419b6b44d0cffa",
-      "size_bytes": 13927
+      "originating_pr_number": 264,
+      "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+      "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
+      "sha256": "15f45da9d0cab8f23cad5d6eeec2e4461a179cba57dfa53aa79d54b59db2577b",
+      "size_bytes": 13638
     },
-    "frontend/components/terminal/GuidedTerminalView.tsx": {
+    "frontend/next.config.mjs": {
       "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "95fbc97ffc52bf5f4868cfd60160db157d86df9d0f7438181338959c0f3030d5",
-      "size_bytes": 17646
+      "originating_pr_number": 264,
+      "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+      "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
+      "sha256": "9969a67cfe9bff23c571485db6b8a1996377839f4a63a09908fe0ac2b229d74b",
+      "size_bytes": 3373
     },
-    "frontend/components/terminal/SharedExecutionLadder.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "14cc68084375cbdff8b24c779fe9d1f6d69912a46f9dfa5fd27521b3725cb9e3",
-      "size_bytes": 16259
-    },
-    "frontend/components/terminal/StandardTerminalView.tsx": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "b5d0f319332b4eb37791fd51c4248e4b646660f001aed6b750ccf038952999cd",
-      "size_bytes": 25828
-    },
-    "frontend/lib/evidenceDomains.ts": {
-      "operation": "M",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "f3a382807f12733a1e9f7b8ce82603a1d0c1491d88a2640c60f4c645140956d8",
-      "size_bytes": 26471
-    },
-    "frontend/tests/executionPresentationConsolidation.test.ts": {
+    "frontend/tests/uxPhase5RefinementAndWorkflow.test.ts": {
       "operation": "A",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "208d9bd6d5225ff19043a01d10fd9de8d04b3b122183bc2d2d655becf87290f3",
-      "size_bytes": 9993
-    },
-    "frontend/tests/uxPhase2NomenclatureAndDeSlop.test.ts": {
-      "operation": "A",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "1482117e1dac87523737ca43b0cb4c1111178befb6614d735a29cde459108119",
-      "size_bytes": 9230
-    },
-    "frontend/tests/uxPhase3GovernanceAndClearance.test.ts": {
-      "operation": "A",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "39cfdea8ad97e7994f201e15e0d3161017f2596ce7b1dcbf483ebb2b4f2a0352",
-      "size_bytes": 11816
-    },
-    "frontend/tests/uxPhase4RouteDecouplingAndDiscovery.test.ts": {
-      "operation": "A",
-      "originating_pr_number": 260,
-      "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-      "sha256": "0284a59ef514262506de438978f7d0c2d41517575b184581cdc9960ff403c420",
-      "size_bytes": 5784
+      "originating_pr_number": 264,
+      "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+      "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
+      "sha256": "96c1d7b10e588bb932b1c0a25ab58aa11f19ed8c910e581801825e47e1477596",
+      "size_bytes": 6066
     }
   },
   "qualification_framework_files": {
@@ -189,8 +53,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "22cb763e8b19014684d306c965b7910c69c6882090171d8291af61b797b9348e",
-      "size_bytes": 58011,
+      "sha256": "d1c98cf1bcb793a56f51d6473b479a3cac9403b1e37d7a5cabb0ebf990ecd532",
+      "size_bytes": 58016,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -305,6 +169,191 @@
           "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/261#issuecomment-6781775816",
           "sha256": "37b7fa1aa266c60fd1c5940f6c85d3e0e37047e0a54c240a58f8a95cc8ff452d",
           "size_bytes": 2539
+        }
+      }
+    },
+    {
+      "release_candidate_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+      "base_anchor_commit": "428fd636062d96ab45651dc51233648ccf31d862",
+      "total_files": 22,
+      "qualification_policy_version": "2.2.0-D074A4",
+      "directive": "ARX-SPRINT-UI-DISTILL-015-UX-OWNER-ADMITTED",
+      "files": {
+        "docs/ux/ARX_SPRINT_UI_DISTILL_015_PLAN.md": {
+          "operation": "A",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "c336e3e9d71b28ddb63fd78ca2fe002e78eb0bf539dc78bcb84fe9a82383887d",
+          "size_bytes": 15653
+        },
+        "frontend/app/page.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "a1cc4b11445ef2b1642d6b53cf149f200bcd7b9dbe0fcb8cbc2866f8b0aefae3",
+          "size_bytes": 45873
+        },
+        "frontend/app/portfolio/page.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "2a4db6ef4f60c31087f8f85949e9e377a6562a6e410554a25deb6793008fc679",
+          "size_bytes": 77211
+        },
+        "frontend/app/radar/page.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "e1f5e9bc2e70f55db8ab9d75ec49ead771d6624eee8cfa3cc4056ffb33dbbfee",
+          "size_bytes": 119308
+        },
+        "frontend/app/setups/page.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "5e8fcbf342fd7bf697fa11c58f827d67246acc4f3610feeba5aa14b85f892f1f",
+          "size_bytes": 61547
+        },
+        "frontend/components/AdaptiveTerminal.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "4e7d50d2517c0087c2970615d660a23fd4195748f81f4c337da06f7efca44cbc",
+          "size_bytes": 13033
+        },
+        "frontend/components/DecisionReadinessCard.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "20b09c8608e736c81e23ca4e27fd158b141af0cf8dbfaa28628c8d51d268dcb3",
+          "size_bytes": 12028
+        },
+        "frontend/components/IntentHero.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "079caf2cb9314596b8e133697068387b558e7dbe68e6844ab1f4133d9aeb308b",
+          "size_bytes": 8002
+        },
+        "frontend/components/OptimalEntryExitCard.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "c706c8ef827ff73251013420f8df7db830a96c79f8c4bbd0fb98afc52261519b",
+          "size_bytes": 49189
+        },
+        "frontend/components/PreFlightReadinessBar.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "eaff469b90bc8169842f3bc2b0983de2103cb323fe29a3546f117d387cc9e366",
+          "size_bytes": 13325
+        },
+        "frontend/components/UniversalOmniSearch.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "de611650c040036676ffb184ac17a290c6416b66fd9efac1f2336ebb43fb8fcf",
+          "size_bytes": 15634
+        },
+        "frontend/components/WatchlistSidebar.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "b313178c96a9b59d468a3ad6b21e3cc80436773ad1c49485bfbcdca1e54ca094",
+          "size_bytes": 18454
+        },
+        "frontend/components/discovery/DiscoveryLandingView.tsx": {
+          "operation": "A",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "4a381fe858e8f2b1f43801c1ce0f3cbe0848a863cf130ebd3ce1bfaae38a4183",
+          "size_bytes": 13150
+        },
+        "frontend/components/terminal/EvidenceDomainStatusCard.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "4903277bbceb9cd5856551697256ce09b74eecdf114fd4fedd419b6b44d0cffa",
+          "size_bytes": 13927
+        },
+        "frontend/components/terminal/GuidedTerminalView.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "95fbc97ffc52bf5f4868cfd60160db157d86df9d0f7438181338959c0f3030d5",
+          "size_bytes": 17646
+        },
+        "frontend/components/terminal/SharedExecutionLadder.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "14cc68084375cbdff8b24c779fe9d1f6d69912a46f9dfa5fd27521b3725cb9e3",
+          "size_bytes": 16259
+        },
+        "frontend/components/terminal/StandardTerminalView.tsx": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "b5d0f319332b4eb37791fd51c4248e4b646660f001aed6b750ccf038952999cd",
+          "size_bytes": 25828
+        },
+        "frontend/lib/evidenceDomains.ts": {
+          "operation": "M",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "f3a382807f12733a1e9f7b8ce82603a1d0c1491d88a2640c60f4c645140956d8",
+          "size_bytes": 26471
+        },
+        "frontend/tests/executionPresentationConsolidation.test.ts": {
+          "operation": "A",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "208d9bd6d5225ff19043a01d10fd9de8d04b3b122183bc2d2d655becf87290f3",
+          "size_bytes": 9993
+        },
+        "frontend/tests/uxPhase2NomenclatureAndDeSlop.test.ts": {
+          "operation": "A",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "1482117e1dac87523737ca43b0cb4c1111178befb6614d735a29cde459108119",
+          "size_bytes": 9230
+        },
+        "frontend/tests/uxPhase3GovernanceAndClearance.test.ts": {
+          "operation": "A",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "39cfdea8ad97e7994f201e15e0d3161017f2596ce7b1dcbf483ebb2b4f2a0352",
+          "size_bytes": 11816
+        },
+        "frontend/tests/uxPhase4RouteDecouplingAndDiscovery.test.ts": {
+          "operation": "A",
+          "originating_pr_number": 260,
+          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
+          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
+          "sha256": "0284a59ef514262506de438978f7d0c2d41517575b184581cdc9960ff403c420",
+          "size_bytes": 5784
         }
       }
     }
@@ -523,6 +572,54 @@
           "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
           "sha256": "0284a59ef514262506de438978f7d0c2d41517575b184581cdc9960ff403c420",
           "size_bytes": 5784
+        }
+      }
+    },
+    "2341c1cc9889c4ac82b519ddc1c34aac96d55b58": {
+      "release_candidate_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+      "base_anchor_commit": "a54a234422d8cdfcd6902f290a9ef7329ed0f131",
+      "total_files": 5,
+      "directive": "ARX-UX-PHASE5-POST-LAUNCH-REFINEMENT-OWNER-PREAPPROVED",
+      "files": {
+        ".gitignore": {
+          "operation": "M",
+          "originating_pr_number": 264,
+          "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+          "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
+          "sha256": "2dd011e38055c20221aee8c342be5f4a776dcd1ad78cf1d021aa691d40cdbefe",
+          "size_bytes": 901
+        },
+        "frontend/components/IntentHero.tsx": {
+          "operation": "M",
+          "originating_pr_number": 264,
+          "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+          "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
+          "sha256": "3c54ec6c9054cbcca52c54adb0981359f1560ff60aa8036c6151bd2841b18c1e",
+          "size_bytes": 9788
+        },
+        "frontend/components/discovery/DiscoveryLandingView.tsx": {
+          "operation": "M",
+          "originating_pr_number": 264,
+          "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+          "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
+          "sha256": "15f45da9d0cab8f23cad5d6eeec2e4461a179cba57dfa53aa79d54b59db2577b",
+          "size_bytes": 13638
+        },
+        "frontend/next.config.mjs": {
+          "operation": "M",
+          "originating_pr_number": 264,
+          "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+          "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
+          "sha256": "9969a67cfe9bff23c571485db6b8a1996377839f4a63a09908fe0ac2b229d74b",
+          "size_bytes": 3373
+        },
+        "frontend/tests/uxPhase5RefinementAndWorkflow.test.ts": {
+          "operation": "A",
+          "originating_pr_number": 264,
+          "originating_commit": "2341c1cc9889c4ac82b519ddc1c34aac96d55b58",
+          "governing_requirement": "ARX-UX-PHASE5-001: Post-launch refinement, institutional decision workflow progression & discovery accessibility (PR #264). Operational holds preserved. Owner preapproval: ARX-UX-PHASE5-002.",
+          "sha256": "96c1d7b10e588bb932b1c0a25ab58aa11f19ed8c910e581801825e47e1477596",
+          "size_bytes": 6066
         }
       }
     }
