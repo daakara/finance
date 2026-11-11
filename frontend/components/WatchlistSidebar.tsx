@@ -14,7 +14,7 @@ interface WatchlistItemDisplay extends WatchlistDefinition {
 }
 
 interface WatchlistSidebarProps {
-  activeSymbol: string;
+  activeSymbol?: string | null;
   onSelectSymbol: (symbol: string) => void;
   liveCurrentPrice?: number | null;
   livePriceChangePct?: number;
@@ -350,8 +350,8 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
         ) : (
           filteredItems.map((item) => {
             const itemClean = item.symbol.toUpperCase().replace("-USD", "");
-            const activeClean = activeSymbol.toUpperCase().replace("-USD", "");
-            const isSelected = activeClean === itemClean;
+            const activeClean = (activeSymbol || "").toUpperCase().replace("-USD", "");
+            const isSelected = Boolean(activeSymbol) && activeClean === itemClean;
             const isPinned = pinnedSymbols.includes(item.symbol.toUpperCase());
             return (
               <div

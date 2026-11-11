@@ -76,7 +76,7 @@ export interface EvidenceResolutionContext {
       congressional_stock_act?: any;
     };
     notice?: string;
-  };
+  } | null;
   macroData?: any;
   vix?: number;
   preflightCleared?: boolean;

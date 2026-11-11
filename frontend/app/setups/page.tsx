@@ -24,7 +24,6 @@ import { validateFillParams, generateIdempotencyKey } from '../../lib/tradeLifec
 import { isStatusActionable, isDecisionActionable } from '../../types/decisionContract';
 import { formatConfluenceScore } from '../../lib/confluenceFormat';
 import { trackSetupToPortfolio } from '../../lib/matomo';
-import SynthesisGuideBanner from '../../components/synthesis/SynthesisGuideBanner';
 import SynthesisMobileDock from '../../components/synthesis/SynthesisMobileDock';
 
 type SetupLoadState = 'LOADING' | 'ACTIONABLE' | 'SUPPRESSED_CRITERIA' | 'UNSUPPORTED_ASSET' | 'REQUEST_FAILURE' | 'BROWSE_ALL';
@@ -464,7 +463,6 @@ function SetupsContent() {
       activeHub="setups"
       activeSymbol={selectedSetup?.ticker || (tickerParam ? tickerParam.trim().toUpperCase() : null)}
     >
-      <SynthesisGuideBanner />
       <div className="space-y-6 pb-20 md:pb-0">
         {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC5) */}
         <PageIntro

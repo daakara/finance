@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ShieldCheck, Scale, Bell, Briefcase } from "lucide-react";
 import { isUxReviewOnly } from "../lib/uxReviewBoundary";
 import { useUxReviewOnly } from "../hooks/useUxReviewOnly";
 import { OptimalExecutionPlan } from "../lib/api";
@@ -20,6 +21,7 @@ import { resolveFreshCachedVix } from "../lib/preflightEvaluator";
 interface OptimalEntryExitCardProps {
   symbol: string;
   onOpenPreFlight?: () => void;
+  onOpenSizer?: () => void;
   executionPlan?: OptimalExecutionPlan;
   currentPrice?: number | null;
   liveSpotPrice?: number | null;
@@ -44,6 +46,7 @@ interface OptimalEntryExitCardProps {
 export default function OptimalEntryExitCard({
   symbol,
   onOpenPreFlight,
+  onOpenSizer,
   executionPlan,
   currentPrice,
   liveSpotPrice,
@@ -69,6 +72,14 @@ export default function OptimalEntryExitCard({
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
   const [logStatus, setLogStatus] = useState<string | null>(null);
+
+  const handleOpenSizer = () => {
+    if (onOpenSizer) {
+      onOpenSizer();
+    } else {
+      setIsSizerOpen(true);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -210,7 +221,7 @@ export default function OptimalEntryExitCard({
       >
         <div className="flex items-center space-x-2 text-[var(--text-muted)]">
           <span className="w-2 h-2 rounded-full bg-[var(--text-muted)]"></span>
-          <h3 className="text-sm font-bold text-[var(--text-1)]">🎯 {symbol} Execution Setup Unavailable</h3>
+          <h3 className="text-sm font-bold text-[var(--text-1)]">{symbol} Execution Setup Unavailable</h3>
         </div>
         <p className="text-xs text-[var(--text-2)] leading-relaxed">
           {entry_thesis || "Historical candlestick depth is insufficient (< 50 trading sessions) or asset identity is unverified. Under Phase 18 quantitative integrity invariants, the platform strictly refuses to synthesize hypothetical entry ranges, stop-loss levels, or asymmetric profit targets."}
@@ -417,7 +428,7 @@ export default function OptimalEntryExitCard({
   return (
     <div
       data-testid="conditional-trade-plan"
-      className={`bg-[var(--surface-1)] border rounded-xl p-2.5 sm:p-5 shadow-xl space-y-2.5 sm:space-y-4 font-sans text-[var(--text-1)] transition-colors ${
+      className={`bg-[var(--surface-1)] border rounded-xl p-2.5 sm:p-5 shadow-xl space-y-2.5 sm:space-y-4 font-sans text-[var(--text-1)] transition-colors min-w-0 overflow-hidden ${
         isDayTrader ? "border-[var(--signal-warn)]/40" : "border-[var(--border-subtle)]"
       }`}
     >
@@ -433,7 +444,7 @@ export default function OptimalEntryExitCard({
               }`}
             ></span>
             <h3 className="text-sm sm:text-base font-bold text-[var(--text-1)] tracking-tight flex items-center gap-2">
-              <span>{isPlain ? `🎯 ${symbol} Conditional Trade Plan` : `🎯 ${symbol} Conditional Execution Ladder`}</span>
+              <span>{isPlain ? `${symbol} Conditional Trade Plan` : `${symbol} Conditional Execution Ladder`}</span>
             </h3>
           </div>
           <p className="text-xs text-[var(--text-2)] mt-0.5 font-normal hidden sm:block">
@@ -844,27 +855,27 @@ export default function OptimalEntryExitCard({
           <button
             type="button"
             onClick={() => onOpenPreFlight?.()}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-emerald-600/20 hover:bg-emerald-500 hover:text-slate-950 border-emerald-500/60 text-emerald-300 flex items-center gap-1.5 shadow"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-emerald-600/20 hover:bg-emerald-500 hover:text-slate-950 border-emerald-500/60 text-emerald-300 flex items-center gap-1.5 shadow min-h-[44px]"
           >
-            <span>✈️</span>
+            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
             <span>Pre-Flight Checklist</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setIsSizerOpen(true)}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300 flex items-center gap-1.5 shadow"
+            onClick={handleOpenSizer}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300 flex items-center gap-1.5 shadow min-h-[44px]"
           >
-            <span>⚖️</span>
+            <Scale className="w-3.5 h-3.5 shrink-0" />
             <span>Size Position</span>
           </button>
 
           <button
             type="button"
             onClick={() => setIsAlertOpen(true)}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-amber-600/20 hover:bg-amber-500 hover:text-slate-950 border-amber-500/50 text-amber-300 flex items-center gap-1.5 shadow"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-amber-600/20 hover:bg-amber-500 hover:text-slate-950 border-amber-500/50 text-amber-300 flex items-center gap-1.5 shadow min-h-[44px]"
           >
-            <span>🔔</span>
+            <Bell className="w-3.5 h-3.5 shrink-0" />
             <span>Set Trigger Alert</span>
           </button>
 
@@ -873,9 +884,9 @@ export default function OptimalEntryExitCard({
             onClick={handleLogToPortfolio}
             disabled={reviewOnly}
             title={reviewOnly ? "Owner review preview: paper recording is locked while financial authority is unresolved" : undefined}
-            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/50 text-indigo-300 flex items-center gap-1.5 shadow"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/50 text-indigo-300 flex items-center gap-1.5 shadow min-h-[44px]"
           >
-            <span>💼</span>
+            <Briefcase className="w-3.5 h-3.5 shrink-0" />
             <span>{logStatus ? logStatus : (isPlain ? "Add to Paper Portfolio" : "Log Plan to Portfolio")}</span>
           </button>
         </div>
@@ -887,20 +898,26 @@ export default function OptimalEntryExitCard({
         />
       </div>
 
-      <PositionSizerModal
-        isOpen={isSizerOpen}
-        onClose={() => setIsSizerOpen(false)}
-        symbol={symbol}
-        entryPrice={current_price}
-        stopLoss={stop_loss}
-        takeProfit1={take_profit_1}
-        riskRewardRatio={risk_reward_ratio}
-        isStage4={isStage4}
-        adv20d={executionPlan.liquidity_defense?.adv_20d_usd}
-        canSizeTrade={canSizeTrade}
-        isActionable={canonicalActionable}
-        decisionStateLabel={decisionStateLabel}
-      />
+      {/* Position Sizer Modal (Local fallback when not hosted within AdaptiveTerminal) */}
+      {!onOpenSizer && isSizerOpen && (
+        <PositionSizerModal
+          isOpen={isSizerOpen}
+          onClose={() => setIsSizerOpen(false)}
+          symbol={symbol}
+          entryPrice={displayMarketPrice}
+          liveSpotPrice={liveSpotPrice}
+          liveFreshness={resolvedLiveFreshness}
+          analysisReferencePrice={canonicalAnalysisRef}
+          stopLoss={stop_loss}
+          takeProfit1={take_profit_1}
+          riskRewardRatio={risk_reward_ratio}
+          isStage4={isStage4}
+          adv20d={executionPlan.liquidity_defense?.adv_20d_usd}
+          canSizeTrade={canSizeTrade}
+          isActionable={canonicalActionable}
+          decisionStateLabel={decisionStateLabel}
+        />
+      )}
 
       <AlertTriggerModal
         isOpen={isAlertOpen}
