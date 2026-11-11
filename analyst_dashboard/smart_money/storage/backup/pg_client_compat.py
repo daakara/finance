@@ -53,7 +53,8 @@ def inspect_custom_archive(path: str, *, required_major: int = SMART_MONEY_POSTG
     intentionally limited to the currently supported PG16 production contract.
     """
     try:
-        header = Path(path).open("rb").read(7)
+        with Path(path).open("rb") as archive:
+            header = archive.read(7)
     except OSError:
         raise RuntimeError("POSTGRES_ARCHIVE_UNREADABLE") from None
     if len(header) < 7 or header[:5] != b"PGDMP":
