@@ -989,7 +989,7 @@ class SmartMoneyContinuousPipeline:
         return raw_filings
 
     def _fetch_filings_from_sec(self, ticker: str, cik: str, company_name: str) -> List[Dict[str, Any]]:
-        """Read one latest SEC Form 4/4-A using only the guarded HTTP session.
+        """Read all new Form 4/4-A filings within issuer budget via guarded HTTP.
 
         Default production path: worker -> pipeline -> ContinuousOutboundSession.
         Pure offline tests inject a mocked adapter. No unguarded requests are used.
@@ -1036,9 +1036,41 @@ class SmartMoneyContinuousPipeline:
         except (KeyError, TypeError, ValueError, IndexError) as e:
             raise RuntimeError("SEC_SUBMISSIONS_SCHEMA_INVALID") from e
 
+        if self.repository is None:
+            if not self.allow_test_mode:
+                raise RuntimeError("SEC_FILING_WATERMARK_DB_UNAVAILABLE")
+            known_accessions = set()
+        else:
+            try:
+                known_accessions = set(
+                    self.repository.get_existing_accessions_for_issuer(ticker)
+                )
+            except Exception as exc:
+                raise RuntimeError("SEC_FILING_WATERMARK_UNVERIFIED") from exc
+
+        # A governed issuer permits only four actual wire transmissions per cycle.
+        # One is reserved for the submissions index; at most three new primary
+        # documents may be fetched, absent redirects/fallbacks. If the catalog
+        # advertises more new filings, fail closed instead of silently truncating.
+        new_indices = []
+        seen_accessions = set()
         for index, form in enumerate(forms):
             if form not in ("4", "4/A"):
                 continue
+            accession = accessions[index]
+            if not isinstance(accession, str) or not re.fullmatch(
+                r"[0-9]{10}-[0-9]{2}-[0-9]{6}", accession
+            ):
+                raise RuntimeError("SEC_ACCESSION_INVALID")
+            if accession not in known_accessions and accession not in seen_accessions:
+                new_indices.append(index)
+            seen_accessions.add(accession)
+        if len(new_indices) > 3:
+            raise RuntimeError("SEC_NEW_FILINGS_EXCEED_ISSUER_BUDGET")
+
+        retrieved = []
+        for index in new_indices:
+            form = forms[index]
             accession = accessions[index]
             doc = primary_documents[index]
             if not isinstance(accession, str) or not re.fullmatch(r"[0-9]{10}-[0-9]{2}-[0-9]{6}", accession):
@@ -1061,7 +1093,7 @@ class SmartMoneyContinuousPipeline:
             if not xml or "<ownershipdocument" not in xml.lower():
                 raise RuntimeError("SEC_FORM4_XML_INVALID")
 
-            return [{
+            retrieved.append({
                 "ticker": ticker,
                 "cik": str(cik).zfill(10),
                 "company_name": company_name,
@@ -1072,9 +1104,9 @@ class SmartMoneyContinuousPipeline:
                 "xml_content": xml,
                 "source_url": source_url,
                 "content_hash": hashlib.sha256(xml.encode("utf-8")).hexdigest(),
-            }]
+            })
 
-        return []
+        return retrieved
 
     def _step7_parse_and_reconcile(
         self,

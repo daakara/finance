@@ -49,6 +49,21 @@ class PostgresSmartMoneyRepository:
 
     # ── Raw Filings & Idempotency ─────────────────────────────────────────────
 
+    def get_existing_accessions_for_issuer(self, ticker: str) -> Set[str]:
+        """Read existing Form 4 accession IDs for one governed issuer.
+
+        This lookup is read-only and must fail closed on database failure.
+        Do not infer that an inaccessible or empty repository has zero filings.
+        """
+        if not self.dsn:
+            raise RuntimeError("SEC_FILING_WATERMARK_DB_UNAVAILABLE")
+        with transaction(dsn=self.dsn) as cur:
+            cur.execute(
+                "SELECT accession_number FROM form4_raw_filings WHERE ticker = %s;",
+                (ticker,),
+            )
+            return {row[0] for row in cur.fetchall()}
+
     def save_raw_filing(
         self,
         filing: Dict[str, Any],
