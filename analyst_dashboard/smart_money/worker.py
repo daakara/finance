@@ -54,10 +54,56 @@ from analyst_dashboard.smart_money.storage.backup.containment_gate import (
     ContainmentState,
     BackupAgeContainmentViolationException,
 )
-from analyst_dashboard.smart_money.continuous_pipeline import SmartMoneyContinuousPipeline
+from analyst_dashboard.smart_money.continuous_pipeline import SmartMoneyContinuousPipeline, DEFAULT_GOVERNED_ISSUERS
+from analyst_dashboard.smart_money.continuous_authorization import require_continuous_authorization
 import threading
 
 logger = logging.getLogger("smart_money.worker")
+
+def init_worker_sentry() -> bool:
+    """Initializes Sentry telemetry for smart-money-worker with subsystem=smart_money."""
+    dsn = os.environ.get("SENTRY_DSN", "").strip()
+    if not dsn:
+        return False
+    try:
+        import sentry_sdk
+        release_sha = os.environ.get("ARX_RELEASE_SHA") or os.environ.get("RAILWAY_GIT_COMMIT_SHA")
+        env = os.environ.get("ARX_ENVIRONMENT", "production")
+        sentry_sdk.init(
+            dsn=dsn,
+            environment=env,
+            release=release_sha,
+            send_default_pii=False,
+            traces_sample_rate=0.0,
+        )
+        if hasattr(sentry_sdk, "get_global_scope"):
+            scope = sentry_sdk.get_global_scope()
+            scope.set_tag("service", "arx-smart-money-worker")
+            scope.set_tag("subsystem", "smart_money")
+        elif hasattr(sentry_sdk, "Hub"):
+            sentry_sdk.Hub.current.scope.set_tag("service", "arx-smart-money-worker")
+            sentry_sdk.Hub.current.scope.set_tag("subsystem", "smart_money")
+        logger.info("Worker Sentry telemetry initialized with subsystem=smart_money.")
+        return True
+    except Exception as e:
+        logger.warning(f"Worker Sentry initialization skipped/failed: {e}")
+        return False
+
+
+def capture_worker_exception(exc: BaseException, tags: Optional[Dict[str, str]] = None) -> Optional[str]:
+    """Captures exception to Sentry with explicit subsystem=smart_money attribution."""
+    try:
+        import sentry_sdk
+        with sentry_sdk.push_scope() as scope:
+            scope.set_tag("service", "arx-smart-money-worker")
+            scope.set_tag("subsystem", "smart_money")
+            if tags:
+                for k, v in tags.items():
+                    scope.set_tag(k, v)
+            return sentry_sdk.capture_exception(exc)
+    except Exception:
+        return None
+
 
 
 class SmartMoneyBackupSchedulerThread(threading.Thread):
@@ -292,6 +338,11 @@ class SmartMoneyIngestionWorker:
         2. Database configuration must be valid PostgreSQL.
         3. Containment policy configuration authorization in production.
         """
+        # 0. Emergency stop killswitch check
+        if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() in ("TRUE", "1", "YES"):
+            self.state = WorkerHealthState.FATAL
+            raise RuntimeError("EMERGENCY_STOP_ACTIVE: Worker startup halted by emergency stop killswitch.")
+
         role = get_sec_egress_role()
         if role != "OWNER":
             self.state = WorkerHealthState.FATAL
@@ -299,6 +350,8 @@ class SmartMoneyIngestionWorker:
                 f"UNAUTHORIZED_WORKER_ROLE: Worker requires ARX_SEC_EGRESS_ROLE=OWNER. Active role is '{role}'."
             )
 
+        # Require an unexpired, release- and universe-bound grant before any OWNER lock.
+        require_continuous_authorization(issuers=DEFAULT_GOVERNED_ISSUERS)
         validate_storage_configuration()
         if not self.dsn:
             self.state = WorkerHealthState.FATAL
@@ -527,6 +580,16 @@ class SmartMoneyIngestionWorker:
 
     def run_cycle(self) -> None:
         """Executes a single operational work cycle."""
+        # 0. Emergency stop killswitch check
+        if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() in ("TRUE", "1", "YES"):
+            logger.warning("Emergency stop active during run_cycle. Entering STANDBY and releasing lock.")
+            self.state = WorkerHealthState.STANDBY
+            self.release_egress_authority()
+            return
+
+        # Revalidate per cycle: an expired grant terminates the OWNER loop and
+        # the finally block releases its session-level advisory lock.
+        require_continuous_authorization(issuers=DEFAULT_GOVERNED_ISSUERS)
         # 1. Evaluate Backup Freshness Containment Gate
         if not self.containment_gate.check_ingestion_eligibility():
             self.state = WorkerHealthState.BLOCKED_DATA_INTEGRITY
@@ -548,6 +611,7 @@ class SmartMoneyIngestionWorker:
     def start(self, single_cycle: bool = False, poll_interval_sec: float = 5.0) -> None:
         """Starts worker event loop."""
         self._setup_signals()
+        init_worker_sentry()
         is_owner = False
         try:
             is_owner = self.validate_preflight()
@@ -569,6 +633,8 @@ class SmartMoneyIngestionWorker:
                     if single_cycle:
                         break
                     time.sleep(poll_interval_sec)
+                    if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() in ("TRUE", "1", "YES"):
+                        continue
                     if get_sec_egress_role() == "OWNER":
                         logger.info("ARX_SEC_EGRESS_ROLE transitioned to OWNER. Attempting activation...")
                         try:
