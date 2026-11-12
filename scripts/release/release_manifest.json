@@ -1,22 +1,22 @@
 {
-  "release_candidate_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+  "release_candidate_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
   "base_anchor_commit": "88eeccfad0636ed29cf9807a68a63cdf69772ec4",
-  "total_files": 6,
+  "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-CONTINUOUS-HARDENING-002",
+  "directive": "ARX-SM-ACT-020-CONTINUOUS-HARDENING-003",
   "files": {
     ".github/workflows/sm-continuous-authorization.yml": {
       "operation": "A",
       "originating_pr_number": 268,
-      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
       "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
-      "sha256": "b8e825f545b65c07166f363d2add0eeecfc6a9dbe37058ec6573f1a9dd48031c",
-      "size_bytes": 1011
+      "sha256": "f3fd144191e026f3d266ef17af520182216301da7bdeb96a97a8d2192e83d4ef",
+      "size_bytes": 1111
     },
     "analyst_dashboard/smart_money/continuous_authorization.py": {
       "operation": "A",
       "originating_pr_number": 268,
-      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
       "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
       "sha256": "f0503d21d5b64f8ed48edec9081235939d733c8140028071a1c0031285e07a96",
       "size_bytes": 3435
@@ -24,15 +24,15 @@
     "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
       "originating_pr_number": 268,
-      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
       "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
-      "sha256": "872e99e536ac0f744a3d75bef4f7ee698cce6c31026269953288807efeb3ab7c",
-      "size_bytes": 64831
+      "sha256": "4c5014a8fdebe5dc5eae5668a833bb33f5392c0bb8989fc0eecd7ce75085a62e",
+      "size_bytes": 70895
     },
     "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
       "originating_pr_number": 268,
-      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
       "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
       "sha256": "6c51fc05bd422732332f05b0eb81bfe96fce49000eb09ed467b9261d5e2fbb0e",
       "size_bytes": 37135
@@ -40,18 +40,26 @@
     "docs/smart-money/continuous-owner-authorization.md": {
       "operation": "A",
       "originating_pr_number": 268,
-      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
       "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
-      "sha256": "fb5f0c1be80e149ea46a7284e320af3a71f2751998b7ce68bcc2c79a71c62759",
-      "size_bytes": 3405
+      "sha256": "8efa411597df0684a14502ee98eeac839564a374438b9d2f9cf6f8eba09c1059",
+      "size_bytes": 4251
     },
     "tests/test_sm_act_020_continuous_authorization.py": {
       "operation": "A",
       "originating_pr_number": 268,
-      "originating_commit": "7cc28f2fabce804985304c690b5f312db44847c2",
+      "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
       "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
       "sha256": "b3e362fca2d65942fdc96fa31549b66b9532a5e54d5ab9b40c5bd6ea079893c9",
       "size_bytes": 10366
+    },
+    "tests/test_sm_act_020_guarded_sec_fetcher.py": {
+      "operation": "A",
+      "originating_pr_number": 268,
+      "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
+      "governing_requirement": "ARX-SM-ACT-020-CONTINUOUS-GUARDED-SEC-FETCHER-003: no-network default SEC Form4 fetcher integration and strict transport accounting for PR #268 / stacked PR #269; all production holds remain.",
+      "sha256": "207ea3cf951b9aca199784ad29efc222719b2579437ba42150d0d457c873476e",
+      "size_bytes": 7382
     }
   },
   "qualification_framework_files": {
