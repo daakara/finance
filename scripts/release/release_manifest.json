@@ -1,41 +1,25 @@
 {
-  "release_candidate_commit": "fd70116df697f7195eecca75e232614562705af2",
-  "base_anchor_commit": "913a408b763651e57d56375f1c11a1bca272f564",
-  "total_files": 4,
+  "release_candidate_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
+  "base_anchor_commit": "e62f16e2a642433574ae84ab69b47dd33217079d",
+  "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-FILING-COVERAGE-004",
+  "directive": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005",
   "files": {
-    ".github/workflows/sm-continuous-authorization.yml": {
+    "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
-      "originating_pr_number": 270,
-      "originating_commit": "fd70116df697f7195eecca75e232614562705af2",
-      "governing_requirement": "ARX SM-ACT-020-FILING-COVERAGE-004: complete new Form4 accession selection within strict per-issuer budget; fail closed on unverified watermark/backlog; keep SEC/scanner/trading holds.",
-      "sha256": "58590a754650afdeb409034b011c28478c38d505a599fd3c873caafba2f2909d",
-      "size_bytes": 1274
+      "originating_pr_number": 271,
+      "originating_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
+      "governing_requirement": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005: safe attributable worker telemetry probe and exception sanitization (Issue #165 / PR #271). Operational holds preserved.",
+      "sha256": "9ce13176b7d489ef0c15e6b301e7b3af3415e4b9b2d5a2520c69d3aca51a5615",
+      "size_bytes": 44149
     },
-    "analyst_dashboard/smart_money/continuous_pipeline.py": {
-      "operation": "M",
-      "originating_pr_number": 270,
-      "originating_commit": "fd70116df697f7195eecca75e232614562705af2",
-      "governing_requirement": "ARX SM-ACT-020-FILING-COVERAGE-004: complete new Form4 accession selection within strict per-issuer budget; fail closed on unverified watermark/backlog; keep SEC/scanner/trading holds.",
-      "sha256": "b219b82f7b9dd4a8cf08d96575eff763c853b2ffea770acda3ba72eb89007635",
-      "size_bytes": 72376
-    },
-    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
-      "operation": "M",
-      "originating_pr_number": 270,
-      "originating_commit": "fd70116df697f7195eecca75e232614562705af2",
-      "governing_requirement": "ARX SM-ACT-020-FILING-COVERAGE-004: complete new Form4 accession selection within strict per-issuer budget; fail closed on unverified watermark/backlog; keep SEC/scanner/trading holds.",
-      "sha256": "fb3ce7b08c267d3295cec7494e2e8d13fdbab304271581838374e6a00fa5518b",
-      "size_bytes": 47837
-    },
-    "tests/test_sm_act_020_filing_coverage.py": {
+    "tests/test_sm_act_020_sentry_telemetry.py": {
       "operation": "A",
-      "originating_pr_number": 270,
-      "originating_commit": "fd70116df697f7195eecca75e232614562705af2",
-      "governing_requirement": "ARX SM-ACT-020-FILING-COVERAGE-004: complete new Form4 accession selection within strict per-issuer budget; fail closed on unverified watermark/backlog; keep SEC/scanner/trading holds.",
-      "sha256": "aae57e4ab23d436136551b3e9912a31a4080cc45ea712c4150eef63282b56e81",
-      "size_bytes": 4899
+      "originating_pr_number": 271,
+      "originating_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
+      "governing_requirement": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005: safe attributable worker telemetry probe and exception sanitization (Issue #165 / PR #271). Operational holds preserved.",
+      "sha256": "929e14657ddc20d98ed5647ae140dd8bf4d7557dd7253d3fd6f5a105dfa9bd06",
+      "size_bytes": 11677
     }
   },
   "qualification_framework_files": {
@@ -45,8 +29,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "9e5730e4328cf52219b8f947eec17e47860ec03c22358e44c35b6722c11f33d9",
-      "size_bytes": 58031,
+      "sha256": "f97ec31463eec0183d59113149536a7aece7da45af990d2d07b5ad68241c1c61",
+      "size_bytes": 58036,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -788,6 +772,46 @@
           "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
           "sha256": "b3e362fca2d65942fdc96fa31549b66b9532a5e54d5ab9b40c5bd6ea079893c9",
           "size_bytes": 10366
+        }
+      }
+    },
+    "fd70116df697f7195eecca75e232614562705af2": {
+      "release_candidate_commit": "fd70116df697f7195eecca75e232614562705af2",
+      "base_anchor_commit": "913a408b763651e57d56375f1c11a1bca272f564",
+      "total_files": 4,
+      "directive": "ARX-SM-ACT-020-FILING-COVERAGE-004",
+      "files": {
+        ".github/workflows/sm-continuous-authorization.yml": {
+          "operation": "M",
+          "originating_pr_number": 270,
+          "originating_commit": "fd70116df697f7195eecca75e232614562705af2",
+          "governing_requirement": "ARX SM-ACT-020-FILING-COVERAGE-004: complete new Form4 accession selection within strict per-issuer budget; fail closed on unverified watermark/backlog; keep SEC/scanner/trading holds.",
+          "sha256": "58590a754650afdeb409034b011c28478c38d505a599fd3c873caafba2f2909d",
+          "size_bytes": 1274
+        },
+        "analyst_dashboard/smart_money/continuous_pipeline.py": {
+          "operation": "M",
+          "originating_pr_number": 270,
+          "originating_commit": "fd70116df697f7195eecca75e232614562705af2",
+          "governing_requirement": "ARX SM-ACT-020-FILING-COVERAGE-004: complete new Form4 accession selection within strict per-issuer budget; fail closed on unverified watermark/backlog; keep SEC/scanner/trading holds.",
+          "sha256": "b219b82f7b9dd4a8cf08d96575eff763c853b2ffea770acda3ba72eb89007635",
+          "size_bytes": 72376
+        },
+        "analyst_dashboard/smart_money/storage/postgres_repository.py": {
+          "operation": "M",
+          "originating_pr_number": 270,
+          "originating_commit": "fd70116df697f7195eecca75e232614562705af2",
+          "governing_requirement": "ARX SM-ACT-020-FILING-COVERAGE-004: complete new Form4 accession selection within strict per-issuer budget; fail closed on unverified watermark/backlog; keep SEC/scanner/trading holds.",
+          "sha256": "fb3ce7b08c267d3295cec7494e2e8d13fdbab304271581838374e6a00fa5518b",
+          "size_bytes": 47837
+        },
+        "tests/test_sm_act_020_filing_coverage.py": {
+          "operation": "A",
+          "originating_pr_number": 270,
+          "originating_commit": "fd70116df697f7195eecca75e232614562705af2",
+          "governing_requirement": "ARX SM-ACT-020-FILING-COVERAGE-004: complete new Form4 accession selection within strict per-issuer budget; fail closed on unverified watermark/backlog; keep SEC/scanner/trading holds.",
+          "sha256": "aae57e4ab23d436136551b3e9912a31a4080cc45ea712c4150eef63282b56e81",
+          "size_bytes": 4899
         }
       }
     }

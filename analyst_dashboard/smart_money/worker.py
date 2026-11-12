@@ -60,6 +60,35 @@ import threading
 
 logger = logging.getLogger("smart_money.worker")
 
+def _sanitize_worker_event(event: Dict[str, Any], hint: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Sanitizes sensitive values from worker Sentry payloads before transmission."""
+    try:
+        import re
+        from api.observability.sentry_adapter import recursive_sanitize
+
+        def _scrub_worker_secrets(obj: Any) -> Any:
+            if isinstance(obj, dict):
+                res = {}
+                for k, v in obj.items():
+                    k_lower = str(k).lower()
+                    if any(s in k_lower for s in ("secret", "token", "auth", "password", "database_url", "db_url", "dsn", "api_key", "credential")):
+                        res[k] = "[REDACTED]"
+                    else:
+                        res[k] = _scrub_worker_secrets(v)
+                return res
+            if isinstance(obj, (list, tuple, set)):
+                return [_scrub_worker_secrets(x) for x in obj]
+            if isinstance(obj, str):
+                # Scrub password in connection string URLs (e.g. postgres://user:pass@host)
+                return re.sub(r'(://[^:]+:)[^@]+(@)', r'\1[REDACTED]\2', obj)
+            return obj
+
+        cleaned = _scrub_worker_secrets(event)
+        return recursive_sanitize(cleaned)
+    except Exception:
+        return event
+
+
 def init_worker_sentry() -> bool:
     """Initializes Sentry telemetry for smart-money-worker with subsystem=smart_money."""
     dsn = os.environ.get("SENTRY_DSN", "").strip()
@@ -75,14 +104,22 @@ def init_worker_sentry() -> bool:
             release=release_sha,
             send_default_pii=False,
             traces_sample_rate=0.0,
+            before_send=_sanitize_worker_event,
         )
         if hasattr(sentry_sdk, "get_global_scope"):
             scope = sentry_sdk.get_global_scope()
             scope.set_tag("service", "arx-smart-money-worker")
             scope.set_tag("subsystem", "smart_money")
+            scope.set_tag("environment", env)
+            if release_sha:
+                scope.set_tag("release", release_sha)
         elif hasattr(sentry_sdk, "Hub"):
-            sentry_sdk.Hub.current.scope.set_tag("service", "arx-smart-money-worker")
-            sentry_sdk.Hub.current.scope.set_tag("subsystem", "smart_money")
+            scope = sentry_sdk.Hub.current.scope
+            scope.set_tag("service", "arx-smart-money-worker")
+            scope.set_tag("subsystem", "smart_money")
+            scope.set_tag("environment", env)
+            if release_sha:
+                scope.set_tag("release", release_sha)
         logger.info("Worker Sentry telemetry initialized with subsystem=smart_money.")
         return True
     except Exception as e:
@@ -94,15 +131,137 @@ def capture_worker_exception(exc: BaseException, tags: Optional[Dict[str, str]] 
     """Captures exception to Sentry with explicit subsystem=smart_money attribution."""
     try:
         import sentry_sdk
+        init_worker_sentry()
+        release_sha = os.environ.get("ARX_RELEASE_SHA") or os.environ.get("RAILWAY_GIT_COMMIT_SHA")
+        env = os.environ.get("ARX_ENVIRONMENT", "production")
         with sentry_sdk.push_scope() as scope:
             scope.set_tag("service", "arx-smart-money-worker")
             scope.set_tag("subsystem", "smart_money")
+            scope.set_tag("environment", env)
+            if release_sha:
+                scope.set_tag("release", release_sha)
             if tags:
                 for k, v in tags.items():
                     scope.set_tag(k, v)
-            return sentry_sdk.capture_exception(exc)
+            event_id = sentry_sdk.capture_exception(exc)
+            return str(event_id) if event_id else None
     except Exception:
         return None
+
+
+def emit_worker_telemetry_probe(
+    directive_id: str = "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005",
+    probe_uuid: Optional[str] = None,
+    probe_type: str = "worker_telemetry_acceptance",
+) -> Dict[str, Any]:
+    """
+    Emits a safe, attributable, nonfatal diagnostic telemetry event to Sentry.
+    Enforces:
+    1. Zero database connectivity or mutation;
+    2. Zero SEC network requests;
+    3. Zero advisory lock or lease acquisition;
+    4. One-shot execution (disabled by default);
+    5. Strict required tags: subsystem=smart_money, service=arx-smart-money-worker,
+       synthetic=true, directive_id, probe_uuid, probe_type.
+    """
+    import uuid
+    from datetime import datetime, timezone
+
+    probe_uuid = probe_uuid or str(uuid.uuid4())
+    now_utc = datetime.now(timezone.utc).isoformat()
+    release_sha = (
+        os.environ.get("ARX_RELEASE_SHA")
+        or os.environ.get("RAILWAY_GIT_COMMIT_SHA")
+        or "unknown"
+    )
+    env = os.environ.get("ARX_ENVIRONMENT", "production")
+
+    dsn = os.environ.get("SENTRY_DSN", "").strip()
+    if not dsn:
+        return {
+            "status": "SKIPPED_NO_DSN",
+            "error": "SENTRY_DSN not configured",
+            "probe_uuid": probe_uuid,
+            "directive_id": directive_id,
+            "probe_type": probe_type,
+            "subsystem": "smart_money",
+            "service": "arx-smart-money-worker",
+            "environment": env,
+            "release_sha": release_sha,
+            "timestamp": now_utc,
+            "synthetic": True,
+            "sec_traffic_generated": False,
+            "database_mutated": False,
+            "advisory_lock_held": False,
+        }
+
+    try:
+        import sentry_sdk
+        init_worker_sentry()
+
+        with sentry_sdk.push_scope() as scope:
+            scope.set_tag("directive_id", directive_id)
+            scope.set_tag("probe_uuid", probe_uuid)
+            scope.set_tag("subsystem", "smart_money")
+            scope.set_tag("service", "arx-smart-money-worker")
+            scope.set_tag("synthetic", "true")
+            scope.set_tag("probe_type", probe_type)
+            scope.set_tag("environment", env)
+            if release_sha != "unknown":
+                scope.set_tag("release", release_sha)
+
+            scope.set_extra("directive_id", directive_id)
+            scope.set_extra("probe_uuid", probe_uuid)
+            scope.set_extra("utc_timestamp", now_utc)
+            scope.set_extra("production_release_sha", release_sha)
+            scope.set_extra("synthetic", True)
+            scope.set_extra("probe_type", probe_type)
+            scope.set_extra("sec_traffic_generated", False)
+            scope.set_extra("database_mutated", False)
+            scope.set_extra("advisory_lock_held", False)
+
+            message = (
+                f"[SYNTHETIC TEST] {directive_id} — "
+                f"Production Worker Telemetry Acceptance Probe ({probe_uuid[:8]})"
+            )
+            event_id = sentry_sdk.capture_message(message, level="warning")
+
+        sentry_sdk.flush(timeout=5.0)
+
+        return {
+            "status": "SENT" if event_id else "FAILED",
+            "event_id": str(event_id) if event_id else None,
+            "probe_uuid": probe_uuid,
+            "directive_id": directive_id,
+            "probe_type": probe_type,
+            "subsystem": "smart_money",
+            "service": "arx-smart-money-worker",
+            "environment": env,
+            "release_sha": release_sha,
+            "timestamp": now_utc,
+            "synthetic": True,
+            "sec_traffic_generated": False,
+            "database_mutated": False,
+            "advisory_lock_held": False,
+        }
+    except Exception as e:
+        logger.warning(f"Telemetry probe emission failed: {e}")
+        return {
+            "status": "FAILED",
+            "error": str(e),
+            "probe_uuid": probe_uuid,
+            "directive_id": directive_id,
+            "probe_type": probe_type,
+            "subsystem": "smart_money",
+            "service": "arx-smart-money-worker",
+            "environment": env,
+            "release_sha": release_sha,
+            "timestamp": now_utc,
+            "synthetic": True,
+            "sec_traffic_generated": False,
+            "database_mutated": False,
+            "advisory_lock_held": False,
+        }
 
 
 
@@ -786,7 +945,16 @@ def main():
     parser.add_argument("--pilot-expires-at", type=str, default=None, help="Authorization expiry ISO timestamp")
     parser.add_argument("--pilot-release-sha", type=str, default=None, help="Authorization production release SHA binding")
     parser.add_argument("--single-cycle", action="store_true", help="Execute a single worker cycle and terminate")
+    parser.add_argument("--telemetry-probe", action="store_true", help="Emit safe nonfatal diagnostic telemetry probe and exit")
+    parser.add_argument("--probe-uuid", type=str, default=None, help="Explicit UUID for telemetry probe")
+    parser.add_argument("--directive-id", type=str, default="ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005", help="Directive ID for telemetry probe")
     args, _ = parser.parse_known_args()
+
+    if args.telemetry_probe:
+        logger.info(f"Emitting safe diagnostic telemetry probe for directive {args.directive_id}...")
+        res = emit_worker_telemetry_probe(directive_id=args.directive_id, probe_uuid=args.probe_uuid)
+        print(json.dumps(res, indent=2, default=str))
+        sys.exit(0 if res.get("status") == "SENT" else 1)
 
     if args.canary_nvda:
         from analyst_dashboard.smart_money.canary_runner import run_nvda_canary
@@ -812,6 +980,7 @@ def main():
     try:
         worker.start(single_cycle=args.single_cycle)
     except Exception as e:
+        capture_worker_exception(e)
         logger.critical(f"FATAL: Worker terminated with exception: {e}")
         sys.exit(1)
 
