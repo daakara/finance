@@ -7,6 +7,7 @@ on:
       - "analyst_dashboard/smart_money/continuous_pipeline.py"
       - "analyst_dashboard/smart_money/worker.py"
       - "tests/test_sm_act_020_continuous_authorization.py"
+      - "tests/test_sm_act_020_guarded_sec_fetcher.py"
       - ".github/workflows/sm-continuous-authorization.yml"
   workflow_dispatch:
 
@@ -29,4 +30,4 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt pytest
       - name: Run fail-closed authorization tests
-        run: python -m pytest tests/test_sm_act_020_continuous_authorization.py -q
+        run: python -m pytest tests/test_sm_act_020_continuous_authorization.py tests/test_sm_act_020_guarded_sec_fetcher.py -q

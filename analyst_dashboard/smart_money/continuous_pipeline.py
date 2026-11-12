@@ -157,6 +157,9 @@ def _normalize_to_transaction_obj(tx: Any) -> SmartMoneyTransaction:
 
 
 import requests
+import re
+from urllib.parse import urlsplit
+from requests.adapters import HTTPAdapter
 
 
 class ContinuousBudgetExceededError(RuntimeError):
@@ -186,6 +189,10 @@ class ContinuousOutboundSession(requests.Session):
         cancellation_token: Optional[Callable[[], bool]] = None,
     ):
         super().__init__()
+        # Explicitly prohibit urllib3 adapter-managed retries, which would bypass
+        # Session.send accounting. Any future retry must call this guarded send.
+        self.mount("https://", HTTPAdapter(max_retries=0))
+        self.mount("http://", HTTPAdapter(max_retries=0))
         if rate_limiter is not None:
             if hasattr(rate_limiter, "max_per_second") and float(rate_limiter.max_per_second) > 5.0:
                 rate_limiter.max_per_second = 5.0
@@ -208,6 +215,25 @@ class ContinuousOutboundSession(requests.Session):
             self.issuer_transmissions[self.current_issuer] = 0
 
     def send(self, request, **kwargs):
+        # Every redirect must remain on the two explicitly trusted SEC domains.
+        # Reject non-HTTPS schemes, host confusion and alternate ports.
+        target = urlsplit(getattr(request, "url", "") or "")
+        if (
+            target.scheme != "https"
+            or target.hostname not in ("data.sec.gov", "www.sec.gov")
+            or target.port not in (None, 443)
+            or target.username is not None
+            or target.password is not None
+        ):
+            raise RuntimeError("SEC_EGRESS_DESTINATION_REJECTED")
+
+        # Disallow unaccounted HTTPAdapter/urllib3 retries. Redirects are still
+        # followed by requests.Session and are intercepted on each send().
+        adapter = self.get_adapter(request.url)
+        retry_policy = getattr(adapter, "max_retries", None)
+        if getattr(retry_policy, "total", 0) != 0:
+            raise RuntimeError("SEC_EGRESS_UNACCOUNTED_RETRY_POLICY")
+
         # 1. Emergency stop check
         if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() in ("TRUE", "1", "YES"):
             raise RuntimeError("EMERGENCY_STOP_ACTIVE: Outbound send blocked by emergency stop killswitch.")
@@ -239,12 +265,21 @@ class ContinuousOutboundSession(requests.Session):
         # 6. Rate limiting (<= 5.0 req/s)
         self.rate_limiter.acquire()
 
+        # A grant or kill switch may expire while rate limiting blocks.
+        if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() in ("TRUE", "1", "YES"):
+            raise RuntimeError("EMERGENCY_STOP_ACTIVE")
+        if self.cancellation_token and self.cancellation_token():
+            raise RuntimeError("IN_FLIGHT_CANCELLATION")
+        if not self.allow_test_mode:
+            require_continuous_authorization(issuers=self.issuers)
+
         # 7. Record transmission count before wire transmission
         self.total_transmissions += 1
         self.issuer_transmissions[issuer_key] = count_for_issuer + 1
         t0 = time.time()
 
-        # 8. Wire transmission (super().send counts redirects and retries)
+        # 8. Wire transmission; each redirect re-enters send(), while
+        # urllib3 internal retries are disabled above.
         resp = super().send(request, **kwargs)
 
         duration = round(time.time() - t0, 3)
@@ -921,9 +956,6 @@ class SmartMoneyContinuousPipeline:
             # In-flight authorization check before each network egress request
             self._check_in_flight_authorization(step_name=f"STEP_6_SEC_INGESTION_{ticker}")
 
-            # Rate-limiting pause
-            self.rate_limiter.acquire()
-
             # Retrieve filings via fetcher or mock
             if self.sec_fetcher:
                 if hasattr(self.sec_fetcher, "session"):
@@ -948,12 +980,100 @@ class SmartMoneyContinuousPipeline:
 
                 raw_filings.append(filing)
 
+        # Never publish a new empty snapshot after a successful but data-free scan.
+        # Individual issuers may legitimately have no recent filings, but a total
+        # absence of new filings must preserve the existing active snapshot.
+        if not raw_filings and not self.allow_test_mode:
+            raise RuntimeError("NO_NEW_FORM4_FILINGS: Active Smart Money snapshot preserved.")
         logger.info(f"Ingested {len(raw_filings)} Form 4 filing(s) across {len(self.issuers)} governed issuers.")
         return raw_filings
 
     def _fetch_filings_from_sec(self, ticker: str, cik: str, company_name: str) -> List[Dict[str, Any]]:
-        """Default fetcher against SEC EDGAR API with rate limiting."""
-        # For offline or test environments, returns empty or existing filings
+        """Read one latest SEC Form 4/4-A using only the guarded HTTP session.
+
+        Default production path: worker -> pipeline -> ContinuousOutboundSession.
+        Pure offline tests inject a mocked adapter. No unguarded requests are used.
+        A rate limit, invalid SEC response, or malformed URL aborts the cycle.
+        """
+        if not re.fullmatch(r"[0-9]{1,10}", str(cik)):
+            raise RuntimeError("SEC_CIK_INVALID")
+        ua = get_sec_user_agent()
+        if not ua:
+            raise RuntimeError("SEC_USER_AGENT_INVALID")
+        self.outbound_session.headers.update({
+            "User-Agent": ua,
+            "Accept": "application/json, application/xml, text/plain",
+        })
+
+        def receive(url: str) -> requests.Response:
+            # No hidden HTTP adapter retries. All sends/redirects pass through
+            # the guarded session's authorization, budget, rate and host gates.
+            response = self.outbound_session.get(
+                url, timeout=(5, 15), allow_redirects=True
+            )
+            if response.status_code == 429:
+                raise RuntimeError("SEC_RATE_LIMITED_429")
+            if response.status_code != 200:
+                raise RuntimeError("SEC_UPSTREAM_HTTP_ERROR")
+            return response
+
+        catalog = receive(f"https://data.sec.gov/submissions/CIK{str(cik).zfill(10)}.json")
+        try:
+            recent = catalog.json()["filings"]["recent"]
+            forms = recent["form"]
+            accessions = recent["accessionNumber"]
+            filings_dates = recent["filingDate"]
+            accepted_dates = recent["acceptanceDateTime"]
+            primary_documents = recent["primaryDocument"]
+            if not all(isinstance(v, list) for v in (
+                forms, accessions, filings_dates, accepted_dates, primary_documents
+            )):
+                raise ValueError("SEC submissions arrays not lists")
+            if len({len(v) for v in (
+                forms, accessions, filings_dates, accepted_dates, primary_documents
+            )}) != 1:
+                raise ValueError("SEC submissions arrays inconsistent")
+        except (KeyError, TypeError, ValueError, IndexError) as e:
+            raise RuntimeError("SEC_SUBMISSIONS_SCHEMA_INVALID") from e
+
+        for index, form in enumerate(forms):
+            if form not in ("4", "4/A"):
+                continue
+            accession = accessions[index]
+            doc = primary_documents[index]
+            if not isinstance(accession, str) or not re.fullmatch(r"[0-9]{10}-[0-9]{2}-[0-9]{6}", accession):
+                raise RuntimeError("SEC_ACCESSION_INVALID")
+            if not isinstance(doc, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,180}", doc):
+                raise RuntimeError("SEC_PRIMARY_DOCUMENT_INVALID")
+
+            accession_compact = accession.replace("-", "")
+            archive_root = (
+                f"https://www.sec.gov/Archives/edgar/data/"
+                f"{int(cik)}/{accession_compact}/"
+            )
+            response = receive(archive_root + doc)
+            xml = response.text
+            source_url = archive_root + doc
+            if "<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower():
+                response = receive(archive_root + accession + ".txt")
+                xml = Form4XmlParser.extract_xml_from_submission_text(response.text)
+                source_url = archive_root + accession + ".txt"
+            if not xml or "<ownershipdocument" not in xml.lower():
+                raise RuntimeError("SEC_FORM4_XML_INVALID")
+
+            return [{
+                "ticker": ticker,
+                "cik": str(cik).zfill(10),
+                "company_name": company_name,
+                "accession_number": accession,
+                "filing_date": filings_dates[index],
+                "accepted_datetime": accepted_dates[index],
+                "document_type": form,
+                "xml_content": xml,
+                "source_url": source_url,
+                "content_hash": hashlib.sha256(xml.encode("utf-8")).hexdigest(),
+            }]
+
         return []
 
     def _step7_parse_and_reconcile(
