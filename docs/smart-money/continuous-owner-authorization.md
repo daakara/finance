@@ -36,20 +36,20 @@ attested release SHA; the Railway OAuth connector cannot read env values.
 
 ## Remaining rollout prerequisites
 
-- First natural PostgreSQL 16 scheduled backup verified (separate automation).
+- First natural PostgreSQL 16 scheduled backup accepted in R2 (2026-11-12 00:01 UTC); keep ongoing freshness monitoring enabled.
 - Worker Sentry DSN, SDK initialization, `subsystem=smart_money` event tags and
   actual event-delivery evidence. Existing email alert rule alone is not proof.
 - Non-ingesting tests for restart, expiration, lease loss and emergency stop.
 - Outbound egress interception budget: implemented via `ContinuousOutboundSession`,
   enforcing wire-level expiry checks, ceiling of <= 40 total transmissions per cycle,
   ceiling of <= 4 transmissions per issuer (counting initial requests, redirects, and retries),
-  and rate limiting strictly capped at <= 5.0 req/s.
+  and rate limiting strictly capped at <= 5.0 req/s. The default worker path now resolves the SEC submissions index and fetches the latest Form 4/4-A through this guarded session (offline adapter-intercept tests only); urllib3 adapter-managed retries are explicitly disabled, and each Requests-managed redirect is counted. A future retry mechanism must re-enter the guarded send path.
 - Emergency stop & advisory lock release: fail-closed killswitch (`ARX_EMERGENCY_STOP_ACTIVE=TRUE`)
-  implemented in worker preflight, loop, and wire sessions, guaranteeing immediate exit and
-  clean PostgreSQL advisory lock release (`LOCK_SEC_EGRESS_OWNER`).
+  implemented in worker preflight, loop, and wire sessions, with owner-lock release on a detected stop. **Railway variable edits do not interrupt an already-running process**; immediate intervention may require process/container termination. Do not claim zero-delay stop for blocking socket calls.
 - Worker Sentry telemetry: `init_worker_sentry()` and `capture_worker_exception()` implemented
   with mandatory `service=arx-smart-money-worker` and `subsystem=smart_money` tagging.
-- Candidate-specific release admission and official CI gates.
+- Candidate-specific release admission and official CI gates after any new source change. Offline integration tests do not prove live SEC receipt delivery, completeness of all filings, runtime Sentry delivery, or production activation readiness.
+- Real-traffic activation remains gated on explicit owner approval, validated operator stop drill, and verified worker Sentry event delivery.
 - **Separate explicit production activation authorization**. Never repurpose
   the prior two-cycle canary approval for continuous OWNER role.
 
