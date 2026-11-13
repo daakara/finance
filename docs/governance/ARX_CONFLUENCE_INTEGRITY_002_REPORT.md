@@ -87,3 +87,46 @@ Executed via `tests/test_confluence_integrity_002.py` (18/18 PASS):
 - Automated VCP scanning remains DISABLED.
 - Alpaca live execution and automated orders remain DISABLED.
 - Sprint 5 transitions remain LOCKED.
+
+
+---
+
+## Independent P0 Remediation Addendum — Adversarial Follow-up (003)
+
+The first hosted qualification run #43349718670 was successful, but independent source
+review found material gaps not exercised by the original AC-01..15 assertions.
+This addendum records the additional candidate remediations. **This source
+document is not proof of production acceptance**; a new SHA-bound hosted
+qualification run and safe deployment verification are mandatory.
+
+1. **No implicit verified fundamentals.** A common stock's populated scores
+   without a verified, attributed, dated fundamental provenance envelope now
+   fail closed. The absence of provenance is never verification.
+2. **Four-pillar labels only.** All high-conviction and green-light copy is
+   restricted to four verified pillars. A score in 80..84 with three pillars
+   may show SELECTIVE alignment only.
+3. **No fabricated ETF portfolio quality.** NOT_APPLICABLE is a corporate-filing
+   exemption, not a positive evaluation of the ETF holdings. No default
+   75-point fundamental quality score may be assigned without evidence;
+   instrument-specific eligibility remains independent.
+4. **Dates and source authority.** A recognized financial data source without
+   a valid non-future as-of/filing date, an unknown source with a plausible
+   date, and malformed or future-dated inputs are UNVERIFIED, not VERIFIED.
+   Macro or market tape providers cannot automatically establish audited
+   company financial fundamentals.
+5. **Production UI selection tests.** The Spotlight's actual qualification
+   predicate and capped ranking function are exercised in frontend regression
+   tests for 0/1/2/N candidate counts, incomplete pillar evidence and stable
+   sorting; missing counts may not default to four verified pillars.
+6. **Risk/reward geometry test.** The reported R:R is checked against the
+   actual weighted TP1/TP2 reward and structural stop distance rather than
+   merely checking that the output is a float.
+
+Release admission must rerun the strengthened RQ-03 (including
+`test_confluence_integrity_002.py`) and RQ-04 (including the Spotlight
+decoupling and adversarial selection suite) along with all other RQ stages.
+
+**Preserved holds:** `ARX_CONFLUENCE_INTEGRITY_HOLD`,
+`HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, and `PHASE_3_HOLD`.
+The source update neither ratifies a candidate engine nor enables ingestion,
+scanning, paper broker execution, or live trading.
