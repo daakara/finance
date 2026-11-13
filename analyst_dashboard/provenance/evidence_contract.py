@@ -115,7 +115,6 @@ AUTHENTIC_SOURCES = {
     "alphavantage",
     "bloomberg",
     "factset",
-    "fred",
 }
 
 
