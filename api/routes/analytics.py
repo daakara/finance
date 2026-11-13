@@ -1,11 +1,14 @@
 import os
 import re
 import math
+import time
+import threading
+import concurrent.futures
 import logging
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, Set
 from datetime import datetime, timezone
 import exchange_calendars as xcals
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, HTTPException, Query, Response, Request
 import pandas as pd
 import numpy as np
 import yfinance as yf
@@ -161,31 +164,49 @@ def compute_intraday_technicals(df: pd.DataFrame) -> dict:
 
 
 
+_cached_session_date: Tuple[float, str] = (0.0, "")
+
+
+def get_current_nyse_session_date() -> str:
+    """Compute and cache authoritative NYSE last session date with 60-second TTL."""
+    global _cached_session_date
+    now_ts = time.time()
+    if now_ts - _cached_session_date[0] < 60.0 and _cached_session_date[1]:
+        return _cached_session_date[1]
+    try:
+        cal = xcals.get_calendar("XNYS")
+        now_utc = pd.Timestamp.now("UTC")
+        prev_close = cal.previous_close(now_utc)
+        session_date = cal.minute_to_session(prev_close, direction="previous").strftime("%Y-%m-%d")
+        _cached_session_date = (now_ts, session_date)
+        return session_date
+    except Exception as e:
+        logger.debug(f"Freshness calendar check error: {e}")
+        try:
+            fallback = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            _cached_session_date = (now_ts, fallback)
+            return fallback
+        except Exception:
+            return "UNKNOWN"
+
+
 def _is_history_stale(db_candles: List[Dict[str, Any]]) -> bool:
     """Check if historical daily candles are stale relative to the authoritative NYSE trading session."""
     if not db_candles or len(db_candles) < 15:
         return True
-    try:
-        import exchange_calendars as xcals
-        import pandas as pd
-        cal = xcals.get_calendar("XNYS")
-        now_utc = pd.Timestamp.now("UTC")
-        prev_close = cal.previous_close(now_utc)
-        last_session = cal.minute_to_session(prev_close, direction="previous").strftime("%Y-%m-%d")
-        newest_candle_date = str(db_candles[-1].get("time") or db_candles[-1].get("date") or "")[:10]
-        if not newest_candle_date:
-            return True
-        # If newest candle date is strictly prior to the last completed market session, history is stale
+    last_session = get_current_nyse_session_date()
+    newest_candle_date = str(db_candles[-1].get("time") or db_candles[-1].get("date") or "")[:10]
+    if not newest_candle_date:
+        return True
+    if last_session != "UNKNOWN":
         return newest_candle_date < last_session
-    except Exception as e:
-        logger.debug(f"Freshness calendar check error: {e}")
-        try:
-            from datetime import datetime, timezone, timedelta
-            raw_dt = db_candles[-1].get("time") or db_candles[-1].get("date") or ""
-            newest_date = datetime.strptime(str(raw_dt)[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            return (datetime.now(timezone.utc) - newest_date) > timedelta(days=4)
-        except Exception:
-            return True
+    try:
+        from datetime import datetime, timezone, timedelta
+        raw_dt = db_candles[-1].get("time") or db_candles[-1].get("date") or ""
+        newest_date = datetime.strptime(str(raw_dt)[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - newest_date) > timedelta(days=4)
+    except Exception:
+        return True
 
 
 def _build_smart_money_confluence_inputs(
@@ -239,7 +260,13 @@ def _build_smart_money_confluence_inputs(
     }
 
 
-def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, Any]], is_stale: bool) -> Optional[Dict[str, Any]]:
+def _build_tactical_setup(
+    sym: str,
+    clean_role: str,
+    db_candles: List[Dict[str, Any]],
+    is_stale: bool,
+    macro_inputs: Optional[Dict[str, Any]] = None,
+) -> Optional[Dict[str, Any]]:
     """Build tactical trade setup from db_candles and staleness status."""
     obs_date = str(db_candles[-1].get("time") or db_candles[-1].get("date") or "")[:10] if db_candles else ""
     corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym.upper().strip())
@@ -339,8 +366,9 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     } if (has_fundamentals and factor_snap) else None
 
     # Macro Environment & Difficulty Rating from FRED (Canonical Contract Normalization)
-    macro_difficulty = fred_fetcher.get_macro_indicators()
-    macro_inputs = normalize_macro_payload(macro_difficulty) if macro_difficulty else None
+    if macro_inputs is None:
+        macro_difficulty = fred_fetcher.get_macro_indicators()
+        macro_inputs = normalize_macro_payload(macro_difficulty) if macro_difficulty else None
 
     catalyst_report = market_db.get_catalyst(sym)
 
@@ -460,9 +488,39 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
 # APPROVED_WARM_RESPONSE_P95_MS <= 2000ms
 # APPROVED_CACHE_HIT_P95_MS <= 500ms
 # CACHE_BOUNDED = YES, CACHE_TTL_BOUNDED = YES, EVICTION_POLICY_DEFINED = YES
-TACTICAL_SETUPS_CACHE_TTL_SECONDS = 30
-TACTICAL_SETUPS_CACHE_MAX_ENTRIES = 20
+TACTICAL_SETUPS_CACHE_TTL_SECONDS = 120
+TACTICAL_SETUPS_CACHE_MAX_ENTRIES = 50
 _tactical_setups_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+
+# Single-flight request coalescing state
+_setups_flight_lock = threading.Lock()
+_setups_flights: Dict[str, threading.Event] = {}
+
+# Asynchronous background refresh pool for stale market tape
+_refresh_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="tactical_refresh")
+_refresh_in_flight: Set[str] = set()
+_refresh_lock = threading.Lock()
+
+
+def _background_refresh_symbol(sym: str) -> None:
+    try:
+        hist_fetch = yf.Ticker(sym).history(period="6mo", interval="1d", timeout=5)
+        if not hist_fetch.empty and len(hist_fetch) >= 15:
+            market_db.save_daily_candles(sym, hist_fetch)
+            logger.info(f"Background candle refresh completed for {sym}")
+    except Exception as e:
+        logger.debug(f"Background candle refresh failed for {sym}: {e}")
+    finally:
+        with _refresh_lock:
+            _refresh_in_flight.discard(sym)
+
+
+def _schedule_background_refresh(sym: str) -> None:
+    with _refresh_lock:
+        if sym in _refresh_in_flight:
+            return
+        _refresh_in_flight.add(sym)
+    _refresh_executor.submit(_background_refresh_symbol, sym)
 
 
 def _get_tactical_setups_cache_key(clean_role: str, symbols: List[str]) -> str:
@@ -470,22 +528,12 @@ def _get_tactical_setups_cache_key(clean_role: str, symbols: List[str]) -> str:
     import hashlib
     sorted_syms = sorted(set(symbols))
     sym_digest = hashlib.sha256(",".join(sorted_syms).encode("utf-8")).hexdigest()[:16]
-
-    session_date = "UNKNOWN"
-    try:
-        cal = xcals.get_calendar("XNYS")
-        now_utc = pd.Timestamp.now("UTC")
-        prev_close = cal.previous_close(now_utc)
-        session_date = cal.minute_to_session(prev_close, direction="previous").strftime("%Y-%m-%d")
-    except Exception:
-        pass
-
+    session_date = get_current_nyse_session_date()
     return f"tactical_setups:{clean_role}:{sym_digest}:{session_date}"
 
 
 def _get_cached_tactical_setups(cache_key: str) -> Optional[Dict[str, Any]]:
     """Retrieve unexpired cached tactical setups payload, or None if expired/missing."""
-    import time
     entry = _tactical_setups_cache.get(cache_key)
     if not entry:
         return None
@@ -502,7 +550,6 @@ def _get_cached_tactical_setups(cache_key: str) -> Optional[Dict[str, Any]]:
 
 def _store_cached_tactical_setups(cache_key: str, payload: Dict[str, Any]) -> None:
     """Store tactical setups payload into bounded cache with eviction policy."""
-    import time
     # Safety invariant: Never cache failed or malformed payloads
     if not payload or not isinstance(payload, dict) or "setups" not in payload:
         return
@@ -524,11 +571,55 @@ def _store_cached_tactical_setups(cache_key: str, payload: Dict[str, Any]) -> No
 
 def _clear_tactical_setups_cache() -> None:
     """Diagnostic and testing hook to purge tactical setups cache."""
+    global _cached_session_date
     _tactical_setups_cache.clear()
+    _cached_session_date = (0.0, "")
+    with _setups_flight_lock:
+        _setups_flights.clear()
+
+
+def _compute_single_setup(
+    sym: str,
+    clean_role: str,
+    shared_macro_inputs: Optional[Dict[str, Any]] = None,
+) -> Optional[Dict[str, Any]]:
+    """Compute tactical trade setup for a single symbol with bounded provider interaction."""
+    try:
+        corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym.upper().strip())
+        if corp_action and corp_action.get("status") == "DELISTED":
+            # Known delisted security: do NOT call external market data providers
+            db_candles = market_db.get_daily_candles(sym, limit=252)
+            return _build_tactical_setup(sym, clean_role, db_candles or [], is_stale=False, macro_inputs=shared_macro_inputs)
+
+        db_candles = market_db.get_daily_candles(sym, limit=252)
+        is_stale = _is_history_stale(db_candles)
+
+        if not db_candles or len(db_candles) < 15:
+            # Cold cache miss with zero stored candles: bounded synchronous attempt
+            try:
+                hist_fetch = yf.Ticker(sym).history(period="6mo", interval="1d", timeout=3)
+                if not hist_fetch.empty and len(hist_fetch) >= 15:
+                    market_db.save_daily_candles(sym, hist_fetch)
+                    db_candles = market_db.get_daily_candles(sym, limit=252)
+                    is_stale = _is_history_stale(db_candles)
+            except Exception as fetch_err:
+                logger.debug(f"On-demand refresh failed for {sym}: {fetch_err}")
+        elif is_stale:
+            # Historical candles exist but are dated: offload refresh to background without blocking request
+            _schedule_background_refresh(sym)
+
+        if not db_candles or len(db_candles) < 15:
+            return None
+
+        return _build_tactical_setup(sym, clean_role, db_candles, is_stale=is_stale, macro_inputs=shared_macro_inputs)
+    except Exception as e:
+        logger.warning(f"Error computing setup for {sym}: {e}")
+        return None
 
 
 @router.get("/setups", tags=["Setups"])
 def get_tactical_setups(
+    request: Request = None,
     tickers: Optional[str] = Query(None, description="Comma-separated ticker list"),
     user_role: str = Query("LONG_TERM", description="Trading Horizon lens"),
     response: Response = None,
@@ -548,68 +639,94 @@ def get_tactical_setups(
     else:
         symbols = DAY_TRADER_CANDIDATES if clean_role == "DAY_TRADER" else LONG_TERM_CANDIDATES
 
-    # Check bounded in-memory cache
+    # 1. Check bounded in-memory cache
     cache_key = _get_tactical_setups_cache_key(clean_role, symbols)
     cached_payload = _get_cached_tactical_setups(cache_key)
     if cached_payload is not None:
+        if request is not None and hasattr(request, "state"):
+            request.state.cache_hit = True
         return cached_payload
 
-    setups = []
-    for sym in symbols:
-        try:
-            corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym.upper().strip())
-            if corp_action and corp_action.get("status") == "DELISTED":
-                # Known delisted security: do NOT call external market data providers
-                db_candles = market_db.get_daily_candles(sym, limit=252)
-                setup = _build_tactical_setup(sym, clean_role, db_candles or [], is_stale=False)
-                if setup:
-                    setups.append(setup)
-                continue
+    if request is not None and hasattr(request, "state"):
+        request.state.cache_hit = False
 
-            db_candles = market_db.get_daily_candles(sym, limit=252)
-            is_stale = _is_history_stale(db_candles)
+    # 2. Single-flight request coalescing (stampede prevention)
+    is_leader = False
+    flight_event = None
+    with _setups_flight_lock:
+        cached_payload = _get_cached_tactical_setups(cache_key)
+        if cached_payload is not None:
+            if request is not None and hasattr(request, "state"):
+                request.state.cache_hit = True
+            return cached_payload
+        if cache_key in _setups_flights:
+            flight_event = _setups_flights[cache_key]
+        else:
+            flight_event = threading.Event()
+            _setups_flights[cache_key] = flight_event
+            is_leader = True
 
-            if not db_candles or len(db_candles) < 15 or is_stale:
-                try:
-                    hist_fetch = yf.Ticker(sym).history(period="6mo", interval="1d", timeout=5)
-                    if not hist_fetch.empty and len(hist_fetch) >= 15:
-                        market_db.save_daily_candles(sym, hist_fetch)
-                        db_candles = market_db.get_daily_candles(sym, limit=252)
-                        is_stale = _is_history_stale(db_candles)
-                except Exception as fetch_err:
-                    logger.debug(f"On-demand refresh failed for {sym}: {fetch_err}")
+    if not is_leader and flight_event is not None:
+        flight_event.wait(timeout=15.0)
+        cached_payload = _get_cached_tactical_setups(cache_key)
+        if cached_payload is not None:
+            if request is not None and hasattr(request, "state"):
+                request.state.cache_hit = True
+            return cached_payload
 
-            if not db_candles or len(db_candles) < 15:
-                continue
+    t_score_start = time.perf_counter()
+    try:
+        macro_difficulty = fred_fetcher.get_macro_indicators()
+        shared_macro_inputs = normalize_macro_payload(macro_difficulty) if macro_difficulty else None
 
-            setup = _build_tactical_setup(sym, clean_role, db_candles, is_stale=is_stale)
-            if setup:
-                setups.append(setup)
-        except Exception as e:
-            logger.warning(f"Error computing setup for {sym}: {e}")
-            continue
+        # Bounded parallel evaluation across symbols
+        max_workers = min(4, max(1, len(symbols)))
+        setups = []
+        if len(symbols) <= 1:
+            for sym in symbols:
+                res = _compute_single_setup(sym, clean_role, shared_macro_inputs)
+                if res:
+                    setups.append(res)
+        else:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = [executor.submit(_compute_single_setup, sym, clean_role, shared_macro_inputs) for sym in symbols]
+                for future in concurrent.futures.as_completed(futures):
+                    res = future.result()
+                    if res:
+                        setups.append(res)
 
-    # Deterministic sorting for Tactical Setups per ARX Governance & Directive 044R.8:
-    # 1. Delisted securities sink to bottom
-    # 2. Actionable setups first (isActionable == True)
-    # 3. confluenceScore descending
-    # 4. symbol ascending (lexicographical tie-breaker)
-    def _setup_sort_key(s: dict):
-        is_delisted = 1 if s.get("executionStatus") == "DELISTED_SECURITY" else 0
-        is_act = 1 if s.get("isActionable") else 0
-        confl = float(s.get("confluenceScore") or 0.0)
-        sym = str(s.get("symbol") or "")
-        return (is_delisted, -is_act, -confl, sym)
+        # Deterministic sorting for Tactical Setups per ARX Governance & Directive 044R.8:
+        # 1. Delisted securities sink to bottom
+        # 2. Actionable setups first (isActionable == True)
+        # 3. confluenceScore descending
+        # 4. symbol ascending (lexicographical tie-breaker)
+        def _setup_sort_key(s: dict):
+            is_delisted = 1 if s.get("executionStatus") == "DELISTED_SECURITY" else 0
+            is_act = 1 if s.get("isActionable") else 0
+            confl = float(s.get("confluenceScore") or 0.0)
+            sym = str(s.get("symbol") or "")
+            return (is_delisted, -is_act, -confl, sym)
 
-    setups.sort(key=_setup_sort_key)
+        setups.sort(key=_setup_sort_key)
 
-    result_payload = {
-        "userRole": clean_role,
-        "totalSetups": len(setups),
-        "setups": setups,
-    }
-    _store_cached_tactical_setups(cache_key, result_payload)
-    return _sanitize_floats(result_payload)
+        result_payload = {
+            "userRole": clean_role,
+            "totalSetups": len(setups),
+            "setups": setups,
+        }
+        _store_cached_tactical_setups(cache_key, result_payload)
+
+        if request is not None and hasattr(request, "state"):
+            request.state.scoring_latency_ms = round((time.perf_counter() - t_score_start) * 1000, 2)
+
+        return _sanitize_floats(result_payload)
+
+    finally:
+        if is_leader:
+            with _setups_flight_lock:
+                ev = _setups_flights.pop(cache_key, None)
+                if ev and not ev.is_set():
+                    ev.set()
 
 
 @router.get("/setups/{symbol}", tags=["Setups"])
