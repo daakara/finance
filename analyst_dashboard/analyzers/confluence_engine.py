@@ -69,10 +69,20 @@ class ConfluenceEngine:
         fund_prov_status = (fund_prov.get("evidenceStatus") or fund_prov.get("status")) if isinstance(fund_prov, dict) else None
 
         is_fund_synthetic = (fund_prov_status == "SYNTHETIC")
-        is_fund_unverified = (fund_prov_status in ("UNVERIFIED", "FAILED", "STALE"))
+        is_fund_unverified = (fund_prov_status in ("UNVERIFIED", "FAILED", "STALE", "UNAVAILABLE"))
+        # Raw scores are never sufficient to establish a verified evidence pillar.
+        is_fund_verified = bool(
+            isinstance(fund_prov, dict)
+            and fund_prov_status == "VERIFIED"
+            and fund_prov.get("isVerified") is True
+            and not fund_prov.get("isSynthetic", False)
+            and not fund_prov.get("isStale", False)
+            and fund_prov.get("sourceId")
+            and (fund_prov.get("filingDate") or fund_prov.get("asOfDate"))
+        )
         is_fund_exempt = (fund_prov_status == "NOT_APPLICABLE" or asset_class == "ETF" or clean_sym in {"SPY", "QQQ", "IWM", "XLK", "DIA", "SOXX", "SMH", "XLF", "XLE", "VTI", "VOO"})
 
-        if is_fund_synthetic or is_fund_unverified:
+        if not is_fund_exempt and not is_fund_verified:
             has_fundamentals = False
             fund_score = 0.0
             fund_status = "synthetic" if is_fund_synthetic else "unverified"
@@ -83,11 +93,13 @@ class ConfluenceEngine:
             )
             fund_plain = "Financial health data unverified — awaiting audited SEC financial statements."
         elif is_fund_exempt:
-            has_fundamentals = True
-            fund_score = 75.0
+            # An ETF is exempt from corporate 10-K/10-Q requirements, but
+            # exemption is not an observed, verified portfolio-quality score.
+            has_fundamentals = False
+            fund_score = 0.0
             fund_status = "not_applicable"
-            fund_detail = "ETF Structure: Corporate 10-K/10-Q filings not applicable. Portfolio holdings evaluated."
-            fund_plain = "ETF index fund: Evaluated on underlying portfolio quality rather than corporate balance sheet."
+            fund_detail = "ETF structure: Corporate 10-K/10-Q filings not applicable; holdings quality not verified."
+            fund_plain = "Corporate fundamentals exempt; no inferred portfolio-quality score."
         else:
             raw_p = fundamental_data.get("piotroski_f") if fundamental_data and fundamental_data.get("piotroski_f") is not None else (fundamental_data.get("piotroskiFScore") if fundamental_data else None)
             piotroski = int(raw_p) if raw_p is not None else None
@@ -311,7 +323,7 @@ class ConfluenceEngine:
 
         # ── VERIFIED EVIDENCE & COVERAGE AUDIT (ARX-CONFLUENCE-INTEGRITY-002) ──
         tech_verified = bool(technical_data and technical_data.get("current_price"))
-        fund_verified = bool(has_fundamentals and (fund_prov_status in ("VERIFIED", "NOT_APPLICABLE") or (fund_prov is None and has_fundamentals and not is_fund_synthetic)))
+        fund_verified = bool(has_fundamentals and is_fund_verified)
         smart_verified = bool(smart_status in ("positive", "warning") or is_foreign_adr)
         macro_verified = bool(has_macro and macro_status != "unavailable")
 
@@ -394,8 +406,8 @@ class ConfluenceEngine:
             confluence_badge = f"{positives}-Feed Mixed Confluence"
             plain_badge = f"{positives}/4 Positive Signals"
 
-        if final_score >= 80.0:
-            if verified_pillars_count == 4 and smart_status == "positive":
+        if final_score >= 80.0 and verified_pillars_count == 4:
+            if smart_status == "positive":
                 rating = "HIGH-CONVICTION INSTITUTIONAL ALIGNMENT"
                 plain_rating = "🟢 GREEN LIGHT: HIGH CONVICTION"
                 badge_color = "emerald"
@@ -424,6 +436,11 @@ class ConfluenceEngine:
                 aligned_str = "available modeled factors"
 
             bottom_line = f"Strong multi-factor alignment ({positives}/4 pillars positive): {aligned_str.capitalize()} are synchronised."
+        elif final_score >= 80.0 and verified_pillars_count < 4:
+            rating = "SELECTIVE MULTI-FACTOR ALIGNMENT — EVIDENCE INCOMPLETE"
+            plain_rating = "SELECTIVE: Additional verified evidence required"
+            badge_color = "amber"
+            bottom_line = f"Confluence score supported by only {verified_pillars_count}/4 verified pillars. Do not infer institutional high conviction."
         elif final_score <= 48.0 or warns >= 2:
             rating = "DEFENSIVE / CAPITAL PRESERVATION MODE"
             plain_rating = "🔴 RED LIGHT: WAIT FOR DUST TO SETTLE"
