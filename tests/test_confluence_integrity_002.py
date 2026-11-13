@@ -549,3 +549,34 @@ def test_adversarial_risk_reward_matches_actual_blended_plan_geometry():
     risk = entry - stop
     expected = round((0.5 * (tp1 - entry) + 0.5 * (tp2 - entry)) / risk, 2)
     assert abs(rr - expected) <= 0.03, (rr, expected, plan)
+
+
+def test_adversarial_etf_three_verified_alternative_pillars_keep_selective_eligibility():
+    """No phantom 75-point quality, but authentic other factors can still score."""
+    result = _engine.calculate_confluence(
+        symbol="SPY", asset_class="ETF",
+        technical_data={
+            "current_price": 600.0, "stage_phase": "Stage 2",
+            "risk_reward_ratio": 3.0, "rsi_14": 55.0,
+        },
+        fundamental_data=None,
+        fundamental_provenance={"evidenceStatus": "NOT_APPLICABLE", "isVerified": True},
+        smart_money_data={"has_insider_buy": True, "insider_value_usd": 1_000_000},
+        macro_data={"yield_curve_10y2y": 0.3, "credit_spread": 3.0},
+    )
+    assert result["pillars"][1]["status"] == "not_applicable"
+    assert result["pillars"][1]["score"] == 0.0
+    assert result["verifiedPillarCount"] == 3
+    assert 75.0 <= result["confluenceScore"] <= 84.0
+    assert "HIGH-CONVICTION" not in result["confluenceRating"]
+
+
+def test_adversarial_common_stock_cannot_claim_etf_exemption_from_tag():
+    result = _engine.calculate_confluence(
+        symbol="LNTH", asset_class="EQUITY",
+        technical_data={"current_price": 100.0},
+        fundamental_data={"qualityScore": 99.0},
+        fundamental_provenance={"evidenceStatus": "NOT_APPLICABLE", "isVerified": True},
+    )
+    assert result["pillars"][1]["status"] == "unverified"
+    assert result["pillars"][1]["score"] == 0.0
