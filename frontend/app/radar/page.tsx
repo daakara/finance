@@ -1692,9 +1692,9 @@ function RadarContent() {
             tabIndex={0}
             className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-1)] overflow-hidden shadow-xl focus-ring"
           >
-            <p className="sm:hidden px-3 pt-2 text-[11px] text-[var(--text-muted)] font-mono" id="radar-table-scroll-hint">Swipe horizontally for price, score, evidence and actions →</p>
-            <div className="overflow-x-auto overscroll-x-contain touch-pan-x" role="region" aria-label="Radar candidate results, horizontally scrollable" aria-describedby="radar-table-scroll-hint" tabIndex={0} style={{ WebkitOverflowScrolling: "touch" }}>
-              <table className="w-full text-left font-mono text-xs">
+            {/* Desktop Table: Multi-Column Candidate Stream (>= sm) */}
+            <div className="hidden sm:block overflow-x-auto overscroll-x-contain touch-pan-x" role="region" aria-label="Radar candidate results, horizontally scrollable" tabIndex={0} style={{ WebkitOverflowScrolling: "touch" }}>
+              <table className="w-full text-left font-mono text-xs" id="radar-candidates-table">
                 <thead className="bg-[var(--bg-app)] border-b border-[var(--border-subtle)] text-[var(--text-2)] text-[10px] uppercase tracking-wider">
                 <tr>
                   <th className="p-3 sticky left-0 bg-[var(--bg-app)] z-10 min-w-[130px]">Asset</th>
@@ -2051,6 +2051,192 @@ function RadarContent() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards View (< sm): Touch-Friendly, Responsive Cards */}
+          <div className="sm:hidden" data-testid="radar-mobile-cards">
+            {filteredAssets.length === 0 ? (
+              <div className="p-6 text-center text-[var(--text-2)] space-y-4 font-mono">
+                <span className="text-3xl block">🔍</span>
+                <p className="text-sm font-bold text-[var(--text-1)]">
+                  {searchQuery ? `No assets match "${searchQuery}"` : "No qualifying candidates found"}
+                </p>
+                <p className="text-xs text-[var(--text-muted)] font-sans">
+                  Try clearing your search query or refreshing the confluence scan.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-[var(--border-subtle)]" role="feed" aria-label="Radar Confluence Candidate Cards">
+                {filteredAssets.map((asset) => {
+                  const isNearZone = asset.executionStatus === 'IN_BUY_ZONE' || asset.executionStatus === 'READY_TO_BUY';
+                  const isTarget = asset.executionStatus === 'APPROACHING_TARGET';
+                  const screeningLabel = formatRadarExecutionStatus(asset.executionStatus);
+                  const isAssetHeld = getOwnershipState(asset.ticker) === 'HELD';
+                  const allowed = Array.isArray(asset.allowedActions) ? asset.allowedActions : [];
+                  const isDelisted = asset.executionStatus === 'DELISTED_SECURITY';
+                  const isUnverified = asset.executionStatus === 'UNVERIFIED_ASSET';
+
+                  return (
+                    <article
+                      key={`radar-mobile-${asset.ticker}`}
+                      onClick={() => setSelectedAssetTicker(asset.ticker)}
+                      aria-selected={activeCanonicalAsset === asset.ticker}
+                      data-testid={`radar-mobile-card-${asset.ticker}`}
+                      className={`p-3.5 space-y-3 transition-colors ${
+                        activeCanonicalAsset === asset.ticker ? 'bg-[var(--surface-2)]' : 'hover:bg-[var(--surface-hover)]'
+                      }`}
+                    >
+                      {/* Header: Symbol, Name, Badges */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link
+                              href={`/?symbol=${asset.ticker}${asset.decisionContextId ? `&contextId=${encodeURIComponent(asset.decisionContextId)}` : ""}`}
+                              onClick={() => trackRadarAssetClick(asset.ticker)}
+                              className="font-black text-[var(--text-1)] text-base tracking-tight hover:text-cyan-400 transition-colors inline-flex items-center min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
+                            >
+                              {asset.ticker}
+                            </Link>
+                            <RadarPortfolioBadge
+                              ownershipState={getOwnershipState(asset.ticker)}
+                              shares={getHolding(asset.ticker)?.shares}
+                            />
+                          </div>
+                          {asset.name && asset.name !== asset.ticker && (
+                            <div className="text-[11px] text-[var(--text-2)] font-sans truncate max-w-[200px]" title={asset.name}>
+                              {asset.name}
+                            </div>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-right pt-1">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold inline-block ${
+                            asset.executionStatus === 'DELISTED_SECURITY'
+                              ? 'bg-rose-950/80 text-rose-300 border border-rose-700/80'
+                              : isNearZone
+                              ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-700/60'
+                              : asset.executionStatus === 'IN_BUY_ZONE_AWAITING_TRIGGER'
+                              ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                              : isTarget
+                              ? 'bg-blue-950 text-blue-300 border border-blue-800'
+                              : 'bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]'
+                          }`}>
+                            {screeningLabel}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Metrics 3-Column Grid */}
+                      <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-[var(--surface-2)]/60 border border-[var(--border-subtle)] text-xs font-mono">
+                        <div>
+                          <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">Screen Price</div>
+                          <div className="font-bold text-[var(--text-1)] text-xs">
+                            {asset.executionStatus === 'DELISTED_SECURITY' ? (
+                              <span className="text-[var(--text-2)]">
+                                {asset.price && asset.price > 0 ? `$${asset.price.toFixed(2)}` : 'Unavailable'}
+                              </span>
+                            ) : asset.price && asset.price > 0 ? (
+                              `$${asset.price.toFixed(2)}`
+                            ) : (
+                              <span className="text-amber-400 font-normal">Unavailable</span>
+                            )}
+                          </div>
+                          <div className="text-[9px] text-[var(--text-muted)] truncate">
+                            {asset.priceBasis === 'DAILY_CLOSE' && asset.priceDate ? asset.priceDate : (asset.priceDate || 'Daily Close')}
+                          </div>
+                        </div>
+
+                        <div className="text-center">
+                          <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">Score</div>
+                          <div>
+                            <span className={`font-bold px-1.5 py-0.5 rounded text-xs inline-block ${
+                              asset.executionStatus === 'DELISTED_SECURITY'
+                                ? 'text-rose-400 bg-rose-950/60 border border-rose-800/60'
+                                : 'text-emerald-400 bg-emerald-950/60 border border-emerald-800/60'
+                            }`}>
+                              {asset.confluenceScore !== null ? asset.confluenceScore : <span className="text-[var(--text-muted)]">—</span>}
+                            </span>
+                          </div>
+                          <div className="text-[9px] text-[var(--text-muted)]">
+                            RVOL: <span className="text-cyan-300 font-bold">{asset.rvol || '—'}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">R:R Ratio</div>
+                          <div className="font-bold text-emerald-400 text-xs">
+                            {asset.riskRewardRatio !== null && asset.riskRewardRatio !== undefined ? `${asset.riskRewardRatio.toFixed(1)}:1` : '—'}
+                          </div>
+                          <div className="text-[9px] text-[var(--text-2)] truncate" title={asset.vcpStage}>
+                            {asset.vcpStage || 'Base Building'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Catalyst Rationale */}
+                      {(asset.opportunityExplanation || asset.catalyst) && (
+                        <p className="text-[11px] text-[var(--text-2)] font-sans line-clamp-2 leading-relaxed">
+                          {asset.opportunityExplanation || asset.catalyst}
+                        </p>
+                      )}
+
+                      {/* Touch-Friendly Action Row (>= 44px tap targets) */}
+                      <div className="flex items-center gap-2 pt-1">
+                        {(() => {
+                          if (isDelisted || allowed.length === 0) {
+                            return (
+                              <span className="w-full px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-mono text-zinc-500 bg-zinc-900/80 border border-zinc-800 inline-flex items-center justify-center cursor-not-allowed select-none">
+                                {isDelisted ? "Delisted / Inactive" : "Action Unavailable"}
+                              </span>
+                            );
+                          }
+
+                          if (isUnverified) {
+                            if (allowed.includes("RESEARCH_PROFILE")) {
+                              return (
+                                <Link
+                                  href={`/?symbol=${asset.ticker}${asset.decisionContextId ? `&contextId=${encodeURIComponent(asset.decisionContextId)}` : ""}`}
+                                  onClick={() => trackRadarAssetClick(asset.ticker)}
+                                  className="w-full px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-bold font-mono transition-colors inline-flex items-center justify-center border bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border-amber-800/60"
+                                >
+                                  Research Profile →
+                                </Link>
+                              );
+                            }
+                            return (
+                              <span className="w-full px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-mono text-zinc-500 bg-zinc-900/80 border border-zinc-800 inline-flex items-center justify-center cursor-not-allowed select-none">
+                                Market Data Unverified
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <>
+                              <Link
+                                href={`/?symbol=${asset.ticker}${asset.decisionContextId ? `&contextId=${encodeURIComponent(asset.decisionContextId)}` : ""}`}
+                                onClick={() => trackRadarAssetClick(asset.ticker)}
+                                className={`flex-1 px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-bold font-mono transition-colors inline-flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none border ${
+                                  isAssetHeld
+                                    ? 'bg-indigo-950/80 hover:bg-indigo-600 text-indigo-200 hover:text-white border-indigo-700/80'
+                                    : 'bg-[var(--surface-2)] hover:bg-cyan-600 hover:text-white text-cyan-300 border-[var(--border-strong)]'
+                                }`}
+                              >
+                                {isAssetHeld ? "Review Position →" : "Analyze →"}
+                              </Link>
+                              <Link
+                                href={`/setups?ticker=${asset.ticker}`}
+                                className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-hover)] text-slate-300 text-xs font-mono font-medium border border-[var(--border-subtle)] inline-flex items-center justify-center shrink-0"
+                              >
+                                View Plan →
+                              </Link>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
         )}

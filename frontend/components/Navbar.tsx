@@ -364,7 +364,7 @@ export default function Navbar({
           data-testid="navbar"
           className="command-header border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-12 flex items-center overflow-x-clip max-w-full"
         >
-          <div className="command-header-bar max-w-[1750px] mx-auto px-2 sm:px-3 xl:px-6 w-full h-14 flex items-center justify-between gap-1 xl:gap-4 min-w-0">
+          <div className="command-header-bar max-w-[1750px] mx-auto px-2 sm:px-3 xl:px-6 w-full h-12 flex items-center justify-between gap-1 xl:gap-4 min-w-0">
             {/* Left: Brand Logo & Title */}
             <div className="flex items-center space-x-1 sm:space-x-2.5 shrink-0 min-w-0">
               <Link

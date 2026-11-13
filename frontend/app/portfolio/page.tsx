@@ -888,8 +888,10 @@ export default function PortfolioPage() {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs min-w-[720px]">
+            <>
+              {/* Desktop View: Multi-column Table (>= sm) */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[720px]">
                 <thead className="bg-[#090d14] text-slate-400 border-b border-[#1b2434] uppercase text-[10px]">
                   <tr>
                     <th className="py-3 px-4">Asset</th>
@@ -1026,7 +1028,158 @@ export default function PortfolioPage() {
               </tbody>
             </table>
           </div>
-          )}
+
+          {/* Mobile View: Responsive Position Cards (< sm) */}
+          <div className="sm:hidden divide-y divide-[#1b2434]" role="feed" aria-label="Portfolio Position Cards" data-testid="portfolio-mobile-cards">
+            {positions.map((pos) => {
+              const isPriced = pos.currentPrice !== null && !isNaN(pos.currentPrice) && pos.currentPrice > 0;
+              const mktVal = isPriced ? pos.shares * pos.currentPrice! : null;
+              const cost = pos.shares * pos.entryPrice;
+              const pnl = isPriced && mktVal !== null ? mktVal - cost : null;
+              const pnlPct = isPriced && pnl !== null && cost > 0 ? (pnl / cost) * 100 : null;
+              const posUp = pnl !== null ? pnl >= 0 : null;
+
+              // Execution state alert
+              let statusBadge = null;
+              if (!isPriced) {
+                statusBadge = (
+                  <span className="px-2 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/60 font-bold text-[10px] whitespace-nowrap">
+                    UNPRICED
+                  </span>
+                );
+              } else if (pos.targetPrice && pos.currentPrice !== null && pos.currentPrice >= pos.targetPrice) {
+                statusBadge = (
+                  <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold text-[10px] whitespace-nowrap">
+                    🎯 TP1 TARGET HIT
+                  </span>
+                );
+              } else if (pos.stopLossPrice && pos.currentPrice !== null && pos.currentPrice <= pos.stopLossPrice) {
+                statusBadge = (
+                  <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-bold text-[10px] whitespace-nowrap">
+                    🛑 STOP LOSS HIT
+                  </span>
+                );
+              } else if (pos.stopLossPrice && pos.currentPrice !== null && pos.currentPrice <= pos.stopLossPrice * 1.02) {
+                statusBadge = (
+                  <span className="px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800 font-bold text-[10px] whitespace-nowrap">
+                    ⚠️ NEAR STOP FLOOR
+                  </span>
+                );
+              } else {
+                statusBadge = (
+                  <span className="px-2 py-0.5 rounded bg-cyan-950/60 text-cyan-400 border border-cyan-800/60 font-bold text-[10px] whitespace-nowrap">
+                    🟢 ACTIVE HOLDING
+                  </span>
+                );
+              }
+
+              return (
+                <article
+                  key={`mobile-pos-${pos.symbol}`}
+                  data-testid={`portfolio-mobile-card-${pos.symbol}`}
+                  className={`p-3.5 space-y-3 transition-colors ${
+                    activeSymbol && pos.symbol.toUpperCase() === activeSymbol.toUpperCase()
+                      ? "bg-cyan-950/30 border-l-2 border-cyan-400"
+                      : "hover:bg-[#151e2d]"
+                  }`}
+                >
+                  {/* Header row: Symbol, Name, Status Badge */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <Link
+                        href={`/?symbol=${pos.symbol}&ownership=OWNED`}
+                        className="font-bold text-cyan-400 hover:text-cyan-300 text-base flex items-center gap-1.5 min-h-[44px]"
+                      >
+                        <span>{pos.symbol}</span>
+                        <span className="text-xs text-slate-400 font-normal">({pos.name})</span>
+                      </Link>
+                    </div>
+                    <div className="shrink-0 pt-1">{statusBadge}</div>
+                  </div>
+
+                  {/* Metrics 2x2 Grid */}
+                  <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-[#090d14] border border-[#1b2434] text-xs font-mono">
+                    <div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">Current Price</div>
+                      <div className="font-bold text-white text-sm">
+                        {isPriced ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span>${pos.currentPrice!.toFixed(2)}</span>
+                            {pos.liveFreshness && pos.liveFreshness !== "REALTIME" && (
+                              <span className="text-[9px] px-1 py-0.2 rounded bg-amber-950/80 text-amber-400 border border-amber-800 font-mono font-normal">
+                                DELAYED
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-amber-400 text-xs">Unpriced</span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400">Entry: ${pos.entryPrice.toFixed(2)}</div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">Unrealized P&L</div>
+                      <div className={`font-bold text-sm ${posUp ? "text-emerald-400" : "text-rose-400"}`}>
+                        {pnl !== null ? (posUp ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`) : "--"}
+                      </div>
+                      <div className={`text-[10px] font-bold ${posUp ? "text-emerald-400/80" : "text-rose-400/80"}`}>
+                        {pnlPct !== null ? (posUp ? `+${pnlPct.toFixed(2)}%` : `${pnlPct.toFixed(2)}%`) : "--"}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">Shares</div>
+                      <div className="text-slate-200 font-bold">
+                        {typeof pos.shares === "number" ? Number(pos.shares.toFixed(6)) : pos.shares}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">Market Value</div>
+                      <div className="text-slate-100 font-bold">
+                        {mktVal !== null ? `$${mktVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "--"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Risk Ladder / Floors */}
+                  <div className="flex items-center justify-between text-xs font-mono px-2 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800/60">
+                    <span className="text-rose-400">Stop: ${pos.stopLossPrice?.toFixed(2) || "None"}</span>
+                    <span className="text-slate-600">|</span>
+                    <span className="text-emerald-400">Target: ${pos.targetPrice?.toFixed(2) || "None"}</span>
+                  </div>
+
+                  {/* Actions: Record Exit (prominent), Edit, Remove - with >= 44px touch targets */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenExitModal(pos)}
+                      className="flex-1 py-2.5 px-3 min-h-[44px] text-xs rounded-xl bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-800/80 transition-colors cursor-pointer font-bold inline-flex items-center justify-center active:scale-95"
+                    >
+                      Record Exit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditModal(pos)}
+                      className="py-2.5 px-3.5 min-h-[44px] text-xs rounded-xl bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-300 border border-slate-700 transition-colors cursor-pointer inline-flex items-center justify-center"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePosition(pos.symbol)}
+                      className="py-2.5 px-3.5 min-h-[44px] text-xs rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/80 transition-colors cursor-pointer inline-flex items-center justify-center"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </>
+      )}
         </div>
 
         {/* 🌪️ MACRO STRESS-TEST & SCENARIO SIMULATOR */}
