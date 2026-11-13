@@ -18,8 +18,8 @@
       "originating_pr_number": 272,
       "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
       "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: coverage caps, score separation, verified pillar gating.",
-      "sha256": "64f850001be40e323a1e6f8d683644a58a0c132ea935c1a43ac2d51af39f257d",
-      "size_bytes": 33812
+      "sha256": "b2a8dab8e4d74185f9fc3b740841b06479599e9206382fdae8d2b1bd40b06cb8",
+      "size_bytes": 33822
     },
     "analyst_dashboard/analyzers/decision_hierarchy.py": {
       "operation": "M",
@@ -74,8 +74,8 @@
       "originating_pr_number": 272,
       "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
       "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: verified empty state for 0 qualifying setups, pillar count badge.",
-      "sha256": "5329e922080e1580e73a3369e1466f65c0f81d20da37357752687b22fd6badf6",
-      "size_bytes": 50935
+      "sha256": "abe14b2f9e847e9fd79280acbb1c1d45834d83b14fcd5fd3acf2e9fe8c959178",
+      "size_bytes": 50944
     },
     "frontend/lib/simulation/governorSizingEngine.ts": {
       "operation": "M",
