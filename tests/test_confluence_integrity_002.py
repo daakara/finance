@@ -439,3 +439,113 @@ def test_provenance_spec_version_pinned():
     assert PROVENANCE_SPEC_VERSION is not None
     assert isinstance(PROVENANCE_SPEC_VERSION, str)
     assert len(PROVENANCE_SPEC_VERSION) > 0
+
+
+# ── Independent Adversarial Follow-up: no provenance and false confidence ─────
+
+def _fresh_verified_provenance():
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date().isoformat()
+    return {
+        "evidenceStatus": "VERIFIED", "isVerified": True,
+        "sourceId": "sec_edgar", "filingDate": today,
+        "isSynthetic": False, "isStale": False,
+    }
+
+
+def test_adversarial_populated_fundamentals_without_provenance_fail_closed():
+    """Direct confluence call cannot elevate a populated-but-unproven pillar."""
+    result = _engine.calculate_confluence(
+        symbol="LNTH",
+        technical_data={"current_price": 150.0, "stage_phase": "Stage 2", "rsi_14": 55.0},
+        fundamental_data={"qualityScore": 98.0, "growthScore": 90.0},
+        fundamental_provenance=None,
+        smart_money_data={"has_insider_buy": True, "insider_value_usd": 1_000_000},
+        macro_data={"yield_curve_10y2y": 0.3, "credit_spread": 3.0},
+    )
+    assert result["verifiedPillarCount"] <= 3
+    assert result["fundamentalProvenance"] == {}
+    assert result["pillars"][1]["score"] == 0.0
+    assert result["pillars"][1]["status"] == "unverified"
+    assert "HIGH-CONVICTION" not in result["confluenceRating"]
+
+
+def test_adversarial_three_verified_pillars_score_80_is_not_high_conviction():
+    """The 84-point cap does NOT authorize HIGH-CONVICTION copy at 80-84."""
+    result = _engine.calculate_confluence(
+        symbol="LNTH",
+        technical_data={
+            "current_price": 150.0, "stage_phase": "Stage 2",
+            "risk_reward_ratio": 3.0, "rsi_14": 55.0,
+        },
+        fundamental_data={
+            "qualityScore": 95.0, "growthScore": 93.0,
+            "valuationScore": 87.0,
+        },
+        fundamental_provenance=_fresh_verified_provenance(),
+        smart_money_data={"has_insider_buy": True, "insider_value_usd": 1_000_000},
+        macro_data=None,
+    )
+    assert result["verifiedPillarCount"] == 3
+    assert 80.0 <= result["confluenceScore"] <= 84.0
+    assert "HIGH-CONVICTION" not in result["confluenceRating"]
+    assert "HIGH CONVICTION" not in result["plainRating"]
+    assert "GREEN LIGHT" not in result["plainRating"]
+
+
+def test_adversarial_etf_exemption_does_not_invent_holdings_quality():
+    """Exemptions do not establish a quality score or verified holdings pillar."""
+    result = _engine.calculate_confluence(
+        symbol="SPY", asset_class="ETF",
+        technical_data={"current_price": 600.0},
+        fundamental_data=None,
+        fundamental_provenance={"evidenceStatus": "NOT_APPLICABLE", "isVerified": True},
+    )
+    assert result["pillars"][1]["status"] == "not_applicable"
+    assert result["pillars"][1]["score"] == 0.0
+    assert result["verifiedPillarCount"] <= 1
+    assert "HIGH-CONVICTION" not in result["confluenceRating"]
+
+
+@pytest.mark.parametrize("source,date", [
+    ("sec_edgar", None),
+    ("unrecognized_feed", "2026-10-15"),
+    ("sec_edgar", "not-a-date"),
+    ("sec_edgar", "2999-01-01"),
+])
+def test_adversarial_provider_or_date_alone_does_not_verify(source, date):
+    payload = {
+        "source": source, "quality_score": 88.0,
+        "filing_date": date, "symbol": "LNTH",
+    }
+    result = evaluate_factor_provenance(payload, "LNTH")
+    assert result["evidenceStatus"] != "VERIFIED"
+    assert not result["isVerified"]
+
+
+def test_adversarial_genuine_source_with_recent_filing_date_verifies():
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date().isoformat()
+    result = evaluate_factor_provenance({
+        "source": "sec_edgar", "filing_date": today, "quality_score": 88.0,
+    }, "LNTH")
+    assert result["evidenceStatus"] == "VERIFIED"
+    assert result["isVerified"]
+
+
+def test_adversarial_risk_reward_matches_actual_blended_plan_geometry():
+    """No floor/clamp: emitted R:R must match its documented blended TP1/TP2."""
+    plan = OptimalExecutionEngine.calculate_trade_levels(
+        _make_price_df(n=100, start=100.0, trend=0.3),
+        current_price=130.0, user_role="LONG_TERM"
+    )
+    entry = plan.get("planned_entry")
+    stop = plan.get("stop_loss")
+    tp1 = plan.get("take_profit_1")
+    tp2 = plan.get("take_profit_2")
+    rr = plan.get("risk_reward_ratio")
+    assert all(isinstance(x, (float, int)) for x in (entry, stop, tp1, tp2, rr))
+    assert entry > stop
+    risk = entry - stop
+    expected = round((0.5 * (tp1 - entry) + 0.5 * (tp2 - entry)) / risk, 2)
+    assert abs(rr - expected) <= 0.03, (rr, expected, plan)
