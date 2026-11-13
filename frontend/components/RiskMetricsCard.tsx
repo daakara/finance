@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { AnalyticsResponse } from "../lib/api";
+import { useVernacularMode } from "@/lib/useVernacularMode";
+import { JargonTip } from "@/components/ui/JargonTip";
 
 interface RiskMetricsCardProps {
   analyticsData?: AnalyticsResponse;
@@ -12,24 +13,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
   const metrics = analyticsData?.analytics?.advanced_metrics;
   const technicals = analyticsData?.technicals;
   const isDayTrader = userRole === "DAY_TRADER";
-  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
-      if (saved) setVernacularMode(saved);
-    } catch {}
-
-    const handleVernacular = (e: Event) => {
-      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
-      if (custom.detail) setVernacularMode(custom.detail);
-    };
-
-    window.addEventListener("finance:vernacular-change", handleVernacular);
-    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
-  }, []);
-
-  const isPlain = vernacularMode === "PLAIN_ENGLISH";
+  const { mode: vernacularMode, isPlain } = useVernacularMode();
 
   const var95 = metrics?.Modified_VaR_95 ?? -3.42;
   const var99 = metrics?.Modified_VaR_99 ?? -5.18;
@@ -79,7 +63,9 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
         <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group ">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-300">
-              {isDayTrader ? (isPlain ? "Typical Daily Swing" : "14-Day True Range (ATR)") : (isPlain ? "Standard Bad Day (95% VaR)" : "Modified VaR (95%)")}
+              <JargonTip term="CORNISH_FISHER_VAR">
+                {isDayTrader ? (isPlain ? "Typical Daily Swing" : "14-Day True Range (ATR)") : (isPlain ? "Standard Bad Day (95% VaR)" : "Modified VaR (95%)")}
+              </JargonTip>
             </span>
             <span className="text-[10px] text-slate-500 font-semibold px-1 rounded bg-[#1b2434]">
               {isDayTrader ? "Daily Move" : "95% Level"}
@@ -121,7 +107,9 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
         <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group ">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-300">
-              {isPlain ? "Downside Armor (Sortino)" : "Sortino Ratio"}
+              <JargonTip term="SORTINO">
+                {isPlain ? "Downside Armor (Sortino)" : "Sortino Ratio"}
+              </JargonTip>
             </span>
             <span className="text-[10px] text-slate-500 font-semibold px-1 rounded bg-[#1b2434]">
               {isDayTrader ? "Downside" : "Armor"}

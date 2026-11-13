@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo } from "react";
 import { AnalyticsResponse } from "../lib/api";
 import { FredMacroData, SecForm4Trade } from "../lib/institutionalFeeds";
+import { useVernacularMode } from "@/lib/useVernacularMode";
+import { JargonTip } from "@/components/ui/JargonTip";
 
 interface CompositeConvictionCardProps {
   symbol: string;
@@ -57,24 +59,7 @@ export default function CompositeConvictionCard({
   onOpenWhy,
 }: CompositeConvictionCardProps) {
   const cleanSym = symbol.toUpperCase().replace("-USD", "");
-  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
-      if (saved) setVernacularMode(saved);
-    } catch {}
-
-    const handleVernacular = (e: Event) => {
-      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
-      if (custom.detail) setVernacularMode(custom.detail);
-    };
-
-    window.addEventListener("finance:vernacular-change", handleVernacular);
-    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
-  }, []);
-
-  const isPlain = vernacularMode === "PLAIN_ENGLISH";
+  const { mode: vernacularMode, isPlain } = useVernacularMode();
 
   // Pure View Lens Projection: Consume Canonical Backend Confluence (Single Source of Truth)
   const synthesis = useMemo(() => {
@@ -275,7 +260,7 @@ export default function CompositeConvictionCard({
             </span>
           </div>
           <h3 className="text-base sm:text-lg font-bold tracking-tight text-[var(--text-1)] font-mono">
-            Multi-Model Confluence Attribution
+            <JargonTip term="CONFLUENCE">Multi-Model Confluence Attribution</JargonTip>
           </h3>
           <p className="text-xs text-[var(--text-2)] font-sans">
             Four pillars at 25% base weight. The backend aggregate includes governed adjustments and missing-source normalization; it may differ from their simple average.

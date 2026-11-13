@@ -5,6 +5,8 @@ import { ShieldCheck, Scale, Bell, Briefcase } from "lucide-react";
 import { isUxReviewOnly } from "../lib/uxReviewBoundary";
 import { useUxReviewOnly } from "../hooks/useUxReviewOnly";
 import { OptimalExecutionPlan } from "../lib/api";
+import { useVernacularMode } from "@/lib/useVernacularMode";
+import { JargonTip } from "@/components/ui/JargonTip";
 import InsightProvenanceModal from "./InsightProvenanceModal";
 import PositionSizerModal from "./PositionSizerModal";
 import AlertTriggerModal from "./AlertTriggerModal";
@@ -70,7 +72,7 @@ export default function OptimalEntryExitCard({
   const reviewOnly = useUxReviewOnly();
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
-  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+  const { mode: vernacularMode, isPlain } = useVernacularMode();
   const [logStatus, setLogStatus] = useState<string | null>(null);
 
   const handleOpenSizer = () => {
@@ -80,21 +82,6 @@ export default function OptimalEntryExitCard({
       setIsSizerOpen(true);
     }
   };
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
-      if (saved) setVernacularMode(saved);
-    }
-    const handleVernacular = (e: Event) => {
-      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
-      if (custom.detail) setVernacularMode(custom.detail);
-    };
-    window.addEventListener("finance:vernacular-change", handleVernacular);
-    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
-  }, []);
-
-  const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
   if (!executionPlan) return null;
 
@@ -561,7 +548,7 @@ export default function OptimalEntryExitCard({
         <div className="flex items-center space-x-2">
           <div className="bg-[var(--surface-2)] px-3 py-1 rounded-lg border border-[var(--border-subtle)] text-right" title={isStage4 ? "Post-Breakout Pivot Expected Reward-to-Risk Ratio" : "Reward-to-Risk ratio: Potential gain to TP1 relative to maximum risk at Stop Loss"}>
             <span className="text-[9px] text-[var(--text-muted)] block uppercase font-bold font-mono">
-              {isPlain ? "Profit : Risk" : isStage4 ? "Post-Pivot R:R" : "Reward : Risk"}
+              <JargonTip term="R_MULTIPLE">{isPlain ? "Profit : Risk" : isStage4 ? "Post-Pivot R:R" : "Reward : Risk"}</JargonTip>
             </span>
             <span className={`text-sm font-extrabold font-mono tabular-nums ${isStage4 ? "text-amber-400" : "text-emerald-400"}`}>
               {risk_reward_ratio} : 1.0
@@ -803,9 +790,11 @@ export default function OptimalEntryExitCard({
         }`}>
           <div className="flex items-center space-x-2">
             <span className={isStopVisible ? "text-rose-400 font-bold" : "text-[var(--text-1)] font-bold"}>
-              {isStopVisible
-                ? (isPlain ? "🛑 SAFETY EXIT (Cut Loss Price)" : "🛑 HARD STOP-LOSS / INVALIDATION")
-                : (isPlain ? "🛑 STRUCTURAL INVALIDATION FLOOR" : "🛑 STRUCTURAL INVALIDATION REFERENCE")}
+              <JargonTip term="STOP_LOSS">
+                {isStopVisible
+                  ? (isPlain ? "🛑 SAFETY EXIT (Cut Loss Price)" : "🛑 HARD STOP-LOSS / INVALIDATION")
+                  : (isPlain ? "🛑 STRUCTURAL INVALIDATION FLOOR" : "🛑 STRUCTURAL INVALIDATION REFERENCE")}
+              </JargonTip>
             </span>
             <span className="text-xs text-[var(--text-muted)] hidden sm:inline">
               {isStopVisible
