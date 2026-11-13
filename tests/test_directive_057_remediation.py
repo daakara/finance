@@ -15,7 +15,18 @@ Validates:
 
 import math
 import pytest
+from datetime import datetime, timezone
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
+
+
+def _verified_fundamental_provenance():
+    """Source-backed point-in-time fixture, never inferred from numeric factors."""
+    return {
+        "evidenceStatus": "VERIFIED", "isVerified": True,
+        "sourceId": "sec_edgar",
+        "filingDate": datetime.now(timezone.utc).date().isoformat(),
+        "isSynthetic": False, "isStale": False,
+    }
 
 
 # ==============================================================================
@@ -29,6 +40,7 @@ def test_r1_case_01_all_four_pillars_present_and_positive():
         technical_data={"setup_pattern": "Stage 2 Breakout", "stage_phase": "Stage 2", "rsi_14": 55.0, "risk_reward_ratio": 2.8, "current_price": 150.0, "stop_loss": 140.0},
         smart_money_data={"has_insider_buy": True, "has_congress_buy": True},
         fundamental_data={"piotroski_f": 9, "qualityScore": 90.0, "growthScore": 85.0, "valuationScore": 80.0},
+        fundamental_provenance=_verified_fundamental_provenance(),
         macro_data={"yield_curve_10y2y": 0.35, "credit_spread": 3.0},
     )
     assert res["confluenceScore"] >= 80.0
@@ -44,14 +56,14 @@ def test_r1_case_02_smart_money_unavailable_three_positive():
         technical_data={"setup_pattern": "Stage 2 Breakout", "stage_phase": "Stage 2", "rsi_14": 55.0, "risk_reward_ratio": 2.8, "current_price": 150.0, "stop_loss": 140.0},
         smart_money_data=None,  # Smart money unavailable
         fundamental_data={"piotroski_f": 8, "qualityScore": 88.0, "growthScore": 80.0, "valuationScore": 75.0},
+        fundamental_provenance=_verified_fundamental_provenance(),
         macro_data={"yield_curve_10y2y": 0.35, "credit_spread": 3.0},
     )
-    assert res["confluenceScore"] >= 80.0
-    # Must differentiate from full institutional confirmation
-    assert res["confluenceRating"] == "HIGH-CONVICTION MULTI-FACTOR ALIGNMENT"
-    # Narrative MUST NOT claim smart money flow is synchronised
+    assert 80.0 <= res["confluenceScore"] <= 84.0
+    # Three verified pillars cannot assert high conviction, however high the raw score.
+    assert "HIGH-CONVICTION" not in res["confluenceRating"]
+    assert "SELECTIVE" in res["confluenceRating"]
     assert "smart money flow" not in res["bottomLine"]
-    assert "technicals, balance sheet quality and macro tailwinds are synchronised" in res["bottomLine"].lower()
     assert res["coverageRatio"] == 0.75
 
 
@@ -62,6 +74,7 @@ def test_r1_case_03_smart_money_neutral():
         technical_data={"setup_pattern": "Stage 2 Breakout", "stage_phase": "Stage 2", "rsi_14": 55.0, "risk_reward_ratio": 2.8, "current_price": 150.0, "stop_loss": 140.0},
         smart_money_data={"has_insider_buy": False, "has_congress_buy": False},  # Neutral 50.0
         fundamental_data={"piotroski_f": 9, "qualityScore": 90.0, "growthScore": 85.0, "valuationScore": 80.0},
+        fundamental_provenance=_verified_fundamental_provenance(),
         macro_data={"yield_curve_10y2y": 0.35, "credit_spread": 3.0},
     )
     # Even if score reaches 80 via high other pillars, smart money is neutral, so NOT in positive list
@@ -77,6 +90,7 @@ def test_r1_case_04_smart_money_present_and_warning():
         technical_data={"setup_pattern": "Stage 2 Breakout", "stage_phase": "Stage 2", "rsi_14": 55.0, "risk_reward_ratio": 2.8, "current_price": 150.0, "stop_loss": 140.0},
         smart_money_data={"net_institutional_flow_mil": -35.0, "insider_sell_count_90d": 6, "insider_buy_count_90d": 0},
         fundamental_data={"piotroski_f": 7},
+        fundamental_provenance=_verified_fundamental_provenance(),
         macro_data={"yield_curve_10y2y": 0.20, "credit_spread": 3.5},
     )
     assert "smart money flow" not in res["bottomLine"]
@@ -89,13 +103,13 @@ def test_r1_case_05_two_unavailable_pillars():
         technical_data={"setup_pattern": "Stage 2 Breakout", "stage_phase": "Stage 2", "rsi_14": 55.0, "risk_reward_ratio": 2.8, "current_price": 150.0, "stop_loss": 140.0},
         smart_money_data=None,
         fundamental_data={"piotroski_f": 9, "qualityScore": 90.0, "growthScore": 85.0, "valuationScore": 80.0},
+        fundamental_provenance=_verified_fundamental_provenance(),
         macro_data=None,
     )
     assert res["coverageRatio"] == 0.50
-    if res["confluenceScore"] >= 80.0:
-        assert res["confluenceRating"] == "HIGH-CONVICTION MULTI-FACTOR ALIGNMENT"
-        assert "smart money flow" not in res["bottomLine"]
-        assert "technicals and balance sheet quality are synchronised" in res["bottomLine"].lower()
+    assert res["confluenceScore"] <= 72.0
+    assert "HIGH-CONVICTION" not in res["confluenceRating"]
+    assert "smart money flow" not in res["bottomLine"]
 
 
 def test_r1_case_06_missing_technical_data():
@@ -104,6 +118,7 @@ def test_r1_case_06_missing_technical_data():
         symbol="AAPL",
         technical_data={},
         fundamental_data={"piotroski_f": 8, "qualityScore": 80.0},
+        fundamental_provenance=_verified_fundamental_provenance(),
         macro_data={"yield_curve_10y2y": 0.25, "credit_spread": 3.2},
     )
     assert res["pillars"][0]["status"] == "neutral"
@@ -116,6 +131,7 @@ def test_r1_case_07_foreign_adr_smart_money_treatment():
         technical_data={"setup_pattern": "Stage 2 Breakout", "stage_phase": "Stage 2", "rsi_14": 55.0, "risk_reward_ratio": 2.8, "current_price": 800.0, "stop_loss": 760.0},
         smart_money_data=None,
         fundamental_data={"piotroski_f": 8, "qualityScore": 85.0},
+        fundamental_provenance=_verified_fundamental_provenance(),
         macro_data={"yield_curve_10y2y": 0.25, "credit_spread": 3.2},
     )
     smart_pillar = next(p for p in res["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
@@ -131,9 +147,11 @@ def test_r1_case_08_high_score_partial_coverage():
         technical_data={"setup_pattern": "Stage 2 Breakout", "stage_phase": "Stage 2", "rsi_14": 55.0, "risk_reward_ratio": 2.8, "current_price": 150.0, "stop_loss": 140.0},
         smart_money_data=None,
         fundamental_data={"piotroski_f": 9, "qualityScore": 90.0, "growthScore": 85.0, "valuationScore": 80.0},
+        fundamental_provenance=_verified_fundamental_provenance(),
         macro_data={"yield_curve_10y2y": 0.35, "credit_spread": 3.0},
     )
-    assert res["confluenceScore"] >= 80.0
+    assert 80.0 <= res["confluenceScore"] <= 84.0
+    assert "HIGH-CONVICTION" not in res["confluenceRating"]
     assert "4-Pillar" not in res["confluenceBadge"]
     assert "4/4" not in res["plainBadge"]
     assert res["coverageRatio"] == 0.75
@@ -145,6 +163,7 @@ def test_r1_case_09_medium_score_divergence():
         symbol="XYZ",
         technical_data={"setup_pattern": "Consolidation", "stage_phase": "Stage 1", "rsi_14": 50.0},
         fundamental_data={"piotroski_f": 4},
+        fundamental_provenance=_verified_fundamental_provenance(),
     )
     assert res["confluenceScore"] < 65.0
     assert "smart money flow" not in res["bottomLine"]
@@ -156,6 +175,7 @@ def test_r1_case_10_stale_evidence_handling():
         symbol="CPRX",
         technical_data={"setup_pattern": "Correction", "executionStatus": "STOPPED_OUT", "riskRewardRatio": 1.2},
         fundamental_data={},
+        fundamental_provenance=_verified_fundamental_provenance(),
     )
     assert res["confluenceScore"] <= 48.0
     assert "DEFENSIVE" in res["confluenceRating"]
