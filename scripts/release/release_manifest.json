@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "f7e4b97effbf414922b9862b3004023a88f55aa0",
+  "release_candidate_commit": "d3e028fa790c9716acc27102ded59b6793f166ec",
   "base_anchor_commit": "b82e5e5309d16c94147469cabc312508d3f94893",
   "total_files": 16,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -8,18 +8,18 @@
     "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json": {
       "operation": "M",
       "originating_pr_number": 272,
-      "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
+      "originating_commit": "d3e028fa790c9716acc27102ded59b6793f166ec",
       "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: engine checksums updated with true candidate hashes.",
-      "sha256": "95bea46efc8fa934d36600c550daf536079a0d690135b9b4bcf96a78c1028585",
+      "sha256": "c94f1889febbb568ead6997bd6ffe3cd15cc1be0485bbe7315d8c97e2caa3f9d",
       "size_bytes": 1517
     },
     "analyst_dashboard/analyzers/confluence_engine.py": {
       "operation": "M",
       "originating_pr_number": 272,
-      "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
+      "originating_commit": "d3e028fa790c9716acc27102ded59b6793f166ec",
       "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: coverage caps, score separation, verified pillar gating.",
-      "sha256": "b2a8dab8e4d74185f9fc3b740841b06479599e9206382fdae8d2b1bd40b06cb8",
-      "size_bytes": 33822
+      "sha256": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
+      "size_bytes": 34796
     },
     "analyst_dashboard/analyzers/decision_hierarchy.py": {
       "operation": "M",
@@ -104,10 +104,10 @@
     "tests/test_confluence_integrity_002.py": {
       "operation": "A",
       "originating_pr_number": 272,
-      "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
+      "originating_commit": "d3e028fa790c9716acc27102ded59b6793f166ec",
       "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: authoritative acceptance test suite (AC-01..15).",
-      "sha256": "e31e06c00a6d6d0f49d077ec4b549010cb2fe4e3c25d962523f345166b59ff55",
-      "size_bytes": 23318
+      "sha256": "2b6240c721255478cb2401bf763daf559144f71fc4931dcccfdca2b4d6a38675",
+      "size_bytes": 24743
     },
     "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts": {
       "operation": "M",
