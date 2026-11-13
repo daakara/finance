@@ -22,7 +22,7 @@
     },
     "confluence_engine": {
       "filePath": "analyst_dashboard/analyzers/confluence_engine.py",
-      "sha256": "66ca19e24161af25220efde0900ca1194ee51329e2c482477a64d4fefb05995d",
+      "sha256": "b2a8dab8e4d74185f9fc3b740841b06479599e9206382fdae8d2b1bd40b06cb8",
       "candidateScope": "Sprint 4 Liquidity Hazard, Actionability Sizing Demotion & Directive 057 Risk Semantics"
     }
   },
