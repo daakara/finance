@@ -1,25 +1,113 @@
 {
-  "release_candidate_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
-  "base_anchor_commit": "e62f16e2a642433574ae84ab69b47dd33217079d",
-  "total_files": 2,
+  "release_candidate_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+  "base_anchor_commit": "b82e5e5309d16c94147469cabc312508d3f94893",
+  "total_files": 13,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005",
+  "directive": "ARX-CONFLUENCE-INTEGRITY-002",
   "files": {
-    "analyst_dashboard/smart_money/worker.py": {
+    "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json": {
       "operation": "M",
-      "originating_pr_number": 271,
-      "originating_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
-      "governing_requirement": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005: safe attributable worker telemetry probe and exception sanitization (Issue #165 / PR #271). Operational holds preserved.",
-      "sha256": "9ce13176b7d489ef0c15e6b301e7b3af3415e4b9b2d5a2520c69d3aca51a5615",
-      "size_bytes": 44149
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: engine checksums updated with true candidate hashes.",
+      "sha256": "62f210d052ffc63b87ba12df97de16ba6082b3c31b0a4549d47afdb8aabd918e",
+      "size_bytes": 1517
     },
-    "tests/test_sm_act_020_sentry_telemetry.py": {
+    "analyst_dashboard/analyzers/confluence_engine.py": {
+      "operation": "M",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: coverage caps, score separation, verified pillar gating.",
+      "sha256": "66ca19e24161af25220efde0900ca1194ee51329e2c482477a64d4fefb05995d",
+      "size_bytes": 32883
+    },
+    "analyst_dashboard/analyzers/decision_hierarchy.py": {
+      "operation": "M",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: fail-closed EVIDENCE_INCOMPLETE on synthetic/unverified fundamentals.",
+      "sha256": "b0d41de56c34a46000496e2cf80afdfd76a3ff19ffc18fbdd80f430050c375b3",
+      "size_bytes": 17453
+    },
+    "analyst_dashboard/analyzers/optimal_execution.py": {
+      "operation": "M",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: removed max(1.85, rr) clamping, added INVALID_GEOMETRY validation.",
+      "sha256": "df2dc6050bf6fe91cae442e1872a3eccc40520b990f4efb4af63f79311a31dec",
+      "size_bytes": 48949
+    },
+    "analyst_dashboard/provenance/__init__.py": {
       "operation": "A",
-      "originating_pr_number": 271,
-      "originating_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
-      "governing_requirement": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005: safe attributable worker telemetry probe and exception sanitization (Issue #165 / PR #271). Operational holds preserved.",
-      "sha256": "929e14657ddc20d98ed5647ae140dd8bf4d7557dd7253d3fd6f5a105dfa9bd06",
-      "size_bytes": 11677
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: canonical evidence provenance package initialization.",
+      "sha256": "28d60de4dfda0831d1cb818c1639f102177ebf3cc9a9679e1ab6e03b0668ee3b",
+      "size_bytes": 319
+    },
+    "analyst_dashboard/provenance/evidence_contract.py": {
+      "operation": "A",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: canonical evidence provenance contract (ARX-PROV-1.0).",
+      "sha256": "12e443e6b046c8acd52a717cc88434bb589b15a2cb0ad2348efc7657bb668a0d",
+      "size_bytes": 12473
+    },
+    "api/routes/analytics.py": {
+      "operation": "M",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: evaluate factor provenance, pass verified pillars, surface audit telemetry.",
+      "sha256": "233fc2b89a0b5653ac884fef60b9979428950cddc77c66d4270c8d3ee56d0af6",
+      "size_bytes": 81968
+    },
+    "docs/governance/ARX_CONFLUENCE_INTEGRITY_002_REPORT.md": {
+      "operation": "A",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: release qualification and acceptance report.",
+      "sha256": "e0050a98345af966d41ea433062229ef4513d2f29bfdfb0716157ee9c5060dfa",
+      "size_bytes": 7233
+    },
+    "frontend/components/WeeklyConfluenceSpotlight.tsx": {
+      "operation": "M",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: verified empty state for 0 qualifying setups, pillar count badge.",
+      "sha256": "aecb5075e16cd8b97dd2f02a94d57e5a88cdce287335cfa631f72b82c476f3ae",
+      "size_bytes": 50410
+    },
+    "frontend/lib/simulation/governorSizingEngine.ts": {
+      "operation": "M",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: updated TradeSetupSpec interface with provenance fields.",
+      "sha256": "4d53f201629f24f136a48eac54b33c0b2bf121ba055846732a00d45ae69ccd29",
+      "size_bytes": 17636
+    },
+    "scripts/release/rq02_diff_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: add PR 272 to APPROVED_PRS allowlist.",
+      "sha256": "7273c24ea17382e3337a082b1421fde6008513ad2ab0bdb6adbde4f96df9faf8",
+      "size_bytes": 58041
+    },
+    "tests/test_confluence_engine.py": {
+      "operation": "M",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: updated tests with authentic 4-pillar technical/macro data.",
+      "sha256": "99cf5b77adc79453a748e1b7ee2c166b7dae19029720f6d3939802c7bb9220bb",
+      "size_bytes": 5305
+    },
+    "tests/test_confluence_integrity_002.py": {
+      "operation": "A",
+      "originating_pr_number": 272,
+      "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: authoritative acceptance test suite (AC-01..15).",
+      "sha256": "d9c2fc4fcc2f6eec0633122d81cac28e0ea69d63d9aa74270b22736f7f24e1f2",
+      "size_bytes": 18789
     }
   },
   "qualification_framework_files": {
@@ -29,8 +117,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "f97ec31463eec0183d59113149536a7aece7da45af990d2d07b5ad68241c1c61",
-      "size_bytes": 58036,
+      "sha256": "7273c24ea17382e3337a082b1421fde6008513ad2ab0bdb6adbde4f96df9faf8",
+      "size_bytes": 58041,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -394,6 +482,31 @@
           "governing_requirement": "ARX-SM-ACT-020-CONTINUOUS-GUARDED-SEC-FETCHER-003: no-network default SEC Form4 fetcher integration and strict transport accounting for PR #268 / stacked PR #269; all production holds remain.",
           "sha256": "207ea3cf951b9aca199784ad29efc222719b2579437ba42150d0d457c873476e",
           "size_bytes": 7382
+        }
+      }
+    },
+    {
+      "release_candidate_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
+      "base_anchor_commit": "e62f16e2a642433574ae84ab69b47dd33217079d",
+      "total_files": 2,
+      "qualification_policy_version": "2.2.0-D074A4",
+      "directive": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005",
+      "files": {
+        "analyst_dashboard/smart_money/worker.py": {
+          "operation": "M",
+          "originating_pr_number": 271,
+          "originating_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
+          "governing_requirement": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005: safe attributable worker telemetry probe and exception sanitization (Issue #165 / PR #271). Operational holds preserved.",
+          "sha256": "9ce13176b7d489ef0c15e6b301e7b3af3415e4b9b2d5a2520c69d3aca51a5615",
+          "size_bytes": 44149
+        },
+        "tests/test_sm_act_020_sentry_telemetry.py": {
+          "operation": "A",
+          "originating_pr_number": 271,
+          "originating_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
+          "governing_requirement": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005: safe attributable worker telemetry probe and exception sanitization (Issue #165 / PR #271). Operational holds preserved.",
+          "sha256": "929e14657ddc20d98ed5647ae140dd8bf4d7557dd7253d3fd6f5a105dfa9bd06",
+          "size_bytes": 11677
         }
       }
     }
