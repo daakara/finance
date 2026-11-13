@@ -11,6 +11,29 @@ import MiniSparkline from "./MiniSparkline";
 
 // ── Canonical Decoupled Types ────────────────────────────────────────────────
 
+
+// The authoritative Spotlight qualification predicate. Both the rendered UI
+// and adversarial count tests use this exact function (no independent mock list).
+export function isQualifiedSpotlightSetup(setup: TradeSetupSpec): boolean {
+  const n = setup.confluenceVerifiedPillarCount;
+  return setup.isActionable === true
+    && setup.decisionState === "ACTIONABLE_SETUP"
+    && typeof setup.confluenceScore === "number"
+    && Number.isFinite(setup.confluenceScore)
+    && setup.confluenceScore > 0
+    && typeof n === "number" && Number.isInteger(n) && n >= 3 && n <= 4;
+}
+
+// Canonical ranking and maximum of three actually qualified candidates.
+export function rankSpotlightCandidates<T extends { confScore: number; setup: { ticker: string } }>(
+  candidates: readonly T[],
+): T[] {
+  return [...candidates].sort((a, b) => (
+    b.confScore - a.confScore
+    || (a.setup.ticker || "").localeCompare(b.setup.ticker || "")
+  )).slice(0, 3);
+}
+
 export type MarketSessionStatus =
   | "REGULAR_OPEN"
   | "PRE_MARKET"
@@ -517,10 +540,7 @@ export default function WeeklyConfluenceSpotlight({
         }
 
         // Strict qualification: must be actionable, ACTIONABLE_SETUP, and verified pillar count >= 3
-        const isActionable = Boolean(setup.isActionable);
-        const isDecisionActionable = setup.decisionState === "ACTIONABLE_SETUP";
-        const pillarCount = setup.confluenceVerifiedPillarCount ?? 4;
-        if (!isActionable || !isDecisionActionable || pillarCount < 3) {
+        if (!isQualifiedSpotlightSetup(setup)) {
           return null;
         }
 
@@ -532,15 +552,10 @@ export default function WeeklyConfluenceSpotlight({
       })
       .filter((item): item is { setup: TradeSetupSpec; priceResult: DecoupledPriceResult; confScore: number } => item !== null);
 
-    // Canonical Sort: highest confluenceScore descending, then ticker ascending
-    const sorted = [...valid].sort((a, b) => {
-      if (b.confScore !== a.confScore) {
-        return b.confScore - a.confScore;
-      }
-      return (a.setup.ticker || "").localeCompare(b.setup.ticker || "");
-    });
+    // One authoritative ranking function is exercised by the adversarial tests.
+    const sorted = rankSpotlightCandidates(valid);
 
-    return sorted.slice(0, 3).map(({ setup, priceResult, confScore }) => {
+    return sorted.map(({ setup, priceResult, confScore }) => {
       const sym = setup.ticker;
       const master = MASTER_ASSET_CATALOG[sym];
       const entry: MasterAssetEntry = master || {
