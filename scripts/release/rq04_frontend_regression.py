@@ -84,7 +84,7 @@ def main():
     vitest_bin = os.path.join(FRONTEND_DIR, "node_modules", ".bin", "vitest")
     if os.name == "nt":
         vitest_bin += ".cmd"
-    spotlight_cmd = [vitest_bin, "run", "tests/confluenceSpotlightSelection.test.ts"]
+    spotlight_cmd = [vitest_bin, "run", "lib/__tests__/confluenceSpotlightSelection.test.ts"]
     if not os.path.isfile(vitest_bin):
         errors.append("Local Vitest binary missing: npm ci must provision pinned test dependencies")
         res_spotlight = None
@@ -114,7 +114,7 @@ def main():
         "frontend/components/PositionSizerModal.tsx",
         "frontend/components/WeeklyConfluenceSpotlight.tsx",
         "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts",
-        "frontend/tests/confluenceSpotlightSelection.test.ts"
+        "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts"
     ]
 
     receipt = create_stage_receipt(
