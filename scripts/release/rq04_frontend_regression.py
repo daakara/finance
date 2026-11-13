@@ -79,12 +79,14 @@ def main():
     # 3. Actual Spotlight qualification path (zero/one/two/N counts,
     # authoritative pillar evidence, price/session decoupling).
     print("Running Weekly Confluence Spotlight qualification tests...")
-    tsx_bin = os.path.join(FRONTEND_DIR, "node_modules", ".bin", "tsx")
+    # Vitest is pinned in package-lock and provisioned by npm ci.
+    # Avoid npx/tsx interactive package-install prompts on hosted runners.
+    vitest_bin = os.path.join(FRONTEND_DIR, "node_modules", ".bin", "vitest")
     if os.name == "nt":
-        tsx_bin += ".cmd"
-    spotlight_cmd = [tsx_bin, "tests/weeklyConfluenceSpotlightDecoupling.test.ts"]
-    if not os.path.isfile(tsx_bin):
-        errors.append("Local tsx binary missing: do not use interactive npx installation during CI")
+        vitest_bin += ".cmd"
+    spotlight_cmd = [vitest_bin, "run", "tests/confluenceSpotlightSelection.test.ts"]
+    if not os.path.isfile(vitest_bin):
+        errors.append("Local Vitest binary missing: npm ci must provision pinned test dependencies")
         res_spotlight = None
     else:
         res_spotlight = subprocess.run(
@@ -111,7 +113,8 @@ def main():
         "frontend/lib/simulation/governorSizingEngine.ts",
         "frontend/components/PositionSizerModal.tsx",
         "frontend/components/WeeklyConfluenceSpotlight.tsx",
-        "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts"
+        "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts",
+        "frontend/tests/confluenceSpotlightSelection.test.ts"
     ]
 
     receipt = create_stage_receipt(
