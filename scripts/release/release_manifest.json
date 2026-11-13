@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
+  "release_candidate_commit": "359172300c0554c19c5a978a21fb04fbd37879b1",
   "base_anchor_commit": "b82e5e5309d16c94147469cabc312508d3f94893",
-  "total_files": 14,
+  "total_files": 16,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-CONFLUENCE-INTEGRITY-002",
   "files": {
@@ -116,6 +116,22 @@
       "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: adversarial Spotlight selection and price-authority regression",
       "sha256": "124f69ebb4d86b0d5f60417c8bb0e2ec29e70d3206f2a9d2d2b4aab87e4ee844",
       "size_bytes": 17758
+    },
+    "tests/test_directive_057_remediation.py": {
+      "operation": "M",
+      "originating_pr_number": 272,
+      "originating_commit": "359172300c0554c19c5a978a21fb04fbd37879b1",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: transition historical Directive-057 fixtures to verified provenance and require actual frontend Spotlight Vitest selection suite.",
+      "sha256": "3b9514d235f2ac1462e904444912c0bea616404de2d521a26d87a6ea7db5e348",
+      "size_bytes": 16334
+    },
+    "frontend/tests/confluenceSpotlightSelection.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 272,
+      "originating_commit": "359172300c0554c19c5a978a21fb04fbd37879b1",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: transition historical Directive-057 fixtures to verified provenance and require actual frontend Spotlight Vitest selection suite.",
+      "sha256": "5917adc55200ac0be67ccda2b5f9dce3ee0e5444e42c05302c01e0016b033c66",
+      "size_bytes": 2603
     }
   },
   "qualification_framework_files": {
@@ -135,8 +151,8 @@
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "sha256": "e0940bf980b94b241ce1e12b555da7ba7d40e89dd96a4b146ab4d173267ca1f7",
-      "size_bytes": 5445,
+      "sha256": "fdb758bb42f83899dde90daaf1ebcc9b4a47b3bafe10fb13b18e851b3657f6f0",
+      "size_bytes": 5664,
       "description": "Release qualification module: rq04_frontend_regression.py"
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
