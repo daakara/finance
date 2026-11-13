@@ -80,7 +80,9 @@ class ConfluenceEngine:
             and fund_prov.get("sourceId")
             and (fund_prov.get("filingDate") or fund_prov.get("asOfDate"))
         )
-        is_fund_exempt = (fund_prov_status == "NOT_APPLICABLE" or asset_class == "ETF" or clean_sym in {"SPY", "QQQ", "IWM", "XLK", "DIA", "SOXX", "SMH", "XLF", "XLE", "VTI", "VOO"})
+        # Exemption follows canonical instrument classification, never a
+        # caller-provided NOT_APPLICABLE tag on an ordinary common stock.
+        is_fund_exempt = (asset_class == "ETF" or clean_sym in {"SPY", "QQQ", "IWM", "XLK", "DIA", "SOXX", "SMH", "XLF", "XLE", "VTI", "VOO"})
 
         if not is_fund_exempt and not is_fund_verified:
             has_fundamentals = False
@@ -292,7 +294,23 @@ class ConfluenceEngine:
         # dynamically re-weight across the verified pillars so missing disclosures do not act as an artificial penalty ceiling.
         # Note: If fundamentals are missing/unverified, standard 4-pillar weighting applies (with unavailable pillars at 0)
         # to strictly preserve mathematical compression below 50.0 (defensive posture for unverified assets).
-        if smart_status in ("unavailable", "synthetic") and macro_status == "unavailable" and has_fundamentals:
+        if is_fund_exempt:
+            # ETF corporate 10-K/10-Q is not applicable. Renormalize ONLY the
+            # independently observed remaining pillars, without assigning a
+            # fictitious fundamental/holdings quality score. The coverage cap
+            # below still prevents three-pillar high conviction.
+            available_etf_scores = []
+            if technical_data and technical_data.get("current_price"):
+                available_etf_scores.append(tech_score)
+            if smart_status in ("positive", "warning"):
+                available_etf_scores.append(smart_score)
+            if has_macro:
+                available_etf_scores.append(macro_score)
+            raw_composite = (
+                (sum(available_etf_scores) / len(available_etf_scores))
+                if available_etf_scores else 0.0
+            ) + catalyst_mod
+        elif smart_status in ("unavailable", "synthetic") and macro_status == "unavailable" and has_fundamentals:
             raw_composite = (
                 0.50 * tech_score +
                 0.50 * fund_score +
