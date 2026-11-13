@@ -26,6 +26,7 @@ NON_ACTIONABLE_EXECUTION_STATUSES = frozenset({
     "INSUFFICIENT_HISTORY",
     "UNVERIFIED_ASSET",
     "STALE_MARKET_DATA",
+    "INVALID_GEOMETRY",
 })
 
 ALL_EXECUTION_STATUSES = ACTIONABLE_EXECUTION_STATUSES | NON_ACTIONABLE_EXECUTION_STATUSES
@@ -364,7 +365,7 @@ class OptimalExecutionEngine:
             tp2_reward = max(min_tick, take_profit_2 - current_price)
             blended_reward = 0.50 * tp1_reward + 0.50 * tp2_reward
             blended_rr = round(blended_reward / risk_per_share, 2)
-            rr_ratio = round(min(5.0, max(1.85, blended_rr)), 2)
+            rr_ratio = round(blended_rr, 2)
 
             planned_entry = current_price
             structural_invalidation = stop_loss
@@ -380,7 +381,7 @@ class OptimalExecutionEngine:
             tp2_reward = max(min_tick, take_profit_2 - planned_entry)
             blended_reward = 0.50 * tp1_reward + 0.50 * tp2_reward
             blended_rr = round(blended_reward / execution_risk, 2)
-            rr_ratio = round(min(5.0, max(1.85, blended_rr)), 2)
+            rr_ratio = round(blended_rr, 2)
 
         # Check confirmation / stabilization candle
         open_series = price_df["Open"] if "Open" in price_df.columns else (price_df["open"] if "open" in price_df.columns else None)
@@ -493,7 +494,10 @@ class OptimalExecutionEngine:
             "distance_to_entry_pct": distance_to_entry,
             "distance_to_stop_pct": distance_to_stop,
             "distance_to_tp1_pct": distance_to_tp1,
-            "risk_reward_ratio": max(1.85, rr_ratio),
+            "risk_reward_ratio": round(rr_ratio, 2),
+            "planned_entry_rr": round(tp1_reward / execution_risk, 2) if execution_risk > 0 else None,
+            "reference_price_rr": round(tp1_ref_pct / (abs(stop_loss_pct) if stop_loss_pct else 1.0), 2) if stop_loss_pct else None,
+            "execution_eligible_rr": round(((take_profit_1 - eval_price) / execution_risk), 2) if (execution_risk > 0 and eval_price > 0) else None,
             "execution_status": exec_status,
             "market_location": market_location,
             "is_in_buy_zone": exec_status in ACTIONABLE_EXECUTION_STATUSES,
@@ -577,6 +581,22 @@ class OptimalExecutionEngine:
             raise ValueError("Execution plan strictly requires a verified positive spot price")
         spot = float(raw_spot)
         plan["current_price"] = spot
+
+        # INV-RR-003 & INV-RR-004: Fail-closed on explicit invalid trade geometry
+        raw_stop_in = plan.get("stop_loss")
+        raw_entry_in = plan.get("planned_entry")
+        raw_tp1_in = plan.get("take_profit_1")
+        if raw_stop_in is not None and raw_entry_in is not None and raw_stop_in >= raw_entry_in:
+            plan["execution_status"] = "INVALID_GEOMETRY"
+            plan["execution_hazard"] = True
+            plan["is_actionable"] = False
+            plan["disqualification_reason"] = "Invalid trade geometry: Stop loss is greater than or equal to planned entry."
+            return plan
+        if raw_tp1_in is not None and raw_entry_in is not None and raw_tp1_in <= raw_entry_in:
+            plan["execution_status"] = "INVALID_GEOMETRY"
+            plan["is_actionable"] = False
+            plan["disqualification_reason"] = "Invalid trade geometry: Take profit 1 is less than or equal to planned entry."
+            return plan
 
         dec = 6 if spot < 0.01 else (4 if spot < 1.0 else 2)
         min_tick = 10 ** (-dec)
@@ -677,9 +697,10 @@ class OptimalExecutionEngine:
                         plan["take_profit_2"] = round(plan["take_profit_2"] + min_tick, dec)
                     plan["take_profit_2_pct"] = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
 
-            # 5. Mandatory R:R ratio calculation and clamp floor >= 1.85:1
+            # 5. Mandatory R:R ratio calculation (actual geometric ratio)
             actual_tp1_rr = round((plan["take_profit_1"] - spot) / risk, 2)
-            plan["risk_reward_ratio"] = round(min(5.0, max(1.85, max(actual_tp1_rr, plan.get("risk_reward_ratio", 1.85)))), 2)
+            plan["risk_reward_ratio"] = round(actual_tp1_rr, 2)
+            plan["planned_entry_rr"] = round(actual_tp1_rr, 2)
 
             plan["planned_entry"] = plan.get("planned_entry", spot)
             plan["structural_invalidation"] = plan.get("structural_invalidation", plan["stop_loss"])
@@ -781,12 +802,13 @@ class OptimalExecutionEngine:
                 plan["take_profit_1_pct"] = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
                 plan["take_profit_2_pct"] = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
 
-            # R:R ratio calculation relative to planned entry
+            # R:R ratio calculation relative to planned entry (actual geometric ratio)
             tp1_gain = max(min_tick, plan["take_profit_1"] - plan["planned_entry"])
             tp2_gain = max(min_tick, plan["take_profit_2"] - plan["planned_entry"])
             blended_reward = 0.50 * tp1_gain + 0.50 * tp2_gain
             blended_rr = round(blended_reward / plan["execution_risk"], 2)
-            plan["risk_reward_ratio"] = round(min(5.0, max(1.85, blended_rr)), 2)
+            plan["risk_reward_ratio"] = round(blended_rr, 2)
+            plan["planned_entry_rr"] = round(tp1_gain / plan["execution_risk"], 2) if plan.get("execution_risk") else None
 
             # Section 9: Status determination via Option B (OR policy)
             eval_p = plan.get("eval_price")
@@ -844,13 +866,30 @@ class OptimalExecutionEngine:
             plan["target_1_pct_from_live"] = None
             plan["target_2_pct_from_live"] = None
 
+        # INV-RR-003 & INV-RR-004 final check
+        final_p_entry = plan.get("planned_entry") if plan.get("planned_entry") is not None else spot
+        final_sl = plan.get("stop_loss")
+        final_tp1 = plan.get("take_profit_1")
+        if final_sl is not None and final_p_entry is not None and final_sl >= final_p_entry:
+            plan["execution_status"] = "INVALID_GEOMETRY"
+            plan["execution_hazard"] = True
+            plan["is_actionable"] = False
+            plan["disqualification_reason"] = "Invalid trade geometry: Stop loss is greater than or equal to planned entry."
+        if final_tp1 is not None and final_p_entry is not None and final_tp1 <= final_p_entry:
+            plan["execution_status"] = "INVALID_GEOMETRY"
+            plan["is_actionable"] = False
+            plan["disqualification_reason"] = "Invalid trade geometry: Take profit 1 is less than or equal to planned entry."
+
         # 7. Actionability, buy zone, and execution stop visibility flags
-        plan["is_in_buy_zone"] = plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
-        plan["execution_stop_visible"] = bool(plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES)
+        is_exec_actionable = plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
+        plan["is_in_buy_zone"] = is_exec_actionable
+        plan["execution_stop_visible"] = bool(is_exec_actionable)
         plan["is_actionable"] = bool(
             plan.get("stop_loss") is not None
             and plan.get("optimal_entry_max") is not None
-            and plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
+            and is_exec_actionable
+            and not plan.get("execution_hazard")
+            and (plan.get("risk_reward_ratio") or 0.0) >= 1.85
         )
         plan["user_role"] = user_role
 

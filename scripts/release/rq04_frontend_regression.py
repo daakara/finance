@@ -76,6 +76,33 @@ def main():
     if not sizing_passed:
         errors.append(f"Frontend sizing tests failed (observed {passed_tests}/15 passed, exit code {res_sizing.returncode})")
 
+    # 3. Actual Spotlight qualification path (zero/one/two/N counts,
+    # authoritative pillar evidence, price/session decoupling).
+    print("Running Weekly Confluence Spotlight qualification tests...")
+    # Vitest is pinned in package-lock and provisioned by npm ci.
+    # Avoid npx/tsx interactive package-install prompts on hosted runners.
+    vitest_bin = os.path.join(FRONTEND_DIR, "node_modules", ".bin", "vitest")
+    if os.name == "nt":
+        vitest_bin += ".cmd"
+    spotlight_cmd = [vitest_bin, "run", "lib/__tests__/confluenceSpotlightSelection.test.ts"]
+    if not os.path.isfile(vitest_bin):
+        errors.append("Local Vitest binary missing: npm ci must provision pinned test dependencies")
+        res_spotlight = None
+    else:
+        res_spotlight = subprocess.run(
+            spotlight_cmd, cwd=FRONTEND_DIR,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="ignore",
+        )
+        print(res_spotlight.stdout)
+        if res_spotlight.returncode != 0:
+            errors.append(f"Spotlight qualification tests failed with exit code {res_spotlight.returncode}")
+    assertions.append({
+        "assertion": "Production Spotlight predicate and 0/1/2/N card count regression suite passes",
+        "observed": {"exit_code": res_spotlight.returncode if res_spotlight is not None else None},
+        "passed": res_spotlight is not None and res_spotlight.returncode == 0,
+    })
+
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"
     ok, identity, err = resolve_identity_contract()
@@ -84,7 +111,10 @@ def main():
     evidence = [
         "frontend/tests/governorSizingEngine.test.ts",
         "frontend/lib/simulation/governorSizingEngine.ts",
-        "frontend/components/PositionSizerModal.tsx"
+        "frontend/components/PositionSizerModal.tsx",
+        "frontend/components/WeeklyConfluenceSpotlight.tsx",
+        "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts",
+        "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts"
     ]
 
     receipt = create_stage_receipt(

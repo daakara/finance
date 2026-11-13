@@ -15,16 +15,35 @@ pytestmark = pytest.mark.tier2b
 def test_confluence_scoring():
     engine = ConfluenceEngine()
 
-    # 1. High Conviction Scenario
+    # 1. High Conviction Scenario (4-pillar: tech + fund + smart + macro)
+    # Must supply current_price in technical_data for tech_verified=True,
+    # and macro_data for macro_verified=True, to avoid coverage caps below 80.
     high_res = engine.calculate_confluence(
         symbol="LNTH",
-        technical_data={"executionStatus": "IN_BUY_ZONE", "riskRewardRatio": 2.8},
+        technical_data={
+            "executionStatus": "IN_BUY_ZONE",
+            "riskRewardRatio": 2.8,
+            "current_price": 150.0,
+            "stop_loss": 138.0,
+        },
         smart_money_data={"has_insider_buy": True, "has_congress_buy": True},
         fundamental_data={"roic": 36.5, "peg": 0.68, "piotroski_f": 9},
+        fundamental_provenance={
+            "evidenceStatus": "VERIFIED", "isVerified": True,
+            "sourceId": "sec_edgar", "filingDate": "2026-10-15",
+            "isSynthetic": False, "isStale": False,
+        },
         catalyst_data={"days_to_earnings": 35},
+        macro_data={"yield_curve_10y2y": 0.25, "credit_spread": 3.8},
     )
 
-    assert high_res["confluenceScore"] >= 80.0
+    # With 4 verified pillars (tech+fund+smart+macro), coverage cap = 96.0.
+    # Score must exceed the 3-pillar floor of 80 to show high-conviction rating.
+    assert high_res["confluenceScore"] >= 80.0, (
+        f"4-pillar setup should score >= 80.0 (got {high_res['confluenceScore']}). "
+        f"verifiedPillarCount={high_res.get('verifiedPillarCount')}, "
+        f"coverageCap={high_res.get('coverageCap')}"
+    )
     assert "EXCEPTIONAL" in high_res["confluenceRating"] or "HIGH" in high_res["confluenceRating"]
     assert len(high_res["reasons"]) >= 3
 

@@ -12,17 +12,17 @@
   "engines": {
     "optimal_execution": {
       "filePath": "analyst_dashboard/analyzers/optimal_execution.py",
-      "sha256": "26247e91e97b564601bd72bc759a40f831646b0232c9b8a9f6e289fd92dba209",
+      "sha256": "df2dc6050bf6fe91cae442e1872a3eccc40520b990f4efb4af63f79311a31dec",
       "candidateScope": "Sprint 4 input normalization & STOPPED_OUT price-floor semantics"
     },
     "decision_hierarchy": {
       "filePath": "analyst_dashboard/analyzers/decision_hierarchy.py",
-      "sha256": "177840eec7dae88f6ae5957159cc4cdb3856933619b268859793d07622c6cc87",
+      "sha256": "b0d41de56c34a46000496e2cf80afdfd76a3ff19ffc18fbdd80f430050c375b3",
       "candidateScope": "Synthesis E Wave 3 / Sprint 4 Liquidity Hazard Precedence"
     },
     "confluence_engine": {
       "filePath": "analyst_dashboard/analyzers/confluence_engine.py",
-      "sha256": "9df887574c4efc128fceb7b1ff4191bff701bfb323e0b9453240646f1a29e9ec",
+      "sha256": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
       "candidateScope": "Sprint 4 Liquidity Hazard, Actionability Sizing Demotion & Directive 057 Risk Semantics"
     }
   },

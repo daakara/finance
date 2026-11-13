@@ -22,6 +22,8 @@ import {
   SetupValidityStatus,
   SpotlightPresentationState,
   ConfluenceCandidate,
+  isQualifiedSpotlightSetup,
+  rankSpotlightCandidates,
 } from "../components/WeeklyConfluenceSpotlight";
 import { QUOTE_MAX_AGE_MS } from "../lib/api";
 import type { TradeSetupSpec } from "../lib/simulation/governorSizingEngine";
@@ -359,3 +361,42 @@ console.log("\nChecking WEEKLY-SPOTLIGHT-REC14: Adversarial regression tests pas
 console.log("\n===============================================================================");
 console.log("ALL 14 RECONCILIATION CRITERIA (WEEKLY-SPOTLIGHT-REC01 TO REC14) PASSED!");
 console.log("===============================================================================\n");
+
+// ── ARX-CONFLUENCE-INTEGRITY-002 Adversarial Qualified Card Counts ───────────
+// Exercise the exact predicate and capped ranking function used by the UI.
+console.log("\\nChecking Spotlight actual qualification and 0/1/2/N card selection...");
+{
+  const mk = (ticker: string, score: number, pillars: number | undefined, actionable = true): TradeSetupSpec => ({
+    ...MOCK_VALID_SETUP_OPEN,
+    ticker,
+    confluenceScore: score,
+    isActionable: actionable,
+    decisionState: actionable ? "ACTIONABLE_SETUP" : "EVIDENCE_INCOMPLETE",
+    confluenceVerifiedPillarCount: pillars,
+  });
+  const valid = [
+    mk("MSFT", 88, 4), mk("NVDA", 88, 4),
+    mk("AAPL", 90, 4), mk("TSLA", 84, 3)
+  ];
+  const missing = mk("UNVERIFIED", 95, undefined);
+  const suppressed = mk("SUPPRESSED", 99, 2);
+  const rejected = mk("REJECTED", 99, 4, false);
+
+  assert.strictEqual(isQualifiedSpotlightSetup(missing), false,
+    "Absent pillar count must fail closed instead of silently defaulting to 4");
+  assert.strictEqual(isQualifiedSpotlightSetup(suppressed), false);
+  assert.strictEqual(isQualifiedSpotlightSetup(rejected), false);
+
+  const count = (setups: TradeSetupSpec[]) => {
+    const qualified = setups.filter(isQualifiedSpotlightSetup);
+    return rankSpotlightCandidates(qualified.map(setup => ({
+      setup, confScore: setup.confluenceScore!,
+    }))).map(item => item.setup.ticker);
+  };
+
+  assert.deepStrictEqual(count([]), []);
+  assert.deepStrictEqual(count([valid[0], missing, suppressed]), ["MSFT"]);
+  assert.deepStrictEqual(count([valid[0], valid[1], rejected]), ["MSFT", "NVDA"]);
+  assert.deepStrictEqual(count([...valid, missing, suppressed, rejected]), ["AAPL", "MSFT", "NVDA"]);
+  console.log("  [PASS] Spotlight 0/1/2/N card counts, deterministic ranking, and fail-closed pillar evidence.");
+}

@@ -89,6 +89,9 @@ class DecisionHierarchyEngine:
         liquidity_status: Optional[str] = None,
         adv_20d: Optional[float] = None,
         liquidity_defense: Optional[Dict[str, Any]] = None,
+        verified_pillar_count: Optional[int] = None,
+        fundamental_provenance: Optional[Dict[str, Any]] = None,
+        fundamental_evidence_status: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Resolve the active decision state and execution eligibility following strict precedence."""
         clean_sym = symbol.upper().strip()
@@ -194,20 +197,31 @@ class DecisionHierarchyEngine:
         evidence_incomplete = False
         evidence_reason = contract.incomplete_reason
 
+        fund_status_str = fundamental_evidence_status
+        if fund_status_str is None and isinstance(fundamental_provenance, dict):
+            fund_status_str = fundamental_provenance.get("evidenceStatus") or fundamental_provenance.get("status")
+
         if contract.security_type == SecurityType.COMMON_STOCK:
-            if not has_fundamentals:
+            if not has_fundamentals or fund_status_str in ("SYNTHETIC", "UNVERIFIED", "FAILED", "UNAVAILABLE", "STALE"):
                 evidence_incomplete = True
-                evidence_reason = contract.incomplete_reason
+                if fund_status_str == "SYNTHETIC":
+                    evidence_reason = "Synthetic fundamental factors: Lacks audited SEC regulatory filing lineage."
+                elif fund_status_str == "UNVERIFIED":
+                    evidence_reason = "Unverified fundamental disclosures: Audited SEC regulatory filings required."
+                elif fund_status_str == "STALE":
+                    evidence_reason = "Stale fundamental filings: Annual reporting update required."
+                else:
+                    evidence_reason = contract.incomplete_reason
         elif contract.security_type == SecurityType.ETF:
             if not has_fund_profile:
                 evidence_incomplete = True
                 evidence_reason = contract.incomplete_reason
         elif contract.security_type == SecurityType.ADR:
-            if not has_fundamentals:
+            if not has_fundamentals or fund_status_str in ("SYNTHETIC", "FAILED"):
                 evidence_incomplete = True
                 evidence_reason = contract.incomplete_reason
         elif contract.security_type == SecurityType.REIT:
-            if not has_fundamentals:
+            if not has_fundamentals or fund_status_str in ("SYNTHETIC", "FAILED"):
                 evidence_incomplete = True
                 evidence_reason = contract.incomplete_reason
         elif contract.security_type == SecurityType.OTHER:
@@ -247,8 +261,11 @@ class DecisionHierarchyEngine:
         is_severe_hazard = (execution_hazard is True) or (isinstance(execution_hazard, str) and execution_hazard.upper() == "TRUE")
         is_liq_unknown = (execution_hazard == "UNKNOWN") or (liquidity_status in ("UNAVAILABLE", "UNKNOWN"))
 
+        has_sufficient_evidence = (verified_pillar_count is None or verified_pillar_count >= 3)
+
         if (
             confluence_score >= 75.0
+            and has_sufficient_evidence
             and is_in_buy_zone
             and is_confirmed
             and is_stage_eligible
@@ -280,6 +297,8 @@ class DecisionHierarchyEngine:
             reason = f"Execution hazard: Severe liquidity risk detected{adv_str}. Capital allocation prohibited."
         elif is_liq_unknown:
             reason = "Liquidity unverified: Insufficient historical volume or price impact telemetry to clear execution."
+        elif not has_sufficient_evidence:
+            reason = f"Insufficient verified evidence: Minimum 3 verified pillars required for actionability (verified {verified_pillar_count}/4)."
         elif norm_stage == 4:
             reason = "Stage 4 distribution: price below 50-day SMA; wait for floor formation."
         elif norm_stage == 1:

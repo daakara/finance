@@ -26,6 +26,7 @@ def main():
     test_files = [
         "tests/test_directive_057_remediation.py",
         "tests/test_confluence_engine.py",
+        "tests/test_confluence_integrity_002.py",
         "tests/test_smart_money_backup_retention_safety.py"
     ]
 
