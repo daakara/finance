@@ -28,6 +28,11 @@ def test_confluence_scoring():
         },
         smart_money_data={"has_insider_buy": True, "has_congress_buy": True},
         fundamental_data={"roic": 36.5, "peg": 0.68, "piotroski_f": 9},
+        fundamental_provenance={
+            "evidenceStatus": "VERIFIED", "isVerified": True,
+            "sourceId": "sec_edgar", "filingDate": "2026-10-15",
+            "isSynthetic": False, "isStale": False,
+        },
         catalyst_data={"days_to_earnings": 35},
         macro_data={"yield_curve_10y2y": 0.25, "credit_spread": 3.8},
     )
