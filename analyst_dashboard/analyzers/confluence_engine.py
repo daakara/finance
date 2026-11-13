@@ -18,6 +18,8 @@ class ConfluenceEngine:
         fundamental_data: Optional[Dict[str, Any]] = None,
         catalyst_data: Optional[Dict[str, Any]] = None,
         macro_data: Optional[Dict[str, Any]] = None,
+        fundamental_provenance: Optional[Dict[str, Any]] = None,
+        asset_class: str = "EQUITY",
     ) -> Dict[str, Any]:
         """Compute institutional multi-factor confluence score, pillar breakdown, and risk boundaries."""
         clean_sym = symbol.upper().replace("-USD", "").strip()
@@ -63,61 +65,85 @@ class ConfluenceEngine:
                 tech_plain = f"Sideways price action (RSI {rsi:.1f}). No clear direction yet."
 
         # ── 2. FUNDAMENTAL QUALITY & SOLVENCY (Weight: 25%) ──────────────────
-        raw_p = fundamental_data.get("piotroski_f") if fundamental_data and fundamental_data.get("piotroski_f") is not None else (fundamental_data.get("piotroskiFScore") if fundamental_data else None)
-        piotroski = int(raw_p) if raw_p is not None else None
-        raw_q = fundamental_data.get("qualityScore") if fundamental_data else None
-        quality = float(raw_q) if raw_q is not None else None
-        raw_g = fundamental_data.get("growthScore") if fundamental_data else None
-        growth = float(raw_g) if raw_g is not None else None
-        raw_v = fundamental_data.get("valuationScore") if fundamental_data else None
-        valuation = float(raw_v) if raw_v is not None else None
+        fund_prov = fundamental_provenance or (fundamental_data.get("provenance") if isinstance(fundamental_data, dict) else None)
+        fund_prov_status = (fund_prov.get("evidenceStatus") or fund_prov.get("status")) if isinstance(fund_prov, dict) else None
 
-        score_components = []
-        if quality is not None:
-            score_components.append((quality, 0.45))
-        elif piotroski is not None:
-            score_components.append((min(100.0, (piotroski / 9.0) * 100.0), 0.45))
-        elif fundamental_data and fundamental_data.get("roic") is not None:
-            score_components.append((min(100.0, max(0.0, float(fundamental_data["roic"]) * 2.5)), 0.45))
+        is_fund_synthetic = (fund_prov_status == "SYNTHETIC")
+        is_fund_unverified = (fund_prov_status in ("UNVERIFIED", "FAILED", "STALE"))
+        is_fund_exempt = (fund_prov_status == "NOT_APPLICABLE" or asset_class == "ETF" or clean_sym in {"SPY", "QQQ", "IWM", "XLK", "DIA", "SOXX", "SMH", "XLF", "XLE", "VTI", "VOO"})
 
-        if growth is not None:
-            score_components.append((growth, 0.30))
-        elif fundamental_data and fundamental_data.get("roic") is not None:
-            score_components.append((min(100.0, max(0.0, float(fundamental_data["roic"]) * 2.5)), 0.30))
-
-        if valuation is not None:
-            score_components.append((valuation, 0.25))
-        elif fundamental_data and fundamental_data.get("peg") is not None:
-            peg_val = float(fundamental_data["peg"])
-            val_pts = 90.0 if peg_val < 0.8 else (80.0 if peg_val < 1.2 else (65.0 if peg_val < 2.0 else 40.0))
-            score_components.append((val_pts, 0.25))
-
-        has_fundamentals = len(score_components) > 0
-
-        if has_fundamentals:
-            total_weight = sum(w for _, w in score_components)
-            fund_score = round(sum(s * w for s, w in score_components) / total_weight, 1)
-
-            p_desc = f"Piotroski F-Score {piotroski}/9" if piotroski is not None else "Piotroski Unassessed"
-            q_desc = f"Quality Factor {quality:.0f}/100" if quality is not None else "Quality Unassessed"
-
-            if (piotroski is not None and piotroski >= 8) or (quality is not None and quality >= 82.0):
-                fund_status = "positive"
-                fund_detail = f"Fortress Solvency: {p_desc}, {q_desc}."
-                fund_plain = f"Rock-solid balance sheet: Top-tier financial strength with strong margins."
-            elif (piotroski is not None and piotroski <= 4) or (quality is not None and quality < 45.0):
-                fund_status = "warning"
-                fund_detail = f"Elevated Balance Sheet Risk: {p_desc}. Sensitive to credit tightening."
-                fund_plain = f"Weaker financial health. Carries elevated debt or thinning margins."
-            else:
-                fund_status = "neutral"
-                fund_detail = f"Stable Solvency: {p_desc}, {q_desc}."
-                fund_plain = f"Stable core financials without acute balance sheet concerns."
-        else:
+        if is_fund_synthetic or is_fund_unverified:
+            has_fundamentals = False
             fund_score = 0.0
-            fund_status = "unavailable"
-            fund_detail = "Verified SEC fundamental filings unavailable for this asset."
-            fund_plain = "Financial health data unavailable — awaiting audited SEC financial statements."
+            fund_status = "synthetic" if is_fund_synthetic else "unverified"
+            fund_detail = (
+                fund_prov.get("disqualificationReason")
+                if fund_prov and fund_prov.get("disqualificationReason")
+                else "Fundamental data is synthetic or unverified; audited SEC regulatory filings required."
+            )
+            fund_plain = "Financial health data unverified — awaiting audited SEC financial statements."
+        elif is_fund_exempt:
+            has_fundamentals = True
+            fund_score = 75.0
+            fund_status = "not_applicable"
+            fund_detail = "ETF Structure: Corporate 10-K/10-Q filings not applicable. Portfolio holdings evaluated."
+            fund_plain = "ETF index fund: Evaluated on underlying portfolio quality rather than corporate balance sheet."
+        else:
+            raw_p = fundamental_data.get("piotroski_f") if fundamental_data and fundamental_data.get("piotroski_f") is not None else (fundamental_data.get("piotroskiFScore") if fundamental_data else None)
+            piotroski = int(raw_p) if raw_p is not None else None
+            raw_q = fundamental_data.get("qualityScore") if fundamental_data else None
+            quality = float(raw_q) if raw_q is not None else None
+            raw_g = fundamental_data.get("growthScore") if fundamental_data else None
+            growth = float(raw_g) if raw_g is not None else None
+            raw_v = fundamental_data.get("valuationScore") if fundamental_data else None
+            valuation = float(raw_v) if raw_v is not None else None
+
+            score_components = []
+            if quality is not None:
+                score_components.append((quality, 0.45))
+            elif piotroski is not None:
+                score_components.append((min(100.0, (piotroski / 9.0) * 100.0), 0.45))
+            elif fundamental_data and fundamental_data.get("roic") is not None:
+                score_components.append((min(100.0, max(0.0, float(fundamental_data["roic"]) * 2.5)), 0.45))
+
+            if growth is not None:
+                score_components.append((growth, 0.30))
+            elif fundamental_data and fundamental_data.get("roic") is not None:
+                score_components.append((min(100.0, max(0.0, float(fundamental_data["roic"]) * 2.5)), 0.30))
+
+            if valuation is not None:
+                score_components.append((valuation, 0.25))
+            elif fundamental_data and fundamental_data.get("peg") is not None:
+                peg_val = float(fundamental_data["peg"])
+                val_pts = 90.0 if peg_val < 0.8 else (80.0 if peg_val < 1.2 else (65.0 if peg_val < 2.0 else 40.0))
+                score_components.append((val_pts, 0.25))
+
+            has_fundamentals = len(score_components) > 0
+
+            if has_fundamentals:
+                total_weight = sum(w for _, w in score_components)
+                fund_score = round(sum(s * w for s, w in score_components) / total_weight, 1)
+
+                p_desc = f"Piotroski F-Score {piotroski}/9" if piotroski is not None else "Piotroski Unassessed"
+                q_desc = f"Quality Factor {quality:.0f}/100" if quality is not None else "Quality Unassessed"
+
+                if (piotroski is not None and piotroski >= 8) or (quality is not None and quality >= 82.0):
+                    fund_status = "positive"
+                    fund_detail = f"Fortress Solvency: {p_desc}, {q_desc}."
+                    fund_plain = f"Rock-solid balance sheet: Top-tier financial strength with strong margins."
+                elif (piotroski is not None and piotroski <= 4) or (quality is not None and quality < 45.0):
+                    fund_status = "warning"
+                    fund_detail = f"Elevated Balance Sheet Risk: {p_desc}. Sensitive to credit tightening."
+                    fund_plain = f"Weaker financial health. Carries elevated debt or thinning margins."
+                else:
+                    fund_status = "neutral"
+                    fund_detail = f"Stable Solvency: {p_desc}, {q_desc}."
+                    fund_plain = f"Stable core financials without acute balance sheet concerns."
+            else:
+                fund_score = 0.0
+                fund_status = "unavailable"
+                fund_detail = "Verified SEC fundamental filings unavailable for this asset."
+                fund_plain = "Financial health data unavailable — awaiting audited SEC financial statements."
 
         # ── 3. SMART MONEY & REGULATORY FILINGS (Weight: 25%) ────────────────
         smart_score = 0.0
@@ -254,13 +280,13 @@ class ConfluenceEngine:
         # dynamically re-weight across the verified pillars so missing disclosures do not act as an artificial penalty ceiling.
         # Note: If fundamentals are missing/unverified, standard 4-pillar weighting applies (with unavailable pillars at 0)
         # to strictly preserve mathematical compression below 50.0 (defensive posture for unverified assets).
-        if smart_status == "unavailable" and macro_status == "unavailable" and has_fundamentals:
+        if smart_status in ("unavailable", "synthetic") and macro_status == "unavailable" and has_fundamentals:
             raw_composite = (
                 0.50 * tech_score +
                 0.50 * fund_score +
                 catalyst_mod
             )
-        elif smart_status == "unavailable" and has_fundamentals:
+        elif smart_status in ("unavailable", "synthetic") and has_fundamentals:
             raw_composite = (
                 0.35 * tech_score +
                 0.35 * fund_score +
@@ -283,7 +309,31 @@ class ConfluenceEngine:
                 catalyst_mod
             )
 
-        final_score = max(0.0, min(96.0, round(raw_composite, 1)))
+        # ── VERIFIED EVIDENCE & COVERAGE AUDIT (ARX-CONFLUENCE-INTEGRITY-002) ──
+        tech_verified = bool(technical_data and technical_data.get("current_price"))
+        fund_verified = bool(has_fundamentals and (fund_prov_status in ("VERIFIED", "NOT_APPLICABLE") or (fund_prov is None and has_fundamentals and not is_fund_synthetic)))
+        smart_verified = bool(smart_status in ("positive", "warning") or is_foreign_adr)
+        macro_verified = bool(has_macro and macro_status != "unavailable")
+
+        verified_pillars_count = sum([tech_verified, fund_verified, smart_verified, macro_verified])
+        coverage_ratio = round(verified_pillars_count / 4.0, 2)
+        incomplete_coverage = (verified_pillars_count < 4)
+
+        # Hierarchical score caps derived from actual verified evidence:
+        # <= 1 pillar:  50.0 (Defensive compression)
+        # 2 pillars:    72.0 (Prevents score >= 75 actionability gate & >= 80 high-conviction)
+        # 3 pillars:    84.0 (Selective confluence, guarded from pristine high-conviction claims)
+        # 4 pillars:    96.0 (Pristine verified multi-factor confluence)
+        if verified_pillars_count <= 1:
+            coverage_cap = 50.0
+        elif verified_pillars_count == 2:
+            coverage_cap = 72.0
+        elif verified_pillars_count == 3:
+            coverage_cap = 84.0
+        else:
+            coverage_cap = 96.0
+
+        final_score = max(0.0, min(coverage_cap, round(raw_composite, 1)))
 
         pillars = [
             {
@@ -331,12 +381,12 @@ class ConfluenceEngine:
         positives = len([p for p in pillars if p["status"] == "positive"])
         warns = len([p for p in pillars if p["status"] == "warning"])
 
-        if positives == 4:
+        if positives == 4 and verified_pillars_count == 4:
             confluence_badge = "4-Pillar Confluence (Pristine)"
             plain_badge = "4/4 High Conviction"
-        elif positives == 3:
-            confluence_badge = "3-Feed Confluence (Selective)"
-            plain_badge = "3/4 Strong Alignment"
+        elif positives >= 3:
+            confluence_badge = f"{positives}-Feed Confluence (Selective)"
+            plain_badge = f"{positives}/4 Strong Alignment"
         elif warns >= 2:
             confluence_badge = "Multi-Feed Divergence (Risk-Off)"
             plain_badge = "⚠️ Mixed / Caution"
@@ -345,12 +395,14 @@ class ConfluenceEngine:
             plain_badge = f"{positives}/4 Positive Signals"
 
         if final_score >= 80.0:
-            if smart_status == "positive":
+            if verified_pillars_count == 4 and smart_status == "positive":
                 rating = "HIGH-CONVICTION INSTITUTIONAL ALIGNMENT"
+                plain_rating = "🟢 GREEN LIGHT: HIGH CONVICTION"
+                badge_color = "emerald"
             else:
                 rating = "HIGH-CONVICTION MULTI-FACTOR ALIGNMENT"
-            plain_rating = "🟢 GREEN LIGHT: HIGH CONVICTION"
-            badge_color = "emerald"
+                plain_rating = "🟢 GREEN LIGHT: HIGH CONVICTION"
+                badge_color = "emerald"
 
             positive_names = []
             for p in pillars:
@@ -392,6 +444,7 @@ class ConfluenceEngine:
         return {
             "symbol": clean_sym,
             "confluenceScore": final_score,
+            "rawConfluenceScore": round(raw_composite, 1),
             "confluenceRating": rating,
             "plainRating": plain_rating,
             "confluenceBadge": confluence_badge,
@@ -404,7 +457,12 @@ class ConfluenceEngine:
             "positivesCount": positives,
             "warningsCount": warns,
             "warnings": warnings,
-            "coverageRatio": round(sum(1 for p in [tech_status, fund_status, smart_status, macro_status] if p != "unavailable") / 4.0, 2),
+            "coverageRatio": coverage_ratio,
+            "verifiedPillarCount": verified_pillars_count,
+            "coverageCap": coverage_cap,
+            "incompleteCoverage": incomplete_coverage,
+            "evidenceConfidence": "HIGH" if verified_pillars_count == 4 else ("MODERATE" if verified_pillars_count == 3 else "LOW"),
+            "fundamentalProvenance": fund_prov or {},
         }
 
     @staticmethod

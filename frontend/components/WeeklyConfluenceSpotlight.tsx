@@ -97,6 +97,10 @@ export interface ConfluenceCandidate {
   target2Price: number;
   target2Pct: string;
   rewardRiskRatio: string;
+  verifiedPillarCount?: number;
+  incompleteCoverage?: boolean;
+  evidenceConfidence?: string;
+  reasonSuppressed?: string | null;
 }
 
 // ── Pure Domain Evaluation Helpers ───────────────────────────────────────────
@@ -496,7 +500,7 @@ export default function WeeklyConfluenceSpotlight({
   const topCandidates: ConfluenceCandidate[] = useMemo(() => {
     if (!tacticalSetups || tacticalSetups.length === 0) return [];
 
-    // Filter valid setups with verified analytical reference prices, valid levels, and positive confluence
+    // Filter valid setups with verified analytical reference prices, valid levels, positive confluence, and actionable qualification
     const valid = tacticalSetups
       .map((setup) => {
         const sym = setup.ticker;
@@ -512,6 +516,14 @@ export default function WeeklyConfluenceSpotlight({
           return null;
         }
 
+        // Strict qualification: must be actionable, ACTIONABLE_SETUP, and verified pillar count >= 3
+        const isActionable = Boolean(setup.isActionable);
+        const isDecisionActionable = setup.decisionState === "ACTIONABLE_SETUP";
+        const pillarCount = setup.confluenceVerifiedPillarCount ?? 4;
+        if (!isActionable || !isDecisionActionable || pillarCount < 3) {
+          return null;
+        }
+
         return {
           setup,
           priceResult,
@@ -520,15 +532,12 @@ export default function WeeklyConfluenceSpotlight({
       })
       .filter((item): item is { setup: TradeSetupSpec; priceResult: DecoupledPriceResult; confScore: number } => item !== null);
 
-    // Canonical Sort: Actionable first, then highest confluenceScore descending
-    // (Live quote freshness CANNOT alter weekly rank)
+    // Canonical Sort: highest confluenceScore descending, then ticker ascending
     const sorted = [...valid].sort((a, b) => {
-      const aAct = Boolean(a.setup.isActionable);
-      const bAct = Boolean(b.setup.isActionable);
-      if (aAct !== bAct) {
-        return aAct ? -1 : 1;
+      if (b.confScore !== a.confScore) {
+        return b.confScore - a.confScore;
       }
-      return b.confScore - a.confScore;
+      return (a.setup.ticker || "").localeCompare(b.setup.ticker || "");
     });
 
     return sorted.slice(0, 3).map(({ setup, priceResult, confScore }) => {
@@ -605,6 +614,10 @@ export default function WeeklyConfluenceSpotlight({
         target2Price: Number(target2Val.toFixed(2)),
         target2Pct: t2Pct,
         rewardRiskRatio: rr,
+        verifiedPillarCount: setup.confluenceVerifiedPillarCount ?? undefined,
+        incompleteCoverage: setup.confluenceIncompleteCoverage ?? undefined,
+        evidenceConfidence: setup.confluenceEvidenceConfidence ?? undefined,
+        reasonSuppressed: setup.reasonSuppressed ?? null,
       };
     });
   }, [tacticalSetups, liveQuotes, currentSession, backendSession, isDayTrader, isPlain]);
@@ -976,11 +989,29 @@ export default function WeeklyConfluenceSpotlight({
                     </div>
                   </div>
 
-                  {/* Setup Badge */}
+                  {/* Setup Badge & Verified Pillar Badge */}
                   <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-extrabold min-w-0">
-                    <span className="px-2 py-0.5 rounded bg-[#090d14] border border-cyan-800/50 text-cyan-300 truncate max-w-[165px]" title={isPlain ? cand.setupBadgePlain : cand.setupBadge}>
-                      {isPlain ? cand.setupBadgePlain : cand.setupBadge}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="px-2 py-0.5 rounded bg-[#090d14] border border-cyan-800/50 text-cyan-300 truncate max-w-[140px]" title={isPlain ? cand.setupBadgePlain : cand.setupBadge}>
+                        {isPlain ? cand.setupBadgePlain : cand.setupBadge}
+                      </span>
+                      {cand.verifiedPillarCount !== undefined && (
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${
+                            cand.verifiedPillarCount >= 4
+                              ? "bg-emerald-950/60 border-emerald-700/60 text-emerald-300"
+                              : "bg-amber-950/60 border-amber-700/60 text-amber-300"
+                          }`}
+                          title={
+                            cand.verifiedPillarCount >= 4
+                              ? "4/4 pillars independently verified"
+                              : `${cand.verifiedPillarCount}/4 pillars verified (${cand.evidenceConfidence || 'Selective Confluence'})`
+                          }
+                        >
+                          {cand.verifiedPillarCount}/4
+                        </span>
+                      )}
+                    </div>
                     <span className="text-emerald-400 shrink-0 tabular-nums">
                       {cand.rewardRiskRatio} : 1.0 R:R
                     </span>
@@ -1082,7 +1113,7 @@ export default function WeeklyConfluenceSpotlight({
               <span>Zero Active Setups Meeting Spotlight Thresholds</span>
             </div>
             <p className="text-slate-400 max-w-md mx-auto font-sans text-xs">
-              No market assets currently meet the {isDayTrader ? "RVOL >= 1.3, ATR momentum" : "Minervini Stage 2, Confluence, R:R >= 1.85:1"} criteria in this market regime.
+              No qualifying setups currently meet ARX&apos;s evidence and execution requirements.
             </p>
           </div>
         )

@@ -23,6 +23,7 @@ from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher, normalize_macro_payload
 from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine, ACTIONABLE_EXECUTION_STATUSES
+from analyst_dashboard.provenance.evidence_contract import evaluate_factor_provenance
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
@@ -324,11 +325,11 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
 
     smart_data = _build_smart_money_confluence_inputs(sym)
 
-    # Check fundamentals
+    # Check fundamentals & evaluate strict factor provenance
+    asset_class = "ETF" if sym in KNOWN_ETFS else "EQUITY"
     factor_snap = market_db.get_factor_snapshot(sym)
-    has_fundamentals = bool(factor_snap and factor_snap.get("quality_score") is not None)
-    if not has_fundamentals and sym in KNOWN_ETFS:
-        has_fundamentals = True
+    fund_prov = evaluate_factor_provenance(factor_snap, sym, asset_class=asset_class)
+    has_fundamentals = bool(fund_prov.get("isVerified"))
 
     fund_data = {
         "qualityScore": factor_snap.get("quality_score"),
@@ -350,6 +351,8 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         fundamental_data=fund_data,
         catalyst_data=catalyst_report,
         macro_data=macro_inputs,
+        fundamental_provenance=fund_prov,
+        asset_class=asset_class,
     )
     conf_score = conf_output.get("confluenceScore", 0.0)
 
@@ -377,11 +380,14 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         is_cataloged=True,
         is_confirmed=is_confirmed,
         user_role=clean_role,
-        asset_class="ETF" if sym in KNOWN_ETFS else "EQUITY",
+        asset_class=asset_class,
         execution_status=exec_status,
         execution_hazard=exec_hazard,
         adv_20d=adv_20d,
         liquidity_defense=liq_defense,
+        verified_pillar_count=conf_output.get("verifiedPillarCount"),
+        fundamental_provenance=fund_prov,
+        fundamental_evidence_status=fund_prov.get("evidenceStatus"),
     )
 
     decision_state = dec_state.get("state", DecisionState.VALID_SETUP.value)
@@ -390,6 +396,8 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         and exec_status in ACTIONABLE_EXECUTION_STATUSES
         and stop_loss is not None
         and plan.get("optimal_entry_max") is not None
+        and (rr or 0.0) >= 1.85
+        and not exec_hazard
     )
 
     disqualification_reason = dec_state.get("disqualificationReason")
@@ -402,6 +410,10 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
             disqualification_reason = "In buy corridor; awaiting stabilization or confirmation trigger."
         elif exec_status == "APPROACHING_TARGET":
             disqualification_reason = "Price is extended past entry corridor toward target."
+        elif exec_status == "INVALID_GEOMETRY":
+            disqualification_reason = plan.get("disqualification_reason", "Trade levels violate strict geometry rules.")
+        elif (rr or 0.0) < 1.85:
+            disqualification_reason = f"Calculated reward:risk ({rr}:1) fails institutional 1.85:1 minimum threshold."
         else:
             disqualification_reason = plan.get("entry_thesis", "Technical structure does not meet risk/reward criteria")
 
@@ -419,10 +431,22 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         "target1": round(target1, 2) if target1 else None,
         "target2": round(target2, 2) if target2 else None,
         "confluenceScore": round(float(conf_score), 1) if conf_score is not None else 0.0,
+        "rawConfluenceScore": conf_output.get("rawConfluenceScore"),
+        "confluenceCoverageCap": conf_output.get("coverageCap"),
+        "confluenceVerifiedPillarCount": conf_output.get("verifiedPillarCount"),
+        "confluenceIncompleteCoverage": conf_output.get("incompleteCoverage"),
+        "confluenceEvidenceConfidence": conf_output.get("evidenceConfidence"),
         "executionStatus": exec_status,
         "decisionState": decision_state,
         "isActionable": is_actionable,
         "isSuppressed": not is_actionable,
+        "riskRewardRatio": rr,
+        "riskRewardActual": rr,
+        "plannedEntryRR": plan.get("planned_entry_rr"),
+        "referencePriceRR": plan.get("reference_price_rr"),
+        "executionEligibleRR": plan.get("execution_eligible_rr"),
+        "fundamentalEvidenceStatus": fund_prov.get("evidenceStatus"),
+        "fundamentalProvenance": fund_prov,
         "entryThesis": plan.get("entry_thesis", ""),
         "invalidationCondition": plan.get("invalidation_condition", ""),
         "stagePhase": plan.get("stage_phase", ""),

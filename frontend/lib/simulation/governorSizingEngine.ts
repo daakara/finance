@@ -183,6 +183,11 @@ export interface TradeSetupSpec {
   liveSpotPrice?: number | null;
   analysisReferencePrice?: number | null;
   marketPriceState?: any;
+  confluenceVerifiedPillarCount?: number | null;
+  confluenceIncompleteCoverage?: boolean | null;
+  confluenceCoverageCap?: number | null;
+  confluenceEvidenceConfidence?: string | null;
+  fundamentalEvidenceStatus?: string | null;
 }
 
 export interface GovernorSizingOutput {
