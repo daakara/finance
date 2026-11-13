@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "359172300c0554c19c5a978a21fb04fbd37879b1",
+  "release_candidate_commit": "f7e4b97effbf414922b9862b3004023a88f55aa0",
   "base_anchor_commit": "b82e5e5309d16c94147469cabc312508d3f94893",
   "total_files": 16,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -18,8 +18,8 @@
       "originating_pr_number": 272,
       "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
       "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: coverage caps, score separation, verified pillar gating.",
-      "sha256": "b2a8dab8e4d74185f9fc3b740841b06479599e9206382fdae8d2b1bd40b06cb8",
-      "size_bytes": 33822
+      "sha256": "64f850001be40e323a1e6f8d683644a58a0c132ea935c1a43ac2d51af39f257d",
+      "size_bytes": 33812
     },
     "analyst_dashboard/analyzers/decision_hierarchy.py": {
       "operation": "M",
@@ -74,8 +74,8 @@
       "originating_pr_number": 272,
       "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
       "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: verified empty state for 0 qualifying setups, pillar count badge.",
-      "sha256": "abe14b2f9e847e9fd79280acbb1c1d45834d83b14fcd5fd3acf2e9fe8c959178",
-      "size_bytes": 50944
+      "sha256": "5329e922080e1580e73a3369e1466f65c0f81d20da37357752687b22fd6badf6",
+      "size_bytes": 50935
     },
     "frontend/lib/simulation/governorSizingEngine.ts": {
       "operation": "M",
@@ -125,13 +125,13 @@
       "sha256": "3b9514d235f2ac1462e904444912c0bea616404de2d521a26d87a6ea7db5e348",
       "size_bytes": 16334
     },
-    "frontend/tests/confluenceSpotlightSelection.test.ts": {
+    "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts": {
       "operation": "A",
       "originating_pr_number": 272,
-      "originating_commit": "359172300c0554c19c5a978a21fb04fbd37879b1",
-      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: transition historical Directive-057 fixtures to verified provenance and require actual frontend Spotlight Vitest selection suite.",
-      "sha256": "5917adc55200ac0be67ccda2b5f9dce3ee0e5444e42c05302c01e0016b033c66",
-      "size_bytes": 2603
+      "originating_commit": "f7e4b97effbf414922b9862b3004023a88f55aa0",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: configuration-discovered Vitest adversarial Spotlight 0/1/2/N selector and evidence gating.",
+      "sha256": "9ab57fe7d09c9b4ec44165d9a5d464e418cb98abf0578c177cc49b3853b84147",
+      "size_bytes": 2602
     }
   },
   "qualification_framework_files": {
@@ -151,8 +151,8 @@
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "sha256": "fdb758bb42f83899dde90daaf1ebcc9b4a47b3bafe10fb13b18e851b3657f6f0",
-      "size_bytes": 5664,
+      "sha256": "c839280c4a9fc5a7c0fd58e715b6480e3b8a1123a608dbdfa414eef9b3fae3b4",
+      "size_bytes": 5680,
       "description": "Release qualification module: rq04_frontend_regression.py"
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
