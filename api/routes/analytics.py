@@ -1404,6 +1404,19 @@ def get_asset_analytics(
         # Macro inputs: Strictly authentic FRED observations; never fabricated fallbacks
         macro_inputs = normalize_macro_payload(macro_difficulty) if macro_difficulty else None
 
+        # Check fundamentals & evaluate strict factor provenance
+        resolved_asset_class = "ETF" if (upper_sym in KNOWN_ETFS or asset_class_val == "ETF") else asset_class_val
+        factor_snap = market_db.get_factor_snapshot(upper_sym)
+        fund_prov = evaluate_factor_provenance(factor_snap, upper_sym, asset_class=resolved_asset_class)
+        has_verified_fundamentals = bool(fund_prov.get("isVerified"))
+
+        fund_data = {
+            "qualityScore": factor_snap.get("quality_score") if (has_verified_fundamentals and factor_snap) else factor_scores.get("qualityScore"),
+            "piotroski_f": factor_snap.get("piotroski_f") if (has_verified_fundamentals and factor_snap) else piotroski,
+            "growthScore": factor_snap.get("growth_score") if (has_verified_fundamentals and factor_snap) else factor_scores.get("growthScore"),
+            "valuationScore": factor_snap.get("valuation_score") if (has_verified_fundamentals and factor_snap) else factor_scores.get("valuationScore"),
+        } if (has_verified_fundamentals and factor_snap) or (resolved_asset_class == "ETF") else None
+
         # Compute Canonical Multi-Factor Confluence (Single Source of Truth)
         confluence_output = confluence_engine.calculate_confluence(
             symbol=upper_sym,
@@ -1413,12 +1426,11 @@ def get_asset_analytics(
                 "current_price": current_price,
             },
             smart_money_data=conf_smart_inputs,
-            fundamental_data={
-                **factor_scores,
-                "piotroski_f": piotroski,
-            } if (has_fundamentals or upper_sym in KNOWN_ETFS) else {},
+            fundamental_data=fund_data,
             catalyst_data=catalyst_report,
             macro_data=macro_inputs,
+            fundamental_provenance=fund_prov,
+            asset_class=resolved_asset_class,
         )
 
         # Canonical Decision Trace (Single source of truth for actionability & explainability)
@@ -1442,7 +1454,8 @@ def get_asset_analytics(
             catalyst_report=catalyst_report,
             user_role=clean_role,
             security_type=sec_type_val,
-            asset_class=asset_class_val,
+            asset_class=resolved_asset_class,
+            fundamental_provenance=fund_prov,
         )
 
         # Step 2: Passive Prospective Recommendation Capture (Zero execution mutation, Fail-closed)

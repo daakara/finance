@@ -14,6 +14,7 @@ import pandas as pd
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
+from analyst_dashboard.provenance.evidence_contract import evaluate_factor_provenance
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
@@ -1207,8 +1208,13 @@ def run_screener_get(
                     "has_options_flow": False,
                 } if (has_insider or has_congress) else None
     
-                # Authoritative factor snapshot from market database
+                # Authoritative factor snapshot from market database & strict provenance
+                from api.routes.analytics import KNOWN_ETFS
+                asset_class_str = "ETF" if sym in KNOWN_ETFS else "EQUITY"
                 factor_snap = market_db.get_factor_snapshot(sym)
+                fund_prov = evaluate_factor_provenance(factor_snap, sym, asset_class=asset_class_str)
+                has_verified_funds = bool(fund_prov.get("isVerified"))
+
                 q_score = factor_snap.get("quality_score") if (factor_snap and factor_snap.get("quality_score") is not None) else (float(r.get("quality_score")) if r.get("quality_score") is not None else None)
                 g_score = factor_snap.get("growth_score") if (factor_snap and factor_snap.get("growth_score") is not None) else (float(r.get("growth_score")) if r.get("growth_score") is not None else None)
                 v_score = factor_snap.get("valuation_score") if (factor_snap and factor_snap.get("valuation_score") is not None) else (float(r.get("valuation_score")) if r.get("valuation_score") is not None else None)
@@ -1223,7 +1229,7 @@ def run_screener_get(
                     "piotroski_f": pio_f,
                     "roic": res_roic,
                     "peg": res_peg,
-                } if any(v is not None for v in [q_score, g_score, v_score, pio_f, res_roic, res_peg]) else None
+                } if (has_verified_funds or asset_class_str == "ETF") and any(v is not None for v in [q_score, g_score, v_score, pio_f, res_roic, res_peg]) else None
 
                 cat_report = market_db.get_catalyst(sym)
                 if not cat_report and days_to_earn is not None:
@@ -1247,6 +1253,8 @@ def run_screener_get(
                     fundamental_data=fund_data,
                     catalyst_data=cat_report,
                     macro_data=shared_macro,
+                    fundamental_provenance=fund_prov,
+                    asset_class=asset_class_str,
                 )
     
                 if not hist_df.empty and len(hist_df) >= 5 and "Volume" in hist_df.columns:
@@ -1290,10 +1298,7 @@ def run_screener_get(
                 }
             else:
                 candle_count = len(hist_df) if (hist_df is not None and not hist_df.empty) else 0
-                has_fundamentals = bool(
-                    execution_status != "UNVERIFIED_ASSET"
-                    and any(r.get(k) is not None for k in ["quality_score", "growth_score", "valuation_score", "piotroski_f", "roic_pct", "peg_ratio"])
-                )
+                has_fundamentals = (has_verified_funds or asset_class_str == "ETF") and execution_status != "UNVERIFIED_ASSET"
                 if execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
                     freshness_status = "UNAVAILABLE"
                 elif execution_status == "INSUFFICIENT_HISTORY" or candle_count < 50:
@@ -1314,9 +1319,13 @@ def run_screener_get(
                     is_cataloged=True,
                     is_confirmed=False,  # Invariant: Screener represents structural discovery only; cannot confirm execution triggers
                     user_role=user_role,
+                    asset_class=asset_class_str,
                     execution_status=execution_status,
                     execution_hazard=execution.get("execution_hazard"),
                     liquidity_defense=liq_def,
+                    verified_pillar_count=confluence_res.get("verifiedPillarCount"),
+                    fundamental_provenance=fund_prov,
+                    fundamental_evidence_status=fund_prov.get("evidenceStatus"),
                 )
     
             mapped_candidates.append({
@@ -1397,6 +1406,9 @@ def run_screener_get(
                 "confluenceBadgeColor": confluence_res["badgeColor"],
                 "confluenceReasons": confluence_res["reasons"],
                 "confluenceWarnings": confluence_res["warnings"],
+                "verifiedPillarCount": confluence_res.get("verifiedPillarCount"),
+                "fundamentalProvenance": fund_prov,
+                "pillarBreakdown": confluence_res.get("pillarBreakdown"),
                 "liquidityDefense": liq_def,
             })
     
