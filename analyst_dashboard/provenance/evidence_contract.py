@@ -116,7 +116,6 @@ AUTHENTIC_SOURCES = {
     "bloomberg",
     "factset",
     "fred",
-    "alpaca",
 }
 
 
@@ -228,21 +227,24 @@ def evaluate_factor_provenance(
             "profileLabel": "Synthetic / Unverified Template Data",
         }
 
-    # 2. Check Freshness & Staleness
-    # If filing date or as_of date is present, evaluate whether data is within reasonable annual reporting limits
+    # 2. Evidence freshness and source authority must be demonstrated.
+    # Source labels, timestamps alone, or invalid/future dates do not prove
+    # point-in-time authenticity; never silently ignore malformed evidence.
     eval_date_str = filing or as_of or available_from
     is_stale = False
+    valid_evidence_date = False
+    invalid_evidence_date = False
     if eval_date_str:
         try:
-            # Parse YYYY-MM-DD or ISO timestamp
             clean_date = str(eval_date_str)[:10]
             dt = datetime.strptime(clean_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
             now = datetime.now(timezone.utc)
             delta_days = (now - dt).days
-            if delta_days > max_staleness_days:
-                is_stale = True
-        except Exception:
-            pass
+            valid_evidence_date = (0 <= delta_days <= max_staleness_days)
+            is_stale = delta_days > max_staleness_days
+            invalid_evidence_date = delta_days < 0
+        except (ValueError, TypeError, OverflowError):
+            invalid_evidence_date = True
 
     if is_stale:
         return {
@@ -264,9 +266,10 @@ def evaluate_factor_provenance(
             "profileLabel": "Stale Fundamental Disclosures",
         }
 
-    # 3. Check for Authenticity
-    # Must have a recognized authentic source OR non-null verified filing/as_of lineage
-    if source_raw in AUTHENTIC_SOURCES or (eval_date_str and not is_unknown_source):
+    # 3. Check for Authenticity. Require BOTH a recognized provider and
+    # a valid non-future filing/as-of date. A self-asserted source label is
+    # not independent proof of authenticated upstream provenance.
+    if source_raw in AUTHENTIC_SOURCES and valid_evidence_date and not invalid_evidence_date:
         return {
             "status": EvidenceStatus.VERIFIED.value,
             "evidenceStatus": EvidenceStatus.VERIFIED.value,
@@ -283,7 +286,7 @@ def evaluate_factor_provenance(
             "isSynthetic": False,
             "isStale": False,
             "disqualificationReason": None,
-            "profileLabel": "Verified Audited Fundamentals",
+            "profileLabel": "Source-Attributed Fundamental Evidence",
         }
 
     # Fallback to UNVERIFIED if numerical fields exist but source lineage cannot be verified
