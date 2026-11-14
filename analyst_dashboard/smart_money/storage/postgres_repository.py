@@ -788,7 +788,7 @@ class PostgresSmartMoneyRepository:
             WHERE request_type = %s
               AND requested_by_subject_hash = %s
               AND status IN ('PENDING', 'RUNNING', 'RETRY_ELIGIBLE')
-            ORDER BY created_at DESC
+            ORDER BY requested_at DESC
             LIMIT 1;
         """
 
@@ -828,17 +828,59 @@ class PostgresSmartMoneyRepository:
                 return str(active["request_id"])
 
         request_id = str(uuid.uuid4())
-        query = """
-            INSERT INTO sm_run_requests (
-                request_id, request_type, requested_by_subject_hash, status,
-                max_attempts, next_attempt_at
-            ) VALUES (%s, %s, %s, 'PENDING', %s, NOW())
-            RETURNING request_id;
-        """
+        if idempotency_guard:
+            # Atomic conditional insert: prevents concurrent duplicate enqueue races
+            query = """
+                INSERT INTO sm_run_requests (
+                    request_id, request_type, requested_by_subject_hash, status,
+                    max_attempts, next_attempt_at
+                )
+                SELECT %s, %s, %s, 'PENDING', %s, NOW()
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM sm_run_requests
+                    WHERE request_type = %s
+                      AND requested_by_subject_hash = %s
+                      AND status IN ('PENDING', 'RUNNING', 'RETRY_ELIGIBLE')
+                )
+                RETURNING request_id;
+            """
 
-        def _exec(cur):
-            cur.execute(query, (request_id, request_type, subject_hash, max_attempts))
-            return str(cur.fetchone()["request_id"])
+            def _exec(cur):
+                cur.execute(
+                    query,
+                    (request_id, request_type, subject_hash, max_attempts, request_type, subject_hash),
+                )
+                row = cur.fetchone()
+                if row:
+                    return str(row["request_id"])
+                # Concurrent enqueue race won by another caller: fetch winning active request
+                cur.execute(
+                    """
+                    SELECT request_id FROM sm_run_requests
+                    WHERE request_type = %s
+                      AND requested_by_subject_hash = %s
+                      AND status IN ('PENDING', 'RUNNING', 'RETRY_ELIGIBLE')
+                    ORDER BY requested_at DESC
+                    LIMIT 1;
+                    """,
+                    (request_type, subject_hash),
+                )
+                existing = cur.fetchone()
+                if existing:
+                    return str(existing["request_id"])
+                return request_id
+        else:
+            query = """
+                INSERT INTO sm_run_requests (
+                    request_id, request_type, requested_by_subject_hash, status,
+                    max_attempts, next_attempt_at
+                ) VALUES (%s, %s, %s, 'PENDING', %s, NOW())
+                RETURNING request_id;
+            """
+
+            def _exec(cur):
+                cur.execute(query, (request_id, request_type, subject_hash, max_attempts))
+                return str(cur.fetchone()["request_id"])
 
         if conn is not None:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:

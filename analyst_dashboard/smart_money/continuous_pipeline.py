@@ -520,6 +520,21 @@ class SmartMoneyContinuousPipeline:
                     else "SKIPPED_NOT_ELIGIBLE"
                 )
                 steps_completed.append(f"STEP_3_{skip_status}")
+                if self.repository and run_request_id and lease_token:
+                    try:
+                        self.repository.complete_run_request(
+                            run_request_id,
+                            lease_token=lease_token,
+                            status=skip_status,
+                            failure_code=None,
+                        )
+                        logger.info(
+                            f"Marked run request {run_request_id} as terminal {skip_status} under lock."
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"Could not record skip terminal status for {run_request_id}: {e}"
+                        )
                 return {
                     "cycle_id": cycle_id,
                     "status": skip_status,

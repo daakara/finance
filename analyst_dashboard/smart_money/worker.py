@@ -717,6 +717,24 @@ class SmartMoneyIngestionWorker:
                 lease_token=lease_token,
                 trigger_type="OPERATOR",
             )
+            cycle_status = res.get("status")
+            if cycle_status in ("SKIPPED_NOT_ELIGIBLE", "SKIPPED_ALREADY_EXECUTED_TODAY"):
+                logger.info(
+                    f"Operator run request {req_id} skipped ({cycle_status}): {res.get('reason')}"
+                )
+                try:
+                    req_row = self.repository.get_run_request(req_id)
+                    if req_row and req_row.get("status") == "RUNNING":
+                        self.repository.complete_run_request(
+                            req_id,
+                            lease_token=lease_token,
+                            status=cycle_status,
+                            failure_code=None,
+                        )
+                except Exception as comp_err:
+                    logger.warning(f"Could not record skip terminal status for {req_id}: {comp_err}")
+                return 1
+
             logger.info(f"Completed operator run request: {req_id} -> snapshot {res.get('snapshot_id')}")
             return 1
         except StaleLeaseOwnershipLostError as e:
