@@ -302,8 +302,48 @@ export default function PreFlightChecklistModal({
   }, [isOpen, symbol, observationTime, safePrice, passedCount, isCleared]);
 
   // Trade plan markdown — differentiated by vernacularMode
+  const isNonLiveOrBlocked =
+    !isCleared ||
+    evalResult.isSimulatedClearance ||
+    evalResult.isHistoricalReference ||
+    evalResult.provenanceCategory === "UNVERIFIED";
+
+  const exportHeaderNotice = isNonLiveOrBlocked
+    ? `> ⚠️ **RESEARCH / JOURNAL ONLY — NOT EXECUTABLE**\n> Epistemic Mode: ${evalResult.provenanceCategory} · ${
+        !isCleared
+          ? `Clearance Blockers: ${evalResult.allBlockers.join("; ") || activeBlocker}`
+          : evalResult.isSimulatedClearance
+          ? "Notice: Synthetic fixture — not authorized for live order execution."
+          : evalResult.isHistoricalReference
+          ? "Notice: Historical EOD observation — requires live market confirmation."
+          : "Notice: Unverified market feed — requires verified real-time data before execution."
+      }\n\n`
+    : isVixElevated
+    ? `> ⚠️ **CAUTION: ELEVATED MARKET VOLATILITY (VIX ${currentVix?.toFixed(1)})**\n> Volatility regime elevated (20.0–26.0) — exercise caution on position sizing.\n\n`
+    : "";
+
+  const clearanceExportLabelPlain = isCleared
+    ? (evalResult.isSimulatedClearance
+        ? "SIMULATED CLEARANCE — NOT EXECUTABLE"
+        : evalResult.isHistoricalReference
+        ? "HISTORICAL REFERENCE — NOT EXECUTABLE"
+        : isVixElevated
+        ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION"
+        : "🟢 CLEARED")
+    : `⚠️ NOT CLEARED — ${activeBlocker}`;
+
+  const clearanceExportLabelPro = isCleared
+    ? (evalResult.isSimulatedClearance
+        ? "SIMULATED CLEARANCE — NOT EXECUTABLE"
+        : evalResult.isHistoricalReference
+        ? "HISTORICAL REFERENCE — NOT EXECUTABLE"
+        : isVixElevated
+        ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION"
+        : "🟢 CLEARED FOR EXECUTION")
+    : `⚠️ NOT CLEARED (${activeBlocker})`;
+
   const tradePlanMarkdown = isPlain
-    ? `${!isCleared ? `> ⚠️ **RESEARCH / JOURNAL ONLY — NOT EXECUTABLE**\n> Clearance Blockers: ${evalResult.allBlockers.join("; ") || activeBlocker}\n\n` : isVixElevated ? `> ⚠️ **CAUTION: ELEVATED MARKET VOLATILITY (VIX ${currentVix?.toFixed(1)})**\n> Volatility regime elevated (20.0–26.0) — exercise caution on position sizing.\n\n` : ""}### 📋 ARX Terminal Trade Plan: ${symbol}
+    ? `${exportHeaderNotice}### 📋 ARX Terminal Trade Plan: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "⚡ Day Trader" : "🏛️ Swing / Long-Term Compounder"}
 - **Current Price**: $${safePrice.toFixed(2)}
@@ -313,11 +353,11 @@ export default function PreFlightChecklistModal({
 - **Profit Goal 2 (TP2 Runner)**: ${target2Str}
 - **Tactical Rule (Protected Trailing Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a protected trade.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
-- **Pre-Flight Score**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) · ${isCleared ? (isVixElevated ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION" : "🟢 CLEARED") : `⚠️ NOT CLEARED — ${activeBlocker}`}
+- **Pre-Flight Score**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) · ${clearanceExportLabelPlain}
 
 > ⚠️ **PLATFORM HOLD NOTICE (HOLD_EXEC_001)**: Simulation and institutional quantitative research only. Zero live order execution or capital commitment authorized. All levels require live session confirmation before execution.
 `
-    : `${!isCleared ? `> ⚠️ **RESEARCH / JOURNAL ONLY — NOT EXECUTABLE**\n> Clearance Blockers: ${evalResult.allBlockers.join("; ") || activeBlocker}\n\n` : isVixElevated ? `> ⚠️ **CAUTION: ELEVATED MARKET VOLATILITY (VIX ${currentVix?.toFixed(1)})**\n> Volatility regime elevated (20.0–26.0) — exercise caution on position sizing.\n\n` : ""}### 📋 ARX Institutional Execution Brief: ${symbol}
+    : `${exportHeaderNotice}### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "Intraday Momentum Pullback" : "Swing / Compounder Accumulation"}
 - **Readiness input**: $${safePrice.toFixed(2)} | **Optimal Entry**: ${entryZoneStr}
@@ -327,7 +367,7 @@ export default function PreFlightChecklistModal({
 - **Execution Rule (Protected Trailing Ratchet)**: ${safeTarget !== null ? `Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure protected runner convexity.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Risk/Reward**: ${isRRValid && hasExecutionLevels && isLevelDirectionValid ? `${safeRR.toFixed(2)}:1 (${PREFLIGHT_CONFIG.REQUIRED_RR_LABEL})` : `Unavailable (${PREFLIGHT_CONFIG.REQUIRED_RR_LABEL})`}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
-- **Pre-Flight Clearance**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) — ${isCleared ? (isVixElevated ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION" : "🟢 CLEARED FOR EXECUTION") : `⚠️ NOT CLEARED (${activeBlocker})`}
+- **Pre-Flight Clearance**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) — ${clearanceExportLabelPro}
 - **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"}${isVixElevated ? " (ELEVATED CAUTION)" : ""} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "HAZARD" : resolvedCatalystState}
 
 > ⚠️ **PLATFORM HOLD NOTICE (HOLD_EXEC_001)**: Simulation and institutional quantitative research only. Zero live order execution or capital commitment authorized. All levels require live session confirmation before execution.
@@ -436,7 +476,11 @@ export default function PreFlightChecklistModal({
               <div className="text-base sm:text-lg font-extrabold flex items-center gap-1.5">
                 <span>
                   {isCleared
-                    ? (isVixElevated
+                    ? (evalResult.isSimulatedClearance
+                        ? "SIMULATED CLEARANCE — NOT EXECUTABLE"
+                        : evalResult.isHistoricalReference
+                        ? "HISTORICAL REFERENCE — NOT EXECUTABLE"
+                        : isVixElevated
                         ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION"
                         : "🟢 CLEARED TO EXECUTE")
                     : `⚠️ NOT CLEARED — ${activeBlocker}`}
