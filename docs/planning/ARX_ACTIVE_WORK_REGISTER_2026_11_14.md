@@ -73,11 +73,11 @@ This register establishes the single authoritative inventory of all active, defe
 
 ## 4. Open Pull Requests Reconciliation (22 PRs Audited)
 
-The previous classification discrepancy is fully resolved. Exactly **22 open PRs** exist on GitHub across five distinct categories:
+The previous classification discrepancy is fully resolved. Exactly **21 open PRs** exist on GitHub across five distinct categories (PR #282 successfully merged to `release/production` at SHA `c5a134de`):
 
 | PR ID | Title | Branch | Classification | Authoritative Disposition & Action |
 | :--- | :--- | :--- | :--- | :--- |
-| **#282** | `feat(ux): ARX-UX-BRAIN-REDESIGN-025 institutional UX redesign and learn hub editorial transformation` | `feat/ux-brain-redesign-025` | Active Candidate (Sprint 1) | **ACTIVE CANDIDATE:** Preflight in Sprint 0; scheduled for Sprint 1 qualification and release. Does not modify financial engines. |
+| **#282** | `feat(ux): ARX-UX-BRAIN-REDESIGN-025 institutional UX redesign and learn hub editorial transformation` | `feat/ux-brain-redesign-025` | Production Release (Merged) | **MERGED & RELEASED:** Qualified through RQ-01..12, squash-merged into `release/production` at SHA `c5a134de`, verified live on Cloudflare Pages production (`/guide`, `/glossary`). |
 | **#274** | `feat(ux): ARX-UX-R3-001 progressive disclosure & decision-first layout` | `feat/ui-r3-progressive-disclosure` | Active UX Redesign (Sprint 5) | **DRAFT / HELD:** Release admission held under `PHASE_A3_UX_HOLD`. Requires 5-participant real-human formative study. Do not merge before empirical acceptance. |
 | **#262** | `fix(governance): serialize prospective decision capture schema` | `fix/prospective-capture-serialization` | Superseded Governance | **SUPERSEDED:** Historical serialization draft superseded by PR #280 and frozen prospective schemas. Mark for administrative closure. |
 | **#260** | `feat(ux): UI & UX distillation and visual rhythm` | `feat/ui-execution-progressive-disclosure`| Superseded UX | **SUPERSEDED:** Superseded by deployed Phase 5 post-launch touch target releases (PR #263, #264, #273). Mark for administrative closure. |
@@ -107,10 +107,10 @@ The previous classification discrepancy is fully resolved. Exactly **22 open PRs
 | Priority | Action / Target | Owning Issue / PR | Target Window | Preconditions & Execution Gate |
 | :--- | :--- | :--- | :--- | :--- |
 | **1** | **Supervised SEC Qualification Cycle**<br>Execute exactly ONE bounded qualification cycle covering 10 approved issuers (`NVDA, AAPL, MSFT, AMZN, GOOGL, META, TSLA, BRK-B, JPM, V`). | Issue #165 | Monday, Nov 16, 2026<br>@ 22:30 EST | • Pre-flight checks pass (0 locks, backup fresh, empty queue).<br>• Enforce hard limits: max 40 req total, 5 req/s, 2h window.<br>• Immediate post-cycle revocation to `STANDBY`. |
-| **2** | **Phase A3 Formative Human UX Study**<br>Conduct 5-participant real-human study using prepared study pack to unblock PR #274 release admission. | Issue #66<br>PR #274 | Post-Monday Stabilization | • Zero fabricated observations.<br>• Complete qualitative/quantitative evaluation matrix.<br>• Fulfill RQ-01/RQ-02 release admission gates. |
-| **3** | **Radar Candidate Rationale Enhancement**<br>Deduplicate repetitive candidate rationale copy identified during production audit. | Issue #230 | Sprint P2 Allocation | • P3 non-blocking presentation enhancement.<br>• Maintain single-universe integrity and defensive rose styling. |
-| **4** | **Historical PR Hygiene & Closure**<br>Administratively close the 17 superseded/historical PRs identified in Section 4. | Issue #228 | Sprint P0 Allocation | • Comment with specific supersede reference on each PR.<br>• Preserve branches and commit histories intact. |
-| **5** | **Pre-Flight Decision Integrity & Tech Debt**<br>Falsification pass for stale-price/live-macro classification and duplicate UX consolidation. | Issue #229<br>(#181, #197, #198)| Sprint P1 Allocation | • Single consolidated PR addressing Reward vs. Risk wording and evidence caching boundaries.<br>• Preserve 2:1 decision threshold. |
+| **2** | **Administrative Closure of 16 Superseded PRs**<br>Administratively close the 16 superseded/historical PRs identified in Section 4. | Issue #228 | Sprint 0 Allocation | • Comment with specific supersede reference on each PR.<br>• Preserve branches and commit histories intact. |
+| **3** | **Radar Candidate Rationale Enhancement**<br>Deduplicate repetitive candidate rationale copy and wire contextual deep-links to Learn Hub. | Issue #230 | Sprint 2 Allocation<br>(Sprint P2) | • Dynamic contextual copy; preserve recommendation integrity.<br>• Scorecards link to Field Manual; 0 calculation mutations. |
+| **4** | **Pre-Flight Decision Freshness & Transparency**<br>Falsification pass for stale-price classification and Reward vs. Risk 2:1 disclosure copy. | Issue #229<br>(#181, #197) | Sprint 3 Allocation<br>(Sprint P1) | • Single consolidated PR addressing pre-flight freshness.<br>• Preserve 2:1 decision threshold and sizing contracts. |
+| **5** | **Phase A3 Formative Human UX Study**<br>Conduct 5-participant real-human study using prepared study pack to unblock PR #274 release admission review. | Issue #66<br>PR #274 | Sprint 5 Allocation<br>(`PHASE_A3_UX_HOLD`) | • Strictly conditional on 5 real human participants.<br>• Zero synthetic data; complete usability matrix.<br>• Fulfill RQ-01/RQ-02 release admission gates. |
 
 ---
 
