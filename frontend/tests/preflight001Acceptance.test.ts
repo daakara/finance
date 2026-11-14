@@ -174,7 +174,7 @@ console.log("4. Verifying provenance authority differentiation (live vs historic
 }
 
 // -----------------------------------------------------------------------------
-// Test 5: Check 1 Precision & Presentation Invariants (Issue #181)
+// Test 5: Check 1 Precision & Presentation Invariants (Issue #181, ARX-UX-RR-030)
 // -----------------------------------------------------------------------------
 console.log("5. Verifying Check 1 Reward vs. Risk presentation invariants...");
 {
@@ -184,6 +184,90 @@ console.log("5. Verifying Check 1 Reward vs. Risk presentation invariants...");
   const proRes = evaluatePreFlightChecks(BASE_PASS_INPUTS, "PRO_QUANT");
   assert.strictEqual(proRes.checks[0].name, "1. Reward vs. Risk (Asymmetric Payoff)", "Pro Quant check 1 name must be '1. Reward vs. Risk (Asymmetric Payoff)'");
   console.log("   ✓ Check 1 naming verified for both PLAIN_ENGLISH and PRO_QUANT");
+
+  // Case A: 1.85:1 fails below minimum
+  const belowMinInputs: PreFlightChecklistInputs = {
+    ...BASE_PASS_INPUTS,
+    currentPrice: 100.0,
+    stopLoss: 90.0,
+    takeProfit1: 118.5, // 18.5 / 10 = 1.85:1
+  };
+  const belowMinRes = evaluatePreFlightChecks(belowMinInputs);
+  assert.strictEqual(belowMinRes.checks[0].status, "FAIL", "Backend status must remain strictly 'FAIL'");
+  assert.strictEqual(belowMinRes.checks[0].displayStatus, "Below minimum", "Presentation label must be 'Below minimum'");
+  assert.strictEqual(belowMinRes.checks[0].summary, "1.85:1", "Summary ratio format must be '1.85:1' (no trailing .0)");
+  assert.strictEqual(belowMinRes.checks[0].detail, "Potential reward is too low for the risk.", "Explanation must match approved copy");
+  assert.strictEqual(belowMinRes.checks[0].passed, false, "1.85:1 must fail check 1");
+  console.log("   ✓ Below minimum case (1.85:1) correctly displays 'Below minimum' with summary '1.85:1' and backend FAIL");
+
+  // Case B: 2.00:1 meets minimum
+  const exactMinInputs: PreFlightChecklistInputs = {
+    ...BASE_PASS_INPUTS,
+    currentPrice: 100.0,
+    stopLoss: 90.0,
+    takeProfit1: 120.0, // 20.0 / 10 = 2.00:1
+  };
+  const exactMinRes = evaluatePreFlightChecks(exactMinInputs);
+  assert.strictEqual(exactMinRes.checks[0].status, "PASS", "Exact 2.00:1 must pass check 1");
+  assert.strictEqual(exactMinRes.checks[0].displayStatus, "PASS", "Display status must be 'PASS'");
+  assert.strictEqual(exactMinRes.checks[0].summary, "2.00:1", "Summary ratio format must be '2.00:1'");
+  assert.strictEqual(exactMinRes.checks[0].passed, true);
+  console.log("   ✓ Exact boundary case (2.00:1) passes with summary '2.00:1'");
+
+  // Case C: >2:1 passes
+  const aboveMinInputs: PreFlightChecklistInputs = {
+    ...BASE_PASS_INPUTS,
+    currentPrice: 100.0,
+    stopLoss: 90.0,
+    takeProfit1: 125.0, // 25.0 / 10 = 2.50:1
+  };
+  const aboveMinRes = evaluatePreFlightChecks(aboveMinInputs);
+  assert.strictEqual(aboveMinRes.checks[0].status, "PASS");
+  assert.strictEqual(aboveMinRes.checks[0].displayStatus, "PASS");
+  assert.strictEqual(aboveMinRes.checks[0].summary, "2.50:1");
+  assert.strictEqual(aboveMinRes.checks[0].passed, true);
+  console.log("   ✓ Above minimum case (2.50:1) passes with summary '2.50:1'");
+
+  // Case D: Unavailable / missing levels (fail-closed)
+  const missingLevelsInputs: PreFlightChecklistInputs = {
+    ...BASE_PASS_INPUTS,
+    stopLoss: null,
+    takeProfit1: null,
+  };
+  const missingRes = evaluatePreFlightChecks(missingLevelsInputs);
+  assert.strictEqual(missingRes.checks[0].status, "MISSING LEVELS");
+  assert.strictEqual(missingRes.checks[0].displayStatus, "MISSING LEVELS");
+  assert.strictEqual(missingRes.checks[0].summary, "N/A");
+  assert.strictEqual(missingRes.checks[0].passed, false);
+  console.log("   ✓ Missing levels case fail-closed with 'MISSING LEVELS' and summary 'N/A'");
+
+  // Case E: Invalid levels (inverted stop)
+  const invalidLevelsInputs: PreFlightChecklistInputs = {
+    ...BASE_PASS_INPUTS,
+    currentPrice: 100.0,
+    stopLoss: 105.0, // Inverted stop > spot
+    takeProfit1: 125.0,
+  };
+  const invalidRes = evaluatePreFlightChecks(invalidLevelsInputs);
+  assert.strictEqual(invalidRes.checks[0].status, "FAIL");
+  assert.strictEqual(invalidRes.checks[0].displayStatus, "FAIL");
+  assert.strictEqual(invalidRes.checks[0].summary, "Invalid Levels");
+  assert.strictEqual(invalidRes.checks[0].passed, false);
+  console.log("   ✓ Invalid levels case fail-closed with summary 'Invalid Levels'");
+
+  // Case F: Sub-threshold rounding (1.995:1)
+  const subThresholdInputs: PreFlightChecklistInputs = {
+    ...BASE_PASS_INPUTS,
+    currentPrice: 100.0,
+    stopLoss: 90.0,
+    takeProfit1: 119.95, // 19.95 / 10 = 1.995:1 (rounds to 2.00)
+  };
+  const subThresholdRes = evaluatePreFlightChecks(subThresholdInputs);
+  assert.strictEqual(subThresholdRes.checks[0].status, "FAIL");
+  assert.strictEqual(subThresholdRes.checks[0].displayStatus, "Below minimum");
+  assert.strictEqual(subThresholdRes.checks[0].summary, "Below 2.00:1");
+  assert.strictEqual(subThresholdRes.checks[0].passed, false);
+  console.log("   ✓ Sub-threshold rounding case (1.995) strictly FAILS with 'Below 2.00:1'");
 }
 
 console.log("\n=== ALL PREFLIGHT-001 ACCEPTANCE CRITERIA VERIFIED PASS ===");

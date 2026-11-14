@@ -28,15 +28,17 @@ describe("Gate 1: CHK-1 Reward/Risk Threshold Full Numeric Precision", () => {
     },
   };
 
-  it("1. Raw ratio 1.994: Fails closed (summary: '1.99:1.0', status: FAIL)", () => {
+  it("1. Raw ratio 1.994: Fails closed (summary: '1.99:1', status: FAIL, displayStatus: 'Below minimum')", () => {
     const res = evaluatePreFlightChecks({
       ...baseInputs,
       takeProfit1: 119.94,
     });
     const chk1 = res.checks[0];
     expect(chk1.status).toBe("FAIL");
+    expect(chk1.displayStatus).toBe("Below minimum");
     expect(chk1.passed).toBe(false);
-    expect(chk1.summary).toBe("1.99:1.0");
+    expect(chk1.summary).toBe("1.99:1");
+    expect(chk1.detail).toBe("Potential reward is too low for the risk.");
     expect(res.isCleared).toBe(false);
     expect(res.activeBlocker).toBe("REWARD/RISK ASYMMETRY (< 2.0:1)");
   });
@@ -48,10 +50,11 @@ describe("Gate 1: CHK-1 Reward/Risk Threshold Full Numeric Precision", () => {
     });
     const chk1 = res.checks[0];
     expect(chk1.status).toBe("FAIL");
+    expect(chk1.displayStatus).toBe("Below minimum");
     expect(chk1.passed).toBe(false);
     expect(chk1.summary).toBe("Below 2.00:1"); // Unambiguous display for sub-threshold rounding
     expect(chk1.detail).toContain("1.995:1");
-    expect(chk1.detail).toContain("sub-threshold (< 2.0:1 institutional floor)");
+    expect(chk1.detail).toContain("< 2:1 required minimum");
     expect(res.isCleared).toBe(false);
     expect(res.activeBlocker).toBe("REWARD/RISK ASYMMETRY (< 2.0:1)");
   });
@@ -63,35 +66,38 @@ describe("Gate 1: CHK-1 Reward/Risk Threshold Full Numeric Precision", () => {
     });
     const chk1 = res.checks[0];
     expect(chk1.status).toBe("FAIL");
+    expect(chk1.displayStatus).toBe("Below minimum");
     expect(chk1.passed).toBe(false);
     expect(chk1.summary).toBe("Below 2.00:1");
     expect(chk1.detail).toContain("1.999:1");
-    expect(chk1.detail).toContain("sub-threshold (< 2.0:1 institutional floor)");
+    expect(chk1.detail).toContain("< 2:1 required minimum");
     expect(res.isCleared).toBe(false);
     expect(res.activeBlocker).toBe("REWARD/RISK ASYMMETRY (< 2.0:1)");
   });
 
-  it("4. Raw ratio exactly 2.000: PASS (summary: '2.00:1.0', status: PASS)", () => {
+  it("4. Raw ratio exactly 2.000: PASS (summary: '2.00:1', status: PASS)", () => {
     const res = evaluatePreFlightChecks({
       ...baseInputs,
       takeProfit1: 120.0,
     });
     const chk1 = res.checks[0];
     expect(chk1.status).toBe("PASS");
+    expect(chk1.displayStatus).toBe("PASS");
     expect(chk1.passed).toBe(true);
-    expect(chk1.summary).toBe("2.00:1.0");
+    expect(chk1.summary).toBe("2.00:1");
     expect(res.isCleared).toBe(true);
   });
 
-  it("5. Raw ratio 2.001: PASS (summary: '2.00:1.0', status: PASS)", () => {
+  it("5. Raw ratio 2.001: PASS (summary: '2.00:1', status: PASS)", () => {
     const res = evaluatePreFlightChecks({
       ...baseInputs,
       takeProfit1: 120.01,
     });
     const chk1 = res.checks[0];
     expect(chk1.status).toBe("PASS");
+    expect(chk1.displayStatus).toBe("PASS");
     expect(chk1.passed).toBe(true);
-    expect(chk1.summary).toBe("2.00:1.0");
+    expect(chk1.summary).toBe("2.00:1");
     expect(res.isCleared).toBe(true);
   });
 
@@ -160,8 +166,10 @@ describe("Gate 1: CHK-1 Reward/Risk Threshold Full Numeric Precision", () => {
     });
     const chk1 = res.checks[0];
     expect(chk1.status).toBe("FAIL");
+    expect(chk1.displayStatus).toBe("Below minimum");
     expect(chk1.passed).toBe(false);
-    expect(chk1.summary).toBe("1.50:1.0");
+    expect(chk1.summary).toBe("1.50:1");
+    expect(chk1.detail).toBe("Potential reward is too low for the risk.");
     expect(res.isCleared).toBe(false);
   });
 
@@ -174,8 +182,10 @@ describe("Gate 1: CHK-1 Reward/Risk Threshold Full Numeric Precision", () => {
     });
     const chk1 = res.checks[0];
     expect(chk1.status).toBe("FAIL");
+    expect(chk1.displayStatus).toBe("Below minimum");
     expect(chk1.passed).toBe(false);
-    expect(chk1.summary).toBe("1.80:1.0");
+    expect(chk1.summary).toBe("1.80:1");
+    expect(chk1.detail).toBe("Potential reward is too low for the risk.");
     expect(res.isCleared).toBe(false);
   });
 
@@ -189,8 +199,26 @@ describe("Gate 1: CHK-1 Reward/Risk Threshold Full Numeric Precision", () => {
     });
     const chk1 = res.checks[0];
     expect(chk1.status).toBe("FAIL");
-    expect(chk1.summary).toBe("1.33:1.0");
+    expect(chk1.displayStatus).toBe("Below minimum");
+    expect(chk1.summary).toBe("1.33:1");
+    expect(chk1.detail).toBe("Potential reward is too low for the risk.");
     expect(res.isCleared).toBe(false);
+  });
+
+  it("13. Issue #181: Computed ratio 1.85:1 displays '1.85:1', 'Below minimum', and approved explanation", () => {
+    // Current price 100, stop 90 (risk 10), target 118.5 (reward 18.5) -> RR = 1.85:1
+    const res = evaluatePreFlightChecks({
+      ...baseInputs,
+      takeProfit1: 118.5,
+    });
+    const chk1 = res.checks[0];
+    expect(chk1.status).toBe("FAIL");
+    expect(chk1.displayStatus).toBe("Below minimum");
+    expect(chk1.passed).toBe(false);
+    expect(chk1.summary).toBe("1.85:1");
+    expect(chk1.detail).toBe("Potential reward is too low for the risk.");
+    expect(res.isCleared).toBe(false);
+    expect(res.activeBlocker).toBe("REWARD/RISK ASYMMETRY (< 2.0:1)");
   });
 });
 

@@ -1,65 +1,97 @@
 {
-  "release_candidate_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
-  "base_anchor_commit": "d7ef1ed3f728e13320d8ad7e527dedcb65573f1d",
-  "total_files": 7,
+  "release_candidate_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+  "base_anchor_commit": "5104cb8913a7b1f3ac24ad79f5fb5d606ec9d310",
+  "total_files": 11,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SPRINT-REPRIORITIZATION-028",
+  "directive": "ARX-UX-RR-030",
   "files": {
     "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md": {
       "operation": "M",
-      "originating_pr_number": 285,
-      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
-      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: update active work register to reflect Phase A3 deferral and Issue #230 advancement.",
-      "sha256": "5619feef2b41ca2aee21738ed5289123281cc0f4072703d5d0d4ec75626c2c5f",
-      "size_bytes": 17929
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: update planning register and roadmap to reflect Issue #181 implementation.",
+      "sha256": "c9ebd50476f303abc9d784d9d1f42a159820b3334cc3e3724ae95f48cdfbe9ca",
+      "size_bytes": 17959
     },
     "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md": {
       "operation": "M",
-      "originating_pr_number": 285,
-      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
-      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: update canonical sprint roadmap to defer Phase A3 human study and advance Issue #230.",
-      "sha256": "aadf98cdebb70ce7f1c30b4c8b6b662c5dcb01445178005849362311bae9ff65",
-      "size_bytes": 28702
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: update planning register and roadmap to reflect Issue #181 implementation.",
+      "sha256": "958b80a778be5a8d653d80ff793bbedcbceed3e5dc41781a29334b343c2b916f",
+      "size_bytes": 28706
     },
-    "frontend/app/radar/page.tsx": {
+    "frontend/components/PreFlightChecklistModal.tsx": {
       "operation": "M",
-      "originating_pr_number": 285,
-      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
-      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: render deduplicated candidate rationale and contextual Learn Hub deep-links across hero, desktop table, and mobile cards.",
-      "sha256": "b8a8f91c5950a04e13fcfaaa2f256d7adb400f107ed2af712faddc9593906480",
-      "size_bytes": 137989
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: simplify Pre-Flight Reward vs. Risk presentation copy and labels (#181).",
+      "sha256": "43af7b566d54c56f66e14558a08ef79d1f13147f8a8a7462a1048945e12c0383",
+      "size_bytes": 38794
     },
-    "frontend/lib/radarPresentation.ts": {
+    "frontend/components/PreFlightReadinessBar.tsx": {
       "operation": "M",
-      "originating_pr_number": 285,
-      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
-      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: implement resolveRadarCandidateRationale for asset-specific narrative formatting and Learn Hub deep-links.",
-      "sha256": "53a5325d0bf6a0e82ea4ffdb8be11728559db3f1224d80d5a0706d0f44d31306",
-      "size_bytes": 11573
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: simplify Pre-Flight Reward vs. Risk presentation copy and labels (#181).",
+      "sha256": "8ea9896661c01ba78e4a14c4f89fb1fd32806188115ce1de5288b0adeefb34e8",
+      "size_bytes": 13367
+    },
+    "frontend/components/__tests__/PreFlightRewardRiskPresentation.test.tsx": {
+      "operation": "A",
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: unit and regression test coverage for Pre-Flight Reward vs. Risk presentation (#181).",
+      "sha256": "d88d99188ac08bc386c7d57823f513f63fa4557e77e9c518fe93960b9854cf2e",
+      "size_bytes": 7625
+    },
+    "frontend/lib/__tests__/authorityPrecisionAndConfirmation.test.ts": {
+      "operation": "M",
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: unit and regression test coverage for Pre-Flight Reward vs. Risk presentation (#181).",
+      "sha256": "3ccf54530ce1246812929647401a0658e8d3d116e457ea49588b87c96553c19e",
+      "size_bytes": 16215
+    },
+    "frontend/lib/preflightEvaluator.ts": {
+      "operation": "M",
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: simplify Pre-Flight Reward vs. Risk presentation copy and labels (#181).",
+      "sha256": "7f8b90474c667b79ba6ea9dcd6e693f9bddc629f041b7e077f545a8bd042a33b",
+      "size_bytes": 46046
     },
     "frontend/package.json": {
       "operation": "M",
-      "originating_pr_number": 285,
-      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
-      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: integrate radarCandidateNarrativeAndLearnLinks.test.ts into test:arch pipeline.",
-      "sha256": "ebebe6db30c7e72cabab0f95630ae33f9c57407f02ba0097fb9e06f0d847fe38",
-      "size_bytes": 3725
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: wire preflightRewardRiskCopy181.test.ts into test:arch pipeline.",
+      "sha256": "ed35724f11782fbd8d76733dc49da78a4423798717cd9300b2af8dc4ed70bcbe",
+      "size_bytes": 3777
     },
-    "frontend/tests/radarCandidateNarrativeAndLearnLinks.test.ts": {
+    "frontend/tests/preflight001Acceptance.test.ts": {
+      "operation": "M",
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: unit and regression test coverage for Pre-Flight Reward vs. Risk presentation (#181).",
+      "sha256": "40618bf8471d7760db5e544f999e8405d54b41fa99dae3aecb7c3280438005f6",
+      "size_bytes": 13083
+    },
+    "frontend/tests/preflightRewardRiskCopy181.test.ts": {
       "operation": "A",
-      "originating_pr_number": 285,
-      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
-      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: unit tests for candidate rationale deduplication, contextual Learn Hub links, and safeguard invariants.",
-      "sha256": "7e2108da191ff7f46fddf9d9c917571e0060037d83422f9d696fb5d16d7bff28",
-      "size_bytes": 7542
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: unit and regression test coverage for Pre-Flight Reward vs. Risk presentation (#181).",
+      "sha256": "e3546bfde162e0a9c47a2fed78a637d36b04ea2649391bd8cb489a4a3b395190",
+      "size_bytes": 8521
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 285,
-      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
-      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: register approved PR 285 in APPROVED_PRS allowlist.",
-      "sha256": "522c71fe381690d193967bdad6914d9820698e84eeb623cf1b8ad947bab2db04",
-      "size_bytes": 58096
+      "originating_pr_number": 286,
+      "originating_commit": "76b5ad87a0db4371deaa2ce70d4b627884a3f552",
+      "governing_requirement": "ARX-UX-RR-030: register approved PR 286 in APPROVED_PRS allowlist.",
+      "sha256": "1b9598cbc2da0323fa3669fde18c6dde590e6c1cf9ad7c3ab31a2cdb671feaa0",
+      "size_bytes": 58101
     }
   },
   "qualification_framework_files": {
@@ -69,8 +101,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "522c71fe381690d193967bdad6914d9820698e84eeb623cf1b8ad947bab2db04",
-      "size_bytes": 58096,
+      "sha256": "1b9598cbc2da0323fa3669fde18c6dde590e6c1cf9ad7c3ab31a2cdb671feaa0",
+      "size_bytes": 58101,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
