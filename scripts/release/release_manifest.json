@@ -1,65 +1,65 @@
 {
-  "release_candidate_commit": "2b69435d7b755b85ed2f3d671b4e2705069d985f",
-  "base_anchor_commit": "e9b482d906e6e9baa609e3b5471a538df1c4c900",
+  "release_candidate_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
+  "base_anchor_commit": "7f302dc9115aebaf7dfa67b1073c5c9e0b0b2c4d",
   "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-RADAR-RECOMMENDATION-INTEGRITY-018",
+  "directive": "ARX-SM-ACT-020-POST-CYCLE-REMEDIATION",
   "files": {
-    "docs/governance/ARX_RADAR_RECOMMENDATION_INTEGRITY_018_REPORT.md": {
-      "operation": "A",
-      "originating_pr_number": 279,
-      "originating_commit": "2b69435d7b755b85ed2f3d671b4e2705069d985f",
-      "governing_requirement": "ARX-RADAR-018: surgical recommendation integrity qualification report.",
-      "sha256": "476722125e4f2655d75848b9acedcdee0e5c5360a9172b73dabe48110a6b1d34",
-      "size_bytes": 6044
-    },
-    "frontend/app/radar/page.tsx": {
+    "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
-      "originating_pr_number": 279,
-      "originating_commit": "2b69435d7b755b85ed2f3d671b4e2705069d985f",
-      "governing_requirement": "ARX-RADAR-018: align radar score badges with canonical confluence tiers and demote READY_TO_BUY screening copy.",
-      "sha256": "37cb9761961ab080b753bf8aec869f4be75605c350969ee6d122515f808f83b1",
-      "size_bytes": 131709
+      "originating_pr_number": 280,
+      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
+      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: complete calendar-declined run requests (SKIPPED_NOT_ELIGIBLE / SKIPPED_ALREADY_EXECUTED_TODAY) terminally under lock.",
+      "sha256": "63d4cc535dfe328c24a49bfcd5635184d2f9cbbd02156024b8b987e321298867",
+      "size_bytes": 74904
     },
-    "frontend/lib/radarPresentation.ts": {
-      "operation": "A",
-      "originating_pr_number": 279,
-      "originating_commit": "2b69435d7b755b85ed2f3d671b4e2705069d985f",
-      "governing_requirement": "ARX-RADAR-018: standalone score presentation and execution status formatters to preserve Next.js page convention integrity.",
-      "sha256": "88c754fe679bf4c0719bd554e8a795d710e70f1d22d055a958b7c5998f9a06e0",
-      "size_bytes": 3767
-    },
-    "frontend/package.json": {
+    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
       "operation": "M",
-      "originating_pr_number": 279,
-      "originating_commit": "2b69435d7b755b85ed2f3d671b4e2705069d985f",
-      "governing_requirement": "ARX-RADAR-018: bind radarRecommendationIntegrity.test.ts to test:arch.",
-      "sha256": "69aad4c295349d1dd963ef150cb2209a062e5564675d5efe5a2493bd2af71c6e",
-      "size_bytes": 3663
+      "originating_pr_number": 280,
+      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
+      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: query canonical requested_at in find_active_run_request and use atomic conditional insert in create_run_request.",
+      "sha256": "b8c15586c58dcca52c968cff08b6311d557378ae5b87f8df5443a7dcdb359d0c",
+      "size_bytes": 51402
     },
-    "frontend/tests/mobileNavigationDefects.test.ts": {
+    "analyst_dashboard/smart_money/storage/postgres_schema.py": {
       "operation": "M",
-      "originating_pr_number": 279,
-      "originating_commit": "2b69435d7b755b85ed2f3d671b4e2705069d985f",
-      "governing_requirement": "ARX-RADAR-018: accept explicit symbol mounting syntax from PR #263.",
-      "sha256": "d167fe318db42abf4d7d92df17d1af3b8b6bfc56470f3621feced47c115032c1",
-      "size_bytes": 14881
+      "originating_pr_number": 280,
+      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
+      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: add active request index idx_run_requests_active_guard.",
+      "sha256": "040499fde80ee3874a748b2256e9d399ef7bf51fc11c7f46a31c7920e518557e",
+      "size_bytes": 13414
     },
-    "frontend/tests/radarRecommendationIntegrity.test.ts": {
+    "analyst_dashboard/smart_money/worker.py": {
+      "operation": "M",
+      "originating_pr_number": 280,
+      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
+      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: handle skipped cycle statuses gracefully in worker process_run_requests without failure classification.",
+      "sha256": "783014e8e796fdadf0721ee212b3a163d073ae4d3e409c0f470ca56ffec72782",
+      "size_bytes": 45662
+    },
+    "docs/governance/ARX_SM_ACT_020_POST_CYCLE_REMEDIATION_REPORT.md": {
       "operation": "A",
-      "originating_pr_number": 279,
-      "originating_commit": "2b69435d7b755b85ed2f3d671b4e2705069d985f",
-      "governing_requirement": "ARX-RADAR-018: regression tests for 45/100 candidate scoring and screening status integrity.",
-      "sha256": "fa7110799c4325f5e4e31ff7e152f6c02b3eea6e28e8cbe6c78e02981d0b573a",
-      "size_bytes": 9980
+      "originating_pr_number": 280,
+      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
+      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: surgical queue parity, idempotency guard and calendar skip remediation report.",
+      "sha256": "69fd730c12b7d6c41a480f0b57dbf9be9884a939edc34fea69c27c53bd0beeb2",
+      "size_bytes": 8816
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 279,
-      "originating_commit": "2b69435d7b755b85ed2f3d671b4e2705069d985f",
-      "governing_requirement": "ARX-RADAR-018: add PR 279 to APPROVED_PRS allowlist.",
-      "sha256": "3849236cbd10446c03a9fd631b93010a9270a2f5999fcd7163e8365530d22926",
-      "size_bytes": 58066
+      "originating_pr_number": 280,
+      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
+      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: register approved PR 280 in APPROVED_PRS allowlist.",
+      "sha256": "edca81f9d8dab4ff338cba01a810f23497a99db19ef8a8660c09f5baffae3da7",
+      "size_bytes": 58071
+    },
+    "tests/test_worker_queue_remediation.py": {
+      "operation": "M",
+      "originating_pr_number": 280,
+      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
+      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: add regression tests for calendar skips, terminal state persistence, restarts, and zero SEC egress.",
+      "sha256": "b28e3312f433f425c356a08356a89fb5a1f7702cf1ae6d48d8bc1ea9d0e1d164",
+      "size_bytes": 19189
     }
   },
   "qualification_framework_files": {
@@ -69,8 +69,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "3849236cbd10446c03a9fd631b93010a9270a2f5999fcd7163e8365530d22926",
-      "size_bytes": 58066,
+      "sha256": "edca81f9d8dab4ff338cba01a810f23497a99db19ef8a8660c09f5baffae3da7",
+      "size_bytes": 58071,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
