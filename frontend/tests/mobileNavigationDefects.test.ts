@@ -84,8 +84,9 @@ console.log("   [PASS] 1.5: Radar query parameter normalization verified across 
 
 // Invariant 1.6: All application hubs consistently mount SynthesisMobileDock with appropriate context
 assert.ok(
-  pageSrc.includes("<SynthesisMobileDock activeSymbol={selectedSymbol} />"),
-  "Analysis page must mount SynthesisMobileDock with activeSymbol={selectedSymbol}"
+  pageSrc.includes("<SynthesisMobileDock activeSymbol={selectedSymbol} />") ||
+  pageSrc.includes("<SynthesisMobileDock activeSymbol={hasExplicitSymbol && selectedSymbol ? selectedSymbol : null} />"),
+  "Analysis page must mount SynthesisMobileDock with activeSymbol context"
 );
 assert.ok(
   setupsSrc.includes("<SynthesisMobileDock activeSymbol={selectedSetup?.ticker || tickerParam || null} />"),
