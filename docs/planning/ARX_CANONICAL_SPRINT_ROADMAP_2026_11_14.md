@@ -189,7 +189,7 @@ flowchart TD
 | **S2** | **#230** | Radar | **P2** | **Small** (1–3d) | PR #279 Baseline | Candidate rationale deduplication| Dynamic contextual copy; 0 recommendation regressions | **PLANNED** |
 | **S2** | **#282** | UX / Harmony | **P2** | **Small** (1–3d) | S1-PR#282 Release | Contextual terminal deep-links | Scorecards link to Field Manual; 0 calculation mutations | **PLANNED** |
 | **S2** | **#66** | Research | **P2** | **Small** (1–3d) | S1-Recruitment | Participant confirmation (5) | 5 confirmed evaluator slots with scheduled windows | **PLANNED** |
-| **S3** | **#197** | Decision Int | **P1** | **Medium** (4–7d)| S2-DeepLinks | Pre-flight decision freshness | Stale-price classification verified; gate protected | **PLANNED** |
+| **S3** | **#197** | Decision Int | **P1** | **Medium** (4–7d)| S2-DeepLinks | Pre-flight decision freshness | Stale-price classification verified; gate protected | **IMPLEMENTED** |
 | **S3** | **#181** | Decision Int | **P2** | **Small** (1–3d) | S2-DeepLinks | Reward/Risk disclosure copy | 2:1 threshold copy clarified; sizing contract intact | **IMPLEMENTED** |
 | **S3** | **#66** | Research | **P2** | **Small** (1–3d) | S2-Confirmation | Phase A3 pilot dry-run (P1) | Completed worksheet `a3_worksheet_p01.md`; zero blockers | **PLANNED** |
 | **S4** | **#198** | Architecture | **P1** | **Medium** (4–7d)| S3-Freshness | OHLCV provenance & cache fence | Provenance boundary enforced; zero stale cache poisoning | **PLANNED** |

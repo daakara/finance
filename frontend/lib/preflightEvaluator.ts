@@ -847,38 +847,6 @@ export function evaluatePreFlightChecks(
 
   const canSizeTradeGranted = canSizeTrade !== false;
 
-  // Active Blockers Resolution (collecting all active blockers for discoverability)
-  const allBlockers: string[] = [];
-  if (!isActionableGranted) allBlockers.push("CANONICAL SETUP NON-ACTIONABLE");
-  if (!canSizeTradeGranted) allBlockers.push("CANONICAL SIZING PROHIBITED");
-  if (!isPriceValid || !hasExecutionLevels) allBlockers.push("UNVERIFIED EXECUTION LEVELS");
-  if (!isLevelDirectionValid) allBlockers.push("INVERTED EXECUTION BOUNDARIES");
-  if (isStage4) allBlockers.push("STAGE 4 DISTRIBUTION STRUCTURE");
-  if (!isRRPassed) allBlockers.push("REWARD/RISK ASYMMETRY (< 2.0:1)");
-  if (!isTrendPassed) allBlockers.push("TECHNICAL STRUCTURE NOT CONFIRMED");
-  if (!isCapitalRiskPassed) {
-    allBlockers.push(capitalRiskEvidenceState !== "COMPLETE" ? "CAPITAL RISK EVIDENCE INCOMPLETE" : "CAPITAL PRESERVATION DEFENSE");
-  }
-  if (!isCatalystPassed) {
-    if (resolvedCatalystState === "WARN") allBlockers.push("IMMINENT EARNINGS HAZARD (<= 7 DAYS)");
-    else if (resolvedCatalystState === "ERROR") allBlockers.push("CATALYST EVALUATION ERROR");
-    else if (catalystEvidence?.freshnessStatus && catalystEvidence.freshnessStatus !== "LIVE") allBlockers.push("STALE CATALYST COVERAGE");
-    else allBlockers.push("CATALYST COVERAGE UNAVAILABLE");
-  }
-  if (!isMacroPassed) {
-    if (!isVixValid || currentVix === null) allBlockers.push("VIX DATA UNAVAILABLE");
-    else allBlockers.push("MACRO VOLATILITY REGIME (VIX >= 26.0)");
-  }
-  const activeBlocker = allBlockers.length > 0 ? allBlockers[0] : "NONE";
-
-  const isCleared =
-    isActionableGranted &&
-    canSizeTradeGranted &&
-    isPriceValid &&
-    isLevelDirectionValid &&
-    !isStage4 &&
-    mandatoryChecksVerified;
-
   // ── Provenance & Epistemic Authority Classification (Gate 2 Invariants) ──
   const rawDataSource = (inputs.dataSource || "").toLowerCase();
   const rawQuoteStatus = (inputs.quoteStatus || "").toUpperCase();
@@ -934,6 +902,51 @@ export function evaluatePreFlightChecks(
     ? "LIVE_OBSERVATION"
     : "UNVERIFIED";
 
+  // Stale price verification (Gate 2 / Issue #197 Invariant):
+  // Stale, expired, or unavailable live price observations fail closed.
+  const isPriceStale = Boolean(
+    !isSyntheticFixture &&
+    !isHistoricalEOD &&
+    inputs.liveFreshnessStatus &&
+    (inputs.liveFreshnessStatus === "STALE" ||
+     inputs.liveFreshnessStatus === "EXPIRED" ||
+     inputs.liveFreshnessStatus === "UNAVAILABLE")
+  );
+
+  // Active Blockers Resolution (collecting all active blockers for discoverability)
+  const allBlockers: string[] = [];
+  if (!isActionableGranted) allBlockers.push("CANONICAL SETUP NON-ACTIONABLE");
+  if (!canSizeTradeGranted) allBlockers.push("CANONICAL SIZING PROHIBITED");
+  if (!isPriceValid || !hasExecutionLevels) allBlockers.push("UNVERIFIED EXECUTION LEVELS");
+  if (isPriceStale) allBlockers.push("STALE PRICE OBSERVATION");
+  if (!isLevelDirectionValid) allBlockers.push("INVERTED EXECUTION BOUNDARIES");
+  if (isStage4) allBlockers.push("STAGE 4 DISTRIBUTION STRUCTURE");
+  if (!isRRPassed) allBlockers.push("REWARD/RISK ASYMMETRY (< 2.0:1)");
+  if (!isTrendPassed) allBlockers.push("TECHNICAL STRUCTURE NOT CONFIRMED");
+  if (!isCapitalRiskPassed) {
+    allBlockers.push(capitalRiskEvidenceState !== "COMPLETE" ? "CAPITAL RISK EVIDENCE INCOMPLETE" : "CAPITAL PRESERVATION DEFENSE");
+  }
+  if (!isCatalystPassed) {
+    if (resolvedCatalystState === "WARN") allBlockers.push("IMMINENT EARNINGS HAZARD (<= 7 DAYS)");
+    else if (resolvedCatalystState === "ERROR") allBlockers.push("CATALYST EVALUATION ERROR");
+    else if (catalystEvidence?.freshnessStatus && catalystEvidence.freshnessStatus !== "LIVE") allBlockers.push("STALE CATALYST COVERAGE");
+    else allBlockers.push("CATALYST COVERAGE UNAVAILABLE");
+  }
+  if (!isMacroPassed) {
+    if (!isVixValid || currentVix === null) allBlockers.push("VIX DATA UNAVAILABLE");
+    else allBlockers.push("MACRO VOLATILITY REGIME (VIX >= 26.0)");
+  }
+  const activeBlocker = allBlockers.length > 0 ? allBlockers[0] : "NONE";
+
+  const isCleared =
+    isActionableGranted &&
+    canSizeTradeGranted &&
+    isPriceValid &&
+    !isPriceStale &&
+    isLevelDirectionValid &&
+    !isStage4 &&
+    mandatoryChecksVerified;
+
   const isSimulatedClearance = Boolean(isCleared && isSyntheticFixture);
   const isHistoricalReference = Boolean(isCleared && isHistoricalEOD);
 
@@ -947,6 +960,9 @@ export function evaluatePreFlightChecks(
     }
     if (!isPriceValid || !hasExecutionLevels) {
       return "Establish verified spot price and quantitative execution boundaries (stop loss and target levels).";
+    }
+    if (isPriceStale) {
+      return "Wait for live exchange price feed to refresh. Execution clearance is blocked on stale or expired market data.";
     }
     if (!isLevelDirectionValid) {
       return safeStop! >= safePrice
@@ -992,13 +1008,19 @@ export function evaluatePreFlightChecks(
   })();
 
   const clearanceStatusLabel = isCleared
-    ? (isVixElevated
-        ? "CLEARED — ELEVATED VOLATILITY CAUTION"
-        : "CLEARED")
+    ? isSyntheticFixture
+      ? "SIMULATED CLEARANCE"
+      : isHistoricalEOD
+      ? "HISTORICAL REFERENCE"
+      : (isVixElevated
+          ? "CLEARED — ELEVATED VOLATILITY CAUTION"
+          : "CLEARED")
     : passedCount === 5 && !isActionableGranted
     ? "NOT CLEARED · 5/5 PASS (AWAITING CONFIRMATION)"
     : isStage4
     ? "NOT CLEARED — STAGE 4 WAIT"
+    : isPriceStale
+    ? `NOT CLEARED · STALE PRICE (${passedCount}/5)`
     : `NOT CLEARED (${passedCount}/5)`;
 
   const clearanceStatusBadgeClass = isCleared

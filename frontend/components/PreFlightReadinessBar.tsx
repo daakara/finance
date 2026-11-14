@@ -171,6 +171,14 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
               SIMULATED
             </span>
           )}
+          {evalResult.isHistoricalReference && (
+            <span
+              data-testid="inline-historical-tag"
+              className="ml-1 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-950/90 text-amber-300 border border-amber-700/60 font-semibold"
+            >
+              HISTORICAL
+            </span>
+          )}
         </div>
       </div>
 
