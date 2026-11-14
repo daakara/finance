@@ -327,6 +327,10 @@ class SmartMoneyBackupSchedulerThread(threading.Thread):
             logger.info("Executing scheduled automated backup pass (routine, unprivileged)...")
             adapter = self.storage_adapter or get_backup_storage_adapter()
             engine = SmartMoneyBackupEngine(storage_adapter=adapter)
+            # Defect 3: Verify PostgreSQL client toolchain matches PG16 policy before backup
+            from analyst_dashboard.smart_money.storage.backup.pg_client_compat import validate_backup_toolchain
+            pg_dump_bin = getattr(engine, "pg_dump_path", "pg_dump")
+            validate_backup_toolchain("16.0", pg_dump_bin)
             retention = BackupRetentionManager(
                 storage_adapter=adapter,
                 retention_count=self.retention_count,
@@ -488,6 +492,8 @@ class SmartMoneyIngestionWorker:
         self._last_stale_recovery_at = 0.0
         self._is_executing_cycle = False
         self._shutdown_requested = False
+        from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher, SecRateLimiter
+        self._sec_fetcher = SecEdgarFetcher(rate_limiter=SecRateLimiter(max_per_second=5.0))
 
     def validate_preflight(self) -> bool:
         """
@@ -703,6 +709,8 @@ class SmartMoneyIngestionWorker:
                 repository=self.repository,
                 allow_test_mode=False,
                 cancellation_token=lambda: getattr(self, "_shutdown_requested", False),
+                sec_fetcher=self._sec_fetcher,
+                preacquired_lock_conn=self._owner_conn,
             )
             res = pipeline.execute_cycle(
                 run_request_id=req_id,
