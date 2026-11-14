@@ -203,7 +203,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
                   data-testid={`inline-chk-status-${index + 1}`}
                   className={`px-1.5 py-0.5 rounded text-[9.5px] font-extrabold border ${chk.badgeClass}`}
                 >
-                  {chk.status}
+                  {chk.displayStatus || chk.status}
                 </span>
               </div>
               <div className="text-[10px] text-[var(--text-2)] truncate font-mono" title={chk.summary}>
@@ -283,7 +283,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
                 <span
                   className={`text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded border ${chk.badgeClass}`}
                 >
-                  {chk.status}
+                  {chk.displayStatus || chk.status}
                 </span>
               </div>
               <p className="text-[11px] text-[var(--text-2)] leading-snug font-sans">

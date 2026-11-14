@@ -17,6 +17,21 @@
 
 import { MASTER_ASSET_CATALOG } from "./masterCatalog";
 
+/**
+ * Canonical Pre-Flight Threshold Configuration (Issue #181, ARX-UX-RR-030).
+ * Authoritative single source for Pre-Flight quantitative floors and approved presentation labels.
+ */
+export const PREFLIGHT_CONFIG = {
+  MIN_REWARD_TO_RISK_RATIO: 2.0,
+  REQUIRED_RR_DISPLAY_THRESHOLD: "2:1",
+  REQUIRED_RR_LABEL: "Required: 2:1",
+  EXPLANATION_BELOW_MINIMUM: "Potential reward is too low for the risk.",
+  EXPLANATION_ADEQUATE: "Adequate upside cushion",
+  LABEL_BELOW_MINIMUM: "Below minimum",
+  LABEL_PASS: "PASS",
+  LABEL_UNAVAILABLE: "Unavailable",
+} as const;
+
 export interface MacroEvidence {
   vix?: number | null;
   observationTime?: string | null;
@@ -103,6 +118,7 @@ export interface PreFlightCheckItem {
   tag: string;
   name: string;
   status: CheckStatus;
+  displayStatus?: string;
   badgeClass: string;
   passed: boolean;
   summary: string;
@@ -135,6 +151,7 @@ export interface PreFlightEvaluationResult {
   provenanceCategory: ProvenanceCategory;
   isSimulatedClearance: boolean;
   isHistoricalReference: boolean;
+  isLevelDirectionValid: boolean;
   safePrice: number;
   safeStop: number | null;
   safeTarget: number | null;
@@ -439,7 +456,7 @@ export function evaluatePreFlightChecks(
     ? (isRRValid ? Math.min(safeRR, rawComputedRRAtSpot) : rawComputedRRAtSpot)
     : 0;
 
-  const isRRPassed = isPriceValid && hasExecutionLevels && isLevelDirectionValid && rawEffectiveRR >= 2.0;
+  const isRRPassed = isPriceValid && hasExecutionLevels && isLevelDirectionValid && rawEffectiveRR >= PREFLIGHT_CONFIG.MIN_REWARD_TO_RISK_RATIO;
   const chk1Status: CheckStatus = !hasExecutionLevels
     ? "MISSING LEVELS"
     : !isLevelDirectionValid
@@ -449,14 +466,14 @@ export function evaluatePreFlightChecks(
     : "FAIL";
 
   const displayRR = rawEffectiveRR.toFixed(2);
-  const isSubThresholdRounding = !isRRPassed && Number(displayRR) >= 2.0;
+  const isSubThresholdRounding = !isRRPassed && Number(displayRR) >= PREFLIGHT_CONFIG.MIN_REWARD_TO_RISK_RATIO;
   const chk1Summary = !hasExecutionLevels
     ? "N/A"
     : !isLevelDirectionValid
     ? "Invalid Levels"
     : isSubThresholdRounding
     ? "Below 2.00:1"
-    : `${displayRR}:1.0`;
+    : `${displayRR}:1`;
 
   const chk1Detail = !hasExecutionLevels
     ? "Execution levels missing: Stop loss and target required."
@@ -465,16 +482,25 @@ export function evaluatePreFlightChecks(
         ? `Inverted risk boundary: Stop loss ($${safeStop!.toFixed(2)}) is above current price ($${safePrice.toFixed(2)}). Execution risk floor breached.`
         : `Inverted reward boundary: Profit target ($${safeTarget!.toFixed(2)}) is below current price ($${safePrice.toFixed(2)}). Target boundary inverted.`)
     : isRRPassed
-    ? "Adequate upside cushion (R:R >= 2.0:1)."
+    ? "Adequate upside cushion (R:R >= 2:1)."
     : isSubThresholdRounding
-    ? `Hazard: Prospective reward relative to downside risk (${rawEffectiveRR.toFixed(3)}:1) is sub-threshold (< 2.0:1 institutional floor).`
-    : `Hazard: Prospective reward relative to downside risk (${displayRR}:1) is below 2.0:1 institutional floor.`;
+    ? `Potential reward is too low for the risk (${rawEffectiveRR.toFixed(3)}:1 < 2:1 required minimum).`
+    : PREFLIGHT_CONFIG.EXPLANATION_BELOW_MINIMUM;
+
+  const chk1DisplayStatus = isRRPassed
+    ? PREFLIGHT_CONFIG.LABEL_PASS
+    : !hasExecutionLevels
+    ? "MISSING LEVELS"
+    : !isLevelDirectionValid
+    ? "FAIL"
+    : PREFLIGHT_CONFIG.LABEL_BELOW_MINIMUM;
 
   const chk1Item: PreFlightCheckItem = {
     id: "CHK-1",
     tag: "CHK-1 R:R",
     name: isPlain ? "1. Reward vs. Risk" : "1. Reward vs. Risk (Asymmetric Payoff)",
     status: chk1Status,
+    displayStatus: chk1DisplayStatus,
     badgeClass: isRRPassed
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
       : "bg-rose-950/80 text-rose-300 border-rose-700/80",
@@ -1036,6 +1062,7 @@ export function evaluatePreFlightChecks(
     provenanceCategory,
     isSimulatedClearance,
     isHistoricalReference,
+    isLevelDirectionValid,
     canSizeTradeGranted,
     allBlockers,
     safePrice,

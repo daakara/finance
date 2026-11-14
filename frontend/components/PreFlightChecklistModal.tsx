@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import { trackPreFlightOutcome, trackTradePlanCopied } from "../lib/matomo";
-import { evaluatePreFlightChecks, PreFlightChecklistInputs } from "../lib/preflightEvaluator";
+import { evaluatePreFlightChecks, PreFlightChecklistInputs, PREFLIGHT_CONFIG } from "../lib/preflightEvaluator";
 
 export interface PreFlightChecklistModalProps extends PreFlightChecklistInputs {
   isOpen: boolean;
@@ -178,8 +178,9 @@ export default function PreFlightChecklistModal({
   const cleanSym = (symbol || "ASSET").toUpperCase().replace("-USD", "");
   const catalogItem = MASTER_ASSET_CATALOG[cleanSym];
   const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
-  const isRRValid = typeof riskRewardRatio === "number" && !isNaN(riskRewardRatio) && riskRewardRatio > 0;
+  const isRRValid = (typeof riskRewardRatio === "number" && !isNaN(riskRewardRatio) && riskRewardRatio > 0) || (typeof safeRR === "number" && !isNaN(safeRR) && safeRR > 0);
   const hasExecutionLevels = safeStop !== null && safeTarget !== null;
+  const isLevelDirectionValid = evalResult.isLevelDirectionValid ?? (isPriceValid && hasExecutionLevels && safeStop! < safePrice && safeTarget! > safePrice);
   const isRRPassed = checks[0].passed;
   const isTrendPassed = checks[1].passed && !isStage4;
   const isExtendedAboveZone = Boolean(safeEntryMax && safePrice > safeEntryMax * 1.02);
@@ -324,7 +325,7 @@ export default function PreFlightChecklistModal({
 - **Target 1 (TP1)**: ${target1Str}
 - **Target 2 (TP2 Runner)**: ${target2Str}
 - **Execution Rule (Protected Trailing Ratchet)**: ${safeTarget !== null ? `Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure protected runner convexity.` : "Establish verified target levels before executing tactical scaling rules."}
-- **Risk/Reward**: ${isRRValid ? `${safeRR.toFixed(2)}:1 (Required: 2:1)` : "Unavailable"}
+- **Risk/Reward**: ${isRRValid && hasExecutionLevels && isLevelDirectionValid ? `${safeRR.toFixed(2)}:1 (${PREFLIGHT_CONFIG.REQUIRED_RR_LABEL})` : `Unavailable (${PREFLIGHT_CONFIG.REQUIRED_RR_LABEL})`}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
 - **Pre-Flight Clearance**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) — ${isCleared ? (isVixElevated ? "⚠️ CLEARED — ELEVATED VOLATILITY CAUTION" : "🟢 CLEARED FOR EXECUTION") : `⚠️ NOT CLEARED (${activeBlocker})`}
 - **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"}${isVixElevated ? " (ELEVATED CAUTION)" : ""} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "HAZARD" : resolvedCatalystState}
@@ -465,21 +466,61 @@ export default function PreFlightChecklistModal({
 
           {/* 5-Point Validation Checklist */}
           <div className="space-y-2.5 text-xs">
-            {/* Check 1 */}
+            {/* Check 1: Reward vs. Risk (Issue #181, ARX-UX-RR-030) */}
             <div className="p-3 rounded-lg bg-[var(--surface-2)] border border-[var(--border-subtle)] flex items-start justify-between gap-3">
-              <div className="space-y-0.5">
-                <div className="font-bold text-[var(--text-1)] flex items-center gap-1.5">
-                  <span>{isRRPassed ? "✅" : "❌"}</span>
-                  <span>{isPlain ? "1. Reward vs. Risk" : "1. Reward vs. Risk (Asymmetric Payoff)"}</span>
+              <div className="space-y-0.5 min-w-0 flex-1">
+                <div className="font-bold text-[var(--text-1)] flex items-center gap-1.5 flex-wrap">
+                  <span aria-hidden="true">{isRRPassed ? "✅" : "❌"}</span>
+                  <span className="break-words">
+                    1.{" "}
+                    <span data-testid="preflight-chk1-title">
+                      {isPlain ? "Reward vs. Risk" : "Reward vs. Risk (Asymmetric Payoff)"}
+                    </span>
+                  </span>
                 </div>
-                <p className="text-[11px] text-[var(--text-2)] pl-5">
-                  Current: <strong className="text-cyan-300 font-mono">{isRRValid && hasExecutionLevels ? `${safeRR.toFixed(2)}:1 (Required: 2:1)` : "Unavailable"}</strong>{" "}
-                  {isRRPassed ? "(Adequate upside cushion)" : !hasExecutionLevels ? "(Execution levels missing: Stop and target required)" : isRRValid ? "(Potential reward is below the required 2:1 minimum)" : "(Evidence incomplete: risk-reward unavailable)"}
+                <p className="text-[11px] text-[var(--text-2)] pl-5 break-words">
+                  Current:{" "}
+                  <strong className="text-cyan-300 font-mono">
+                    {isRRValid && hasExecutionLevels && isLevelDirectionValid
+                      ? `${safeRR.toFixed(2)}:1 (${PREFLIGHT_CONFIG.REQUIRED_RR_LABEL})`
+                      : `Unavailable (${PREFLIGHT_CONFIG.REQUIRED_RR_LABEL})`}
+                  </strong>{" "}
+                  <span className="text-[var(--text-2)]">
+                    {isRRPassed
+                      ? `(${PREFLIGHT_CONFIG.EXPLANATION_ADEQUATE})`
+                      : !hasExecutionLevels
+                      ? "(Execution levels missing: Stop and target required)"
+                      : !isLevelDirectionValid
+                      ? "(Invalid execution boundaries: Stop and target levels inverted)"
+                      : isRRValid
+                      ? `(${PREFLIGHT_CONFIG.EXPLANATION_BELOW_MINIMUM})`
+                      : "(Evidence incomplete: risk-reward unavailable)"}
+                  </span>
                 </p>
               </div>
-              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
-                isRRPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-rose-950 text-rose-300 border-rose-800"
-              }`}>{isRRPassed ? "PASS" : (!hasExecutionLevels ? "MISSING LEVELS" : "Below minimum")}</span>
+              <span
+                data-testid="preflight-chk1-badge"
+                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
+                  isRRPassed
+                    ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                    : !hasExecutionLevels || !isLevelDirectionValid || !isRRValid
+                    ? "bg-slate-900 text-[var(--text-2)] border-slate-700"
+                    : "bg-rose-950 text-rose-300 border-rose-800"
+                }`}
+                aria-label={`Status: ${
+                  isRRPassed
+                    ? PREFLIGHT_CONFIG.LABEL_PASS
+                    : !hasExecutionLevels || !isLevelDirectionValid || !isRRValid
+                    ? PREFLIGHT_CONFIG.LABEL_UNAVAILABLE
+                    : PREFLIGHT_CONFIG.LABEL_BELOW_MINIMUM
+                }`}
+              >
+                {isRRPassed
+                  ? PREFLIGHT_CONFIG.LABEL_PASS
+                  : !hasExecutionLevels || !isLevelDirectionValid || !isRRValid
+                  ? PREFLIGHT_CONFIG.LABEL_UNAVAILABLE
+                  : PREFLIGHT_CONFIG.LABEL_BELOW_MINIMUM}
+              </span>
             </div>
 
             {/* Check 2 */}
