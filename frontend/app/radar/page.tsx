@@ -32,6 +32,7 @@ import { isCanonicalSecurityIdentifier, resolveCanonicalSecurity } from '../../l
 import {
   formatRadarExecutionStatus,
   resolveRadarScorePresentation,
+  resolveRadarCandidateRationale,
   RadarScoreTier,
   RadarScorePresentation,
 } from '../../lib/radarPresentation';
@@ -987,10 +988,49 @@ function RadarContent() {
                   )}
                 </div>
 
-                <p className="text-xs md:text-sm text-[var(--text-1)] font-sans leading-relaxed">
-                  <strong className="text-cyan-400 font-semibold">Opportunity Thesis: </strong>
-                  {heroAsset.opportunityExplanation || heroAsset.catalyst}
-                </p>
+                {(() => {
+                  const heroRationale = resolveRadarCandidateRationale({
+                    ticker: heroAsset.ticker,
+                    name: heroAsset.name,
+                    sector: heroAsset.sector,
+                    vcpStage: heroAsset.vcpStage,
+                    volumeDryUpPct: heroAsset.volumeDryUpPct,
+                    rvol: heroAsset.rvol,
+                    confluenceScore: heroAsset.confluenceScore,
+                    categories: heroAsset.categories,
+                    executionStatus: heroAsset.executionStatus,
+                    opportunityExplanation: heroAsset.opportunityExplanation,
+                    catalyst: heroAsset.catalyst,
+                    riskRewardRatio: heroAsset.riskRewardRatio,
+                  });
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-xs md:text-sm text-[var(--text-1)] font-sans leading-relaxed">
+                        <strong className="text-cyan-400 font-semibold">Opportunity Rationale: </strong>
+                        <span>{heroRationale.summary}</span>{' '}
+                        <span className="text-[var(--text-2)]">{heroRationale.technicalContext}</span>
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold mr-0.5">
+                          Learn Hub:
+                        </span>
+                        {heroRationale.learnLinks.map((link, idx) => (
+                          <a
+                            key={idx}
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={link.tooltip}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium transition-colors border bg-cyan-950/30 text-cyan-300 border-cyan-800/40 hover:bg-cyan-900/50 hover:border-cyan-700 hover:text-cyan-200"
+                          >
+                            <span>📖</span>
+                            <span>{link.label}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {heroAsset && getOwnershipState(heroAsset.ticker) === 'HELD' && (
                   <div className="p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-700/60 text-indigo-200 text-xs font-mono flex items-center gap-2">
@@ -1974,8 +2014,45 @@ function RadarContent() {
                         <td className="p-3 text-center font-bold text-emerald-400 whitespace-nowrap">
                           {asset.riskRewardRatio !== null && asset.riskRewardRatio !== undefined ? `${asset.riskRewardRatio.toFixed(1)}:1` : <span className="text-[var(--text-muted)] font-normal">—</span>}
                         </td>
-                        <td className="p-3 text-[var(--text-2)] text-[11px] font-sans max-w-xs truncate" title={asset.opportunityExplanation || asset.catalyst}>
-                          {asset.opportunityExplanation || asset.catalyst}
+                        <td className="p-3 text-[var(--text-2)] text-[11px] font-sans max-w-sm">
+                          {(() => {
+                            const rowRationale = resolveRadarCandidateRationale({
+                              ticker: asset.ticker,
+                              name: asset.name,
+                              sector: asset.sector,
+                              vcpStage: asset.vcpStage,
+                              volumeDryUpPct: asset.volumeDryUpPct,
+                              rvol: asset.rvol,
+                              confluenceScore: asset.confluenceScore,
+                              categories: asset.categories,
+                              executionStatus: asset.executionStatus,
+                              opportunityExplanation: asset.opportunityExplanation,
+                              catalyst: asset.catalyst,
+                              riskRewardRatio: asset.riskRewardRatio,
+                            });
+                            return (
+                              <div className="space-y-1">
+                                <div className="truncate font-medium text-[var(--text-1)]" title={`${rowRationale.summary} ${rowRationale.technicalContext}`}>
+                                  {rowRationale.summary}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1">
+                                  {rowRationale.learnLinks.slice(0, 2).map((link, idx) => (
+                                    <a
+                                      key={idx}
+                                      href={link.href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title={link.tooltip}
+                                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-mono transition-colors border bg-cyan-950/40 text-cyan-300 border-cyan-800/50 hover:bg-cyan-900/60 hover:text-cyan-100"
+                                    >
+                                      <span>📖</span>
+                                      <span>{link.label}</span>
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="p-3 text-right whitespace-nowrap">
                           {(() => {
@@ -2175,12 +2252,45 @@ function RadarContent() {
                         </div>
                       </div>
 
-                      {/* Catalyst Rationale */}
-                      {(asset.opportunityExplanation || asset.catalyst) && (
-                        <p className="text-[11px] text-[var(--text-2)] font-sans line-clamp-2 leading-relaxed">
-                          {asset.opportunityExplanation || asset.catalyst}
-                        </p>
-                      )}
+                      {/* Catalyst Rationale & Learn Hub Links */}
+                      {(() => {
+                        const cardRationale = resolveRadarCandidateRationale({
+                          ticker: asset.ticker,
+                          name: asset.name,
+                          sector: asset.sector,
+                          vcpStage: asset.vcpStage,
+                          volumeDryUpPct: asset.volumeDryUpPct,
+                          rvol: asset.rvol,
+                          confluenceScore: asset.confluenceScore,
+                          categories: asset.categories,
+                          executionStatus: asset.executionStatus,
+                          opportunityExplanation: asset.opportunityExplanation,
+                          catalyst: asset.catalyst,
+                          riskRewardRatio: asset.riskRewardRatio,
+                        });
+                        return (
+                          <div className="space-y-1.5 pt-1">
+                            <p className="text-[11px] text-[var(--text-2)] font-sans leading-relaxed line-clamp-2" title={`${cardRationale.summary} ${cardRationale.technicalContext}`}>
+                              {cardRationale.summary}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {cardRationale.learnLinks.slice(0, 2).map((link, idx) => (
+                                <a
+                                  key={idx}
+                                  href={link.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={link.tooltip}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border bg-cyan-950/30 text-cyan-300 border-cyan-800/40 hover:bg-cyan-900/50 hover:text-cyan-200"
+                                >
+                                  <span>📖</span>
+                                  <span>{link.label}</span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* Touch-Friendly Action Row (>= 44px tap targets) */}
                       <div className="flex items-center gap-2 pt-1">
