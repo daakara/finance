@@ -187,6 +187,7 @@ class ContinuousOutboundSession(requests.Session):
         issuers: Optional[Sequence[Dict[str, str]]] = None,
         allow_test_mode: bool = False,
         cancellation_token: Optional[Callable[[], bool]] = None,
+        preacquired_lock_conn: Optional[Any] = None,
     ):
         super().__init__()
         # Explicitly prohibit urllib3 adapter-managed retries, which would bypass
@@ -247,18 +248,20 @@ class ContinuousOutboundSession(requests.Session):
             require_continuous_authorization(issuers=self.issuers)
 
         # 4. Total cycle request budget check (<= 40)
-        if self.total_transmissions >= self.max_total_requests:
+        effective_max_total = int(os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE", str(self.max_total_requests)))
+        if self.total_transmissions >= effective_max_total:
             raise ContinuousBudgetExceededError(
-                f"CYCLE_BUDGET_EXCEEDED: Total cycle HTTP transmissions ({self.total_transmissions}) "
+                f"PILOT_BUDGET_EXCEEDED: CYCLE_BUDGET_EXCEEDED: Total cycle HTTP transmissions ({self.total_transmissions}) "
                 f"reached ceiling ({self.max_total_requests}). Outbound send blocked."
             )
 
         # 5. Per-issuer request budget check (<= 4)
+        effective_max_issuer = int(os.environ.get("ARX_SEC_MAX_REQUESTS_PER_ISSUER", str(self.max_per_issuer_requests)))
         issuer_key = self.current_issuer or "UNKNOWN"
         count_for_issuer = self.issuer_transmissions.get(issuer_key, 0)
-        if count_for_issuer >= self.max_per_issuer_requests:
+        if count_for_issuer >= effective_max_issuer:
             raise ContinuousBudgetExceededError(
-                f"ISSUER_BUDGET_EXCEEDED: Issuer {issuer_key} HTTP transmissions ({count_for_issuer}) "
+                f"PILOT_BUDGET_EXCEEDED: ISSUER_BUDGET_EXCEEDED: Issuer {issuer_key} HTTP transmissions ({count_for_issuer}) "
                 f"reached ceiling ({self.max_per_issuer_requests}). Outbound send blocked."
             )
 
@@ -314,6 +317,7 @@ class SmartMoneyContinuousPipeline:
         scheduler: Optional[SmartMoneyTimezoneScheduler] = None,
         allow_test_mode: bool = False,
         cancellation_token: Optional[Callable[[], bool]] = None,
+        preacquired_lock_conn: Optional[Any] = None,
     ):
         arx_env = os.environ.get("ARX_ENVIRONMENT", "").strip().lower()
         if arx_env == "production" and allow_test_mode:
@@ -376,7 +380,9 @@ class SmartMoneyContinuousPipeline:
         self.sec_fetcher = sec_fetcher
         self.scanner = scanner or SmartMoneyForm4Scanner()
         self.scheduler = scheduler or SmartMoneyTimezoneScheduler()
-        self._lock_conn = None
+        self._preacquired_lock_conn = preacquired_lock_conn
+        self._lock_conn_is_preacquired = preacquired_lock_conn is not None
+        self._lock_conn = preacquired_lock_conn
 
     def cancel(self) -> None:
         """Sets internal cooperative cancellation flag for in-flight checks."""
@@ -706,6 +712,14 @@ class SmartMoneyContinuousPipeline:
         if not self.dsn:
             return
 
+        if getattr(self, "_lock_conn_is_preacquired", False) and self._preacquired_lock_conn is not None:
+            is_closed = getattr(self._preacquired_lock_conn, "closed", False)
+            if is_closed is True or (isinstance(is_closed, int) and not isinstance(is_closed, bool) and is_closed > 0):
+                raise RuntimeError("PREACQUIRED_LOCK_CONN_CLOSED: Preacquired advisory lock connection is closed.")
+            self._lock_conn = self._preacquired_lock_conn
+            logger.info("Reusing preacquired worker advisory lock connection.")
+            return
+
         import psycopg2
         self._lock_conn = psycopg2.connect(self.dsn)
         acquired = acquire_sec_owner_lock(self._lock_conn)
@@ -945,7 +959,14 @@ class SmartMoneyContinuousPipeline:
         # In-flight authorization check before starting ingestion loop
         self._check_in_flight_authorization(step_name="STEP_6_SEC_INGESTION_START")
 
+        max_total_ceiling = int(os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE", "40"))
+        cycle_request_count = 0
+
         for issuer in self.issuers:
+            if cycle_request_count >= max_total_ceiling:
+                raise RuntimeError(
+                    f"PILOT_BUDGET_EXCEEDED: Cycle request budget ({max_total_ceiling}) exceeded before fetching {issuer['ticker']}."
+                )
             ticker = issuer["ticker"]
             cik = issuer["cik"]
             company_name = issuer.get("company_name", ticker)
@@ -963,9 +984,11 @@ class SmartMoneyContinuousPipeline:
                 if hasattr(self.sec_fetcher, "rate_limiter"):
                     self.sec_fetcher.rate_limiter = self.rate_limiter
                 filing_dicts = self.sec_fetcher.fetch_form4_filings(ticker=ticker, cik=cik)
+                cycle_request_count += 1
             else:
-                # Query SEC EDGAR Atom feed or use database-cached filings
+                # Query SEC EDGAR Atom feed or use database-cached filings via guarded session
                 filing_dicts = self._fetch_filings_from_sec(ticker=ticker, cik=cik, company_name=company_name)
+                cycle_request_count += 1
 
             for filing in filing_dicts:
                 # Calculate deterministic content hash if not already computed
@@ -1461,6 +1484,9 @@ class SmartMoneyContinuousPipeline:
     def _cleanup_lock(self) -> None:
         """Releases session advisory lock on completion or error."""
         if self._lock_conn:
+            if getattr(self, "_lock_conn_is_preacquired", False):
+                logger.info("Skipping release and close of preacquired worker advisory lock connection.")
+                return
             is_closed = getattr(self._lock_conn, "closed", 0)
             if not (is_closed is True or (isinstance(is_closed, int) and not isinstance(is_closed, bool) and is_closed > 0)):
                 try:

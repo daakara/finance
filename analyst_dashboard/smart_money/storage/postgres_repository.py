@@ -773,14 +773,60 @@ class PostgresSmartMoneyRepository:
 
     # ── Run Requests (Web -> Worker Queue) ────────────────────────────────────
 
+    def find_active_run_request(
+        self,
+        request_type: str,
+        subject_hash: str,
+        conn: Optional[PgConnection] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Checks for an existing in-flight or pending run request with matching type and subject hash.
+        Prevents duplicate enqueuing.
+        """
+        query = """
+            SELECT * FROM sm_run_requests
+            WHERE request_type = %s
+              AND requested_by_subject_hash = %s
+              AND status IN ('PENDING', 'RUNNING', 'RETRY_ELIGIBLE')
+            ORDER BY created_at DESC
+            LIMIT 1;
+        """
+
+        def _exec(cur):
+            cur.execute(query, (request_type, subject_hash))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        else:
+            with get_connection(dsn=self.dsn) as connection:
+                with connection.cursor(cursor_factory=RealDictCursor) as cur:
+                    return _exec(cur)
+
     def create_run_request(
         self,
         request_type: str,
         subject_hash: str,
         max_attempts: int = 3,
         conn: Optional[PgConnection] = None,
+        idempotency_guard: bool = False,
     ) -> str:
-        """Submits an immutable run request into the queue."""
+        """Submits an immutable run request into the queue.
+        When idempotency_guard=True, returns existing request_id if an active
+        (PENDING, RUNNING, or RETRY_ELIGIBLE) request exists with identical
+        request_type and subject_hash.
+        """
+        if idempotency_guard:
+            active = self.find_active_run_request(request_type, subject_hash, conn=conn)
+            if active:
+                logger.info(
+                    f"Idempotent request reuse: active request {active['request_id']} "
+                    f"found for {request_type}/{subject_hash}."
+                )
+                return str(active["request_id"])
+
         request_id = str(uuid.uuid4())
         query = """
             INSERT INTO sm_run_requests (

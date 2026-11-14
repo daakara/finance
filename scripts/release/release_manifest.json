@@ -1,57 +1,73 @@
 {
-  "release_candidate_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-  "base_anchor_commit": "125bf78095afc3aabec82ceebe8af1730bf56aec",
-  "total_files": 6,
+  "release_candidate_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
+  "base_anchor_commit": "32924dbe247b3aad582f23d68021468c95a56523",
+  "total_files": 8,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-ARCHITECTURE-RSM-002-TACTICAL-SETUPS-LATENCY",
+  "directive": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012",
   "files": {
-    "api/observability/middleware.py": {
+    "Dockerfile": {
       "operation": "M",
-      "originating_pr_number": 275,
-      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-      "governing_requirement": "ARX-RSM-002: latency breakdown and request profiling middleware.",
-      "sha256": "a5874add7e5a91283482929b89151aa4ccab97616ec87df4f7888aadb76ab71c",
-      "size_bytes": 6607
+      "originating_pr_number": 278,
+      "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
+      "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: upgrade PostgreSQL client toolchain to postgresql-client-16 matching Railway PG16.",
+      "sha256": "a74f65fce6748374711ac553d313538f96d5ff56ecd2b75417ac3b6cb014905d",
+      "size_bytes": 1343
     },
-    "api/routes/analytics.py": {
+    "analyst_dashboard/data/sec_edgar_fetcher.py": {
       "operation": "M",
-      "originating_pr_number": 275,
-      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-      "governing_requirement": "ARX-RSM-002: session caching, parallelized analytics factor fetching and batching.",
-      "sha256": "46c7007dd6969f9137a99976664d661be0fa879092e3012eaea759056c3d33e8",
-      "size_bytes": 87792
+      "originating_pr_number": 278,
+      "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
+      "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: add fetch_form4_filings method with rate limiting and budget tracking to SecEdgarFetcher.",
+      "sha256": "b52cee66fa0dbb260505e74f2bec61b273cefa9a195bf12b9e7a4892d0374638",
+      "size_bytes": 42346
     },
-    "docs/governance/ARX_ARCHITECTURE_RSM_001_REPORT.md": {
-      "operation": "A",
-      "originating_pr_number": 275,
-      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-      "governing_requirement": "ARX-RSM-002: architecture latency remediation report and P95 benchmarks.",
-      "sha256": "295d8d12688ebf0d014994630b9cab570c8666f8ed393221b3149a217a517a02",
-      "size_bytes": 12285
-    },
-    "scripts/benchmarks/rsm_capacity_harness.py": {
-      "operation": "A",
-      "originating_pr_number": 275,
-      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-      "governing_requirement": "ARX-RSM-002: capacity and warm latency benchmark harness.",
-      "sha256": "a92e374f0a3260194e0010988623e855fde987a2e4ba21becef4da065c605828",
-      "size_bytes": 4368
-    },
-    "tests/test_tactical_setups_latency_remediation.py": {
+    "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
-      "originating_pr_number": 275,
-      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-      "governing_requirement": "ARX-RSM-002: latency remediation regression tests (15/15 passed).",
-      "sha256": "d86e13fc0d06919e1e4935a0c6df6e370083bc1649825359fd5c0925a4e5e40a",
-      "size_bytes": 11577
+      "originating_pr_number": 278,
+      "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
+      "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: pass preacquired_lock_conn to eliminate self-contention, enforce request budgets, and fail closed in production without SEC fetcher.",
+      "sha256": "45ffa310a1a963843cd5a5b9be962fb9b9d353719e1a8342909947a7c6738fe9",
+      "size_bytes": 74156
+    },
+    "analyst_dashboard/smart_money/storage/backup/pg_client_compat.py": {
+      "operation": "M",
+      "originating_pr_number": 278,
+      "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
+      "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: add PostgresClientMajorMismatchError and strict PG16 major version validation.",
+      "sha256": "e5a7a37aad1b50add75c5440dabfea0acc99943c2fbdcf53fc5d646a1c1425bf",
+      "size_bytes": 4147
+    },
+    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
+      "operation": "M",
+      "originating_pr_number": 278,
+      "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
+      "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: add find_active_run_request and idempotency_guard to prevent duplicate queue submissions.",
+      "sha256": "3862464679e9bf599a090d2f734bb1817bd68dcfd0a221d13b0db76fa8018cf4",
+      "size_bytes": 49590
+    },
+    "analyst_dashboard/smart_money/worker.py": {
+      "operation": "M",
+      "originating_pr_number": 278,
+      "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
+      "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: pass preacquired_lock_conn and sec_fetcher to continuous pipeline and validate backup toolchain in backup pass.",
+      "sha256": "871b5835425417acef29fd289a6305ca341c08f9efa938eb315d044ece1e1d3a",
+      "size_bytes": 44771
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 275,
-      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-      "governing_requirement": "ARX-RSM-002: add PR 275 to APPROVED_PRS allowlist.",
-      "sha256": "a0a0a88983db981b34298275deaa652d346ede8f512a45daf2cbafb8c25b4f69",
-      "size_bytes": 58056
+      "originating_pr_number": 278,
+      "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
+      "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: register approved PR 278 in APPROVED_PRS allowlist.",
+      "sha256": "70b5bdaf40dd5bdbe3dcf77acbcbbd2e729c6ef38699a1db490c51affef76188",
+      "size_bytes": 58061
+    },
+    "tests/test_worker_queue_remediation.py": {
+      "operation": "A",
+      "originating_pr_number": 278,
+      "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
+      "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: regression suite covering request budgets, lock reuse, PG16 validation, SEC fetcher injection, and queue idempotency.",
+      "sha256": "d2966f7b97c4ff45c65f7d3322e761ca998b0a76b4542acb54d09214a0a7b524",
+      "size_bytes": 9124
     }
   },
   "qualification_framework_files": {
@@ -61,8 +77,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "a0a0a88983db981b34298275deaa652d346ede8f512a45daf2cbafb8c25b4f69",
-      "size_bytes": 58056,
+      "sha256": "70b5bdaf40dd5bdbe3dcf77acbcbbd2e729c6ef38699a1db490c51affef76188",
+      "size_bytes": 58061,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -147,6 +163,63 @@
     }
   },
   "historical_releases": [
+    {
+      "release_candidate_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+      "base_anchor_commit": "125bf78095afc3aabec82ceebe8af1730bf56aec",
+      "total_files": 6,
+      "qualification_policy_version": "2.2.0-D074A4",
+      "directive": "ARX-ARCHITECTURE-RSM-002-TACTICAL-SETUPS-LATENCY",
+      "files": {
+        "api/observability/middleware.py": {
+          "operation": "M",
+          "originating_pr_number": 275,
+          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+          "governing_requirement": "ARX-RSM-002: latency breakdown and request profiling middleware.",
+          "sha256": "a5874add7e5a91283482929b89151aa4ccab97616ec87df4f7888aadb76ab71c",
+          "size_bytes": 6607
+        },
+        "api/routes/analytics.py": {
+          "operation": "M",
+          "originating_pr_number": 275,
+          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+          "governing_requirement": "ARX-RSM-002: session caching, parallelized analytics factor fetching and batching.",
+          "sha256": "46c7007dd6969f9137a99976664d661be0fa879092e3012eaea759056c3d33e8",
+          "size_bytes": 87792
+        },
+        "docs/governance/ARX_ARCHITECTURE_RSM_001_REPORT.md": {
+          "operation": "A",
+          "originating_pr_number": 275,
+          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+          "governing_requirement": "ARX-RSM-002: architecture latency remediation report and P95 benchmarks.",
+          "sha256": "295d8d12688ebf0d014994630b9cab570c8666f8ed393221b3149a217a517a02",
+          "size_bytes": 12285
+        },
+        "scripts/benchmarks/rsm_capacity_harness.py": {
+          "operation": "A",
+          "originating_pr_number": 275,
+          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+          "governing_requirement": "ARX-RSM-002: capacity and warm latency benchmark harness.",
+          "sha256": "a92e374f0a3260194e0010988623e855fde987a2e4ba21becef4da065c605828",
+          "size_bytes": 4368
+        },
+        "tests/test_tactical_setups_latency_remediation.py": {
+          "operation": "M",
+          "originating_pr_number": 275,
+          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+          "governing_requirement": "ARX-RSM-002: latency remediation regression tests (15/15 passed).",
+          "sha256": "d86e13fc0d06919e1e4935a0c6df6e370083bc1649825359fd5c0925a4e5e40a",
+          "size_bytes": 11577
+        },
+        "scripts/release/rq02_diff_integrity.py": {
+          "operation": "M",
+          "originating_pr_number": 275,
+          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+          "governing_requirement": "ARX-RSM-002: add PR 275 to APPROVED_PRS allowlist.",
+          "sha256": "a0a0a88983db981b34298275deaa652d346ede8f512a45daf2cbafb8c25b4f69",
+          "size_bytes": 58056
+        }
+      }
+    },
     {
       "release_candidate_commit": "d3e028fa790c9716acc27102ded59b6793f166ec",
       "base_anchor_commit": "b82e5e5309d16c94147469cabc312508d3f94893",

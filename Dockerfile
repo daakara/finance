@@ -7,11 +7,16 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# Install system build dependencies and runtime tools
+# Install system build dependencies, PostgreSQL 16 client, and runtime tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    postgresql-client \
+    gnupg \
+    lsb-release \
+    && echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-16 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

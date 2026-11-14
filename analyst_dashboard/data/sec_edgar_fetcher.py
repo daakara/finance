@@ -861,3 +861,75 @@ class SecEdgarFetcher:
         """Get formatted list of recent regulatory filings (backwards compatible)."""
         env = self.get_recent_filings_envelope(symbol, form_types=form_types)
         return env.get("items") or []
+
+    def fetch_form4_filings(self, ticker: str, cik: str, limit: int = 1) -> List[Dict[str, Any]]:
+        """
+        Fetches the latest Form 4 filing(s) for a governed ticker from SEC EDGAR.
+        Returns a list of raw filing dictionaries ready for repository persistence.
+        """
+        import hashlib
+        from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
+
+        env = self.get_company_submissions_envelope(ticker)
+        if env.get("status") not in ("SUCCESS", "AVAILABLE_WITH_RESULTS"):
+            return []
+
+        sub_data = env.get("data") or {}
+        recent = sub_data.get("filings", {}).get("recent", {})
+        forms = recent.get("form", [])
+        accessions = recent.get("accessionNumber", [])
+        filing_dates = recent.get("filingDate", [])
+        acceptance_dts = recent.get("acceptanceDateTime", [])
+        primary_docs = recent.get("primaryDocument", [])
+
+        results: List[Dict[str, Any]] = []
+        cik_int = int(cik) if str(cik).isdigit() else 0
+        company_name = sub_data.get("name", ticker)
+
+        for idx, f_type in enumerate(forms):
+            if f_type in ("4", "4/A"):
+                acc_num = accessions[idx]
+                clean_acc = acc_num.replace("-", "")
+                f_date = filing_dates[idx] if idx < len(filing_dates) else ""
+                acc_dt = acceptance_dts[idx] if idx < len(acceptance_dts) else ""
+                p_doc = primary_docs[idx] if idx < len(primary_docs) else ""
+                clean_p_doc = p_doc.split("/")[-1] if p_doc else ""
+
+                xml_url = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{clean_p_doc}"
+                raw_xml = ""
+                source_url = xml_url
+                try:
+                    doc_resp = self._get(xml_url)
+                    if doc_resp.status_code == 200 and ("<XML" in doc_resp.text.upper() or "<OWNERSHIPDOCUMENT" in doc_resp.text.upper()):
+                        raw_xml = doc_resp.text
+                except Exception:
+                    raw_xml = ""
+
+                if not raw_xml:
+                    txt_url = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt"
+                    try:
+                        txt_resp = self._get(txt_url)
+                        if txt_resp.status_code == 200:
+                            raw_xml = Form4XmlParser.extract_xml_from_submission_text(txt_resp.text)
+                            source_url = txt_url
+                    except Exception:
+                        raw_xml = ""
+
+                if raw_xml:
+                    content_hash = hashlib.sha256(raw_xml.encode("utf-8")).hexdigest()
+                    results.append({
+                        "accession_number": acc_num,
+                        "cik": cik,
+                        "ticker": ticker,
+                        "company_name": company_name,
+                        "filing_date": f_date,
+                        "accepted_datetime": acc_dt,
+                        "xml_content": raw_xml,
+                        "content_hash": content_hash,
+                        "form_type": f_type,
+                        "primary_doc_url": source_url,
+                        "source_url": source_url,
+                    })
+                    if len(results) >= limit:
+                        break
+        return results
