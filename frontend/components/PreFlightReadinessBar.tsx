@@ -3,6 +3,7 @@
 import { createPortal } from "react-dom";
 import React, { useState } from "react";
 import { ShieldCheck } from "lucide-react";
+import { useVernacularMode } from "@/lib/useVernacularMode";
 import {
   evaluatePreFlightChecks,
   PreFlightChecklistInputs,
@@ -23,7 +24,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
   const { summaryTarget = null, priceContext, onOpenModal, className = "", isDrawerExpanded: controlledDrawerExpanded, onToggleDrawer, ...evalInputs } = props;
   const [internalDrawerExpanded, setInternalDrawerExpanded] = useState<boolean>(false);
   const isDrawerExpanded = controlledDrawerExpanded !== undefined ? controlledDrawerExpanded : internalDrawerExpanded;
-  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+  const { mode: vernacularMode, isPlain } = useVernacularMode();
 
   const handleToggleDrawer = () => {
     if (onToggleDrawer) {
@@ -32,20 +33,6 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
       setInternalDrawerExpanded((prev) => !prev);
     }
   };
-
-  React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
-      if (saved) setVernacularMode(saved);
-    } catch {}
-
-    const handleVernacular = (e: Event) => {
-      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
-      if (custom.detail) setVernacularMode(custom.detail);
-    };
-    window.addEventListener("finance:vernacular-change", handleVernacular);
-    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
-  }, []);
 
   const evalResult: PreFlightEvaluationResult = evaluatePreFlightChecks(evalInputs, vernacularMode);
 
@@ -62,8 +49,6 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
     evidenceMeta,
     isSimulatedClearance,
   } = evalResult;
-
-  const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
   const blockerSummary = (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-2 text-xs">

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { AssetFactorScores, MacroDifficultyRating, ExpectedReturnForecast } from "../lib/api";
+import { useVernacularMode } from "@/lib/useVernacularMode";
+import { JargonTip } from "@/components/ui/JargonTip";
 
 interface AssetFactorRadarProps {
   symbol: string;
@@ -11,24 +12,7 @@ interface AssetFactorRadarProps {
 }
 
 export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty, expectedReturn }: AssetFactorRadarProps) {
-  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
-      if (saved) setVernacularMode(saved);
-    } catch {}
-
-    const handleVernacular = (e: Event) => {
-      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
-      if (custom.detail) setVernacularMode(custom.detail);
-    };
-
-    window.addEventListener("finance:vernacular-change", handleVernacular);
-    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
-  }, []);
-
-  const isPlain = vernacularMode === "PLAIN_ENGLISH";
+  const { mode: vernacularMode, isPlain } = useVernacularMode();
 
   if (!factorScores) {
     return (
@@ -70,7 +54,9 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
             </h3>
             {scores.piotroskiFScore && (
               <span className="text-[10px] bg-[#1b2434] text-cyan-300 border border-cyan-800/60 px-2 py-0.5 rounded">
-                {isPlain ? `BS Detector: ${scores.piotroskiFScore}/9` : `Piotroski: ${scores.piotroskiFScore}/9`}
+                <JargonTip term="PIOTROSKI">
+                  {isPlain ? `BS Detector: ${scores.piotroskiFScore}/9` : `Piotroski: ${scores.piotroskiFScore}/9`}
+                </JargonTip>
               </span>
             )}
           </div>
