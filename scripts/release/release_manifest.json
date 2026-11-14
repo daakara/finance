@@ -1,57 +1,41 @@
 {
-  "release_candidate_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
-  "base_anchor_commit": "6ea232838a53e482753d5705ba533ad9ce041e44",
-  "total_files": 6,
+  "release_candidate_commit": "9ef307a3ffc5e53a0e87f3965c0a448d4bac9d45",
+  "base_anchor_commit": "41bd702498f4f73dbd74b9e8b3170b80d058dd0b",
+  "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-DOCS-BACKLOG-RECONCILIATION-024",
+  "directive": "ARX-BRAIN-SPRINT-PLANNING-026",
   "files": {
     "README.md": {
       "operation": "M",
-      "originating_pr_number": 281,
-      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
-      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: synchronize operational reconciliation block with baseline 6ea2328 and canonical holds matrix.",
-      "sha256": "8e55c385cdedbf0e140184df9b235f790cdb944465f5e43edd53251cc073d07b",
-      "size_bytes": 15877
-    },
-    "docs/ARX_STATUS_ADDENDUM_2026_11_07.md": {
-      "operation": "M",
-      "originating_pr_number": 281,
-      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
-      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: add pointer note to authoritative 2026-11-14 status addendum.",
-      "sha256": "50c8381c1a88f379e2f1e7a9ab63ceabe169640991fe579198f988aa7e064c8a",
-      "size_bytes": 5037
-    },
-    "docs/ARX_STATUS_ADDENDUM_2026_11_14.md": {
-      "operation": "A",
-      "originating_pr_number": 281,
-      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
-      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: integrated status addendum across all 5 ARX workstreams.",
-      "sha256": "15b61b04f01ca28d5bf7ffda3013aa6bd8f923aaefdd2e0efe87ffef481fab23",
-      "size_bytes": 11943
-    },
-    "docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md": {
-      "operation": "A",
-      "originating_pr_number": 281,
-      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
-      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: authoritative operational holds register covering all 6 fail-closed platform holds.",
-      "sha256": "d284a2b43dc00b8d45f296512cee4879cb5e8dffcba28e2e178547b1f90b1234",
-      "size_bytes": 8583
+      "originating_pr_number": 283,
+      "originating_commit": "9ef307a3ffc5e53a0e87f3965c0a448d4bac9d45",
+      "governing_requirement": "ARX-BRAIN-SPRINT-PLANNING-026: update current status and documentation portal with canonical sprint roadmap.",
+      "sha256": "10acd9175997714e1beeafa0b7edd233177bd81bf5ada7be1810b49594c0ecf5",
+      "size_bytes": 16387
     },
     "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md": {
+      "operation": "M",
+      "originating_pr_number": 283,
+      "originating_commit": "9ef307a3ffc5e53a0e87f3965c0a448d4bac9d45",
+      "governing_requirement": "ARX-BRAIN-SPRINT-PLANNING-026: reference canonical sprint roadmap and reconcile PR inventory to 22 open PRs.",
+      "sha256": "295b0249eba8891c22db72468ab84862b79623d57ffbd53e24328a9d034448f1",
+      "size_bytes": 17514
+    },
+    "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md": {
       "operation": "A",
-      "originating_pr_number": 281,
-      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
-      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: authoritative active work register reconciling all 23 issues and 21 PRs.",
-      "sha256": "23f7020684104d9f042cba038a14a10e54c6728d8a9adbc1fbe6f58b4dca8f7f",
-      "size_bytes": 16781
+      "originating_pr_number": 283,
+      "originating_commit": "9ef307a3ffc5e53a0e87f3965c0a448d4bac9d45",
+      "governing_requirement": "ARX-BRAIN-SPRINT-PLANNING-026: canonical six-sprint execution roadmap, capacity model, and Sprint 0 packet.",
+      "sha256": "b3b81f4460f655405213913937e8d9656d4aa497cb457c6f825cfdf15388dd58",
+      "size_bytes": 28618
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 281,
-      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
-      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: register approved PR 281 in APPROVED_PRS allowlist.",
-      "sha256": "8fa457bf6a10e656b8156e741b0300a3bcd7f5fba1b2ab1d5c0406a5d4b3b134",
-      "size_bytes": 58076
+      "originating_pr_number": 283,
+      "originating_commit": "9ef307a3ffc5e53a0e87f3965c0a448d4bac9d45",
+      "governing_requirement": "ARX-BRAIN-SPRINT-PLANNING-026: register approved PR 283 in APPROVED_PRS allowlist.",
+      "sha256": "faf21bb415883c21b9b7f15d935d26235bb1a7d00014bffa36034526d061e2a6",
+      "size_bytes": 58081
     }
   },
   "qualification_framework_files": {
@@ -61,8 +45,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "8fa457bf6a10e656b8156e741b0300a3bcd7f5fba1b2ab1d5c0406a5d4b3b134",
-      "size_bytes": 58076,
+      "sha256": "faf21bb415883c21b9b7f15d935d26235bb1a7d00014bffa36034526d061e2a6",
+      "size_bytes": 58081,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {

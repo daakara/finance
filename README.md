@@ -22,8 +22,9 @@ A professional-grade quantitative intelligence platform featuring real-time mark
 
 For the current authoritative operational status across all five ARX engineering workstreams, see:
 
+- [Canonical sprint roadmap (2026-11-14)](docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md) — six-sprint backlog prioritization (Sprint 0–5), multi-perspective Project Brain architecture, capacity allocation, and Sprint 0 execution packet.
 - [Integrated status addendum — 2026-11-14](docs/ARX_STATUS_ADDENDUM_2026_11_14.md) — comprehensive reconciliation across Smart Money, Radar, Confluence, Frontend UX, and Infrastructure.
-- [Active work register — 2026-11-14](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md) — complete inventory, deduplication, and status of all 23 open issues and 21 open PRs.
+- [Active work register — 2026-11-14](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md) — complete inventory, deduplication, and status of all 19 open issues and 22 open PRs.
 - [Operational holds register](docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md) — authoritative matrix of the 6 active fail-closed platform holds, enforcement, and exit criteria.
 - [Radar investment research direction](docs/architecture/ARX_RADAR_INVESTMENT_RESEARCH_DIRECTION_2026_11_07.md) — product scope, existing rule owners, Stage 2/VCP separation, data quality, and wave sequencing.
 
@@ -37,8 +38,9 @@ The ARX Terminal documentation estate is consolidated into a canonical hierarchy
 
 | Dimension | Canonical Documentation Portal | Primary Focus & Governance Scope |
 | :--- | :--- | :--- |
+| **Canonical Sprint Roadmap (2026-11-14)** | [`ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md`](docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md) | Six-sprint execution plan (Sprint 0–5), capacity model, dependency graph, and Sprint 0 ready packet. |
 | **Operational Holds Register** | [`ARX_OPERATIONAL_HOLDS_REGISTER.md`](docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md) | Authoritative matrix of 6 active fail-closed platform holds, live enforcement, and exit criteria. |
-| **Active Work Register (2026-11-14)** | [`ARX_ACTIVE_WORK_REGISTER_2026_11_14.md`](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md) | Authoritative inventory, deduplication, and status across all 23 open issues and 21 open PRs. |
+| **Active Work Register (2026-11-14)** | [`ARX_ACTIVE_WORK_REGISTER_2026_11_14.md`](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md) | Authoritative inventory, deduplication, and status across all 19 open issues and 22 open PRs. |
 | **Integrated Status Addendum (2026-11-14)** | [`ARX_STATUS_ADDENDUM_2026_11_14.md`](docs/ARX_STATUS_ADDENDUM_2026_11_14.md) | Single source of operational truth across Smart Money, Radar, Confluence, UX, and DR. |
 | **Integrated Project Status (2026-10-29)** | [`ARX_MASTER_PROJECT_STATUS_2026_10_29.md`](docs/ARX_MASTER_PROJECT_STATUS_2026_10_29.md) | Historical master status across research, UX, engines, engineering, and hosting status. |
 | **Documentation Master Inventory** | [`ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md`](docs/planning/ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md) | Comprehensive audit and 8-tier authority classification of all 1,478 repository documents. |
