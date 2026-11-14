@@ -1,33 +1,65 @@
 {
-  "release_candidate_commit": "3f6eade13051a0f76d8b6d60aab66fcbceef3422",
-  "base_anchor_commit": "c5a134de456485daec6a18aaf5b1bfd2c5f6908c",
-  "total_files": 3,
+  "release_candidate_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
+  "base_anchor_commit": "d7ef1ed3f728e13320d8ad7e527dedcb65573f1d",
+  "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-BRAIN-SPRINT-026",
+  "directive": "ARX-SPRINT-REPRIORITIZATION-028",
   "files": {
     "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md": {
       "operation": "M",
-      "originating_pr_number": 284,
-      "originating_commit": "3f6eade13051a0f76d8b6d60aab66fcbceef3422",
-      "governing_requirement": "ARX-BRAIN-SPRINT-026: update active work register to reflect PR #282 merged release (21 open PRs).",
-      "sha256": "a3b400db765a4b8dd9fb27306cee1c6f25c69ba315216eabaf707dc764ab4c22",
-      "size_bytes": 17721
+      "originating_pr_number": 285,
+      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
+      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: update active work register to reflect Phase A3 deferral and Issue #230 advancement.",
+      "sha256": "5619feef2b41ca2aee21738ed5289123281cc0f4072703d5d0d4ec75626c2c5f",
+      "size_bytes": 17929
     },
     "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md": {
       "operation": "M",
-      "originating_pr_number": 284,
-      "originating_commit": "3f6eade13051a0f76d8b6d60aab66fcbceef3422",
-      "governing_requirement": "ARX-BRAIN-SPRINT-026: reconcile roadmap to baseline c5a134de with PR #282 marked delivered and non-duplicative backlog.",
-      "sha256": "2b0d8c88fc68e5513fadb4c17674a4a1fdf9b2b53d272e034b344e589eee9db4",
-      "size_bytes": 32657
+      "originating_pr_number": 285,
+      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
+      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: update canonical sprint roadmap to defer Phase A3 human study and advance Issue #230.",
+      "sha256": "aadf98cdebb70ce7f1c30b4c8b6b662c5dcb01445178005849362311bae9ff65",
+      "size_bytes": 28702
+    },
+    "frontend/app/radar/page.tsx": {
+      "operation": "M",
+      "originating_pr_number": 285,
+      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
+      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: render deduplicated candidate rationale and contextual Learn Hub deep-links across hero, desktop table, and mobile cards.",
+      "sha256": "b8a8f91c5950a04e13fcfaaa2f256d7adb400f107ed2af712faddc9593906480",
+      "size_bytes": 137989
+    },
+    "frontend/lib/radarPresentation.ts": {
+      "operation": "M",
+      "originating_pr_number": 285,
+      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
+      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: implement resolveRadarCandidateRationale for asset-specific narrative formatting and Learn Hub deep-links.",
+      "sha256": "53a5325d0bf6a0e82ea4ffdb8be11728559db3f1224d80d5a0706d0f44d31306",
+      "size_bytes": 11573
+    },
+    "frontend/package.json": {
+      "operation": "M",
+      "originating_pr_number": 285,
+      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
+      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: integrate radarCandidateNarrativeAndLearnLinks.test.ts into test:arch pipeline.",
+      "sha256": "ebebe6db30c7e72cabab0f95630ae33f9c57407f02ba0097fb9e06f0d847fe38",
+      "size_bytes": 3725
+    },
+    "frontend/tests/radarCandidateNarrativeAndLearnLinks.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 285,
+      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
+      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: unit tests for candidate rationale deduplication, contextual Learn Hub links, and safeguard invariants.",
+      "sha256": "7e2108da191ff7f46fddf9d9c917571e0060037d83422f9d696fb5d16d7bff28",
+      "size_bytes": 7542
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 284,
-      "originating_commit": "3f6eade13051a0f76d8b6d60aab66fcbceef3422",
-      "governing_requirement": "ARX-BRAIN-SPRINT-026: register approved PR 284 in APPROVED_PRS allowlist.",
-      "sha256": "6c204c6e6397f4d5cd12114bfdcd234dda15f9d7a0e272beeb71164b09149c39",
-      "size_bytes": 58091
+      "originating_pr_number": 285,
+      "originating_commit": "bf78f1da6927cc072d09bd9d86a1fc632b4e8b67",
+      "governing_requirement": "ARX-SPRINT-REPRIORITIZATION-028: register approved PR 285 in APPROVED_PRS allowlist.",
+      "sha256": "522c71fe381690d193967bdad6914d9820698e84eeb623cf1b8ad947bab2db04",
+      "size_bytes": 58096
     }
   },
   "qualification_framework_files": {
@@ -37,8 +69,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "6c204c6e6397f4d5cd12114bfdcd234dda15f9d7a0e272beeb71164b09149c39",
-      "size_bytes": 58091,
+      "sha256": "522c71fe381690d193967bdad6914d9820698e84eeb623cf1b8ad947bab2db04",
+      "size_bytes": 58096,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -121,638 +153,5 @@
       "size_bytes": 12373,
       "description": "Release qualification module: test_rq11_adversarial_controls.py"
     }
-  },
-  "historical_releases": [
-    {
-      "release_candidate_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
-      "base_anchor_commit": "32924dbe247b3aad582f23d68021468c95a56523",
-      "total_files": 8,
-      "qualification_policy_version": "2.2.0-D074A4",
-      "directive": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012",
-      "files": {
-        "Dockerfile": {
-          "operation": "M",
-          "originating_pr_number": 278,
-          "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
-          "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: upgrade PostgreSQL client toolchain to postgresql-client-16 matching Railway PG16.",
-          "sha256": "a74f65fce6748374711ac553d313538f96d5ff56ecd2b75417ac3b6cb014905d",
-          "size_bytes": 1343
-        },
-        "analyst_dashboard/data/sec_edgar_fetcher.py": {
-          "operation": "M",
-          "originating_pr_number": 278,
-          "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
-          "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: add fetch_form4_filings method with rate limiting and budget tracking to SecEdgarFetcher.",
-          "sha256": "b52cee66fa0dbb260505e74f2bec61b273cefa9a195bf12b9e7a4892d0374638",
-          "size_bytes": 42346
-        },
-        "analyst_dashboard/smart_money/continuous_pipeline.py": {
-          "operation": "M",
-          "originating_pr_number": 278,
-          "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
-          "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: pass preacquired_lock_conn to eliminate self-contention, enforce request budgets, and fail closed in production without SEC fetcher.",
-          "sha256": "45ffa310a1a963843cd5a5b9be962fb9b9d353719e1a8342909947a7c6738fe9",
-          "size_bytes": 74156
-        },
-        "analyst_dashboard/smart_money/storage/backup/pg_client_compat.py": {
-          "operation": "M",
-          "originating_pr_number": 278,
-          "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
-          "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: add PostgresClientMajorMismatchError and strict PG16 major version validation.",
-          "sha256": "e5a7a37aad1b50add75c5440dabfea0acc99943c2fbdcf53fc5d646a1c1425bf",
-          "size_bytes": 4147
-        },
-        "analyst_dashboard/smart_money/storage/postgres_repository.py": {
-          "operation": "M",
-          "originating_pr_number": 278,
-          "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
-          "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: add find_active_run_request and idempotency_guard to prevent duplicate queue submissions.",
-          "sha256": "3862464679e9bf599a090d2f734bb1817bd68dcfd0a221d13b0db76fa8018cf4",
-          "size_bytes": 49590
-        },
-        "analyst_dashboard/smart_money/worker.py": {
-          "operation": "M",
-          "originating_pr_number": 278,
-          "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
-          "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: pass preacquired_lock_conn and sec_fetcher to continuous pipeline and validate backup toolchain in backup pass.",
-          "sha256": "871b5835425417acef29fd289a6305ca341c08f9efa938eb315d044ece1e1d3a",
-          "size_bytes": 44771
-        },
-        "scripts/release/rq02_diff_integrity.py": {
-          "operation": "M",
-          "originating_pr_number": 278,
-          "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
-          "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: register approved PR 278 in APPROVED_PRS allowlist.",
-          "sha256": "70b5bdaf40dd5bdbe3dcf77acbcbbd2e729c6ef38699a1db490c51affef76188",
-          "size_bytes": 58061
-        },
-        "tests/test_worker_queue_remediation.py": {
-          "operation": "A",
-          "originating_pr_number": 278,
-          "originating_commit": "d3ad7df847a59f25a5a8d9a0f59877f7da76fd52",
-          "governing_requirement": "ARX-SM-ACT-020-QUEUE-REMEDIATION-012: regression suite covering request budgets, lock reuse, PG16 validation, SEC fetcher injection, and queue idempotency.",
-          "sha256": "d2966f7b97c4ff45c65f7d3322e761ca998b0a76b4542acb54d09214a0a7b524",
-          "size_bytes": 9124
-        }
-      }
-    },
-    {
-      "release_candidate_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-      "base_anchor_commit": "125bf78095afc3aabec82ceebe8af1730bf56aec",
-      "total_files": 6,
-      "qualification_policy_version": "2.2.0-D074A4",
-      "directive": "ARX-ARCHITECTURE-RSM-002-TACTICAL-SETUPS-LATENCY",
-      "files": {
-        "api/observability/middleware.py": {
-          "operation": "M",
-          "originating_pr_number": 275,
-          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-          "governing_requirement": "ARX-RSM-002: latency breakdown and request profiling middleware.",
-          "sha256": "a5874add7e5a91283482929b89151aa4ccab97616ec87df4f7888aadb76ab71c",
-          "size_bytes": 6607
-        },
-        "api/routes/analytics.py": {
-          "operation": "M",
-          "originating_pr_number": 275,
-          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-          "governing_requirement": "ARX-RSM-002: session caching, parallelized analytics factor fetching and batching.",
-          "sha256": "46c7007dd6969f9137a99976664d661be0fa879092e3012eaea759056c3d33e8",
-          "size_bytes": 87792
-        },
-        "docs/governance/ARX_ARCHITECTURE_RSM_001_REPORT.md": {
-          "operation": "A",
-          "originating_pr_number": 275,
-          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-          "governing_requirement": "ARX-RSM-002: architecture latency remediation report and P95 benchmarks.",
-          "sha256": "295d8d12688ebf0d014994630b9cab570c8666f8ed393221b3149a217a517a02",
-          "size_bytes": 12285
-        },
-        "scripts/benchmarks/rsm_capacity_harness.py": {
-          "operation": "A",
-          "originating_pr_number": 275,
-          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-          "governing_requirement": "ARX-RSM-002: capacity and warm latency benchmark harness.",
-          "sha256": "a92e374f0a3260194e0010988623e855fde987a2e4ba21becef4da065c605828",
-          "size_bytes": 4368
-        },
-        "tests/test_tactical_setups_latency_remediation.py": {
-          "operation": "M",
-          "originating_pr_number": 275,
-          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-          "governing_requirement": "ARX-RSM-002: latency remediation regression tests (15/15 passed).",
-          "sha256": "d86e13fc0d06919e1e4935a0c6df6e370083bc1649825359fd5c0925a4e5e40a",
-          "size_bytes": 11577
-        },
-        "scripts/release/rq02_diff_integrity.py": {
-          "operation": "M",
-          "originating_pr_number": 275,
-          "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
-          "governing_requirement": "ARX-RSM-002: add PR 275 to APPROVED_PRS allowlist.",
-          "sha256": "a0a0a88983db981b34298275deaa652d346ede8f512a45daf2cbafb8c25b4f69",
-          "size_bytes": 58056
-        }
-      }
-    },
-    {
-      "release_candidate_commit": "d3e028fa790c9716acc27102ded59b6793f166ec",
-      "base_anchor_commit": "b82e5e5309d16c94147469cabc312508d3f94893",
-      "total_files": 16,
-      "qualification_policy_version": "2.2.0-D074A4",
-      "directive": "ARX-CONFLUENCE-INTEGRITY-002",
-      "files": {
-        "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "d3e028fa790c9716acc27102ded59b6793f166ec",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: engine checksums updated with true candidate hashes.",
-          "sha256": "c94f1889febbb568ead6997bd6ffe3cd15cc1be0485bbe7315d8c97e2caa3f9d",
-          "size_bytes": 1517
-        },
-        "analyst_dashboard/analyzers/confluence_engine.py": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "d3e028fa790c9716acc27102ded59b6793f166ec",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: coverage caps, score separation, verified pillar gating.",
-          "sha256": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
-          "size_bytes": 34796
-        },
-        "analyst_dashboard/analyzers/decision_hierarchy.py": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: fail-closed EVIDENCE_INCOMPLETE on synthetic/unverified fundamentals.",
-          "sha256": "b0d41de56c34a46000496e2cf80afdfd76a3ff19ffc18fbdd80f430050c375b3",
-          "size_bytes": 17453
-        },
-        "analyst_dashboard/analyzers/optimal_execution.py": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: removed max(1.85, rr) clamping, added INVALID_GEOMETRY validation.",
-          "sha256": "df2dc6050bf6fe91cae442e1872a3eccc40520b990f4efb4af63f79311a31dec",
-          "size_bytes": 48949
-        },
-        "analyst_dashboard/provenance/__init__.py": {
-          "operation": "A",
-          "originating_pr_number": 272,
-          "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: canonical evidence provenance package initialization.",
-          "sha256": "28d60de4dfda0831d1cb818c1639f102177ebf3cc9a9679e1ab6e03b0668ee3b",
-          "size_bytes": 319
-        },
-        "analyst_dashboard/provenance/evidence_contract.py": {
-          "operation": "A",
-          "originating_pr_number": 272,
-          "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: canonical evidence provenance contract (ARX-PROV-1.0).",
-          "sha256": "de621b02d48b000d0dd84e76bbfd8e19726e2daea2eee39b1c2841b1cd1a4693",
-          "size_bytes": 12802
-        },
-        "api/routes/analytics.py": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: evaluate factor provenance, pass verified pillars, surface audit telemetry.",
-          "sha256": "233fc2b89a0b5653ac884fef60b9979428950cddc77c66d4270c8d3ee56d0af6",
-          "size_bytes": 81968
-        },
-        "docs/governance/ARX_CONFLUENCE_INTEGRITY_002_REPORT.md": {
-          "operation": "A",
-          "originating_pr_number": 272,
-          "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: release qualification and acceptance report.",
-          "sha256": "c31a04665176487557c48f0c1fa8f78692ac72eb9304f9596cff14dc26449cde",
-          "size_bytes": 9680
-        },
-        "frontend/components/WeeklyConfluenceSpotlight.tsx": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: verified empty state for 0 qualifying setups, pillar count badge.",
-          "sha256": "abe14b2f9e847e9fd79280acbb1c1d45834d83b14fcd5fd3acf2e9fe8c959178",
-          "size_bytes": 50944
-        },
-        "frontend/lib/simulation/governorSizingEngine.ts": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: updated TradeSetupSpec interface with provenance fields.",
-          "sha256": "4d53f201629f24f136a48eac54b33c0b2bf121ba055846732a00d45ae69ccd29",
-          "size_bytes": 17636
-        },
-        "scripts/release/rq02_diff_integrity.py": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "5edd2b19e6952d2f138b4c1829fde19657136107",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: add PR 272 to APPROVED_PRS allowlist.",
-          "sha256": "7273c24ea17382e3337a082b1421fde6008513ad2ab0bdb6adbde4f96df9faf8",
-          "size_bytes": 58041
-        },
-        "tests/test_confluence_engine.py": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: updated tests with authentic 4-pillar technical/macro data.",
-          "sha256": "aa2e9f1221270549aa48265146a52d817aadf96e4c9ada83e5e169f35e01e907",
-          "size_bytes": 5528
-        },
-        "tests/test_confluence_integrity_002.py": {
-          "operation": "A",
-          "originating_pr_number": 272,
-          "originating_commit": "d3e028fa790c9716acc27102ded59b6793f166ec",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: authoritative acceptance test suite (AC-01..15).",
-          "sha256": "2b6240c721255478cb2401bf763daf559144f71fc4931dcccfdca2b4d6a38675",
-          "size_bytes": 24743
-        },
-        "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "2394935c6f930016f34b38867e8d154d5c54877c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: adversarial Spotlight selection and price-authority regression",
-          "sha256": "124f69ebb4d86b0d5f60417c8bb0e2ec29e70d3206f2a9d2d2b4aab87e4ee844",
-          "size_bytes": 17758
-        },
-        "tests/test_directive_057_remediation.py": {
-          "operation": "M",
-          "originating_pr_number": 272,
-          "originating_commit": "359172300c0554c19c5a978a21fb04fbd37879b1",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: transition historical Directive-057 fixtures to verified provenance and require actual frontend Spotlight Vitest selection suite.",
-          "sha256": "3b9514d235f2ac1462e904444912c0bea616404de2d521a26d87a6ea7db5e348",
-          "size_bytes": 16334
-        },
-        "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts": {
-          "operation": "A",
-          "originating_pr_number": 272,
-          "originating_commit": "f7e4b97effbf414922b9862b3004023a88f55aa0",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-002: configuration-discovered Vitest adversarial Spotlight 0/1/2/N selector and evidence gating.",
-          "sha256": "9ab57fe7d09c9b4ec44165d9a5d464e418cb98abf0578c177cc49b3853b84147",
-          "size_bytes": 2602
-        }
-      }
-    },
-    {
-      "release_candidate_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
-      "base_anchor_commit": "5f9f17ac284a844e25abf39325a6a7c6a78f37ad",
-      "total_files": 3,
-      "qualification_policy_version": "2.2.0-D074A4",
-      "directive": "ARX-SM-ACT-020-SCHEDULED-BACKUP-ENTRYPOINT-OWNER-ADMITTED",
-      "files": {
-        "analyst_dashboard/smart_money/storage/backup/backup_scheduled.py": {
-          "operation": "A",
-          "originating_pr_number": 261,
-          "originating_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
-          "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/261#issuecomment-6781775816",
-          "sha256": "bdf74b3324aeef4d182f817c4feb5bbee0e8536b6467f0740df1cb1b150c093c",
-          "size_bytes": 7109
-        },
-        "tests/test_sm_act_020_backup_scheduled_runner.py": {
-          "operation": "A",
-          "originating_pr_number": 261,
-          "originating_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
-          "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/261#issuecomment-6781775816",
-          "sha256": "e8c036599e989368cdac4dafb3848758232591840ffe640a56f8386b1e923322",
-          "size_bytes": 14018
-        },
-        "docs/reports/SM_ACT_020_SCHEDULED_BACKUP_ENTRYPOINT_REVIEW.md": {
-          "operation": "A",
-          "originating_pr_number": 261,
-          "originating_commit": "b58fb5b304d8e0e0f7cc293148e519c65d34b678",
-          "governing_requirement": "SM-ACT-020: dedicated scheduled backup entry point; PR #261 review candidate. Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/261#issuecomment-6781775816",
-          "sha256": "37b7fa1aa266c60fd1c5940f6c85d3e0e37047e0a54c240a58f8a95cc8ff452d",
-          "size_bytes": 2539
-        }
-      }
-    },
-    {
-      "release_candidate_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-      "base_anchor_commit": "428fd636062d96ab45651dc51233648ccf31d862",
-      "total_files": 22,
-      "qualification_policy_version": "2.2.0-D074A4",
-      "directive": "ARX-SPRINT-UI-DISTILL-015-UX-OWNER-ADMITTED",
-      "files": {
-        "docs/ux/ARX_SPRINT_UI_DISTILL_015_PLAN.md": {
-          "operation": "A",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "c336e3e9d71b28ddb63fd78ca2fe002e78eb0bf539dc78bcb84fe9a82383887d",
-          "size_bytes": 15653
-        },
-        "frontend/app/page.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "a1cc4b11445ef2b1642d6b53cf149f200bcd7b9dbe0fcb8cbc2866f8b0aefae3",
-          "size_bytes": 45873
-        },
-        "frontend/app/portfolio/page.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "2a4db6ef4f60c31087f8f85949e9e377a6562a6e410554a25deb6793008fc679",
-          "size_bytes": 77211
-        },
-        "frontend/app/radar/page.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "e1f5e9bc2e70f55db8ab9d75ec49ead771d6624eee8cfa3cc4056ffb33dbbfee",
-          "size_bytes": 119308
-        },
-        "frontend/app/setups/page.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "5e8fcbf342fd7bf697fa11c58f827d67246acc4f3610feeba5aa14b85f892f1f",
-          "size_bytes": 61547
-        },
-        "frontend/components/AdaptiveTerminal.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "4e7d50d2517c0087c2970615d660a23fd4195748f81f4c337da06f7efca44cbc",
-          "size_bytes": 13033
-        },
-        "frontend/components/DecisionReadinessCard.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "20b09c8608e736c81e23ca4e27fd158b141af0cf8dbfaa28628c8d51d268dcb3",
-          "size_bytes": 12028
-        },
-        "frontend/components/IntentHero.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "079caf2cb9314596b8e133697068387b558e7dbe68e6844ab1f4133d9aeb308b",
-          "size_bytes": 8002
-        },
-        "frontend/components/OptimalEntryExitCard.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "c706c8ef827ff73251013420f8df7db830a96c79f8c4bbd0fb98afc52261519b",
-          "size_bytes": 49189
-        },
-        "frontend/components/PreFlightReadinessBar.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "eaff469b90bc8169842f3bc2b0983de2103cb323fe29a3546f117d387cc9e366",
-          "size_bytes": 13325
-        },
-        "frontend/components/UniversalOmniSearch.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "de611650c040036676ffb184ac17a290c6416b66fd9efac1f2336ebb43fb8fcf",
-          "size_bytes": 15634
-        },
-        "frontend/components/WatchlistSidebar.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "b313178c96a9b59d468a3ad6b21e3cc80436773ad1c49485bfbcdca1e54ca094",
-          "size_bytes": 18454
-        },
-        "frontend/components/discovery/DiscoveryLandingView.tsx": {
-          "operation": "A",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "4a381fe858e8f2b1f43801c1ce0f3cbe0848a863cf130ebd3ce1bfaae38a4183",
-          "size_bytes": 13150
-        },
-        "frontend/components/terminal/EvidenceDomainStatusCard.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "4903277bbceb9cd5856551697256ce09b74eecdf114fd4fedd419b6b44d0cffa",
-          "size_bytes": 13927
-        },
-        "frontend/components/terminal/GuidedTerminalView.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "95fbc97ffc52bf5f4868cfd60160db157d86df9d0f7438181338959c0f3030d5",
-          "size_bytes": 17646
-        },
-        "frontend/components/terminal/SharedExecutionLadder.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "14cc68084375cbdff8b24c779fe9d1f6d69912a46f9dfa5fd27521b3725cb9e3",
-          "size_bytes": 16259
-        },
-        "frontend/components/terminal/StandardTerminalView.tsx": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "b5d0f319332b4eb37791fd51c4248e4b646660f001aed6b750ccf038952999cd",
-          "size_bytes": 25828
-        },
-        "frontend/lib/evidenceDomains.ts": {
-          "operation": "M",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "f3a382807f12733a1e9f7b8ce82603a1d0c1491d88a2640c60f4c645140956d8",
-          "size_bytes": 26471
-        },
-        "frontend/tests/executionPresentationConsolidation.test.ts": {
-          "operation": "A",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "208d9bd6d5225ff19043a01d10fd9de8d04b3b122183bc2d2d655becf87290f3",
-          "size_bytes": 9993
-        },
-        "frontend/tests/uxPhase2NomenclatureAndDeSlop.test.ts": {
-          "operation": "A",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "1482117e1dac87523737ca43b0cb4c1111178befb6614d735a29cde459108119",
-          "size_bytes": 9230
-        },
-        "frontend/tests/uxPhase3GovernanceAndClearance.test.ts": {
-          "operation": "A",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "39cfdea8ad97e7994f201e15e0d3161017f2596ce7b1dcbf483ebb2b4f2a0352",
-          "size_bytes": 11816
-        },
-        "frontend/tests/uxPhase4RouteDecouplingAndDiscovery.test.ts": {
-          "operation": "A",
-          "originating_pr_number": 260,
-          "originating_commit": "b0df5f2d1997bfb332871de5a56594c1444ce01f",
-          "governing_requirement": "ARX-SPRINT-UI-DISTILL-015: UX distillation, route decoupling & governance consolidation (PR #260). Operational holds preserved. Owner admission: https://github.com/daakara/finance/pull/263#issuecomment-6789951432",
-          "sha256": "0284a59ef514262506de438978f7d0c2d41517575b184581cdc9960ff403c420",
-          "size_bytes": 5784
-        }
-      }
-    },
-    {
-      "release_candidate_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
-      "base_anchor_commit": "88eeccfad0636ed29cf9807a68a63cdf69772ec4",
-      "total_files": 7,
-      "directive": "ARX-SM-ACT-020-CONTINUOUS-HARDENING-003",
-      "files": {
-        ".github/workflows/sm-continuous-authorization.yml": {
-          "operation": "A",
-          "originating_pr_number": 268,
-          "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
-          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
-          "sha256": "f3fd144191e026f3d266ef17af520182216301da7bdeb96a97a8d2192e83d4ef",
-          "size_bytes": 1111
-        },
-        "analyst_dashboard/smart_money/continuous_authorization.py": {
-          "operation": "A",
-          "originating_pr_number": 268,
-          "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
-          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
-          "sha256": "f0503d21d5b64f8ed48edec9081235939d733c8140028071a1c0031285e07a96",
-          "size_bytes": 3435
-        },
-        "analyst_dashboard/smart_money/continuous_pipeline.py": {
-          "operation": "M",
-          "originating_pr_number": 268,
-          "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
-          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
-          "sha256": "4c5014a8fdebe5dc5eae5668a833bb33f5392c0bb8989fc0eecd7ce75085a62e",
-          "size_bytes": 70895
-        },
-        "analyst_dashboard/smart_money/worker.py": {
-          "operation": "M",
-          "originating_pr_number": 268,
-          "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
-          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
-          "sha256": "6c51fc05bd422732332f05b0eb81bfe96fce49000eb09ed467b9261d5e2fbb0e",
-          "size_bytes": 37135
-        },
-        "docs/smart-money/continuous-owner-authorization.md": {
-          "operation": "A",
-          "originating_pr_number": 268,
-          "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
-          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
-          "sha256": "8efa411597df0684a14502ee98eeac839564a374438b9d2f9cf6f8eba09c1059",
-          "size_bytes": 4251
-        },
-        "tests/test_sm_act_020_continuous_authorization.py": {
-          "operation": "A",
-          "originating_pr_number": 268,
-          "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
-          "governing_requirement": "ARX-SM-ACT-020: Continuous OWNER authorization expiry, wire-level budget enforcement, rate limiting, and emergency stop hardening (Issue #165 / PR #268). Operational holds preserved.",
-          "sha256": "b3e362fca2d65942fdc96fa31549b66b9532a5e54d5ab9b40c5bd6ea079893c9",
-          "size_bytes": 10366
-        },
-        "tests/test_sm_act_020_guarded_sec_fetcher.py": {
-          "operation": "A",
-          "originating_pr_number": 268,
-          "originating_commit": "2ee82f3e92d22ba7bae5555a4265cd28886a6ab6",
-          "governing_requirement": "ARX-SM-ACT-020-CONTINUOUS-GUARDED-SEC-FETCHER-003: no-network default SEC Form4 fetcher integration and strict transport accounting for PR #268 / stacked PR #269; all production holds remain.",
-          "sha256": "207ea3cf951b9aca199784ad29efc222719b2579437ba42150d0d457c873476e",
-          "size_bytes": 7382
-        }
-      }
-    },
-    {
-      "release_candidate_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
-      "base_anchor_commit": "e62f16e2a642433574ae84ab69b47dd33217079d",
-      "total_files": 2,
-      "qualification_policy_version": "2.2.0-D074A4",
-      "directive": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005",
-      "files": {
-        "analyst_dashboard/smart_money/worker.py": {
-          "operation": "M",
-          "originating_pr_number": 271,
-          "originating_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
-          "governing_requirement": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005: safe attributable worker telemetry probe and exception sanitization (Issue #165 / PR #271). Operational holds preserved.",
-          "sha256": "9ce13176b7d489ef0c15e6b301e7b3af3415e4b9b2d5a2520c69d3aca51a5615",
-          "size_bytes": 44149
-        },
-        "tests/test_sm_act_020_sentry_telemetry.py": {
-          "operation": "A",
-          "originating_pr_number": 271,
-          "originating_commit": "46671cef7efc8eca11fbf9ceb25df2db134d40f2",
-          "governing_requirement": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005: safe attributable worker telemetry probe and exception sanitization (Issue #165 / PR #271). Operational holds preserved.",
-          "sha256": "929e14657ddc20d98ed5647ae140dd8bf4d7557dd7253d3fd6f5a105dfa9bd06",
-          "size_bytes": 11677
-        }
-      }
-    },
-    {
-      "release_candidate_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-      "base_anchor_commit": "d266bb01d9fec7343786ec0234ba2a667dc0af89",
-      "total_files": 6,
-      "qualification_policy_version": "2.2.0-D074A4",
-      "directive": "ARX-CONFLUENCE-INTEGRITY-003",
-      "files": {
-        "analyst_dashboard/analyzers/decision_trace.py": {
-          "operation": "M",
-          "originating_pr_number": 277,
-          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: enforce verified factor provenance on has_fundamentals and forward provenance to DecisionHierarchyEngine.",
-          "sha256": "61c584a245b779a8e95316fea8195b3c6b4bdb8f78c7919dcbd9c320c99bf9a5",
-          "size_bytes": 14701
-        },
-        "api/routes/analytics.py": {
-          "operation": "M",
-          "originating_pr_number": 277,
-          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: wire evaluate_factor_provenance and forward fundamental_provenance and asset_class to confluence_engine.",
-          "sha256": "9d7b54f6421e229a67094219e005577fb6d8f763520df0b3bd8c59b5d42532a6",
-          "size_bytes": 83098
-        },
-        "api/routes/screener.py": {
-          "operation": "M",
-          "originating_pr_number": 277,
-          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: wire evaluate_factor_provenance and forward fundamental_provenance and verified_pillar_count to confluence and decision state.",
-          "sha256": "d9df6def69ea6d810b00199d2055dce17ba452d0453124cfe26aa9c082d3079e",
-          "size_bytes": 122450
-        },
-        "tests/test_confluence_cross_component_parity.py": {
-          "operation": "A",
-          "originating_pr_number": 277,
-          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: cross-component confluence parity and provenance invariants test suite.",
-          "sha256": "c3a8c2d6dc3b09d227681deb92a26611e77bec4504a6279daa1fca0d7ddef042",
-          "size_bytes": 10804
-        },
-        "tests/test_confluence_provenance_wiring_003.py": {
-          "operation": "A",
-          "originating_pr_number": 277,
-          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: decision trace provenance fail-closed gating regression suite.",
-          "sha256": "c23970f3938a30fbdf80cc5d535e65cbd3bbd590df6baddae9ee8caaed45cd18",
-          "size_bytes": 4650
-        },
-        "scripts/release/rq02_diff_integrity.py": {
-          "operation": "M",
-          "originating_pr_number": 277,
-          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: add PR 277 to APPROVED_PRS allowlist.",
-          "sha256": "5c9c0518900d5ebf3adfded8c839dd0563fa79d83b1286652f76d31f23a9d5b5",
-          "size_bytes": 58051
-        }
-      }
-    }
-  ]
+  }
 }
