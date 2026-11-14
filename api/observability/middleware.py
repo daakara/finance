@@ -11,6 +11,7 @@ Enforces:
 """
 
 import time
+import asyncio
 import logging
 from typing import Callable
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -62,24 +63,61 @@ class CorrelationMiddleware(BaseHTTPMiddleware):
                 event_name = "http_request_completed" if response.status_code < 500 else "http_request_failed"
                 log_level = logging.INFO if response.status_code < 400 else (logging.WARNING if response.status_code < 500 else logging.ERROR)
 
+                state = getattr(request, "state", None)
+                extra = {
+                    "event_name": event_name,
+                    "route": request.url.path,
+                    "method": request.method,
+                    "status_code": response.status_code,
+                    "duration_ms": duration_ms,
+                    "request_id": req_id,
+                    "correlation_id": corr_id,
+                    "request_cancelled": False,
+                }
+                if state:
+                    for field in ("cache_hit", "provider_latency_ms", "database_latency_ms", "scoring_latency_ms"):
+                        val = getattr(state, field, None)
+                        if val is not None:
+                            extra[field] = val
+
                 logger.log(
                     log_level,
                     f"{request.method} {request.url.path} responded {response.status_code} in {duration_ms}ms",
-                    extra={
-                        "event_name": event_name,
-                        "route": request.url.path,
-                        "method": request.method,
-                        "status_code": response.status_code,
-                        "duration_ms": duration_ms,
-                        "request_id": req_id,
-                        "correlation_id": corr_id,
-                    },
+                    extra=extra,
                 )
             except Exception as log_err:
                 # Telemetry failure safety: logging failures must never crash request
                 pass
 
             return response
+
+        except asyncio.CancelledError:
+            duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+            try:
+                state = getattr(request, "state", None)
+                extra = {
+                    "event_name": "http_request_cancelled",
+                    "route": request.url.path,
+                    "method": request.method,
+                    "status_code": 499,
+                    "duration_ms": duration_ms,
+                    "request_id": req_id,
+                    "correlation_id": corr_id,
+                    "request_cancelled": True,
+                }
+                if state:
+                    for field in ("cache_hit", "provider_latency_ms", "database_latency_ms", "scoring_latency_ms"):
+                        val = getattr(state, field, None)
+                        if val is not None:
+                            extra[field] = val
+
+                logger.warning(
+                    f"{request.method} {request.url.path} cancelled by client after {duration_ms}ms",
+                    extra=extra,
+                )
+            except Exception:
+                pass
+            raise
 
         except Exception as exc:
             duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
