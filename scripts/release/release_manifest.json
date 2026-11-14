@@ -1,49 +1,89 @@
 {
-  "release_candidate_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-  "base_anchor_commit": "e63cd1ed4efdd56c8c08f6a1ef963cd4a4e35d03",
-  "total_files": 5,
+  "release_candidate_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+  "base_anchor_commit": "d266bb01d9fec7343786ec0234ba2a667dc0af89",
+  "total_files": 10,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-UX-R5-001-MOBILE-OPTIMIZATION-OWNER-PREAPPROVED",
+  "directive": "ARX-UX-R3-001-PROGRESSIVE-JARGON-MANAGEMENT",
   "files": {
-    "frontend/app/portfolio/page.tsx": {
+    "frontend/components/AssetFactorRadar.tsx": {
       "operation": "M",
-      "originating_pr_number": 273,
-      "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-      "governing_requirement": "ARX-UX-R5-001: mobile table cards (<sm) preserving stop-floor, unrealized P&L and WCAG touch targets.",
-      "sha256": "37ef28f9f2097ae8ec2a3e6d98bd94f24cb9fb9928cc7b5e2574eadc995c0128",
-      "size_bytes": 85994
+      "originating_pr_number": 274,
+      "originating_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+      "governing_requirement": "ARX-UX-R3-001: integrate JargonTip into Piotroski factor description.",
+      "sha256": "68b7989697526ccc56563476bb28917877cc5d09ed459598140e46c98cef1b2e",
+      "size_bytes": 9686
     },
-    "frontend/app/radar/page.tsx": {
+    "frontend/components/CompositeConvictionCard.tsx": {
       "operation": "M",
-      "originating_pr_number": 273,
-      "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-      "governing_requirement": "ARX-UX-R5-001: mobile candidate cards (<sm) preserving score, sparkline, execution state and >=44px touch targets.",
-      "sha256": "32d78e17d4f4e9abf08858051def987a7732198a792a92eec1f3b7fc2bf6a8e1",
-      "size_bytes": 131295
+      "originating_pr_number": 274,
+      "originating_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+      "governing_requirement": "ARX-UX-R3-001: integrate JargonTip into Confluence score breakdown.",
+      "sha256": "262ecb6d2a5605f4e9fa3839086a48b6f0a6e32c870b95c5a996ac1a0025234c",
+      "size_bytes": 14420
     },
-    "frontend/components/Navbar.tsx": {
+    "frontend/components/OptimalEntryExitCard.tsx": {
       "operation": "M",
-      "originating_pr_number": 273,
-      "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-      "governing_requirement": "ARX-UX-R5-001: mobile chrome height constraint h-12 (48px) keeping combined top fixed chrome <= 72px.",
-      "sha256": "2f50c07c1376d87e74ed4d409eb606e345c1c07a3227a58206060bfcad704902",
-      "size_bytes": 38433
+      "originating_pr_number": 274,
+      "originating_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+      "governing_requirement": "ARX-UX-R3-001: integrate JargonTip into R-Multiple and Stop Loss terms.",
+      "sha256": "e5a36e79847eb1cf49d644dda763d7f6bc479703087b2380409138aa45e95776",
+      "size_bytes": 48753
     },
-    "frontend/tests/uxPhaseR5MobileOptimization.test.ts": {
+    "frontend/components/PreFlightReadinessBar.tsx": {
+      "operation": "M",
+      "originating_pr_number": 274,
+      "originating_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+      "governing_requirement": "ARX-UX-R3-001: integrate vernacular mode into preflight checklist labels.",
+      "sha256": "3e48dbe687f3453b47b2a59cbb9e7d1454c65795d04b3b4db0a49b9c83638ada",
+      "size_bytes": 12732
+    },
+    "frontend/components/RiskMetricsCard.tsx": {
+      "operation": "M",
+      "originating_pr_number": 274,
+      "originating_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+      "governing_requirement": "ARX-UX-R3-001: integrate JargonTip into Cornish-Fisher M-VaR and Sortino terms.",
+      "sha256": "bc4108dc8b60fb133cc5ff3265a195f922979cdbaf5cb53802297c82d65b42bb",
+      "size_bytes": 8695
+    },
+    "frontend/components/ui/JargonTip.tsx": {
       "operation": "A",
-      "originating_pr_number": 273,
-      "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-      "governing_requirement": "ARX-UX-R5-001: mobile table cards and navigation chrome regression test suite.",
-      "sha256": "06714c99b4d32f0a9006c1f2a2b155d889588001c8c4fa01be089de8c77cc522",
-      "size_bytes": 7884
+      "originating_pr_number": 274,
+      "originating_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+      "governing_requirement": "ARX-UX-R3-001: accessible inline glossary tooltip component with WCAG 2.1 AA attributes.",
+      "sha256": "19653ff38de72938a3c46e8db7db21c17db701c4745d64f3cac95e3d448feaab",
+      "size_bytes": 5605
+    },
+    "frontend/lib/jargonGlossary.ts": {
+      "operation": "A",
+      "originating_pr_number": 274,
+      "originating_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+      "governing_requirement": "ARX-UX-R3-001: canonical jargon glossary dictionary and normalized lookup helper.",
+      "sha256": "7fc58105fb29a968d4945eb44e04a742a6dfb3018eb9afd7fc753bf91df39fbc",
+      "size_bytes": 8854
+    },
+    "frontend/lib/useVernacularMode.ts": {
+      "operation": "A",
+      "originating_pr_number": 274,
+      "originating_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+      "governing_requirement": "ARX-UX-R3-001: cross-component vernacular state hook (Plain English vs Pro Quant).",
+      "sha256": "c7c3b76ea189f643fb76a1deb59f7149023039ff3bcc17ec53933dba03ff5cc2",
+      "size_bytes": 2513
+    },
+    "frontend/tests/uxPhaseR3JargonManagement.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 274,
+      "originating_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+      "governing_requirement": "ARX-UX-R3-001: progressive jargon management regression and accessibility test suite.",
+      "sha256": "0d9889c968289071a534e978d91c9079ba97ff82a54f36057143a0492fe0c811",
+      "size_bytes": 10113
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 273,
-      "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-      "governing_requirement": "ARX-UX-R5-001: add PR 273 to APPROVED_PRS allowlist.",
-      "sha256": "4effe75cbb3a450a73245a6980d2355c2326af91faa95bd354f8cac475ddb3dc",
-      "size_bytes": 58046
+      "originating_pr_number": 274,
+      "originating_commit": "03db5d609a145dc68b654592d1c7073f6324bf55",
+      "governing_requirement": "ARX-UX-R3-001: add PR 274 to APPROVED_PRS allowlist.",
+      "sha256": "8784c4c325b7dfa9ac33785689438d4a4d177374e971d9b0503d42bc22f34c23",
+      "size_bytes": 58051
     }
   },
   "qualification_framework_files": {
@@ -53,8 +93,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "4effe75cbb3a450a73245a6980d2355c2326af91faa95bd354f8cac475ddb3dc",
-      "size_bytes": 58046,
+      "sha256": "8784c4c325b7dfa9ac33785689438d4a4d177374e971d9b0503d42bc22f34c23",
+      "size_bytes": 58051,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -580,6 +620,55 @@
           "governing_requirement": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005: safe attributable worker telemetry probe and exception sanitization (Issue #165 / PR #271). Operational holds preserved.",
           "sha256": "929e14657ddc20d98ed5647ae140dd8bf4d7557dd7253d3fd6f5a105dfa9bd06",
           "size_bytes": 11677
+        }
+      }
+    },
+    {
+      "release_candidate_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
+      "base_anchor_commit": "e63cd1ed4efdd56c8c08f6a1ef963cd4a4e35d03",
+      "total_files": 5,
+      "qualification_policy_version": "2.2.0-D074A4",
+      "directive": "ARX-UX-R5-001-MOBILE-OPTIMIZATION-OWNER-PREAPPROVED",
+      "files": {
+        "frontend/app/portfolio/page.tsx": {
+          "operation": "M",
+          "originating_pr_number": 273,
+          "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
+          "governing_requirement": "ARX-UX-R5-001: mobile table cards (<sm) preserving stop-floor, unrealized P&L and WCAG touch targets.",
+          "sha256": "37ef28f9f2097ae8ec2a3e6d98bd94f24cb9fb9928cc7b5e2574eadc995c0128",
+          "size_bytes": 85994
+        },
+        "frontend/app/radar/page.tsx": {
+          "operation": "M",
+          "originating_pr_number": 273,
+          "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
+          "governing_requirement": "ARX-UX-R5-001: mobile candidate cards (<sm) preserving score, sparkline, execution state and >=44px touch targets.",
+          "sha256": "32d78e17d4f4e9abf08858051def987a7732198a792a92eec1f3b7fc2bf6a8e1",
+          "size_bytes": 131295
+        },
+        "frontend/components/Navbar.tsx": {
+          "operation": "M",
+          "originating_pr_number": 273,
+          "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
+          "governing_requirement": "ARX-UX-R5-001: mobile chrome height constraint h-12 (48px) keeping combined top fixed chrome <= 72px.",
+          "sha256": "2f50c07c1376d87e74ed4d409eb606e345c1c07a3227a58206060bfcad704902",
+          "size_bytes": 38433
+        },
+        "frontend/tests/uxPhaseR5MobileOptimization.test.ts": {
+          "operation": "A",
+          "originating_pr_number": 273,
+          "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
+          "governing_requirement": "ARX-UX-R5-001: mobile table cards and navigation chrome regression test suite.",
+          "sha256": "06714c99b4d32f0a9006c1f2a2b155d889588001c8c4fa01be089de8c77cc522",
+          "size_bytes": 7884
+        },
+        "scripts/release/rq02_diff_integrity.py": {
+          "operation": "M",
+          "originating_pr_number": 273,
+          "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
+          "governing_requirement": "ARX-UX-R5-001: add PR 273 to APPROVED_PRS allowlist.",
+          "sha256": "4effe75cbb3a450a73245a6980d2355c2326af91faa95bd354f8cac475ddb3dc",
+          "size_bytes": 58046
         }
       }
     }
