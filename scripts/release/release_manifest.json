@@ -1,65 +1,57 @@
 {
-  "release_candidate_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
-  "base_anchor_commit": "7f302dc9115aebaf7dfa67b1073c5c9e0b0b2c4d",
-  "total_files": 7,
+  "release_candidate_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
+  "base_anchor_commit": "6ea232838a53e482753d5705ba533ad9ce041e44",
+  "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-POST-CYCLE-REMEDIATION",
+  "directive": "ARX-DOCS-BACKLOG-RECONCILIATION-024",
   "files": {
-    "analyst_dashboard/smart_money/continuous_pipeline.py": {
+    "README.md": {
       "operation": "M",
-      "originating_pr_number": 280,
-      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
-      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: complete calendar-declined run requests (SKIPPED_NOT_ELIGIBLE / SKIPPED_ALREADY_EXECUTED_TODAY) terminally under lock.",
-      "sha256": "63d4cc535dfe328c24a49bfcd5635184d2f9cbbd02156024b8b987e321298867",
-      "size_bytes": 74904
+      "originating_pr_number": 281,
+      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
+      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: synchronize operational reconciliation block with baseline 6ea2328 and canonical holds matrix.",
+      "sha256": "8e55c385cdedbf0e140184df9b235f790cdb944465f5e43edd53251cc073d07b",
+      "size_bytes": 15877
     },
-    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
+    "docs/ARX_STATUS_ADDENDUM_2026_11_07.md": {
       "operation": "M",
-      "originating_pr_number": 280,
-      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
-      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: query canonical requested_at in find_active_run_request and use atomic conditional insert in create_run_request.",
-      "sha256": "b8c15586c58dcca52c968cff08b6311d557378ae5b87f8df5443a7dcdb359d0c",
-      "size_bytes": 51402
+      "originating_pr_number": 281,
+      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
+      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: add pointer note to authoritative 2026-11-14 status addendum.",
+      "sha256": "50c8381c1a88f379e2f1e7a9ab63ceabe169640991fe579198f988aa7e064c8a",
+      "size_bytes": 5037
     },
-    "analyst_dashboard/smart_money/storage/postgres_schema.py": {
-      "operation": "M",
-      "originating_pr_number": 280,
-      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
-      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: add active request index idx_run_requests_active_guard.",
-      "sha256": "040499fde80ee3874a748b2256e9d399ef7bf51fc11c7f46a31c7920e518557e",
-      "size_bytes": 13414
-    },
-    "analyst_dashboard/smart_money/worker.py": {
-      "operation": "M",
-      "originating_pr_number": 280,
-      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
-      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: handle skipped cycle statuses gracefully in worker process_run_requests without failure classification.",
-      "sha256": "783014e8e796fdadf0721ee212b3a163d073ae4d3e409c0f470ca56ffec72782",
-      "size_bytes": 45662
-    },
-    "docs/governance/ARX_SM_ACT_020_POST_CYCLE_REMEDIATION_REPORT.md": {
+    "docs/ARX_STATUS_ADDENDUM_2026_11_14.md": {
       "operation": "A",
-      "originating_pr_number": 280,
-      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
-      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: surgical queue parity, idempotency guard and calendar skip remediation report.",
-      "sha256": "69fd730c12b7d6c41a480f0b57dbf9be9884a939edc34fea69c27c53bd0beeb2",
-      "size_bytes": 8816
+      "originating_pr_number": 281,
+      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
+      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: integrated status addendum across all 5 ARX workstreams.",
+      "sha256": "15b61b04f01ca28d5bf7ffda3013aa6bd8f923aaefdd2e0efe87ffef481fab23",
+      "size_bytes": 11943
+    },
+    "docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md": {
+      "operation": "A",
+      "originating_pr_number": 281,
+      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
+      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: authoritative operational holds register covering all 6 fail-closed platform holds.",
+      "sha256": "d284a2b43dc00b8d45f296512cee4879cb5e8dffcba28e2e178547b1f90b1234",
+      "size_bytes": 8583
+    },
+    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md": {
+      "operation": "A",
+      "originating_pr_number": 281,
+      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
+      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: authoritative active work register reconciling all 23 issues and 21 PRs.",
+      "sha256": "23f7020684104d9f042cba038a14a10e54c6728d8a9adbc1fbe6f58b4dca8f7f",
+      "size_bytes": 16781
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 280,
-      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
-      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: register approved PR 280 in APPROVED_PRS allowlist.",
-      "sha256": "edca81f9d8dab4ff338cba01a810f23497a99db19ef8a8660c09f5baffae3da7",
-      "size_bytes": 58071
-    },
-    "tests/test_worker_queue_remediation.py": {
-      "operation": "M",
-      "originating_pr_number": 280,
-      "originating_commit": "a267e6bb11e3c146c308bf6bbae5d10a19bbac38",
-      "governing_requirement": "ARX-SM-ACT-020-POST-CYCLE: add regression tests for calendar skips, terminal state persistence, restarts, and zero SEC egress.",
-      "sha256": "b28e3312f433f425c356a08356a89fb5a1f7702cf1ae6d48d8bc1ea9d0e1d164",
-      "size_bytes": 19189
+      "originating_pr_number": 281,
+      "originating_commit": "688b13d9e59ecf4571a267f28cf603c3a32c3126",
+      "governing_requirement": "ARX-DOCS-BACKLOG-RECONCILIATION-024: register approved PR 281 in APPROVED_PRS allowlist.",
+      "sha256": "8fa457bf6a10e656b8156e741b0300a3bcd7f5fba1b2ab1d5c0406a5d4b3b134",
+      "size_bytes": 58076
     }
   },
   "qualification_framework_files": {
@@ -69,8 +61,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "edca81f9d8dab4ff338cba01a810f23497a99db19ef8a8660c09f5baffae3da7",
-      "size_bytes": 58071,
+      "sha256": "8fa457bf6a10e656b8156e741b0300a3bcd7f5fba1b2ab1d5c0406a5d4b3b134",
+      "size_bytes": 58076,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
