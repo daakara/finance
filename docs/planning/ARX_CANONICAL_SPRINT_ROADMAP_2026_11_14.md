@@ -85,45 +85,40 @@ flowchart TD
     subgraph S0["Sprint 0: Planning & Operational Readiness (Weeks 1–2)"]
         S0_1["Track Monday SM Live Cycle (Nov 16, 22:30 EST)"]
         S0_2["Administrative Closure of 16 Superseded PRs"]
-        S0_3["Phase A3 Study Pack Readiness"]
-        S0_4["PR #282 Review & Preview Audit (Existing Code)"]
+        S0_3["PR #282 Merged & Released (c5a134de)"]
+        S0_4["Radar Candidate Rationale & Learn Links (#230)"]
     end
 
-    subgraph S1["Sprint 1: PR #282 Release & Production Integration (Weeks 3–4)"]
+    subgraph S1["Sprint 1: Production Integration & Cross-Hub Harmony (Weeks 3–4)"]
         S1_Ops["SM Cohort Telemetry Monitoring (#231)"]
-        S1_1["Release PR #282: Learn Hub, Nav & Glossary"]
-        S1_2["Post-Deploy Route Verification (/guide, /glossary)"]
-        S1_3["Phase A3 Participant Outreach & Screening"]
+        S1_1["Release Verification: Learn Hub (/guide, /glossary)"]
+        S1_2["Terminal Contextual Deep-Links Integration"]
     end
 
-    subgraph S2["Sprint 2: Cross-Hub UX Harmony & Rationale Quality (Weeks 5–6)"]
-        S2_1["Radar Candidate Rationale Deduplication (#230)"]
-        S2_2["Contextual Terminal Deep-Links to Learn Modules"]
-        S2_3["Phase A3 Evaluator Confirmation (5 Real Users)"]
+    subgraph S2["Sprint 2: Pre-Flight Transparency & Freshness (Weeks 5–6)"]
+        S2_1["Pre-Flight Decision Freshness & Stale Flags (#197)"]
+        S2_2["Reward/Risk 2:1 Decision Copy Disclosure (#181)"]
     end
 
-    subgraph S3["Sprint 3: Decision Freshness & Preflight Transparency (Weeks 7–8)"]
-        S3_1["Pre-Flight Decision Freshness & Stale Flags (#197)"]
-        S3_2["Reward/Risk 2:1 Decision Copy Disclosure (#181)"]
-        S3_3["Phase A3 Pilot Dry-Run (Participant #1)"]
+    subgraph S3["Sprint 3: Evidence Provenance & Cache Fencing (Weeks 7–8)"]
+        S3_1["OHLCV Cache Fencing & Day-Boundary Provenance (#198)"]
+        S3_2["SEC-001 Query Debt & ARCH-001 Contracts (#203, #204)"]
     end
 
-    subgraph S4["Sprint 4: Evidence Provenance & Boundary Hardening (Weeks 9–10)"]
-        S4_1["OHLCV Cache Fencing & Day-Boundary Provenance (#198)"]
-        S4_2["SEC-001 Query Debt & ARCH-001 Contracts (#203, #204)"]
-        S4_3["Phase A3 Study Sessions (Participants #2 & #3)"]
+    subgraph S4["Sprint 4: Observability & Boundary Hardening (Weeks 9–10)"]
+        S4_1["OBS-01 Production Observability Hardening (#146)"]
+        S4_2["End-to-End SLA & Latency Audits"]
     end
 
-    subgraph S5["Sprint 5: Empirical Human Validation & PR #274 Review (Weeks 11–12)"]
-        S5_1["Phase A3 Study Sessions (Participants #4 & #5)"]
-        S5_2["Synthesize Formative Usability Matrix & Report"]
-        S5_3["Release Admission Decision for PR #274 (PHASE_A3_UX_HOLD)"]
+    subgraph Deferred["Deferred Governance Backlog (Owner Gated)"]
+        Def_A3["Phase A3 Real-Human Study & PR #274 Admission (PHASE_A3_UX_HOLD)"]
     end
 
     %% Operational Lane (Isolated)
     S0_1 --> S1_Ops
 
     %% Product & Engineering Lane (Decoupled from SM)
+    S0_3 --> S0_4
     S0_4 --> S1_1
     S1_1 --> S1_2
     S1_2 --> S2_1
@@ -133,84 +128,51 @@ flowchart TD
     S3_1 & S3_2 --> S4_1
     S3_1 & S3_2 --> S4_2
 
-    %% Research & Validation Lane (Conditional on Real Humans)
-    S0_3 --> S1_3
-    S1_3 --> S2_3
-    S2_3 --> S3_3
-    S3_3 --> S4_3
-    S4_3 --> S5_1
-    S5_1 --> S5_2
-    S5_2 --> S5_3
+    %% Deferred Governance Lane
+    Def_A3 -.->|Requires explicit OWNER instruction| S4_2
 ```
 
 ---
 
-### Sprint 0 — Planning & Operational Readiness (Weeks 1–2: Nov 14 – Nov 28, 2026)
-- **Primary Outcome:** Establish execution discipline, supervise Monday SEC Form 4 qualification cycle, execute administrative closure of 16 superseded PRs, audit PR #282 candidate, and verify Phase A3 study pack readiness.
+### Sprint 0 — Planning, Operational Readiness & Radar Rationale Enhancement (Weeks 1–2: Nov 14 – Nov 28, 2026)
+- **Primary Outcome:** Supervise Monday SEC Form 4 qualification cycle, execute administrative closure of 16 superseded PRs, verify PR #282 production deployment, and advance Radar candidate-rationale improvements and contextual Learn Hub deep-links (Issue #230).
 - **Operational Lane:** Supervise single live SEC Form 4 qualification cycle on Monday, Nov 16 at 22:30 EST (`ARX Smart Money Monday Pilot`, Issue #165). Enforce hard limits: max 40 requests, 1 attempt, 5 req/s. Verify immediate return to `STANDBY` (`ARX_SEC_EGRESS_ROLE=DISABLED`).
 - **Product & Engineering Lane:**
-  - Audit existing PR #282 candidate (`feat/ux-brain-redesign-025`) against Release Qualification criteria (`tsc --noEmit`, `npm run test:arch`, Cloudflare Pages preview `b718e7a5`, and responsive layout at 390px, 768px, 1440px). Note: Curriculum, glossary, and navigation are already fully authored in PR #282.
+  - Verify PR #282 production merge ([`c5a134de`](https://github.com/daakara/finance/commit/c5a134de)) delivering Learn Hub (`/guide`), Quantitative Glossary (`/glossary`), and global navigation.
+  - Advance Issue #230: Deduplicate repetitive candidate rationale copy in Radar cards and wire contextual deep-links to Learn Hub modules (`#module-foundations`, `#module-technical`, `#module-fundamental`, `#module-smart-money`) and Glossary terms.
   - Administratively close 16 superseded PRs (#38, #40, #42, #44, #47, #73, #103, #109, #124, #128, #141, #142, #193, #235, #260, #262) in Issue #228.
-- **Research & Validation Lane:** Review Phase A3 study pack (`a3_study_environment_guide.md`, `a3_formative_evaluation_matrix.md`) and verify staging environment readiness.
-- **Governance Gate:** Administrative closure of 16 superseded PRs recorded in Issue #228. Zero production operational holds lifted.
+- **Research & Validation Lane (Deferred):** Phase A3 human usability evaluation deferred to Deferred Governance Backlog pursuant to Directive ARX-SPRINT-REPRIORITIZATION-028.
+- **Governance Gate:** Radar recommendation integrity contracts preserved; `isActionable: false` barrier maintained; all 6 operational holds strictly active.
 
-### Sprint 1 — PR #282 Release & Production Integration (Weeks 3–4: Nov 29 – Dec 12, 2026)
-- **Primary Outcome:** Qualify, merge, and deploy PR #282 into production, delivering the fully authored Learn Hub, quantitative glossary, and global navigation foundation.
+### Sprint 1 — Production Integration & Pre-Flight Transparency (Weeks 3–4: Nov 29 – Dec 12, 2026)
+- **Primary Outcome:** Monitor post-cycle SEC telemetry, and advance Pre-Flight decision freshness and Reward vs. Risk disclosure copy under Sprint P1 container (#229).
 - **Operational Lane:** Monitor post-cycle SEC telemetry, PostgreSQL 16 state, and backup verification stability in Railway/R2; track read-only cohort telemetry under Sprint P3 container (#231).
-- **Product & Engineering Lane:**
-  - Execute standard release qualification (RQ-01..12) and squash-merge PR #282 into `release/production`.
-  - Production deployment of PR #282 deliverables (already implemented in source):
-    - **Global Navigation:** Primary desktop nav link for Learn (`/guide`) in `Navbar.tsx`; utilities menu entries for Field Manual & Glossary with WCAG 2.2 AA $44\times 44\text{px}$ touch targets (`UI-0`).
-    - **Field Manual Curriculum (`GuideContent.tsx`):**
-      - *Module 1: Foundations of Capital Preservation & Sizing* (1% non-discretionary risk allocation, $50k portfolio example, 2:1 reward/risk threshold).
-      - *Module 2: Technical Execution & Volatility Contraction Pattern (VCP)* (Minervini contractions, volume dry-up, dual-horizon intraday scalp VWAP vs daily/weekly 20 EMA trend).
-      - *Module 3: Fundamental DNA & Accounting Statement Forensics* (9-point Piotroski F-score framework, operating cash flow divergence).
-      - *Module 4: Smart Money Diagnostics & STOCK Act Forensics* (SEC Form 4 open-market cluster buys, 45-day lag decay penalty, Congressional disclosures).
-      - *Module 5: Confluence Synthesis & Fail-Closed Risk Gates* (35/30/20/15 pillar weights, 4 canonical workspaces, automated circuit breakers).
-    - **Quantitative Glossary (`glossaryCatalog.ts`):** Complete 10-term upgrade with LaTeX KaTeX formulas, numerical examples, explicit limitations, and deep links.
-  - Post-deployment verification of live routes `https://www.arxterminal.com/guide/` and `/glossary/`.
-- **Research & Validation Lane:** Begin targeted outreach and screening for 5 real-human participants for Phase A3 formative evaluation.
-- **Governance Gate:** Release Qualification Suite (RQ-01..12) passing on PR #282; Cloudflare Pages production deployment verified; zero modification to financial engines.
-
-### Sprint 2 — Cross-Hub UX Harmony & Rationale Quality (Weeks 5–6: Dec 13 – Dec 26, 2026)
-- **Primary Outcome:** Eliminate repetitive candidate rationale copy in Radar and wire contextual terminal deep-links to the newly deployed Learn Hub modules.
-- **Operational Lane:** Routine infrastructure health and PostgreSQL 16 WAL archiving verification.
-- **Product & Engineering Lane:**
-  - Resolve Issue #230: Deduplicate repetitive candidate rationale copy in Radar cards (`radarPresentation.ts`) using dynamic contextual templating (fixing defect identified in Directive 023 production audit).
-  - Wire contextual deep-links from Radar cards and Tactical Analysis scorecards directly to corresponding Learn Hub modules (`#module-foundations`, `#module-technical`, `#module-fundamental`, `#module-smart-money`, `#module-using-arx`) and Glossary entries (`/glossary#term-*`).
-  - Harmonize semantic color tokens (emerald for valid accumulation, rose for defensive stops, cyan for focus, amber for caution).
-- **Research & Validation Lane:** Screen, confirm, and schedule 5 committed real-human evaluators for Phase A3 sessions.
-- **Governance Gate:** Radar recommendation integrity contracts preserved; `isActionable: false` barrier maintained; zero regression in Vitest suite.
-
-### Sprint 3 — Decision Freshness & Preflight Transparency (Weeks 7–8: Dec 27, 2026 – Jan 9, 2027)
-- **Primary Outcome:** Consolidate pre-flight decision freshness, stale data classification, and Reward vs. Risk disclosure copy under Sprint P1 container (#229).
-- **Operational Lane:** Quarterly operational hold review and access credential verification.
 - **Product & Engineering Lane:**
   - Resolve Issue #197: Implement pre-flight decision freshness checks: stale-price classification flags, exchange holiday calendar checks, and market closed banner warnings before corridor rendering.
   - Resolve Issue #181: Clarify the 2:1 Reward-to-Risk decision threshold copy and pre-flight trade readiness disclosure in Trade Plan UI without altering sizing contracts in `governorSizingEngine.ts`.
-- **Research & Validation Lane:** Conduct pilot dry-run of the Phase A3 study environment with Participant #1 using staged worksheet `a3_worksheet_p01.md`.
 - **Governance Gate:** Single consolidated PR targeting `release/production`; cross-engine invariant tests passing; sizing contracts strictly locked.
 
-### Sprint 4 — Evidence Provenance & Boundary Hardening (Weeks 9–10: Jan 10 – Jan 23, 2027)
+### Sprint 2 — Evidence Provenance & Cache Fencing (Weeks 5–6: Dec 13 – Dec 26, 2026)
 - **Primary Outcome:** Enforce OHLCV cache fencing and resolve backend query hygiene and typing contract debt.
-- **Operational Lane:** Sentry exception tracking and API latency SLA audit (<150ms).
+- **Operational Lane:** Routine infrastructure health and PostgreSQL 16 WAL archiving verification.
 - **Product & Engineering Lane:**
   - Resolve Issue #198: Audit and enforce memory cache fencing across day boundaries to prevent stale OHLCV cache poisoning and preserve Point-in-Time (PIT) integrity.
   - Resolve Issue #203 / Issue #204 under Sprint P4 container (#232): Optimize Form 4 transaction querying indexes (`idx_transactions_issuer_date`) in `postgres_repository.py` and formalize backend typing boundaries with the FastAPI router.
-- **Research & Validation Lane:** Execute Phase A3 evaluation sessions with Participants #2 and #3 using worksheets `a3_worksheet_p02.md` and `a3_worksheet_p03.md`.
 - **Governance Gate:** Backend regression suite passing 100%; zero schema drift; database query index optimization verified.
 
-### Sprint 5 — Empirical Human Validation & PR #274 Admission Review (Weeks 11–12: Jan 24 – Feb 6, 2027)
-- **Primary Outcome:** Complete Phase A3 real-human evaluation, synthesize empirical findings, and execute formal release admission review for PR #274.
-- **Operational Lane:** Review operational status of `PHASE_A3_UX_HOLD` based on empirical study findings.
-- **Product & Engineering Lane:** Apply any targeted, surgical usability remediations identified during the formative study.
-- **Research & Validation Lane:**
-  - Complete study sessions with Participants #4 and #5 using worksheets `a3_worksheet_p04.md` and `a3_worksheet_p05.md`.
-  - Synthesize the authoritative Formative Usability Matrix across all 5 participants (error rates, task completion times, cognitive load scores).
-  - Author the authoritative Phase A3 Usability Acceptance Report.
-- **Governance Gate:** Formal Owner sign-off on usability acceptance. Strictly conditional on 5 real human participants and empirical worksheets:
-  - If ACCEPTED: Execute standard release qualification and merge workflow for PR #274 (`feat/ui-r3-progressive-disclosure`).
-  - If REJECTED or INCONCLUSIVE: Retain `PHASE_A3_UX_HOLD` and log actionable remediation backlog. Zero synthetic data permitted.
+### Sprint 3 — Observability Hardening & Latency SLA (Weeks 7–8: Dec 27, 2026 – Jan 9, 2027)
+- **Primary Outcome:** Harden production observability, error tracking, and API latency SLAs under Sprint P4 container (#232).
+- **Operational Lane:** Sentry exception tracking and API latency SLA audit (<150ms).
+- **Product & Engineering Lane:**
+  - Resolve Issue #146: Extract discrete production observability improvements and breadcrumb hygiene from OBS-01 draft into a clean release candidate.
+  - End-to-end API latency and cold-start profiling.
+- **Governance Gate:** 100% pass on observability and correlation tracking suites; zero unhandled errors.
+
+### Deferred Governance Backlog — Phase A3 Usability Evaluation (PR #274)
+- **Governance Directive:** `ARX-SPRINT-REPRIORITIZATION-028`
+- **Scope:** Real-human formative usability evaluation (5 participants), evaluation worksheet synthesis (`a3_worksheet_p01..p05.md`), and PR #274 release admission review.
+- **Disposition:** **DEFERRED FROM ACTIVE SPRINT COMMITMENT.** Placed in deferred backlog pending explicit future OWNER instruction.
+- **Safeguards:** PR #274 remains strictly **DRAFT / HELD** under `PHASE_A3_UX_HOLD`. This is a scheduling deferral, not a waiver of the study or lifting of the hold. Release admission review requires authentic human evaluation evidence; zero synthetic data permitted.
 
 ---
 
