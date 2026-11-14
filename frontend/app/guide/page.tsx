@@ -4,12 +4,12 @@ import GuideContent from "../../components/GuideContent";
 import AuthorEeatBadge from "../../components/AuthorEeatBadge";
 
 export const metadata: Metadata = {
-  title: "Quantitative Terminal Field Manual & Algorithmic Handbook",
+  title: "Field Manual & Quantitative Methodology | ARX Terminal",
   description:
-    "Institutional manual detailing Decision Intelligence Suites (Pre-Flight Gate, Smart Money Radar, Edge Scorecard, Macro Stress Testing), Congressional STOCK Act tracking, Legislative Alignment Index (0-100), Mark Minervini VCP entry points, Cornish-Fisher Modified VaR, and Self-Healing Forecast Audits.",
+    "Authoritative reference guide to ARX Terminal's execution corridors, capital allocation risk gates, Volatility Contraction Pattern (VCP) detection, Cornish-Fisher VaR tail-risk models, and statutory insider forensics.",
   openGraph: {
-    title: "ARX Terminal: Quantitative Field Manual & Algorithmic Handbook",
-    description: "Master institutional quantitative trading, 5-point Pre-Flight execution gates, Smart Money order flow forensics, macro stress testing, staleness decay penalties, and tail risk management.",
+    title: "ARX Terminal Field Manual & Quantitative Methodology",
+    description: "Learn the quantitative models, capital preservation rules, execution corridors, and risk boundaries powering ARX Terminal.",
     url: "https://www.arxterminal.com/guide/",
     siteName: "ARX Terminal",
     type: "article",
@@ -24,8 +24,8 @@ export default function GuidePage() {
     {
       "@context": "https://schema.org",
       "@type": "TechArticle",
-      "headline": "Quantitative Terminal Field Manual & Algorithmic Handbook",
-      "description": "Comprehensive guide to Decision Intelligence Suites, Congressional STOCK Act tracking, Legislative Alignment Index, Mark Minervini VCP algorithmic entry points, Cornish-Fisher Modified VaR risk modeling, and FRED macroeconomic regimes.",
+      "headline": "ARX Terminal Field Manual & Quantitative Methodology",
+      "description": "Comprehensive reference guide to ARX Terminal's execution corridors, capital allocation risk gates, Volatility Contraction Pattern (VCP) detection, Cornish-Fisher VaR tail-risk models, and statutory insider forensics.",
       "author": {
         "@type": "Organization",
         "name": "ARX Terminal Quantitative Intelligence"
@@ -39,7 +39,7 @@ export default function GuidePage() {
         }
       },
       "datePublished": "2026-08-26",
-      "dateModified": "2026-08-29"
+      "dateModified": "2026-11-14"
     },
     {
       "@context": "https://schema.org",
@@ -47,50 +47,18 @@ export default function GuidePage() {
       "mainEntity": [
         {
           "@type": "Question",
-          "name": "How many assets does the terminal track, and how does the 4-tier pipeline work?",
+          "name": "How does the ARX 1% risk allocation rule calculate share sizing?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The terminal operates a 4-tier pipeline: Tier 1 is the Master Catalog (38 high-conviction fundamental baselines), Tier 2 is the Multi-Factor Screener (35 dynamic assets), Tier 3 is Pre-Rendered Static Pages (94 pre-compiled edge routes for <10ms loading), and Tier 4 is Universal Omnisearch (unlimited real-time on-demand queries for any US equity or crypto asset)."
+            "text": "The position sizer divides 1% of total portfolio equity by the dollar distance between the entry price and the technical stop-loss floor. If a $50,000 account risks 1% ($500) buying a stock at $213 with a $201 stop ($12 risk), exactly 41 shares are purchased."
           }
         },
         {
           "@type": "Question",
-          "name": "What is the 5-point Pre-Flight Clearance Gate?",
+          "name": "What are the 5 gates in the Pre-Flight Clearance Checklist?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The Pre-Flight Checklist is a strict quantitative risk gate evaluating: 1) Trend & Moving Averages / Key Support (20 EMA & 50 EMA alignment), 2) Minervini Volatility Contraction Pattern (VCP base structure), 3) Institutional Smart Money & Short Squeeze Ratio, 4) Binary Catalyst Proximity (48h earnings/FDA hazard buffer), and 5) Macro Volatility Guard (VIX < 26.0)."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How does the Smart Money Divergence Radar identify stealth accumulation vs distribution traps?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "The radar compares price trend direction against institutional order flow (institutional flow signals including C-suite Form 4 buys, curated ATS research, and STOCK Act disclosures). Price consolidation during high institutional accumulation signals a high-conviction breakout setup, whereas price spikes during net insider distribution flag dangerous distribution traps."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What is the Macro Stress Test Simulator?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "The Macro Stress Test simulates hypothetical systemic shocks (e.g. QQQ Tech Selloff -5%, Treasury Yield Surge +50bps, VIX Spike to 35) across your portfolio using covariance Beta weighting, projecting total portfolio drawdown and recommending exact defensive cash reserves."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What is the Congressional STOCK Act filing deadline?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Under Public Law 112-105 (Stop Trading on Congressional Knowledge Act of 2012), members of the US Congress and Senate are legally required to disclose securities transactions within 45 days of execution or 30 days of notification."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How is the Legislative Alignment Index calculated?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "The Legislative Alignment Index (0–100) quantifies the correlation between a politician's trade and their legislative influence by evaluating committee jurisdiction overlap (+16 to +32 pts), transaction sizing tiers ($50k to $1M+), and estimated historical politician win rates (heuristic)."
+            "text": "The Pre-Flight Gate evaluates: 1) Trend & Moving Average alignment above the 20 EMA, 2) Mark Minervini Volatility Contraction Pattern (VCP) base geometry, 3) Institutional Smart Money accumulation, 4) Binary Catalyst Buffer (zero earnings/FDA hazard within 48h), and 5) Macro Volatility Floor (CBOE VIX strictly below 26.0)."
           }
         },
         {
@@ -98,7 +66,7 @@ export default function GuidePage() {
           "name": "What are the 4 Mathematical ATR Execution States?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The 4 ATR Execution States are: 1) IN_BUY_ZONE (Optimal Accumulation), 2) APPROACHING_TARGET (Momentum Expansion), 3) WAITING_PULLBACK (Overextended / Chasing Risk), and 4) STOPPED_OUT (Invalidation Exit)."
+            "text": "The 4 ATR Execution States are: 1) IN_BUY_ZONE (Optimal Accumulation within support), 2) APPROACHING_TARGET (Advancing momentum toward Target 1), 3) WAITING_PULLBACK (Overextended past 2% ceiling; elevated mean-reversion risk), and 4) STOPPED_OUT (Closed below invalidation floor; strict capital defense exit)."
           }
         },
         {
@@ -106,7 +74,15 @@ export default function GuidePage() {
           "name": "How does Cornish-Fisher Modified Value-at-Risk (M-VaR) differ from standard VaR?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Standard Gaussian VaR assumes a normal distribution, underestimating fat-tail crash risks. Cornish-Fisher M-VaR uses a polynomial expansion adjusting for sample skewness and excess kurtosis to provide accurate downside risk boundaries."
+            "text": "Standard Gaussian VaR assumes a normal distribution, severely underestimating fat-tail crash risks. Cornish-Fisher M-VaR applies a polynomial expansion adjusting for empirical skewness and excess kurtosis to capture true downside tail risk."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does the Congressional STOCK Act staleness decay schedule operate?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Lawmakers have up to 45 days to disclose securities trades under Public Law 112-105. Filings within 15 days incur 0 penalty points, 16-30 days incur a 5-point deduction, 31-45 days incur a 16-point deduction, and filings past the 45-day statutory window incur a 32-point deduction."
           }
         }
       ]
@@ -124,7 +100,7 @@ export default function GuidePage() {
         {
           "@type": "ListItem",
           "position": 2,
-          "name": "Field Manual & Algorithmic Handbook",
+          "name": "Field Manual & Quantitative Methodology",
           "item": "https://www.arxterminal.com/guide/"
         }
       ]
@@ -144,7 +120,7 @@ export default function GuidePage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 -mb-4">
         <AuthorEeatBadge
           topic="Institutional Decision Intelligence & Algorithmic Execution"
-          lastUpdated="September 2026"
+          lastUpdated="November 2026"
         />
       </div>
 
