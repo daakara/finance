@@ -12,6 +12,9 @@
 
 This register establishes the single authoritative inventory of all active, deferred, held, and completed engineering work across the ARX Terminal repository. It provides complete reconciliation of all open GitHub issues and pull requests as of November 14, 2026, eliminating duplicate tickets, documenting verified historical closures, and providing a prioritized execution queue for subsequent engineering cycles.
 
+**Execution Roadmap:** For the full six-sprint planning horizon, multi-perspective Project Brain analysis, dependency graph, and Sprint 0 execution packet, see the companion document:
+- [`ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md`](ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md)
+
 **Governance Authority:** This document provides operational inventory and sprint prioritization; it does **not** authorize lifting any of the six active operational holds or activating Sprint 5 execution.
 
 ---
@@ -68,11 +71,14 @@ This register establishes the single authoritative inventory of all active, defe
 
 ---
 
-## 4. Open Pull Requests Reconciliation (21 PRs Audited)
+## 4. Open Pull Requests Reconciliation (22 PRs Audited)
+
+The previous classification discrepancy is fully resolved. Exactly **22 open PRs** exist on GitHub across five distinct categories:
 
 | PR ID | Title | Branch | Classification | Authoritative Disposition & Action |
 | :--- | :--- | :--- | :--- | :--- |
-| **#274** | `feat(ux): ARX-UX-R3-001 progressive disclosure & decision-first layout` | `feat/ui-r3-progressive-disclosure` | Active UX Redesign | **DRAFT / HELD:** Release admission held under `PHASE_A3_UX_HOLD`. Requires 5-participant real-human formative study. Do not merge before empirical acceptance. |
+| **#282** | `feat(ux): ARX-UX-BRAIN-REDESIGN-025 institutional UX redesign and learn hub editorial transformation` | `feat/ux-brain-redesign-025` | Active Candidate (Sprint 1) | **ACTIVE CANDIDATE:** Preflight in Sprint 0; scheduled for Sprint 1 qualification and release. Does not modify financial engines. |
+| **#274** | `feat(ux): ARX-UX-R3-001 progressive disclosure & decision-first layout` | `feat/ui-r3-progressive-disclosure` | Active UX Redesign (Sprint 5) | **DRAFT / HELD:** Release admission held under `PHASE_A3_UX_HOLD`. Requires 5-participant real-human formative study. Do not merge before empirical acceptance. |
 | **#262** | `fix(governance): serialize prospective decision capture schema` | `fix/prospective-capture-serialization` | Superseded Governance | **SUPERSEDED:** Historical serialization draft superseded by PR #280 and frozen prospective schemas. Mark for administrative closure. |
 | **#260** | `feat(ux): UI & UX distillation and visual rhythm` | `feat/ui-execution-progressive-disclosure`| Superseded UX | **SUPERSEDED:** Superseded by deployed Phase 5 post-launch touch target releases (PR #263, #264, #273). Mark for administrative closure. |
 | **#235** | `docs(planning): expose the authoritative sprint portfolio` | `docs/sprint-portfolio-visibility` | Stale Planning Draft | **SUPERSEDED:** Superseded by canonical active work registers (Nov 7 and Nov 14). Mark for administrative closure. |
