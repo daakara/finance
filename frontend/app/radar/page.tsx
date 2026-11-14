@@ -29,6 +29,12 @@ import { RadarPortfolioBadge } from '../../components/radar/RadarPortfolioBadge'
 import { ExecutionStatus } from '../../types/decisionContract';
 import SynthesisMobileDock from '../../components/synthesis/SynthesisMobileDock';
 import { isCanonicalSecurityIdentifier, resolveCanonicalSecurity } from '../../lib/assetRegistry';
+import {
+  formatRadarExecutionStatus,
+  resolveRadarScorePresentation,
+  RadarScoreTier,
+  RadarScorePresentation,
+} from '../../lib/radarPresentation';
 
 interface RadarAsset {
   ticker: string;
@@ -41,6 +47,7 @@ interface RadarAsset {
   vcpStage: string;
   volumeDryUpPct?: number | null;
   confluenceScore: number | null;
+  confluenceBadgeColor?: string | null;
   catalyst: string;
   categories: CanonicalRadarCategory[];
   sector: string;
@@ -78,33 +85,6 @@ function parseCanonicalExecutionStatus(raw: string): ExecutionStatus {
   if (s.includes('APPROACHING') || s.includes('TARGET')) return 'APPROACHING_TARGET';
   if (s.includes('PULLBACK') || s.includes('WAITING')) return 'WAITING_PULLBACK';
   return 'UNKNOWN';
-}
-
-function formatRadarExecutionStatus(status: ExecutionStatus): string {
-  switch (status) {
-    case 'DELISTED_SECURITY':
-      return 'DELISTED / INACTIVE';
-    case 'IN_BUY_ZONE':
-      return 'NEAR SCREENING ZONE';
-    case 'READY_TO_BUY':
-      return 'READY TO BUY';
-    case 'IN_BUY_ZONE_AWAITING_TRIGGER':
-      return 'AWAITING TRIGGER';
-    case 'APPROACHING_TARGET':
-      return 'APPROACHING TARGET';
-    case 'WAITING_PULLBACK':
-      return 'PULLBACK PENDING';
-    case 'STOPPED_OUT':
-      return 'STOPPED OUT';
-    case 'INSUFFICIENT_HISTORY':
-      return 'INSUFFICIENT HISTORY';
-    case 'UNVERIFIED_ASSET':
-      return 'UNVERIFIED ASSET';
-    case 'STALE_MARKET_DATA':
-      return 'STALE MARKET DATA';
-    default:
-      return 'UNKNOWN';
-  }
 }
 
 function RadarContent() {
@@ -348,6 +328,7 @@ function RadarContent() {
             vcpStage: stageStr,
             volumeDryUpPct: dryUp,
             confluenceScore: resolvedConfluence,
+            confluenceBadgeColor: gem.confluenceBadgeColor || gem.confluence_badge_color || gem.badgeColor || null,
             catalyst: gem.primary_catalyst || gem.investment_thesis || (executionStatus === 'DELISTED_SECURITY' ? 'Trading suspended for delisted security.' : 'Catalyst disclosures unavailable.'),
             categories: cat,
             sector: catalogEntry?.sector || "Broad Market",
@@ -690,6 +671,7 @@ function RadarContent() {
         confluenceScore: (data.confluence?.confluenceScore != null && Number.isFinite(data.confluence.confluenceScore))
           ? Math.round(data.confluence.confluenceScore)
           : null,
+        confluenceBadgeColor: data.confluence?.badgeColor || null,
         catalyst: opt?.entry_thesis || "Catalyst disclosures unavailable.",
         categories: cat,
         sector: "On-Demand Discovery",
@@ -1041,10 +1023,21 @@ function RadarContent() {
                     </span>
                   </div>
                   <span className="text-slate-700">•</span>
-                  <div className="flex items-center gap-1.5" title="Authoritative multi-factor confluence conviction score (0-100) from published universe pipeline">
-                    <span className="text-[var(--text-2)]">Screen Confluence:</span>
-                    <span className="text-emerald-400 font-bold">{heroAsset.confluenceScore !== null ? `${heroAsset.confluenceScore}/100` : "Unavailable"}</span>
-                  </div>
+                  {(() => {
+                    const heroScorePres = resolveRadarScorePresentation(
+                      heroAsset.confluenceScore,
+                      heroAsset.executionStatus === 'DELISTED_SECURITY',
+                      heroAsset.confluenceBadgeColor
+                    );
+                    return (
+                      <div className="flex items-center gap-1.5" title="Authoritative multi-factor confluence conviction score (0-100) from published universe pipeline · Relative discovery ranking — not an actionable buy recommendation">
+                        <span className="text-[var(--text-2)]">Screen Confluence:</span>
+                        <span className={`font-bold ${heroScorePres.colorClass}`}>
+                          {heroAsset.confluenceScore !== null ? `${heroAsset.confluenceScore}/100` : "Unavailable"}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   {heroAsset.rvol && (
                     <>
                       <span className="text-slate-700">•</span>
@@ -1149,7 +1142,7 @@ function RadarContent() {
                   );
                 })()}
                 <div className="text-[10px] font-mono text-[var(--text-2)] text-center">
-                  Discovery Candidate · Not an Execution Recommendation
+                  Discovery Candidate · Relative discovery ranking — not an actionable buy recommendation
                 </div>
               </div>
             </div>
@@ -1512,15 +1505,15 @@ function RadarContent() {
               <span className="text-[var(--text-2)]">
                 Sorted by: {sortBy === 'SCORE' ? (
                   <>
-                    <strong className="text-cyan-300">Technical Confluence</strong> (Confluence Score descending), <span className="text-amber-300/90 font-medium">not an intrinsic valuation discount ranking</span>
+                    <strong className="text-cyan-300">Technical Confluence</strong> (Confluence Score descending), <span className="text-amber-300/90 font-medium">relative discovery ranking — not an actionable buy recommendation</span>
                   </>
                 ) : sortBy === 'RVOL' ? (
                   <>
-                    <strong className="text-cyan-300">Relative Volume</strong> (RVOL descending), <span className="text-amber-300/90 font-medium">not an intrinsic valuation discount ranking</span>
+                    <strong className="text-cyan-300">Relative Volume</strong> (RVOL descending), <span className="text-amber-300/90 font-medium">relative discovery ranking — not an actionable buy recommendation</span>
                   </>
                 ) : (
                   <>
-                    <strong className="text-cyan-300">Share Price</strong> (Nominal price descending), <span className="text-amber-300/90 font-medium">not an intrinsic valuation discount ranking</span>
+                    <strong className="text-cyan-300">Share Price</strong> (Nominal price descending), <span className="text-amber-300/90 font-medium">relative discovery ranking — not an actionable buy recommendation</span>
                   </>
                 )}
               </span>
@@ -1961,13 +1954,18 @@ function RadarContent() {
                           )}
                         </td>
                         <td className="p-3 text-center whitespace-nowrap">
-                          <span className={`font-bold px-1.5 py-0.5 rounded ${
-                            asset.executionStatus === 'DELISTED_SECURITY'
-                              ? 'text-rose-400 bg-rose-950/60 border border-rose-800/60'
-                              : 'text-emerald-400 bg-emerald-950/60 border border-emerald-800/60'
-                          }`} title="Screening Snapshot Score">
-                            {asset.confluenceScore !== null ? asset.confluenceScore : <span className="text-[var(--text-muted)] font-normal font-mono">—</span>}
-                          </span>
+                          {(() => {
+                            const scorePres = resolveRadarScorePresentation(
+                              asset.confluenceScore,
+                              asset.executionStatus === 'DELISTED_SECURITY',
+                              asset.confluenceBadgeColor
+                            );
+                            return (
+                              <span className={`font-bold px-1.5 py-0.5 rounded ${scorePres.badgeClass}`} title={scorePres.tooltip}>
+                                {scorePres.label}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="p-3 text-center font-bold text-cyan-300 whitespace-nowrap">
                           {asset.rvol ? asset.rvol : <span className="text-[var(--text-muted)] font-normal">—</span>}
@@ -2148,13 +2146,18 @@ function RadarContent() {
                         <div className="text-center">
                           <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">Score</div>
                           <div>
-                            <span className={`font-bold px-1.5 py-0.5 rounded text-xs inline-block ${
-                              asset.executionStatus === 'DELISTED_SECURITY'
-                                ? 'text-rose-400 bg-rose-950/60 border border-rose-800/60'
-                                : 'text-emerald-400 bg-emerald-950/60 border border-emerald-800/60'
-                            }`}>
-                              {asset.confluenceScore !== null ? asset.confluenceScore : <span className="text-[var(--text-muted)]">—</span>}
-                            </span>
+                            {(() => {
+                              const scorePres = resolveRadarScorePresentation(
+                                asset.confluenceScore,
+                                asset.executionStatus === 'DELISTED_SECURITY',
+                                asset.confluenceBadgeColor
+                              );
+                              return (
+                                <span className={`font-bold px-1.5 py-0.5 rounded text-xs inline-block ${scorePres.badgeClass}`} title={scorePres.tooltip}>
+                                  {scorePres.label}
+                                </span>
+                              );
+                            })()}
                           </div>
                           <div className="text-[9px] text-[var(--text-muted)]">
                             RVOL: <span className="text-cyan-300 font-bold">{asset.rvol || '—'}</span>
