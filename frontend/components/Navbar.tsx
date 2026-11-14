@@ -18,7 +18,7 @@ import MarketCommandRibbon from "./nav/MarketCommandRibbon";
 import ExperienceModeToggle from "./experience/ExperienceModeToggle";
 import WatchlistDrawerTrigger from "./drawers/WatchlistDrawerTrigger";
 import { CANONICAL_HUBS, buildHubHref, isHubActive, extractActiveSymbol } from "../lib/canonicalNav";
-import { HelpCircle, Compass, Shield, RefreshCw, Zap, Landmark, Radar, Microscope, Briefcase, FileSearch } from "lucide-react";
+import { HelpCircle, Compass, Shield, RefreshCw, Zap, Landmark, Radar, Microscope, Briefcase, FileSearch, BookOpen } from "lucide-react";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -419,6 +419,17 @@ export default function Navbar({
                 >
                   <span>Research</span>
                 </Link>
+                <Link
+                  href="/guide"
+                  aria-current={pathname === "/guide" || pathname?.startsWith("/guide/") || pathname === "/glossary" || pathname?.startsWith("/glossary/") ? "page" : undefined}
+                  className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/guide" || pathname?.startsWith("/guide/") || pathname === "/glossary" || pathname?.startsWith("/glossary/")
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Learn</span>
+                </Link>
               </nav>
             </div>
 
@@ -485,6 +496,26 @@ export default function Navbar({
                     <div className="px-1 text-xs text-slate-500 uppercase tracking-wider font-bold">
                       Help & Navigation
                     </div>
+                    <Link
+                      id="field-manual-nav-btn"
+                      href="/guide"
+                      role="menuitem"
+                      onClick={() => setIsUtilitiesMenuOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px] transition-colors"
+                    >
+                      <BookOpen className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span>Field Manual & Learn</span>
+                    </Link>
+                    <Link
+                      id="glossary-nav-btn"
+                      href="/glossary"
+                      role="menuitem"
+                      onClick={() => setIsUtilitiesMenuOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px] transition-colors"
+                    >
+                      <Compass className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Quantitative Glossary</span>
+                    </Link>
                     <button
                       id="shortcuts-help-btn"
                       type="button"
@@ -493,7 +524,7 @@ export default function Navbar({
                         setIsUtilitiesMenuOpen(false);
                         setIsShortcutsOpen(true);
                       }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[36px] transition-colors"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px] transition-colors"
                     >
                       <HelpCircle className="w-4 h-4 text-cyan-400 shrink-0" />
                       <span>Keyboard Shortcuts</span>
@@ -507,7 +538,7 @@ export default function Navbar({
                         setIsUtilitiesMenuOpen(false);
                         handleOpenOnboarding();
                       }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[36px] transition-colors"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px] transition-colors"
                     >
                       <Compass className="w-4 h-4 text-cyan-400 shrink-0" />
                       <span>Guided Onboarding Tour</span>
@@ -527,7 +558,7 @@ export default function Navbar({
                         setIsUtilitiesMenuOpen(false);
                         setIsPrivacyOpen(true);
                       }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[36px] transition-colors"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px] transition-colors"
                     >
                       <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
                       <span>Privacy & Telemetry</span>
@@ -547,7 +578,7 @@ export default function Navbar({
                         setIsUtilitiesMenuOpen(false);
                         handlePurgeCache();
                       }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-rose-950/40 hover:text-rose-300 text-left cursor-pointer min-h-[36px] transition-colors"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-rose-950/40 hover:text-rose-300 text-left cursor-pointer min-h-[44px] transition-colors"
                     >
                       <RefreshCw className={`w-4 h-4 text-amber-400 shrink-0 ${isPurging ? "animate-spin text-cyan-400" : ""}`} />
                       <div className="flex flex-col">
