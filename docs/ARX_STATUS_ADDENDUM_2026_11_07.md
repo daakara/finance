@@ -1,6 +1,13 @@
 # ARX Terminal — Integrated Status Addendum (2026-11-07)
 
-> **Current operational reconciliation (2026-11-07, production SHA `83bca0b69d2d56d30b4d3157ff492fae260b7f3a`):** See [Active work register](planning/ARX_ACTIVE_WORK_REGISTER_2026_11_07.md) and [latest release reconciliation](releases/2026-11-07_operational_release_reconciliation.md). Older SHAs and pending-Radar statements below are dated historical context, not current status. PR #220 Radar and PR #222 learning integrity are merged; learning calibration, natural scans, SEC recurring ingest and execution remain held.
+> [!NOTE]
+> **Superseded by 2026-11-14 Operational Reconciliation:**  
+> This November 7, 2026 addendum is preserved as an immutable historical record. For the current production baseline (`6ea232838a53e482753d5705ba533ad9ce041e44`), active workstreams, verified deployments, and operational holds, see:
+> - [Integrated Status Addendum — 2026-11-14](ARX_STATUS_ADDENDUM_2026_11_14.md)
+> - [Active Work Register — 2026-11-14](planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md)
+> - [Operational Holds Register](governance/ARX_OPERATIONAL_HOLDS_REGISTER.md)
+
+> **Historical operational reconciliation (2026-11-07, production SHA `83bca0b69d2d56d30b4d3157ff492fae260b7f3a`):** See [Active work register](planning/ARX_ACTIVE_WORK_REGISTER_2026_11_07.md) and [latest release reconciliation](releases/2026-11-07_operational_release_reconciliation.md). Older SHAs and pending-Radar statements below are dated historical context, not current status. PR #220 Radar and PR #222 learning integrity are merged; learning calibration, natural scans, SEC recurring ingest and execution remain held.
 
 
 **Purpose:** Dated successor addendum to [the 2026-10-29 master project status](ARX_MASTER_PROJECT_STATUS_2026_10_29.md); preserves historical baseline without overwriting it.
