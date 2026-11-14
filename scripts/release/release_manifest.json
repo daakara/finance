@@ -1,113 +1,33 @@
 {
-  "release_candidate_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-  "base_anchor_commit": "f4e33bd603c798cbff63b9cf5417b7d6e557cb17",
-  "total_files": 13,
+  "release_candidate_commit": "3f6eade13051a0f76d8b6d60aab66fcbceef3422",
+  "base_anchor_commit": "c5a134de456485daec6a18aaf5b1bfd2c5f6908c",
+  "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-UX-BRAIN-REDESIGN-025",
+  "directive": "ARX-BRAIN-SPRINT-026",
   "files": {
-    "docs/planning/ARX_FINAL_UX_QUALITY_ASSESSMENT_025.md": {
-      "operation": "A",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: final UX quality assessment distinguishing verified changes from unverified hypotheses.",
-      "sha256": "048fa2688c8c3d91680ed9aaf82aa6729752d437eca15e0aa2d6865e33df135f",
-      "size_bytes": 7748
-    },
-    "docs/planning/ARX_LEARN_HUB_EDITORIAL_AUDIT_025.md": {
-      "operation": "A",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: learn hub editorial audit and forensic inventory of AI slop patterns.",
-      "sha256": "36626ac154dc713cf73efff101d67cdb6a51491d71ae7b360f0d9ca37e7b7dae",
-      "size_bytes": 12186
-    },
-    "docs/planning/ARX_LEARN_HUB_HUMAN_WRITING_GUIDE_025.md": {
-      "operation": "A",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: human writing guide and canonical editorial standards for financial decision systems.",
-      "sha256": "2443e4625554ff59b875c2faf62571e8a88d312390be614c2f29827960f6981b",
-      "size_bytes": 7863
-    },
-    "docs/planning/ARX_PROJECT_BRAIN_DESIGN_CRITIQUE_025.md": {
-      "operation": "A",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: 7-perspective project brain design critique and 3-option tradeoff analysis.",
-      "sha256": "503aad9931e71edb26743dc1b078581e63e44c4ca1ac9918ca9726a2d3cca3b8",
-      "size_bytes": 11507
-    },
-    "docs/planning/ARX_UX_BASELINE_AUDIT_025.md": {
-      "operation": "A",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: baseline UX audit answering 7 mandatory questions across 8 surfaces.",
-      "sha256": "7db289031c114a014702369f74e4243913febb49a39547afed2dd8316e1dd3f8",
-      "size_bytes": 16637
-    },
-    "docs/planning/ARX_UX_IMPLEMENTATION_EVIDENCE_025.md": {
-      "operation": "A",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: implementation evidence, test logs, and hold preservation confirmation.",
-      "sha256": "76cef4e6c5fd1a2ccd93078cc31908b1c98c30ed698e9d7a2903a1b47f45b2a0",
-      "size_bytes": 7769
-    },
-    "docs/planning/ARX_UX_REDESIGN_IMPLEMENTATION_PLAN_025.md": {
-      "operation": "A",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: phased redesign implementation plan with PR overlap analysis.",
-      "sha256": "962fc0962c59dc7d3e067e3103960faf61ac2fb37819b09276f4cc8159f9a7b8",
-      "size_bytes": 6056
-    },
-    "docs/planning/ARX_UX_REDESIGN_SPECIFICATION_025.md": {
-      "operation": "A",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: target institutional UX specification and visual architecture tokens.",
-      "sha256": "bfa729c8b822b5d85d68772df20ab286f1dbe97cf0868a9bb593b445f69cc3f0",
-      "size_bytes": 9077
-    },
-    "frontend/app/guide/page.tsx": {
+    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md": {
       "operation": "M",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: institutional metadata and Schema.org structured data for Learn Hub.",
-      "sha256": "8a6439ad422e0f8e7d78d3c5d02b7e1b71d8d1e2375b088e78396f2d5f0d1567",
-      "size_bytes": 5658
+      "originating_pr_number": 284,
+      "originating_commit": "3f6eade13051a0f76d8b6d60aab66fcbceef3422",
+      "governing_requirement": "ARX-BRAIN-SPRINT-026: update active work register to reflect PR #282 merged release (21 open PRs).",
+      "sha256": "a3b400db765a4b8dd9fb27306cee1c6f25c69ba315216eabaf707dc764ab4c22",
+      "size_bytes": 17721
     },
-    "frontend/components/GuideContent.tsx": {
+    "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md": {
       "operation": "M",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: complete editorial rewrite of Learn Hub eliminating AI slop with 5-module curriculum.",
-      "sha256": "fb71ff12e50a674afa9179ae9ef767b4113dd922883a4fec9ff817b2e1dbc1f9",
-      "size_bytes": 29188
-    },
-    "frontend/components/Navbar.tsx": {
-      "operation": "M",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: promote Learn Hub to first-class global navigation and utilities menu with WCAG touch targets.",
-      "sha256": "ca4bf5087b1ca7a7e052e84d540cd9cf7cf8cce90312e04a433331515efe3713",
-      "size_bytes": 40475
-    },
-    "frontend/lib/glossaryCatalog.ts": {
-      "operation": "M",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: rigorous human rewrite of all 10 quantitative glossary terms with formulas and limitations.",
-      "sha256": "ba5714d907c65a51b1d30013ec6386d3ce2d12772d4d29bedccca7f60dd449a4",
-      "size_bytes": 21087
+      "originating_pr_number": 284,
+      "originating_commit": "3f6eade13051a0f76d8b6d60aab66fcbceef3422",
+      "governing_requirement": "ARX-BRAIN-SPRINT-026: reconcile roadmap to baseline c5a134de with PR #282 marked delivered and non-duplicative backlog.",
+      "sha256": "2b0d8c88fc68e5513fadb4c17674a4a1fdf9b2b53d272e034b344e589eee9db4",
+      "size_bytes": 32657
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 282,
-      "originating_commit": "7e2b5d3e9324aefcf1fa010f3bebaef8734ec588",
-      "governing_requirement": "ARX-UX-BRAIN-REDESIGN-025: register approved PR 282 in APPROVED_PRS allowlist.",
-      "sha256": "266ad37b3926a8c90c3cda04248d0cfc83294c25121f3f1a0f6c5a9baa75c5d1",
-      "size_bytes": 58086
+      "originating_pr_number": 284,
+      "originating_commit": "3f6eade13051a0f76d8b6d60aab66fcbceef3422",
+      "governing_requirement": "ARX-BRAIN-SPRINT-026: register approved PR 284 in APPROVED_PRS allowlist.",
+      "sha256": "6c204c6e6397f4d5cd12114bfdcd234dda15f9d7a0e272beeb71164b09149c39",
+      "size_bytes": 58091
     }
   },
   "qualification_framework_files": {
@@ -117,8 +37,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "266ad37b3926a8c90c3cda04248d0cfc83294c25121f3f1a0f6c5a9baa75c5d1",
-      "size_bytes": 58086,
+      "sha256": "6c204c6e6397f4d5cd12114bfdcd234dda15f9d7a0e272beeb71164b09149c39",
+      "size_bytes": 58091,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
