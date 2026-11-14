@@ -42,6 +42,12 @@ import TerminalSsrShell from "../components/TerminalSsrShell";
 import SynthesisMobileDock from "../components/synthesis/SynthesisMobileDock";
 import { resolveFreshCachedVix, resolveFreshMacroEvidence } from "../lib/preflightEvaluator";
 import { validateDecisionContext, getAnalysisHubCacheKey } from "../lib/decisionContext";
+import {
+  isAnalysisCacheEntryFresh,
+  formatAnalysisObservationTime,
+  resolvePreflightLiveFreshness,
+  CachedAnalyticsEntry,
+} from "../lib/analysisCache";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
 type WorkspaceTab = "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
@@ -101,19 +107,13 @@ function TerminalContent() {
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const [isPreflightModalOpen, setIsPreflightModalOpen] = useState<boolean>(false);
   const [isPreflightDrawerExpanded, setIsPreflightDrawerExpanded] = useState<boolean>(false);
-  const cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map());
+  const cacheRef = useRef<Map<string, CachedAnalyticsEntry>>(new Map());
 
   useEffect(() => {
     if (data) {
-      const obsTimeStr = data.liveObservedAt || (data.marketPriceState as any)?.asOfTimestamp || data.analysisReferenceDate;
-      if (obsTimeStr) {
-        const d = new Date(obsTimeStr);
-        if (!isNaN(d.getTime())) {
-          setLastUpdatedTime(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (Observed)");
-          return;
-        }
-      }
-      setLastUpdatedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (Rendered)");
+      setLastUpdatedTime(formatAnalysisObservationTime(data));
+    } else {
+      setLastUpdatedTime("");
     }
   }, [data]);
 
@@ -262,22 +262,10 @@ function TerminalContent() {
       const cacheKey = getAnalysisHubCacheKey(selectedSymbol, interval, userRole);
       const cached = cacheRef.current.get(cacheKey);
 
-      // Instant optimistic display from memory cache (<10ms) with source observation freshness check (PREFLIGHT-001)
+      // Instant optimistic display from memory cache with authoritative TTL and source observation freshness check (Issue #198 / PREFLIGHT-001)
       if (cached) {
-        const obsTimeStr = cached.liveObservedAt || (cached.marketPriceState as any)?.asOfTimestamp;
-        let isCacheFresh = true;
-        if (obsTimeStr) {
-          const obsTime = new Date(obsTimeStr).getTime();
-          if (!isNaN(obsTime)) {
-            const ageMinutes = (Date.now() - obsTime) / 60000;
-            const freshnessStr = typeof cached.liveFreshness === "string" ? cached.liveFreshness : (cached.liveFreshness as any)?.status;
-            if (ageMinutes > 5 && (freshnessStr === "LIVE" || freshnessStr === "REALTIME")) {
-              isCacheFresh = false;
-            }
-          }
-        }
-        if (isCacheFresh) {
-          setData(cached);
+        if (isAnalysisCacheEntryFresh(cached)) {
+          setData(cached.data);
           setLoading(false);
           return;
         } else {
@@ -327,7 +315,7 @@ function TerminalContent() {
         if (isMounted && !abortController.signal.aborted && requestId === analysisRequestIdRef.current) {
           setData(res);
           setError(null);
-          cacheRef.current.set(cacheKey, res);
+          cacheRef.current.set(cacheKey, { data: res, cachedAt: Date.now() });
         }
       } catch (err) {
         if (abortController.signal.aborted) return;
@@ -410,8 +398,8 @@ function TerminalContent() {
       marketSession: data?.marketSession || data?.marketPriceState?.marketSession,
       quoteStatus: data?.quoteStatus,
       liveSource: data?.liveSource,
-      liveFreshnessStatus: (data?.liveFreshness as any)?.status || ((data?.marketPriceState as any)?.liveFreshness as any)?.status,
-      observationTime: data?.liveObservedAt || (data?.marketPriceState as any)?.asOfTimestamp,
+      liveFreshnessStatus: resolvePreflightLiveFreshness(data),
+      observationTime: data?.liveObservedAt || (data?.marketPriceState as any)?.asOfTimestamp || data?.analysisReferenceDate || undefined,
       shortFloat: (data as any)?.shortFloat ?? (data?.optimalExecution as any)?.short_float ?? (data?.factorScores as any)?.shortFloat,
       qualityScore: (data as any)?.qualityScore ?? (data?.factorScores as any)?.qualityScore ?? (data?.dnaScores as any)?.qualityScore,
       assetClass: (data as any)?.assetClass ?? (data?.canonicalInstrument as any)?.asset_class,

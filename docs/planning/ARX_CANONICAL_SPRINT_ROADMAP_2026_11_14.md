@@ -192,7 +192,7 @@ flowchart TD
 | **S3** | **#197** | Decision Int | **P1** | **Medium** (4–7d)| S2-DeepLinks | Pre-flight decision freshness | Stale-price classification verified; gate protected | **IMPLEMENTED** |
 | **S3** | **#181** | Decision Int | **P2** | **Small** (1–3d) | S2-DeepLinks | Reward/Risk disclosure copy | 2:1 threshold copy clarified; sizing contract intact | **IMPLEMENTED** |
 | **S3** | **#66** | Research | **P2** | **Small** (1–3d) | S2-Confirmation | Phase A3 pilot dry-run (P1) | Completed worksheet `a3_worksheet_p01.md`; zero blockers | **PLANNED** |
-| **S4** | **#198** | Architecture | **P1** | **Medium** (4–7d)| S3-Freshness | OHLCV provenance & cache fence | Provenance boundary enforced; zero stale cache poisoning | **PLANNED** |
+| **S4** | **#198** | Architecture | **P1** | **Medium** (4–7d)| S3-Freshness | OHLCV provenance & cache fence | Provenance boundary enforced; zero stale cache poisoning | **IMPLEMENTED** |
 | **S4** | **#203** | Security/Arch| **P2** | **Medium** (4–7d)| S3-Freshness | SEC-001 & ARCH-001 boundary pass | Query index optimization; typing contracts verified | **PLANNED** |
 | **S4** | **#66** | Research | **P1** | **Medium** (4–7d)| S3-Pilot | Phase A3 study sessions (P2 & P3)| Completed worksheets `a3_worksheet_p02` & `p03` | **PLANNED** |
 | **S5** | **#66** | Research | **P0** | **Medium** (4–7d)| S4-Sessions | Phase A3 study sessions (P4 & P5)| Completed worksheets `a3_worksheet_p04` & `p05` | **PLANNED (Gated)** |
