@@ -33,15 +33,26 @@ class DecisionTraceEngine:
         security_type: Optional[Any] = None,
         asset_class: Optional[Any] = None,
         has_fund_profile: bool = True,
+        fundamental_provenance: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Construct the comprehensive Decision Trace tree."""
         clean_sym = symbol.upper().strip()
         candle_count = len(candles) if candles else 0
         freshness_status = freshness.get("status", "UNAVAILABLE") if freshness else "UNAVAILABLE"
 
-        has_fundamentals = bool(
-            factor_scores and any(factor_scores.get(k) is not None for k in ["qualityScore", "piotroskiFScore", "piotroski_f"])
+        fund_prov = (
+            fundamental_provenance
+            or (confluence.get("fundamentalProvenance") if isinstance(confluence, dict) else None)
         )
+        fund_status = (fund_prov.get("evidenceStatus") or fund_prov.get("status")) if isinstance(fund_prov, dict) else None
+        v_pillars = confluence.get("verifiedPillarCount") if isinstance(confluence, dict) else None
+
+        if isinstance(fund_prov, dict) and fund_prov:
+            has_fundamentals = bool(fund_prov.get("isVerified"))
+        else:
+            has_fundamentals = bool(
+                factor_scores and any(factor_scores.get(k) is not None for k in ["qualityScore", "piotroskiFScore", "piotroski_f"])
+            )
 
         confluence_score = float(confluence.get("confluenceScore", 0.0)) if confluence else 0.0
         exec_status = optimal_execution.get("execution_status", "UNKNOWN") if optimal_execution else "UNKNOWN"
@@ -77,6 +88,9 @@ class DecisionTraceEngine:
             execution_status=exec_status,
             execution_hazard=exec_hazard,
             liquidity_defense=liq_defense,
+            verified_pillar_count=v_pillars,
+            fundamental_provenance=fund_prov,
+            fundamental_evidence_status=fund_status,
         )
 
         # 2. Extract Pillar Statuses
