@@ -1,57 +1,57 @@
 {
-  "release_candidate_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-  "base_anchor_commit": "d266bb01d9fec7343786ec0234ba2a667dc0af89",
+  "release_candidate_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+  "base_anchor_commit": "125bf78095afc3aabec82ceebe8af1730bf56aec",
   "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-CONFLUENCE-INTEGRITY-003",
+  "directive": "ARX-ARCHITECTURE-RSM-002-TACTICAL-SETUPS-LATENCY",
   "files": {
-    "analyst_dashboard/analyzers/decision_trace.py": {
+    "api/observability/middleware.py": {
       "operation": "M",
-      "originating_pr_number": 277,
-      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: enforce verified factor provenance on has_fundamentals and forward provenance to DecisionHierarchyEngine.",
-      "sha256": "61c584a245b779a8e95316fea8195b3c6b4bdb8f78c7919dcbd9c320c99bf9a5",
-      "size_bytes": 14701
+      "originating_pr_number": 275,
+      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+      "governing_requirement": "ARX-RSM-002: latency breakdown and request profiling middleware.",
+      "sha256": "a5874add7e5a91283482929b89151aa4ccab97616ec87df4f7888aadb76ab71c",
+      "size_bytes": 6607
     },
     "api/routes/analytics.py": {
       "operation": "M",
-      "originating_pr_number": 277,
-      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: wire evaluate_factor_provenance and forward fundamental_provenance and asset_class to confluence_engine.",
-      "sha256": "9d7b54f6421e229a67094219e005577fb6d8f763520df0b3bd8c59b5d42532a6",
-      "size_bytes": 83098
+      "originating_pr_number": 275,
+      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+      "governing_requirement": "ARX-RSM-002: session caching, parallelized analytics factor fetching and batching.",
+      "sha256": "46c7007dd6969f9137a99976664d661be0fa879092e3012eaea759056c3d33e8",
+      "size_bytes": 87792
     },
-    "api/routes/screener.py": {
+    "docs/governance/ARX_ARCHITECTURE_RSM_001_REPORT.md": {
+      "operation": "A",
+      "originating_pr_number": 275,
+      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+      "governing_requirement": "ARX-RSM-002: architecture latency remediation report and P95 benchmarks.",
+      "sha256": "295d8d12688ebf0d014994630b9cab570c8666f8ed393221b3149a217a517a02",
+      "size_bytes": 12285
+    },
+    "scripts/benchmarks/rsm_capacity_harness.py": {
+      "operation": "A",
+      "originating_pr_number": 275,
+      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+      "governing_requirement": "ARX-RSM-002: capacity and warm latency benchmark harness.",
+      "sha256": "a92e374f0a3260194e0010988623e855fde987a2e4ba21becef4da065c605828",
+      "size_bytes": 4368
+    },
+    "tests/test_tactical_setups_latency_remediation.py": {
       "operation": "M",
-      "originating_pr_number": 277,
-      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: wire evaluate_factor_provenance and forward fundamental_provenance and verified_pillar_count to confluence and decision state.",
-      "sha256": "d9df6def69ea6d810b00199d2055dce17ba452d0453124cfe26aa9c082d3079e",
-      "size_bytes": 122450
-    },
-    "tests/test_confluence_cross_component_parity.py": {
-      "operation": "A",
-      "originating_pr_number": 277,
-      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: cross-component confluence parity and provenance invariants test suite.",
-      "sha256": "c3a8c2d6dc3b09d227681deb92a26611e77bec4504a6279daa1fca0d7ddef042",
-      "size_bytes": 10804
-    },
-    "tests/test_confluence_provenance_wiring_003.py": {
-      "operation": "A",
-      "originating_pr_number": 277,
-      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: decision trace provenance fail-closed gating regression suite.",
-      "sha256": "c23970f3938a30fbdf80cc5d535e65cbd3bbd590df6baddae9ee8caaed45cd18",
-      "size_bytes": 4650
+      "originating_pr_number": 275,
+      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+      "governing_requirement": "ARX-RSM-002: latency remediation regression tests (15/15 passed).",
+      "sha256": "d86e13fc0d06919e1e4935a0c6df6e370083bc1649825359fd5c0925a4e5e40a",
+      "size_bytes": 11577
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 277,
-      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
-      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: add PR 277 to APPROVED_PRS allowlist.",
-      "sha256": "5c9c0518900d5ebf3adfded8c839dd0563fa79d83b1286652f76d31f23a9d5b5",
-      "size_bytes": 58051
+      "originating_pr_number": 275,
+      "originating_commit": "6d380de61a165d232cde9de3f1aefa362d286861",
+      "governing_requirement": "ARX-RSM-002: add PR 275 to APPROVED_PRS allowlist.",
+      "sha256": "a0a0a88983db981b34298275deaa652d346ede8f512a45daf2cbafb8c25b4f69",
+      "size_bytes": 58056
     }
   },
   "qualification_framework_files": {
@@ -61,8 +61,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "5c9c0518900d5ebf3adfded8c839dd0563fa79d83b1286652f76d31f23a9d5b5",
-      "size_bytes": 58051,
+      "sha256": "a0a0a88983db981b34298275deaa652d346ede8f512a45daf2cbafb8c25b4f69",
+      "size_bytes": 58056,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -588,6 +588,63 @@
           "governing_requirement": "ARX-SM-ACT-020-SENTRY-ACCEPTANCE-005: safe attributable worker telemetry probe and exception sanitization (Issue #165 / PR #271). Operational holds preserved.",
           "sha256": "929e14657ddc20d98ed5647ae140dd8bf4d7557dd7253d3fd6f5a105dfa9bd06",
           "size_bytes": 11677
+        }
+      }
+    },
+    {
+      "release_candidate_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+      "base_anchor_commit": "d266bb01d9fec7343786ec0234ba2a667dc0af89",
+      "total_files": 6,
+      "qualification_policy_version": "2.2.0-D074A4",
+      "directive": "ARX-CONFLUENCE-INTEGRITY-003",
+      "files": {
+        "analyst_dashboard/analyzers/decision_trace.py": {
+          "operation": "M",
+          "originating_pr_number": 277,
+          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: enforce verified factor provenance on has_fundamentals and forward provenance to DecisionHierarchyEngine.",
+          "sha256": "61c584a245b779a8e95316fea8195b3c6b4bdb8f78c7919dcbd9c320c99bf9a5",
+          "size_bytes": 14701
+        },
+        "api/routes/analytics.py": {
+          "operation": "M",
+          "originating_pr_number": 277,
+          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: wire evaluate_factor_provenance and forward fundamental_provenance and asset_class to confluence_engine.",
+          "sha256": "9d7b54f6421e229a67094219e005577fb6d8f763520df0b3bd8c59b5d42532a6",
+          "size_bytes": 83098
+        },
+        "api/routes/screener.py": {
+          "operation": "M",
+          "originating_pr_number": 277,
+          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: wire evaluate_factor_provenance and forward fundamental_provenance and verified_pillar_count to confluence and decision state.",
+          "sha256": "d9df6def69ea6d810b00199d2055dce17ba452d0453124cfe26aa9c082d3079e",
+          "size_bytes": 122450
+        },
+        "tests/test_confluence_cross_component_parity.py": {
+          "operation": "A",
+          "originating_pr_number": 277,
+          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: cross-component confluence parity and provenance invariants test suite.",
+          "sha256": "c3a8c2d6dc3b09d227681deb92a26611e77bec4504a6279daa1fca0d7ddef042",
+          "size_bytes": 10804
+        },
+        "tests/test_confluence_provenance_wiring_003.py": {
+          "operation": "A",
+          "originating_pr_number": 277,
+          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: decision trace provenance fail-closed gating regression suite.",
+          "sha256": "c23970f3938a30fbdf80cc5d535e65cbd3bbd590df6baddae9ee8caaed45cd18",
+          "size_bytes": 4650
+        },
+        "scripts/release/rq02_diff_integrity.py": {
+          "operation": "M",
+          "originating_pr_number": 277,
+          "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+          "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: add PR 277 to APPROVED_PRS allowlist.",
+          "sha256": "5c9c0518900d5ebf3adfded8c839dd0563fa79d83b1286652f76d31f23a9d5b5",
+          "size_bytes": 58051
         }
       }
     }
