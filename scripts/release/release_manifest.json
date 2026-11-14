@@ -1,49 +1,57 @@
 {
-  "release_candidate_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-  "base_anchor_commit": "e63cd1ed4efdd56c8c08f6a1ef963cd4a4e35d03",
-  "total_files": 5,
+  "release_candidate_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+  "base_anchor_commit": "d266bb01d9fec7343786ec0234ba2a667dc0af89",
+  "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-UX-R5-001-MOBILE-OPTIMIZATION-OWNER-PREAPPROVED",
+  "directive": "ARX-CONFLUENCE-INTEGRITY-003",
   "files": {
-    "frontend/app/portfolio/page.tsx": {
+    "analyst_dashboard/analyzers/decision_trace.py": {
       "operation": "M",
-      "originating_pr_number": 273,
-      "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-      "governing_requirement": "ARX-UX-R5-001: mobile table cards (<sm) preserving stop-floor, unrealized P&L and WCAG touch targets.",
-      "sha256": "37ef28f9f2097ae8ec2a3e6d98bd94f24cb9fb9928cc7b5e2574eadc995c0128",
-      "size_bytes": 85994
+      "originating_pr_number": 277,
+      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: enforce verified factor provenance on has_fundamentals and forward provenance to DecisionHierarchyEngine.",
+      "sha256": "61c584a245b779a8e95316fea8195b3c6b4bdb8f78c7919dcbd9c320c99bf9a5",
+      "size_bytes": 14701
     },
-    "frontend/app/radar/page.tsx": {
+    "api/routes/analytics.py": {
       "operation": "M",
-      "originating_pr_number": 273,
-      "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-      "governing_requirement": "ARX-UX-R5-001: mobile candidate cards (<sm) preserving score, sparkline, execution state and >=44px touch targets.",
-      "sha256": "32d78e17d4f4e9abf08858051def987a7732198a792a92eec1f3b7fc2bf6a8e1",
-      "size_bytes": 131295
+      "originating_pr_number": 277,
+      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: wire evaluate_factor_provenance and forward fundamental_provenance and asset_class to confluence_engine.",
+      "sha256": "9d7b54f6421e229a67094219e005577fb6d8f763520df0b3bd8c59b5d42532a6",
+      "size_bytes": 83098
     },
-    "frontend/components/Navbar.tsx": {
+    "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 273,
-      "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-      "governing_requirement": "ARX-UX-R5-001: mobile chrome height constraint h-12 (48px) keeping combined top fixed chrome <= 72px.",
-      "sha256": "2f50c07c1376d87e74ed4d409eb606e345c1c07a3227a58206060bfcad704902",
-      "size_bytes": 38433
+      "originating_pr_number": 277,
+      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: wire evaluate_factor_provenance and forward fundamental_provenance and verified_pillar_count to confluence and decision state.",
+      "sha256": "d9df6def69ea6d810b00199d2055dce17ba452d0453124cfe26aa9c082d3079e",
+      "size_bytes": 122450
     },
-    "frontend/tests/uxPhaseR5MobileOptimization.test.ts": {
+    "tests/test_confluence_cross_component_parity.py": {
       "operation": "A",
-      "originating_pr_number": 273,
-      "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-      "governing_requirement": "ARX-UX-R5-001: mobile table cards and navigation chrome regression test suite.",
-      "sha256": "06714c99b4d32f0a9006c1f2a2b155d889588001c8c4fa01be089de8c77cc522",
-      "size_bytes": 7884
+      "originating_pr_number": 277,
+      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: cross-component confluence parity and provenance invariants test suite.",
+      "sha256": "c3a8c2d6dc3b09d227681deb92a26611e77bec4504a6279daa1fca0d7ddef042",
+      "size_bytes": 10804
+    },
+    "tests/test_confluence_provenance_wiring_003.py": {
+      "operation": "A",
+      "originating_pr_number": 277,
+      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: decision trace provenance fail-closed gating regression suite.",
+      "sha256": "c23970f3938a30fbdf80cc5d535e65cbd3bbd590df6baddae9ee8caaed45cd18",
+      "size_bytes": 4650
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 273,
-      "originating_commit": "ec82bd416bb5d1051bb76c5d48059968faef7053",
-      "governing_requirement": "ARX-UX-R5-001: add PR 273 to APPROVED_PRS allowlist.",
-      "sha256": "4effe75cbb3a450a73245a6980d2355c2326af91faa95bd354f8cac475ddb3dc",
-      "size_bytes": 58046
+      "originating_pr_number": 277,
+      "originating_commit": "1378fe7b556332d80fb79d3623823aab5a34593c",
+      "governing_requirement": "ARX-CONFLUENCE-INTEGRITY-003: add PR 277 to APPROVED_PRS allowlist.",
+      "sha256": "5c9c0518900d5ebf3adfded8c839dd0563fa79d83b1286652f76d31f23a9d5b5",
+      "size_bytes": 58051
     }
   },
   "qualification_framework_files": {
@@ -53,8 +61,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "4effe75cbb3a450a73245a6980d2355c2326af91faa95bd354f8cac475ddb3dc",
-      "size_bytes": 58046,
+      "sha256": "5c9c0518900d5ebf3adfded8c839dd0563fa79d83b1286652f76d31f23a9d5b5",
+      "size_bytes": 58051,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
