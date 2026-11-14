@@ -264,6 +264,7 @@ CREATE TABLE IF NOT EXISTS sm_run_requests (
 CREATE INDEX IF NOT EXISTS idx_run_requests_queue ON sm_run_requests(status, requested_at);
 CREATE INDEX IF NOT EXISTS idx_run_requests_eligible ON sm_run_requests(status, next_attempt_at, requested_at);
 CREATE INDEX IF NOT EXISTS idx_run_requests_stale_running ON sm_run_requests(status, lease_expires_at) WHERE status = 'RUNNING';
+CREATE INDEX IF NOT EXISTS idx_run_requests_active_guard ON sm_run_requests(request_type, requested_by_subject_hash, status);
 """
 
 SCHEMA_V2_MIGRATION_DDL = """
@@ -287,6 +288,7 @@ ALTER TABLE form4_parsed_transactions ADD COLUMN IF NOT EXISTS is_open_market_pu
 
 CREATE INDEX IF NOT EXISTS idx_run_requests_eligible ON sm_run_requests(status, next_attempt_at, requested_at);
 CREATE INDEX IF NOT EXISTS idx_run_requests_stale_running ON sm_run_requests(status, lease_expires_at) WHERE status = 'RUNNING';
+CREATE INDEX IF NOT EXISTS idx_run_requests_active_guard ON sm_run_requests(request_type, requested_by_subject_hash, status);
 """
 
 
