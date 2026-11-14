@@ -1,81 +1,73 @@
 {
-  "release_candidate_commit": "3a1192ba160dc258b6204fb6335c667ca07a49f3",
-  "base_anchor_commit": "fb1198bd93528032bf63a69729b1629eae529d0c",
-  "total_files": 9,
+  "release_candidate_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
+  "base_anchor_commit": "886f5cb747fe0ddbb71922deea7487cbfaf9dde1",
+  "total_files": 8,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-PREFLIGHT-INTEGRITY-031",
+  "directive": "ARX-EVIDENCE-INTEGRITY-032",
   "files": {
     "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md": {
       "operation": "M",
-      "originating_pr_number": 287,
-      "originating_commit": "3a1192ba160dc258b6204fb6335c667ca07a49f3",
-      "governing_requirement": "ARX-PREFLIGHT-INTEGRITY-031: update planning register to reflect Issue #197 implementation.",
-      "sha256": "977691834d117bf78c3c8f583409cb247a5ddd8a52bfb625766c2f5560922428",
-      "size_bytes": 18008
+      "originating_pr_number": 288,
+      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
+      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
+      "sha256": "505f7754771f98b576b70ba93ebddf3df5c8853d9dbf2b0e245c3bfb91d7102e",
+      "size_bytes": 18106
     },
     "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md": {
       "operation": "M",
-      "originating_pr_number": 287,
-      "originating_commit": "3a1192ba160dc258b6204fb6335c667ca07a49f3",
-      "governing_requirement": "ARX-PREFLIGHT-INTEGRITY-031: update canonical roadmap to reflect Issue #197 implementation.",
-      "sha256": "dee5bc8a641b6db56baf655e0f3ebec6ee06c968ec4d15ad6f872f1bc6350356",
-      "size_bytes": 28710
+      "originating_pr_number": 288,
+      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
+      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
+      "sha256": "c2dd7ef516cb3db8c35fac0aa373f935ad0d6692d5b97266ea67ae9c24b84e2d",
+      "size_bytes": 28714
     },
-    "frontend/components/PreFlightChecklistModal.tsx": {
+    "frontend/app/page.tsx": {
       "operation": "M",
-      "originating_pr_number": 287,
-      "originating_commit": "3a1192ba160dc258b6204fb6335c667ca07a49f3",
-      "governing_requirement": "ARX-PREFLIGHT-INTEGRITY-031: epistemic separation in checklist modal and research journal export safeguards (#197).",
-      "sha256": "f03c3ccae7c89eb0d1181a9ddb62370e299e01ff43397aefc659497d2ea246d4",
-      "size_bytes": 39977
+      "originating_pr_number": 288,
+      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
+      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
+      "sha256": "3bac3874e3c63bce0cbb3d4b4e08fe60bce2f7647d0011afed039cab85dbda6b",
+      "size_bytes": 45057
     },
-    "frontend/components/PreFlightReadinessBar.tsx": {
-      "operation": "M",
-      "originating_pr_number": 287,
-      "originating_commit": "3a1192ba160dc258b6204fb6335c667ca07a49f3",
-      "governing_requirement": "ARX-PREFLIGHT-INTEGRITY-031: epistemic historical reference badge in PreFlightReadinessBar (#197).",
-      "sha256": "4c1a7987a7bd6b14f92b615a0d51251756d01d0d6c1c0d912f7bf39832a44662",
-      "size_bytes": 13717
-    },
-    "frontend/components/__tests__/PreFlightDecisionIntegrity197.test.tsx": {
+    "frontend/lib/analysisCache.ts": {
       "operation": "A",
-      "originating_pr_number": 287,
-      "originating_commit": "3a1192ba160dc258b6204fb6335c667ca07a49f3",
-      "governing_requirement": "ARX-PREFLIGHT-INTEGRITY-031: component tests for epistemic distinction and stale price failure (#197).",
-      "sha256": "1fd32f4ad009db51aa7a07bf8570057f3d035645b9fd21570445ddf6ff2a7300",
-      "size_bytes": 2960
-    },
-    "frontend/lib/preflightEvaluator.ts": {
-      "operation": "M",
-      "originating_pr_number": 287,
-      "originating_commit": "3a1192ba160dc258b6204fb6335c667ca07a49f3",
-      "governing_requirement": "ARX-PREFLIGHT-INTEGRITY-031: fail-closed stale price gate and epistemic clearance separation (#197).",
-      "sha256": "ce77e5b425662b39e2676a7b8fa0036abb05a81a08f343e49cb58cdcfdec468e",
-      "size_bytes": 46883
+      "originating_pr_number": 288,
+      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
+      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
+      "sha256": "d568ca7fc8b82409fb6a869d420c43b325da7e81ef1a7de3b7c1c520f17f5ab4",
+      "size_bytes": 4924
     },
     "frontend/package.json": {
       "operation": "M",
-      "originating_pr_number": 287,
-      "originating_commit": "3a1192ba160dc258b6204fb6335c667ca07a49f3",
-      "governing_requirement": "ARX-PREFLIGHT-INTEGRITY-031: wire preflightDecisionIntegrity197.test.ts into test:arch pipeline.",
-      "sha256": "4363f5963debcf8bb2b9334943e0c62f03b97f85eb19249257602b15232bd1de",
-      "size_bytes": 3832
+      "originating_pr_number": 288,
+      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
+      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
+      "sha256": "9f4c7a73b064c045ada2b24fcf69baeb202ed36125f52cf93695aa7a082f08d1",
+      "size_bytes": 3883
     },
-    "frontend/tests/preflightDecisionIntegrity197.test.ts": {
+    "frontend/tests/analysisCacheAuthority198.test.ts": {
       "operation": "A",
-      "originating_pr_number": 287,
-      "originating_commit": "3a1192ba160dc258b6204fb6335c667ca07a49f3",
-      "governing_requirement": "ARX-PREFLIGHT-INTEGRITY-031: formal acceptance and falsification suite for Issue #197.",
-      "sha256": "c6b1b70ef580858b5a773ff1a07fcfc96d8f5395a37d89d3c028ebd069848c8e",
-      "size_bytes": 9528
+      "originating_pr_number": 288,
+      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
+      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
+      "sha256": "8dab6a02187a1fba0a8788eeebd944fede33125a05bbc21bc30bdb71ded6eb54",
+      "size_bytes": 11122
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 287,
-      "originating_commit": "3a1192ba160dc258b6204fb6335c667ca07a49f3",
-      "governing_requirement": "ARX-PREFLIGHT-INTEGRITY-031: register approved PR 287 in APPROVED_PRS allowlist.",
-      "sha256": "ad547ceced826ed86a657baa24696e63b208f51c5c9c36870a8faf6c672dff7f",
-      "size_bytes": 58106
+      "originating_pr_number": 288,
+      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
+      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: register approved PR 288 in APPROVED_PRS allowlist.",
+      "sha256": "aa2a53b9a3c0bd2ee22a187ded46d731e100f6d117365876447ceb2529dbe7ec",
+      "size_bytes": 58111
+    },
+    "tests/test_ohlcv_provenance_atomicity_198.py": {
+      "operation": "A",
+      "originating_pr_number": 288,
+      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
+      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
+      "sha256": "3f93beabc70def0f895a41ba4a63f7cae69859a6a7fd4917e1d5d144289dc677",
+      "size_bytes": 8654
     }
   },
   "qualification_framework_files": {
@@ -85,8 +77,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "ad547ceced826ed86a657baa24696e63b208f51c5c9c36870a8faf6c672dff7f",
-      "size_bytes": 58106,
+      "sha256": "aa2a53b9a3c0bd2ee22a187ded46d731e100f6d117365876447ceb2529dbe7ec",
+      "size_bytes": 58111,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
