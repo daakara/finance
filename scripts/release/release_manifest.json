@@ -1,97 +1,65 @@
 {
-  "release_candidate_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-  "base_anchor_commit": "62c645f4eb0f73dc01d214f79efce4f27a23dddc",
-  "total_files": 11,
+  "release_candidate_commit": "fb6ce74a4f845a6188669418e7b48609c78ca0ab",
+  "base_anchor_commit": "cc0c72c23cd874148a6db49730153d9b644617f0",
+  "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-QA-AUTHORITY-035",
+  "directive": "ARX-FINANCIAL-AUTHORITY-039",
   "files": {
-    ".github/workflows/release-qualification.yml": {
-      "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: wire RQ-13 financial integrity check into release qualification CI workflow.",
-      "sha256": "d6e2ae03c4f25e297bb2743a834945b9388b82143153ee3696d13c7934040188",
-      "size_bytes": 4186
-    },
-    "api/routes/screener.py": {
-      "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: Form 4 transaction classification remediation to prevent insider sales awarding purchase points.",
-      "sha256": "7fa50772ee970df24054a0f33c96b361bc721ed1117ef4d00f66097c7c7db5c1",
-      "size_bytes": 129154
-    },
-    "frontend/lib/insightGenerator.ts": {
-      "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: CDNS score and observation parity remediation evaluating both 20 EMA and 50 SMA.",
-      "sha256": "6de7fd382cd91c3c56b197a593f50061c1c829d1eebafca38df1c784fc95c0c9",
-      "size_bytes": 42354
-    },
-    "frontend/tests/cdnsPriceTrendParity035.test.ts": {
+    "FROZEN_ENGINE_MANIFEST_V2_5_3.json": {
+      "sha256": "172961d03d1cd4006d0833693cc5b98e0d862c25dc70c98538cc1d35b03c1f48",
+      "size_bytes": 1892,
       "operation": "A",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: CDNS price trend parity and pullback classification regression test suite.",
-      "sha256": "c47414dfa16506e976478540887e72eb943bb40ee27752b6e840a1630e570eb3",
-      "size_bytes": 20817
+      "originating_pr_number": 290,
+      "originating_commit": "fb6ce74a4f845a6188669418e7b48609c78ca0ab",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: owner-ratified v2.5.3 manifest, provenance, negative controls and ledger authority; no numerical changes"
     },
-    "scripts/release/rq02_diff_integrity.py": {
+    "docs/governance/ARX_RC5_ENGINE_MANIFEST_V253_SUCCESSION_RECORD.md": {
+      "sha256": "312a24db881f4d77fcad2ad52f855baeab4f5f2ecfe32dc6c112ba1a53814f19",
+      "size_bytes": 4511,
+      "operation": "A",
+      "originating_pr_number": 290,
+      "originating_commit": "fb6ce74a4f845a6188669418e7b48609c78ca0ab",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: owner-ratified v2.5.3 manifest, provenance, negative controls and ledger authority; no numerical changes"
+    },
+    "scripts/release/rq10_config_integrity.py": {
+      "sha256": "c2fc028331b7ad091ab050b77daeb47fda5888851a34d5db7259d09535a76df3",
+      "size_bytes": 13133,
       "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: register approved PR 289 in APPROVED_PRS allowlist.",
-      "sha256": "05a473b738f4f7e8b37cd718f886bb5652fad82e200bdfec75a169f079ce4b96",
-      "size_bytes": 58116
+      "originating_pr_number": 290,
+      "originating_commit": "fb6ce74a4f845a6188669418e7b48609c78ca0ab",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: owner-ratified v2.5.3 manifest, provenance, negative controls and ledger authority; no numerical changes"
+    },
+    "analyst_dashboard/governance/experiment_ledger.py": {
+      "sha256": "1feca000e24c4e9573a19c437f18e34f5c4598ab9b26413e3d8dbeba5aace71e",
+      "size_bytes": 154513,
+      "operation": "M",
+      "originating_pr_number": 290,
+      "originating_commit": "fb6ce74a4f845a6188669418e7b48609c78ca0ab",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: owner-ratified v2.5.3 manifest, provenance, negative controls and ledger authority; no numerical changes"
+    },
+    "tests/test_rq10_ratification_039.py": {
+      "sha256": "85821eef313a8619a0dde6ca9b63dfb578d2abf8e603d277810e5a278ee3b7f2",
+      "size_bytes": 3937,
+      "operation": "A",
+      "originating_pr_number": 290,
+      "originating_commit": "fb6ce74a4f845a6188669418e7b48609c78ca0ab",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: owner-ratified v2.5.3 manifest, provenance, negative controls and ledger authority; no numerical changes"
     },
     "scripts/release/rq03_backend_regression.py": {
+      "sha256": "8e2bda472165511e2b8ed6d2275800dec5d061603de0bc9955735e313dee2a81",
+      "size_bytes": 3605,
       "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: wire test_financial_correctness_authority_035.py into RQ-03 suite.",
-      "sha256": "f1dfdba2a791a225e1db7ec617497fa3a4a7a471551026c4efb913b29d60056c",
-      "size_bytes": 3558
+      "originating_pr_number": 290,
+      "originating_commit": "fb6ce74a4f845a6188669418e7b48609c78ca0ab",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: owner-ratified v2.5.3 manifest, provenance, negative controls and ledger authority; no numerical changes"
     },
-    "scripts/release/rq04_frontend_regression.py": {
+    "scripts/release/rq02_diff_integrity.py": {
+      "sha256": "a67b8a401f10c657b62542a50ed94b72ecebd4f26fc48c797930c97bfb5f04db",
+      "size_bytes": 58121,
       "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: wire cdnsPriceTrendParity035.test.ts into RQ-04 suite.",
-      "sha256": "c64b193223aeca69817d0bbac29c54c2dfb2e2e260ab3f69d73fb77cf53b98ef",
-      "size_bytes": 6667
-    },
-    "scripts/release/rq12_qualification_summary.py": {
-      "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: add RQ-13 to mandatory control suite and validate receipt aggregation.",
-      "sha256": "89ffe00c59f17a6b629bfd5c7b269c69cae183cf0c10ef9ec72cf588a2c11674",
-      "size_bytes": 15891
-    },
-    "scripts/release/rq13_financial_integrity.py": {
-      "operation": "A",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: financial evidence, coverage caps, and decision integrity control script.",
-      "sha256": "0be51d32c2d443c06a6ef1bbd5dbd4911ac5c2de987e61cf21a8803965707bbd",
-      "size_bytes": 16736
-    },
-    "scripts/release/run_release_ci_suite.py": {
-      "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: wire RQ-13 execution into master release CI suite.",
-      "sha256": "454544d08ec2c7d9b06925a4442750040a6f499128eff374fbcebb9849d69895",
-      "size_bytes": 4414
-    },
-    "tests/test_financial_correctness_authority_035.py": {
-      "operation": "A",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: deterministic invariant tests for financial correctness and Form 4 classification.",
-      "sha256": "514bc9375a5b73b003a05132a4c608ede23fb964c383608290c122e880965b00",
-      "size_bytes": 19511
+      "originating_pr_number": 290,
+      "originating_commit": "fb6ce74a4f845a6188669418e7b48609c78ca0ab",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: owner-ratified v2.5.3 manifest, provenance, negative controls and ledger authority; no numerical changes"
     }
   },
   "qualification_framework_files": {
@@ -101,13 +69,13 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "05a473b738f4f7e8b37cd718f886bb5652fad82e200bdfec75a169f079ce4b96",
-      "size_bytes": 58116,
+      "sha256": "a67b8a401f10c657b62542a50ed94b72ecebd4f26fc48c797930c97bfb5f04db",
+      "size_bytes": 58121,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "f1dfdba2a791a225e1db7ec617497fa3a4a7a471551026c4efb913b29d60056c",
-      "size_bytes": 3558,
+      "sha256": "8e2bda472165511e2b8ed6d2275800dec5d061603de0bc9955735e313dee2a81",
+      "size_bytes": 3605,
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
@@ -141,8 +109,8 @@
       "description": "Release qualification module: rq09_compatibility_suite.py"
     },
     "scripts/release/rq10_config_integrity.py": {
-      "sha256": "6ef2de812ab6e61fc66c8d225a8ae255735a850a72dbbfc08b9426293dee017a",
-      "size_bytes": 7459,
+      "sha256": "c2fc028331b7ad091ab050b77daeb47fda5888851a34d5db7259d09535a76df3",
+      "size_bytes": 13133,
       "description": "Release qualification module: rq10_config_integrity.py"
     },
     "scripts/release/rq11_rollback_readiness.py": {
