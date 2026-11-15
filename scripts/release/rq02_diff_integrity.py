@@ -599,15 +599,39 @@ def main():
                 sub_env["ARX_RQ02_SKIP_ADVERSARIAL_RECURSION"] = "1"
                 print("\n>>> [RQ-02-ADV] Executing RQ-02 Cumulative Adversarial Controls...")
                 res_adv1 = subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "test_rq02_adversarial_controls.py")], cwd=PROJECT_ROOT, env=sub_env)
-                if res_adv1.returncode != 0:
-                    print("FAIL: RQ-02 Adversarial Controls failed!")
+                def fail_adversarial_controls(control_name):
+                    # Do not leave a stale PASS receipt when a required
+                    # adversarial child exits nonzero. RQ-12 must see FAIL too.
+                    fatal = f"RQ-02 mandatory adversarial control failed: {control_name}"
+                    fail_receipt = create_stage_receipt(
+                        control_id="RQ-02",
+                        name="Release Diff Integrity",
+                        status="FAIL",
+                        start_time=start_time,
+                        end_time=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                        duration_sec=time.time() - t0,
+                        candidate_sha=head_sha,
+                        target_branch="release/production",
+                        assertions=assertions + [{
+                            "assertion": control_name,
+                            "observed": "FAILED",
+                            "passed": False
+                        }],
+                        evidence_paths=[manifest_path],
+                        errors=errors + [fatal],
+                        metadata={"mode": mode, "adversarial_control_failure": control_name}
+                    )
+                    save_stage_receipt(fail_receipt)
+                    print(f"FAIL: {fatal}")
                     sys.exit(1)
+
+                if res_adv1.returncode != 0:
+                    fail_adversarial_controls("RQ-02 cumulative adversarial suite")
 
                 print("\n>>> [Gate H] Executing Gate H 12-Scenario Workflow Attacks...")
                 res_adv2 = subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "test_d12c_workflow_attacks.py")], cwd=PROJECT_ROOT, env=sub_env)
                 if res_adv2.returncode != 0:
-                    print("FAIL: Gate H Workflow Attacks failed!")
-                    sys.exit(1)
+                    fail_adversarial_controls("Gate H workflow attack suite")
 
                 save_stage_receipt(receipt)
 
