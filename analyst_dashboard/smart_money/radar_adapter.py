@@ -2,7 +2,10 @@
 analyst_dashboard/smart_money/radar_adapter.py
 
 Authoritative Read-Only Radar Smart Money Evidence Adapter.
-Directive: ARX-RADAR-SM-ADAPTER-REMEDIATION-003 (PR #294 Remediation).
+Directives:
+- ARX-RADAR-SM-CONFLUENCE-INTEGRITY-001
+- ARX-RADAR-SM-ADAPTER-REMEDIATION-003
+- ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004
 
 Responsibilities & Governance:
 1. Reuses canonical PostgreSQL Form 4 evidence retrieval (PostgresSmartMoneyRepository.get_bulk_transactions_as_of)
@@ -12,7 +15,7 @@ Responsibilities & Governance:
 4. Distinguishes seven explicit evidence states without manufacturing zero activity or neutral signals:
    - VERIFIED_BUY: Authentic open-market purchase conviction (Code P, Acquired, non-derivative, unamended/resolved).
    - VERIFIED_SELL: Open-market insider sales (Code S, Disposed, non-derivative).
-   - VERIFIED_ZERO: Active governed issuer with COMPLETE reconciliation receipt certifying zero transactions in trailing window.
+   - VERIFIED_ZERO: Active governed issuer with authoritative issuer-level COMPLETE reconciliation receipt certifying zero transactions in trailing window.
    - STALE: Latest observation/receipt exceeds trailing freshness SLA (>90 days).
    - UNAVAILABLE: Database repository disconnected, table missing, or query error.
    - HELD: Operational hold ARX_CONFLUENCE_INTEGRITY_HOLD active without explicit read-only authorization.
@@ -21,13 +24,16 @@ Responsibilities & Governance:
    - Invalid as_of timestamps fail closed immediately (never fall back to current time).
    - Date-only as_of strings map to authoritative session-close (T23:59:59Z).
    - Enforces public_availability_at <= as_of_watermark to prevent lookahead bias.
+6. Authoritative Coverage Contract:
+   - VERIFIED_ZERO is emitted ONLY when the exact issuer, full requested observation interval, and certified watermark
+     are covered by an authoritative complete receipt. Unrelated global receipts cannot certify issuer-specific zero activity.
 """
 
 import os
 import sqlite3
 import logging
 from datetime import datetime, date, timedelta, timezone
-from typing import Dict, Any, List, Optional, Set
+from typing import Dict, Any, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +44,70 @@ class RadarSmartMoneyAdapter:
     DEFAULT_WINDOW_DAYS = 90
     STALENESS_THRESHOLD_DAYS = 90
 
+    @staticmethod
+    def validate_issuer_coverage_receipt(
+        receipt: Optional[Dict[str, Any]],
+        clean_sym: str,
+        clean_cik: Optional[str],
+        interval_start_iso: str,
+        as_of_watermark: str,
+        window_days: int = DEFAULT_WINDOW_DAYS,
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Validates whether a reconciliation receipt establishes authoritative complete coverage
+        for the exact issuer, full requested observation interval, and certified watermark.
+        Strictly prevents using cross-issuer, cross-interval, stale-watermark, or partial-coverage
+        receipts to certify zero activity.
+        """
+        if not receipt:
+            return False, f"Governed issuer {clean_sym} lacks authoritative reconciliation receipt."
+
+        # 1. Exact Issuer Binding Check
+        receipt_cik = str(receipt.get("issuer_cik") or "").strip().zfill(10) if receipt.get("issuer_cik") else None
+        receipt_sym = str(receipt.get("ticker") or receipt.get("symbol") or "").strip().upper() if (receipt.get("ticker") or receipt.get("symbol")) else None
+        covered_ciks = [str(c).strip().zfill(10) for c in (receipt.get("covered_ciks") or [])]
+        covered_syms = [str(s).strip().upper() for s in (receipt.get("covered_tickers") or receipt.get("covered_symbols") or [])]
+
+        is_issuer_covered = False
+        if clean_cik and receipt_cik and receipt_cik == clean_cik:
+            is_issuer_covered = True
+        elif receipt_sym and receipt_sym == clean_sym:
+            is_issuer_covered = True
+        elif clean_cik and clean_cik in covered_ciks:
+            is_issuer_covered = True
+        elif clean_sym in covered_syms:
+            is_issuer_covered = True
+
+        if not is_issuer_covered:
+            return False, f"Coverage receipt {receipt.get('receipt_id')} does not certify requested issuer {clean_sym} (CIK: {clean_cik})."
+
+        # 2. Full Requested Interval Coverage Check
+        r_start = str(receipt.get("interval_start") or "")[:10]
+        r_end = str(receipt.get("interval_end") or "")[:10]
+        req_start = interval_start_iso[:10]
+        req_end = as_of_watermark[:10]
+
+        if r_start > req_start:
+            return False, f"Coverage receipt interval start ({r_start}) does not cover full requested interval start ({req_start})."
+        if r_end < req_end:
+            return False, f"Coverage receipt interval end ({r_end}) does not cover requested interval end ({req_end})."
+
+        # 3. Certified Watermark Freshness Check
+        r_wm = str(receipt.get("certified_watermark") or "")[:10]
+        if r_wm < req_end:
+            return False, f"Coverage receipt certified watermark ({r_wm}) is older than requested watermark ({req_end})."
+
+        # 4. Coverage Completeness & Material Gaps Check
+        cov_st = str(receipt.get("coverage_status") or "").upper()
+        missing_cnt = receipt.get("missing_count", 0)
+        gap_cnt = receipt.get("material_gap_count", 0)
+        if cov_st != "COMPLETE":
+            return False, f"Coverage receipt status is '{cov_st}', not 'COMPLETE'."
+        if missing_cnt > 0 or gap_cnt > 0:
+            return False, f"Coverage receipt contains missing filings ({missing_cnt}) or material gaps ({gap_cnt})."
+
+        return True, None
+
     @classmethod
     def get_radar_insider_trades(
         cls,
@@ -47,6 +117,7 @@ class RadarSmartMoneyAdapter:
         storage_backend: Optional[str] = None,
         db_path: Optional[str] = None,
         postgres_repo: Optional[Any] = None,
+        coverage_receipt: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Retrieves authentic point-in-time Form 4 insider transactions for an equity.
@@ -158,6 +229,7 @@ class RadarSmartMoneyAdapter:
         is_governed_issuer = False
         is_scannable = False
         has_complete_coverage_receipt = False
+        coverage_rejection_reason: Optional[str] = None
         has_stale_data = False
         latest_record_date: Optional[str] = None
         query_source = "UNAVAILABLE"
@@ -189,13 +261,26 @@ class RadarSmartMoneyAdapter:
                 query_source = "POSTGRES"
 
                 # Check if coverage receipt exists certifying the interval
-                receipt = repo.get_authoritative_receipt_for_interval(
-                    interval_start=cutoff_str,
-                    interval_end=eval_date.isoformat(),
-                    certified_watermark=as_of_watermark,
+                if coverage_receipt is not None:
+                    receipt = coverage_receipt
+                else:
+                    receipt = repo.get_authoritative_receipt_for_interval(
+                        interval_start=cutoff_str,
+                        interval_end=eval_date.isoformat(),
+                        certified_watermark=as_of_watermark,
+                        issuer_cik=issuer_cik,
+                    )
+
+                is_cov_valid, cov_reason = cls.validate_issuer_coverage_receipt(
+                    receipt=receipt,
+                    clean_sym=clean_sym,
+                    clean_cik=issuer_cik,
+                    interval_start_iso=cutoff_str,
+                    as_of_watermark=as_of_watermark,
+                    window_days=window_days,
                 )
-                if receipt and receipt.get("coverage_status") == "COMPLETE" and receipt.get("missing_count", 1) == 0:
-                    has_complete_coverage_receipt = True
+                has_complete_coverage_receipt = is_cov_valid
+                coverage_rejection_reason = cov_reason
 
                 # If no transactions in 90d window, check if older records exist to test STALE
                 if not raw_trades and is_governed_issuer:
@@ -218,41 +303,47 @@ class RadarSmartMoneyAdapter:
 
             except Exception as pg_exc:
                 logger.debug(f"RadarSmartMoneyAdapter PostgreSQL query failed for {clean_sym}: {pg_exc}")
-                if os.environ.get("ARX_ENVIRONMENT") == "production":
+                # Fall back to SQLite if not explicitly pinned to postgres
+                if storage_backend == "postgres":
                     return {
                         "status": "UNAVAILABLE",
                         "evidence_state": "UNAVAILABLE",
                         "trades": [],
                         "issuer_cik": None,
                         "as_of_watermark": as_of_watermark,
-                        "query_source": "POSTGRES_ERROR",
-                        "reason": f"POSTGRES_QUERY_FAILED: {str(pg_exc)}",
+                        "query_source": "UNAVAILABLE",
+                        "reason": f"POSTGRES_ERROR: {str(pg_exc)}",
                     }
-                backend = "sqlite"  # Local test fallback
+                backend = "sqlite"
 
-        # Attempt SQLite (isolated tests or local development)
-        if backend == "sqlite" and query_source != "POSTGRES":
+        # Fallback to local SQLite store
+        if backend == "sqlite":
+            effective_db_path = db_path
+            if not effective_db_path:
+                try:
+                    from analyst_dashboard.smart_money.storage.config import get_sqlite_evidence_db_path
+                    effective_db_path = get_sqlite_evidence_db_path()
+                except Exception:
+                    effective_db_path = "analyst_dashboard/data/smart_money_cache.db"
+
+            if not os.path.exists(effective_db_path):
+                return {
+                    "status": "UNAVAILABLE",
+                    "evidence_state": "UNAVAILABLE",
+                    "trades": [],
+                    "issuer_cik": None,
+                    "as_of_watermark": as_of_watermark,
+                    "query_source": "UNAVAILABLE",
+                    "reason": f"DATABASE_FILE_NOT_FOUND: {effective_db_path}",
+                }
+
+            conn = None
             try:
-                from analyst_dashboard.smart_money.form4_ingestion import connect_smart_money_db
-                conn = connect_smart_money_db(db_path=db_path)
+                conn = sqlite3.connect(effective_db_path)
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
 
-                # Check if tables exist
-                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='form4_parsed_transactions';")
-                if not cur.fetchone():
-                    conn.close()
-                    return {
-                        "status": "UNAVAILABLE",
-                        "evidence_state": "UNAVAILABLE",
-                        "trades": [],
-                        "issuer_cik": None,
-                        "as_of_watermark": as_of_watermark,
-                        "query_source": "SQLITE_NO_TABLE",
-                        "reason": "SMART_MONEY_TABLES_NOT_INITIALIZED",
-                    }
-
-                # Check governed / known issuer
+                # Check if governed_issuers table exists
                 cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='governed_issuers';")
                 has_gov_table = bool(cur.fetchone())
                 if has_gov_table:
@@ -272,21 +363,40 @@ class RadarSmartMoneyAdapter:
                         issuer_cik = str(cik_row["issuer_cik"]).zfill(10)
 
                 # Check reconciliation receipts for interval coverage
-                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sm_reconciliation_receipts';")
-                has_receipts_table = bool(cur.fetchone())
-                if has_receipts_table:
-                    cur.execute("""
-                        SELECT coverage_status, missing_count, material_gap_count
-                        FROM sm_reconciliation_receipts
-                        WHERE (interval_end = ? OR interval_end = ?)
-                          AND coverage_status = 'COMPLETE'
-                          AND missing_count = 0
-                          AND material_gap_count = 0
-                        LIMIT 1;
-                    """, (eval_date.isoformat(), f"{eval_date.isoformat()}T23:59:59Z"))
-                    r_row = cur.fetchone()
-                    if r_row:
-                        has_complete_coverage_receipt = True
+                if coverage_receipt is not None:
+                    receipt = coverage_receipt
+                else:
+                    receipt = None
+                    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sm_reconciliation_receipts';")
+                    has_receipts_table = bool(cur.fetchone())
+                    if has_receipts_table:
+                        cur.execute("PRAGMA table_info(sm_reconciliation_receipts);")
+                        cols = [r["name"] for r in cur.fetchall()]
+                        if "issuer_cik" in cols or "ticker" in cols:
+                            cur.execute("""
+                                SELECT * FROM sm_reconciliation_receipts
+                                WHERE (issuer_cik = ? OR ticker = ?)
+                                  AND interval_start <= ?
+                                  AND (interval_end >= ? OR interval_end >= ?)
+                                  AND coverage_status = 'COMPLETE'
+                                  AND missing_count = 0
+                                  AND material_gap_count = 0
+                                ORDER BY receipt_version DESC, created_at DESC LIMIT 1;
+                            """, (issuer_cik, clean_sym, cutoff_str, eval_date.isoformat(), f"{eval_date.isoformat()}T23:59:59Z"))
+                            r_row = cur.fetchone()
+                            if r_row:
+                                receipt = dict(r_row)
+
+                is_cov_valid, cov_reason = cls.validate_issuer_coverage_receipt(
+                    receipt=receipt,
+                    clean_sym=clean_sym,
+                    clean_cik=issuer_cik,
+                    interval_start_iso=cutoff_str,
+                    as_of_watermark=as_of_watermark,
+                    window_days=window_days,
+                )
+                has_complete_coverage_receipt = is_cov_valid
+                coverage_rejection_reason = cov_reason
 
                 # Query transactions within cutoff and point-in-time availability
                 cur.execute("""
@@ -310,70 +420,82 @@ class RadarSmartMoneyAdapter:
                 # If no transactions in window, check for older records to evaluate STALE
                 if not raw_trades and is_governed_issuer:
                     cur.execute("""
-                        SELECT transaction_date, filing_date FROM form4_parsed_transactions
-                        WHERE issuer_symbol = ? AND (acceptance_datetime IS NULL OR acceptance_datetime <= ?)
+                        SELECT transaction_date, filing_date
+                        FROM form4_parsed_transactions
+                        WHERE issuer_symbol = ?
+                          AND (acceptance_datetime IS NULL OR acceptance_datetime <= ?)
                         ORDER BY transaction_date DESC LIMIT 1;
                     """, (clean_sym, as_of_watermark))
-                    old_row = cur.fetchone()
-                    if old_row:
-                        latest_record_date = str(old_row["transaction_date"] or old_row["filing_date"])
+                    stale_row = cur.fetchone()
+                    if stale_row:
+                        latest_record_date = str(stale_row["transaction_date"] or stale_row["filing_date"])
                         has_stale_data = True
 
-                conn.close()
-
-            except Exception as sq_exc:
-                logger.debug(f"RadarSmartMoneyAdapter SQLite query failed for {clean_sym}: {sq_exc}")
+            except Exception as e:
                 return {
                     "status": "UNAVAILABLE",
                     "evidence_state": "UNAVAILABLE",
                     "trades": [],
                     "issuer_cik": None,
                     "as_of_watermark": as_of_watermark,
-                    "query_source": "SQLITE_ERROR",
-                    "reason": f"SQLITE_QUERY_FAILED: {str(sq_exc)}",
+                    "query_source": "UNAVAILABLE",
+                    "reason": f"SQLITE_QUERY_ERROR: {str(e)}",
                 }
+            finally:
+                if conn:
+                    conn.close()
 
-        # ── 4. CANONICAL RECORD NORMALIZATION & CIK IDENTITY AUDIT ────────────
+        # ── 4. NORMALIZE & FILTER TRADES THROUGH SEC CLASSIFIER ───────────────
+        from api.routes.screener import classify_sec_trades
+
+        # Format records for classify_sec_trades:
+        # Expected keys: transaction_code, acquired_disposed_code, is_derivative,
+        # transaction_shares, price_per_share, is_amendment, amendment_number, etc.
         normalized_trades: List[Dict[str, Any]] = []
         for t in raw_trades:
-            tx_code = str(t.get("transaction_code", "")).upper().strip()
-            row_cik = str(t.get("issuer_cik", "")).zfill(10) if t.get("issuer_cik") else None
-
-            # Verify CIK identity consistency
+            # Enforce CIK identity match against canonical governed issuer CIK
+            row_cik = str(t.get("issuer_cik") or "").strip().zfill(10) if t.get("issuer_cik") else None
             if issuer_cik and row_cik and row_cik != issuer_cik:
-                logger.warning(
-                    f"CIK_IDENTITY_MISMATCH: Row CIK {row_cik} does not match canonical {issuer_cik} for {clean_sym}."
-                )
-                continue  # Exclude row with mismatched identity
+                # Row identity mismatch — reject transaction from consideration
+                continue
 
-            normalized_trades.append({
-                "transaction_code": tx_code,
-                "transaction_type": t.get("signal_type") or ("Purchase" if tx_code == "P" else ("Sale" if tx_code == "S" else "Other")),
-                "is_derivative": bool(t.get("is_derivative")),
-                "acquired_disposed": str(t.get("acquired_disposed", "")).upper().strip(),
+            amend_num = t.get("amendment_number") or 0
+            try:
+                amend_num = int(amend_num)
+            except Exception:
+                amend_num = 0
+
+            norm_trade = {
+                "accession_number": t.get("accession_number"),
+                "issuer_symbol": clean_sym,
+                "issuer_cik": row_cik or issuer_cik,
+                "reporting_owner": t.get("reporting_owner_name") or t.get("reporting_owner", ""),
+                "reporting_owner_name": t.get("reporting_owner_name") or t.get("reporting_owner", ""),
+                "officer_title": t.get("officer_title", ""),
+                "is_officer": bool(t.get("is_officer", False)),
+                "is_director": bool(t.get("is_director", False)),
+                "is_ten_percent_owner": bool(t.get("is_ten_percent", False) or t.get("is_ten_percent_owner", False)),
+                "filing_date": t.get("filing_date"),
+                "transaction_date": t.get("transaction_date"),
+                "transaction_code": t.get("transaction_code", ""),
+                "acquired_disposed_code": t.get("acquired_disposed", ""),
+                "is_derivative": bool(t.get("is_derivative", False)),
+                "transaction_shares": float(t.get("shares") or 0.0),
+                "price_per_share": float(t.get("price_per_share") or 0.0),
                 "total_value": float(t.get("total_value_usd") or 0.0),
-                "total_value_usd": float(t.get("total_value_usd") or 0.0),
-                "reporting_owner": t.get("reporting_owner_name", ""),
-                "reporting_owner_name": t.get("reporting_owner_name", ""),
-                "accession_number": t.get("accession_number", ""),
-                "filing_date": str(t.get("filing_date", "")),
-                "transaction_date": str(t.get("transaction_date", "")),
-                "public_availability_at": str(t.get("public_availability_at") or t.get("acceptance_datetime") or ""),
-                "cik": str(row_cik or issuer_cik or ""),
-                "symbol": clean_sym,
-                "is_amendment": bool(t.get("amendment_number") or t.get("base_accession")),
-                "unresolved_amendment": str(t.get("resolution_status", "")) in ("AMENDMENT_TARGET_AMBIGUOUS", "UNRESOLVED", "UNRESOLVED_AMENDMENT"),
-            })
+                "is_amendment": amend_num > 0,
+                "amendment_number": amend_num,
+                "resolution_status": t.get("resolution_status", "RESOLVED"),
+            }
+            normalized_trades.append(norm_trade)
 
-        # ── 5. RESOLVE EVIDENCE STATE (Zero-Fabrication Contract) ─────────────
-        from api.routes.screener import classify_sec_trades
         classification = classify_sec_trades(normalized_trades)
+        buy_trades = classification.get("buy_trades", [])
+        sell_trades = classification.get("sell_trades", [])
+        has_buy = classification.get("has_insider_buy", False)
+        has_sell = classification.get("has_insider_sell", False)
 
-        has_buy = classification["has_insider_buy"]
-        has_sell = classification["has_insider_sell"]
-        buy_trades = classification["buy_trades"]
-        sell_trades = classification["sell_trades"]
-
+        # ── 5. RESOLVE EXPLICIT EVIDENCE STATE ────────────────────────────────
         if has_buy:
             evidence_state = "VERIFIED_BUY"
             status = "VERIFIED"
@@ -386,7 +508,7 @@ class RadarSmartMoneyAdapter:
             # Governed issuer with complete coverage receipt certifying 0 transactions in window
             evidence_state = "VERIFIED_ZERO"
             status = "VERIFIED_ZERO"
-            reason = f"Governed issuer {clean_sym} certified with 0 open-market transactions in complete {window_days}-day interval."
+            reason = f"Active governed issuer {clean_sym} ({issuer_cik}) certified with 0 open-market transactions in complete {window_days}-day interval."
         elif is_governed_issuer and has_stale_data:
             # Issuer has historical transactions, but newest exceeds window
             evidence_state = "STALE"
@@ -401,7 +523,10 @@ class RadarSmartMoneyAdapter:
             # Governed issuer present, but lacking complete interval coverage receipt -> FAIL CLOSED
             evidence_state = "UNVERIFIED"
             status = "UNVERIFIED"
-            reason = f"Governed issuer {clean_sym} lacks authoritative reconciliation receipt certifying trailing {window_days}-day window."
+            if coverage_rejection_reason:
+                reason = f"VERIFIED_ZERO contract rejected: {coverage_rejection_reason}"
+            else:
+                reason = f"Governed issuer {clean_sym} lacks authoritative issuer-level reconciliation receipt certifying trailing {window_days}-day window."
         else:
             evidence_state = "UNAVAILABLE"
             status = "UNAVAILABLE"

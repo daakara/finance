@@ -295,14 +295,18 @@ class PostgresSmartMoneyRepository:
         interval_end: str,
         certified_watermark: str,
         conn: Optional[PgConnection] = None,
+        issuer_cik: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Queries the authoritative reconciliation receipt certifying watermark W.
-        Requires exact interval match, COMPLETE coverage status, and zero material gaps.
+        Requires full interval coverage, certified watermark >= W, COMPLETE coverage status,
+        and zero missing count or material gaps.
         """
         query = """
             SELECT * FROM sm_reconciliation_receipts
-            WHERE (interval_end = %s OR interval_end = %s)
+            WHERE interval_start <= %s
+              AND (interval_end >= %s OR interval_end >= %s)
+              AND (certified_watermark >= %s OR certified_watermark >= %s)
               AND coverage_status = 'COMPLETE'
               AND missing_count = 0
               AND material_gap_count = 0
@@ -310,11 +314,13 @@ class PostgresSmartMoneyRepository:
             LIMIT 1;
         """
         eod_end = f"{interval_end[:10]}T23:59:59Z" if len(interval_end) >= 10 else interval_end
-        params = (interval_end, eod_end)
+        eod_wm = f"{certified_watermark[:10]}T23:59:59Z" if len(certified_watermark) >= 10 else certified_watermark
+        params = (interval_start, interval_end, eod_end, certified_watermark, eod_wm)
 
         def _exec(cur):
             cur.execute(query, params)
-            return cur.fetchone()
+            row = cur.fetchone()
+            return dict(row) if row else None
 
         if conn is not None:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:

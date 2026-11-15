@@ -271,7 +271,8 @@ def test_radar_adapter_verified_zero_requires_complete_receipt(mock_smart_money_
         assert res_no_receipt["status"] == "UNVERIFIED"
         assert "lacks authoritative reconciliation receipt" in res_no_receipt["reason"]
 
-        # Case B: Insert authoritative COMPLETE reconciliation receipt certifying the interval
+        # Case B: Insert unscoped global reconciliation receipt (lacking issuer binding)
+        # Invariant (Phase 1): Unscoped global receipts CANNOT certify issuer-specific zero activity.
         conn = sqlite3.connect(mock_smart_money_db)
         cur = conn.cursor()
         cur.execute("""
@@ -280,22 +281,184 @@ def test_radar_adapter_verified_zero_requires_complete_receipt(mock_smart_money_
                 expected_count, accounted_count, missing_count, material_gap_count,
                 coverage_status, reconciliation_hash
             ) VALUES (
-                'REC1', '2026-08-08', '2026-11-06', '2026-11-06T23:59:59Z',
+                'REC-GLOBAL', '2026-08-08', '2026-11-06', '2026-11-06T23:59:59Z',
                 100, 100, 0, 0, 'COMPLETE', 'HASHREC1'
             );
         """)
         conn.commit()
         conn.close()
 
-        res_with_receipt = RadarSmartMoneyAdapter.get_radar_insider_trades(
+        res_with_global = RadarSmartMoneyAdapter.get_radar_insider_trades(
             symbol="NVDA",
             as_of="2026-11-06T23:59:59Z",
             storage_backend="sqlite",
             db_path=mock_smart_money_db,
         )
-        assert res_with_receipt["evidence_state"] == "VERIFIED_ZERO"
-        assert res_with_receipt["status"] == "VERIFIED_ZERO"
-        assert "certified with 0 open-market transactions" in res_with_receipt["reason"]
+        assert res_with_global["evidence_state"] == "UNVERIFIED"
+        assert res_with_global["status"] == "UNVERIFIED"
+        assert "does not certify requested issuer" in res_with_global["reason"] or "lacks authoritative reconciliation receipt" in res_with_global["reason"]
+
+        # Case C: Provide explicit issuer-level coverage receipt certifying NVDA
+        issuer_receipt = {
+            "receipt_id": "REC-NVDA-EXACT",
+            "issuer_cik": "0001045810",
+            "ticker": "NVDA",
+            "interval_start": "2026-08-08T00:00:00Z",
+            "interval_end": "2026-11-06T23:59:59Z",
+            "certified_watermark": "2026-11-06T23:59:59Z",
+            "expected_count": 100,
+            "accounted_count": 100,
+            "missing_count": 0,
+            "material_gap_count": 0,
+            "coverage_status": "COMPLETE",
+            "reconciliation_hash": "HASH-NVDA-CERT",
+        }
+        res_with_issuer_receipt = RadarSmartMoneyAdapter.get_radar_insider_trades(
+            symbol="NVDA",
+            as_of="2026-11-06T23:59:59Z",
+            storage_backend="sqlite",
+            db_path=mock_smart_money_db,
+            coverage_receipt=issuer_receipt,
+        )
+        assert res_with_issuer_receipt["evidence_state"] == "VERIFIED_ZERO"
+        assert res_with_issuer_receipt["status"] == "VERIFIED_ZERO"
+        assert "certified with 0 open-market transactions" in res_with_issuer_receipt["reason"]
+
+
+def test_verified_zero_rejects_cross_issuer_misclassification(mock_smart_money_db):
+    """Adversarial check: Receipt certifying AMD cannot certify zero activity for NVDA."""
+    conn = sqlite3.connect(mock_smart_money_db)
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO governed_issuers (cik, ticker, company_name, scannable, universe_build_id, manifest_hash)
+        VALUES ('0001045810', 'NVDA', 'NVIDIA CORP', 1, 'UB-001', 'HASH1');
+    """)
+    conn.commit()
+    conn.close()
+
+    with patch.dict(os.environ, {"ARX_CONFLUENCE_INTEGRITY_HOLD": "0", "ARX_ALLOW_READ_ONLY_SM": "1"}):
+        amd_receipt = {
+            "receipt_id": "REC-AMD-ONLY",
+            "issuer_cik": "0000002488",
+            "ticker": "AMD",
+            "interval_start": "2026-08-08T00:00:00Z",
+            "interval_end": "2026-11-06T23:59:59Z",
+            "certified_watermark": "2026-11-06T23:59:59Z",
+            "coverage_status": "COMPLETE",
+            "missing_count": 0,
+            "material_gap_count": 0,
+        }
+        res = RadarSmartMoneyAdapter.get_radar_insider_trades(
+            symbol="NVDA",
+            as_of="2026-11-06T23:59:59Z",
+            storage_backend="sqlite",
+            db_path=mock_smart_money_db,
+            coverage_receipt=amd_receipt,
+        )
+        assert res["evidence_state"] == "UNVERIFIED"
+        assert "does not certify requested issuer NVDA" in res["reason"]
+
+
+def test_verified_zero_rejects_cross_interval_misclassification(mock_smart_money_db):
+    """Adversarial check: Receipt covering only 30 days cannot certify 90-day window."""
+    conn = sqlite3.connect(mock_smart_money_db)
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO governed_issuers (cik, ticker, company_name, scannable, universe_build_id, manifest_hash)
+        VALUES ('0001045810', 'NVDA', 'NVIDIA CORP', 1, 'UB-001', 'HASH1');
+    """)
+    conn.commit()
+    conn.close()
+
+    with patch.dict(os.environ, {"ARX_CONFLUENCE_INTEGRITY_HOLD": "0", "ARX_ALLOW_READ_ONLY_SM": "1"}):
+        short_receipt = {
+            "receipt_id": "REC-SHORT-30D",
+            "issuer_cik": "0001045810",
+            "ticker": "NVDA",
+            "interval_start": "2026-10-07T00:00:00Z",  # Only 30 days, not 90
+            "interval_end": "2026-11-06T23:59:59Z",
+            "certified_watermark": "2026-11-06T23:59:59Z",
+            "coverage_status": "COMPLETE",
+            "missing_count": 0,
+            "material_gap_count": 0,
+        }
+        res = RadarSmartMoneyAdapter.get_radar_insider_trades(
+            symbol="NVDA",
+            as_of="2026-11-06T23:59:59Z",
+            storage_backend="sqlite",
+            db_path=mock_smart_money_db,
+            coverage_receipt=short_receipt,
+        )
+        assert res["evidence_state"] == "UNVERIFIED"
+        assert "does not cover full requested interval start" in res["reason"]
+
+
+def test_verified_zero_rejects_stale_watermark_misclassification(mock_smart_money_db):
+    """Adversarial check: Stale certified watermark (< as_of) fails closed."""
+    conn = sqlite3.connect(mock_smart_money_db)
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO governed_issuers (cik, ticker, company_name, scannable, universe_build_id, manifest_hash)
+        VALUES ('0001045810', 'NVDA', 'NVIDIA CORP', 1, 'UB-001', 'HASH1');
+    """)
+    conn.commit()
+    conn.close()
+
+    with patch.dict(os.environ, {"ARX_CONFLUENCE_INTEGRITY_HOLD": "0", "ARX_ALLOW_READ_ONLY_SM": "1"}):
+        stale_wm_receipt = {
+            "receipt_id": "REC-STALE-WM",
+            "issuer_cik": "0001045810",
+            "ticker": "NVDA",
+            "interval_start": "2026-08-08T00:00:00Z",
+            "interval_end": "2026-11-06T23:59:59Z",
+            "certified_watermark": "2026-10-15T00:00:00Z",  # Older than as_of 2026-11-06
+            "coverage_status": "COMPLETE",
+            "missing_count": 0,
+            "material_gap_count": 0,
+        }
+        res = RadarSmartMoneyAdapter.get_radar_insider_trades(
+            symbol="NVDA",
+            as_of="2026-11-06T23:59:59Z",
+            storage_backend="sqlite",
+            db_path=mock_smart_money_db,
+            coverage_receipt=stale_wm_receipt,
+        )
+        assert res["evidence_state"] == "UNVERIFIED"
+        assert "is older than requested watermark" in res["reason"]
+
+
+def test_verified_zero_rejects_partial_coverage_misclassification(mock_smart_money_db):
+    """Adversarial check: Receipt with PARTIAL status or missing filings fails closed."""
+    conn = sqlite3.connect(mock_smart_money_db)
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO governed_issuers (cik, ticker, company_name, scannable, universe_build_id, manifest_hash)
+        VALUES ('0001045810', 'NVDA', 'NVIDIA CORP', 1, 'UB-001', 'HASH1');
+    """)
+    conn.commit()
+    conn.close()
+
+    with patch.dict(os.environ, {"ARX_CONFLUENCE_INTEGRITY_HOLD": "0", "ARX_ALLOW_READ_ONLY_SM": "1"}):
+        partial_receipt = {
+            "receipt_id": "REC-PARTIAL",
+            "issuer_cik": "0001045810",
+            "ticker": "NVDA",
+            "interval_start": "2026-08-08T00:00:00Z",
+            "interval_end": "2026-11-06T23:59:59Z",
+            "certified_watermark": "2026-11-06T23:59:59Z",
+            "coverage_status": "PARTIAL",
+            "missing_count": 2,
+            "material_gap_count": 0,
+        }
+        res = RadarSmartMoneyAdapter.get_radar_insider_trades(
+            symbol="NVDA",
+            as_of="2026-11-06T23:59:59Z",
+            storage_backend="sqlite",
+            db_path=mock_smart_money_db,
+            coverage_receipt=partial_receipt,
+        )
+        assert res["evidence_state"] == "UNVERIFIED"
+        assert "Coverage receipt status is 'PARTIAL'" in res["reason"] or "missing filings" in res["reason"]
 
 
 # ── TEST GROUP 4: STALE EVIDENCE CLASSIFICATION ──────────────────────────────

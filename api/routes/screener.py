@@ -1316,9 +1316,19 @@ def run_screener_get(
                 short_float_val = "N/A"
             else:
                 from analyst_dashboard.smart_money.radar_adapter import RadarSmartMoneyAdapter
-                sm_adapter_res = RadarSmartMoneyAdapter.get_radar_insider_trades(sym, as_of=price_date)
-                sm_evidence_state = sm_adapter_res.get("evidence_state", "UNAVAILABLE")
-                sec_trades = sm_adapter_res.get("trades") or []
+                confluence_hold = os.environ.get("ARX_CONFLUENCE_INTEGRITY_HOLD", "1") == "1"
+                if confluence_hold:
+                    # Invariant (Phase 4): ARX_CONFLUENCE_INTEGRITY_HOLD is active by default.
+                    # Smart Money trades must remain empty for scoring to guarantee zero production
+                    # score drift and zero ranking change. ARX_ALLOW_READ_ONLY_SM cannot be used
+                    # as an unauthorized production scoring activation path.
+                    sec_trades = []
+                    sm_evidence_state = "HELD"
+                    sm_adapter_res = {"status": "HELD", "evidence_state": "HELD", "trades": []}
+                else:
+                    sm_adapter_res = RadarSmartMoneyAdapter.get_radar_insider_trades(sym, as_of=price_date)
+                    sm_evidence_state = sm_adapter_res.get("evidence_state", "UNAVAILABLE")
+                    sec_trades = sm_adapter_res.get("trades") or []
                 cong_trades = smart_money_engine.get_congressional_trades(sym)
 
                 # Classify transactions into authentic open-market purchases vs sales via production classifier
