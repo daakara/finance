@@ -19,28 +19,77 @@ from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_f
 
 REQUIRED_ENV_VARS = ["NEXT_PUBLIC_API_URL"]
 
-def verify_engine_manifest():
-    manifest_path = os.path.join(PROJECT_ROOT, "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json")
-    if not os.path.exists(manifest_path):
-        raise AssertionError("CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json not found in repository root.")
+def verify_engine_manifest(enforce_production=True, manifest_override=None):
+    """Check three-engine integrity and ratified release authority.
+
+    Production mode is the release runner default. Development mode must be
+    explicitly selected by callers; it does not produce production authority.
+    """
+    manifest_name = manifest_override or (
+        "FROZEN_ENGINE_MANIFEST_V2_5_3.json"
+        if enforce_production else "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json"
+    )
+    if os.path.basename(manifest_name) != manifest_name:
+        raise AssertionError("Manifest path must be a repository-root filename")
+    manifest_path = os.path.join(PROJECT_ROOT, manifest_name)
+    if not os.path.isfile(manifest_path):
+        raise AssertionError(f"Engine manifest missing: {manifest_name}")
 
     with open(manifest_path, "r", encoding="utf-8-sig") as f:
         data = json.load(f)
 
-    confluence_meta = data.get("engines", {}).get("confluence_engine", {})
-    expected_hash = confluence_meta.get("sha256")
-    if not expected_hash:
-        raise AssertionError("confluence_engine entry in CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json missing sha256.")
+    if enforce_production:
+        if manifest_name != "FROZEN_ENGINE_MANIFEST_V2_5_3.json":
+            raise AssertionError("Production must use the exact frozen v2.5.3 manifest")
+        if data.get("isProductionRatified") is not True:
+            raise AssertionError("Production engine manifest is not ratified")
+        if data.get("manifestVersion") != "2.5.3":
+            raise AssertionError("Unexpected production engine manifest version")
+        if data.get("authorityScope") != "CURRENT_PRODUCTION_AUTHORITY":
+            raise AssertionError("Manifest not scoped to production authority")
+        if data.get("provenanceCommit") != "cc0c72c23cd874148a6db49730153d9b644617f0":
+            raise AssertionError("Unrecognized ratification provenance commit")
+        if data.get("releaseAuthorityBinding") != "SPRINT4_RC5_CONFLUENCE_PROVENANCE_AND_CAPS_RATIFICATION":
+            raise AssertionError("Unrecognized release authority binding")
+        if data.get("ratifiedAuthorityRecord") != "docs/governance/ARX_RC5_ENGINE_MANIFEST_V253_SUCCESSION_RECORD.md":
+            raise AssertionError("Ratification record binding mismatch")
+        record = os.path.join(PROJECT_ROOT, data["ratifiedAuthorityRecord"])
+        if not os.path.isfile(record):
+            raise AssertionError("Ratification record missing")
+        record_text = open(record, "r", encoding="utf-8").read()
+        if "ARX_RC5_MANIFEST_SUCCESSION_V253_AUTHORIZED" not in record_text:
+            raise AssertionError("Owner ratification record missing authorization token")
+        if data.get("invariants", {}).get("production_ratification_prohibited") is True:
+            raise AssertionError("Production ratification explicitly prohibited")
+    elif data.get("isProductionRatified") is True and manifest_name != "FROZEN_ENGINE_MANIFEST_V2_5_3.json":
+        raise AssertionError("Development candidate cannot assert production ratification")
 
-    confluence_file = os.path.join(PROJECT_ROOT, "analyst_dashboard", "analyzers", "confluence_engine.py")
-    if not os.path.exists(confluence_file):
-        raise AssertionError(f"Confluence engine file not found at {confluence_file}")
+    required = {"confluence_engine", "optimal_execution", "decision_hierarchy"}
+    engines = data.get("engines", {})
+    if not isinstance(engines, dict) or not required.issubset(engines):
+        raise AssertionError("Engine manifest must list all three mandatory engines")
+    hashes = {}
+    for name in sorted(required):
+        meta = engines[name]
+        expected_path = f"analyst_dashboard/analyzers/{name}.py"
+        if meta.get("filePath") != expected_path:
+            raise AssertionError(f"{name}: unexpected engine source path")
+        expected_hash = meta.get("sha256")
+        if not isinstance(expected_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_hash):
+            raise AssertionError(f"{name}: invalid engine digest")
+        engine_path = os.path.join(PROJECT_ROOT, expected_path)
+        if not os.path.isfile(engine_path):
+            raise AssertionError(f"{name}: engine source missing")
+        with open(engine_path, "rb") as f:
+            actual_hash = hashlib.sha256(f.read().replace(b"\\r\\n", b"\\n")).hexdigest()
+        if actual_hash != expected_hash:
+            raise AssertionError(f"{name}: engine hash mismatch")
+        hashes[name] = actual_hash
 
-    actual_hash = compute_file_sha256(confluence_file)
-    if actual_hash.lower() != expected_hash.lower():
-        raise AssertionError(f"Confluence engine hash mismatch: expected {expected_hash[:10]}... got {actual_hash[:10]}...")
+    return {"manifest_version": data.get("manifestVersion"),
+            "ratified": data.get("isProductionRatified") is True,
+            "engine_hashes": hashes}
 
-    return {"manifest_version": data.get("manifest_version"), "engine_hash": actual_hash}
 
 def verify_env_contracts():
     """Actively inspects environment variables, .env.production, and package configuration."""
@@ -105,14 +154,14 @@ def main():
     try:
         manifest_info = verify_engine_manifest()
         assertions.append({
-            "assertion": "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json hash matches source",
+            "assertion": "Ratified v2.5.3 manifest and three engine hashes match production source",
             "observed": manifest_info,
             "passed": True
         })
-        print("  [PASS] Candidate engine manifest verified.")
+        print("  [PASS] Ratified production engine manifest verified.")
     except Exception as e:
         assertions.append({
-            "assertion": "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json hash matches source",
+            "assertion": "Ratified v2.5.3 manifest and three engine hashes match production source",
             "observed": str(e),
             "passed": False
         })
