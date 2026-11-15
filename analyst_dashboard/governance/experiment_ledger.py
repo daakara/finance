@@ -101,13 +101,20 @@ class ExperimentLedger:
     VERSION_INCREMENT_REASON = "LIVE_MARKET_DECISION_INPUT_SEMANTICS"
 
     # Current Production Authority Binding (Release Addendum 002 -> RC5 Corporate Events)
-    CURRENT_RATIFIED_AUTHORITY = "SPRINT3_RC5_CORPORATE_EVENTS_RATIFICATION"
-    CURRENT_RATIFIED_COMMIT = "7980d3a6e5dde0fe172d215c729ec213b9a164b1"
-    CURRENT_AUTHORITY_MANIFEST = "FROZEN_ENGINE_MANIFEST_V2_5_2.json"
-    CURRENT_AUTHORITY_MANIFEST_DIGEST = "5a7be1f24e200a8480a41fbb096790a4cc6968a47170daba6107bdf176bd6330"
+    CURRENT_RATIFIED_AUTHORITY = "SPRINT4_RC5_CONFLUENCE_PROVENANCE_AND_CAPS_RATIFICATION"
+    CURRENT_RATIFIED_COMMIT = "cc0c72c23cd874148a6db49730153d9b644617f0"
+    CURRENT_AUTHORITY_MANIFEST = "FROZEN_ENGINE_MANIFEST_V2_5_3.json"
+    CURRENT_AUTHORITY_MANIFEST_DIGEST = "48ee13f219577c6478e9881c0f24836d0d1e0a8de4607a2f58cf0396105ec2c3"
 
     # Explicit Authority & Provenance Bindings for Engine Freeze Manifests
     AUTHORITY_VERSION_BINDINGS = {
+        "2.5.3": {
+            "manifestFile": "FROZEN_ENGINE_MANIFEST_V2_5_3.json",
+            "provenanceCommit": "cc0c72c23cd874148a6db49730153d9b644617f0",
+            "releaseAuthorityBinding": "SPRINT4_RC5_CONFLUENCE_PROVENANCE_AND_CAPS_RATIFICATION",
+            "ratifiedAuthorityRecord": "docs/governance/ARX_RC5_ENGINE_MANIFEST_V253_SUCCESSION_RECORD.md",
+            "expectedDigest": "48ee13f219577c6478e9881c0f24836d0d1e0a8de4607a2f58cf0396105ec2c3",
+        },
         "2.5.2": {
             "manifestFile": "FROZEN_ENGINE_MANIFEST_V2_5_2.json",
             "provenanceCommit": "7980d3a6e5dde0fe172d215c729ec213b9a164b1",
@@ -150,8 +157,8 @@ class ExperimentLedger:
         """Loads the cryptographic engine freeze manifest enforcing explicit version authority bindings."""
         if repo_root is None:
             repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        if version is None or version in ["2.5.2", "CURRENT", "ACTIVE"]:
-            binding = cls.AUTHORITY_VERSION_BINDINGS.get("2.5.2")
+        if version is None or version in ["CURRENT", "ACTIVE"]:
+            binding = cls.AUTHORITY_VERSION_BINDINGS.get("2.5.3")
         else:
             binding = cls.AUTHORITY_VERSION_BINDINGS.get(version)
 
