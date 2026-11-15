@@ -24,6 +24,8 @@ def main():
     assertions = []
 
     print("=== [RQ-04] FRONTEND REGRESSION & TYPECHECK ===")
+    if "/usr/local/bin" not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = f"/usr/local/bin:{os.environ.get('PATH', '')}"
 
     # 1. Typecheck
     print("Running npm run type-check...")

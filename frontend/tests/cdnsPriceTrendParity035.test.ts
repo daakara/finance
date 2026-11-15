@@ -236,12 +236,78 @@ console.log("\nTest 5: Unsupported VCP-Explanation Regression...");
     !nonVcpTrend.modelRule.includes("VCP base contraction"),
     `Non-VCP setup must NOT assert VCP base contraction! Got: "${nonVcpTrend.modelRule}"`
   );
+  // Unverified slope with 50 candles asserts "key moving averages" rather than unsubstantiated "rising"
   assert.ok(
-    nonVcpTrend.modelRule.includes("Price holding firmly above rising moving averages"),
-    `Non-VCP setup must assert general trend structure. Got: "${nonVcpTrend.modelRule}"`
+    nonVcpTrend.modelRule.includes("Price holding firmly above key moving averages"),
+    `Non-VCP setup with unverified slope must assert key moving averages. Got: "${nonVcpTrend.modelRule}"`
   );
 
-  // Verified VCP Execution Plan
+  // Test with >= 55 candles where slope is verified rising
+  const risingCandles = Array.from({ length: 60 }, (_, i) => ({
+    time: `2025-09-${String((i % 28) + 1).padStart(2, "0")}`,
+    open: 280 + i * 2,
+    high: 285 + i * 2,
+    low: 278 + i * 2,
+    close: 282 + i * 2, // steadily rising
+    volume: 100000,
+  }));
+  const verifiedSlopeInsight = generateQuantitativeInsight(
+    "RISING_SLOPE",
+    "Rising Corp",
+    420.0,
+    1.5,
+    undefined,
+    undefined,
+    "SWING",
+    "NOT_OWNED",
+    "USER_DECLARED",
+    risingCandles,
+    "historical",
+    undefined,
+    undefined,
+    nonVcpPlan
+  );
+  const risingTrend = verifiedSlopeInsight.terminalState?.domains?.find((d) => d.domainId === "trend");
+  assert.ok(risingTrend, "Rising trend domain must exist");
+  assert.ok(
+    risingTrend.modelRule.includes("Price holding firmly above rising moving averages"),
+    `Verified rising slope must assert rising moving averages. Got: "${risingTrend.modelRule}"`
+  );
+
+  // Test: Truthy but unverified/pending VCP status MUST NOT assert VCP base contraction
+  const pendingVcpPlan: OptimalExecutionPlan = {
+    current_price: 349.0,
+    stop_loss: 340.0,
+    setup_pattern: "Minervini Volatility Contraction Pattern (VCP)",
+    entry_thesis: "VCP thesis",
+    invalidation_condition: "VCP invalidation",
+    stage_phase: "Stage 2",
+    vcp_contraction_status: "PENDING_BREAKOUT", // Truthy but NOT qualified/confirmed
+  };
+  const pendingVcpInsight = generateQuantitativeInsight(
+    "PENDING_VCP",
+    "Pending VCP Corp",
+    349.0,
+    1.0,
+    undefined,
+    undefined,
+    "SWING",
+    "NOT_OWNED",
+    "USER_DECLARED",
+    candles,
+    "historical",
+    undefined,
+    undefined,
+    pendingVcpPlan
+  );
+  const pendingTrend = pendingVcpInsight.terminalState?.domains?.find((d) => d.domainId === "trend");
+  assert.ok(pendingTrend, "Pending VCP trend domain must exist");
+  assert.ok(
+    !pendingTrend.modelRule.includes("VCP base contraction"),
+    `Pending/unverified VCP must NOT assert VCP base contraction! Got: "${pendingTrend.modelRule}"`
+  );
+
+  // Verified VCP Execution Plan (with qualified 3T_CONTRACTION status)
   const vcpPlan: OptimalExecutionPlan = {
     current_price: 349.0,
     stop_loss: 340.0,
@@ -319,6 +385,29 @@ console.log("\nTest 6: Incomplete history (< 50) and fallback feed fail-closed..
   assert.strictEqual(fallTrend.availability, "UNAVAILABLE");
   assert.strictEqual(fallTrend.status, "UNAVAILABLE");
   assert.strictEqual(fallTrend.pointImpact, 0);
+
+  // Mixed observation timestamps / Stale market data (> 4 days staleness)
+  const staleInsight = generateQuantitativeInsight(
+    "STALE_ASSET",
+    "Stale Market Corp",
+    323.01,
+    0.0,
+    undefined,
+    undefined,
+    "SWING",
+    "NOT_OWNED",
+    "USER_DECLARED",
+    createCandles(320.83, 328.26, 323.01),
+    "historical",
+    undefined,
+    undefined,
+    undefined,
+    { status: "STALE_HISTORICAL", stalenessDays: 7, lastTradeDate: "2026-11-01" }
+  );
+  assert.strictEqual(staleInsight.terminalState?.isActionable, false, "Stale market data must not be actionable");
+  assert.strictEqual(staleInsight.terminalState?.canSizeTrade, false, "Stale market data must disable sizing");
+  assert.strictEqual(staleInsight.terminalState?.decisionState, "STALE_DATA", "Stale market data must set STALE_DATA state");
+
   console.log("  [PASS] Fail-closed behavior strictly preserves 0 points and UNAVAILABLE status.");
 }
 
@@ -432,6 +521,50 @@ console.log("\nTest 8: Confluence score authority decoupling...");
     "CDNS with 72 setup score and 2 pillars must NOT be actionable"
   );
   console.log("  [PASS] Domain point adjustments are decoupled from authoritative Confluence score.");
+}
+
+// ── Test 9: Missing SMA50 & Zero Indicator Fail-Closed Invariant ──────────────
+console.log("\nTest 9: Missing SMA50 & Zero Indicator Fail-Closed Invariant...");
+{
+  // Test with null/empty candles: SMA50 is missing
+  const noCandlesInsight = generateQuantitativeInsight(
+    "NO_SMA",
+    "No SMA Corp",
+    100.0,
+    0.0,
+    undefined,
+    undefined,
+    "SWING",
+    "NOT_OWNED",
+    "USER_DECLARED",
+    []
+  );
+  const noSmaTrend = noCandlesInsight.terminalState?.domains?.find((d) => d.domainId === "trend");
+  assert.ok(noSmaTrend, "Trend domain must exist");
+  assert.strictEqual(noSmaTrend.availability, "UNAVAILABLE", "Missing SMA50 must be UNAVAILABLE");
+  assert.strictEqual(noSmaTrend.status, "UNAVAILABLE", "Missing SMA50 status must be UNAVAILABLE");
+  assert.strictEqual(noSmaTrend.pointImpact, 0, "Missing SMA50 must award 0 points");
+  assert.ok(!noSmaTrend.observation.includes("$NaN"), "Observation must not contain $NaN");
+  assert.ok(!noSmaTrend.observation.includes("undefined"), "Observation must not contain undefined");
+
+  // Test with invalid price 0
+  const zeroPriceInsight = generateQuantitativeInsight(
+    "ZERO",
+    "Zero Corp",
+    0.0,
+    0.0,
+    undefined,
+    undefined,
+    "SWING",
+    "NOT_OWNED",
+    "USER_DECLARED",
+    createCandles(320.83, 328.26, 323.01)
+  );
+  const zeroTrend = zeroPriceInsight.terminalState?.domains?.find((d) => d.domainId === "trend");
+  assert.ok(zeroTrend, "Trend domain must exist");
+  assert.strictEqual(zeroTrend.status, "UNFAVORABLE");
+  assert.strictEqual(zeroTrend.pointImpact, -25);
+  console.log("  [PASS] Missing SMA50 and edge prices strictly fail closed without invalid numbers.");
 }
 
 console.log("\n=== ALL CDNS PRICE TREND PARITY TESTS PASSED ===");

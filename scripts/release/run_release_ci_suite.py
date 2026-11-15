@@ -41,6 +41,8 @@ def main():
     os.makedirs(RECEIPTS_DIR, exist_ok=True)
 
     start_time = time.time()
+    if "/usr/local/bin" not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = f"/usr/local/bin:{os.environ.get('PATH', '')}"
     results = {}
     passed = 0
     failed = 0

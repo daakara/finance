@@ -5,8 +5,8 @@ Directive ARX-QA-AUTHORITY-035: Independent Financial Correctness & Decision Gat
 
 Validates that:
 1. Form 4 transaction semantics: Open-market purchases ('P') award positive points; sales ('S') do not.
-2. Non-purchase Form 4 codes (M, A, F, G, D) are never classified as open-market accumulation.
-3. CDNS price trend parity: Pullback between 20 EMA and 50 SMA is classified truthfully as MIXED.
+2. Non-purchase Form 4 codes (M, A, F, G, D) and derivatives are never classified as open-market accumulation.
+3. CDNS price trend parity: Executed in RQ-04 (frontend regression test cdnsPriceTrendParity035.test.ts).
 4. Coverage caps are strictly enforced: <=1 pillar -> 50.0, 2 -> 72.0, 3 -> 84.0, 4 -> 96.0.
 5. Missing and synthetic fundamentals fail closed to EVIDENCE_INCOMPLETE.
 6. ETF corporate 10-K exemption preserves alternate-pillar eligibility without fabricated quality.
@@ -76,6 +76,51 @@ def test_screener_classify_sec_trades_production():
     assert len(res_grant["sell_trades"]) == 0, "Stock grant must not be sell"
     assert res_grant["has_insider_buy"] is False
     assert res_grant["has_insider_sell"] is False
+
+    # Option exercise (Code M)
+    res_opt = classify_sec_trades([{"transaction_code": "M", "transaction_type": "Option Exercise", "total_value": 500000}])
+    assert res_opt["has_insider_buy"] is False, "Option exercise must not be buy"
+
+    # Tax withholding (Code F)
+    res_tax = classify_sec_trades([{"transaction_code": "F", "transaction_type": "Tax Withholding", "total_value": 200000}])
+    assert res_tax["has_insider_buy"] is False, "Tax withholding must not be buy"
+
+    # Gift (Code G)
+    res_gift = classify_sec_trades([{"transaction_code": "G", "transaction_type": "Bona Fide Gift", "total_value": 100000}])
+    assert res_gift["has_insider_buy"] is False, "Gift must not be buy"
+
+    # Contradictory Code S with Purchase description -> fails closed (neither buy nor sell)
+    res_contra_s = classify_sec_trades([{"transaction_code": "S", "transaction_type": "Purchase of shares", "total_value": 300000}])
+    assert res_contra_s["has_insider_buy"] is False, "Contradictory sale must never be classified as buy"
+    assert res_contra_s["has_insider_sell"] is False, "Contradictory sale must fail closed"
+
+    # Contradictory Code P with Sale description -> fails closed (neither buy nor sell)
+    res_contra_p = classify_sec_trades([{"transaction_code": "P", "transaction_type": "Sale of shares", "total_value": 300000}])
+    assert res_contra_p["has_insider_buy"] is False, "Contradictory buy must fail closed"
+    assert res_contra_p["has_insider_sell"] is False, "Contradictory buy must never be classified as sell"
+
+    # Code M option exercise with Purchase description and is_derivative=True
+    res_m_deriv = classify_sec_trades([{"transaction_code": "M", "transaction_type": "Purchase", "is_derivative": True, "total_value": 500000}])
+    assert res_m_deriv["has_insider_buy"] is False, "Derivative option exercise must not be classified as buy"
+    assert res_m_deriv["has_insider_sell"] is False
+
+    # Code M option exercise with Purchase description even if is_derivative=False -> must never be classified as buy
+    res_m_plain = classify_sec_trades([{"transaction_code": "M", "transaction_type": "Purchase", "is_derivative": False, "total_value": 500000}])
+    assert res_m_plain["has_insider_buy"] is False, "Code M option exercise must never be classified as buy"
+    assert res_m_plain["has_insider_sell"] is False
+
+    # Missing transaction code -> cannot manufacture purchase conviction
+    res_missing_code = classify_sec_trades([{"transaction_type": "Purchase (Direct Open Market)", "total_value": 500000}])
+    assert res_missing_code["has_insider_buy"] is False, "Missing transaction code must fail closed"
+    assert res_missing_code["has_insider_sell"] is False
+
+    # Derivative purchase -> excluded from common stock purchases
+    res_deriv = classify_sec_trades([{"transaction_code": "P", "is_derivative": True, "total_value": 250000}])
+    assert res_deriv["has_insider_buy"] is False, "Derivative purchase must not be classified as common stock buy"
+
+    # Unresolved amendment -> fails closed
+    res_amend = classify_sec_trades([{"transaction_code": "P", "unresolved_amendment": True, "total_value": 250000}])
+    assert res_amend["has_insider_buy"] is False, "Unresolved amendment must fail closed"
 
 
 def test_form4_classification_semantics():

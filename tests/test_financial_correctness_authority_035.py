@@ -40,48 +40,209 @@ def test_form4_transaction_classification_integrity():
 def test_production_classify_sec_trades_exercises_implementation():
     """
     Exercises the actual production classify_sec_trades in api/routes/screener.py.
-    Guarantees no duplicated list comprehensions or classification logic in test code.
+    Guarantees strict coverage across all 15 required financial fixtures:
+    1. Valid code-P nonderivative open-market purchase
+    2. Valid code-S open-market sale
+    3. Code-M option exercise with 'Purchase' description
+    4. Code-A equity grant
+    5. Code-F tax withholding
+    6. Code-G bona fide gift
+    7. Code-D issuer disposition
+    8. Code-P with contradictory 'Sale' description
+    9. Code-S with contradictory 'Purchase' description
+    10. Missing transaction code
+    11. Missing or malformed transaction metadata
+    12. Derivative code-P record
+    13. Unresolved amendment
+    14. Multiple transactions with mixed classifications
+    15. Empty and unavailable evidence
     """
-    sale_trade = {
-        "ticker": "CDNS",
-        "transaction_type": "Sale (Open Market)",
-        "transaction_code": "S",
-        "total_value": "$5,000,000",
-        "reporting_owner": "Corporate Director"
-    }
-    buy_trade = {
+    f1_valid_buy = {
         "ticker": "CDNS",
         "transaction_type": "Purchase (Direct Open Market)",
         "transaction_code": "P",
+        "is_derivative": False,
         "total_value": "$2,500,000",
         "reporting_owner": "Chief Executive Officer"
     }
-    grant_trade = {
+    f2_valid_sale = {
+        "ticker": "CDNS",
+        "transaction_type": "Sale (Open Market)",
+        "transaction_code": "S",
+        "is_derivative": False,
+        "total_value": "$5,000,000",
+        "reporting_owner": "Corporate Director"
+    }
+    f3_option_exercise = {
+        "ticker": "CDNS",
+        "transaction_type": "Purchase (Option Exercise)",
+        "transaction_code": "M",
+        "is_derivative": True,
+        "total_value": "$1,200,000"
+    }
+    f4_grant = {
         "ticker": "CDNS",
         "transaction_type": "Grant (Rule 16b-3)",
         "transaction_code": "A",
-        "total_value": "$1,000,000",
-        "reporting_owner": "Executive Officer"
+        "total_value": "$800,000"
+    }
+    f5_tax = {
+        "ticker": "CDNS",
+        "transaction_type": "Tax Withholding",
+        "transaction_code": "F",
+        "total_value": "$300,000"
+    }
+    f6_gift = {
+        "ticker": "CDNS",
+        "transaction_type": "Bona Fide Gift",
+        "transaction_code": "G",
+        "total_value": "$150,000"
+    }
+    f7_disposition = {
+        "ticker": "CDNS",
+        "transaction_type": "Disposition to Issuer",
+        "transaction_code": "D",
+        "total_value": "$400,000"
+    }
+    f8_contradictory_buy_with_sale = {
+        "ticker": "CDNS",
+        "transaction_type": "Sale (Open Market)",
+        "transaction_code": "P",
+        "total_value": "$900,000"
+    }
+    f9_contradictory_sale_with_buy = {
+        "ticker": "CDNS",
+        "transaction_type": "Purchase (Direct Open Market)",
+        "transaction_code": "S",
+        "total_value": "$700,000"
+    }
+    f10_missing_code = {
+        "ticker": "CDNS",
+        "transaction_type": "Purchase (Direct Open Market)",
+        "transaction_code": None,
+        "total_value": "$500,000"
+    }
+    f11_malformed = {
+        "ticker": "CDNS",
+        "transaction_code": "   ",
+        "total_value": None
+    }
+    f12_derivative_p = {
+        "ticker": "CDNS",
+        "transaction_type": "Purchase of Call Option",
+        "transaction_code": "P",
+        "is_derivative": True,
+        "total_value": "$600,000"
+    }
+    f13_unresolved_amendment = {
+        "ticker": "CDNS",
+        "transaction_type": "Open Market Purchase",
+        "transaction_code": "P",
+        "unresolved_amendment": True,
+        "total_value": "$450,000"
     }
 
-    # Exercise actual production classifier on sale
-    res_sale = classify_sec_trades([sale_trade])
-    assert res_sale["has_insider_buy"] is False, "Production classifier must NOT identify sale as insider buy"
-    assert res_sale["has_insider_sell"] is True, "Production classifier must identify sale as insider sell"
-    assert len(res_sale["buy_trades"]) == 0
-    assert len(res_sale["sell_trades"]) == 1
+    # 1. Valid code-P nonderivative purchase
+    r1 = classify_sec_trades([f1_valid_buy])
+    assert r1["has_insider_buy"] is True
+    assert r1["has_insider_sell"] is False
+    assert len(r1["buy_trades"]) == 1
+    assert len(r1["sell_trades"]) == 0
+    assert r1["total_buy_value_usd"] == 2500000.0
 
-    # Exercise actual production classifier on purchase
-    res_buy = classify_sec_trades([buy_trade])
-    assert res_buy["has_insider_buy"] is True, "Production classifier must identify purchase as insider buy"
-    assert res_buy["has_insider_sell"] is False, "Production classifier must NOT identify purchase as insider sell"
-    assert len(res_buy["buy_trades"]) == 1
-    assert len(res_buy["sell_trades"]) == 0
+    # 2. Valid code-S open-market sale
+    r2 = classify_sec_trades([f2_valid_sale])
+    assert r2["has_insider_buy"] is False
+    assert r2["has_insider_sell"] is True
+    assert len(r2["buy_trades"]) == 0
+    assert len(r2["sell_trades"]) == 1
+    assert r2["total_sell_value_usd"] == 5000000.0
 
-    # Exercise actual production classifier on grant
-    res_grant = classify_sec_trades([grant_trade])
-    assert res_grant["has_insider_buy"] is False, "Stock grant must NOT be classified as open-market buy"
-    assert res_grant["has_insider_sell"] is False, "Stock grant must NOT be classified as open-market sell"
+    # 3. Code-M option exercise with 'Purchase' description -> excluded
+    r3 = classify_sec_trades([f3_option_exercise])
+    assert r3["has_insider_buy"] is False
+    assert r3["has_insider_sell"] is False
+
+    # 4. Code-A stock grant -> excluded
+    r4 = classify_sec_trades([f4_grant])
+    assert r4["has_insider_buy"] is False
+    assert r4["has_insider_sell"] is False
+
+    # 5. Code-F tax withholding -> excluded
+    r5 = classify_sec_trades([f5_tax])
+    assert r5["has_insider_buy"] is False
+    assert r5["has_insider_sell"] is False
+
+    # 6. Code-G gift -> excluded
+    r6 = classify_sec_trades([f6_gift])
+    assert r6["has_insider_buy"] is False
+    assert r6["has_insider_sell"] is False
+
+    # 7. Code-D issuer disposition -> excluded
+    r7 = classify_sec_trades([f7_disposition])
+    assert r7["has_insider_buy"] is False
+    assert r7["has_insider_sell"] is False
+
+    # 8. Code-P with contradictory 'Sale' description -> fails closed
+    r8 = classify_sec_trades([f8_contradictory_buy_with_sale])
+    assert r8["has_insider_buy"] is False
+    assert r8["has_insider_sell"] is False
+
+    # 9. Code-S with contradictory 'Purchase' description -> fails closed
+    r9 = classify_sec_trades([f9_contradictory_sale_with_buy])
+    assert r9["has_insider_buy"] is False
+    assert r9["has_insider_sell"] is False
+
+    # 10. Missing transaction code -> fails closed
+    r10 = classify_sec_trades([f10_missing_code])
+    assert r10["has_insider_buy"] is False
+    assert r10["has_insider_sell"] is False
+
+    # 11. Malformed metadata and non-dict records -> fail closed
+    r11 = classify_sec_trades([f11_malformed, "INVALID", None, 12345])
+    assert r11["has_insider_buy"] is False
+    assert r11["has_insider_sell"] is False
+
+    # 12. Derivative code-P record -> excluded
+    r12 = classify_sec_trades([f12_derivative_p])
+    assert r12["has_insider_buy"] is False
+    assert r12["has_insider_sell"] is False
+
+    # 13. Unresolved amendment -> fails closed
+    r13 = classify_sec_trades([f13_unresolved_amendment])
+    assert r13["has_insider_buy"] is False
+    assert r13["has_insider_sell"] is False
+
+    # 14. Multiple transactions with mixed classifications
+    r14 = classify_sec_trades([f1_valid_buy, f2_valid_sale, f3_option_exercise, f4_grant])
+    assert r14["has_insider_buy"] is True
+    assert r14["has_insider_sell"] is True
+    assert len(r14["buy_trades"]) == 1
+    assert len(r14["sell_trades"]) == 1
+    assert r14["total_buy_value_usd"] == 2500000.0
+    assert r14["total_sell_value_usd"] == 5000000.0
+
+    # 15. Empty and unavailable evidence
+    r15_empty = classify_sec_trades([])
+    assert r15_empty["has_insider_buy"] is False
+    assert r15_empty["has_insider_sell"] is False
+    r15_none = classify_sec_trades(None)
+    assert r15_none["has_insider_buy"] is False
+    assert r15_none["has_insider_sell"] is False
+
+    # Positive buying conviction demonstration
+    pos_confluence = ConfluenceEngine.calculate_confluence(
+        symbol="CDNS",
+        smart_money_data={
+            "has_insider_buy": r1["has_insider_buy"],
+            "insider_value_usd": r1["total_buy_value_usd"],
+            "insider_name": f1_valid_buy["reporting_owner"]
+        }
+    )
+    smart_pillar = next(p for p in pos_confluence["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
+    assert smart_pillar["score"] == 90.0
+    assert smart_pillar["status"] == "positive"
+    assert "purchased" in smart_pillar["detail"].lower()
 
 
 # ── TEST 3: Baseline Failure & Corrected Success Falsification ────────────────

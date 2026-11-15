@@ -262,7 +262,39 @@ export function generateQuantitativeInsight(
       ? (() => {
           const hasSma50 = typeof sma50 === "number" && !isNaN(sma50) && sma50 > 0;
           const hasEma20 = typeof ema20 === "number" && !isNaN(ema20) && ema20 > 0;
-          const isAboveSma50 = hasSma50 && safePrice >= (sma50 as number) && !isStage4;
+
+          // Missing or invalid SMA50 fails closed to UNAVAILABLE (never enters AVAILABLE or renders invalid numbers)
+          if (!hasSma50) {
+            return {
+              domainId: "trend",
+              domainName: "Price Trend",
+              availability: "UNAVAILABLE",
+              status: "UNAVAILABLE" as const,
+              pointImpact: 0,
+              importanceLevel: "HIGH" as const,
+              observation: candles && candles.length > 0
+                ? `Insufficient historical trading sessions (${candles.length} of 50 required) to compute 50-day moving average.`
+                : "Historical price action candles unavailable for this asset.",
+              modelRule: "Price trend requires at least 50 valid trading sessions; zero points awarded when evidence is unavailable.",
+              evidence: candles && candles.length > 0
+                ? [
+                    {
+                      metricName: "Price vs 50-Day SMA",
+                      currentValue: `$${safePrice.toFixed(2)}`,
+                      benchmarkValue: "N/A (< 50 sessions)",
+                      source: "Market Feed",
+                      asOf: "Completed Daily Session",
+                      freshness: "END_OF_DAY" as const,
+                      significance: "HIGH" as const,
+                      status: "UNAVAILABLE" as const,
+                    },
+                  ]
+                : [],
+              whatWouldChangeAssessment: "Accumulation of 50 closed daily trading sessions will activate trend moving-average analysis.",
+            };
+          }
+
+          const isAboveSma50 = safePrice >= (sma50 as number) && !isStage4;
           const isAboveEma20 = hasEma20 && safePrice >= (ema20 as number);
 
           if (!isAboveSma50) {
@@ -308,8 +340,7 @@ export function generateQuantitativeInsight(
 
           if (hasEma20 && !isAboveEma20) {
             // Price is above 50 SMA but below 20 EMA (Pullback / Consolidation: CDNS condition)
-            // Governing financial specification (docs/ux/07_data_to_ui_contract.md) authorizes +25 for maintaining 50-day SMA trend structure.
-            // Retains original approved numerical behavior (+25 pts) while eliminating demonstrably false claim of holding above 20 EMA.
+            // Preserves established baseline numerical behavior (+25 pts) while assigning MIXED status and eliminating false claim of holding above 20 EMA.
             const evidence: EvidenceItem[] = [
               {
                 metricName: "Price vs 20-Day EMA",
@@ -348,10 +379,24 @@ export function generateQuantitativeInsight(
           }
 
           // Price is above 50 SMA and either above 20 EMA or 20 EMA is not present
-          const hasVcp = Boolean(
-            optimalExecution?.setup_pattern?.toUpperCase().includes("VCP") ||
-            optimalExecution?.vcp_contraction_status ||
-            (decisionTrace as any)?.setup_pattern?.toUpperCase().includes("VCP")
+          // Verify moving average slope before describing as 'rising'
+          // SMA50 slope is verified if we have >= 55 daily candles and SMA50(current) > SMA50(5 bars ago)
+          let isSma50Rising = false;
+          if (candles && candles.length >= 55 && !isFallbackFeed) {
+            const smaNow = sma50 as number;
+            const prev50Slice = candles.slice(-55, -5);
+            const smaPrev = prev50Slice.reduce((sum, c) => sum + c.close, 0) / 50;
+            isSma50Rising = smaNow > smaPrev;
+          }
+
+          // Explicit qualified VCP verification: requires explicit VCP setup pattern
+          // AND qualified contraction state (truthy pending/unverified status is insufficient)
+          const QUALIFIED_VCP_STATES = ["QUALIFIED", "CONFIRMED", "COMPLETED", "TIGHT", "3T_CONTRACTION", "4T_CONTRACTION", "2T_CONTRACTION"];
+          const vcpStatus = (optimalExecution?.vcp_contraction_status || "").toUpperCase();
+          const hasQualifiedVcp = Boolean(
+            (optimalExecution?.setup_pattern?.toUpperCase().includes("VCP") ||
+             (decisionTrace as any)?.setup_pattern?.toUpperCase().includes("VCP")) &&
+            (QUALIFIED_VCP_STATES.includes(vcpStatus) || (!optimalExecution?.vcp_contraction_status && optimalExecution?.setup_pattern?.toUpperCase().includes("VCP")))
           );
 
           const evidence: EvidenceItem[] = [];
@@ -382,9 +427,10 @@ export function generateQuantitativeInsight(
             ? `Price ($${safePrice.toFixed(2)}) is holding firmly above the 20 EMA ($${(ema20 as number).toFixed(2)}) and 50 SMA ($${(sma50 as number).toFixed(2)}).`
             : `Price ($${safePrice.toFixed(2)}) is holding firmly above the 50 SMA ($${(sma50 as number).toFixed(2)}).`;
 
-          const ruleText = hasVcp
-            ? "VCP base contraction above rising moving averages adds +25 points."
-            : "Price holding firmly above rising moving averages confirms positive trend structure (+25 pts).";
+          const maAdjective = isSma50Rising ? "rising" : "key";
+          const ruleText = hasQualifiedVcp
+            ? `VCP base contraction above ${maAdjective} moving averages adds +25 points.`
+            : `Price holding firmly above ${maAdjective} moving averages confirms positive trend structure (+25 pts).`;
 
           return {
             domainId: "trend",
