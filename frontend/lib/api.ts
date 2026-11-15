@@ -1136,6 +1136,7 @@ export interface CandidatePopulationModel {
   universeBuildId?: string | null;
   stage2OpportunityCount?: number;
   stage1RecordCount?: number;
+  stage3RecordCount?: number;
   stage4RecordCount?: number;
   stageUnresolvedRecordCount?: number;
   marketDataAsOf?: string | null;

@@ -1,65 +1,49 @@
 {
-  "release_candidate_commit": "983c0f2b9af8f955677c2666f6ee16b97ee8705e",
-  "base_anchor_commit": "cc0c72c23cd874148a6db49730153d9b644617f0",
-  "total_files": 7,
+  "release_candidate_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
+  "base_anchor_commit": "7d22d8b4a2b217fdc130da848ac1e49c7305d3dd",
+  "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-FINANCIAL-AUTHORITY-039",
+  "directive": "ARX-RADAR-P2-RECONCILIATION",
   "files": {
-    "FROZEN_ENGINE_MANIFEST_V2_5_3.json": {
+    "api/routes/screener.py": {
+      "operation": "M",
+      "originating_pr_number": 292,
+      "originating_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
+      "governing_requirement": "ARX-RADAR-P2-RECONCILIATION: api/routes/screener.py Stage 3 population accounting & test fixture isolation.",
+      "sha256": "10113e84e6426bf8429db449fa1ab0971dbd6c750d762a4eae5bc48ceefe1498",
+      "size_bytes": 129358
+    },
+    "frontend/lib/api.ts": {
+      "operation": "M",
+      "originating_pr_number": 292,
+      "originating_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
+      "governing_requirement": "ARX-RADAR-P2-RECONCILIATION: frontend/lib/api.ts Stage 3 population accounting & test fixture isolation.",
+      "sha256": "4f01895a3ad74ad806a5a11a2ad0d1449e119252b560cd930eac1fe4cae33309",
+      "size_bytes": 193003
+    },
+    "tests/conftest.py": {
+      "operation": "M",
+      "originating_pr_number": 292,
+      "originating_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
+      "governing_requirement": "ARX-RADAR-P2-RECONCILIATION: tests/conftest.py Stage 3 population accounting & test fixture isolation.",
+      "sha256": "7d81940f569ea1a5098b4b5d1679fd604a7c3e39bdefc701bb98a7eae6035e67",
+      "size_bytes": 9495
+    },
+    "tests/test_radar_population_conservation.py": {
       "operation": "A",
-      "originating_pr_number": 291,
-      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
-      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
-      "sha256": "48ee13f219577c6478e9881c0f24836d0d1e0a8de4607a2f58cf0396105ec2c3",
-      "size_bytes": 1908
+      "originating_pr_number": 292,
+      "originating_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
+      "governing_requirement": "ARX-RADAR-P2-RECONCILIATION: tests/test_radar_population_conservation.py Stage 3 population accounting & test fixture isolation.",
+      "sha256": "73e95a9dee86f50bb60234924bd36cb18ce168c5c31c75eafc356bafeafc6a9b",
+      "size_bytes": 8622
     },
-    "analyst_dashboard/governance/experiment_ledger.py": {
+    "tests/test_radar_stage2_discovery_remediation.py": {
       "operation": "M",
-      "originating_pr_number": 291,
-      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
-      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
-      "sha256": "cd2f0ccbc140508b61f63e1953c231571950c2409879ab14242628ac99982dcb",
-      "size_bytes": 154504
-    },
-    "docs/governance/ARX_RC5_ENGINE_MANIFEST_V253_SUCCESSION_RECORD.md": {
-      "operation": "A",
-      "originating_pr_number": 291,
-      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
-      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
-      "sha256": "b58b4fff0fcf00dcb1d736b48f6a8e619f94250b67d47d7c03fc9144947f9660",
-      "size_bytes": 3802
-    },
-    "scripts/release/rq02_diff_integrity.py": {
-      "operation": "M",
-      "originating_pr_number": 291,
-      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
-      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
-      "sha256": "453497f230c1a79e418d8838b26eeb658fc0edd7e0f689d98dd572e88ba95e28",
-      "size_bytes": 58121
-    },
-    "scripts/release/rq03_backend_regression.py": {
-      "operation": "M",
-      "originating_pr_number": 291,
-      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
-      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
-      "sha256": "1695ba330f0a817e819e86c9d1e31f1ef2220e17e0f0d9e17b88cc05140ac474",
-      "size_bytes": 3622
-    },
-    "scripts/release/rq10_config_integrity.py": {
-      "operation": "M",
-      "originating_pr_number": 291,
-      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
-      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
-      "sha256": "a8a3c4239f5e59fd3a1fdd1fa77042470b6c3785dca22c1c1614ace221cbaa37",
-      "size_bytes": 11026
-    },
-    "tests/test_rq10_manifest_authority_negative_cases.py": {
-      "operation": "A",
-      "originating_pr_number": 291,
-      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
-      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
-      "sha256": "a2e36908703d125f44067812e594f487de00aeda56a50024b0d2f589067423e9",
-      "size_bytes": 3230
+      "originating_pr_number": 292,
+      "originating_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
+      "governing_requirement": "ARX-RADAR-P2-RECONCILIATION: tests/test_radar_stage2_discovery_remediation.py Stage 3 population accounting & test fixture isolation.",
+      "sha256": "f68fd6f93929563fb43099406acee5c4d34641497d323e24d74a4636c783bed0",
+      "size_bytes": 12639
     }
   },
   "qualification_framework_files": {
@@ -69,8 +53,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "453497f230c1a79e418d8838b26eeb658fc0edd7e0f689d98dd572e88ba95e28",
-      "size_bytes": 58121,
+      "sha256": "dbdd9231b7c0a06e11978b7bf8f38b846d104a0209841562b349871d9b85df10",
+      "size_bytes": 58126,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
