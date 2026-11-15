@@ -1,97 +1,65 @@
 {
-  "release_candidate_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-  "base_anchor_commit": "62c645f4eb0f73dc01d214f79efce4f27a23dddc",
-  "total_files": 11,
+  "release_candidate_commit": "983c0f2b9af8f955677c2666f6ee16b97ee8705e",
+  "base_anchor_commit": "cc0c72c23cd874148a6db49730153d9b644617f0",
+  "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-QA-AUTHORITY-035",
+  "directive": "ARX-FINANCIAL-AUTHORITY-039",
   "files": {
-    ".github/workflows/release-qualification.yml": {
-      "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: wire RQ-13 financial integrity check into release qualification CI workflow.",
-      "sha256": "d6e2ae03c4f25e297bb2743a834945b9388b82143153ee3696d13c7934040188",
-      "size_bytes": 4186
-    },
-    "api/routes/screener.py": {
-      "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: Form 4 transaction classification remediation to prevent insider sales awarding purchase points.",
-      "sha256": "7fa50772ee970df24054a0f33c96b361bc721ed1117ef4d00f66097c7c7db5c1",
-      "size_bytes": 129154
-    },
-    "frontend/lib/insightGenerator.ts": {
-      "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: CDNS score and observation parity remediation evaluating both 20 EMA and 50 SMA.",
-      "sha256": "6de7fd382cd91c3c56b197a593f50061c1c829d1eebafca38df1c784fc95c0c9",
-      "size_bytes": 42354
-    },
-    "frontend/tests/cdnsPriceTrendParity035.test.ts": {
+    "FROZEN_ENGINE_MANIFEST_V2_5_3.json": {
       "operation": "A",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: CDNS price trend parity and pullback classification regression test suite.",
-      "sha256": "c47414dfa16506e976478540887e72eb943bb40ee27752b6e840a1630e570eb3",
-      "size_bytes": 20817
+      "originating_pr_number": 291,
+      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
+      "sha256": "48ee13f219577c6478e9881c0f24836d0d1e0a8de4607a2f58cf0396105ec2c3",
+      "size_bytes": 1908
+    },
+    "analyst_dashboard/governance/experiment_ledger.py": {
+      "operation": "M",
+      "originating_pr_number": 291,
+      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
+      "sha256": "cd2f0ccbc140508b61f63e1953c231571950c2409879ab14242628ac99982dcb",
+      "size_bytes": 154504
+    },
+    "docs/governance/ARX_RC5_ENGINE_MANIFEST_V253_SUCCESSION_RECORD.md": {
+      "operation": "A",
+      "originating_pr_number": 291,
+      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
+      "sha256": "b58b4fff0fcf00dcb1d736b48f6a8e619f94250b67d47d7c03fc9144947f9660",
+      "size_bytes": 3802
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: register approved PR 289 in APPROVED_PRS allowlist.",
-      "sha256": "05a473b738f4f7e8b37cd718f886bb5652fad82e200bdfec75a169f079ce4b96",
-      "size_bytes": 58116
+      "originating_pr_number": 291,
+      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
+      "sha256": "453497f230c1a79e418d8838b26eeb658fc0edd7e0f689d98dd572e88ba95e28",
+      "size_bytes": 58121
     },
     "scripts/release/rq03_backend_regression.py": {
       "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: wire test_financial_correctness_authority_035.py into RQ-03 suite.",
-      "sha256": "f1dfdba2a791a225e1db7ec617497fa3a4a7a471551026c4efb913b29d60056c",
-      "size_bytes": 3558
+      "originating_pr_number": 291,
+      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
+      "sha256": "1695ba330f0a817e819e86c9d1e31f1ef2220e17e0f0d9e17b88cc05140ac474",
+      "size_bytes": 3622
     },
-    "scripts/release/rq04_frontend_regression.py": {
+    "scripts/release/rq10_config_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: wire cdnsPriceTrendParity035.test.ts into RQ-04 suite.",
-      "sha256": "c64b193223aeca69817d0bbac29c54c2dfb2e2e260ab3f69d73fb77cf53b98ef",
-      "size_bytes": 6667
+      "originating_pr_number": 291,
+      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
+      "sha256": "a8a3c4239f5e59fd3a1fdd1fa77042470b6c3785dca22c1c1614ace221cbaa37",
+      "size_bytes": 11026
     },
-    "scripts/release/rq12_qualification_summary.py": {
-      "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: add RQ-13 to mandatory control suite and validate receipt aggregation.",
-      "sha256": "89ffe00c59f17a6b629bfd5c7b269c69cae183cf0c10ef9ec72cf588a2c11674",
-      "size_bytes": 15891
-    },
-    "scripts/release/rq13_financial_integrity.py": {
+    "tests/test_rq10_manifest_authority_negative_cases.py": {
       "operation": "A",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: financial evidence, coverage caps, and decision integrity control script.",
-      "sha256": "0be51d32c2d443c06a6ef1bbd5dbd4911ac5c2de987e61cf21a8803965707bbd",
-      "size_bytes": 16736
-    },
-    "scripts/release/run_release_ci_suite.py": {
-      "operation": "M",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: wire RQ-13 execution into master release CI suite.",
-      "sha256": "454544d08ec2c7d9b06925a4442750040a6f499128eff374fbcebb9849d69895",
-      "size_bytes": 4414
-    },
-    "tests/test_financial_correctness_authority_035.py": {
-      "operation": "A",
-      "originating_pr_number": 289,
-      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
-      "governing_requirement": "ARX-QA-AUTHORITY-035: deterministic invariant tests for financial correctness and Form 4 classification.",
-      "sha256": "514bc9375a5b73b003a05132a4c608ede23fb964c383608290c122e880965b00",
-      "size_bytes": 19511
+      "originating_pr_number": 291,
+      "originating_commit": "721b72b18dd0ddad3ea584ddd949859f6a5cc5fa",
+      "governing_requirement": "ARX-FINANCIAL-AUTHORITY-039: explicitly owner-ratified manifest succession with strict RQ-10 fail-closed gate; zero engine numerical modifications.",
+      "sha256": "a2e36908703d125f44067812e594f487de00aeda56a50024b0d2f589067423e9",
+      "size_bytes": 3230
     }
   },
   "qualification_framework_files": {
@@ -101,13 +69,13 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "05a473b738f4f7e8b37cd718f886bb5652fad82e200bdfec75a169f079ce4b96",
-      "size_bytes": 58116,
+      "sha256": "453497f230c1a79e418d8838b26eeb658fc0edd7e0f689d98dd572e88ba95e28",
+      "size_bytes": 58121,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "f1dfdba2a791a225e1db7ec617497fa3a4a7a471551026c4efb913b29d60056c",
-      "size_bytes": 3558,
+      "sha256": "1695ba330f0a817e819e86c9d1e31f1ef2220e17e0f0d9e17b88cc05140ac474",
+      "size_bytes": 3622,
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
@@ -141,8 +109,8 @@
       "description": "Release qualification module: rq09_compatibility_suite.py"
     },
     "scripts/release/rq10_config_integrity.py": {
-      "sha256": "6ef2de812ab6e61fc66c8d225a8ae255735a850a72dbbfc08b9426293dee017a",
-      "size_bytes": 7459,
+      "sha256": "a8a3c4239f5e59fd3a1fdd1fa77042470b6c3785dca22c1c1614ace221cbaa37",
+      "size_bytes": 11026,
       "description": "Release qualification module: rq10_config_integrity.py"
     },
     "scripts/release/rq11_rollback_readiness.py": {
