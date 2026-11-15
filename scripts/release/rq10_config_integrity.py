@@ -90,7 +90,7 @@ def verify_engine_manifest(enforce_production=True, manifest_override=None):
         # Pin the complete owner-approved manifest, not just a mutable ratified flag.
         expected_manifest_digest = "48ee13f219577c6478e9881c0f24836d0d1e0a8de4607a2f58cf0396105ec2c3"
         with open(manifest_path, "rb") as f:
-            actual_manifest_digest = hashlib.sha256(f.read().replace(b"\\r\\n", b"\\n")).hexdigest()
+            actual_manifest_digest = hashlib.sha256(f.read().replace(bytes([13, 10]), bytes([10]))).hexdigest()
         if actual_manifest_digest != expected_manifest_digest:
             raise AssertionError("Ratified manifest digest does not match approved authority")
 
