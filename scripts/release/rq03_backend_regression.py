@@ -27,6 +27,9 @@ def main():
         "tests/test_directive_057_remediation.py",
         "tests/test_confluence_engine.py",
         "tests/test_confluence_integrity_002.py",
+        "tests/test_confluence_provenance_wiring_003.py",
+        "tests/test_confluence_cross_component_parity.py",
+        "tests/test_financial_correctness_authority_035.py",
         "tests/test_smart_money_backup_retention_safety.py"
     ]
 

@@ -24,6 +24,8 @@ def main():
     assertions = []
 
     print("=== [RQ-04] FRONTEND REGRESSION & TYPECHECK ===")
+    if "/usr/local/bin" not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = f"/usr/local/bin:{os.environ.get('PATH', '')}"
 
     # 1. Typecheck
     print("Running npm run type-check...")
@@ -101,6 +103,25 @@ def main():
         "assertion": "Production Spotlight predicate and 0/1/2/N card count regression suite passes",
         "observed": {"exit_code": res_spotlight.returncode if res_spotlight is not None else None},
         "passed": res_spotlight is not None and res_spotlight.returncode == 0,
+    })
+
+    # 4. CDNS Price Trend Moving-Average Parity & Explanation Suite
+    print("Running CDNS Price Trend Parity regression tests...")
+    npx_bin = "npx.cmd" if os.name == "nt" else "npx"
+    cdns_cmd = [npx_bin, "tsx", "tests/cdnsPriceTrendParity035.test.ts"]
+    res_cdns = subprocess.run(
+        cdns_cmd, cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, encoding="utf-8", errors="ignore",
+    )
+    print(res_cdns.stdout)
+    cdns_passed = (res_cdns.returncode == 0)
+    if not cdns_passed:
+        errors.append(f"CDNS Price Trend Parity tests failed with exit code {res_cdns.returncode}")
+    assertions.append({
+        "assertion": "CDNS Price Trend moving-average parity and explanation suite passes",
+        "observed": {"exit_code": res_cdns.returncode},
+        "passed": cdns_passed,
     })
 
     duration = time.time() - t0

@@ -4,6 +4,7 @@ import {
   OwnershipState,
   OwnershipSource,
   DomainAssessment,
+  EvidenceItem,
   FactorAttributionItem,
   DecisionTrace,
   FreshnessInfo,
@@ -258,35 +259,194 @@ export function generateQuantitativeInsight(
 
     // Domain 2: Price Trend (Technical)
     isTrendAvailable
-      ? {
-          domainId: "trend",
-          domainName: "Price Trend",
-          availability: "AVAILABLE",
-          status: isStage4 ? "UNFAVORABLE" : "FAVORABLE",
-          pointImpact: isStage4 ? -25 : 25,
-          importanceLevel: "HIGH",
-          observation: isStage4
-            ? `Price ($${safePrice.toFixed(2)}) is below the 50-day average ($${(sma50 as number).toFixed(2)}).`
-            : `Price ($${safePrice.toFixed(2)}) is holding firmly above the 20 EMA ($${(ema20 as number).toFixed(2)}) and 50 SMA ($${(sma50 as number).toFixed(2)}).`,
-          modelRule: isStage4
-            ? "Price below 50-day SMA deducts 25 points because trend confirmation is absent."
-            : "VCP base contraction above rising moving averages adds +25 points.",
-          evidence: [
-            {
+      ? (() => {
+          const hasSma50 = typeof sma50 === "number" && !isNaN(sma50) && sma50 > 0;
+          const hasEma20 = typeof ema20 === "number" && !isNaN(ema20) && ema20 > 0;
+
+          // Missing or invalid SMA50 fails closed to UNAVAILABLE (never enters AVAILABLE or renders invalid numbers)
+          if (!hasSma50) {
+            return {
+              domainId: "trend",
+              domainName: "Price Trend",
+              availability: "UNAVAILABLE",
+              status: "UNAVAILABLE" as const,
+              pointImpact: 0,
+              importanceLevel: "HIGH" as const,
+              observation: candles && candles.length > 0
+                ? `Insufficient historical trading sessions (${candles.length} of 50 required) to compute 50-day moving average.`
+                : "Historical price action candles unavailable for this asset.",
+              modelRule: "Price trend requires at least 50 valid trading sessions; zero points awarded when evidence is unavailable.",
+              evidence: candles && candles.length > 0
+                ? [
+                    {
+                      metricName: "Price vs 50-Day SMA",
+                      currentValue: `$${safePrice.toFixed(2)}`,
+                      benchmarkValue: "N/A (< 50 sessions)",
+                      source: "Market Feed",
+                      asOf: "Completed Daily Session",
+                      freshness: "END_OF_DAY" as const,
+                      significance: "HIGH" as const,
+                      status: "UNAVAILABLE" as const,
+                    },
+                  ]
+                : [],
+              whatWouldChangeAssessment: "Accumulation of 50 closed daily trading sessions will activate trend moving-average analysis.",
+            };
+          }
+
+          const isAboveSma50 = safePrice >= (sma50 as number) && !isStage4;
+          const isAboveEma20 = hasEma20 && safePrice >= (ema20 as number);
+
+          if (!isAboveSma50) {
+            const evidence: EvidenceItem[] = [];
+            if (hasEma20) {
+              evidence.push({
+                metricName: "Price vs 20-Day EMA",
+                currentValue: `$${safePrice.toFixed(2)}`,
+                benchmarkValue: `$${(ema20 as number).toFixed(2)} (20D EMA)`,
+                source: "Market Feed",
+                asOf: "Completed Daily Session",
+                freshness: "END_OF_DAY" as const,
+                significance: "HIGH" as const,
+                status: "NEGATIVE" as const,
+              });
+            }
+            evidence.push({
               metricName: "Price vs 50-Day SMA",
               currentValue: `$${safePrice.toFixed(2)}`,
               benchmarkValue: `$${(sma50 as number).toFixed(2)} (50D SMA)`,
               source: "Market Feed",
               asOf: "Completed Daily Session",
-              freshness: "END_OF_DAY",
-              significance: "HIGH",
-              status: isStage4 ? "NEGATIVE" : "POSITIVE",
-            },
-          ],
-          whatWouldChangeAssessment: isStage4
-            ? `Price reclaiming and holding above $${(sma50 as number).toFixed(2)} (50D SMA) on above-average volume will remove this penalty.`
-            : "A daily close below the 20-day EMA would weaken breakout strength.",
-        }
+              freshness: "END_OF_DAY" as const,
+              significance: "HIGH" as const,
+              status: "NEGATIVE" as const,
+            });
+
+            return {
+              domainId: "trend",
+              domainName: "Price Trend",
+              availability: "AVAILABLE",
+              status: "UNFAVORABLE" as const,
+              pointImpact: -25,
+              importanceLevel: "HIGH" as const,
+              observation: hasEma20 && !isAboveEma20
+                ? `Price ($${safePrice.toFixed(2)}) is below the 50-day average ($${(sma50 as number).toFixed(2)}) and 20 EMA ($${(ema20 as number).toFixed(2)}).`
+                : `Price ($${safePrice.toFixed(2)}) is below the 50-day average ($${(sma50 as number).toFixed(2)}).`,
+              modelRule: "Price below 50-day SMA deducts 25 points because trend confirmation is absent.",
+              evidence,
+              whatWouldChangeAssessment: `Price reclaiming and holding above $${(sma50 as number).toFixed(2)} (50D SMA) on above-average volume will remove this penalty.`,
+            };
+          }
+
+          if (hasEma20 && !isAboveEma20) {
+            // Price is above 50 SMA but below 20 EMA (Pullback / Consolidation: CDNS condition)
+            // Preserves established baseline numerical behavior (+25 pts) while assigning MIXED status and eliminating false claim of holding above 20 EMA.
+            const evidence: EvidenceItem[] = [
+              {
+                metricName: "Price vs 20-Day EMA",
+                currentValue: `$${safePrice.toFixed(2)}`,
+                benchmarkValue: `$${(ema20 as number).toFixed(2)} (20D EMA)`,
+                source: "Market Feed",
+                asOf: "Completed Daily Session",
+                freshness: "END_OF_DAY" as const,
+                significance: "HIGH" as const,
+                status: "NEGATIVE" as const,
+              },
+              {
+                metricName: "Price vs 50-Day SMA",
+                currentValue: `$${safePrice.toFixed(2)}`,
+                benchmarkValue: `$${(sma50 as number).toFixed(2)} (50D SMA)`,
+                source: "Market Feed",
+                asOf: "Completed Daily Session",
+                freshness: "END_OF_DAY" as const,
+                significance: "HIGH" as const,
+                status: "POSITIVE" as const,
+              },
+            ];
+
+            return {
+              domainId: "trend",
+              domainName: "Price Trend",
+              availability: "AVAILABLE",
+              status: "MIXED" as const,
+              pointImpact: 25,
+              importanceLevel: "HIGH" as const,
+              observation: `Price ($${safePrice.toFixed(2)}) is consolidating below the 20 EMA ($${(ema20 as number).toFixed(2)}) while holding above the 50 SMA ($${(sma50 as number).toFixed(2)}).`,
+              modelRule: "Price holding above 50-day SMA confirms structural trend (+25 points); short-term pullback below 20-day EMA is active.",
+              evidence,
+              whatWouldChangeAssessment: `Reclaiming and holding above the 20-day EMA ($${(ema20 as number).toFixed(2)}) on volume would restore favorable trend momentum (+25 pts).`,
+            };
+          }
+
+          // Price is above 50 SMA and either above 20 EMA or 20 EMA is not present
+          // Verify moving average slope before describing as 'rising'
+          // SMA50 slope is verified if we have >= 55 daily candles and SMA50(current) > SMA50(5 bars ago)
+          let isSma50Rising = false;
+          if (candles && candles.length >= 55 && !isFallbackFeed) {
+            const smaNow = sma50 as number;
+            const prev50Slice = candles.slice(-55, -5);
+            const smaPrev = prev50Slice.reduce((sum, c) => sum + c.close, 0) / 50;
+            isSma50Rising = smaNow > smaPrev;
+          }
+
+          // Explicit qualified VCP verification: requires explicit VCP setup pattern
+          // AND qualified contraction state (truthy pending/unverified status is insufficient)
+          const QUALIFIED_VCP_STATES = ["QUALIFIED", "CONFIRMED", "COMPLETED", "TIGHT", "3T_CONTRACTION", "4T_CONTRACTION", "2T_CONTRACTION"];
+          const vcpStatus = (optimalExecution?.vcp_contraction_status || "").toUpperCase();
+          const hasQualifiedVcp = Boolean(
+            (optimalExecution?.setup_pattern?.toUpperCase().includes("VCP") ||
+             (decisionTrace as any)?.setup_pattern?.toUpperCase().includes("VCP")) &&
+            (QUALIFIED_VCP_STATES.includes(vcpStatus) || (!optimalExecution?.vcp_contraction_status && optimalExecution?.setup_pattern?.toUpperCase().includes("VCP")))
+          );
+
+          const evidence: EvidenceItem[] = [];
+          if (hasEma20) {
+            evidence.push({
+              metricName: "Price vs 20-Day EMA",
+              currentValue: `$${safePrice.toFixed(2)}`,
+              benchmarkValue: `$${(ema20 as number).toFixed(2)} (20D EMA)`,
+              source: "Market Feed",
+              asOf: "Completed Daily Session",
+              freshness: "END_OF_DAY" as const,
+              significance: "HIGH" as const,
+              status: "POSITIVE" as const,
+            });
+          }
+          evidence.push({
+            metricName: "Price vs 50-Day SMA",
+            currentValue: `$${safePrice.toFixed(2)}`,
+            benchmarkValue: `$${(sma50 as number).toFixed(2)} (50D SMA)`,
+            source: "Market Feed",
+            asOf: "Completed Daily Session",
+            freshness: "END_OF_DAY" as const,
+            significance: "HIGH" as const,
+            status: "POSITIVE" as const,
+          });
+
+          const obsText = hasEma20
+            ? `Price ($${safePrice.toFixed(2)}) is holding firmly above the 20 EMA ($${(ema20 as number).toFixed(2)}) and 50 SMA ($${(sma50 as number).toFixed(2)}).`
+            : `Price ($${safePrice.toFixed(2)}) is holding firmly above the 50 SMA ($${(sma50 as number).toFixed(2)}).`;
+
+          const maAdjective = isSma50Rising ? "rising" : "key";
+          const ruleText = hasQualifiedVcp
+            ? `VCP base contraction above ${maAdjective} moving averages adds +25 points.`
+            : `Price holding firmly above ${maAdjective} moving averages confirms positive trend structure (+25 pts).`;
+
+          return {
+            domainId: "trend",
+            domainName: "Price Trend",
+            availability: "AVAILABLE",
+            status: "FAVORABLE" as const,
+            pointImpact: 25,
+            importanceLevel: "HIGH" as const,
+            observation: obsText,
+            modelRule: ruleText,
+            evidence,
+            whatWouldChangeAssessment: hasEma20
+              ? `A daily close below the 20-day EMA ($${(ema20 as number).toFixed(2)}) would weaken breakout strength.`
+              : `A daily close below the 50-day SMA ($${(sma50 as number).toFixed(2)}) would weaken trend strength.`,
+          };
+        })()
       : {
           domainId: "trend",
           domainName: "Price Trend",

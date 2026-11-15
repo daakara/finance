@@ -215,6 +215,135 @@ def count_smart_money_stage2_intersection(candidates, non_tradable):
         and "SMART_MONEY" in candidate.get("categories", [])
     )
 
+
+def classify_sec_trades(sec_trades: Optional[List[Dict[str, Any]]]) -> Dict[str, Any]:
+    """
+    Classify Form 4 SEC insider transactions into authentic open-market purchases vs sales.
+    
+    Enforces canonical Form 4 classification semantics and fail-closed false-positive controls:
+    - Code 'P' is strictly required for open-market purchase conviction, but not alone sufficient.
+    - Excludes non-purchase codes ('S', 'M', 'A', 'F', 'G', 'D') and non-discretionary acquisitions.
+    - Contradictory code and description (e.g. code 'P' with 'Sale' or code 'S' with 'Purchase') fail closed.
+    - Derivative transactions (is_derivative=True) and unresolved amendments fail closed.
+    - Missing or malformed transaction records cannot manufacture conviction.
+    - Accurately aggregates buy vs sell trade values.
+    """
+    if not sec_trades or not isinstance(sec_trades, list):
+        return {
+            "buy_trades": [],
+            "sell_trades": [],
+            "unqualified_trades": [],
+            "has_insider_buy": False,
+            "has_insider_sell": False,
+            "total_buy_value_usd": 0.0,
+            "total_sell_value_usd": 0.0,
+        }
+
+    buy_trades = []
+    sell_trades = []
+    unqualified_trades = []
+
+    def _extract_trade_value(t: Dict[str, Any]) -> float:
+        val_raw = t.get("total_value") or t.get("total_value_usd") or t.get("transaction_value") or 0.0
+        if isinstance(val_raw, (int, float)):
+            return float(val_raw)
+        if isinstance(val_raw, str):
+            cleaned = val_raw.replace("$", "").replace(",", "").strip()
+            try:
+                return float(cleaned)
+            except ValueError:
+                return 0.0
+        return 0.0
+
+    for t in sec_trades:
+        if not isinstance(t, dict):
+            unqualified_trades.append({"record": t, "reason": "MALFORMED_NON_DICT_RECORD"})
+            continue
+
+        raw_code = t.get("transaction_code")
+        raw_type = t.get("transaction_type") or ""
+        type_str = str(raw_type).upper().strip()
+
+        # Check for derivative flag
+        is_deriv = (
+            t.get("is_derivative") is True
+            or str(t.get("is_derivative", "")).lower() in ("true", "1")
+            or "DERIVATIVE" in str(t.get("transaction_id", "")).upper()
+            or "DERIVATIVE" in str(t.get("security_title", "")).upper()
+        )
+
+        # Check for amendment flag / unresolved amendment
+        is_amendment = (
+            t.get("unresolved_amendment") is True
+            or t.get("is_amendment") is True
+            or (t.get("is_amended") is True and t.get("amendment_resolved") is not True)
+            or "4/A" in str(t.get("form_type", "")).upper()
+            or "AMENDMENT" in str(t.get("form_type", "")).upper()
+        )
+
+        acq_disp = str(t.get("acquired_disposed", "")).upper().strip()
+
+        # If code is missing or not a non-empty string, fail closed
+        if not raw_code or not isinstance(raw_code, str) or not raw_code.strip():
+            unqualified_trades.append({"record": t, "reason": "MISSING_TRANSACTION_CODE"})
+            continue
+
+        code = raw_code.strip().upper()
+
+        # Derivative records fail closed: cannot qualify as open-market purchase or sale conviction
+        if is_deriv:
+            unqualified_trades.append({"record": t, "reason": "DERIVATIVE_TRANSACTION_EXCLUDED"})
+            continue
+
+        # Unresolved amendments cannot become authorized scoring evidence
+        if is_amendment:
+            unqualified_trades.append({"record": t, "reason": "UNRESOLVED_AMENDMENT_EXCLUDED"})
+            continue
+
+        # Contradiction keywords
+        has_purchase_keywords = any(kw in type_str for kw in ("PURCHASE", "BUY", "ACQUISITION"))
+        has_sale_keywords = any(kw in type_str for kw in ("SALE", "SOLD", "DISPOSITION", "DISPOSE"))
+        has_nonmarket_keywords = any(kw in type_str for kw in ("GRANT", "AWARD", "GIFT", "OPTION", "EXERCISE", "TAX", "WITHHOLD"))
+
+        if code == "P":
+            # Code P: Must NOT have sale, nonmarket, or disposition keywords
+            if has_sale_keywords or has_nonmarket_keywords:
+                unqualified_trades.append({"record": t, "reason": "CONTRADICTORY_CODE_AND_DESCRIPTION"})
+                continue
+            # If acquired_disposed is specified, it must not be Disposed ('D')
+            if acq_disp == "D":
+                unqualified_trades.append({"record": t, "reason": "CONTRADICTORY_ACQUIRED_DISPOSED_CODE"})
+                continue
+            buy_trades.append(t)
+
+        elif code == "S":
+            # Code S: Must NOT have purchase, nonmarket, or disposition keywords (fails closed)
+            if has_purchase_keywords or has_nonmarket_keywords:
+                unqualified_trades.append({"record": t, "reason": "CONTRADICTORY_CODE_AND_DESCRIPTION"})
+                continue
+            # If acquired_disposed is specified, it must not be Acquired ('A')
+            if acq_disp == "A":
+                unqualified_trades.append({"record": t, "reason": "CONTRADICTORY_ACQUIRED_DISPOSED_CODE"})
+                continue
+            sell_trades.append(t)
+
+        else:
+            # Codes 'M', 'A', 'F', 'G', 'D', and other non-open-market codes
+            unqualified_trades.append({"record": t, "reason": f"NON_OPEN_MARKET_CODE_{code}"})
+
+    total_buy_val = sum(_extract_trade_value(t) for t in buy_trades)
+    total_sell_val = sum(_extract_trade_value(t) for t in sell_trades)
+
+    return {
+        "buy_trades": buy_trades,
+        "sell_trades": sell_trades,
+        "unqualified_trades": unqualified_trades,
+        "has_insider_buy": len(buy_trades) > 0,
+        "has_insider_sell": len(sell_trades) > 0,
+        "total_buy_value_usd": round(total_buy_val, 2),
+        "total_sell_value_usd": round(total_sell_val, 2),
+    }
+
 def get_radar_capabilities(
     *args,
     vcp_snapshot: Optional[Dict[str, Any]] = None,
@@ -1184,11 +1313,17 @@ def run_screener_get(
             else:
                 sec_trades = smart_money_engine.get_sec_insider_trades(sym)
                 cong_trades = smart_money_engine.get_congressional_trades(sym)
-                has_insider = len(sec_trades) > 0
+
+                # Classify transactions into authentic open-market purchases vs sales via production classifier
+                trade_classification = classify_sec_trades(sec_trades)
+                buy_trades = trade_classification["buy_trades"]
+                sell_trades = trade_classification["sell_trades"]
+                has_insider_buy = trade_classification["has_insider_buy"]
+                has_insider_sell = trade_classification["has_insider_sell"]
                 has_congress = len(cong_trades) > 0
                 insider_val = 0.0
-                if has_insider:
-                    for t in sec_trades:
+                if has_insider_buy:
+                    for t in buy_trades:
                         val_raw = t.get("total_value") or t.get("transaction_value") or 0.0
                         if isinstance(val_raw, str):
                             cleaned = val_raw.replace("$", "").replace(",", "").strip()
@@ -1199,14 +1334,18 @@ def run_screener_get(
                         elif isinstance(val_raw, (int, float)):
                             insider_val += float(val_raw)
                 days_to_earn = r.get("days_to_earnings")
-    
+
+                has_any_smart = has_insider_buy or has_insider_sell or has_congress
                 smart_data = {
-                    "has_insider_buy": has_insider,
-                    "insider_value_usd": insider_val if has_insider else 0.0,
-                    "insider_name": sec_trades[0].get("reporting_owner", "") if has_insider else "",
+                    "has_insider_buy": has_insider_buy,
+                    "has_insider_sell": has_insider_sell,
+                    "insider_value_usd": insider_val if has_insider_buy else 0.0,
+                    "insider_name": buy_trades[0].get("reporting_owner", "") if has_insider_buy else (sell_trades[0].get("reporting_owner", "") if has_insider_sell else ""),
                     "has_congress_buy": has_congress,
                     "has_options_flow": False,
-                } if (has_insider or has_congress) else None
+                    "insider_buy_count_90d": len(buy_trades),
+                    "insider_sell_count_90d": len(sell_trades),
+                } if has_any_smart else None
     
                 # Authoritative factor snapshot from market database & strict provenance
                 from api.routes.analytics import KNOWN_ETFS

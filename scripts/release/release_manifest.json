@@ -1,73 +1,97 @@
 {
-  "release_candidate_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
-  "base_anchor_commit": "886f5cb747fe0ddbb71922deea7487cbfaf9dde1",
-  "total_files": 8,
+  "release_candidate_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
+  "base_anchor_commit": "62c645f4eb0f73dc01d214f79efce4f27a23dddc",
+  "total_files": 11,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-EVIDENCE-INTEGRITY-032",
+  "directive": "ARX-QA-AUTHORITY-035",
   "files": {
-    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md": {
+    ".github/workflows/release-qualification.yml": {
       "operation": "M",
-      "originating_pr_number": 288,
-      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
-      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
-      "sha256": "505f7754771f98b576b70ba93ebddf3df5c8853d9dbf2b0e245c3bfb91d7102e",
-      "size_bytes": 18106
+      "originating_pr_number": 289,
+      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: wire RQ-13 financial integrity check into release qualification CI workflow.",
+      "sha256": "d6e2ae03c4f25e297bb2743a834945b9388b82143153ee3696d13c7934040188",
+      "size_bytes": 4186
     },
-    "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md": {
+    "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 288,
-      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
-      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
-      "sha256": "c2dd7ef516cb3db8c35fac0aa373f935ad0d6692d5b97266ea67ae9c24b84e2d",
-      "size_bytes": 28714
+      "originating_pr_number": 289,
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: Form 4 transaction classification remediation to prevent insider sales awarding purchase points.",
+      "sha256": "7fa50772ee970df24054a0f33c96b361bc721ed1117ef4d00f66097c7c7db5c1",
+      "size_bytes": 129154
     },
-    "frontend/app/page.tsx": {
+    "frontend/lib/insightGenerator.ts": {
       "operation": "M",
-      "originating_pr_number": 288,
-      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
-      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
-      "sha256": "3bac3874e3c63bce0cbb3d4b4e08fe60bce2f7647d0011afed039cab85dbda6b",
-      "size_bytes": 45057
+      "originating_pr_number": 289,
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: CDNS score and observation parity remediation evaluating both 20 EMA and 50 SMA.",
+      "sha256": "6de7fd382cd91c3c56b197a593f50061c1c829d1eebafca38df1c784fc95c0c9",
+      "size_bytes": 42354
     },
-    "frontend/lib/analysisCache.ts": {
+    "frontend/tests/cdnsPriceTrendParity035.test.ts": {
       "operation": "A",
-      "originating_pr_number": 288,
-      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
-      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
-      "sha256": "d568ca7fc8b82409fb6a869d420c43b325da7e81ef1a7de3b7c1c520f17f5ab4",
-      "size_bytes": 4924
-    },
-    "frontend/package.json": {
-      "operation": "M",
-      "originating_pr_number": 288,
-      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
-      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
-      "sha256": "9f4c7a73b064c045ada2b24fcf69baeb202ed36125f52cf93695aa7a082f08d1",
-      "size_bytes": 3883
-    },
-    "frontend/tests/analysisCacheAuthority198.test.ts": {
-      "operation": "A",
-      "originating_pr_number": 288,
-      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
-      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
-      "sha256": "8dab6a02187a1fba0a8788eeebd944fede33125a05bbc21bc30bdb71ded6eb54",
-      "size_bytes": 11122
+      "originating_pr_number": 289,
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: CDNS price trend parity and pullback classification regression test suite.",
+      "sha256": "c47414dfa16506e976478540887e72eb943bb40ee27752b6e840a1630e570eb3",
+      "size_bytes": 20817
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
-      "originating_pr_number": 288,
-      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
-      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: register approved PR 288 in APPROVED_PRS allowlist.",
-      "sha256": "aa2a53b9a3c0bd2ee22a187ded46d731e100f6d117365876447ceb2529dbe7ec",
-      "size_bytes": 58111
+      "originating_pr_number": 289,
+      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: register approved PR 289 in APPROVED_PRS allowlist.",
+      "sha256": "05a473b738f4f7e8b37cd718f886bb5652fad82e200bdfec75a169f079ce4b96",
+      "size_bytes": 58116
     },
-    "tests/test_ohlcv_provenance_atomicity_198.py": {
+    "scripts/release/rq03_backend_regression.py": {
+      "operation": "M",
+      "originating_pr_number": 289,
+      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: wire test_financial_correctness_authority_035.py into RQ-03 suite.",
+      "sha256": "f1dfdba2a791a225e1db7ec617497fa3a4a7a471551026c4efb913b29d60056c",
+      "size_bytes": 3558
+    },
+    "scripts/release/rq04_frontend_regression.py": {
+      "operation": "M",
+      "originating_pr_number": 289,
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: wire cdnsPriceTrendParity035.test.ts into RQ-04 suite.",
+      "sha256": "c64b193223aeca69817d0bbac29c54c2dfb2e2e260ab3f69d73fb77cf53b98ef",
+      "size_bytes": 6667
+    },
+    "scripts/release/rq12_qualification_summary.py": {
+      "operation": "M",
+      "originating_pr_number": 289,
+      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: add RQ-13 to mandatory control suite and validate receipt aggregation.",
+      "sha256": "89ffe00c59f17a6b629bfd5c7b269c69cae183cf0c10ef9ec72cf588a2c11674",
+      "size_bytes": 15891
+    },
+    "scripts/release/rq13_financial_integrity.py": {
       "operation": "A",
-      "originating_pr_number": 288,
-      "originating_commit": "d5af2bb9636af54cb6eb50d1b0c96942505f2257",
-      "governing_requirement": "ARX-EVIDENCE-INTEGRITY-032: analysis cache authority and OHLCV provenance atomicity (#198).",
-      "sha256": "3f93beabc70def0f895a41ba4a63f7cae69859a6a7fd4917e1d5d144289dc677",
-      "size_bytes": 8654
+      "originating_pr_number": 289,
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: financial evidence, coverage caps, and decision integrity control script.",
+      "sha256": "0be51d32c2d443c06a6ef1bbd5dbd4911ac5c2de987e61cf21a8803965707bbd",
+      "size_bytes": 16736
+    },
+    "scripts/release/run_release_ci_suite.py": {
+      "operation": "M",
+      "originating_pr_number": 289,
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: wire RQ-13 execution into master release CI suite.",
+      "sha256": "454544d08ec2c7d9b06925a4442750040a6f499128eff374fbcebb9849d69895",
+      "size_bytes": 4414
+    },
+    "tests/test_financial_correctness_authority_035.py": {
+      "operation": "A",
+      "originating_pr_number": 289,
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
+      "governing_requirement": "ARX-QA-AUTHORITY-035: deterministic invariant tests for financial correctness and Form 4 classification.",
+      "sha256": "514bc9375a5b73b003a05132a4c608ede23fb964c383608290c122e880965b00",
+      "size_bytes": 19511
     }
   },
   "qualification_framework_files": {
@@ -77,18 +101,18 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "aa2a53b9a3c0bd2ee22a187ded46d731e100f6d117365876447ceb2529dbe7ec",
-      "size_bytes": 58111,
+      "sha256": "05a473b738f4f7e8b37cd718f886bb5652fad82e200bdfec75a169f079ce4b96",
+      "size_bytes": 58116,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "956d65da0a5483b7b8e2f9abcc8fcfb8e2c8bd4a5ac7d70197259a6cc09f3955",
-      "size_bytes": 3380,
+      "sha256": "f1dfdba2a791a225e1db7ec617497fa3a4a7a471551026c4efb913b29d60056c",
+      "size_bytes": 3558,
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "sha256": "c839280c4a9fc5a7c0fd58e715b6480e3b8a1123a608dbdfa414eef9b3fae3b4",
-      "size_bytes": 5680,
+      "sha256": "c64b193223aeca69817d0bbac29c54c2dfb2e2e260ab3f69d73fb77cf53b98ef",
+      "size_bytes": 6667,
       "description": "Release qualification module: rq04_frontend_regression.py"
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
@@ -127,39 +151,44 @@
       "description": "Release qualification module: rq11_rollback_readiness.py"
     },
     "scripts/release/rq12_qualification_summary.py": {
-      "sha256": "eb6fa07022544ad745584c94dfb21623a89abca8935fd8bb355d155e0c88082f",
-      "size_bytes": 15833,
+      "sha256": "89ffe00c59f17a6b629bfd5c7b269c69cae183cf0c10ef9ec72cf588a2c11674",
+      "size_bytes": 15891,
       "description": "Release qualification module: rq12_qualification_summary.py"
     },
+    "scripts/release/rq13_financial_integrity.py": {
+      "sha256": "0be51d32c2d443c06a6ef1bbd5dbd4911ac5c2de987e61cf21a8803965707bbd",
+      "size_bytes": 16736,
+      "description": "Release qualification module: rq13_financial_integrity.py"
+    },
     "scripts/release/run_release_ci_suite.py": {
-      "sha256": "a32d607071d5123fd3d772793afdf540ba83f15e30778685fcbf630d791d3a38",
-      "size_bytes": 4173,
+      "sha256": "454544d08ec2c7d9b06925a4442750040a6f499128eff374fbcebb9849d69895",
+      "size_bytes": 4414,
       "description": "Release qualification module: run_release_ci_suite.py"
-    },
-    "scripts/release/test_release_ci_negative_cases.py": {
-      "sha256": "d4f35186a78ea0610326cc6609cd54a721983a9443c077e62b0232693dc2f792",
-      "size_bytes": 49519,
-      "description": "Release qualification module: test_release_ci_negative_cases.py"
-    },
-    "scripts/release/test_synthetic_merge_reproduction.py": {
-      "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246",
-      "size_bytes": 10113,
-      "description": "Release qualification module: test_synthetic_merge_reproduction.py"
-    },
-    "scripts/release/test_rq02_adversarial_controls.py": {
-      "sha256": "222334cea903614bd9e6e832ebd3840afcc15e1b3352bbe9a5d94feabff1f2e6",
-      "size_bytes": 16488,
-      "description": "Release qualification module: test_rq02_adversarial_controls.py"
     },
     "scripts/release/test_d12c_workflow_attacks.py": {
       "sha256": "90054e28d133733f4c00c32ce384bc5047172010058898e5875f463ae71a4cc3",
       "size_bytes": 20012,
       "description": "Release qualification module: test_d12c_workflow_attacks.py"
     },
+    "scripts/release/test_release_ci_negative_cases.py": {
+      "sha256": "d4f35186a78ea0610326cc6609cd54a721983a9443c077e62b0232693dc2f792",
+      "size_bytes": 49519,
+      "description": "Release qualification module: test_release_ci_negative_cases.py"
+    },
+    "scripts/release/test_rq02_adversarial_controls.py": {
+      "sha256": "222334cea903614bd9e6e832ebd3840afcc15e1b3352bbe9a5d94feabff1f2e6",
+      "size_bytes": 16488,
+      "description": "Release qualification module: test_rq02_adversarial_controls.py"
+    },
     "scripts/release/test_rq11_adversarial_controls.py": {
       "sha256": "8f4141000511fab66be203043c579bfc409c6130df0735a9238441073f9880cc",
       "size_bytes": 12373,
       "description": "Release qualification module: test_rq11_adversarial_controls.py"
+    },
+    "scripts/release/test_synthetic_merge_reproduction.py": {
+      "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246",
+      "size_bytes": 10113,
+      "description": "Release qualification module: test_synthetic_merge_reproduction.py"
     }
   }
 }
