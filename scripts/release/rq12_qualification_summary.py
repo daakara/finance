@@ -39,7 +39,8 @@ MANDATORY_CONTROLS = [
     ("RQ-08", "Artifact Provenance & Digest Binding"),
     ("RQ-09", "Four-Way Cross-Platform Compatibility"),
     ("RQ-10", "Release Configuration Integrity"),
-    ("RQ-11", "Rollback Readiness & Target Verification")
+    ("RQ-11", "Rollback Readiness & Target Verification"),
+    ("RQ-13", "Financial Evidence & Decision Integrity")
 ]
 
 def main():

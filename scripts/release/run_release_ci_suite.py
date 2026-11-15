@@ -23,6 +23,7 @@ CHECKS = [
     ("RQ-09", "Compatibility Suite", [sys.executable, "scripts/release/rq09_compatibility_suite.py"]),
     ("RQ-10", "Configuration Integrity", [sys.executable, "scripts/release/rq10_config_integrity.py"]),
     ("RQ-11", "Rollback Readiness", [sys.executable, "scripts/release/rq11_rollback_readiness.py"]),
+    ("RQ-13", "Financial Integrity", [sys.executable, "scripts/release/rq13_financial_integrity.py"]),
     ("RQ-12", "Qualification Summary", [sys.executable, "scripts/release/rq12_qualification_summary.py"])
 ]
 

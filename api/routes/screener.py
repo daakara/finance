@@ -1184,11 +1184,24 @@ def run_screener_get(
             else:
                 sec_trades = smart_money_engine.get_sec_insider_trades(sym)
                 cong_trades = smart_money_engine.get_congressional_trades(sym)
-                has_insider = len(sec_trades) > 0
+
+                # Classify transactions into authentic open-market purchases vs sales
+                # Open-market purchase: code 'P' or 'PURCHASE' in type, excluding sales
+                buy_trades = [
+                    t for t in sec_trades
+                    if (t.get("transaction_code") == "P" or "PURCHASE" in (t.get("transaction_type") or "").upper())
+                    and (t.get("transaction_code") != "S" and "SALE" not in (t.get("transaction_type") or "").upper())
+                ]
+                sell_trades = [
+                    t for t in sec_trades
+                    if t.get("transaction_code") == "S" or "SALE" in (t.get("transaction_type") or "").upper()
+                ]
+                has_insider_buy = len(buy_trades) > 0
+                has_insider_sell = len(sell_trades) > 0
                 has_congress = len(cong_trades) > 0
                 insider_val = 0.0
-                if has_insider:
-                    for t in sec_trades:
+                if has_insider_buy:
+                    for t in buy_trades:
                         val_raw = t.get("total_value") or t.get("transaction_value") or 0.0
                         if isinstance(val_raw, str):
                             cleaned = val_raw.replace("$", "").replace(",", "").strip()
@@ -1199,14 +1212,18 @@ def run_screener_get(
                         elif isinstance(val_raw, (int, float)):
                             insider_val += float(val_raw)
                 days_to_earn = r.get("days_to_earnings")
-    
+
+                has_any_smart = has_insider_buy or has_insider_sell or has_congress
                 smart_data = {
-                    "has_insider_buy": has_insider,
-                    "insider_value_usd": insider_val if has_insider else 0.0,
-                    "insider_name": sec_trades[0].get("reporting_owner", "") if has_insider else "",
+                    "has_insider_buy": has_insider_buy,
+                    "has_insider_sell": has_insider_sell,
+                    "insider_value_usd": insider_val if has_insider_buy else 0.0,
+                    "insider_name": buy_trades[0].get("reporting_owner", "") if has_insider_buy else (sell_trades[0].get("reporting_owner", "") if has_insider_sell else ""),
                     "has_congress_buy": has_congress,
                     "has_options_flow": False,
-                } if (has_insider or has_congress) else None
+                    "insider_buy_count_90d": len(buy_trades),
+                    "insider_sell_count_90d": len(sell_trades),
+                } if has_any_smart else None
     
                 # Authoritative factor snapshot from market database & strict provenance
                 from api.routes.analytics import KNOWN_ETFS

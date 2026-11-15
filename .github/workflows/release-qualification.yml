@@ -101,6 +101,11 @@ jobs:
         if: success() || failure()
         run: python scripts/release/rq11_rollback_readiness.py
 
+      # RQ-13: Financial Evidence & Decision Integrity
+      - name: "[RQ-13] Verify Financial Evidence & Decision Integrity"
+        if: success() || failure()
+        run: python scripts/release/rq13_financial_integrity.py
+
       # RQ-12: Final Qualification Summary Aggregation (Aggregates Receipts, Fails Closed)
       - name: "[RQ-12] Compile Release Qualification Summary"
         if: success() || failure()

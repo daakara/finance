@@ -258,35 +258,113 @@ export function generateQuantitativeInsight(
 
     // Domain 2: Price Trend (Technical)
     isTrendAvailable
-      ? {
-          domainId: "trend",
-          domainName: "Price Trend",
-          availability: "AVAILABLE",
-          status: isStage4 ? "UNFAVORABLE" : "FAVORABLE",
-          pointImpact: isStage4 ? -25 : 25,
-          importanceLevel: "HIGH",
-          observation: isStage4
-            ? `Price ($${safePrice.toFixed(2)}) is below the 50-day average ($${(sma50 as number).toFixed(2)}).`
-            : `Price ($${safePrice.toFixed(2)}) is holding firmly above the 20 EMA ($${(ema20 as number).toFixed(2)}) and 50 SMA ($${(sma50 as number).toFixed(2)}).`,
-          modelRule: isStage4
-            ? "Price below 50-day SMA deducts 25 points because trend confirmation is absent."
-            : "VCP base contraction above rising moving averages adds +25 points.",
-          evidence: [
-            {
-              metricName: "Price vs 50-Day SMA",
-              currentValue: `$${safePrice.toFixed(2)}`,
-              benchmarkValue: `$${(sma50 as number).toFixed(2)} (50D SMA)`,
-              source: "Market Feed",
-              asOf: "Completed Daily Session",
-              freshness: "END_OF_DAY",
-              significance: "HIGH",
-              status: isStage4 ? "NEGATIVE" : "POSITIVE",
-            },
-          ],
-          whatWouldChangeAssessment: isStage4
-            ? `Price reclaiming and holding above $${(sma50 as number).toFixed(2)} (50D SMA) on above-average volume will remove this penalty.`
-            : "A daily close below the 20-day EMA would weaken breakout strength.",
-        }
+      ? (() => {
+          const isAboveSma50 = safePrice >= (sma50 as number);
+          const hasEma20 = typeof ema20 === "number" && !isNaN(ema20);
+          const isAboveEma20 = hasEma20 ? safePrice >= (ema20 as number) : true;
+
+          if (isStage4 || !isAboveSma50) {
+            return {
+              domainId: "trend",
+              domainName: "Price Trend",
+              availability: "AVAILABLE",
+              status: "UNFAVORABLE" as const,
+              pointImpact: -25,
+              importanceLevel: "HIGH" as const,
+              observation: `Price ($${safePrice.toFixed(2)}) is below the 50-day average ($${(sma50 as number).toFixed(2)}).`,
+              modelRule: "Price below 50-day SMA deducts 25 points because trend confirmation is absent.",
+              evidence: [
+                {
+                  metricName: "Price vs 50-Day SMA",
+                  currentValue: `$${safePrice.toFixed(2)}`,
+                  benchmarkValue: `$${(sma50 as number).toFixed(2)} (50D SMA)`,
+                  source: "Market Feed",
+                  asOf: "Completed Daily Session",
+                  freshness: "END_OF_DAY" as const,
+                  significance: "HIGH" as const,
+                  status: "NEGATIVE" as const,
+                },
+              ],
+              whatWouldChangeAssessment: `Price reclaiming and holding above $${(sma50 as number).toFixed(2)} (50D SMA) on above-average volume will remove this penalty.`,
+            };
+          }
+
+          if (hasEma20 && !isAboveEma20) {
+            // Price is above 50 SMA but below 20 EMA (Pullback / Consolidation)
+            return {
+              domainId: "trend",
+              domainName: "Price Trend",
+              availability: "AVAILABLE",
+              status: "MIXED" as const,
+              pointImpact: 10,
+              importanceLevel: "HIGH" as const,
+              observation: `Price ($${safePrice.toFixed(2)}) is pulling back below the 20 EMA ($${(ema20 as number).toFixed(2)}) while holding above the 50-day average ($${(sma50 as number).toFixed(2)}).`,
+              modelRule: "Price holding above 50-day SMA provides structural support; pullback below 20-day EMA moderates momentum score (+10 points).",
+              evidence: [
+                {
+                  metricName: "Price vs 50-Day SMA",
+                  currentValue: `$${safePrice.toFixed(2)}`,
+                  benchmarkValue: `$${(sma50 as number).toFixed(2)} (50D SMA)`,
+                  source: "Market Feed",
+                  asOf: "Completed Daily Session",
+                  freshness: "END_OF_DAY" as const,
+                  significance: "HIGH" as const,
+                  status: "POSITIVE" as const,
+                },
+                {
+                  metricName: "Price vs 20-Day EMA",
+                  currentValue: `$${safePrice.toFixed(2)}`,
+                  benchmarkValue: `$${(ema20 as number).toFixed(2)} (20D EMA)`,
+                  source: "Market Feed",
+                  asOf: "Completed Daily Session",
+                  freshness: "END_OF_DAY" as const,
+                  significance: "HIGH" as const,
+                  status: "NEGATIVE" as const,
+                },
+              ],
+              whatWouldChangeAssessment: `Reclaiming the 20-day EMA ($${(ema20 as number).toFixed(2)}) would restore full momentum alignment (+25 points).`,
+            };
+          }
+
+          const emaText = hasEma20 ? `the 20 EMA ($${(ema20 as number).toFixed(2)}) and ` : "";
+          return {
+            domainId: "trend",
+            domainName: "Price Trend",
+            availability: "AVAILABLE",
+            status: "FAVORABLE" as const,
+            pointImpact: 25,
+            importanceLevel: "HIGH" as const,
+            observation: `Price ($${safePrice.toFixed(2)}) is holding firmly above ${emaText}50 SMA ($${(sma50 as number).toFixed(2)}).`,
+            modelRule: "VCP base contraction above rising moving averages adds +25 points.",
+            evidence: [
+              {
+                metricName: "Price vs 50-Day SMA",
+                currentValue: `$${safePrice.toFixed(2)}`,
+                benchmarkValue: `$${(sma50 as number).toFixed(2)} (50D SMA)`,
+                source: "Market Feed",
+                asOf: "Completed Daily Session",
+                freshness: "END_OF_DAY" as const,
+                significance: "HIGH" as const,
+                status: "POSITIVE" as const,
+              },
+              ...(hasEma20
+                ? [
+                    {
+                      metricName: "Price vs 20-Day EMA",
+                      currentValue: `$${safePrice.toFixed(2)}`,
+                      benchmarkValue: `$${(ema20 as number).toFixed(2)} (20D EMA)`,
+                      source: "Market Feed",
+                      asOf: "Completed Daily Session",
+                      freshness: "END_OF_DAY" as const,
+                      significance: "HIGH" as const,
+                      status: "POSITIVE" as const,
+                    },
+                  ]
+                : []),
+            ],
+            whatWouldChangeAssessment: "A daily close below the 20-day EMA would weaken breakout strength.",
+          };
+        })()
       : {
           domainId: "trend",
           domainName: "Price Trend",
