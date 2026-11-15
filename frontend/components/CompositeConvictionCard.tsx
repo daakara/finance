@@ -19,13 +19,19 @@ export interface ConfluencePillarDisplay {
   weightPct: number;
   score: number | null;
   scoreDisplay: string;
-  status: "positive" | "neutral" | "warning" | "unavailable";
+  status: "positive" | "neutral" | "warning" | "unavailable" | "unverified" | "not_applicable" | "synthetic" | string;
   detail: string;
   icon: string;
 }
 
 function getPillarScoreColor(scoreDisplay: string, score: number | null): string {
-  if (score === null || scoreDisplay === "UNAVAILABLE" || scoreDisplay === "PENDING") {
+  if (
+    score === null ||
+    scoreDisplay === "UNAVAILABLE" ||
+    scoreDisplay === "PENDING" ||
+    scoreDisplay === "UNVERIFIED" ||
+    scoreDisplay === "EXEMPT"
+  ) {
     return "text-[var(--text-2)] font-semibold text-sm";
   }
   if (score >= 75) return "text-emerald-400";
@@ -42,7 +48,10 @@ function getPillarStatusDot(status: string): string {
       return "bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.6)]";
     case "neutral":
       return "bg-cyan-400";
+    case "unverified":
+    case "synthetic":
     case "unavailable":
+    case "not_applicable":
     default:
       return "bg-slate-600";
   }
@@ -99,13 +108,21 @@ export default function CompositeConvictionCard({
       const smartP = backendPillars.find((p) => p.pillar === "SMART_MONEY_FLOW");
       const macroP = backendPillars.find((p) => p.pillar === "MACRO_SAFETY_FLOOR");
 
+      const formatPillarScore = (p?: { score: number | null; status: string }) => {
+        if (!p || p.score == null) return "UNAVAILABLE";
+        if (p.status === "unverified" || p.status === "synthetic") return "UNVERIFIED";
+        if (p.status === "unavailable") return "UNAVAILABLE";
+        if (p.status === "not_applicable") return "EXEMPT";
+        return `${Math.round(p.score)} / 100`;
+      };
+
       const pillars: ConfluencePillarDisplay[] = [
         {
           id: "TECHNICAL_STRUCTURE",
           label: "Technical Confluence",
           weightPct: 25,
           score: techP?.score != null ? Math.round(techP.score) : null,
-          scoreDisplay: techP?.score != null ? `${Math.round(techP.score)} / 100` : "UNAVAILABLE",
+          scoreDisplay: formatPillarScore(techP),
           status: techP?.status || "unavailable",
           detail: (isPlain ? techP?.plainDetail : techP?.detail) || techP?.detail || "Chart pattern and volume accumulation evaluated.",
           icon: techP?.icon || "📈",
@@ -115,7 +132,7 @@ export default function CompositeConvictionCard({
           label: "Fundamental Moat",
           weightPct: 25,
           score: fundP?.score != null ? Math.round(fundP.score) : null,
-          scoreDisplay: fundP?.score != null ? `${Math.round(fundP.score)} / 100` : "UNAVAILABLE",
+          scoreDisplay: formatPillarScore(fundP),
           status: fundP?.status || "unavailable",
           detail: (isPlain ? fundP?.plainDetail : fundP?.detail) || fundP?.detail || "Balance sheet solvency and financial quality evaluated.",
           icon: fundP?.icon || "🏢",
@@ -125,7 +142,7 @@ export default function CompositeConvictionCard({
           label: "Institutional Flow",
           weightPct: 25,
           score: smartP?.score != null ? Math.round(smartP.score) : null,
-          scoreDisplay: smartP?.score != null ? `${Math.round(smartP.score)} / 100` : "UNAVAILABLE",
+          scoreDisplay: formatPillarScore(smartP),
           status: smartP?.status || "unavailable",
           detail: (isPlain ? smartP?.plainDetail : smartP?.detail) || smartP?.detail || "SEC Form 4 insider transactions and options order flow evaluated.",
           icon: smartP?.icon || "🏛️",
@@ -135,7 +152,7 @@ export default function CompositeConvictionCard({
           label: "Macro Environment",
           weightPct: 25,
           score: macroP?.score != null ? Math.round(macroP.score) : null,
-          scoreDisplay: macroP?.score != null ? `${Math.round(macroP.score)} / 100` : "UNAVAILABLE",
+          scoreDisplay: formatPillarScore(macroP),
           status: macroP?.status || "unavailable",
           detail: (isPlain ? macroP?.plainDetail : macroP?.detail) || macroP?.detail || "Treasury yield curve and credit spread tailwinds evaluated.",
           icon: macroP?.icon || "🛡️",
