@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+  "release_candidate_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
   "base_anchor_commit": "62c645f4eb0f73dc01d214f79efce4f27a23dddc",
   "total_files": 11,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -16,26 +16,26 @@
     "api/routes/screener.py": {
       "operation": "M",
       "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "originating_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
       "governing_requirement": "ARX-QA-AUTHORITY-035: Form 4 transaction classification remediation to prevent insider sales awarding purchase points.",
-      "sha256": "d2cb902c69f25ad9cd2dd56ded6a117b612ffe740bfc80a2c8a2b3d8e5e05921",
-      "size_bytes": 123565
+      "sha256": "0917dd89efe4256e1e93d0233266cb88be4153d554f1d24c08b7ef4b063110df",
+      "size_bytes": 124392
     },
     "frontend/lib/insightGenerator.ts": {
       "operation": "M",
       "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "originating_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
       "governing_requirement": "ARX-QA-AUTHORITY-035: CDNS score and observation parity remediation evaluating both 20 EMA and 50 SMA.",
-      "sha256": "3ee09b2f52509dbc1427ef9be29c1437b2f98970471eed39423be7ecf33de2cf",
-      "size_bytes": 37889
+      "sha256": "e33b6954f48ffb75110337ea60786c11a1295d14b68a475f90b73cc6aa88c015",
+      "size_bytes": 39750
     },
     "frontend/tests/cdnsPriceTrendParity035.test.ts": {
       "operation": "A",
       "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "originating_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
       "governing_requirement": "ARX-QA-AUTHORITY-035: CDNS price trend parity and pullback classification regression test suite.",
-      "sha256": "40579d871ddf28371f83a6f8e9f2db88267b5d78c9327f71e9db9a9c094a3356",
-      "size_bytes": 6007
+      "sha256": "0f4c938cf09a0d0eeb686ad7e9629e9b8016116c186be7e562ef5100fed56597",
+      "size_bytes": 16064
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
@@ -72,10 +72,10 @@
     "scripts/release/rq13_financial_integrity.py": {
       "operation": "A",
       "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "originating_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
       "governing_requirement": "ARX-QA-AUTHORITY-035: financial evidence, coverage caps, and decision integrity control script.",
-      "sha256": "07d138a4702d3383346168bb49c55c0888480cdc62aad213a07e2533c395b970",
-      "size_bytes": 11091
+      "sha256": "be4273f44ad8c2e208aed41d9e390d38708635578452db21e70e649ec5bb69c9",
+      "size_bytes": 13464
     },
     "scripts/release/run_release_ci_suite.py": {
       "operation": "M",
@@ -88,10 +88,10 @@
     "tests/test_financial_correctness_authority_035.py": {
       "operation": "A",
       "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "originating_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
       "governing_requirement": "ARX-QA-AUTHORITY-035: deterministic invariant tests for financial correctness and Form 4 classification.",
-      "sha256": "55fd2e628d38a3fd883e13b59686f1e585e179d4ed6d1a8f8b81cb4c3712381e",
-      "size_bytes": 10307
+      "sha256": "25348aae97d5f72c6f2c62327dfaa2eeff036ad57388cf63832a9cc292ceb29b",
+      "size_bytes": 14151
     }
   },
   "qualification_framework_files": {
@@ -156,8 +156,8 @@
       "description": "Release qualification module: rq12_qualification_summary.py"
     },
     "scripts/release/rq13_financial_integrity.py": {
-      "sha256": "07d138a4702d3383346168bb49c55c0888480cdc62aad213a07e2533c395b970",
-      "size_bytes": 11091,
+      "sha256": "be4273f44ad8c2e208aed41d9e390d38708635578452db21e70e649ec5bb69c9",
+      "size_bytes": 13464,
       "description": "Release qualification module: rq13_financial_integrity.py"
     },
     "scripts/release/run_release_ci_suite.py": {
