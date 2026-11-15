@@ -81,6 +81,9 @@ def main():
         mod_files = [f for f, m in canonical_manifest["files"].items() if m.get("operation") == "M"]
         target_mod = mod_files[0] if mod_files else next(iter(canonical_manifest["files"]))
         del m2["files"][target_mod]
+        # A framework script can be authorized in both maps; this adversarial
+        # test must remove both approvals to prove unauthorized changes fail.
+        m2.get("qualification_framework_files", {}).pop(target_mod, None)
         m2_path = os.path.join(temp_dir, "manifest_nc02.json")
         with open(m2_path, "w", encoding="utf-8") as f:
             json.dump(m2, f, indent=2)
