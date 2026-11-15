@@ -1064,6 +1064,8 @@ def run_screener_get(
             sym = str(raw_sym).strip().upper()
             roic_val = r.get("roic_pct")
             margin_val = r.get("gross_margin_pct")
+            sm_adapter_res = None
+            sm_evidence_state = "UNAVAILABLE"
     
             # Check for confirmed corporate actions (delistings / acquisitions)
             corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym)
@@ -1315,6 +1317,7 @@ def run_screener_get(
             else:
                 from analyst_dashboard.smart_money.radar_adapter import RadarSmartMoneyAdapter
                 sm_adapter_res = RadarSmartMoneyAdapter.get_radar_insider_trades(sym, as_of=price_date)
+                sm_evidence_state = sm_adapter_res.get("evidence_state", "UNAVAILABLE")
                 sec_trades = sm_adapter_res.get("trades") or []
                 cong_trades = smart_money_engine.get_congressional_trades(sym)
 
@@ -1543,7 +1546,7 @@ def run_screener_get(
                 "fundamentalProvenance": fund_prov,
                 "pillarBreakdown": confluence_res.get("pillarBreakdown"),
                 "liquidityDefense": liq_def,
-                "smartMoneyEvidenceState": sm_adapter_res.get("evidence_state", "UNAVAILABLE") if 'sm_adapter_res' in locals() else "UNAVAILABLE",
+                "smartMoneyEvidenceState": sm_evidence_state,
             })
     
         # Invariant: Establish one canonical Stage 2 primary eligibility set before applying category filters (ARX-RADAR-UNIVERSE-001)

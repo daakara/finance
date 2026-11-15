@@ -397,6 +397,7 @@ class PostgresSmartMoneyRepository:
                 tx.is_positive_buying_conviction,
                 tx.is_open_market_purchase_evidence,
                 f.ticker AS symbol,
+                f.cik AS issuer_cik,
                 f.company_name,
                 av.public_availability_at,
                 am.amendment_number,
@@ -770,6 +771,27 @@ class PostgresSmartMoneyRepository:
         else:
             with transaction(dsn=self.dsn) as cur:
                 return _exec(cur)
+
+    def get_governed_issuer(self, ticker: str, conn: Optional[PgConnection] = None) -> Optional[Dict[str, Any]]:
+        """Retrieves authoritative governed issuer record for a ticker."""
+        query = """
+            SELECT cik, ticker, company_name, sic, fiscal_year_end,
+                   scannable, universe_build_id, manifest_hash, updated_at
+            FROM governed_issuers
+            WHERE ticker = %s LIMIT 1;
+        """
+        def _exec(cur):
+            cur.execute(query, (ticker.upper().strip(),))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        else:
+            with get_connection(dsn=self.dsn) as c:
+                with c.cursor(cursor_factory=RealDictCursor) as cur:
+                    return _exec(cur)
 
     # ── Run Requests (Web -> Worker Queue) ────────────────────────────────────
 
