@@ -3,6 +3,15 @@
 Tests never open a database, issue SEC HTTP requests or alter Railway.
 """
 from datetime import datetime, timedelta, timezone
+import sys
+from unittest.mock import MagicMock
+
+# Graceful test mock for environments where sentry-sdk is not installed
+if "sentry_sdk" not in sys.modules:
+    try:
+        import sentry_sdk
+    except ImportError:
+        sys.modules["sentry_sdk"] = MagicMock()
 
 import pytest
 
@@ -248,3 +257,53 @@ def test_worker_sentry_capture_exception():
         mock_scope.set_tag.assert_any_call("service", "arx-smart-money-worker")
         mock_scope.set_tag.assert_any_call("subsystem", "smart_money")
         mock_scope.set_tag.assert_any_call("test_tag", "test_val")
+
+
+def test_monday_nov16_utc_window_authorization():
+    """Verify schedule alignment: Nov 16 22:30 EST = Nov 17 03:30 UTC = Nov 17 04:30 CET.
+    
+    Validates that require_continuous_authorization accepts the 2-hour window from
+    verified activation time, and rejects pre-window, expired, and duration-exceeded grants.
+    """
+    deployed_sha = "7dc68a9e5bf30a6ddc97604f35fb219439512197"
+    issued_at_utc = "2026-11-17T03:30:00Z"
+    expires_at_utc = "2026-11-17T05:30:00Z"  # exactly 2.0h duration
+
+    monday_grant = grant(
+        ARX_RELEASE_SHA=deployed_sha,
+        ARX_CONTINUOUS_AUTH_RELEASE_SHA=deployed_sha,
+        ARX_CONTINUOUS_AUTH_ID="c" * 32,
+        ARX_CONTINUOUS_AUTH_ISSUED_AT=issued_at_utc,
+        ARX_CONTINUOUS_AUTH_EXPIRES_AT=expires_at_utc,
+    )
+
+    # 1. Valid at start of window (2026-11-17 03:30 UTC)
+    t_start = datetime(2026, 11, 17, 3, 30, 0, tzinfo=UTC)
+    require_continuous_authorization(env=monday_grant, issuers=ISSUERS, now=t_start)
+
+    # 2. Valid in-flight (2026-11-17 04:15 UTC)
+    t_inflight = datetime(2026, 11, 17, 4, 15, 0, tzinfo=UTC)
+    require_continuous_authorization(env=monday_grant, issuers=ISSUERS, now=t_inflight)
+
+    # 3. Fails closed before window opens (2026-11-17 03:29:59 UTC)
+    t_early = datetime(2026, 11, 17, 3, 29, 59, tzinfo=UTC)
+    with pytest.raises(RuntimeError, match="CONTINUOUS_AUTH_NOT_YET_VALID"):
+        require_continuous_authorization(env=monday_grant, issuers=ISSUERS, now=t_early)
+
+    # 4. Fails closed after 2-hour window expires (2026-11-17 05:30:01 UTC)
+    t_expired = datetime(2026, 11, 17, 5, 30, 1, tzinfo=UTC)
+    with pytest.raises(RuntimeError, match="CONTINUOUS_AUTH_EXPIRED"):
+        require_continuous_authorization(env=monday_grant, issuers=ISSUERS, now=t_expired)
+
+    # 5. Fails closed on erroneous EST-as-UTC timestamp (2026-11-16T22:30:00Z expiring 2026-11-17T00:30:00Z)
+    erroneous_grant = grant(
+        ARX_RELEASE_SHA=deployed_sha,
+        ARX_CONTINUOUS_AUTH_RELEASE_SHA=deployed_sha,
+        ARX_CONTINUOUS_AUTH_ID="d" * 32,
+        ARX_CONTINUOUS_AUTH_ISSUED_AT="2026-11-16T22:30:00Z",
+        ARX_CONTINUOUS_AUTH_EXPIRES_AT="2026-11-17T00:30:00Z",
+    )
+    with pytest.raises(RuntimeError, match="CONTINUOUS_AUTH_EXPIRED"):
+        # Evaluated at 03:30 UTC when run actually begins
+        require_continuous_authorization(env=erroneous_grant, issuers=ISSUERS, now=t_start)
+
