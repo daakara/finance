@@ -295,14 +295,18 @@ class PostgresSmartMoneyRepository:
         interval_end: str,
         certified_watermark: str,
         conn: Optional[PgConnection] = None,
+        issuer_cik: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Queries the authoritative reconciliation receipt certifying watermark W.
-        Requires exact interval match, COMPLETE coverage status, and zero material gaps.
+        Requires full interval coverage, certified watermark >= W, COMPLETE coverage status,
+        and zero missing count or material gaps.
         """
         query = """
             SELECT * FROM sm_reconciliation_receipts
-            WHERE (interval_end = %s OR interval_end = %s)
+            WHERE interval_start <= %s
+              AND (interval_end >= %s OR interval_end >= %s)
+              AND (certified_watermark >= %s OR certified_watermark >= %s)
               AND coverage_status = 'COMPLETE'
               AND missing_count = 0
               AND material_gap_count = 0
@@ -310,11 +314,13 @@ class PostgresSmartMoneyRepository:
             LIMIT 1;
         """
         eod_end = f"{interval_end[:10]}T23:59:59Z" if len(interval_end) >= 10 else interval_end
-        params = (interval_end, eod_end)
+        eod_wm = f"{certified_watermark[:10]}T23:59:59Z" if len(certified_watermark) >= 10 else certified_watermark
+        params = (interval_start, interval_end, eod_end, certified_watermark, eod_wm)
 
         def _exec(cur):
             cur.execute(query, params)
-            return cur.fetchone()
+            row = cur.fetchone()
+            return dict(row) if row else None
 
         if conn is not None:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -397,6 +403,7 @@ class PostgresSmartMoneyRepository:
                 tx.is_positive_buying_conviction,
                 tx.is_open_market_purchase_evidence,
                 f.ticker AS symbol,
+                f.cik AS issuer_cik,
                 f.company_name,
                 av.public_availability_at,
                 am.amendment_number,
@@ -770,6 +777,27 @@ class PostgresSmartMoneyRepository:
         else:
             with transaction(dsn=self.dsn) as cur:
                 return _exec(cur)
+
+    def get_governed_issuer(self, ticker: str, conn: Optional[PgConnection] = None) -> Optional[Dict[str, Any]]:
+        """Retrieves authoritative governed issuer record for a ticker."""
+        query = """
+            SELECT cik, ticker, company_name, sic, fiscal_year_end,
+                   scannable, universe_build_id, manifest_hash, updated_at
+            FROM governed_issuers
+            WHERE ticker = %s LIMIT 1;
+        """
+        def _exec(cur):
+            cur.execute(query, (ticker.upper().strip(),))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        else:
+            with get_connection(dsn=self.dsn) as c:
+                with c.cursor(cursor_factory=RealDictCursor) as cur:
+                    return _exec(cur)
 
     # ── Run Requests (Web -> Worker Queue) ────────────────────────────────────
 

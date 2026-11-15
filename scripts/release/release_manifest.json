@@ -1,33 +1,49 @@
 {
-  "release_candidate_commit": "08d7eac489e45b9595baba38f35dbff4132088bf",
-  "base_anchor_commit": "7dc68a9e5bf30a6ddc97604f35fb219439512197",
-  "total_files": 3,
+  "release_candidate_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
+  "base_anchor_commit": "dcff2bac9268ad41e8958aaf91a3a6d96bd83e7a",
+  "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020",
+  "directive": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004",
   "files": {
+    "analyst_dashboard/smart_money/radar_adapter.py": {
+      "operation": "A",
+      "originating_pr_number": 294,
+      "originating_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
+      "governing_requirement": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004: Production read-only Smart Money adapter connecting Form 4 evidence to Radar.",
+      "sha256": "aaf9894816cdeb754e068cd37f7d5077d50264f5498046cb9df4f9974abf77f9",
+      "size_bytes": 28015
+    },
+    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
+      "operation": "M",
+      "originating_pr_number": 294,
+      "originating_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
+      "governing_requirement": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004: Canonical governed_issuers retrieval, issuer CIK selection, and interval coverage receipt validation.",
+      "sha256": "2422689552f7311c9fcc538f26c7d3dcdf6638c335d0ba95e3d86c822cb39a80",
+      "size_bytes": 52759
+    },
     "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 293,
-      "originating_commit": "08d7eac489e45b9595baba38f35dbff4132088bf",
-      "governing_requirement": "ARX-SM-ACT-020: Enforce max_attempts=1 and idempotency_guard=True in trigger_smart_money_scan.",
-      "sha256": "35f6bf5130931addb1e2105011b4414e2968b95f4b96b6924258bbcd0dced53f",
-      "size_bytes": 129522
+      "originating_pr_number": 294,
+      "originating_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
+      "governing_requirement": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004: Screener candidate loop state isolation and ARX_CONFLUENCE_INTEGRITY_HOLD enforcement.",
+      "sha256": "71511d94b6467e2c6819f0a70d634f40b5fec51d75a789710ff606eb0496c2dc",
+      "size_bytes": 130284
     },
-    "tests/test_operator_queue_safety_remediation.py": {
+    "tests/test_radar_postgres_schema_acceptance.py": {
       "operation": "A",
-      "originating_pr_number": 293,
-      "originating_commit": "08d7eac489e45b9595baba38f35dbff4132088bf",
-      "governing_requirement": "ARX-SM-ACT-020: Adversarial tests for max_attempts=1, idempotency guard, concurrent enqueue, and stale recovery failure.",
-      "sha256": "7557486166fba4660028be4574c22705be1b788adbfeb5aa7b2efb3a629dc087",
-      "size_bytes": 16982
+      "originating_pr_number": 294,
+      "originating_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
+      "governing_requirement": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004: Real PostgreSQL schema compatibility and acceptance test suite.",
+      "sha256": "685304efc409d742a4139dfeaae231353f41f8057c0133d387841c2977cc0ac7",
+      "size_bytes": 17749
     },
-    "tests/test_sm_act_020_continuous_authorization.py": {
-      "operation": "M",
-      "originating_pr_number": 293,
-      "originating_commit": "08d7eac489e45b9595baba38f35dbff4132088bf",
-      "governing_requirement": "ARX-SM-ACT-020: Graceful test sentry-sdk mock fallback and schedule alignment test for Nov 16 22:30 EST (Nov 17 03:30 UTC / 04:30 CET).",
-      "sha256": "b79ff06e3b50484123235521fa9c898c521e254d310ec0bb2d6f488204cad816",
-      "size_bytes": 13029
+    "tests/test_radar_smart_money_adapter_adversarial.py": {
+      "operation": "A",
+      "originating_pr_number": 294,
+      "originating_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
+      "governing_requirement": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004: Adversarial tests for operational holds, fail-closed PIT watermarks, issuer coverage contracts, and zero leakage.",
+      "sha256": "44cb24e47cd210f7f1c70e615b11adf24eb783bc52809d58d9a878b46047d140",
+      "size_bytes": 30454
     }
   },
   "qualification_framework_files": {
@@ -37,8 +53,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "fba3dfdde6a82ab783de2311020e36cf9c2b655f5bee190d8c878d11af978190",
-      "size_bytes": 58131,
+      "sha256": "041ccb145b35d4c131ce68c578cff2c2e0ad22a9f01370b3feb55ed775ae544d",
+      "size_bytes": 58136,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
