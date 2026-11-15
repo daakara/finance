@@ -81,7 +81,7 @@ def verify_engine_manifest(enforce_production=True, manifest_override=None):
         if not os.path.isfile(engine_path):
             raise AssertionError(f"{name}: engine source missing")
         with open(engine_path, "rb") as f:
-            actual_hash = hashlib.sha256(f.read().replace(b"\\r\\n", b"\\n")).hexdigest()
+            actual_hash = hashlib.sha256(f.read().replace(b"\r\n", b"\n")).hexdigest()
         if actual_hash != expected_hash:
             raise AssertionError(f"{name}: engine hash mismatch")
         hashes[name] = actual_hash
