@@ -1313,7 +1313,9 @@ def run_screener_get(
                 rvol_val = "N/A"
                 short_float_val = "N/A"
             else:
-                sec_trades = smart_money_engine.get_sec_insider_trades(sym)
+                from analyst_dashboard.smart_money.radar_adapter import RadarSmartMoneyAdapter
+                sm_adapter_res = RadarSmartMoneyAdapter.get_radar_insider_trades(sym, as_of=price_date)
+                sec_trades = sm_adapter_res.get("trades") or []
                 cong_trades = smart_money_engine.get_congressional_trades(sym)
 
                 # Classify transactions into authentic open-market purchases vs sales via production classifier
@@ -1323,18 +1325,7 @@ def run_screener_get(
                 has_insider_buy = trade_classification["has_insider_buy"]
                 has_insider_sell = trade_classification["has_insider_sell"]
                 has_congress = len(cong_trades) > 0
-                insider_val = 0.0
-                if has_insider_buy:
-                    for t in buy_trades:
-                        val_raw = t.get("total_value") or t.get("transaction_value") or 0.0
-                        if isinstance(val_raw, str):
-                            cleaned = val_raw.replace("$", "").replace(",", "").strip()
-                            try:
-                                insider_val += float(cleaned)
-                            except ValueError:
-                                pass
-                        elif isinstance(val_raw, (int, float)):
-                            insider_val += float(val_raw)
+                insider_val = trade_classification["total_buy_value_usd"]
                 days_to_earn = r.get("days_to_earnings")
 
                 has_any_smart = has_insider_buy or has_insider_sell or has_congress
@@ -1342,11 +1333,12 @@ def run_screener_get(
                     "has_insider_buy": has_insider_buy,
                     "has_insider_sell": has_insider_sell,
                     "insider_value_usd": insider_val if has_insider_buy else 0.0,
-                    "insider_name": buy_trades[0].get("reporting_owner", "") if has_insider_buy else (sell_trades[0].get("reporting_owner", "") if has_insider_sell else ""),
+                    "insider_name": (buy_trades[0].get("reporting_owner_name") or buy_trades[0].get("reporting_owner", "")) if has_insider_buy else ((sell_trades[0].get("reporting_owner_name") or sell_trades[0].get("reporting_owner", "")) if has_insider_sell else ""),
                     "has_congress_buy": has_congress,
                     "has_options_flow": False,
                     "insider_buy_count_90d": len(buy_trades),
                     "insider_sell_count_90d": len(sell_trades),
+                    "smart_money_evidence_state": sm_adapter_res.get("evidence_state", "UNAVAILABLE"),
                 } if has_any_smart else None
     
                 # Authoritative factor snapshot from market database & strict provenance
@@ -1551,6 +1543,7 @@ def run_screener_get(
                 "fundamentalProvenance": fund_prov,
                 "pillarBreakdown": confluence_res.get("pillarBreakdown"),
                 "liquidityDefense": liq_def,
+                "smartMoneyEvidenceState": sm_adapter_res.get("evidence_state", "UNAVAILABLE") if 'sm_adapter_res' in locals() else "UNAVAILABLE",
             })
     
         # Invariant: Establish one canonical Stage 2 primary eligibility set before applying category filters (ARX-RADAR-UNIVERSE-001)
