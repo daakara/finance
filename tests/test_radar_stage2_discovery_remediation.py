@@ -125,9 +125,9 @@ def test_4_unresolved_data_not_presented_as_failed_technical_setup():
 
 def test_5_active_promoted_universe_resolved_dynamically():
     """
-    Check 5: Active promoted universe is used dynamically, preserving 35-symbol fixture.
+    Check 5: Active promoted universe is used dynamically per ARX-RADAR-UNIVERSE-001.
     The primary screener resolves membership from UniverseStore.get_latest_published_universe,
-    while explicit PRE_SCREENED or HISTORICAL_35 requests fall back safely to the 35-symbol fixture.
+    while explicit PRE_SCREENED requests strictly resolve to the authoritative published ARX_US_EQUITIES universe.
     """
     resp = Response()
     # Default execution: dynamic resolution
@@ -136,12 +136,11 @@ def test_5_active_promoted_universe_resolved_dynamically():
     assert data_dynamic.get("universeScope") == "ARX_US_EQUITIES"
     assert data_dynamic.get("activeUniverseBuildId") is not None
 
-    # Regression fixture path
+    # Regression fixture path: PRE_SCREENED does not substitute curated lists
     data_fixture = run_screener_get(resp, universe="PRE_SCREENED")
-    fixture_symbols = set(HISTORICAL_VCP_35_REGRESSION_FIXTURE)
-    fixture_candidates = data_fixture.get("candidates", [])
-    for c in fixture_candidates:
-        assert c["symbol"] in fixture_symbols
+    assert data_fixture.get("activeUniverseId") == "ARX_US_EQUITIES"
+    assert data_fixture.get("universeScope") == "ARX_US_EQUITIES"
+    assert data_fixture.get("activeUniverseBuildId") == data_dynamic.get("activeUniverseBuildId")
 
 
 def test_6_transport_classification_matches_canonical_vcp_classifier():
