@@ -1,49 +1,33 @@
 {
-  "release_candidate_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
-  "base_anchor_commit": "7d22d8b4a2b217fdc130da848ac1e49c7305d3dd",
-  "total_files": 5,
+  "release_candidate_commit": "08d7eac489e45b9595baba38f35dbff4132088bf",
+  "base_anchor_commit": "7dc68a9e5bf30a6ddc97604f35fb219439512197",
+  "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-RADAR-P2-RECONCILIATION",
+  "directive": "ARX-SM-ACT-020",
   "files": {
     "api/routes/screener.py": {
       "operation": "M",
-      "originating_pr_number": 292,
-      "originating_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
-      "governing_requirement": "ARX-RADAR-P2-RECONCILIATION: api/routes/screener.py Stage 3 population accounting & test fixture isolation.",
-      "sha256": "10113e84e6426bf8429db449fa1ab0971dbd6c750d762a4eae5bc48ceefe1498",
-      "size_bytes": 129358
+      "originating_pr_number": 293,
+      "originating_commit": "08d7eac489e45b9595baba38f35dbff4132088bf",
+      "governing_requirement": "ARX-SM-ACT-020: Enforce max_attempts=1 and idempotency_guard=True in trigger_smart_money_scan.",
+      "sha256": "35f6bf5130931addb1e2105011b4414e2968b95f4b96b6924258bbcd0dced53f",
+      "size_bytes": 129522
     },
-    "frontend/lib/api.ts": {
-      "operation": "M",
-      "originating_pr_number": 292,
-      "originating_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
-      "governing_requirement": "ARX-RADAR-P2-RECONCILIATION: frontend/lib/api.ts Stage 3 population accounting & test fixture isolation.",
-      "sha256": "4f01895a3ad74ad806a5a11a2ad0d1449e119252b560cd930eac1fe4cae33309",
-      "size_bytes": 193003
-    },
-    "tests/conftest.py": {
-      "operation": "M",
-      "originating_pr_number": 292,
-      "originating_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
-      "governing_requirement": "ARX-RADAR-P2-RECONCILIATION: tests/conftest.py Stage 3 population accounting & test fixture isolation.",
-      "sha256": "7d81940f569ea1a5098b4b5d1679fd604a7c3e39bdefc701bb98a7eae6035e67",
-      "size_bytes": 9495
-    },
-    "tests/test_radar_population_conservation.py": {
+    "tests/test_operator_queue_safety_remediation.py": {
       "operation": "A",
-      "originating_pr_number": 292,
-      "originating_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
-      "governing_requirement": "ARX-RADAR-P2-RECONCILIATION: tests/test_radar_population_conservation.py Stage 3 population accounting & test fixture isolation.",
-      "sha256": "73e95a9dee86f50bb60234924bd36cb18ce168c5c31c75eafc356bafeafc6a9b",
-      "size_bytes": 8622
+      "originating_pr_number": 293,
+      "originating_commit": "08d7eac489e45b9595baba38f35dbff4132088bf",
+      "governing_requirement": "ARX-SM-ACT-020: Adversarial tests for max_attempts=1, idempotency guard, concurrent enqueue, and stale recovery failure.",
+      "sha256": "7557486166fba4660028be4574c22705be1b788adbfeb5aa7b2efb3a629dc087",
+      "size_bytes": 16982
     },
-    "tests/test_radar_stage2_discovery_remediation.py": {
+    "tests/test_sm_act_020_continuous_authorization.py": {
       "operation": "M",
-      "originating_pr_number": 292,
-      "originating_commit": "9e6af812f6f7d03033d49991bf833e4d37abe288",
-      "governing_requirement": "ARX-RADAR-P2-RECONCILIATION: tests/test_radar_stage2_discovery_remediation.py Stage 3 population accounting & test fixture isolation.",
-      "sha256": "f68fd6f93929563fb43099406acee5c4d34641497d323e24d74a4636c783bed0",
-      "size_bytes": 12639
+      "originating_pr_number": 293,
+      "originating_commit": "08d7eac489e45b9595baba38f35dbff4132088bf",
+      "governing_requirement": "ARX-SM-ACT-020: Graceful test sentry-sdk mock fallback and schedule alignment test for Nov 16 22:30 EST (Nov 17 03:30 UTC / 04:30 CET).",
+      "sha256": "b79ff06e3b50484123235521fa9c898c521e254d310ec0bb2d6f488204cad816",
+      "size_bytes": 13029
     }
   },
   "qualification_framework_files": {
@@ -53,8 +37,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "dbdd9231b7c0a06e11978b7bf8f38b846d104a0209841562b349871d9b85df10",
-      "size_bytes": 58126,
+      "sha256": "fba3dfdde6a82ab783de2311020e36cf9c2b655f5bee190d8c878d11af978190",
+      "size_bytes": 58131,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
