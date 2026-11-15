@@ -1,49 +1,25 @@
 {
-  "release_candidate_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
-  "base_anchor_commit": "dcff2bac9268ad41e8958aaf91a3a6d96bd83e7a",
-  "total_files": 5,
+  "release_candidate_commit": "212bd4f4a9c3f1cdcc6b7d6dbd3b5fcc2b53ea3e",
+  "base_anchor_commit": "1c8246e9afffc4915eb93df536d5ca0f4e58c35a",
+  "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004",
+  "directive": "ARX-NVDA-EVIDENCE-TRUTH-002",
   "files": {
-    "analyst_dashboard/smart_money/radar_adapter.py": {
-      "operation": "A",
-      "originating_pr_number": 294,
-      "originating_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
-      "governing_requirement": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004: Production read-only Smart Money adapter connecting Form 4 evidence to Radar.",
-      "sha256": "aaf9894816cdeb754e068cd37f7d5077d50264f5498046cb9df4f9974abf77f9",
-      "size_bytes": 28015
-    },
-    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
+    "frontend/components/CompositeConvictionCard.tsx": {
       "operation": "M",
-      "originating_pr_number": 294,
-      "originating_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
-      "governing_requirement": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004: Canonical governed_issuers retrieval, issuer CIK selection, and interval coverage receipt validation.",
-      "sha256": "2422689552f7311c9fcc538f26c7d3dcdf6638c335d0ba95e3d86c822cb39a80",
-      "size_bytes": 52759
+      "originating_pr_number": 295,
+      "originating_commit": "212bd4f4a9c3f1cdcc6b7d6dbd3b5fcc2b53ea3e",
+      "governing_requirement": "ARX-NVDA-EVIDENCE-TRUTH-002: Disambiguate unverified/held Confluence pillar evidence states from failing zero scores without modifying scoring engine.",
+      "sha256": "22a363400cd5e9c05c270a6306b5eb2ef0b032e6302ceb0d1e43d35bcf75d7de",
+      "size_bytes": 16077
     },
-    "api/routes/screener.py": {
-      "operation": "M",
-      "originating_pr_number": 294,
-      "originating_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
-      "governing_requirement": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004: Screener candidate loop state isolation and ARX_CONFLUENCE_INTEGRITY_HOLD enforcement.",
-      "sha256": "71511d94b6467e2c6819f0a70d634f40b5fec51d75a789710ff606eb0496c2dc",
-      "size_bytes": 130284
-    },
-    "tests/test_radar_postgres_schema_acceptance.py": {
+    "frontend/tests/confluenceEvidencePresentationTruth.test.ts": {
       "operation": "A",
-      "originating_pr_number": 294,
-      "originating_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
-      "governing_requirement": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004: Real PostgreSQL schema compatibility and acceptance test suite.",
-      "sha256": "685304efc409d742a4139dfeaae231353f41f8057c0133d387841c2977cc0ac7",
-      "size_bytes": 17749
-    },
-    "tests/test_radar_smart_money_adapter_adversarial.py": {
-      "operation": "A",
-      "originating_pr_number": 294,
-      "originating_commit": "c8fb3faa415b9a20429f4510426b691d8d8dc539",
-      "governing_requirement": "ARX-RADAR-SM-ADAPTER-RELEASE-QUALIFICATION-004: Adversarial tests for operational holds, fail-closed PIT watermarks, issuer coverage contracts, and zero leakage.",
-      "sha256": "44cb24e47cd210f7f1c70e615b11adf24eb783bc52809d58d9a878b46047d140",
-      "size_bytes": 30454
+      "originating_pr_number": 295,
+      "originating_commit": "212bd4f4a9c3f1cdcc6b7d6dbd3b5fcc2b53ea3e",
+      "governing_requirement": "ARX-NVDA-EVIDENCE-TRUTH-002: Production qualification test suite verifying status precedence, NVDA presentation truth, and genuine failing score preservation.",
+      "sha256": "6bafa94c8718e66f2fab7b5eb59f8c727360c50b1963febaf811297e6a39c89b",
+      "size_bytes": 10582
     }
   },
   "qualification_framework_files": {
@@ -53,8 +29,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "041ccb145b35d4c131ce68c578cff2c2e0ad22a9f01370b3feb55ed775ae544d",
-      "size_bytes": 58136,
+      "sha256": "b5ea78cb1bbeca99f1bb90d12c698c0cf6862d8bf2765de7935210a53784d3da",
+      "size_bytes": 58141,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
