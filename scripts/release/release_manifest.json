@@ -144,7 +144,7 @@
       "description": "Release qualification module: test_release_ci_negative_cases.py"
     },
     "scripts/release/test_rq02_adversarial_controls.py": {
-      "sha256": "00000000000000000000000000000000402eff5b1930b3b3bc9a1c20baba452a",
+      "sha256": "23ad84d21396b86881d99547e8b4e2c91feaeb7b352adf0fcf2e8654896226d3",
       "size_bytes": 16721,
       "description": "Release qualification module: test_rq02_adversarial_controls.py"
     },
