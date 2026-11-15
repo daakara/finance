@@ -1,12 +1,14 @@
 /**
  * ARX Confluence Evidence Presentation Truth Acceptance Suite
- * Directive: ARX-NVDA-EVIDENCE-TRUTH-AUDIT-001
+ * Directive: ARX-NVDA-EVIDENCE-TRUTH-AUDIT-001 & ARX-NVDA-EVIDENCE-TRUTH-002
  *
- * Verifies that CompositeConvictionCard strictly differentiates between:
+ * Exercises the authoritative exported production formatting functions from
+ * CompositeConvictionCard directly:
  * 1. Evaluated failing numerical scores (e.g. 30/100 in amber/rose)
  * 2. Unverified evidence states ("UNVERIFIED", rendered in neutral muted slate)
- * 3. Unavailable / held evidence states ("UNAVAILABLE", rendered in neutral muted slate)
+ * 3. Unavailable / held evidence states ("UNAVAILABLE", including pipeline_held, rendered in neutral muted slate)
  * 4. Exempt statutory structures ("EXEMPT", rendered in neutral muted slate)
+ * 5. Checking status before score == null so null scores never discard unverified/exempt status
  *
  * Eliminates the semantic collision where missing or held data was erroneously
  * displayed as an alarming red "0 / 100" while adjacent notices stated
@@ -16,10 +18,15 @@
 import * as assert from "node:assert";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import {
+  formatPillarScore,
+  getPillarScoreColor,
+  getPillarStatusDot,
+} from "../components/CompositeConvictionCard";
 
 console.log("=====================================================================");
 console.log("ARX CONFLUENCE EVIDENCE PRESENTATION TRUTH & SEMANTIC INTEGRITY SUITE");
-console.log("Directive: ARX-NVDA-EVIDENCE-TRUTH-AUDIT-001");
+console.log("Directives: ARX-NVDA-EVIDENCE-TRUTH-001 / 002");
 console.log("=====================================================================\n");
 
 const COMPONENT_PATH = path.join(__dirname, "../components/CompositeConvictionCard.tsx");
@@ -28,10 +35,10 @@ const source = fs.readFileSync(COMPONENT_PATH, "utf8");
 // ── Test 1: Static Code Invariants ───────────────────────────────────────────
 console.log("Test 1: Verifying CompositeConvictionCard source code invariants...");
 {
-  // 1. Must define formatPillarScore helper or equivalent logic
+  // 1. Must export formatPillarScore helper
   assert.ok(
-    source.includes("formatPillarScore"),
-    "CompositeConvictionCard must define formatPillarScore helper"
+    source.includes("export function formatPillarScore"),
+    "CompositeConvictionCard must export formatPillarScore helper"
   );
 
   // 2. Must handle unverified and synthetic statuses explicitly
@@ -40,10 +47,10 @@ console.log("Test 1: Verifying CompositeConvictionCard source code invariants...
     'CompositeConvictionCard must explicitly emit "UNVERIFIED" scoreDisplay'
   );
 
-  // 3. Must handle unavailable status explicitly
+  // 3. Must handle unavailable and pipeline_held status explicitly
   assert.ok(
-    source.includes('"UNAVAILABLE"'),
-    'CompositeConvictionCard must explicitly emit "UNAVAILABLE" scoreDisplay'
+    source.includes('"pipeline_held"') || source.includes('pipeline_held'),
+    'CompositeConvictionCard must explicitly handle pipeline_held status'
   );
 
   // 4. Must handle not_applicable / exempt status explicitly
@@ -58,21 +65,17 @@ console.log("Test 1: Verifying CompositeConvictionCard source code invariants...
     "Pillar score displays must never leak null or undefined string tokens"
   );
 
-  // 6. getPillarScoreColor must treat UNVERIFIED, UNAVAILABLE, EXEMPT, PENDING as neutral muted text
+  // 6. Narrowly typed status union (no open `| string` escape hatch)
   assert.ok(
-    source.includes('scoreDisplay === "UNVERIFIED"'),
-    "getPillarScoreColor must handle UNVERIFIED as neutral text"
-  );
-  assert.ok(
-    source.includes('scoreDisplay === "EXEMPT"'),
-    "getPillarScoreColor must handle EXEMPT as neutral text"
+    source.includes("export type ConfluencePillarStatus ="),
+    "CompositeConvictionCard must define narrow ConfluencePillarStatus type"
   );
 
   console.log("  ✓ Test 1 Passed: Static code invariants verified.\n");
 }
 
-// ── Test 2: Runtime Semantic Scoring Logic Simulation ─────────────────────────
-console.log("Test 2: Simulating NVDA live production response projection...");
+// ── Test 2: Direct Execution of Production Formatter on Real NVDA Payload ────
+console.log("Test 2: Exercising production formatPillarScore directly on NVDA payload...");
 {
   // Simulated NVDA backend confluence response
   const nvdaBackendConfluence = {
@@ -127,76 +130,99 @@ console.log("Test 2: Simulating NVDA live production response projection...");
     ],
   };
 
-  // Re-create the component's formatting logic
-  const formatPillarScore = (p?: { score: number | null; status: string }) => {
-    if (!p || p.score == null) return "UNAVAILABLE";
-    if (p.status === "unverified" || p.status === "synthetic") return "UNVERIFIED";
-    if (p.status === "unavailable") return "UNAVAILABLE";
-    if (p.status === "not_applicable") return "EXEMPT";
-    return `${Math.round(p.score)} / 100`;
-  };
-
-  function getPillarScoreColor(scoreDisplay: string, score: number | null): string {
-    if (
-      score === null ||
-      scoreDisplay === "UNAVAILABLE" ||
-      scoreDisplay === "PENDING" ||
-      scoreDisplay === "UNVERIFIED" ||
-      scoreDisplay === "EXEMPT"
-    ) {
-      return "text-[var(--text-2)] font-semibold text-sm";
-    }
-    if (score >= 75) return "text-emerald-400";
-    if (score >= 50) return "text-cyan-400";
-    if (score >= 35) return "text-amber-400";
-    return "text-rose-400";
-  }
-
   const techP = nvdaBackendConfluence.pillars.find(p => p.pillar === "TECHNICAL_STRUCTURE")!;
   const fundP = nvdaBackendConfluence.pillars.find(p => p.pillar === "FUNDAMENTAL_SOLVENCY")!;
   const smartP = nvdaBackendConfluence.pillars.find(p => p.pillar === "SMART_MONEY_FLOW")!;
   const macroP = nvdaBackendConfluence.pillars.find(p => p.pillar === "MACRO_SAFETY_FLOOR")!;
 
-  // Assertions for NVDA
-  assert.strictEqual(formatPillarScore(techP), "30 / 100", "Technical pillar must format as '30 / 100'");
-  assert.strictEqual(getPillarScoreColor(formatPillarScore(techP), techP.score), "text-rose-400", "Technical 30/100 must be rose");
+  // Assertions for NVDA using actual imported functions
+  const techDisplay = formatPillarScore(techP);
+  assert.strictEqual(techDisplay, "30 / 100", "Technical pillar must format as '30 / 100'");
+  assert.strictEqual(getPillarScoreColor(techDisplay, techP.score), "text-rose-400", "Technical 30/100 must be rose");
+  assert.ok(getPillarStatusDot(techP.status).includes("bg-rose-400"), "Technical dot must be rose");
 
-  assert.strictEqual(formatPillarScore(fundP), "UNVERIFIED", "Fundamental pillar must format as 'UNVERIFIED', NOT '0 / 100'");
-  assert.strictEqual(getPillarScoreColor(formatPillarScore(fundP), fundP.score), "text-[var(--text-2)] font-semibold text-sm", "UNVERIFIED must NOT be red");
+  const fundDisplay = formatPillarScore(fundP);
+  assert.strictEqual(fundDisplay, "UNVERIFIED", "Fundamental pillar must format as 'UNVERIFIED', NOT '0 / 100'");
+  assert.strictEqual(getPillarScoreColor(fundDisplay, fundP.score), "text-[var(--text-2)] font-semibold text-sm", "UNVERIFIED must NOT be red");
+  assert.strictEqual(getPillarStatusDot(fundP.status), "bg-slate-600", "UNVERIFIED dot must be neutral slate");
 
-  assert.strictEqual(formatPillarScore(smartP), "UNAVAILABLE", "Smart Money pillar must format as 'UNAVAILABLE', NOT '0 / 100'");
-  assert.strictEqual(getPillarScoreColor(formatPillarScore(smartP), smartP.score), "text-[var(--text-2)] font-semibold text-sm", "UNAVAILABLE must NOT be red");
+  const smartDisplay = formatPillarScore(smartP);
+  assert.strictEqual(smartDisplay, "UNAVAILABLE", "Smart Money pillar must format as 'UNAVAILABLE', NOT '0 / 100'");
+  assert.strictEqual(getPillarScoreColor(smartDisplay, smartP.score), "text-[var(--text-2)] font-semibold text-sm", "UNAVAILABLE must NOT be red");
+  assert.strictEqual(getPillarStatusDot(smartP.status), "bg-slate-600", "UNAVAILABLE dot must be neutral slate");
 
-  assert.strictEqual(formatPillarScore(macroP), "85 / 100", "Macro pillar must format as '85 / 100'");
-  assert.strictEqual(getPillarScoreColor(formatPillarScore(macroP), macroP.score), "text-emerald-400", "Macro 85/100 must be emerald");
+  const macroDisplay = formatPillarScore(macroP);
+  assert.strictEqual(macroDisplay, "85 / 100", "Macro pillar must format as '85 / 100'");
+  assert.strictEqual(getPillarScoreColor(macroDisplay, macroP.score), "text-emerald-400", "Macro 85/100 must be emerald");
+  assert.ok(getPillarStatusDot(macroP.status).includes("bg-emerald-400"), "Macro dot must be emerald");
 
   // Confluence gauge score assertion
   const displayScore = Math.round(nvdaBackendConfluence.confluenceScore);
   assert.strictEqual(displayScore, 21, "Confluence score 20.8 must round to 21 for top-level display gauge");
 
-  console.log("  ✓ Test 2 Passed: NVDA production response projected with 100% semantic clarity.\n");
+  console.log("  ✓ Test 2 Passed: Actual production functions executed on NVDA payload.\n");
 }
 
-// ── Test 3: ETF and Foreign ADR Special Cases ─────────────────────────────────
-console.log("Test 3: Testing ETF exemption and foreign ADR cases...");
+// ── Test 3: Status Priority Over Null Scores (RQ-Review Requirement 2) ───────
+console.log("Test 3: Testing status precedence when score == null...");
 {
-  const formatPillarScore = (p?: { score: number | null; status: string }) => {
-    if (!p || p.score == null) return "UNAVAILABLE";
-    if (p.status === "unverified" || p.status === "synthetic") return "UNVERIFIED";
-    if (p.status === "unavailable") return "UNAVAILABLE";
-    if (p.status === "not_applicable") return "EXEMPT";
-    return `${Math.round(p.score)} / 100`;
-  };
+  // When score is null, unverified status must NOT collapse to generic UNAVAILABLE
+  assert.strictEqual(
+    formatPillarScore({ score: null, status: "unverified" }),
+    "UNVERIFIED",
+    "score: null with status: 'unverified' must return 'UNVERIFIED'"
+  );
+  assert.strictEqual(
+    formatPillarScore({ score: null, status: "synthetic" }),
+    "UNVERIFIED",
+    "score: null with status: 'synthetic' must return 'UNVERIFIED'"
+  );
+  assert.strictEqual(
+    formatPillarScore({ score: null, status: "not_applicable" }),
+    "EXEMPT",
+    "score: null with status: 'not_applicable' must return 'EXEMPT'"
+  );
+  assert.strictEqual(
+    formatPillarScore({ score: null, status: "pipeline_held" }),
+    "UNAVAILABLE",
+    "score: null with status: 'pipeline_held' must return 'UNAVAILABLE'"
+  );
+  assert.strictEqual(
+    formatPillarScore({ score: 0.0, status: "pipeline_held" }),
+    "UNAVAILABLE",
+    "score: 0.0 with status: 'pipeline_held' must return 'UNAVAILABLE'"
+  );
+  assert.strictEqual(
+    formatPillarScore({ score: null, status: "positive" }),
+    "UNAVAILABLE",
+    "score: null with positive status must fail closed to 'UNAVAILABLE'"
+  );
 
-  // ETF fundamental exemption
-  const etfFundP = { score: 0.0, status: "not_applicable" };
-  assert.strictEqual(formatPillarScore(etfFundP), "EXEMPT", "ETF fundamental exemption must format as 'EXEMPT'");
+  console.log("  ✓ Test 3 Passed: Status precedence over null scores strictly verified.\n");
+}
 
-  // Neutral verified smart money (e.g. foreign ADR or verified zero)
-  const neutralSmartP = { score: 50.0, status: "neutral" };
-  assert.strictEqual(formatPillarScore(neutralSmartP), "50 / 100", "Neutral verified smart money must format as '50 / 100'");
+// ── Test 4: Genuinely Evaluated Failing Pillars & Edge Cases ──────────────────
+console.log("Test 4: Testing genuinely evaluated failing pillars and edge cases...");
+{
+  // Genuine failing technical breakdown
+  const failingTech = { score: 20.0, status: "warning" };
+  assert.strictEqual(formatPillarScore(failingTech), "20 / 100");
+  assert.strictEqual(getPillarScoreColor("20 / 100", 20.0), "text-rose-400");
 
-  console.log("  ✓ Test 3 Passed: ETF and foreign ADR cases verified.\n");
+  // Heavy insider selling (evaluated smart money)
+  const insiderDumping = { score: 35.0, status: "warning" };
+  assert.strictEqual(formatPillarScore(insiderDumping), "35 / 100");
+  assert.strictEqual(getPillarScoreColor("35 / 100", 35.0), "text-amber-400");
+
+  // Piotroski distress (evaluated fundamentals)
+  const balanceSheetDistress = { score: 33.0, status: "warning" };
+  assert.strictEqual(formatPillarScore(balanceSheetDistress), "33 / 100");
+  assert.strictEqual(getPillarScoreColor("33 / 100", 33.0), "text-rose-400");
+
+  // Missing pillar object
+  assert.strictEqual(formatPillarScore(undefined), "UNAVAILABLE");
+
+  console.log("  ✓ Test 4 Passed: Genuine failing scores and boundary conditions verified.\n");
 }
 
 console.log("=====================================================================");

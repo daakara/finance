@@ -13,18 +13,38 @@ interface CompositeConvictionCardProps {
   onOpenWhy?: () => void;
 }
 
+export type ConfluencePillarStatus =
+  | "positive"
+  | "neutral"
+  | "warning"
+  | "unavailable"
+  | "unverified"
+  | "pipeline_held"
+  | "synthetic"
+  | "not_applicable";
+
 export interface ConfluencePillarDisplay {
   id: "TECHNICAL_STRUCTURE" | "FUNDAMENTAL_SOLVENCY" | "SMART_MONEY_FLOW" | "MACRO_SAFETY_FLOOR";
   label: string;
   weightPct: number;
   score: number | null;
   scoreDisplay: string;
-  status: "positive" | "neutral" | "warning" | "unavailable" | "unverified" | "not_applicable" | "synthetic" | string;
+  status: ConfluencePillarStatus;
   detail: string;
   icon: string;
 }
 
-function getPillarScoreColor(scoreDisplay: string, score: number | null): string {
+export function formatPillarScore(p?: { score: number | null; status?: string | null }): string {
+  if (!p) return "UNAVAILABLE";
+  const st = (p.status || "").toLowerCase().trim();
+  if (st === "unverified" || st === "synthetic") return "UNVERIFIED";
+  if (st === "unavailable" || st === "pipeline_held") return "UNAVAILABLE";
+  if (st === "not_applicable") return "EXEMPT";
+  if (p.score == null) return "UNAVAILABLE";
+  return `${Math.round(p.score)} / 100`;
+}
+
+export function getPillarScoreColor(scoreDisplay: string, score: number | null): string {
   if (
     score === null ||
     scoreDisplay === "UNAVAILABLE" ||
@@ -40,8 +60,8 @@ function getPillarScoreColor(scoreDisplay: string, score: number | null): string
   return "text-rose-400";
 }
 
-function getPillarStatusDot(status: string): string {
-  switch (status) {
+export function getPillarStatusDot(status: string): string {
+  switch ((status || "").toLowerCase().trim()) {
     case "positive":
       return "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]";
     case "warning":
@@ -51,6 +71,7 @@ function getPillarStatusDot(status: string): string {
     case "unverified":
     case "synthetic":
     case "unavailable":
+    case "pipeline_held":
     case "not_applicable":
     default:
       return "bg-slate-600";
@@ -108,12 +129,21 @@ export default function CompositeConvictionCard({
       const smartP = backendPillars.find((p) => p.pillar === "SMART_MONEY_FLOW");
       const macroP = backendPillars.find((p) => p.pillar === "MACRO_SAFETY_FLOOR");
 
-      const formatPillarScore = (p?: { score: number | null; status: string }) => {
-        if (!p || p.score == null) return "UNAVAILABLE";
-        if (p.status === "unverified" || p.status === "synthetic") return "UNVERIFIED";
-        if (p.status === "unavailable") return "UNAVAILABLE";
-        if (p.status === "not_applicable") return "EXEMPT";
-        return `${Math.round(p.score)} / 100`;
+      const normalizeStatus = (st?: string | null): ConfluencePillarStatus => {
+        const s = (st || "").toLowerCase().trim();
+        if (
+          s === "positive" ||
+          s === "neutral" ||
+          s === "warning" ||
+          s === "unavailable" ||
+          s === "unverified" ||
+          s === "pipeline_held" ||
+          s === "synthetic" ||
+          s === "not_applicable"
+        ) {
+          return s as ConfluencePillarStatus;
+        }
+        return "unavailable";
       };
 
       const pillars: ConfluencePillarDisplay[] = [
@@ -123,7 +153,7 @@ export default function CompositeConvictionCard({
           weightPct: 25,
           score: techP?.score != null ? Math.round(techP.score) : null,
           scoreDisplay: formatPillarScore(techP),
-          status: techP?.status || "unavailable",
+          status: normalizeStatus(techP?.status),
           detail: (isPlain ? techP?.plainDetail : techP?.detail) || techP?.detail || "Chart pattern and volume accumulation evaluated.",
           icon: techP?.icon || "📈",
         },
@@ -133,7 +163,7 @@ export default function CompositeConvictionCard({
           weightPct: 25,
           score: fundP?.score != null ? Math.round(fundP.score) : null,
           scoreDisplay: formatPillarScore(fundP),
-          status: fundP?.status || "unavailable",
+          status: normalizeStatus(fundP?.status),
           detail: (isPlain ? fundP?.plainDetail : fundP?.detail) || fundP?.detail || "Balance sheet solvency and financial quality evaluated.",
           icon: fundP?.icon || "🏢",
         },
@@ -143,7 +173,7 @@ export default function CompositeConvictionCard({
           weightPct: 25,
           score: smartP?.score != null ? Math.round(smartP.score) : null,
           scoreDisplay: formatPillarScore(smartP),
-          status: smartP?.status || "unavailable",
+          status: normalizeStatus(smartP?.status),
           detail: (isPlain ? smartP?.plainDetail : smartP?.detail) || smartP?.detail || "SEC Form 4 insider transactions and options order flow evaluated.",
           icon: smartP?.icon || "🏛️",
         },
@@ -153,7 +183,7 @@ export default function CompositeConvictionCard({
           weightPct: 25,
           score: macroP?.score != null ? Math.round(macroP.score) : null,
           scoreDisplay: formatPillarScore(macroP),
-          status: macroP?.status || "unavailable",
+          status: normalizeStatus(macroP?.status),
           detail: (isPlain ? macroP?.plainDetail : macroP?.detail) || macroP?.detail || "Treasury yield curve and credit spread tailwinds evaluated.",
           icon: macroP?.icon || "🛡️",
         },
