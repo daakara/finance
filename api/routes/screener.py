@@ -1814,12 +1814,15 @@ def trigger_smart_money_scan(
 
     if get_smart_money_storage_backend() == "postgres":
         repo = get_smart_money_repository()
+        clean_operator_req_id = x_operator_request_id.strip() if x_operator_request_id else None
         subject_hash = hashlib.sha256(
-            f"{as_of_watermark}:{universe_build_id}:{x_operator_request_id}".encode("utf-8")
+            f"{as_of_watermark}:{universe_build_id}:{clean_operator_req_id}".encode("utf-8")
         ).hexdigest()
         req_id = repo.create_run_request(
             request_type="MARKET_WIDE_FORM4_SCAN",
             subject_hash=subject_hash,
+            max_attempts=1,
+            idempotency_guard=True,
         )
         if response is not None and hasattr(response, "status_code"):
             response.status_code = status.HTTP_202_ACCEPTED
