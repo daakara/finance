@@ -19,28 +19,112 @@ from rq_receipt_utils import create_stage_receipt, save_stage_receipt, compute_f
 
 REQUIRED_ENV_VARS = ["NEXT_PUBLIC_API_URL"]
 
-def verify_engine_manifest():
-    manifest_path = os.path.join(PROJECT_ROOT, "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json")
-    if not os.path.exists(manifest_path):
-        raise AssertionError("CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json not found in repository root.")
+# Owner-ratified v2.5.3 source binding; changing these constants requires a reviewed
+# successor ratification, not merely toggling a JSON Boolean.
+EXPECTED_V253_COMMIT = "cc0c72c23cd874148a6db49730153d9b644617f0"
+EXPECTED_V253_AUTHORITY = "SPRINT4_RC5_CONFLUENCE_PROVENANCE_AND_CAPS_RATIFICATION"
+EXPECTED_V253_TOKEN = "ARX_RC5_MANIFEST_SUCCESSION_V253_AUTHORIZED"
+EXPECTED_V253_DIGESTS = {
+    "confluence_engine": ("analyst_dashboard/analyzers/confluence_engine.py", "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2"),
+    "optimal_execution": ("analyst_dashboard/analyzers/optimal_execution.py", "df2dc6050bf6fe91cae442e1872a3eccc40520b990f4efb4af63f79311a31dec"),
+    "decision_hierarchy": ("analyst_dashboard/analyzers/decision_hierarchy.py", "b0d41de56c34a46000496e2cf80afdfd76a3ff19ffc18fbdd80f430050c375b3"),
+}
+V253_MANIFEST = "FROZEN_ENGINE_MANIFEST_V2_5_3.json"
+V253_ADR = "docs/governance/ARX_RC5_ENGINE_MANIFEST_V253_SUCCESSION_RECORD.md"
+
+def verify_engine_manifest(target_branch="release/production"):
+    """RQ-10: reject candidate-only authority and verify three owner-approved hashes.
+
+    The approved chat decision is recorded in the ADR. This check establishes
+    content consistency, not a cryptographic signature; repository approval and
+    signed-commit protection remain independent release obligations.
+    """
+    clean_target = (target_branch or "").replace("refs/heads/", "").strip()
+    if clean_target not in ("release/production", "main"):
+        raise AssertionError(f"Unrecognized manifest qualification target: {target_branch!r}")
+
+    manifest_path = os.path.join(PROJECT_ROOT, V253_MANIFEST)
+    if not os.path.isfile(manifest_path):
+        raise AssertionError(f"Ratified production manifest missing: {V253_MANIFEST}")
 
     with open(manifest_path, "r", encoding="utf-8-sig") as f:
         data = json.load(f)
 
-    confluence_meta = data.get("engines", {}).get("confluence_engine", {})
-    expected_hash = confluence_meta.get("sha256")
-    if not expected_hash:
-        raise AssertionError("confluence_engine entry in CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json missing sha256.")
+    if data.get("isProductionRatified") is not True:
+        raise AssertionError("Production release candidate rejected: manifest is not ratified")
+    expected_fields = {
+        "manifestVersion": "2.5.3",
+        "frozenStrategyVersion": "2.5.3",
+        "authorityScope": "CURRENT_PRODUCTION_AUTHORITY",
+        "provenanceCommit": EXPECTED_V253_COMMIT,
+        "releaseAuthorityBinding": EXPECTED_V253_AUTHORITY,
+        "ratifiedAuthorityRecord": V253_ADR,
+        "supersedesManifest": "FROZEN_ENGINE_MANIFEST_V2_5_2.json",
+    }
+    for field, expected in expected_fields.items():
+        if data.get(field) != expected:
+            raise AssertionError(f"Unapproved manifest field {field}: {data.get(field)!r}")
 
-    confluence_file = os.path.join(PROJECT_ROOT, "analyst_dashboard", "analyzers", "confluence_engine.py")
-    if not os.path.exists(confluence_file):
-        raise AssertionError(f"Confluence engine file not found at {confluence_file}")
+    if data.get("invariants", {}).get("zero_production_mutation") is not True:
+        raise AssertionError("Missing zero-production-mutation invariant")
 
-    actual_hash = compute_file_sha256(confluence_file)
-    if actual_hash.lower() != expected_hash.lower():
-        raise AssertionError(f"Confluence engine hash mismatch: expected {expected_hash[:10]}... got {actual_hash[:10]}...")
+    engines = data.get("engines")
+    if not isinstance(engines, dict) or set(engines) != set(EXPECTED_V253_DIGESTS):
+        raise AssertionError("Ratified manifest must contain exactly the three authorized engines")
 
-    return {"manifest_version": data.get("manifest_version"), "engine_hash": actual_hash}
+    actual_hashes = {}
+    for name, (approved_path, approved_hash) in EXPECTED_V253_DIGESTS.items():
+        meta = engines[name]
+        if (meta.get("filePath") != approved_path
+                or meta.get("sha256") != approved_hash
+                or meta.get("ratificationCommit") != EXPECTED_V253_COMMIT):
+            raise AssertionError(f"Unauthorized manifest binding for {name}")
+        full_path = os.path.join(PROJECT_ROOT, approved_path)
+        if not os.path.isfile(full_path):
+            raise AssertionError(f"Missing authorized engine source: {approved_path}")
+        actual = compute_file_sha256(full_path)
+        if actual.lower() != approved_hash:
+            raise AssertionError(f"Engine digest mismatch for {name}: expected {approved_hash[:12]}, got {actual[:12]}")
+        actual_hashes[name] = actual
+
+    adr_path = os.path.join(PROJECT_ROOT, V253_ADR)
+    if not os.path.isfile(adr_path):
+        raise AssertionError("Owner succession decision record is missing")
+    with open(adr_path, "r", encoding="utf-8") as f:
+        adr = f.read()
+    if EXPECTED_V253_TOKEN not in adr or EXPECTED_V253_COMMIT not in adr:
+        raise AssertionError("Owner succession decision record lacks expected binding")
+    if any(expected_hash not in adr for _, expected_hash in EXPECTED_V253_DIGESTS.values()):
+        raise AssertionError("Owner succession decision record has incomplete engine digest binding")
+
+    # Check the ledger registration without importing optional analytics dependencies.
+    import ast
+    ledger_path = os.path.join(PROJECT_ROOT, "analyst_dashboard", "governance", "experiment_ledger.py")
+    with open(ledger_path, "r", encoding="utf-8") as f:
+        ledger_tree = ast.parse(f.read(), filename=ledger_path)
+    cls = next((node for node in ledger_tree.body if isinstance(node, ast.ClassDef) and node.name == "ExperimentLedger"), None)
+    if cls is None:
+        raise AssertionError("ExperimentLedger governance binding class missing")
+    attributes = {}
+    for node in cls.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            if node.targets[0].id in ("AUTHORITY_VERSION_BINDINGS", "CURRENT_AUTHORITY_MANIFEST", "CURRENT_RATIFIED_AUTHORITY"):
+                attributes[node.targets[0].id] = ast.literal_eval(node.value)
+    binding = attributes.get("AUTHORITY_VERSION_BINDINGS", {}).get("2.5.3", {})
+    if (binding.get("manifestFile") != V253_MANIFEST
+            or binding.get("provenanceCommit") != EXPECTED_V253_COMMIT
+            or binding.get("releaseAuthorityBinding") != EXPECTED_V253_AUTHORITY
+            or binding.get("ratifiedAuthorityRecord") != V253_ADR
+            or attributes.get("CURRENT_AUTHORITY_MANIFEST") != V253_MANIFEST
+            or attributes.get("CURRENT_RATIFIED_AUTHORITY") != EXPECTED_V253_AUTHORITY):
+        raise AssertionError("ExperimentLedger ratified production authority registration mismatch")
+    declared_manifest_digest = binding.get("expectedDigest")
+    actual_manifest_digest = compute_file_sha256(manifest_path)
+    if not declared_manifest_digest or declared_manifest_digest != actual_manifest_digest:
+        raise AssertionError("Frozen manifest content digest mismatch against ledger authority binding")
+
+    return {"manifest_version": "2.5.3", "engine_hashes": actual_hashes,
+            "manifest_digest": actual_manifest_digest, "authority": EXPECTED_V253_AUTHORITY}
 
 def verify_env_contracts():
     """Actively inspects environment variables, .env.production, and package configuration."""
@@ -103,16 +187,19 @@ def main():
 
     # 1. Engine manifest verification
     try:
-        manifest_info = verify_engine_manifest()
+        ok, identity, identity_error = resolve_identity_contract()
+        if not ok:
+            raise AssertionError(f"Release identity unavailable for manifest verification: {identity_error}")
+        manifest_info = verify_engine_manifest(identity["target_branch"])
         assertions.append({
-            "assertion": "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json hash matches source",
+            "assertion": "Ratified v2.5.3 three-engine and governance authority matches source",
             "observed": manifest_info,
             "passed": True
         })
-        print("  [PASS] Candidate engine manifest verified.")
+        print("  [PASS] Ratified v2.5.3 engine manifest and ledger authority verified.")
     except Exception as e:
         assertions.append({
-            "assertion": "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json hash matches source",
+            "assertion": "Ratified v2.5.3 three-engine and governance authority matches source",
             "observed": str(e),
             "passed": False
         })
@@ -153,8 +240,12 @@ def main():
     candidate_sha = identity["source_sha"] if ok else None
 
     evidence = [
-        "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json",
+        V253_MANIFEST,
+        V253_ADR,
+        "analyst_dashboard/governance/experiment_ledger.py",
         "analyst_dashboard/analyzers/confluence_engine.py",
+        "analyst_dashboard/analyzers/optimal_execution.py",
+        "analyst_dashboard/analyzers/decision_hierarchy.py",
         "frontend/.env.production"
     ]
 
