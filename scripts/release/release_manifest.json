@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
+  "release_candidate_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
   "base_anchor_commit": "62c645f4eb0f73dc01d214f79efce4f27a23dddc",
   "total_files": 11,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -16,26 +16,26 @@
     "api/routes/screener.py": {
       "operation": "M",
       "originating_pr_number": 289,
-      "originating_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
       "governing_requirement": "ARX-QA-AUTHORITY-035: Form 4 transaction classification remediation to prevent insider sales awarding purchase points.",
-      "sha256": "0917dd89efe4256e1e93d0233266cb88be4153d554f1d24c08b7ef4b063110df",
-      "size_bytes": 124392
+      "sha256": "7fa50772ee970df24054a0f33c96b361bc721ed1117ef4d00f66097c7c7db5c1",
+      "size_bytes": 129154
     },
     "frontend/lib/insightGenerator.ts": {
       "operation": "M",
       "originating_pr_number": 289,
-      "originating_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
       "governing_requirement": "ARX-QA-AUTHORITY-035: CDNS score and observation parity remediation evaluating both 20 EMA and 50 SMA.",
-      "sha256": "e33b6954f48ffb75110337ea60786c11a1295d14b68a475f90b73cc6aa88c015",
-      "size_bytes": 39750
+      "sha256": "6de7fd382cd91c3c56b197a593f50061c1c829d1eebafca38df1c784fc95c0c9",
+      "size_bytes": 42354
     },
     "frontend/tests/cdnsPriceTrendParity035.test.ts": {
       "operation": "A",
       "originating_pr_number": 289,
-      "originating_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
       "governing_requirement": "ARX-QA-AUTHORITY-035: CDNS price trend parity and pullback classification regression test suite.",
-      "sha256": "0f4c938cf09a0d0eeb686ad7e9629e9b8016116c186be7e562ef5100fed56597",
-      "size_bytes": 16064
+      "sha256": "c47414dfa16506e976478540887e72eb943bb40ee27752b6e840a1630e570eb3",
+      "size_bytes": 20817
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
@@ -56,10 +56,10 @@
     "scripts/release/rq04_frontend_regression.py": {
       "operation": "M",
       "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
       "governing_requirement": "ARX-QA-AUTHORITY-035: wire cdnsPriceTrendParity035.test.ts into RQ-04 suite.",
-      "sha256": "a5d3ff3475bea61ab53385a6fcc95fca774d906f6d61a4f4a5eba93e457acb76",
-      "size_bytes": 6532
+      "sha256": "c64b193223aeca69817d0bbac29c54c2dfb2e2e260ab3f69d73fb77cf53b98ef",
+      "size_bytes": 6667
     },
     "scripts/release/rq12_qualification_summary.py": {
       "operation": "M",
@@ -72,26 +72,26 @@
     "scripts/release/rq13_financial_integrity.py": {
       "operation": "A",
       "originating_pr_number": 289,
-      "originating_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
       "governing_requirement": "ARX-QA-AUTHORITY-035: financial evidence, coverage caps, and decision integrity control script.",
-      "sha256": "be4273f44ad8c2e208aed41d9e390d38708635578452db21e70e649ec5bb69c9",
-      "size_bytes": 13464
+      "sha256": "0be51d32c2d443c06a6ef1bbd5dbd4911ac5c2de987e61cf21a8803965707bbd",
+      "size_bytes": 16736
     },
     "scripts/release/run_release_ci_suite.py": {
       "operation": "M",
       "originating_pr_number": 289,
-      "originating_commit": "cf8bdf1e23fe3863aa21da00e60fc193ace6ed76",
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
       "governing_requirement": "ARX-QA-AUTHORITY-035: wire RQ-13 execution into master release CI suite.",
-      "sha256": "bbf5ddfe88d1dd8c74a51fc75358739d477e8a99b8355bd877d597b61c53fb16",
-      "size_bytes": 4277
+      "sha256": "454544d08ec2c7d9b06925a4442750040a6f499128eff374fbcebb9849d69895",
+      "size_bytes": 4414
     },
     "tests/test_financial_correctness_authority_035.py": {
       "operation": "A",
       "originating_pr_number": 289,
-      "originating_commit": "b9c664a6370dc7bff1a9a4b33df949512c922c04",
+      "originating_commit": "92ffa7564e3b99c7cb71dbe18945fb73b46fe7ba",
       "governing_requirement": "ARX-QA-AUTHORITY-035: deterministic invariant tests for financial correctness and Form 4 classification.",
-      "sha256": "25348aae97d5f72c6f2c62327dfaa2eeff036ad57388cf63832a9cc292ceb29b",
-      "size_bytes": 14151
+      "sha256": "514bc9375a5b73b003a05132a4c608ede23fb964c383608290c122e880965b00",
+      "size_bytes": 19511
     }
   },
   "qualification_framework_files": {
@@ -111,8 +111,8 @@
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "sha256": "a5d3ff3475bea61ab53385a6fcc95fca774d906f6d61a4f4a5eba93e457acb76",
-      "size_bytes": 6532,
+      "sha256": "c64b193223aeca69817d0bbac29c54c2dfb2e2e260ab3f69d73fb77cf53b98ef",
+      "size_bytes": 6667,
       "description": "Release qualification module: rq04_frontend_regression.py"
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
@@ -156,13 +156,13 @@
       "description": "Release qualification module: rq12_qualification_summary.py"
     },
     "scripts/release/rq13_financial_integrity.py": {
-      "sha256": "be4273f44ad8c2e208aed41d9e390d38708635578452db21e70e649ec5bb69c9",
-      "size_bytes": 13464,
+      "sha256": "0be51d32c2d443c06a6ef1bbd5dbd4911ac5c2de987e61cf21a8803965707bbd",
+      "size_bytes": 16736,
       "description": "Release qualification module: rq13_financial_integrity.py"
     },
     "scripts/release/run_release_ci_suite.py": {
-      "sha256": "bbf5ddfe88d1dd8c74a51fc75358739d477e8a99b8355bd877d597b61c53fb16",
-      "size_bytes": 4277,
+      "sha256": "454544d08ec2c7d9b06925a4442750040a6f499128eff374fbcebb9849d69895",
+      "size_bytes": 4414,
       "description": "Release qualification module: run_release_ci_suite.py"
     },
     "scripts/release/test_d12c_workflow_attacks.py": {
