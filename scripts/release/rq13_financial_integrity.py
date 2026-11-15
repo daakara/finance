@@ -33,6 +33,49 @@ from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngi
 from analyst_dashboard.provenance.evidence_contract import evaluate_factor_provenance
 from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
 from analyst_dashboard.smart_money.form4_models import SmartMoneySignalType
+from api.routes.screener import classify_sec_trades
+
+
+def test_screener_classify_sec_trades_production():
+    """Verify production classify_sec_trades in api/routes/screener.py accurately categorizes transactions."""
+    sale_trade = {
+        "ticker": "CDNS",
+        "transaction_type": "Sale (Open Market)",
+        "transaction_code": "S",
+        "total_value": "$5,000,000",
+        "reporting_owner": "Corporate Director"
+    }
+    buy_trade = {
+        "ticker": "CDNS",
+        "transaction_type": "Purchase (Direct Open Market)",
+        "transaction_code": "P",
+        "total_value": "$2,500,000",
+        "reporting_owner": "Chief Executive Officer"
+    }
+    grant_trade = {
+        "ticker": "CDNS",
+        "transaction_type": "Award of Stock",
+        "transaction_code": "A",
+        "total_value": "$1,000,000",
+    }
+
+    res_sale = classify_sec_trades([sale_trade])
+    assert len(res_sale["buy_trades"]) == 0, "Sale must not be categorized as buy"
+    assert len(res_sale["sell_trades"]) == 1, "Sale must be categorized as sell"
+    assert res_sale["has_insider_buy"] is False
+    assert res_sale["has_insider_sell"] is True
+
+    res_buy = classify_sec_trades([buy_trade])
+    assert len(res_buy["buy_trades"]) == 1, "Purchase must be categorized as buy"
+    assert len(res_buy["sell_trades"]) == 0, "Purchase must not be categorized as sell"
+    assert res_buy["has_insider_buy"] is True
+    assert res_buy["has_insider_sell"] is False
+
+    res_grant = classify_sec_trades([grant_trade])
+    assert len(res_grant["buy_trades"]) == 0, "Stock grant must not be buy"
+    assert len(res_grant["sell_trades"]) == 0, "Stock grant must not be sell"
+    assert res_grant["has_insider_buy"] is False
+    assert res_grant["has_insider_sell"] is False
 
 
 def test_form4_classification_semantics():
@@ -169,6 +212,15 @@ def main():
     except Exception as e:
         assertions.append({"assertion": "Form 4 SEC transaction code mapping integrity", "passed": False})
         errors.append(f"Form 4 classification error: {e}")
+
+    # 1b. Production screener classification direct invocation
+    try:
+        test_screener_classify_sec_trades_production()
+        assertions.append({"assertion": "Production screener classify_sec_trades accurately classifies purchases vs sales", "passed": True})
+        print("  [PASS] Production screener classify_sec_trades direct execution verified.")
+    except Exception as e:
+        assertions.append({"assertion": "Production screener classify_sec_trades accurately classifies purchases vs sales", "passed": False})
+        errors.append(f"Production screener classify_sec_trades error: {e}")
 
     # 2. Form 4 sale vs purchase scoring
     try:

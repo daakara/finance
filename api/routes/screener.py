@@ -215,6 +215,38 @@ def count_smart_money_stage2_intersection(candidates, non_tradable):
         and "SMART_MONEY" in candidate.get("categories", [])
     )
 
+
+def classify_sec_trades(sec_trades: Optional[List[Dict[str, Any]]]) -> Dict[str, Any]:
+    """
+    Classify Form 4 SEC insider transactions into authentic open-market purchases vs sales.
+    
+    Excludes non-purchase transaction types (option exercises, grants, gifts, dispositions, sales).
+    Returns categorized lists and presence booleans.
+    """
+    if not sec_trades:
+        return {
+            "buy_trades": [],
+            "sell_trades": [],
+            "has_insider_buy": False,
+            "has_insider_sell": False,
+        }
+
+    buy_trades = [
+        t for t in sec_trades
+        if (t.get("transaction_code") == "P" or "PURCHASE" in (t.get("transaction_type") or "").upper())
+        and (t.get("transaction_code") != "S" and "SALE" not in (t.get("transaction_type") or "").upper())
+    ]
+    sell_trades = [
+        t for t in sec_trades
+        if t.get("transaction_code") == "S" or "SALE" in (t.get("transaction_type") or "").upper()
+    ]
+    return {
+        "buy_trades": buy_trades,
+        "sell_trades": sell_trades,
+        "has_insider_buy": len(buy_trades) > 0,
+        "has_insider_sell": len(sell_trades) > 0,
+    }
+
 def get_radar_capabilities(
     *args,
     vcp_snapshot: Optional[Dict[str, Any]] = None,
@@ -1185,19 +1217,12 @@ def run_screener_get(
                 sec_trades = smart_money_engine.get_sec_insider_trades(sym)
                 cong_trades = smart_money_engine.get_congressional_trades(sym)
 
-                # Classify transactions into authentic open-market purchases vs sales
-                # Open-market purchase: code 'P' or 'PURCHASE' in type, excluding sales
-                buy_trades = [
-                    t for t in sec_trades
-                    if (t.get("transaction_code") == "P" or "PURCHASE" in (t.get("transaction_type") or "").upper())
-                    and (t.get("transaction_code") != "S" and "SALE" not in (t.get("transaction_type") or "").upper())
-                ]
-                sell_trades = [
-                    t for t in sec_trades
-                    if t.get("transaction_code") == "S" or "SALE" in (t.get("transaction_type") or "").upper()
-                ]
-                has_insider_buy = len(buy_trades) > 0
-                has_insider_sell = len(sell_trades) > 0
+                # Classify transactions into authentic open-market purchases vs sales via production classifier
+                trade_classification = classify_sec_trades(sec_trades)
+                buy_trades = trade_classification["buy_trades"]
+                sell_trades = trade_classification["sell_trades"]
+                has_insider_buy = trade_classification["has_insider_buy"]
+                has_insider_sell = trade_classification["has_insider_sell"]
                 has_congress = len(cong_trades) > 0
                 insider_val = 0.0
                 if has_insider_buy:
