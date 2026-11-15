@@ -1,0 +1,35 @@
+{
+  "manifestVersion": "2.5.3",
+  "frozenTimestamp": "2026-11-15T08:00:00Z",
+  "provenanceCommit": "cc0c72c23cd874148a6db49730153d9b644617f0",
+  "frozenStrategyVersion": "2.5.3",
+  "releaseAuthorityBinding": "SPRINT4_RC5_CONFLUENCE_PROVENANCE_AND_CAPS_RATIFICATION",
+  "ratifiedAuthorityRecord": "docs/governance/ARX_RC5_ENGINE_MANIFEST_V253_SUCCESSION_RECORD.md",
+  "supersedesManifest": "FROZEN_ENGINE_MANIFEST_V2_5_2.json",
+  "isProductionRatified": true,
+  "authorityScope": "CURRENT_PRODUCTION_AUTHORITY",
+  "engines": {
+    "optimal_execution": {
+      "filePath": "analyst_dashboard/analyzers/optimal_execution.py",
+      "sha256": "df2dc6050bf6fe91cae442e1872a3eccc40520b990f4efb4af63f79311a31dec",
+      "ratificationRecord": "Sprint 4 geometric R:R, OHLCV normalization and invalid-geometry guards (INV-RR-003, INV-RR-004)",
+      "ratificationCommit": "cc0c72c23cd874148a6db49730153d9b644617f0"
+    },
+    "confluence_engine": {
+      "filePath": "analyst_dashboard/analyzers/confluence_engine.py",
+      "sha256": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
+      "ratificationRecord": "PR #272 provenance and hierarchical coverage caps (50/72/84/96), ETF exemption; PR #105 liquidity hazard sizing suppression",
+      "ratificationCommit": "cc0c72c23cd874148a6db49730153d9b644617f0"
+    },
+    "decision_hierarchy": {
+      "filePath": "analyst_dashboard/analyzers/decision_hierarchy.py",
+      "sha256": "b0d41de56c34a46000496e2cf80afdfd76a3ff19ffc18fbdd80f430050c375b3",
+      "ratificationRecord": "PR #272 verified evidence precedence (three verified pillars for actionability) and liquidity hazard sizing invalidation",
+      "ratificationCommit": "cc0c72c23cd874148a6db49730153d9b644617f0"
+    }
+  },
+  "invariants": {
+    "zero_production_mutation": true,
+    "enforced_by": "scripts/release/rq10_config_integrity.py::verify_engine_manifest"
+  }
+}
