@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "09e93083754a8e385c93621d31a2040c90e4f69b",
+  "release_candidate_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
   "base_anchor_commit": "b485e44141fc2435c33c71eb7e4af107b02fa129",
   "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -8,58 +8,58 @@
     "analyst_dashboard/data/fred_fetcher.py": {
       "operation": "M",
       "originating_pr_number": 296,
-      "originating_commit": "09e93083754a8e385c93621d31a2040c90e4f69b",
+      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
       "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Fetch DFII10 10Y real rate, capture series observations timestamps, and normalize macro payload.",
-      "sha256": "f229dbfae39289a8604ffd8f9e17d19ade1aabbc0453434bb77093159e6ffb1e",
-      "size_bytes": 14575
+      "sha256": "cd299f0a63ad688119932341a7b4a824a459e5c18bdab1870c1e39ef8a99bb42",
+      "size_bytes": 22784
     },
     "api/routes/regimes.py": {
       "operation": "M",
       "originating_pr_number": 296,
-      "originating_commit": "09e93083754a8e385c93621d31a2040c90e4f69b",
+      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
       "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Expose authoritative FRED macro contract on /regimes/current with strict live qualification and zero multiplier fabrication.",
-      "sha256": "dedc2ca7a1306966f96541cd9e33c9c4d99113ec99bed8f71215c704c58e0c0e",
-      "size_bytes": 9827
+      "sha256": "0e244dbb290bc952fa0d23446caf984dce8f3efc73fe5f8ee90db911435ec0d9",
+      "size_bytes": 14088
     },
     "frontend/components/InstitutionalFeeds.tsx": {
       "operation": "M",
       "originating_pr_number": 296,
-      "originating_commit": "09e93083754a8e385c93621d31a2040c90e4f69b",
+      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
       "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Render unavailable macro warning banner with FRED series IDs and display unparsed Form 4 filings as regulatory disclosures rather than open-market purchases.",
-      "sha256": "73081316fda4485863d3a68725e3633a0bca62f66a8fcbb3c61831a3fedda4a8",
-      "size_bytes": 20262
+      "sha256": "97ca6e3907a54df00a6b560baa3f433d85eb49c3bf5dea383e988d510ae8abd3",
+      "size_bytes": 24163
     },
     "frontend/components/discovery/DiscoveryLandingView.tsx": {
       "operation": "M",
       "originating_pr_number": 296,
-      "originating_commit": "09e93083754a8e385c93621d31a2040c90e4f69b",
+      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
       "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Null-safe rendering for yield curve, real rate, and credit spread under unavailable macroeconomic telemetry.",
-      "sha256": "9e4f5e29c3d52d1f660f7c672d7bbd1729e2828683c901b0f05fe44e5a43df01",
-      "size_bytes": 15454
+      "sha256": "99793a994c7bbed22b36dd7a45532bac8f49287146b08b6e2af96717e03fa11c",
+      "size_bytes": 17286
     },
     "frontend/lib/institutionalFeeds.ts": {
       "operation": "M",
       "originating_pr_number": 296,
-      "originating_commit": "09e93083754a8e385c93621d31a2040c90e4f69b",
+      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
       "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Eliminate silent historical macro snapshot fallback, map unparsed Form 4 filings to null shares/price/value, and preserve EDGAR accession metadata.",
-      "sha256": "b9237075ab77e4f9b75387883634012e9a5f14bc3f5041332b7596699e80e8d6",
-      "size_bytes": 13565
+      "sha256": "cfdd2bb213618b739e286f7096306aae121c65ab4fc93f4153aa41d3d54c7a67",
+      "size_bytes": 15902
     },
     "frontend/tests/fredSecPresentationIntegrity.test.ts": {
       "operation": "A",
       "originating_pr_number": 296,
-      "originating_commit": "09e93083754a8e385c93621d31a2040c90e4f69b",
+      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
       "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Frontend TypeScript verification suite for unparsed Form 4 null mapping, macro live contract ingestion, and fail-closed unavailable state.",
-      "sha256": "e5e6e1b2d09682aca6926b359da33570d1786d79235064280b51d0b264833308",
-      "size_bytes": 13960
+      "sha256": "6c02a9081ff5e92654a5a41413f070fa3d32dbc7bce50dc27a812e19e9c99517",
+      "size_bytes": 19966
     },
     "tests/test_fred_sec_presentation_integrity.py": {
       "operation": "A",
       "originating_pr_number": 296,
-      "originating_commit": "09e93083754a8e385c93621d31a2040c90e4f69b",
+      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
       "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Backend pytest suite verifying macro contract schemas, live qualification guards, zero multiplier fabrication, and SEC filing metadata preservation.",
-      "sha256": "26b9a8eb201fbdca0e7f9c65d16dbd4fe2e65cd82f6ea8cf9f211f8fd4812628",
-      "size_bytes": 11943
+      "sha256": "94e122ac8846a02625faf7b5ebaad692a4f96d41a409061d30c92162e4285638",
+      "size_bytes": 21386
     }
   },
   "qualification_framework_files": {
