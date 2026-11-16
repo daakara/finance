@@ -30,7 +30,12 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
 
   const cleanSym = activeSymbol.toUpperCase().replace("-USD", "");
   const trades: SecForm4Trade[] = filingsResult?.items ?? [];
-  const matchedInsider = trades.find((i) => i.ticker === cleanSym);
+
+  // Identify authentic parsed purchase transactions versus unparsed regulatory filing metadata
+  const parsedPurchase = trades.find(
+    (t) => t.hasParsedTransaction && t.isBuy && typeof t.sharesTraded === "number" && typeof t.pricePerShare === "number"
+  );
+  const primaryFiling = trades[0];
 
   const getUnavailableCopy = (status?: string) => {
     switch (status) {
@@ -41,7 +46,7 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
       case "UPSTREAM_SERVER_ERROR":
         return "SEC EDGAR is temporarily unavailable.";
       case "UPSTREAM_NOT_FOUND":
-        return `SEC Form 4 filings are unavailable for ${cleanSym}.`;
+        return `SEC Form 4 filings are unavailable for ${cleanSym} (unregistered issuer, foreign FPI, or exempt investment company).`;
       case "STRUCTURALLY_INVALID":
       case "TRANSPORT_INCOMPLETE":
         return "SEC filing data could not be verified from the upstream response.";
@@ -58,10 +63,10 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
       {/* Header with Sub-Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1b2434] pb-3">
         <div className="flex items-center space-x-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
           <h3 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-1.5">
             <span>🏛️</span>
-            <span>Federal Reserve (FRED) &amp; SEC EDGAR Corporate Insiders</span>
+            <span>Federal Reserve (FRED) &amp; SEC EDGAR Regulatory Disclosures</span>
           </h3>
         </div>
 
@@ -86,60 +91,128 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            🏢 SEC Form 4 (CEO/CFO)
+            🏢 SEC Form 4 Disclosures
           </button>
         </div>
       </div>
 
       {/* VIEW 1: FRED MACRO REGIME */}
-      {activeTab === "FRED_MACRO" && macro && (
-        <div className="space-y-4">
-          <div className="bg-[#090d14] p-3.5 rounded-xl border border-[#1b2434] space-y-1">
-            <div className="flex items-center justify-between">
-              <strong className="text-xs font-bold text-cyan-400">{macro.regimeTitle}</strong>
-              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
-                1.1x Risk Budget Active
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
-              {macro.regimeSubtitle}
-            </p>
+      {activeTab === "FRED_MACRO" && (
+        isLoading ? (
+          <div className="bg-[#090d14] p-4 rounded-lg text-xs text-slate-400 text-center animate-pulse border border-[#1b2434]">
+            Synchronizing authentic macroeconomic feeds from St. Louis Fed (FRED)...
           </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
-            <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
-              <span className="text-[10px] text-slate-400 block uppercase">10Y-2Y Yield Curve</span>
-              <span className="text-sm sm:text-base font-extrabold text-emerald-400 tabular-nums">
-                +{macro.yieldCurve10Y2Y.toFixed(2)}%
-              </span>
-              <span className="text-[9px] text-slate-500 block">Normal Upward Slope</span>
+        ) : !macro || macro.status === "UNAVAILABLE" || !macro.isLive ? (
+          <div className="space-y-4" data-testid="fred-macro-unavailable">
+            <div
+              role="alert"
+              className="bg-amber-950/20 border border-amber-800/60 rounded-xl p-4 text-xs space-y-1.5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center space-x-2 text-amber-400 font-bold">
+                  <span>⚠️</span>
+                  <span>FRED Macroeconomic Feeds Unavailable</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-bold bg-[#141b28] px-2 py-0.5 rounded border border-[#243044]">
+                  Risk Budget Multiplier Inactive (1.0x Neutral)
+                </span>
+              </div>
+              <p className="text-slate-300 font-sans leading-relaxed">
+                {macro?.regimeSubtitle ||
+                  "Authoritative macroeconomic indicators (T10Y2Y yield curve spread, high-yield credit spread, 10Y real interest rate, and fed funds rate) are currently unavailable from live Federal Reserve feeds."}
+              </p>
             </div>
 
-            <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
-              <span className="text-[10px] text-slate-400 block uppercase">High Yield OAS Spread</span>
-              <span className="text-sm sm:text-base font-extrabold text-cyan-300 tabular-nums">
-                {macro.highYieldCreditSpread.toFixed(2)}%
-              </span>
-              <span className="text-[9px] text-slate-500 block">Tight Default Risk</span>
-            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+              <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
+                <span className="text-[10px] text-slate-400 block uppercase">10Y-2Y Yield Curve</span>
+                <span className="text-sm sm:text-base font-extrabold text-slate-400 tabular-nums">Unavailable</span>
+                <span className="text-[9px] text-slate-500 block">Series T10Y2Y</span>
+              </div>
 
-            <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
-              <span className="text-[10px] text-slate-400 block uppercase">10Y Real Rate (TIPS)</span>
-              <span className="text-sm sm:text-base font-extrabold text-slate-200 tabular-nums">
-                {macro.realInterestRate10Y.toFixed(2)}%
-              </span>
-              <span className="text-[9px] text-slate-500 block">Positive Real Return</span>
-            </div>
+              <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
+                <span className="text-[10px] text-slate-400 block uppercase">High Yield OAS Spread</span>
+                <span className="text-sm sm:text-base font-extrabold text-slate-400 tabular-nums">Unavailable</span>
+                <span className="text-[9px] text-slate-500 block">Series BAMLH0A0HYM2</span>
+              </div>
 
-            <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
-              <span className="text-[10px] text-slate-400 block uppercase">Effective Fed Funds</span>
-              <span className="text-sm sm:text-base font-extrabold text-amber-400 tabular-nums">
-                {macro.fedFundsRate.toFixed(2)}%
-              </span>
-              <span className="text-[9px] text-slate-500 block">Terminal Pivot Regime</span>
+              <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
+                <span className="text-[10px] text-slate-400 block uppercase">10Y Real Rate (TIPS)</span>
+                <span className="text-sm sm:text-base font-extrabold text-slate-400 tabular-nums">Unavailable</span>
+                <span className="text-[9px] text-slate-500 block">Series DFII10</span>
+              </div>
+
+              <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
+                <span className="text-[10px] text-slate-400 block uppercase">Effective Fed Funds</span>
+                <span className="text-sm sm:text-base font-extrabold text-slate-400 tabular-nums">Unavailable</span>
+                <span className="text-[9px] text-slate-500 block">Series FEDFUNDS</span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4" data-testid="fred-macro-available">
+            <div className="bg-[#090d14] p-3.5 rounded-xl border border-[#1b2434] space-y-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <strong className="text-xs font-bold text-cyan-400">{macro.regimeTitle}</strong>
+                {typeof macro.macroRiskMultiplier === "number" && (
+                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+                    {macro.macroRiskMultiplier.toFixed(2)}x Risk Budget Active
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
+                {macro.regimeSubtitle}
+              </p>
+              {macro.lastUpdated && (
+                <div className="text-[10px] text-slate-500 font-mono pt-1">
+                  Observed as of: {macro.lastUpdated}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+              <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
+                <span className="text-[10px] text-slate-400 block uppercase">10Y-2Y Yield Curve</span>
+                <span className="text-sm sm:text-base font-extrabold text-emerald-400 tabular-nums">
+                  {typeof macro.yieldCurve10Y2Y === "number"
+                    ? `${macro.yieldCurve10Y2Y >= 0 ? "+" : ""}${macro.yieldCurve10Y2Y.toFixed(2)}%`
+                    : "Unavailable"}
+                </span>
+                <span className="text-[9px] text-slate-500 block">Series T10Y2Y</span>
+              </div>
+
+              <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
+                <span className="text-[10px] text-slate-400 block uppercase">High Yield OAS Spread</span>
+                <span className="text-sm sm:text-base font-extrabold text-cyan-300 tabular-nums">
+                  {typeof macro.highYieldCreditSpread === "number"
+                    ? `${macro.highYieldCreditSpread.toFixed(2)}%`
+                    : "Unavailable"}
+                </span>
+                <span className="text-[9px] text-slate-500 block">Series BAMLH0A0HYM2</span>
+              </div>
+
+              <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
+                <span className="text-[10px] text-slate-400 block uppercase">10Y Real Rate (TIPS)</span>
+                <span className="text-sm sm:text-base font-extrabold text-slate-200 tabular-nums">
+                  {typeof macro.realInterestRate10Y === "number"
+                    ? `${macro.realInterestRate10Y.toFixed(2)}%`
+                    : "Unavailable"}
+                </span>
+                <span className="text-[9px] text-slate-500 block">Series DFII10</span>
+              </div>
+
+              <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
+                <span className="text-[10px] text-slate-400 block uppercase">Effective Fed Funds</span>
+                <span className="text-sm sm:text-base font-extrabold text-amber-400 tabular-nums">
+                  {typeof macro.fedFundsRate === "number"
+                    ? `${macro.fedFundsRate.toFixed(2)}%`
+                    : "Unavailable"}
+                </span>
+                <span className="text-[9px] text-slate-500 block">Series FEDFUNDS</span>
+              </div>
+            </div>
+          </div>
+        )
       )}
 
       {/* VIEW 2: SEC FORM 4 CORPORATE INSIDERS */}
@@ -172,23 +245,24 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
             >
               <div className="text-slate-300 font-bold">No Qualifying Disclosures Found</div>
               <p className="text-slate-500 font-sans text-[11px]">
-                No qualifying recent SEC Form 4 purchases were found for {cleanSym} in the last 30 days.
+                No qualifying recent SEC Form 4 disclosures were found for {cleanSym} in the last 30 days.
               </p>
             </div>
           ) : (
             /* Populated Filings State */
             <>
-              {matchedInsider && (
+              {/* Highlight Banner: Render verified purchase if parsed; otherwise render filing notice */}
+              {parsedPurchase && typeof parsedPurchase.sharesTraded === "number" && typeof parsedPurchase.pricePerShare === "number" && typeof parsedPurchase.totalValueUsd === "number" ? (
                 <div className="bg-emerald-950/30 border border-emerald-800/80 rounded-xl p-3.5 text-xs space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <span className="text-base">🟢</span>
                       <strong className="text-emerald-300 font-bold text-sm">
-                        {matchedInsider.insiderName} ({matchedInsider.insiderRole})
+                        {parsedPurchase.insiderName || "Corporate Insider"} ({parsedPurchase.insiderRole || "Officer / Director"})
                       </strong>
                     </div>
                     <a
-                      href={matchedInsider.secEdgarUrl}
+                      href={parsedPurchase.secEdgarUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[10px] font-bold text-cyan-400 hover:underline flex items-center gap-1"
@@ -198,17 +272,51 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                     </a>
                   </div>
                   <p className="text-[11px] text-slate-200 font-sans">
-                    Purchased <strong>{matchedInsider.sharesTraded.toLocaleString()} shares</strong> on the open market at <strong>${matchedInsider.pricePerShare.toFixed(2)}</strong> (Total: <strong>${(matchedInsider.totalValueUsd / 1000000).toFixed(2)}M USD</strong>).
+                    Purchased <strong>{parsedPurchase.sharesTraded.toLocaleString()} shares</strong> on the open market at <strong>${parsedPurchase.pricePerShare.toFixed(2)}</strong> (Total: <strong>${(parsedPurchase.totalValueUsd / 1000000).toFixed(2)}M USD</strong>).
                   </p>
                 </div>
-              )}
+              ) : primaryFiling ? (
+                <div className="bg-[#0b1019] border border-[#243044] rounded-xl p-3.5 text-xs space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-base">📋</span>
+                      <strong className="text-slate-200 font-bold text-sm">
+                        Official Regulatory Disclosure ({cleanSym})
+                      </strong>
+                      {primaryFiling.isAmendment && (
+                        <span className="text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800 px-1.5 py-0.5 rounded">
+                          Amendment
+                        </span>
+                      )}
+                    </div>
+                    {primaryFiling.secEdgarUrl && (
+                      <a
+                        href={primaryFiling.secEdgarUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] font-bold text-cyan-400 hover:underline flex items-center gap-1"
+                      >
+                        <span>SEC EDGAR Source</span>
+                        <span>↗</span>
+                      </a>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
+                    Recent SEC Form {primaryFiling.formType || "4"} disclosure filed on <strong>{primaryFiling.filingDate || "recent date"}</strong>
+                    {primaryFiling.accessionNumber ? (
+                      <> (Accession: <span className="font-mono text-slate-400">{primaryFiling.accessionNumber}</span>)</>
+                    ) : null}.
+                    Transaction-level breakdown (shares, price, total value) is unparsed from submission metadata; no buying or selling is inferred from filing existence.
+                  </p>
+                </div>
+              ) : null}
 
               <div className="overflow-x-auto pt-1">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-[#090d14] text-slate-400 text-[10px] uppercase border-b border-[#1b2434]">
                     <tr>
                       <th className="py-2.5 px-3">Ticker</th>
-                      <th className="py-2.5 px-3">Executive / Role</th>
+                      <th className="py-2.5 px-3">Filing / Reporting Person</th>
                       <th className="py-2.5 px-3">Shares</th>
                       <th className="py-2.5 px-3">Total ($)</th>
                       <th className="py-2.5 px-3">Filing Date</th>
@@ -220,14 +328,37 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                       <tr key={idx} className="hover:bg-[#151e2d] transition-colors">
                         <td className="py-2 px-3 font-bold text-cyan-400">{trade.ticker}</td>
                         <td className="py-2 px-3 text-slate-200">
-                          <span className="font-semibold">{trade.insiderName}</span>
-                          <span className="text-[10px] text-slate-400 block font-normal">{trade.insiderRole}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold">
+                              {trade.insiderName || `Form ${trade.formType || "4"} Public Filing`}
+                            </span>
+                            {trade.isAmendment && (
+                              <span className="text-[9px] font-bold bg-amber-950 text-amber-400 border border-amber-800 px-1 py-0.5 rounded">
+                                4/A
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 block font-normal font-sans">
+                            {trade.insiderRole || (trade.accessionNumber ? `Accession: ${trade.accessionNumber}` : trade.transactionType)}
+                          </span>
                         </td>
-                        <td className="py-2 px-3 text-slate-300">{trade.sharesTraded.toLocaleString()}</td>
-                        <td className="py-2 px-3 text-emerald-400 font-bold">
-                          ${(trade.totalValueUsd / 1000000).toFixed(2)}M
+                        <td className="py-2 px-3 text-slate-300">
+                          {typeof trade.sharesTraded === "number" ? (
+                            trade.sharesTraded.toLocaleString()
+                          ) : (
+                            <span className="text-slate-500 font-sans font-normal">Unavailable</span>
+                          )}
                         </td>
-                        <td className="py-2 px-3 text-slate-400 text-[11px]">{trade.filingDate}</td>
+                        <td className="py-2 px-3 font-bold">
+                          {typeof trade.totalValueUsd === "number" ? (
+                            <span className={trade.isBuy ? "text-emerald-400" : (trade.isSell ? "text-rose-400" : "text-slate-200")}>
+                              ${(trade.totalValueUsd / 1000000).toFixed(2)}M
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 font-sans font-normal">Unavailable</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 text-slate-400 text-[11px]">{trade.filingDate || "—"}</td>
                         <td className="py-2 px-3 text-right">
                           <a
                             href={trade.secEdgarUrl}
@@ -235,7 +366,7 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                             rel="noopener noreferrer"
                             className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 underline"
                           >
-                            Form 4 ↗
+                            {trade.formType ? `Form ${trade.formType} ↗` : "EDGAR ↗"}
                           </a>
                         </td>
                       </tr>

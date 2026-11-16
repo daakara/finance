@@ -151,8 +151,16 @@ export default function DiscoveryLandingView({
             </h2>
           </div>
           <div className="flex items-center gap-1.5 text-xs font-mono">
-            <span className="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/80 font-semibold">
-              FRED & CBOE Verified
+            <span
+              className={`px-2 py-0.5 rounded border font-semibold ${
+                macroData?.isLive && macroData?.status === "AVAILABLE"
+                  ? "bg-cyan-950/80 text-cyan-300 border-cyan-800/80"
+                  : macroData?.status === "UNAVAILABLE"
+                  ? "bg-slate-900/80 text-amber-400 border-amber-800/80"
+                  : "bg-slate-900/80 text-slate-300 border-slate-700/80"
+              }`}
+            >
+              {macroData?.isLive ? "FRED & CBOE Verified (Live)" : "FRED Telemetry Offline / Unavailable"}
             </span>
             {macroData?.lastUpdated && (
               <span className="text-slate-400 hidden sm:inline">
@@ -167,32 +175,68 @@ export default function DiscoveryLandingView({
             {/* Yield Curve 10Y-2Y */}
             <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-1">
               <span className="text-[10px] text-slate-400 uppercase font-bold block">10Y-2Y Yield Curve</span>
-              <span className={`text-base font-black block tabular-nums ${macroData.yieldCurve10Y2Y >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                {macroData.yieldCurve10Y2Y >= 0 ? "+" : ""}{macroData.yieldCurve10Y2Y.toFixed(2)}%
-              </span>
-              <span className="text-[10px] text-slate-400 font-sans block">
-                {macroData.yieldCurve10Y2Y >= 0 ? "Normal Slope (Expansionary)" : "Inverted (Recession Hazard)"}
-              </span>
+              {macroData.yieldCurve10Y2Y !== null ? (
+                <>
+                  <span
+                    className={`text-base font-black block tabular-nums ${
+                      macroData.yieldCurve10Y2Y >= 0 ? "text-emerald-400" : "text-rose-400"
+                    }`}
+                  >
+                    {macroData.yieldCurve10Y2Y >= 0 ? "+" : ""}
+                    {macroData.yieldCurve10Y2Y.toFixed(2)}%
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-sans block">
+                    {macroData.yieldCurve10Y2Y >= 0 ? "Normal Slope (Expansionary)" : "Inverted (Recession Hazard)"}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-base font-black text-slate-400 block tabular-nums">Unavailable</span>
+                  <span className="text-[10px] text-slate-500 font-sans block">FRED: T10Y2Y</span>
+                </>
+              )}
             </div>
 
             {/* 10Y Real Interest Rate */}
             <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-1">
               <span className="text-[10px] text-slate-400 uppercase font-bold block">10Y Real Rate (TIPS)</span>
-              <span className="text-base font-black text-cyan-300 block tabular-nums">
-                {macroData.realInterestRate10Y.toFixed(2)}%
-              </span>
-              <span className="text-[10px] text-slate-400 font-sans block">DFII10 Capital Hurdle</span>
+              {macroData.realInterestRate10Y !== null ? (
+                <>
+                  <span className="text-base font-black text-cyan-300 block tabular-nums">
+                    {macroData.realInterestRate10Y.toFixed(2)}%
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-sans block">DFII10 Capital Hurdle</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-base font-black text-slate-400 block tabular-nums">Unavailable</span>
+                  <span className="text-[10px] text-slate-500 font-sans block">FRED: DFII10</span>
+                </>
+              )}
             </div>
 
             {/* High Yield Spread */}
             <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-1">
               <span className="text-[10px] text-slate-400 uppercase font-bold block">High Yield Credit Spread</span>
-              <span className={`text-base font-black block tabular-nums ${macroData.highYieldCreditSpread < 4.0 ? "text-emerald-400" : "text-amber-400"}`}>
-                {macroData.highYieldCreditSpread.toFixed(2)}%
-              </span>
-              <span className="text-[10px] text-slate-400 font-sans block">
-                {macroData.highYieldCreditSpread < 4.0 ? "Tight / Risk Seeking" : "Wide / Risk Averse"}
-              </span>
+              {macroData.highYieldCreditSpread !== null ? (
+                <>
+                  <span
+                    className={`text-base font-black block tabular-nums ${
+                      macroData.highYieldCreditSpread < 4.0 ? "text-emerald-400" : "text-amber-400"
+                    }`}
+                  >
+                    {macroData.highYieldCreditSpread.toFixed(2)}%
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-sans block">
+                    {macroData.highYieldCreditSpread < 4.0 ? "Tight / Risk Seeking" : "Wide / Risk Averse"}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-base font-black text-slate-400 block tabular-nums">Unavailable</span>
+                  <span className="text-[10px] text-slate-500 font-sans block">FRED: BAMLH0A0HYM2</span>
+                </>
+              )}
             </div>
 
             {/* Market Volatility Index (VIX) */}

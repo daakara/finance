@@ -5,36 +5,81 @@ import { getApiBaseUrl } from "./api";
 /**
  * Institutional Data Ingestion & Synthesis Engine:
  * 1. Federal Reserve Economic Data (FRED): Real-time macroeconomic regime, 10Y-2Y curve, high yield credit spread.
- * 2. SEC EDGAR Form 4 & 13F: Real-time corporate insider and C-suite purchasing disclosures.
+ * 2. SEC EDGAR Form 4 & 13F: Regulatory filing disclosures and parsed insider purchasing.
  */
 
+export interface FredSeriesObservation {
+  value: number | null;
+  date: string | null;
+  series_id: string;
+  name?: string;
+}
+
 export interface FredMacroData {
-  regimeName: "EXPANSION_GOLDILOCKS" | "NEUTRAL_EXPANSION" | "HAWKISH_TIGHTENING" | "RECESSIONARY_PRESSURE";
+  status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE";
+  isLive: boolean;
+  regimeName:
+    | "EXPANSION_GOLDILOCKS"
+    | "NEUTRAL_EXPANSION"
+    | "HAWKISH_TIGHTENING"
+    | "RECESSIONARY_PRESSURE"
+    | "MACRO_TELEMETRY_UNAVAILABLE";
   regimeTitle: string;
   regimeSubtitle: string;
-  yieldCurve10Y2Y: number; // e.g. +0.18% (T10Y2Y)
-  realInterestRate10Y: number; // e.g. 1.82% (DFII10)
-  highYieldCreditSpread: number; // e.g. 3.25% (BAMLH0A0HYM2)
-  fedFundsRate: number; // e.g. 4.88% (DFF)
-  macroRiskMultiplier: number; // 0.8x to 1.25x scaling on position sizing
-  lastUpdated: string;
+  yieldCurve10Y2Y: number | null; // e.g. +0.18% (T10Y2Y)
+  realInterestRate10Y: number | null; // e.g. 1.82% (DFII10)
+  highYieldCreditSpread: number | null; // e.g. 3.25% (BAMLH0A0HYM2)
+  fedFundsRate: number | null; // e.g. 4.88% (FEDFUNDS)
+  macroRiskMultiplier: number | null; // e.g. 1.10x scaling on position sizing (null when unverified/unavailable)
+  lastUpdated: string | null;
+  seriesObservations?: Record<string, FredSeriesObservation>;
 }
 
 export interface SecForm4Trade {
   ticker: string;
   companyName: string;
-  insiderName: string;
-  insiderRole: string; // "Chief Executive Officer", "Chief Financial Officer", "Director"
+  insiderName: string | null;
+  insiderRole: string | null;
   transactionType: string;
-  sharesTraded: number;
-  pricePerShare: number;
-  totalValueUsd: number;
+  sharesTraded: number | null; // null when unparsed/unavailable, NOT 0
+  pricePerShare: number | null; // null when unparsed/unavailable, NOT 0
+  totalValueUsd: number | null; // null when unparsed/unavailable, NOT 0
   filingDate: string;
   secEdgarUrl: string;
   isSignificantBuy: boolean; // Flagged if open-market purchase >= $100k
+  isBuy?: boolean | null;
+  isSell?: boolean | null;
+  hasParsedTransaction?: boolean;
+  accessionNumber?: string;
+  formType?: string;
+  isAmendment?: boolean;
 }
 
+/**
+ * Unavailability contract for production FRED macro telemetry.
+ * Used when live feed fails, is unverified, or returns unavailable status.
+ */
+export const UNAVAILABLE_FRED_MACRO_DATA: FredMacroData = {
+  status: "UNAVAILABLE",
+  isLive: false,
+  regimeName: "MACRO_TELEMETRY_UNAVAILABLE",
+  regimeTitle: "Macro Telemetry Unavailable",
+  regimeSubtitle: "Authoritative macroeconomic indicators from Federal Reserve Economic Data (FRED) are currently unavailable.",
+  yieldCurve10Y2Y: null,
+  realInterestRate10Y: null,
+  highYieldCreditSpread: null,
+  fedFundsRate: null,
+  macroRiskMultiplier: null,
+  lastUpdated: null,
+};
+
+/**
+ * Historical snapshot fixture preserved strictly for unit tests and historical regression tests.
+ * Never used as a silent fallback for live production presentation.
+ */
 export const CURRENT_FRED_MACRO_SNAPSHOT: FredMacroData = {
+  status: "AVAILABLE",
+  isLive: false,
   regimeName: "NEUTRAL_EXPANSION",
   regimeTitle: "Macro Regime: Disinflationary Expansion (Yield Curve Uninverting)",
   regimeSubtitle: "10Y-2Y Spread at +0.18%, High Yield Spreads Tight at 3.25%. Macro regime is supportive of equity accumulation.",
@@ -42,9 +87,12 @@ export const CURRENT_FRED_MACRO_SNAPSHOT: FredMacroData = {
   realInterestRate10Y: 1.82,
   highYieldCreditSpread: 3.25,
   fedFundsRate: 4.88,
-  macroRiskMultiplier: 1.10, // 10% bonus risk budget permitted
+  macroRiskMultiplier: 1.10,
   lastUpdated: "2026-08-26",
 };
+
+/** Alias for historical testing */
+export const HISTORICAL_FRED_MACRO_FIXTURE = CURRENT_FRED_MACRO_SNAPSHOT;
 
 export const CURATED_HISTORICAL_SEC_TRADES: SecForm4Trade[] = [
   {
@@ -59,6 +107,11 @@ export const CURATED_HISTORICAL_SEC_TRADES: SecForm4Trade[] = [
     filingDate: "2026-08-20",
     secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0001045810",
     isSignificantBuy: true,
+    isBuy: true,
+    isSell: false,
+    hasParsedTransaction: true,
+    formType: "4",
+    isAmendment: false,
   },
   {
     ticker: "AAPL",
@@ -72,6 +125,11 @@ export const CURATED_HISTORICAL_SEC_TRADES: SecForm4Trade[] = [
     filingDate: "2026-08-18",
     secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0000320193",
     isSignificantBuy: false,
+    isBuy: false,
+    isSell: true,
+    hasParsedTransaction: true,
+    formType: "4",
+    isAmendment: false,
   },
   {
     ticker: "PLTR",
@@ -85,6 +143,11 @@ export const CURATED_HISTORICAL_SEC_TRADES: SecForm4Trade[] = [
     filingDate: "2026-08-15",
     secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0001321655",
     isSignificantBuy: true,
+    isBuy: true,
+    isSell: false,
+    hasParsedTransaction: true,
+    formType: "4",
+    isAmendment: false,
   },
   {
     ticker: "TSLA",
@@ -98,6 +161,11 @@ export const CURATED_HISTORICAL_SEC_TRADES: SecForm4Trade[] = [
     filingDate: "2026-08-10",
     secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0001318605",
     isSignificantBuy: false,
+    isBuy: false,
+    isSell: true,
+    hasParsedTransaction: true,
+    formType: "4",
+    isAmendment: false,
   },
   {
     ticker: "MSFT",
@@ -111,6 +179,11 @@ export const CURATED_HISTORICAL_SEC_TRADES: SecForm4Trade[] = [
     filingDate: "2026-08-22",
     secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0000936395",
     isSignificantBuy: true,
+    isBuy: true,
+    isSell: false,
+    hasParsedTransaction: true,
+    formType: "4",
+    isAmendment: false,
   },
 ];
 
@@ -124,23 +197,55 @@ export async function fetchFredMacroRegime(): Promise<FredMacroData> {
     if (res.ok) {
       const data = await res.json();
       if (data && data.macro) {
+        const m = data.macro;
+        const isLive = Boolean(m.is_live ?? (m.availability === "AVAILABLE"));
+        const status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" =
+          m.availability === "AVAILABLE"
+            ? "AVAILABLE"
+            : m.availability === "PARTIAL"
+            ? "PARTIAL"
+            : "UNAVAILABLE";
+
+        if (status === "AVAILABLE" && isLive) {
+          return {
+            status: "AVAILABLE",
+            isLive: true,
+            regimeName: m.regime || "NEUTRAL_EXPANSION",
+            regimeTitle: m.regime_title || "Macro Regime: Live FRED Telemetry",
+            regimeSubtitle: m.regime_subtitle || "Verified macroeconomic liquidity and spread observations from FRED.",
+            yieldCurve10Y2Y: typeof m.yield_curve_10y2y === "number" ? m.yield_curve_10y2y : null,
+            realInterestRate10Y: typeof m.real_interest_rate === "number" ? m.real_interest_rate : (typeof m.real_interest_rate_10y === "number" ? m.real_interest_rate_10y : null),
+            highYieldCreditSpread: typeof m.credit_spread === "number" ? m.credit_spread : (typeof m.high_yield_credit_spread === "number" ? m.high_yield_credit_spread : null),
+            fedFundsRate: typeof m.fed_funds_rate === "number" ? m.fed_funds_rate : null,
+            macroRiskMultiplier: typeof m.macro_multiplier === "number" ? m.macro_multiplier : null,
+            lastUpdated: m.last_updated || null,
+            seriesObservations: m.series_observations,
+          };
+        }
+
+        // Explicit unavailable or partial state without fabricating numbers or live multipliers
         return {
-          regimeName: data.regime || CURRENT_FRED_MACRO_SNAPSHOT.regimeName,
-          regimeTitle: data.title || CURRENT_FRED_MACRO_SNAPSHOT.regimeTitle,
-          regimeSubtitle: data.description || CURRENT_FRED_MACRO_SNAPSHOT.regimeSubtitle,
-          yieldCurve10Y2Y: data.macro.yield_curve_10y2y ?? CURRENT_FRED_MACRO_SNAPSHOT.yieldCurve10Y2Y,
-          realInterestRate10Y: data.macro.real_interest_rate ?? CURRENT_FRED_MACRO_SNAPSHOT.realInterestRate10Y,
-          highYieldCreditSpread: data.macro.credit_spread ?? CURRENT_FRED_MACRO_SNAPSHOT.highYieldCreditSpread,
-          fedFundsRate: data.macro.fed_funds_rate ?? CURRENT_FRED_MACRO_SNAPSHOT.fedFundsRate,
-          macroRiskMultiplier: data.macro_multiplier ?? CURRENT_FRED_MACRO_SNAPSHOT.macroRiskMultiplier,
-          lastUpdated: data.last_updated || new Date().toISOString().split("T")[0],
+          status: status,
+          isLive: false,
+          regimeName: "MACRO_TELEMETRY_UNAVAILABLE",
+          regimeTitle: m.regime_title || "Macro Telemetry Unavailable",
+          regimeSubtitle: m.regime_subtitle || "Authoritative macroeconomic indicators from Federal Reserve Economic Data (FRED) are currently unavailable.",
+          yieldCurve10Y2Y: null,
+          realInterestRate10Y: null,
+          highYieldCreditSpread: null,
+          fedFundsRate: null,
+          macroRiskMultiplier: null,
+          lastUpdated: null,
+          seriesObservations: m.series_observations,
         };
       }
     }
   } catch (err) {
-    console.warn("Live FRED macro regime fetch failed, using fallback snapshot:", err);
+    console.warn("Live FRED macro regime fetch failed:", err);
   }
-  return CURRENT_FRED_MACRO_SNAPSHOT;
+
+  // FAIL CLOSED: Never silently use historical snapshot in production
+  return UNAVAILABLE_FRED_MACRO_DATA;
 }
 
 export type SecFilingsStatus =
@@ -181,19 +286,56 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilings
 
       if (status === "AVAILABLE_WITH_RESULTS") {
         const rawList = Array.isArray(data.items) ? data.items : (Array.isArray(data.filings) ? data.filings : []);
-        const mapped: SecForm4Trade[] = rawList.map((f: any) => ({
-          ticker: symClean,
-          companyName: `${symClean} SEC Reporting Issuer`,
-          insiderName: f.description || `Form ${f.form} Regulatory Filing`,
-          insiderRole: "Reporting Officer / 10% Owner",
-          transactionType: `Form ${f.form} Public Filing`,
-          sharesTraded: 0,
-          pricePerShare: 0,
-          totalValueUsd: 0,
-          filingDate: f.filing_date,
-          secEdgarUrl: f.sec_url,
-          isSignificantBuy: false,
-        }));
+        const mapped: SecForm4Trade[] = rawList.map((f: any) => {
+          const hasShares = typeof f.shares_traded === "number" || typeof f.sharesTraded === "number";
+          const hasPrice = typeof f.price_per_share === "number" || typeof f.pricePerShare === "number";
+          const hasTotal = typeof f.total_value_usd === "number" || typeof f.totalValueUsd === "number";
+          const hasParsed = hasShares || hasPrice || hasTotal || Boolean(f.has_parsed_transaction);
+
+          const shares = hasShares ? Number(f.shares_traded ?? f.sharesTraded) : null;
+          const price = hasPrice ? Number(f.price_per_share ?? f.pricePerShare) : null;
+          const total = hasTotal ? Number(f.total_value_usd ?? f.totalValueUsd) : null;
+
+          const isBuy = typeof f.is_buy === "boolean" ? f.is_buy : (typeof f.isBuy === "boolean" ? f.isBuy : null);
+          const isSell = typeof f.is_sell === "boolean" ? f.is_sell : (typeof f.isSell === "boolean" ? f.isSell : null);
+
+          const isSignif = Boolean(
+            f.isSignificantBuy ||
+            (isBuy && total !== null && total >= 100000)
+          );
+
+          const formType = String(f.form || f.formType || "4");
+          const isAmendment = Boolean(
+            f.is_amendment ?? f.isAmendment ?? formType.includes("/A")
+          );
+          const accNum = f.accession_number || f.accessionNumber || "";
+
+          const insiderName = f.insider_name || f.insiderName || null;
+          const insiderRole = f.role || f.insiderRole || null;
+
+          const txType = f.transaction_type || f.transactionType || (isAmendment ? `Form ${formType} Regulatory Filing (Amendment)` : `Form ${formType} Regulatory Filing`);
+
+          return {
+            ticker: symClean,
+            companyName: `${symClean} SEC Reporting Issuer`,
+            insiderName,
+            insiderRole,
+            transactionType: txType,
+            sharesTraded: shares,
+            pricePerShare: price,
+            totalValueUsd: total,
+            filingDate: f.filing_date || f.filingDate || "",
+            secEdgarUrl: f.sec_url || f.secEdgarUrl || "",
+            isSignificantBuy: isSignif,
+            isBuy,
+            isSell,
+            hasParsedTransaction: hasParsed,
+            accessionNumber: accNum,
+            formType,
+            isAmendment,
+          };
+        });
+
         return {
           status: "AVAILABLE_WITH_RESULTS",
           items: mapped,

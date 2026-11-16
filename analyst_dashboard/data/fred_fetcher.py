@@ -122,6 +122,17 @@ def normalize_macro_payload(raw_data: Any) -> Optional[Dict[str, Any]]:
     if effective_cs is not None:
         result["credit_spread"] = effective_cs
 
+    if "real_interest_rate" in raw_data and raw_data["real_interest_rate"] is not None:
+        result["real_interest_rate"] = raw_data["real_interest_rate"]
+    elif "real_interest_rate_10y" in raw_data and raw_data["real_interest_rate_10y"] is not None:
+        result["real_interest_rate"] = raw_data["real_interest_rate_10y"]
+
+    if "fed_funds_rate" in raw_data and raw_data["fed_funds_rate"] is not None:
+        result["fed_funds_rate"] = raw_data["fed_funds_rate"]
+
+    if "series_observations" in raw_data and isinstance(raw_data["series_observations"], dict):
+        result["series_observations"] = raw_data["series_observations"]
+
     return result
 
 
@@ -189,20 +200,30 @@ class FredMacroFetcher:
         - T10Y2Y: 10-Year Minus 2-Year Treasury Yield Spread (%)
         - FEDFUNDS: Effective Federal Funds Rate (%)
         - BAMLH0A0HYM2: US High Yield Option-Adjusted Spread (%)
+        - DFII10: 10-Year Real Interest Rate (TIPS) (%)
         - CPIAUCSL: Consumer Price Index level
         """
         yc_record = self.fetch_latest_observation_record("T10Y2Y")
         ff_record = self.fetch_latest_observation_record("FEDFUNDS")
         cs_record = self.fetch_latest_observation_record("BAMLH0A0HYM2")
+        dfii_record = self.fetch_latest_observation_record("DFII10")
         cpi_record = self.fetch_latest_observation_record("CPIAUCSL")
 
         yield_curve = yc_record["value"] if yc_record is not None else None
         fed_funds = ff_record["value"] if ff_record is not None else None
         credit_spread_oas = cs_record["value"] if cs_record is not None else None
+        real_rate = dfii_record["value"] if dfii_record is not None else None
         cpi = cpi_record["value"] if cpi_record is not None else None
 
         yc_ts = yc_record.get("timestamp") if yc_record else None
         cs_ts = cs_record.get("timestamp") if cs_record else None
+        ff_ts = ff_record.get("timestamp") if ff_record else None
+        dfii_ts = dfii_record.get("timestamp") if dfii_record else None
+
+        yc_date = yc_record.get("date") if yc_record else None
+        cs_date = cs_record.get("date") if cs_record else None
+        ff_date = ff_record.get("date") if ff_record else None
+        dfii_date = dfii_record.get("date") if dfii_record else None
 
         # Fail-closed regime and rating: only compute if core indicators are authentic
         if yield_curve is not None and credit_spread_oas is not None:
@@ -234,11 +255,40 @@ class FredMacroFetcher:
             inflation_impact = "Macroeconomic inflation telemetry unavailable."
             availability = "PARTIAL" if (yield_curve is not None or credit_spread_oas is not None) else "UNAVAILABLE"
 
+        series_observations = {
+            "T10Y2Y": {
+                "series_id": "T10Y2Y",
+                "name": "10-Year Minus 2-Year Treasury Yield Spread",
+                "value": round(yield_curve, 2) if yield_curve is not None else None,
+                "date": yc_date,
+            },
+            "BAMLH0A0HYM2": {
+                "series_id": "BAMLH0A0HYM2",
+                "name": "US High Yield Option-Adjusted Spread",
+                "value": round(credit_spread_oas, 2) if credit_spread_oas is not None else None,
+                "date": cs_date,
+            },
+            "DFII10": {
+                "series_id": "DFII10",
+                "name": "10-Year Real Interest Rate (TIPS)",
+                "value": round(real_rate, 2) if real_rate is not None else None,
+                "date": dfii_date,
+            },
+            "FEDFUNDS": {
+                "series_id": "FEDFUNDS",
+                "name": "Effective Federal Funds Rate",
+                "value": round(fed_funds, 2) if fed_funds is not None else None,
+                "date": ff_date,
+            },
+        }
+
         return {
             # Legacy provider keys
             "yield_curve_spread": round(yield_curve, 2) if yield_curve is not None else None,
             "fed_funds_rate": round(fed_funds, 2) if fed_funds is not None else None,
             "credit_spread_oas": round(credit_spread_oas, 2) if credit_spread_oas is not None else None,
+            "real_interest_rate": round(real_rate, 2) if real_rate is not None else None,
+            "real_interest_rate_10y": round(real_rate, 2) if real_rate is not None else None,
             "cpi_index": round(cpi, 2) if cpi is not None else None,
             "cpi_yoy": 2.4,  # Current trailing annualized rate
             "rating": max(1, min(5, rating)) if rating > 0 else 0,
@@ -252,7 +302,10 @@ class FredMacroFetcher:
             "credit_spread": round(credit_spread_oas, 2) if credit_spread_oas is not None else None,
             "yield_observation_timestamp": yc_ts,
             "credit_observation_timestamp": cs_ts,
-            "macro_observation_available_at": yc_ts or cs_ts,
+            "real_rate_observation_timestamp": dfii_ts,
+            "fed_funds_observation_timestamp": ff_ts,
+            "macro_observation_available_at": yc_ts or cs_ts or dfii_ts or ff_ts,
+            "series_observations": series_observations,
             "provider": "FRED",
             "availability": availability,
         }
