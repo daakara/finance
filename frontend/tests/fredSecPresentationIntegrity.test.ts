@@ -322,8 +322,140 @@ async function runTests() {
     passedCount++;
   }
 
+  // ── Test 7: Stale Macro Telemetry Mapping & Zero Multiplier Fabrication ──────
+  console.log("\nTest 7: FRED macro maps STALE status and null multiplier when series is stale...");
+  {
+    const restore = mockFetch(async (url) => {
+      if (url.includes("/regimes/current")) {
+        return {
+          ok: true,
+          json: async () => ({
+            symbol: "SPY",
+            macro: {
+              availability: "STALE",
+              is_live: false,
+              regime: "MACRO_TELEMETRY_STALE",
+              regime_title: "Macro Telemetry Stale / Multiplier Inactive",
+              regime_subtitle: "Authoritative macro inputs unverified: series stale (T10Y2Y). Position sizing multiplier inactive (1.0x neutral baseline).",
+              yield_curve_10y2y: 0.35,
+              real_interest_rate: 1.78,
+              credit_spread: 3.10,
+              fed_funds_rate: 4.58,
+              macro_multiplier: null,
+              last_updated: "2026-11-01",
+              yield_curve_observation_date: "2026-11-01",
+              credit_spread_observation_date: "2026-11-14",
+              real_rate_observation_date: "2026-11-14",
+              fed_funds_observation_date: "2026-11-01",
+              freshness_summary: {
+                is_all_fresh: false,
+                stale_series: ["T10Y2Y"],
+                missing_series: [],
+                oldest_observation_date: "2026-11-01",
+                newest_observation_date: "2026-11-14",
+              },
+              series_observations: {
+                T10Y2Y: { value: 0.35, date: "2026-11-01", is_fresh: false, status: "STALE", frequency: "DAILY" },
+                BAMLH0A0HYM2: { value: 3.10, date: "2026-11-14", is_fresh: true, status: "FRESH", frequency: "DAILY" },
+                DFII10: { value: 1.78, date: "2026-11-14", is_fresh: true, status: "FRESH", frequency: "DAILY" },
+                FEDFUNDS: {
+                  value: 4.58,
+                  date: "2026-11-01",
+                  is_fresh: true,
+                  status: "FRESH",
+                  frequency: "MONTHLY",
+                  distinction: "Monthly effective rate (FEDFUNDS); distinct from daily DFF.",
+                },
+              },
+            },
+          }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    try {
+      const macro = await fetchFredMacroRegime();
+      assert.strictEqual(macro.status, "STALE");
+      assert.strictEqual(macro.isLive, false);
+      assert.strictEqual(macro.regimeName, "MACRO_TELEMETRY_STALE");
+      assert.strictEqual(macro.macroRiskMultiplier, null, "Must NOT fabricate multiplier when stale");
+      assert.strictEqual(macro.yieldCurve10Y2Y, 0.35, "Must preserve values for operator inspection");
+      assert.strictEqual(macro.realInterestRate10Y, 1.78);
+      assert.strictEqual(macro.highYieldCreditSpread, 3.10);
+      assert.strictEqual(macro.fedFundsRate, 4.58);
+      assert.strictEqual(macro.yieldCurveObservationDate, "2026-11-01");
+      assert.strictEqual(macro.creditSpreadObservationDate, "2026-11-14");
+      assert.strictEqual(macro.realRateObservationDate, "2026-11-14");
+      assert.strictEqual(macro.fedFundsObservationDate, "2026-11-01");
+      assert.ok(macro.freshnessSummary);
+      assert.deepStrictEqual(macro.freshnessSummary.staleSeries, ["T10Y2Y"]);
+      assert.ok(macro.seriesObservations);
+      assert.strictEqual(macro.seriesObservations["FEDFUNDS"].frequency, "MONTHLY");
+      assert.ok(macro.seriesObservations["FEDFUNDS"].distinction?.includes("distinct from daily DFF"));
+
+      console.log("  ✓ Passed: Stale macro contract mapped with zero multiplier fabrication and per-series freshness.");
+      passedCount++;
+    } finally {
+      restore();
+    }
+  }
+
+  // ── Test 8: Genuine Numeric Zero Preservation ───────────────────────────────
+  console.log("\nTest 8: Genuine numeric zero (0.0) preserved across all macroeconomic indicators...");
+  {
+    const restore = mockFetch(async (url) => {
+      if (url.includes("/regimes/current")) {
+        return {
+          ok: true,
+          json: async () => ({
+            symbol: "SPY",
+            macro: {
+              availability: "AVAILABLE",
+              is_live: true,
+              regime: "NEUTRAL_EXPANSION",
+              regime_title: "Macro Regime: Disinflationary Expansion",
+              regime_subtitle: "Yield curve flat at 0.00%, real rates at 0.00%.",
+              yield_curve_10y2y: 0.0,
+              real_interest_rate: 0.0,
+              credit_spread: 3.10,
+              fed_funds_rate: 4.50,
+              macro_multiplier: 1.10,
+              last_updated: "2026-11-14",
+              yield_curve_observation_date: "2026-11-14",
+              credit_spread_observation_date: "2026-11-14",
+              real_rate_observation_date: "2026-11-14",
+              fed_funds_observation_date: "2026-11-01",
+            },
+          }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    try {
+      const macro = await fetchFredMacroRegime();
+      assert.strictEqual(macro.status, "AVAILABLE");
+      assert.strictEqual(macro.isLive, true);
+      assert.strictEqual(macro.yieldCurve10Y2Y, 0.0, "Zero yield curve MUST be 0.0 (not null)");
+      assert.strictEqual(macro.realInterestRate10Y, 0.0, "Zero real rate MUST be 0.0 (not null)");
+      assert.strictEqual(macro.macroRiskMultiplier, 1.10);
+
+      // Verify formatting logic handles zero properly without rendering "Unavailable"
+      const formatYield = (v: number | null) =>
+        typeof v === "number" ? `${v >= 0 ? "+" : ""}${v.toFixed(2)}%` : "Unavailable";
+      assert.strictEqual(formatYield(macro.yieldCurve10Y2Y), "+0.00%");
+      assert.strictEqual(formatYield(macro.realInterestRate10Y), "+0.00%");
+
+      console.log("  ✓ Passed: Numeric zero values preserved accurately and formatted as +0.00%.");
+      passedCount++;
+    } finally {
+      restore();
+    }
+  }
+
   console.log(`\n======================================================`);
-  console.log(`ALL ${passedCount}/6 FRED & SEC PRESENTATION INTEGRITY TESTS PASSED`);
+  console.log(`ALL ${passedCount}/8 FRED & SEC PRESENTATION INTEGRITY TESTS PASSED`);
   console.log(`======================================================\n`);
 }
 

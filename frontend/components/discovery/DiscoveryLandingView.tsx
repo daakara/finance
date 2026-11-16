@@ -153,18 +153,30 @@ export default function DiscoveryLandingView({
           <div className="flex items-center gap-1.5 text-xs font-mono">
             <span
               className={`px-2 py-0.5 rounded border font-semibold ${
-                macroData?.isLive && macroData?.status === "AVAILABLE"
+                macroData?.isLive && typeof freshVix === "number" && freshVix > 0
                   ? "bg-cyan-950/80 text-cyan-300 border-cyan-800/80"
+                  : macroData?.isLive
+                  ? "bg-cyan-950/80 text-cyan-300 border-cyan-800/80"
+                  : macroData?.status === "STALE"
+                  ? "bg-amber-950/80 text-amber-300 border-amber-800/80"
                   : macroData?.status === "UNAVAILABLE"
                   ? "bg-slate-900/80 text-amber-400 border-amber-800/80"
                   : "bg-slate-900/80 text-slate-300 border-slate-700/80"
               }`}
             >
-              {macroData?.isLive ? "FRED & CBOE Verified (Live)" : "FRED Telemetry Offline / Unavailable"}
+              {macroData?.isLive && typeof freshVix === "number" && freshVix > 0
+                ? "FRED & CBOE Verified (Live)"
+                : macroData?.isLive
+                ? "FRED Verified (Live)"
+                : typeof freshVix === "number" && freshVix > 0
+                ? "CBOE Verified (Live)"
+                : macroData?.status === "STALE"
+                ? "FRED Telemetry Stale"
+                : "FRED Telemetry Offline / Unavailable"}
             </span>
             {macroData?.lastUpdated && (
               <span className="text-slate-400 hidden sm:inline">
-                Observed: {new Date(macroData.lastUpdated).toLocaleDateString()}
+                Observed: {macroData.lastUpdated}
               </span>
             )}
           </div>
@@ -188,6 +200,11 @@ export default function DiscoveryLandingView({
                   <span className="text-[10px] text-slate-400 font-sans block">
                     {macroData.yieldCurve10Y2Y >= 0 ? "Normal Slope (Expansionary)" : "Inverted (Recession Hazard)"}
                   </span>
+                  {(macroData.yieldCurveObservationDate || macroData.seriesObservations?.["T10Y2Y"]?.date) && (
+                    <span className="text-[9px] text-slate-500 font-sans block">
+                      FRED: T10Y2Y • {macroData.yieldCurveObservationDate || macroData.seriesObservations?.["T10Y2Y"]?.date}
+                    </span>
+                  )}
                 </>
               ) : (
                 <>
@@ -206,6 +223,11 @@ export default function DiscoveryLandingView({
                     {macroData.realInterestRate10Y.toFixed(2)}%
                   </span>
                   <span className="text-[10px] text-slate-400 font-sans block">DFII10 Capital Hurdle</span>
+                  {(macroData.realRateObservationDate || macroData.seriesObservations?.["DFII10"]?.date) && (
+                    <span className="text-[9px] text-slate-500 font-sans block">
+                      FRED: DFII10 • {macroData.realRateObservationDate || macroData.seriesObservations?.["DFII10"]?.date}
+                    </span>
+                  )}
                 </>
               ) : (
                 <>
@@ -230,6 +252,11 @@ export default function DiscoveryLandingView({
                   <span className="text-[10px] text-slate-400 font-sans block">
                     {macroData.highYieldCreditSpread < 4.0 ? "Tight / Risk Seeking" : "Wide / Risk Averse"}
                   </span>
+                  {(macroData.creditSpreadObservationDate || macroData.seriesObservations?.["BAMLH0A0HYM2"]?.date) && (
+                    <span className="text-[9px] text-slate-500 font-sans block">
+                      FRED: BAMLH0A0HYM2 • {macroData.creditSpreadObservationDate || macroData.seriesObservations?.["BAMLH0A0HYM2"]?.date}
+                    </span>
+                  )}
                 </>
               ) : (
                 <>
@@ -247,6 +274,9 @@ export default function DiscoveryLandingView({
               </span>
               <span className="text-[10px] text-slate-400 font-sans block">
                 {(freshVix || 16.5) < 26.0 ? "Calm Regime (Execution Open)" : "Elevated Risk (Holds Active)"}
+              </span>
+              <span className="text-[9px] text-slate-500 font-sans block">
+                CBOE: VIX Index • 26.0 Ceiling
               </span>
             </div>
           </div>

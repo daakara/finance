@@ -56,7 +56,8 @@ def test_macro_contract_available_and_live():
         assert payload["fed_funds_rate"] == 4.58
         assert payload["macro_multiplier"] is not None
         assert payload["macro_multiplier"] > 0
-        assert payload["last_updated"] == "2026-11-14"
+        # Conservative oldest date across required series (Requirement 3: never newest date)
+        assert payload["last_updated"] == "2026-11-01"
         assert "T10Y2Y" in payload["series_observations"]
 
 
@@ -70,6 +71,9 @@ def test_macro_contract_inverted_yield_curve_defensive_multiplier():
         "fed_funds_rate": 5.25,
         "series_observations": {
             "T10Y2Y": {"value": -0.35, "date": "2026-11-14", "series_id": "T10Y2Y"},
+            "BAMLH0A0HYM2": {"value": 3.80, "date": "2026-11-14", "series_id": "BAMLH0A0HYM2"},
+            "DFII10": {"value": 2.10, "date": "2026-11-14", "series_id": "DFII10"},
+            "FEDFUNDS": {"value": 5.25, "date": "2026-11-01", "series_id": "FEDFUNDS"},
         },
     }
 
@@ -271,3 +275,199 @@ def test_sec_filings_metadata_preservation():
         assert "shares" not in filing
         assert "price" not in filing
         assert "transaction_code" not in filing
+
+
+# ── 5. Documented Freshness Policy & Strict Contract Enforcement ────────────
+
+def test_macro_freshness_mixed_observation_dates():
+    """Verify mixed observation dates: T10Y2Y from 2d ago and FEDFUNDS from 25d ago are both fresh.
+
+    Invariants Enforced:
+    - is_live is True because each series satisfies its own frequency policy (7d daily, 45d monthly).
+    - Individual observation dates are preserved.
+    - last_updated is the conservative OLDEST date (2026-10-20), NEVER the newest (2026-11-13).
+    """
+    import datetime
+    from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
+
+    ref_date = datetime.date(2026, 11, 15)
+    fetcher = FredMacroFetcher()
+
+    def mock_fetch(series_id):
+        data = {
+            "T10Y2Y": (0.35, "2026-11-13"),         # 2 days old (Daily <= 7d -> FRESH)
+            "BAMLH0A0HYM2": (3.10, "2026-11-13"),   # 2 days old (Daily <= 7d -> FRESH)
+            "DFII10": (1.80, "2026-11-12"),         # 3 days old (Daily <= 7d -> FRESH)
+            "FEDFUNDS": (4.58, "2026-10-20"),       # 26 days old (Monthly <= 45d -> FRESH)
+        }
+        if series_id in data:
+            val, dt = data[series_id]
+            return {"value": val, "date": dt, "series_id": series_id}
+        return None
+
+    with patch.object(fetcher, "fetch_latest_observation_record", side_effect=mock_fetch):
+        with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher", return_value=fetcher):
+            payload = _build_macro_contract_payload(ref_date=ref_date)
+
+            assert payload["is_live"] is True
+            assert payload["availability"] == "AVAILABLE"
+            assert payload["macro_multiplier"] is not None
+            assert payload["macro_multiplier"] > 0
+            # Must use conservative oldest observation date, NOT newest!
+            assert payload["last_updated"] == "2026-10-20"
+            assert payload["yield_curve_observation_date"] == "2026-11-13"
+            assert payload["credit_spread_observation_date"] == "2026-11-13"
+            assert payload["real_rate_observation_date"] == "2026-11-12"
+            assert payload["fed_funds_observation_date"] == "2026-10-20"
+            assert payload["freshness_summary"]["is_all_fresh"] is True
+            assert payload["freshness_summary"]["oldest_observation_date"] == "2026-10-20"
+            assert payload["freshness_summary"]["newest_observation_date"] == "2026-11-13"
+            assert payload["series_observations"]["FEDFUNDS"]["frequency"] == "MONTHLY"
+            assert payload["series_observations"]["FEDFUNDS"]["max_age_days"] == 45
+
+
+def test_macro_freshness_stale_daily_series_fails_closed():
+    """Verify that a single stale daily series (T10Y2Y 10 days old > 7d) causes fail-closed behavior.
+
+    Invariants Enforced:
+    - is_live is False.
+    - macro_multiplier is None (zero live multiplier fabrication).
+    - availability is STALE and regime is MACRO_TELEMETRY_STALE.
+    - Stale series is identified in freshness_summary and regime_subtitle.
+    """
+    import datetime
+    from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
+
+    ref_date = datetime.date(2026, 11, 15)
+    fetcher = FredMacroFetcher()
+
+    def mock_fetch(series_id):
+        data = {
+            "T10Y2Y": (0.35, "2026-11-05"),         # 10 days old (Daily > 7d -> STALE!)
+            "BAMLH0A0HYM2": (3.10, "2026-11-14"),   # 1 day old (Fresh)
+            "DFII10": (1.80, "2026-11-14"),         # 1 day old (Fresh)
+            "FEDFUNDS": (4.58, "2026-11-01"),       # 14 days old (Monthly <= 45d -> Fresh)
+        }
+        if series_id in data:
+            val, dt = data[series_id]
+            return {"value": val, "date": dt, "series_id": series_id}
+        return None
+
+    with patch.object(fetcher, "fetch_latest_observation_record", side_effect=mock_fetch):
+        with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher", return_value=fetcher):
+            payload = _build_macro_contract_payload(ref_date=ref_date)
+
+            assert payload["is_live"] is False
+            assert payload["availability"] == "STALE"
+            assert payload["regime"] == "MACRO_TELEMETRY_STALE"
+            assert payload["macro_multiplier"] is None
+            assert "T10Y2Y" in payload["freshness_summary"]["stale_series"]
+            assert "T10Y2Y" in payload["regime_subtitle"]
+            # Series values are preserved for transparent operator review
+            assert payload["yield_curve_10y2y"] == 0.35
+            assert payload["credit_spread"] == 3.10
+
+
+def test_macro_freshness_monthly_policy_boundary_and_dff_distinction():
+    """Verify FEDFUNDS 45-day monthly policy boundary and explicit distinction from daily DFF."""
+    import datetime
+    from analyst_dashboard.data.fred_fetcher import evaluate_series_freshness, FRED_SERIES_POLICY
+
+    ref_date = datetime.date(2026, 11, 15)
+
+    # 1. Policy metadata verification
+    assert FRED_SERIES_POLICY["FEDFUNDS"]["frequency"] == "MONTHLY"
+    assert FRED_SERIES_POLICY["FEDFUNDS"]["max_age_days"] == 45
+    assert FRED_SERIES_POLICY["DFF"]["frequency"] == "DAILY"
+    assert FRED_SERIES_POLICY["DFF"]["max_age_days"] == 7
+
+    # 2. FEDFUNDS within 45 days is FRESH
+    ff_fresh = evaluate_series_freshness("FEDFUNDS", "2026-10-15", ref_date=ref_date)
+    assert ff_fresh["is_fresh"] is True
+    assert ff_fresh["status"] == "FRESH"
+    assert ff_fresh["age_days"] == 31
+    assert ff_fresh["max_age_days"] == 45
+
+    # 3. FEDFUNDS beyond 45 days is STALE
+    ff_stale = evaluate_series_freshness("FEDFUNDS", "2026-09-25", ref_date=ref_date)
+    assert ff_stale["is_fresh"] is False
+    assert ff_stale["status"] == "STALE"
+    assert ff_stale["age_days"] == 51
+
+    # 4. Daily DFF at identical 31-day date is STALE (demonstrating frequency distinction)
+    dff_eval = evaluate_series_freshness("DFF", "2026-10-15", ref_date=ref_date)
+    assert dff_eval["is_fresh"] is False
+    assert dff_eval["status"] == "STALE"
+    assert dff_eval["age_days"] == 31
+    assert dff_eval["max_age_days"] == 7
+
+    # 5. Future date quarantine
+    future_eval = evaluate_series_freshness("FEDFUNDS", "2026-11-20", ref_date=ref_date)
+    assert future_eval["is_fresh"] is False
+    assert future_eval["status"] == "FUTURE_DATED"
+    assert future_eval["age_days"] < 0
+
+
+def test_macro_missing_series_fails_closed():
+    """Verify that when any required series is missing (None), is_live is False with zero multiplier fabrication."""
+    import datetime
+    from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
+
+    ref_date = datetime.date(2026, 11, 15)
+    fetcher = FredMacroFetcher()
+
+    def mock_fetch(series_id):
+        # DFII10 is missing (returns None)
+        data = {
+            "T10Y2Y": (0.35, "2026-11-14"),
+            "BAMLH0A0HYM2": (3.10, "2026-11-14"),
+            "FEDFUNDS": (4.58, "2026-11-01"),
+        }
+        if series_id in data:
+            val, dt = data[series_id]
+            return {"value": val, "date": dt, "series_id": series_id}
+        return None
+
+    with patch.object(fetcher, "fetch_latest_observation_record", side_effect=mock_fetch):
+        with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher", return_value=fetcher):
+            payload = _build_macro_contract_payload(ref_date=ref_date)
+
+            assert payload["is_live"] is False
+            assert payload["macro_multiplier"] is None
+            assert payload["real_interest_rate"] is None
+            assert "DFII10" in payload["freshness_summary"]["missing_series"]
+            assert "DFII10" in payload["regime_subtitle"]
+
+
+def test_macro_numeric_zero_preservation():
+    """Verify that genuine numeric zero (0.0) is preserved and never mistaken for missing or falsy."""
+    import datetime
+    from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
+
+    ref_date = datetime.date(2026, 11, 15)
+    fetcher = FredMacroFetcher()
+
+    def mock_fetch(series_id):
+        # Yield curve is flat (0.00%) and real interest rate is exactly 0.00%
+        data = {
+            "T10Y2Y": (0.0, "2026-11-14"),
+            "BAMLH0A0HYM2": (3.20, "2026-11-14"),
+            "DFII10": (0.0, "2026-11-14"),
+            "FEDFUNDS": (4.50, "2026-11-01"),
+        }
+        if series_id in data:
+            val, dt = data[series_id]
+            return {"value": val, "date": dt, "series_id": series_id}
+        return None
+
+    with patch.object(fetcher, "fetch_latest_observation_record", side_effect=mock_fetch):
+        with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher", return_value=fetcher):
+            payload = _build_macro_contract_payload(ref_date=ref_date)
+
+            assert payload["is_live"] is True
+            assert payload["availability"] == "AVAILABLE"
+            assert payload["yield_curve_10y2y"] == 0.0
+            assert payload["real_interest_rate"] == 0.0
+            # Flat yield curve (yc >= 0 and cs <= 4.5) evaluates to NEUTRAL_EXPANSION with multiplier 1.10
+            assert payload["regime"] == "NEUTRAL_EXPANSION"
+            assert payload["macro_multiplier"] == 1.10

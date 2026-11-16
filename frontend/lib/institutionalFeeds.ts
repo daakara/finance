@@ -11,19 +11,35 @@ import { getApiBaseUrl } from "./api";
 export interface FredSeriesObservation {
   value: number | null;
   date: string | null;
+  timestamp?: string | null;
   series_id: string;
   name?: string;
+  frequency?: "DAILY" | "MONTHLY";
+  max_age_days?: number;
+  age_days?: number | null;
+  is_fresh?: boolean;
+  status?: "FRESH" | "STALE" | "MISSING" | "FUTURE_DATED" | "UNVERIFIED";
+  distinction?: string;
+}
+
+export interface FredFreshnessSummary {
+  isAllFresh: boolean;
+  staleSeries: string[];
+  missingSeries: string[];
+  oldestObservationDate: string | null;
+  newestObservationDate: string | null;
 }
 
 export interface FredMacroData {
-  status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE";
+  status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "STALE";
   isLive: boolean;
   regimeName:
     | "EXPANSION_GOLDILOCKS"
     | "NEUTRAL_EXPANSION"
     | "HAWKISH_TIGHTENING"
     | "RECESSIONARY_PRESSURE"
-    | "MACRO_TELEMETRY_UNAVAILABLE";
+    | "MACRO_TELEMETRY_UNAVAILABLE"
+    | "MACRO_TELEMETRY_STALE";
   regimeTitle: string;
   regimeSubtitle: string;
   yieldCurve10Y2Y: number | null; // e.g. +0.18% (T10Y2Y)
@@ -32,6 +48,11 @@ export interface FredMacroData {
   fedFundsRate: number | null; // e.g. 4.88% (FEDFUNDS)
   macroRiskMultiplier: number | null; // e.g. 1.10x scaling on position sizing (null when unverified/unavailable)
   lastUpdated: string | null;
+  yieldCurveObservationDate?: string | null;
+  creditSpreadObservationDate?: string | null;
+  realRateObservationDate?: string | null;
+  fedFundsObservationDate?: string | null;
+  freshnessSummary?: FredFreshnessSummary | null;
   seriesObservations?: Record<string, FredSeriesObservation>;
 }
 
@@ -198,13 +219,31 @@ export async function fetchFredMacroRegime(): Promise<FredMacroData> {
       const data = await res.json();
       if (data && data.macro) {
         const m = data.macro;
-        const isLive = Boolean(m.is_live ?? (m.availability === "AVAILABLE"));
-        const status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" =
+        const isLive = Boolean(m.is_live);
+        const status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "STALE" =
           m.availability === "AVAILABLE"
             ? "AVAILABLE"
+            : m.availability === "STALE"
+            ? "STALE"
             : m.availability === "PARTIAL"
             ? "PARTIAL"
             : "UNAVAILABLE";
+
+        const yc = typeof m.yield_curve_10y2y === "number" ? m.yield_curve_10y2y : null;
+        const rr = typeof m.real_interest_rate === "number" ? m.real_interest_rate : (typeof m.real_interest_rate_10y === "number" ? m.real_interest_rate_10y : null);
+        const cs = typeof m.credit_spread === "number" ? m.credit_spread : (typeof m.high_yield_credit_spread === "number" ? m.high_yield_credit_spread : null);
+        const ff = typeof m.fed_funds_rate === "number" ? m.fed_funds_rate : null;
+
+        const rawFresh = m.freshness_summary;
+        const freshnessSummary: FredFreshnessSummary | null = rawFresh
+          ? {
+              isAllFresh: Boolean(rawFresh.is_all_fresh ?? rawFresh.isAllFresh),
+              staleSeries: rawFresh.stale_series ?? rawFresh.staleSeries ?? [],
+              missingSeries: rawFresh.missing_series ?? rawFresh.missingSeries ?? [],
+              oldestObservationDate: rawFresh.oldest_observation_date ?? rawFresh.oldestObservationDate ?? null,
+              newestObservationDate: rawFresh.newest_observation_date ?? rawFresh.newestObservationDate ?? null,
+            }
+          : null;
 
         if (status === "AVAILABLE" && isLive) {
           return {
@@ -213,30 +252,40 @@ export async function fetchFredMacroRegime(): Promise<FredMacroData> {
             regimeName: m.regime || "NEUTRAL_EXPANSION",
             regimeTitle: m.regime_title || "Macro Regime: Live FRED Telemetry",
             regimeSubtitle: m.regime_subtitle || "Verified macroeconomic liquidity and spread observations from FRED.",
-            yieldCurve10Y2Y: typeof m.yield_curve_10y2y === "number" ? m.yield_curve_10y2y : null,
-            realInterestRate10Y: typeof m.real_interest_rate === "number" ? m.real_interest_rate : (typeof m.real_interest_rate_10y === "number" ? m.real_interest_rate_10y : null),
-            highYieldCreditSpread: typeof m.credit_spread === "number" ? m.credit_spread : (typeof m.high_yield_credit_spread === "number" ? m.high_yield_credit_spread : null),
-            fedFundsRate: typeof m.fed_funds_rate === "number" ? m.fed_funds_rate : null,
+            yieldCurve10Y2Y: yc,
+            realInterestRate10Y: rr,
+            highYieldCreditSpread: cs,
+            fedFundsRate: ff,
             macroRiskMultiplier: typeof m.macro_multiplier === "number" ? m.macro_multiplier : null,
             lastUpdated: m.last_updated || null,
-            seriesObservations: m.series_observations,
+            yieldCurveObservationDate: m.yield_curve_observation_date || null,
+            creditSpreadObservationDate: m.credit_spread_observation_date || null,
+            realRateObservationDate: m.real_rate_observation_date || null,
+            fedFundsObservationDate: m.fed_funds_observation_date || null,
+            freshnessSummary: freshnessSummary,
+            seriesObservations: m.series_observations || {},
           };
         }
 
-        // Explicit unavailable or partial state without fabricating numbers or live multipliers
+        // Explicit unavailable or stale state: zero multiplier fabrication
         return {
           status: status,
           isLive: false,
-          regimeName: "MACRO_TELEMETRY_UNAVAILABLE",
-          regimeTitle: m.regime_title || "Macro Telemetry Unavailable",
-          regimeSubtitle: m.regime_subtitle || "Authoritative macroeconomic indicators from Federal Reserve Economic Data (FRED) are currently unavailable.",
-          yieldCurve10Y2Y: null,
-          realInterestRate10Y: null,
-          highYieldCreditSpread: null,
-          fedFundsRate: null,
-          macroRiskMultiplier: null,
-          lastUpdated: null,
-          seriesObservations: m.series_observations,
+          regimeName: status === "STALE" ? "MACRO_TELEMETRY_STALE" : "MACRO_TELEMETRY_UNAVAILABLE",
+          regimeTitle: m.regime_title || (status === "STALE" ? "Macro Telemetry Stale / Multiplier Inactive" : "Macro Telemetry Unavailable"),
+          regimeSubtitle: m.regime_subtitle || "Authoritative macroeconomic indicators from Federal Reserve Economic Data (FRED) are unverified or stale.",
+          yieldCurve10Y2Y: yc,
+          realInterestRate10Y: rr,
+          highYieldCreditSpread: cs,
+          fedFundsRate: ff,
+          macroRiskMultiplier: null, // Strictly null when unverified/stale!
+          lastUpdated: m.last_updated || null,
+          yieldCurveObservationDate: m.yield_curve_observation_date || null,
+          creditSpreadObservationDate: m.credit_spread_observation_date || null,
+          realRateObservationDate: m.real_rate_observation_date || null,
+          fedFundsObservationDate: m.fed_funds_observation_date || null,
+          freshnessSummary: freshnessSummary,
+          seriesObservations: m.series_observations || {},
         };
       }
     }

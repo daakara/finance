@@ -102,7 +102,7 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
           <div className="bg-[#090d14] p-4 rounded-lg text-xs text-slate-400 text-center animate-pulse border border-[#1b2434]">
             Synchronizing authentic macroeconomic feeds from St. Louis Fed (FRED)...
           </div>
-        ) : !macro || macro.status === "UNAVAILABLE" || !macro.isLive ? (
+        ) : !macro || macro.status === "UNAVAILABLE" ? (
           <div className="space-y-4" data-testid="fred-macro-unavailable">
             <div
               role="alert"
@@ -145,60 +145,126 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
               <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
                 <span className="text-[10px] text-slate-400 block uppercase">Effective Fed Funds</span>
                 <span className="text-sm sm:text-base font-extrabold text-slate-400 tabular-nums">Unavailable</span>
-                <span className="text-[9px] text-slate-500 block">Series FEDFUNDS</span>
+                <span className="text-[9px] text-slate-500 block">Series FEDFUNDS • Monthly Average</span>
+                <span className="text-[8px] text-slate-500 block">(Distinct from daily DFF)</span>
               </div>
             </div>
           </div>
         ) : (
-          <div className="space-y-4" data-testid="fred-macro-available">
-            <div className="bg-[#090d14] p-3.5 rounded-xl border border-[#1b2434] space-y-1">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <strong className="text-xs font-bold text-cyan-400">{macro.regimeTitle}</strong>
-                {typeof macro.macroRiskMultiplier === "number" && (
-                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
-                    {macro.macroRiskMultiplier.toFixed(2)}x Risk Budget Active
+          <div
+            className="space-y-4"
+            data-testid={macro.status === "STALE" ? "fred-macro-stale" : "fred-macro-available"}
+          >
+            {macro.status === "STALE" ? (
+              <div
+                role="alert"
+                className="bg-amber-950/20 border border-amber-800/60 rounded-xl p-3.5 space-y-1.5"
+                data-testid="fred-macro-stale-banner"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2 text-amber-400 font-bold text-xs">
+                    <span>⚠️</span>
+                    <span>{macro.regimeTitle || "Macro Telemetry Stale / Multiplier Inactive"}</span>
+                  </div>
+                  <span className="text-[10px] text-amber-300 font-bold bg-[#141b28] px-2 py-0.5 rounded border border-amber-800/60">
+                    Risk Budget Multiplier Inactive (1.0x Neutral)
                   </span>
+                </div>
+                <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
+                  {macro.regimeSubtitle}
+                </p>
+                {macro.freshnessSummary?.staleSeries && macro.freshnessSummary.staleSeries.length > 0 && (
+                  <div className="text-[10px] text-amber-400/90 font-mono pt-0.5">
+                    Stale series detected: {macro.freshnessSummary.staleSeries.join(", ")}
+                  </div>
+                )}
+                {macro.lastUpdated && (
+                  <div className="text-[10px] text-slate-500 font-mono pt-0.5">
+                    Conservative observation baseline: {macro.lastUpdated}
+                  </div>
                 )}
               </div>
-              <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
-                {macro.regimeSubtitle}
-              </p>
-              {macro.lastUpdated && (
-                <div className="text-[10px] text-slate-500 font-mono pt-1">
-                  Observed as of: {macro.lastUpdated}
+            ) : (
+              <div className="bg-[#090d14] p-3.5 rounded-xl border border-[#1b2434] space-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <strong className="text-xs font-bold text-cyan-400">{macro.regimeTitle}</strong>
+                  {typeof macro.macroRiskMultiplier === "number" && (
+                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+                      {macro.macroRiskMultiplier.toFixed(2)}x Risk Budget Active
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
+                <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
+                  {macro.regimeSubtitle}
+                </p>
+                {macro.lastUpdated && (
+                  <div className="text-[10px] text-slate-500 font-mono pt-1">
+                    Observed as of: {macro.lastUpdated}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
               <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
                 <span className="text-[10px] text-slate-400 block uppercase">10Y-2Y Yield Curve</span>
-                <span className="text-sm sm:text-base font-extrabold text-emerald-400 tabular-nums">
+                <span
+                  className={`text-sm sm:text-base font-extrabold tabular-nums ${
+                    typeof macro.yieldCurve10Y2Y === "number"
+                      ? macro.yieldCurve10Y2Y >= 0
+                        ? "text-emerald-400"
+                        : "text-rose-400"
+                      : "text-slate-400"
+                  }`}
+                >
                   {typeof macro.yieldCurve10Y2Y === "number"
                     ? `${macro.yieldCurve10Y2Y >= 0 ? "+" : ""}${macro.yieldCurve10Y2Y.toFixed(2)}%`
                     : "Unavailable"}
                 </span>
                 <span className="text-[9px] text-slate-500 block">Series T10Y2Y</span>
+                {(macro.yieldCurveObservationDate || macro.seriesObservations?.["T10Y2Y"]?.date) && (
+                  <span className="text-[9px] text-slate-500 font-mono block">
+                    FRED: {macro.yieldCurveObservationDate || macro.seriesObservations?.["T10Y2Y"]?.date}
+                  </span>
+                )}
               </div>
 
               <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
                 <span className="text-[10px] text-slate-400 block uppercase">High Yield OAS Spread</span>
-                <span className="text-sm sm:text-base font-extrabold text-cyan-300 tabular-nums">
+                <span
+                  className={`text-sm sm:text-base font-extrabold tabular-nums ${
+                    typeof macro.highYieldCreditSpread === "number"
+                      ? macro.highYieldCreditSpread < 4.0
+                        ? "text-emerald-400"
+                        : "text-amber-400"
+                      : "text-slate-400"
+                  }`}
+                >
                   {typeof macro.highYieldCreditSpread === "number"
                     ? `${macro.highYieldCreditSpread.toFixed(2)}%`
                     : "Unavailable"}
                 </span>
                 <span className="text-[9px] text-slate-500 block">Series BAMLH0A0HYM2</span>
+                {(macro.creditSpreadObservationDate || macro.seriesObservations?.["BAMLH0A0HYM2"]?.date) && (
+                  <span className="text-[9px] text-slate-500 font-mono block">
+                    FRED: {macro.creditSpreadObservationDate || macro.seriesObservations?.["BAMLH0A0HYM2"]?.date}
+                  </span>
+                )}
               </div>
 
               <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
                 <span className="text-[10px] text-slate-400 block uppercase">10Y Real Rate (TIPS)</span>
-                <span className="text-sm sm:text-base font-extrabold text-slate-200 tabular-nums">
+                <span className="text-sm sm:text-base font-extrabold text-cyan-300 tabular-nums">
                   {typeof macro.realInterestRate10Y === "number"
                     ? `${macro.realInterestRate10Y.toFixed(2)}%`
                     : "Unavailable"}
                 </span>
                 <span className="text-[9px] text-slate-500 block">Series DFII10</span>
+                {(macro.realRateObservationDate || macro.seriesObservations?.["DFII10"]?.date) && (
+                  <span className="text-[9px] text-slate-500 font-mono block">
+                    FRED: {macro.realRateObservationDate || macro.seriesObservations?.["DFII10"]?.date}
+                  </span>
+                )}
               </div>
 
               <div className="bg-[#0b1019] p-3 rounded-lg border border-[#1e293b]">
@@ -208,7 +274,13 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                     ? `${macro.fedFundsRate.toFixed(2)}%`
                     : "Unavailable"}
                 </span>
-                <span className="text-[9px] text-slate-500 block">Series FEDFUNDS</span>
+                <span className="text-[9px] text-slate-400 block font-medium">Series FEDFUNDS • Monthly Average</span>
+                <span className="text-[8px] text-slate-500 block">(Distinct from daily DFF)</span>
+                {(macro.fedFundsObservationDate || macro.seriesObservations?.["FEDFUNDS"]?.date) && (
+                  <span className="text-[9px] text-slate-500 font-mono block">
+                    FRED: {macro.fedFundsObservationDate || macro.seriesObservations?.["FEDFUNDS"]?.date}
+                  </span>
+                )}
               </div>
             </div>
           </div>

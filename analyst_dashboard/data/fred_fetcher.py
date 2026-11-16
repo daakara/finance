@@ -4,12 +4,136 @@ import os
 import logging
 import hashlib
 import json
+import datetime
 import requests
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_FRED_API_KEY = os.getenv("FRED_API_KEY", "")
+
+# ── Explicit & Documented Macroeconomic Series Freshness Policy ──────────────
+# Invariants Enforced:
+# 1. Daily Series (T10Y2Y, BAMLH0A0HYM2, DFII10, DFF): Max allowable age = 7 calendar days
+#    (accounting for weekend and federal market holiday publication schedules).
+# 2. Monthly Series (FEDFUNDS): Max allowable age = 45 calendar days (accounting for monthly
+#    release cadence; distinct from daily DFF).
+# 3. Future Observation Quarantine: Dates ahead of evaluation reference date rejected as FUTURE_DATED.
+# 4. Genuine Numeric Zero: 0.0 is preserved as a valid observation and never mistaken for missing.
+
+FRED_SERIES_POLICY: Dict[str, Dict[str, Any]] = {
+    "T10Y2Y": {
+        "series_id": "T10Y2Y",
+        "name": "10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity",
+        "frequency": "DAILY",
+        "max_age_days": 7,
+        "required_for_regime": True,
+        "description": "Daily constant maturity treasury yield curve spread (recession vs. expansion).",
+    },
+    "BAMLH0A0HYM2": {
+        "series_id": "BAMLH0A0HYM2",
+        "name": "ICE BofA US High Yield Index Option-Adjusted Spread",
+        "frequency": "DAILY",
+        "max_age_days": 7,
+        "required_for_regime": True,
+        "description": "Daily high-yield credit spread (credit risk appetite vs. liquidity crunch).",
+    },
+    "DFII10": {
+        "series_id": "DFII10",
+        "name": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Inflation-Indexed",
+        "frequency": "DAILY",
+        "max_age_days": 7,
+        "required_for_regime": True,
+        "description": "Daily 10-Year real interest rate (TIPS) capital hurdle rate.",
+    },
+    "FEDFUNDS": {
+        "series_id": "FEDFUNDS",
+        "name": "Federal Funds Effective Rate (Monthly Average)",
+        "frequency": "MONTHLY",
+        "max_age_days": 45,
+        "required_for_regime": True,
+        "description": "Monthly average effective federal funds policy rate. Distinct from daily DFF.",
+    },
+    "DFF": {
+        "series_id": "DFF",
+        "name": "Federal Funds Effective Rate (Daily)",
+        "frequency": "DAILY",
+        "max_age_days": 7,
+        "required_for_regime": False,
+        "description": "Daily Federal Funds Effective Rate (high-frequency alternative series).",
+    },
+}
+
+
+def evaluate_series_freshness(
+    series_id: str,
+    obs_date_str: Optional[str],
+    ref_date: Optional[datetime.date] = None,
+) -> Dict[str, Any]:
+    """Evaluate series observation freshness against its documented publication frequency policy.
+
+    Invariants:
+    - Daily series: max_age_days = 7.
+    - Monthly series (FEDFUNDS): max_age_days = 45.
+    - Future dates: flagged as FUTURE_DATED (anti-lookahead).
+    - Missing dates: flagged as MISSING.
+    """
+    policy = FRED_SERIES_POLICY.get(
+        series_id,
+        {"frequency": "DAILY", "max_age_days": 7, "name": series_id, "required_for_regime": True},
+    )
+    max_age_days = policy["max_age_days"]
+    freq = policy["frequency"]
+
+    if not obs_date_str:
+        return {
+            "is_fresh": False,
+            "status": "MISSING",
+            "age_days": None,
+            "max_age_days": max_age_days,
+            "frequency": freq,
+            "observation_date": None,
+        }
+
+    clean_date = obs_date_str.split("T")[0]
+    try:
+        obs_dt = datetime.date.fromisoformat(clean_date)
+    except Exception:
+        return {
+            "is_fresh": False,
+            "status": "INVALID_DATE",
+            "age_days": None,
+            "max_age_days": max_age_days,
+            "frequency": freq,
+            "observation_date": clean_date,
+        }
+
+    if ref_date is None:
+        ref_date = datetime.datetime.now(datetime.timezone.utc).date()
+
+    age_days = (ref_date - obs_dt).days
+
+    if age_days < 0:
+        return {
+            "is_fresh": False,
+            "status": "FUTURE_DATED",
+            "age_days": age_days,
+            "max_age_days": max_age_days,
+            "frequency": freq,
+            "observation_date": clean_date,
+        }
+
+    is_fresh = (age_days <= max_age_days)
+    status = "FRESH" if is_fresh else "STALE"
+
+    return {
+        "is_fresh": is_fresh,
+        "status": status,
+        "age_days": age_days,
+        "max_age_days": max_age_days,
+        "frequency": freq,
+        "observation_date": clean_date,
+    }
 
 
 def normalize_macro_payload(raw_data: Any) -> Optional[Dict[str, Any]]:
@@ -133,6 +257,18 @@ def normalize_macro_payload(raw_data: Any) -> Optional[Dict[str, Any]]:
     if "series_observations" in raw_data and isinstance(raw_data["series_observations"], dict):
         result["series_observations"] = raw_data["series_observations"]
 
+    if "freshness_summary" in raw_data and isinstance(raw_data["freshness_summary"], dict):
+        result["freshness_summary"] = raw_data["freshness_summary"]
+
+    for d_key in [
+        "yield_curve_observation_date",
+        "credit_spread_observation_date",
+        "real_rate_observation_date",
+        "fed_funds_observation_date",
+    ]:
+        if d_key in raw_data and raw_data[d_key] is not None:
+            result[d_key] = raw_data[d_key]
+
     return result
 
 
@@ -194,13 +330,13 @@ class FredMacroFetcher:
             return record["value"]
         return default_val
 
-    def get_macro_indicators(self) -> Dict[str, Any]:
+    def get_macro_indicators(self, ref_date: Optional[datetime.date] = None) -> Dict[str, Any]:
         """
         Fetch core macroeconomic regime indicators:
-        - T10Y2Y: 10-Year Minus 2-Year Treasury Yield Spread (%)
-        - FEDFUNDS: Effective Federal Funds Rate (%)
-        - BAMLH0A0HYM2: US High Yield Option-Adjusted Spread (%)
-        - DFII10: 10-Year Real Interest Rate (TIPS) (%)
+        - T10Y2Y: 10-Year Minus 2-Year Treasury Yield Spread (%) [DAILY, max age 7d]
+        - BAMLH0A0HYM2: US High Yield Option-Adjusted Spread (%) [DAILY, max age 7d]
+        - DFII10: 10-Year Real Interest Rate (TIPS) (%) [DAILY, max age 7d]
+        - FEDFUNDS: Effective Federal Funds Rate (%) [MONTHLY, max age 45d; distinct from daily DFF]
         - CPIAUCSL: Consumer Price Index level
         """
         yc_record = self.fetch_latest_observation_record("T10Y2Y")
@@ -225,8 +361,33 @@ class FredMacroFetcher:
         ff_date = ff_record.get("date") if ff_record else None
         dfii_date = dfii_record.get("date") if dfii_record else None
 
-        # Fail-closed regime and rating: only compute if core indicators are authentic
-        if yield_curve is not None and credit_spread_oas is not None:
+        # Freshness evaluation per series against explicit policy
+        yc_fresh = evaluate_series_freshness("T10Y2Y", yc_date, ref_date=ref_date)
+        cs_fresh = evaluate_series_freshness("BAMLH0A0HYM2", cs_date, ref_date=ref_date)
+        dfii_fresh = evaluate_series_freshness("DFII10", dfii_date, ref_date=ref_date)
+        ff_fresh = evaluate_series_freshness("FEDFUNDS", ff_date, ref_date=ref_date)
+
+        stale_series = []
+        missing_series = []
+        valid_dates = []
+
+        for sid, fresh_meta, val in [
+            ("T10Y2Y", yc_fresh, yield_curve),
+            ("BAMLH0A0HYM2", cs_fresh, credit_spread_oas),
+            ("DFII10", dfii_fresh, real_rate),
+            ("FEDFUNDS", ff_fresh, fed_funds),
+        ]:
+            if val is None:
+                missing_series.append(sid)
+            elif not fresh_meta["is_fresh"]:
+                stale_series.append(sid)
+            if fresh_meta.get("observation_date"):
+                valid_dates.append(fresh_meta["observation_date"])
+
+        is_all_fresh = (len(missing_series) == 0 and len(stale_series) == 0)
+
+        # Fail-closed regime and rating: only compute if core indicators are authentic, complete, and fresh
+        if yield_curve is not None and credit_spread_oas is not None and is_all_fresh:
             rating = 2
             regime = "Accommodative Growth"
             rate_impact = "Fed interest rate reductions provide equity multiple expansion tailwinds"
@@ -248,6 +409,12 @@ class FredMacroFetcher:
                 regime = "Optimal Expansionary Goldilocks"
                 rate_impact = "Steepening curve and tight credit spreads fuel strong risk-on alpha"
             availability = "AVAILABLE"
+        elif stale_series and len(missing_series) == 0:
+            rating = 0
+            regime = "Macro Telemetry Stale"
+            rate_impact = f"Macroeconomic telemetry stale ({', '.join(stale_series)})."
+            inflation_impact = "Macroeconomic inflation telemetry unverified."
+            availability = "STALE"
         else:
             rating = 0
             regime = "Macro Telemetry Unavailable"
@@ -261,25 +428,58 @@ class FredMacroFetcher:
                 "name": "10-Year Minus 2-Year Treasury Yield Spread",
                 "value": round(yield_curve, 2) if yield_curve is not None else None,
                 "date": yc_date,
+                "timestamp": yc_ts,
+                "frequency": "DAILY",
+                "age_days": yc_fresh["age_days"],
+                "max_age_days": 7,
+                "is_fresh": yc_fresh["is_fresh"],
+                "status": yc_fresh["status"],
             },
             "BAMLH0A0HYM2": {
                 "series_id": "BAMLH0A0HYM2",
                 "name": "US High Yield Option-Adjusted Spread",
                 "value": round(credit_spread_oas, 2) if credit_spread_oas is not None else None,
                 "date": cs_date,
+                "timestamp": cs_ts,
+                "frequency": "DAILY",
+                "age_days": cs_fresh["age_days"],
+                "max_age_days": 7,
+                "is_fresh": cs_fresh["is_fresh"],
+                "status": cs_fresh["status"],
             },
             "DFII10": {
                 "series_id": "DFII10",
                 "name": "10-Year Real Interest Rate (TIPS)",
                 "value": round(real_rate, 2) if real_rate is not None else None,
                 "date": dfii_date,
+                "timestamp": dfii_ts,
+                "frequency": "DAILY",
+                "age_days": dfii_fresh["age_days"],
+                "max_age_days": 7,
+                "is_fresh": dfii_fresh["is_fresh"],
+                "status": dfii_fresh["status"],
             },
             "FEDFUNDS": {
                 "series_id": "FEDFUNDS",
-                "name": "Effective Federal Funds Rate",
+                "name": "Effective Federal Funds Rate (Monthly)",
                 "value": round(fed_funds, 2) if fed_funds is not None else None,
                 "date": ff_date,
+                "timestamp": ff_ts,
+                "frequency": "MONTHLY",
+                "age_days": ff_fresh["age_days"],
+                "max_age_days": 45,
+                "is_fresh": ff_fresh["is_fresh"],
+                "status": ff_fresh["status"],
+                "distinction": "Monthly effective rate (FEDFUNDS); distinct from daily DFF.",
             },
+        }
+
+        freshness_summary = {
+            "is_all_fresh": is_all_fresh,
+            "stale_series": stale_series,
+            "missing_series": missing_series,
+            "oldest_observation_date": min(valid_dates) if valid_dates else None,
+            "newest_observation_date": max(valid_dates) if valid_dates else None,
         }
 
         return {
@@ -304,7 +504,12 @@ class FredMacroFetcher:
             "credit_observation_timestamp": cs_ts,
             "real_rate_observation_timestamp": dfii_ts,
             "fed_funds_observation_timestamp": ff_ts,
-            "macro_observation_available_at": yc_ts or cs_ts or dfii_ts or ff_ts,
+            "yield_curve_observation_date": yc_date,
+            "credit_spread_observation_date": cs_date,
+            "real_rate_observation_date": dfii_date,
+            "fed_funds_observation_date": ff_date,
+            "macro_observation_available_at": min(valid_dates) if valid_dates else None,
+            "freshness_summary": freshness_summary,
             "series_observations": series_observations,
             "provider": "FRED",
             "availability": availability,
