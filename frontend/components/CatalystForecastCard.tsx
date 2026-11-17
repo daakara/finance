@@ -3,10 +3,13 @@
 import { useState, useEffect } from "react";
 import { CatalystForecastData, fetchEtfSectors, EtfSectorAllocation } from "../lib/api";
 import { isETF } from "../lib/assetTypeUtils";
+import { normalizeSymbol } from "../lib/opportunityDossiers";
 
 interface CatalystForecastCardProps {
   data?: CatalystForecastData;
   etfSectors?: EtfSectorAllocation[];
+  selectedSymbol?: string;
+  loading?: boolean;
 }
 
 type SectorArchetype = "BIOTECH" | "TECH" | "BUSINESS";
@@ -50,8 +53,19 @@ function getSectorArchetype(sector?: string): SectorArchetype {
   return "BUSINESS";
 }
 
-export default function CatalystForecastCard({ data, etfSectors }: CatalystForecastCardProps) {
+export default function CatalystForecastCard({
+  data: rawData,
+  etfSectors,
+  selectedSymbol,
+  loading,
+}: CatalystForecastCardProps) {
   const [sectors, setSectors] = useState<EtfSectorAllocation[] | null>(etfSectors || null);
+
+  // Render the Catalyst Forecast payload only when it matches the selected ticker
+  const isMatching =
+    !selectedSymbol ||
+    (Boolean(rawData?.symbol) && normalizeSymbol(rawData!.symbol) === normalizeSymbol(selectedSymbol));
+  const data = isMatching ? rawData : undefined;
 
   useEffect(() => {
     // If not an ETF, immediately clear sectors to prevent sticky ETF allocations on stock view

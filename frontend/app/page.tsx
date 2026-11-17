@@ -827,7 +827,11 @@ function TerminalContent() {
                   />
                 )}
                 <InstitutionalFeeds activeSymbol={selectedSymbol} />
-                <CatalystForecastCard data={data?.catalystForecast} />
+                <CatalystForecastCard
+                  data={data?.catalystForecast}
+                  selectedSymbol={selectedSymbol}
+                  loading={loading}
+                />
               </div>
             )}
 

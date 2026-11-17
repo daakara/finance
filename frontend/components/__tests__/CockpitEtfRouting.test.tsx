@@ -327,4 +327,81 @@ describe("Cockpit ETF Routing & Behavioral Boundary (Milestone P1)", () => {
     expect(screen.queryByText(/Clinical Trials/i)).toBeNull();
     expect(screen.queryByText(/Flagship Platform/i)).toBeNull();
   });
+
+  it("prevents displaying previous ticker card during loading interval or out-of-order response", () => {
+    const nvdaData: any = {
+      symbol: "NVDA",
+      company_name: "NVIDIA Corporation",
+      sector: "Semiconductors & AI Hardware Infrastructure",
+      primary_drug_trial: "Blackwell GB200 NVL72 & Rubin R100 Ultra Platform",
+      trial_phase: "Hyperscaler Mass Deployment Phase",
+      trial_readout_timeline: "Q3 2026 - Q1 2027",
+      efficacy_summary: "4x AI training throughput vs Hopper.",
+      competitive_edge: "Full-stack proprietary CUDA software moat.",
+      upcoming_milestones: [
+        { date: "Q4 2026", event: "GB200 Liquid Cooling Ramp", impact: "High Positive" }
+      ],
+      multi_year_forecast: [
+        { year: 2025, revenue_billions: 128.5, net_margin_pct: 54.0, projected_eps: 2.85, implied_pe: 45.0, implied_target: 128.25 }
+      ],
+    };
+
+    const spyData: any = {
+      symbol: "SPY",
+      company_name: "SPDR S&P 500 ETF Trust",
+      sector: "Index ETF",
+      efficacy_summary: "Diversified index allocation.",
+      competitive_edge: "Ultra-low expense ratio.",
+      upcoming_milestones: [],
+      multi_year_forecast: [],
+    };
+
+    // 1. Initial settled state: NVDA selected with NVDA data
+    const { rerender } = render(
+      <CatalystForecastCard
+        data={nvdaData}
+        selectedSymbol="NVDA"
+        loading={false}
+      />
+    );
+    expect(screen.getByText(/Product Cycles, Strategic Catalysts & 5-Year Earnings Model/i)).toBeDefined();
+    expect(screen.getByText(/Blackwell GB200 NVL72 & Rubin R100 Ultra Platform/i)).toBeDefined();
+
+    // 2. Loading interval: User switches to SPY, but network response is delayed (data is still stale NVDA)
+    rerender(
+      <CatalystForecastCard
+        data={nvdaData}
+        selectedSymbol="SPY"
+        loading={true}
+      />
+    );
+    // Prove that NVDA card is hidden while SPY is selected
+    expect(screen.queryByText(/Product Cycles, Strategic Catalysts & 5-Year Earnings Model/i)).toBeNull();
+    expect(screen.queryByText(/Blackwell GB200 NVL72 & Rubin R100 Ultra Platform/i)).toBeNull();
+    expect(screen.queryByText(/ETF Sector Allocations/i)).toBeNull();
+
+    // 3. Out-of-order response: Late arriving SPY data while user has already switched back to NVDA
+    rerender(
+      <CatalystForecastCard
+        data={spyData}
+        selectedSymbol="NVDA"
+        loading={true}
+      />
+    );
+    // Prove that SPY card is hidden while NVDA is selected
+    expect(screen.queryByText(/ETF Sector Allocations/i)).toBeNull();
+    expect(screen.queryByText(/SPDR S&P 500 ETF Trust/i)).toBeNull();
+    expect(screen.queryByText(/Product Cycles/i)).toBeNull();
+
+    // 4. Settled state: SPY selected with matching SPY data
+    rerender(
+      <CatalystForecastCard
+        data={spyData}
+        selectedSymbol="SPY"
+        loading={false}
+      />
+    );
+    expect(screen.getByText(/ETF Sector Allocations, Macro Holdings & 5-Year Trajectory/i)).toBeDefined();
+    expect(screen.getAllByText(/SPDR S&P 500 ETF Trust/i).length).toBeGreaterThan(0);
+  });
 });
