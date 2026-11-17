@@ -134,6 +134,8 @@ class SmartMoneyFiling:
     fetched_at: str = ""
     disposition: str = "FETCHED_AND_PARSED"
     amendment_of_accession: Optional[str] = None
+    original_submission_date: Optional[str] = None
+    reporting_owner_ciks: List[str] = field(default_factory=list)
 
 
 @dataclass

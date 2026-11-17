@@ -70,6 +70,8 @@ class TestSmartMoneyContinuousIngestion:
         worker.stale_recovery_interval_sec = 30
         worker._last_stale_recovery_at = time.time()
         worker.dsn = "postgresql://mock"
+        worker._owner_conn = MagicMock()
+        worker._owner_lock_acquired = True
 
         mock_gate = MagicMock()
         mock_gate.check_ingestion_eligibility.return_value = True
@@ -109,6 +111,8 @@ class TestSmartMoneyContinuousIngestion:
         worker.stale_recovery_interval_sec = 30
         worker._last_stale_recovery_at = time.time()
         worker.dsn = "postgresql://mock"
+        worker._owner_conn = MagicMock()
+        worker._owner_lock_acquired = True
 
         mock_gate = MagicMock()
         mock_gate.check_ingestion_eligibility.return_value = True
@@ -168,6 +172,8 @@ class TestSmartMoneyContinuousIngestion:
         worker.stale_recovery_interval_sec = 30
         worker._last_stale_recovery_at = time.time()
         worker.dsn = "postgresql://mock"
+        worker._owner_conn = MagicMock()
+        worker._owner_lock_acquired = True
 
         mock_gate = MagicMock()
         mock_gate.check_ingestion_eligibility.return_value = True
@@ -206,7 +212,7 @@ class TestSmartMoneyContinuousIngestion:
         assert "ALREADY_EXECUTED_TODAY" in reason_dup
 
     # ── Test 7: Idempotent filing persistence ────────────────────────────────
-    def test_idempotent_filing_persistence(self):
+    def test_fetch_defers_persistence_until_atomic_reconciliation(self):
         mock_repo = MagicMock()
         mock_repo.save_raw_filing.return_value = True
 
@@ -225,7 +231,7 @@ class TestSmartMoneyContinuousIngestion:
 
         filings = pipeline._step6_ingest_form4_filings()
         assert len(filings) == len(pipeline.issuers)
-        assert mock_repo.save_raw_filing.call_count == len(pipeline.issuers)
+        mock_repo.save_raw_filing.assert_not_called()
 
     # ── Test 8: Backup freshness gate compliance ─────────────────────────────
     def test_backup_freshness_gate_compliance(self):
@@ -281,6 +287,9 @@ class TestSmartMoneyContinuousIngestion:
         pipeline._step1_preflight = MagicMock()
         pipeline._step5_claim_advisory_lock = MagicMock()
         pipeline._cleanup_lock = MagicMock()
+        pipeline._step6_ingest_form4_filings = MagicMock(return_value=[])
+        pipeline._step7_parse_and_reconcile = MagicMock(return_value=([], {}))
+        pipeline._step8_publish_snapshot = MagicMock(return_value={"snapshot_id": "SNAP_001"})
 
         result = pipeline.execute_cycle(trigger_type="TEST")
         assert result["status"] == "DEGRADED_POST_BACKUP_FAILED"

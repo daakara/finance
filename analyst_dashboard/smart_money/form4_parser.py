@@ -369,6 +369,8 @@ class Form4XmlParser:
             issuer_symbol=issuer_symbol,
             filing_date=filing_date,
             acceptance_datetime=acceptance_datetime,
+            original_submission_date=cls._get_text(root, "dateOfOriginalSubmission") or None,
+            reporting_owner_ciks=[o["cik"] for o in owners if o["cik"] != "0000000000"],
             document_type=doc_type,
             is_amendment=is_amendment,
             transactions=transactions,

@@ -113,14 +113,15 @@ def test_all_known_filings_returns_empty_without_archive_fetch():
 def test_repository_watermark_query_is_parameterized_and_read_only():
     repo = PostgresSmartMoneyRepository(dsn="postgresql://mock")
     cursor = MagicMock()
-    cursor.fetchall.return_value = [(ACCESSIONS[0],), (ACCESSIONS[1],)]
+    cursor.fetchall.return_value = [{"accession_number": a} for a in ACCESSIONS[:2]]
     connection_context = MagicMock()
     connection_context.__enter__.return_value = cursor
     with patch("analyst_dashboard.smart_money.storage.postgres_repository.transaction",
                return_value=connection_context):
         known = repo.get_existing_accessions_for_issuer("NVDA")
     assert known == set(ACCESSIONS[:2])
-    cursor.execute.assert_called_once_with(
-        "SELECT accession_number FROM form4_raw_filings WHERE ticker = %s;",
-        ("NVDA",),
-    )
+    query, params = cursor.execute.call_args.args
+    assert params == ("NVDA",)
+    assert "JOIN sm_source_availability_ledger" in query
+    assert "resolution_status <> 'RESOLVED'" in query
+    assert "INSERT" not in query and "UPDATE" not in query

@@ -10,6 +10,7 @@ import json
 import uuid
 import hashlib
 import logging
+from contextlib import contextmanager
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Set
 
@@ -47,6 +48,47 @@ class PostgresSmartMoneyRepository:
         self.dsn = dsn
         self.containment_gate = containment_gate
 
+    @contextmanager
+    def ingestion_transaction(self):
+        """Commit complete filing evidence together; never retain partial ingestion."""
+        with get_connection(dsn=self.dsn) as conn:
+            try:
+                yield conn
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+
+    def resolve_amendment_base(self, filing, original_date, owner_ciks, conn):
+        """Resolve only a unique original Form 4 with the same issuer/owner set.
+
+        Accession prefixes are submitting agents, not reporting-owner identities.
+        An ambiguous or absent match remains unresolved and cannot imply conviction.
+        """
+        from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
+        if not original_date or not owner_ciks:
+            return None
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """SELECT accession_number, xml_content FROM form4_raw_filings
+                   WHERE cik = %s AND ticker = %s AND filing_date = %s
+                     AND accession_number <> %s AND accepted_datetime <= %s;""",
+                (filing["cik"], filing["ticker"], original_date,
+                 filing["accession_number"], filing["accepted_datetime"]),
+            )
+            candidates = cur.fetchall()
+        matches = []
+        for candidate in candidates:
+            parsed = Form4XmlParser.parse_filing(
+                candidate["xml_content"], accession_number=candidate["accession_number"]
+            )
+            if (parsed and parsed.disposition != "PARSE_FAILED"
+                    and parsed.issuer_cik == str(filing["cik"]).zfill(10)
+                    and parsed.document_type == "4"
+                    and set(parsed.reporting_owner_ciks) == set(owner_ciks)):
+                matches.append(candidate["accession_number"])
+        return matches[0] if len(matches) == 1 else None
+
     # ── Raw Filings & Idempotency ─────────────────────────────────────────────
 
     def get_existing_accessions_for_issuer(self, ticker: str) -> Set[str]:
@@ -59,10 +101,16 @@ class PostgresSmartMoneyRepository:
             raise RuntimeError("SEC_FILING_WATERMARK_DB_UNAVAILABLE")
         with transaction(dsn=self.dsn) as cur:
             cur.execute(
-                "SELECT accession_number FROM form4_raw_filings WHERE ticker = %s;",
+                """SELECT f.accession_number FROM form4_raw_filings f
+                   JOIN sm_source_availability_ledger av USING (accession_number)
+                   WHERE f.ticker = %s AND NOT EXISTS (
+                     SELECT 1 FROM sm_amendments a
+                     WHERE a.amendment_accession = f.accession_number
+                       AND a.resolution_status <> 'RESOLVED'
+                   );""",
                 (ticker,),
             )
-            return {row[0] for row in cur.fetchall()}
+            return {row["accession_number"] for row in cur.fetchall()}
 
     def save_raw_filing(
         self,
@@ -229,7 +277,12 @@ class PostgresSmartMoneyRepository:
             INSERT INTO sm_amendments (
                 amendment_accession, base_accession, amendment_number, resolution_status, resolved_at
             ) VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (amendment_accession) DO NOTHING;
+            ON CONFLICT (amendment_accession) DO UPDATE SET
+                base_accession = EXCLUDED.base_accession,
+                resolution_status = EXCLUDED.resolution_status,
+                resolved_at = EXCLUDED.resolved_at
+            WHERE sm_amendments.resolution_status = 'UNRESOLVED'
+              AND EXCLUDED.resolution_status = 'RESOLVED';
         """
         params = (amendment_accession, base_accession, amendment_number, resolution_status, resolved_at)
 

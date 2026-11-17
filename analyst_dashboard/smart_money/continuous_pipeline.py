@@ -23,6 +23,7 @@ import uuid
 import json
 import hashlib
 import logging
+from contextlib import nullcontext
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple, Set, Callable
 
@@ -993,7 +994,7 @@ class SmartMoneyContinuousPipeline:
             self._check_in_flight_authorization(step_name=f"STEP_6_SEC_INGESTION_{ticker}")
 
             # Retrieve filings via fetcher or mock
-            if self.sec_fetcher:
+            if self.sec_fetcher and self.allow_test_mode:
                 if hasattr(self.sec_fetcher, "session"):
                     self.sec_fetcher.session = self.outbound_session
                 if hasattr(self.sec_fetcher, "rate_limiter"):
@@ -1012,10 +1013,8 @@ class SmartMoneyContinuousPipeline:
                         filing.get("xml_content", "").encode("utf-8")
                     ).hexdigest()
 
-                if self.repository:
-                    # Idempotent persistence (raises SOURCE_INTEGRITY_CONFLICT on hash mismatch)
-                    self.repository.save_raw_filing(filing)
-
+                # Persist only after parsing, with availability and reconciliation
+                # in the shared Step 7 transaction. A parse failure must be retryable.
                 raw_filings.append(filing)
 
         # Never publish a new empty snapshot after a successful but data-free scan.
@@ -1156,25 +1155,51 @@ class SmartMoneyContinuousPipeline:
         Parses Form 4 XML into normalized transactions and persists them.
         Generates and saves immutable cryptographic reconciliation receipt.
         """
+        context = self.repository.ingestion_transaction() if self.repository else nullcontext(None)
+        with context as conn:
+            return self._parse_and_reconcile_transaction(raw_filings, cycle_id, as_of, conn)
+
+    def _parse_and_reconcile_transaction(self, raw_filings, cycle_id, as_of, conn):
         parsed_tx_objs: List[SmartMoneyTransaction] = []
         raw_tx_dicts: List[Dict[str, Any]] = []
+        unresolved_amendments = []
         now_iso = datetime.now(timezone.utc).isoformat()
         watermark = as_of or now_iso
 
         for f in raw_filings:
+            if self.repository:
+                if not f.get("accepted_datetime"):
+                    raise RuntimeError("SEC_PUBLIC_AVAILABILITY_MISSING")
+                self.repository.save_raw_filing(f, conn=conn)
+                self.repository.record_source_availability(
+                    f["accession_number"], f["accepted_datetime"], source="SEC_INDEX",
+                    source_reference=f.get("source_url"), conn=conn,
+                )
+
+        for f in raw_filings:
             xml = f.get("xml_content")
             if not xml:
-                continue
+                raise RuntimeError("SEC_FORM4_XML_MISSING")
             accession = f.get("accession_number", "UNKNOWN")
-            parsed_filing = Form4XmlParser.parse_filing(xml, accession_number=accession)
-            if parsed_filing and parsed_filing.transactions:
+            parsed_filing = Form4XmlParser.parse_filing(
+                xml, accession_number=accession,
+                acceptance_datetime=f.get("accepted_datetime"),
+                source_url=f.get("source_url", ""),
+            )
+            if not parsed_filing or parsed_filing.disposition not in (
+                "FETCHED_AND_PARSED", "FETCHED_NO_RELEVANT_TRANSACTIONS"
+            ):
+                raise RuntimeError("SEC_FORM4_PARSE_FAILED")
+            if parsed_filing.issuer_cik != str(f.get("cik", "")).zfill(10):
+                raise RuntimeError("SEC_FORM4_ISSUER_MISMATCH")
+            if parsed_filing.transactions:
                 for tx in parsed_filing.transactions:
                     if not tx.issuer_symbol:
                         tx.issuer_symbol = f.get("ticker") or f.get("symbol")
                     if not tx.issuer_cik:
                         tx.issuer_cik = f.get("cik") or parsed_filing.issuer_cik
                     if not tx.issuer_name:
-                        tx.issuer_name = f.get("company_name") or parsed_filing.issuer_name
+                        tx.issuer_name = f.get("company_name")
 
                     parsed_tx_objs.append(tx)
                     tx_dict = {
@@ -1203,21 +1228,21 @@ class SmartMoneyContinuousPipeline:
             # Record amendment relationship in repository if Form 4/A
             is_amend = getattr(parsed_filing, "is_amendment", False) or f.get("document_type") in ("4/A", "4A")
             if is_amend and self.repository:
-                base_acc = getattr(parsed_filing, "amended_accession_number", None)
-                res_status = "RESOLVED" if base_acc else "UNRESOLVED"
-                try:
-                    self.repository.save_amendment(
-                        amendment_accession=accession,
-                        base_accession=base_acc,
-                        amendment_number=1,
-                        resolution_status=res_status,
-                        resolved_at=now_iso if base_acc else None,
-                    )
-                except Exception as e_am:
-                    logger.warning(f"Error saving amendment lineage for {accession}: {e_am}")
+                base_acc = self.repository.resolve_amendment_base(
+                    f, parsed_filing.original_submission_date,
+                    parsed_filing.reporting_owner_ciks, conn,
+                )
+                if not base_acc:
+                    unresolved_amendments.append(accession)
+                self.repository.save_amendment(
+                    amendment_accession=accession, base_accession=base_acc,
+                    amendment_number=1,
+                    resolution_status="RESOLVED" if base_acc else "UNRESOLVED",
+                    resolved_at=now_iso if base_acc else None, conn=conn,
+                )
 
         if self.repository and raw_tx_dicts:
-            self.repository.save_parsed_transactions(raw_tx_dicts)
+            self.repository.save_parsed_transactions(raw_tx_dicts, conn=conn)
 
         # Cryptographic reconciliation receipt
         reconcile_str = f"{cycle_id}:{watermark}:{len(raw_filings)}:{len(parsed_tx_objs)}"
@@ -1230,17 +1255,17 @@ class SmartMoneyContinuousPipeline:
             "certified_watermark": watermark,
             "receipt_version": 1,
             "expected_count": len(raw_filings),
-            "accounted_count": len(raw_filings),
+            "accounted_count": len(raw_filings) - len(unresolved_amendments),
             "missing_count": 0,
-            "material_gap_count": 0,
-            "coverage_status": "COMPLETE",
-            "failure_reasons": [],
+            "material_gap_count": len(unresolved_amendments),
+            "coverage_status": "PARTIAL" if unresolved_amendments else "COMPLETE",
+            "failure_reasons": [f"UNRESOLVED_AMENDMENT:{a}" for a in unresolved_amendments],
             "reconciliation_hash": reconciliation_hash,
             "release_sha": os.environ.get("ARX_RELEASE_SHA", "b9588f95188ab7e204474773f67dacbc9f6afb1f"),
         }
 
         if self.repository:
-            self.repository.save_reconciliation_receipt(receipt_meta)
+            self.repository.save_reconciliation_receipt(receipt_meta, conn=conn)
 
         return parsed_tx_objs, receipt_meta
 
@@ -1270,6 +1295,9 @@ class SmartMoneyContinuousPipeline:
         recon_hash = receipt_meta.get("reconciliation_hash") if receipt_meta else None
         if not recon_hash:
             raise RuntimeError("SNAPSHOT_PUBLICATION_REJECTED: Missing reconciliation receipt hash")
+
+        if receipt_meta.get("material_gap_count", 0) or receipt_meta.get("coverage_status", "COMPLETE") != "COMPLETE":
+            raise RuntimeError("SNAPSHOT_PUBLICATION_REJECTED: Reconciliation evidence incomplete")
 
         # 2. Normalize incoming transactions to SmartMoneyTransaction objects
         tx_objects: List[SmartMoneyTransaction] = []
