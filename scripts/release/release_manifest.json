@@ -1,41 +1,49 @@
 {
-  "release_candidate_commit": "168c45ef71afac3b03feac9f824b2a9af316f5ef",
-  "base_anchor_commit": "bb9fdcf412b8ed55af94f944f09c39541a122e17",
-  "total_files": 4,
+  "release_candidate_commit": "802c73858087f18e29951300695d749d67d1747d",
+  "base_anchor_commit": "ee8ceab7b25be706292a5c38faedc03548073d0f",
+  "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-CONFLUENCE-DRAWER-PRESENTATION-001",
+  "directive": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027",
   "files": {
-    "frontend/components/AdaptiveTerminal.tsx": {
+    "README.md": {
       "operation": "M",
-      "originating_pr_number": 299,
-      "originating_commit": "077efc18d7da5a01aa3072db9e8184392a019190",
-      "governing_requirement": "ARX-CONFLUENCE-DRAWER-PRESENTATION-001: Pass canonical Confluence attribution to the drawer.",
-      "sha256": "45bb5f1db6bbe1d231e984c2953e6706ed3930b4e342302c478e5576711bc849",
-      "size_bytes": 13150
+      "originating_pr_number": 301,
+      "originating_commit": "802c73858087f18e29951300695d749d67d1747d",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027: Reconcile production status, operational holds, and sprint planning.",
+      "sha256": "3be226f035ca77703a4cb2981d7e54a07da58918ea1afdb45c656396e5ecb6db",
+      "size_bytes": 17548
     },
-    "frontend/components/WhyInspectModal.tsx": {
-      "operation": "M",
-      "originating_pr_number": 299,
-      "originating_commit": "077efc18d7da5a01aa3072db9e8184392a019190",
-      "governing_requirement": "ARX-CONFLUENCE-DRAWER-PRESENTATION-001: Render backend pillar scores, coverage, and warnings.",
-      "sha256": "9f6abee1e8f1888681a53db1d52540567fcb094d515b990249ba8258c414847b",
-      "size_bytes": 22535
-    },
-    "frontend/lib/api.ts": {
-      "operation": "M",
-      "originating_pr_number": 299,
-      "originating_commit": "077efc18d7da5a01aa3072db9e8184392a019190",
-      "governing_requirement": "ARX-CONFLUENCE-DRAWER-PRESENTATION-001: Expose canonical Confluence fields to the frontend.",
-      "sha256": "8fc9120b5deafa4d9c5dc1ce3174a32ef1a65cce35dcbf34a0ce280ff2b140f8",
-      "size_bytes": 193328
-    },
-    "frontend/tests/confluenceDrawerPresentation.test.ts": {
+    "docs/ARX_STATUS_ADDENDUM_2026_11_17.md": {
       "operation": "A",
-      "originating_pr_number": 299,
-      "originating_commit": "077efc18d7da5a01aa3072db9e8184392a019190",
-      "governing_requirement": "ARX-CONFLUENCE-DRAWER-PRESENTATION-001: Exercise Confluence drawer presentation regressions.",
-      "sha256": "d4988d5ea8361f72e5010d47ec917a19231b3d80a0f6cc21aa249d6b1fa071a9",
-      "size_bytes": 11038
+      "originating_pr_number": 301,
+      "originating_commit": "802c73858087f18e29951300695d749d67d1747d",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027: Reconcile production status, operational holds, and sprint planning.",
+      "sha256": "18421b039e1713b95b904837ee1caa562e95898cbe4e24bed0230d830c73e3cb",
+      "size_bytes": 13244
+    },
+    "docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md": {
+      "operation": "M",
+      "originating_pr_number": 301,
+      "originating_commit": "802c73858087f18e29951300695d749d67d1747d",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027: Reconcile production status, operational holds, and sprint planning.",
+      "sha256": "4a64ab0011d9dc255943f5189e5c513eaca11a789376b02020e01a85466ce631",
+      "size_bytes": 8837
+    },
+    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md": {
+      "operation": "A",
+      "originating_pr_number": 301,
+      "originating_commit": "802c73858087f18e29951300695d749d67d1747d",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027: Reconcile production status, operational holds, and sprint planning.",
+      "sha256": "548523d2e9aa27fd8de15569642ab88e7f6e62a4d50eaeac9cec615166258374",
+      "size_bytes": 12978
+    },
+    "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md": {
+      "operation": "A",
+      "originating_pr_number": 301,
+      "originating_commit": "802c73858087f18e29951300695d749d67d1747d",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027: Reconcile production status, operational holds, and sprint planning.",
+      "sha256": "2516200cf5ac7e9db0a336203b43e6ef23c58f7df1c791c5248c5b75f61c6944",
+      "size_bytes": 10664
     }
   },
   "qualification_framework_files": {
@@ -45,8 +53,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "6ff99654afa42a8ad26be4d386ff3a2e8a05a6ecc45770e45f5fd74d3a5f1545",
-      "size_bytes": 58166,
+      "sha256": "f6a3687c8a82e08d77edeac6a65b70d507fc66fd03958dd4a8570d934cfb8381",
+      "size_bytes": 58171,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
