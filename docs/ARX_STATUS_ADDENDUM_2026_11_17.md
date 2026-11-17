@@ -1,6 +1,6 @@
 # ARX Terminal — Integrated Status Addendum (2026-11-17)
 
-> **Authoritative Operational Reconciliation (2026-11-17, Production Baseline SHA `a42601eed6c09f7608b8f439b6f7f45ef743310d`):**  
+> **Authoritative Operational Reconciliation (2026-11-17, Production Baseline SHA `bb9fdcf412b8ed55af94f944f09c39541a122e17`):**  
 > This document provides the single authoritative operational status across all five ARX Terminal engineering workstreams. It supersedes the status portion of [the 2026-11-14 addendum](ARX_STATUS_ADDENDUM_2026_11_14.md) and historical registers. All immutable receipts, historical evidence, and audit logs are preserved untouched.
 
 ---
@@ -29,8 +29,8 @@ A feature may be **fully implemented** and **deployed to production** while rema
 │ 1. Smart Money     │ COMPLETE (NVDA)  │ Railway (STANDBY│ Pilot Closed │ HOLD_SEC_001  │
 │ 2. Radar           │ COMPLETE (PR#294)│ Cloudflare LIVE │ Discovery OK │ HOLD_SCAN_001 │
 │ 3. Confluence      │ CANDIDATE (PR299)│ Preview LIVE    │ Research OK  │ CONFLUENCE_HLD│
-│ 4. Pre-Flight / UX │ CANDIDATE (PR300)│ Preview LIVE    │ Research OK  │ PHASE_A3_UX_HL│
-│ 5. Infrastructure  │ VERIFIED (a42601)│ Cloudflare / PG │ Standby Armed│ HOLD_EXEC_001 │
+│ 4. Pre-Flight / UX │ DEPLOYED (PR300) │ Production LIVE    │ Research OK  │ PHASE_A3_UX_HL│
+│ 5. Infrastructure  │ VERIFIED (bb9fdc)│ Cloudflare / PG │ Standby Armed│ HOLD_EXEC_001 │
 └────────────────────┴──────────────────┴─────────────────┴──────────────┴───────────────┘
 ```
 
@@ -105,13 +105,14 @@ A feature may be **fully implemented** and **deployed to production** while rema
     - Preserves non-live pathways: `HISTORICAL REFERENCE` and `SIMULATED CLEARANCE`.
     - Verified surface agreement across readiness bar, checklist modal, and copied report.
     - Audited NVDA snapshot returns exactly 2/5 checks passed and `NOT CLEARED — STAGE 4 WAIT`.
+    - **Production verification:** Squash-merged as `bb9fdcf412b8ed55af94f944f09c39541a122e17`. [Release Qualification](https://github.com/daakara/finance/actions/runs/44103586783) passed on `4145fe60`. [PR #300 preview](https://bb5d8def.finance-xp8.pages.dev) serves `4145fe60`. [Manual production deployment](https://36c3c2e1.finance-xp8.pages.dev) succeeded at 16:18 CET on 2026-11-17. Both public hosts serve the merged SHA. All 12 merged-code acceptance tests passed. The live NVDA readiness bar and modal showed 2/5 checks passed with clearance blocked. The original audit inputs replayed with CHK-1 `Invalid Levels`.
 - **Hold State: `PHASE_A3_UX_HOLD=ACTIVE`.** Progressive disclosure redesign (PR #274) remains held in draft awaiting authentic 5-participant formative usability study.
 
 ---
 
 ### Workstream 5: Infrastructure & Production Telemetry
 
-- **Production Deployment Baseline:** Cloudflare Pages production deployment verified at commit SHA `a42601eed6c09f7608b8f439b6f7f45ef743310d` via `<meta name="arx-release-sha">`.
+- **Production Deployment Baseline:** Cloudflare Pages production deployment verified at commit SHA `bb9fdcf412b8ed55af94f944f09c39541a122e17` via `<meta name="arx-release-sha">`.
 - **Railway Services:**
   - `web` (`analyst-dashboard`): FastAPI online, serving live endpoints.
   - `smart-money-worker`: In `STANDBY` loop, `ARX_SEC_EGRESS_ROLE=DISABLED`, 0 held advisory locks, 0 active queue rows.
