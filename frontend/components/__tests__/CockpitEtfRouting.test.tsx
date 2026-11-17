@@ -227,4 +227,104 @@ describe("Cockpit ETF Routing & Behavioral Boundary (Milestone P1)", () => {
     rerender(<CatalystForecastCard data={undefined} />);
     expect(screen.queryByText(/Sector Allocations/i)).toBeNull();
   });
+
+  it("renders sector-appropriate labels in CatalystForecastCard and clears ETF allocation when switching ETF to stock", () => {
+    // 1. Render ETF with sector allocation
+    const { rerender } = render(
+      <CatalystForecastCard
+        data={{
+          symbol: "SPY",
+          company_name: "SPDR S&P 500 ETF Trust",
+          sector: "Index ETF",
+          efficacy_summary: "Diversified index allocation.",
+          competitive_edge: "Ultra-low expense ratio.",
+          upcoming_milestones: [],
+          multi_year_forecast: [],
+        }}
+        etfSectors={[{ sector: "Technology", weightPct: 31.5 }]}
+      />
+    );
+    expect(screen.getByText(/ETF Sector Allocations/i)).toBeDefined();
+    expect(screen.getByText("31.5%")).toBeDefined();
+
+    // 2. Switch to NVDA (Tech stock) without etfSectors prop
+    rerender(
+      <CatalystForecastCard
+        data={{
+          symbol: "NVDA",
+          company_name: "NVIDIA Corporation",
+          sector: "Semiconductors & AI Hardware Infrastructure",
+          primary_drug_trial: "Blackwell GB200 NVL72 & Rubin R100 Ultra Platform",
+          trial_phase: "Hyperscaler Mass Deployment Phase",
+          trial_readout_timeline: "Q3 2026 - Q1 2027",
+          efficacy_summary: "4x AI training throughput vs Hopper.",
+          competitive_edge: "Full-stack proprietary CUDA software moat.",
+          upcoming_milestones: [
+            { date: "Q4 2026", event: "GB200 Liquid Cooling Ramp", impact: "High Positive" }
+          ],
+          multi_year_forecast: [
+            { year: 2025, revenue_billions: 128.5, net_margin_pct: 54.0, projected_eps: 2.85, implied_pe: 45.0, implied_target: 128.25 }
+          ],
+        }}
+      />
+    );
+
+    // Verify ETF allocations are CLEARED
+    expect(screen.queryByText(/ETF Sector Allocations/i)).toBeNull();
+    expect(screen.queryByText("31.5%")).toBeNull();
+
+    // Verify NVDA tech labels
+    expect(screen.getByText(/Product Cycles, Strategic Catalysts & 5-Year Earnings Model/i)).toBeDefined();
+    expect(screen.getByText(/Flagship Platform:/i)).toBeDefined();
+    expect(screen.getByText(/Launch \/ Deployment Horizon/i)).toBeDefined();
+    expect(screen.getByText(/Performance & Market Impact/i)).toBeDefined();
+    expect(screen.queryByText(/Clinical Trials/i)).toBeNull();
+    expect(screen.queryByText(/Readout Horizon/i)).toBeNull();
+
+    // 3. Switch to NVO (Biotech / Pharma)
+    rerender(
+      <CatalystForecastCard
+        data={{
+          symbol: "NVO",
+          company_name: "Novo Nordisk A/S",
+          sector: "Pharmaceuticals & Biotechnology",
+          primary_drug_trial: "Amycretin (Oral & Subcutaneous Dual GLP-1/Amylin Agonist)",
+          trial_phase: "Phase 2 Clinical Development",
+          trial_readout_timeline: "2026 - 2027",
+          efficacy_summary: "Substantial body weight reduction in Phase 1.",
+          competitive_edge: "Global metabolic and obesity pipeline leader.",
+          upcoming_milestones: [],
+          multi_year_forecast: [],
+        }}
+      />
+    );
+    expect(screen.getByText(/Clinical Trials, Pipeline Catalysts & 5-Year Earnings Model/i)).toBeDefined();
+    expect(screen.getByText(/Key Asset:/i)).toBeDefined();
+    expect(screen.getByText(/Readout Horizon/i)).toBeDefined();
+    expect(screen.getByText(/Efficacy & Impact/i)).toBeDefined();
+
+    // 4. Switch to JPM (Financials / Consumer / Business)
+    rerender(
+      <CatalystForecastCard
+        data={{
+          symbol: "JPM",
+          company_name: "JPMorgan Chase & Co.",
+          sector: "Financial Services / Commercial & Investment Banking",
+          primary_drug_trial: "Net Interest Income (NII) Resilience & Wealth Inflows",
+          trial_phase: "Operational Scale Phase",
+          trial_readout_timeline: "2026 - 2027",
+          efficacy_summary: "Dominant franchise deposit moat.",
+          competitive_edge: "FORTRESS balance sheet.",
+          upcoming_milestones: [],
+          multi_year_forecast: [],
+        }}
+      />
+    );
+    expect(screen.getByText(/Business Catalysts, Strategic Initiatives & 5-Year Earnings Model/i)).toBeDefined();
+    expect(screen.getByText(/Strategic Initiative:/i)).toBeDefined();
+    expect(screen.getByText(/Execution Horizon/i)).toBeDefined();
+    expect(screen.getByText(/Strategic & Operational Impact/i)).toBeDefined();
+    expect(screen.queryByText(/Clinical Trials/i)).toBeNull();
+    expect(screen.queryByText(/Flagship Platform/i)).toBeNull();
+  });
 });

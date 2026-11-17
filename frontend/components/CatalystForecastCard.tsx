@@ -9,26 +9,76 @@ interface CatalystForecastCardProps {
   etfSectors?: EtfSectorAllocation[];
 }
 
+type SectorArchetype = "BIOTECH" | "TECH" | "BUSINESS";
+
+function getSectorArchetype(sector?: string): SectorArchetype {
+  if (!sector) return "BUSINESS";
+  const s = sector.toLowerCase();
+
+  // 1. Biotech and Pharmaceuticals retain clinical terminology
+  if (
+    s.includes("biotech") ||
+    s.includes("pharma") ||
+    s.includes("drug") ||
+    s.includes("therapeutics") ||
+    s.includes("clinical") ||
+    s.includes("life science")
+  ) {
+    return "BIOTECH";
+  }
+
+  // 2. Technology, Hardware, Semiconductors, AI, Software, Networking, Aerospace
+  if (
+    s.includes("semiconductor") ||
+    s.includes("software") ||
+    s.includes("hardware") ||
+    s.includes("technology") ||
+    s.includes("artificial intelligence") ||
+    s.includes("ai ") ||
+    s.includes(" ai") ||
+    s.includes("electronics") ||
+    s.includes("networking") ||
+    s.includes("optical") ||
+    s.includes("aerospace") ||
+    s.includes("defense") ||
+    s.includes("data center")
+  ) {
+    return "TECH";
+  }
+
+  // 3. Financials, Consumer businesses, and unclassified companies use business catalyst labels
+  return "BUSINESS";
+}
+
 export default function CatalystForecastCard({ data, etfSectors }: CatalystForecastCardProps) {
   const [sectors, setSectors] = useState<EtfSectorAllocation[] | null>(etfSectors || null);
 
   useEffect(() => {
+    // If not an ETF, immediately clear sectors to prevent sticky ETF allocations on stock view
+    if (!data?.symbol || !isETF(data.symbol)) {
+      setSectors(null);
+      return;
+    }
     if (etfSectors && etfSectors.length > 0) {
       setSectors(etfSectors);
       return;
     }
-    if (data?.symbol && isETF(data.symbol)) {
-      fetchEtfSectors(data.symbol).then((res) => {
+    fetchEtfSectors(data.symbol)
+      .then((res) => {
         if (res && res.sectors && res.sectors.length > 0) {
           setSectors(res.sectors);
+        } else {
+          setSectors(null);
         }
+      })
+      .catch(() => {
+        setSectors(null);
       });
-    }
   }, [data?.symbol, etfSectors]);
 
   if (!data) return null;
 
-  const isFund = isETF(data.symbol) || Boolean(sectors && sectors.length > 0);
+  const isFund = isETF(data.symbol);
 
   if (isFund) {
     return (
@@ -142,20 +192,58 @@ export default function CatalystForecastCard({ data, etfSectors }: CatalystForec
     );
   }
 
+  const archetype = getSectorArchetype(data.sector);
+
+  const archetypeConfig = {
+    BIOTECH: {
+      icon: "🔬",
+      headerTitle: "Clinical Trials, Pipeline Catalysts & 5-Year Earnings Model",
+      subBadgeIcon: "🔬",
+      subBadgeText: "Milestone Schedule & Forward DCF Trajectory Simulation",
+      assetEmoji: "💊",
+      assetLabel: "Key Asset",
+      horizonLabel: "Readout Horizon",
+      impactLabel: "Efficacy & Impact",
+      disclaimer: "*Simulation estimates future free cash flows, commercial penetration curves, and multiple compression upon patent expirations.",
+    },
+    TECH: {
+      icon: "⚡",
+      headerTitle: "Product Cycles, Strategic Catalysts & 5-Year Earnings Model",
+      subBadgeIcon: "⚡",
+      subBadgeText: "Product Roadmap & Forward DCF Trajectory Simulation",
+      assetEmoji: "🚀",
+      assetLabel: "Flagship Platform",
+      horizonLabel: "Launch / Deployment Horizon",
+      impactLabel: "Performance & Market Impact",
+      disclaimer: "*Simulation estimates future free cash flows, enterprise adoption curves, and hardware/software product cycle monetization.",
+    },
+    BUSINESS: {
+      icon: "🏛️",
+      headerTitle: "Business Catalysts, Strategic Initiatives & 5-Year Earnings Model",
+      subBadgeIcon: "🏛️",
+      subBadgeText: "Strategic Roadmap & Forward DCF Trajectory Simulation",
+      assetEmoji: "🏛️",
+      assetLabel: "Strategic Initiative",
+      horizonLabel: "Execution Horizon",
+      impactLabel: "Strategic & Operational Impact",
+      disclaimer: "*Simulation estimates future free cash flows, operating leverage, and strategic initiative execution.",
+    },
+  }[archetype];
+
   return (
     <section aria-labelledby="catalyst-header" className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl font-mono space-y-4">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1b2434] pb-3">
         <div className="flex items-center space-x-2">
-          <span className="text-xl">🔬</span>
+          <span className="text-xl">{archetypeConfig.icon}</span>
           <div>
             <h2 id="catalyst-header" className="text-sm sm:text-base font-bold text-white tracking-tight">
-              Clinical Trials, Pipeline Catalysts & 5-Year Earnings Model
+              {archetypeConfig.headerTitle}
             </h2>
             <div className="flex flex-wrap items-center gap-2 mt-0.5">
               <span className="text-[11px] text-cyan-400 font-semibold">{data.company_name} ({data.symbol}) • {data.sector}</span>
               <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/80 inline-flex items-center gap-1">
-                <span>🔬</span> Milestone Schedule & Forward DCF Trajectory Simulation
+                <span>{archetypeConfig.subBadgeIcon}</span> {archetypeConfig.subBadgeText}
               </span>
             </div>
           </div>
@@ -169,13 +257,15 @@ export default function CatalystForecastCard({ data, etfSectors }: CatalystForec
       <div className="bg-[#0b1019] border border-cyan-900/40 rounded-xl p-3.5 space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold text-cyan-300 flex items-center space-x-1.5">
-            <span>💊 Key Asset:</span>
+            <span>{archetypeConfig.assetEmoji} {archetypeConfig.assetLabel}:</span>
             <span className="text-white font-extrabold">{data.primary_drug_trial}</span>
           </span>
-          <span className="text-[11px] text-slate-400">Readout Horizon: <strong className="text-slate-200">{data.trial_readout_timeline}</strong></span>
+          <span className="text-[11px] text-slate-400">
+            {archetypeConfig.horizonLabel}: <strong className="text-slate-200">{data.trial_readout_timeline}</strong>
+          </span>
         </div>
         <p className="text-xs text-slate-300 leading-relaxed">
-          <strong className="text-slate-100">Efficacy & Impact:</strong> {data.efficacy_summary}
+          <strong className="text-slate-100">{archetypeConfig.impactLabel}:</strong> {data.efficacy_summary}
         </p>
         <p className="text-[11px] text-slate-400 leading-snug">
           <strong className="text-cyan-400">Competitive Moat:</strong> {data.competitive_edge}
@@ -240,7 +330,7 @@ export default function CatalystForecastCard({ data, etfSectors }: CatalystForec
             </table>
           </div>
           <p className="text-[10px] text-slate-500 leading-tight">
-            *Simulation estimates future free cash flows, commercial penetration curves, and multiple compression upon patent expirations.
+            {archetypeConfig.disclaimer}
           </p>
         </div>
       </div>
