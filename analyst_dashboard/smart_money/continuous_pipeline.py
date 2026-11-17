@@ -1269,6 +1269,60 @@ class SmartMoneyContinuousPipeline:
 
         return parsed_tx_objs, receipt_meta
 
+    @staticmethod
+    def _snapshot_cutoff(as_of):
+        """Date-only replays include that UTC day; timestamps require an explicit zone."""
+        if as_of is None:
+            value = datetime.now(timezone.utc)
+        elif re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(as_of)):
+            value = datetime.fromisoformat(str(as_of)).replace(
+                hour=23, minute=59, second=59, tzinfo=timezone.utc,
+            )
+        else:
+            value = datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+            if value.tzinfo is None:
+                raise ValueError("SNAPSHOT_CUTOFF_TIMEZONE_REQUIRED")
+        return value.astimezone(timezone.utc)
+
+    def _historical_snapshot_inputs(self, cutoff):
+        if self.repository is None:
+            raise RuntimeError("SNAPSHOT_HISTORICAL_REPOSITORY_REQUIRED")
+        watermark = cutoff.isoformat().replace("+00:00", "Z")
+        min_date = (cutoff.date() - timedelta(days=30)).isoformat()
+        evidence = self.repository.get_snapshot_evidence_as_of(watermark, self.issuers, min_date)
+        expected = {i["ticker"]: i["cik"] for i in self.issuers}
+        transactions = []
+        for symbol, rows in evidence["transactions"].items():
+            if symbol not in expected:
+                raise RuntimeError("SNAPSHOT_UNEXPECTED_ISSUER")
+            for row in rows:
+                if str(row.get("issuer_cik", "")).zfill(10) != expected[symbol]:
+                    raise RuntimeError("SNAPSHOT_ISSUER_IDENTITY_MISMATCH")
+                public_at = datetime.fromisoformat(str(row["public_availability_at"]).replace("Z", "+00:00"))
+                if public_at.tzinfo is None or public_at > cutoff:
+                    raise RuntimeError("SNAPSHOT_PUBLIC_AVAILABILITY_INVALID")
+                item = dict(row)
+                item["transaction_date"] = str(row["transaction_date"])[:10]
+                if not min_date <= item["transaction_date"] <= cutoff.date().isoformat():
+                    raise RuntimeError("SNAPSHOT_TRANSACTION_DATE_INVALID")
+                # Canonical parser record keys retain the XML reporting-owner CIK.
+                parts = str(item["transaction_id"]).split(":")
+                if len(parts) != 4 or parts[0] != item["accession_number"] or not re.fullmatch(r"[0-9]{10}", parts[1]):
+                    raise RuntimeError("SNAPSHOT_REPORTING_OWNER_UNVERIFIED")
+                item["reporting_owner_cik"] = parts[1]
+                tx = _normalize_to_transaction_obj(item)
+                # Stored evidence flags remain authoritative; do not infer a buy from code P.
+                tx.is_open_market_purchase_evidence = row.get("is_open_market_purchase_evidence") is True
+                tx.is_positive_buying_conviction = row.get("is_positive_buying_conviction") is True
+                tx.public_availability_at = public_at.isoformat()
+                transactions.append(tx)
+        return transactions, {
+            "source": "POSTGRES_PUBLIC_AVAILABLE",
+            "watermark": watermark,
+            "interval_start": min_date,
+            "coverage_receipt_ids": evidence["coverage_receipt_ids"],
+        }
+
     def _step8_publish_snapshot(
         self,
         parsed_txs: List[Any],
@@ -1288,7 +1342,8 @@ class SmartMoneyContinuousPipeline:
         snapshot_id = f"SNAP_SM_{now_ts}_{uuid.uuid4().hex[:8]}"
         run_id = f"RUN_SM_{now_ts}_{uuid.uuid4().hex[:6]}"
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        as_of_watermark = as_of or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        cutoff = self._snapshot_cutoff(as_of)
+        as_of_watermark = cutoff.isoformat().replace("+00:00", "Z")
         release_sha = os.environ.get("ARX_RELEASE_SHA", "b9588f95188ab7e204474773f67dacbc9f6afb1f")
 
         # 1. Reconciliation gate check
@@ -1299,14 +1354,12 @@ class SmartMoneyContinuousPipeline:
         if receipt_meta.get("material_gap_count", 0) or receipt_meta.get("coverage_status", "COMPLETE") != "COMPLETE":
             raise RuntimeError("SNAPSHOT_PUBLICATION_REJECTED: Reconciliation evidence incomplete")
 
-        # 2. Normalize incoming transactions to SmartMoneyTransaction objects
-        tx_objects: List[SmartMoneyTransaction] = []
-        for tx in parsed_txs:
-            try:
-                tx_objects.append(_normalize_to_transaction_obj(tx))
-            except Exception as e:
-                logger.error(f"Error normalizing transaction: {e}")
-                raise RuntimeError(f"SNAPSHOT_PUBLICATION_REJECTED: Transaction normalization failed: {e}")
+        # Live snapshots use all eligible persisted evidence, never the latest batch.
+        input_provenance = {"source": "EXPLICIT_TEST_FIXTURE"}
+        if self.allow_test_mode:
+            tx_objects = [_normalize_to_transaction_obj(tx) for tx in parsed_txs]
+        else:
+            tx_objects, input_provenance = self._historical_snapshot_inputs(cutoff)
 
         # 3. Evaluate scanner candidate results for each governed issuer
         scanned_successfully_count = 0
@@ -1336,7 +1389,7 @@ class SmartMoneyContinuousPipeline:
                     symbol=ticker,
                     transactions=issuer_txs,
                     lookback_days=30,
-                    now_date=as_of_watermark,
+                    now_date=cutoff.date().isoformat(),
                 )
                 scanned_successfully_count += 1
                 data_complete_count += 1
@@ -1446,6 +1499,7 @@ class SmartMoneyContinuousPipeline:
                 "subsignal": "INSIDER_FORM4",
                 "statutory_basis": "SEC Form 4 Section 16(a)",
                 "role": "INSIDER_FORM4_POINT_IN_TIME_FLOW",
+                "historical_input": input_provenance,
                 "reconciliation_receipt_id": receipt_meta.get("receipt_id"),
                 "reconciliation_hash": recon_hash,
                 "release_sha": release_sha,

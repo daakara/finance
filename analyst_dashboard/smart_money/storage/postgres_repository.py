@@ -468,6 +468,7 @@ class PostgresSmartMoneyRepository:
             LEFT JOIN sm_amendments am ON tx.accession_number = am.amendment_accession
             WHERE {time_predicate}
               AND tx.transaction_date >= %s
+              AND tx.transaction_date <= (%s::timestamptz AT TIME ZONE 'UTC')::date
               AND f.ticker = ANY(%s)
               -- 1. Exclude unresolved or ambiguous amendments
               AND NOT EXISTS (
@@ -511,7 +512,7 @@ class PostgresSmartMoneyRepository:
                             AND re_am.amendment_number > curr_am.amendment_number
                       )
                   )
-                    AND re_am.resolution_status NOT IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'ADDITIONAL_TRANSACTION', 'PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                    AND re_am.resolution_status IN ('SUPERSEDED', 'SUPERSEDED_OR_CORRECTED', 'FULL_REPLACEMENT')
                     AND {re_time_predicate}
               )
             ORDER BY tx.transaction_date ASC, av.public_availability_at ASC;
@@ -521,6 +522,7 @@ class PostgresSmartMoneyRepository:
             params = (
                 as_of_watermark,
                 min_date,
+                as_of_watermark,
                 [s.upper().strip() for s in symbols],
                 as_of_watermark,
                 as_of_watermark,
@@ -577,7 +579,7 @@ class PostgresSmartMoneyRepository:
             JOIN form4_raw_filings f ON am.amendment_accession = f.accession_number
             JOIN sm_source_availability_ledger av ON am.amendment_accession = av.accession_number
             WHERE {time_predicate}
-              AND am.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED')
+              AND am.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'RESOLVED')
               AND f.ticker = ANY(%s);
         """
 
@@ -593,6 +595,41 @@ class PostgresSmartMoneyRepository:
             with get_connection(dsn=self.dsn) as c:
                 with c.cursor(cursor_factory=RealDictCursor) as cur:
                     return _exec(cur)
+
+    def get_snapshot_evidence_as_of(self, as_of_watermark, issuers, min_date):
+        """Read a coherent historical input set; never certify zero from a batch receipt."""
+        from analyst_dashboard.smart_money.radar_adapter import RadarSmartMoneyAdapter
+        symbols = [issuer["ticker"] for issuer in issuers]
+        with get_connection(dsn=self.dsn) as conn:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+                ambiguous = self.get_ambiguous_amendment_symbols_as_of(
+                    as_of_watermark, symbols, conn=conn,
+                )
+                if ambiguous:
+                    raise RuntimeError("SNAPSHOT_AMENDMENT_EFFECT_UNVERIFIED")
+                receipt_ids = []
+                for issuer in issuers:
+                    receipt = self.get_authoritative_receipt_for_interval(
+                        interval_start=min_date, interval_end=as_of_watermark,
+                        certified_watermark=as_of_watermark, issuer_cik=issuer["cik"], conn=conn,
+                    )
+                    valid, _ = RadarSmartMoneyAdapter.validate_issuer_coverage_receipt(
+                        receipt, issuer["ticker"], issuer["cik"], min_date, as_of_watermark,
+                        window_days=30,
+                    )
+                    if not valid:
+                        raise RuntimeError("SNAPSHOT_HISTORICAL_COVERAGE_UNVERIFIED")
+                    receipt_ids.append(str(receipt["receipt_id"]))
+                transactions = self.get_bulk_transactions_as_of(
+                    as_of_watermark, symbols, min_date, conn=conn,
+                    replay_mode="PUBLIC_AVAILABLE",
+                )
+                return {"transactions": transactions, "coverage_receipt_ids": receipt_ids}
+            finally:
+                # End the read-only transaction on success and failure before pooling.
+                conn.rollback()
 
     # ── Snapshot Publication (Atomic Publication Transaction) ────────────────
 

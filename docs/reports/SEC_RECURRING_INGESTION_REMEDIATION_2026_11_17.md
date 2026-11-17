@@ -19,3 +19,19 @@ The existing Continuous Authorization Guard workflow now includes the new tests 
 ## Operational boundary
 
 This candidate does not enable SEC ingestion, change Railway variables, dispatch a production request, query SEC, alter the NVDA frozen-baseline backfill, lift holds, or change scoring formulas. Production remains STANDBY. No claim of continuous operational readiness or current full-universe coverage is made. Subsequent activation still requires release qualification, deployment verification, current backup/restore evidence, lock/queue checks and a bounded authorized cycle. Snapshot evaluation of only the current cycle's transactions versus the historical PIT repository remains a separate activation-review concern.
+
+## Historical snapshot follow-up
+
+The Step 8 activation review confirmed that scoring previously consumed only the current fetched batch. Production now queries the repository for all stored, eligible public evidence in the existing 30-day scanner window. Explicit timestamps preserve intraday precision; a date-only replay includes the UTC day through 23:59:59. Naive and malformed timestamps fail rather than falling back to current time. The scanner formula and window are unchanged.
+
+A single read-only, repeatable-read transaction checks amendment classification, historical issuer coverage and the PIT transaction set. Later-available filings and future-dated transactions are excluded. Returned issuer CIK, transaction date, availability and canonical reporting-owner record keys are checked before evaluation. Stored buying-evidence flags are preserved; code P does not override a false flag. Snapshot provenance records the public cutoff, observation-window start and coverage receipt IDs.
+
+A `RESOLVED` amendment link establishes lineage only, not replacement scope. Such links block production snapshot publication until the amendment effect is independently classified. Only known full replacements supersede an entire prior filing. Existing explicit partial-correction and additional-transaction classifications retain their PIT behavior.
+
+### Activation blocker: issuer-bound historical coverage
+
+The existing `sm_reconciliation_receipts` schema has no issuer or covered-universe binding. A one-cycle global receipt cannot certify the full historical window for each governed issuer. The snapshot reader therefore rejects absent or unbound historical coverage with `SNAPSHOT_HISTORICAL_COVERAGE_UNVERIFIED`, including when the transaction query would return zero. A linked but scope-unclassified amendment raises `SNAPSHOT_AMENDMENT_EFFECT_UNVERIFIED`. This is an explicit activation blocker, not a reason to infer completeness from stored row counts or lift any hold.
+
+Follow-up activation work must establish durable issuer/window-bound coverage evidence, classify amendment effect from source evidence, and qualify a controlled cycle against that evidence. No schema migration, production backfill, receipt fabrication, operational arming or SEC egress is part of this candidate.
+
+New regression cases cover historical versus current-batch inputs, precise cutoffs, future availability and transaction dates, missing coverage, read failure without fallback, reporting-owner identity, stored classification flags, amendment scope and pre/post-publication replay. Local database cases remain socket-restricted; the hosted guard workflow requires real PostgreSQL execution.
