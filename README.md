@@ -1,6 +1,6 @@
 # 📈 ARX Terminal | Institutional Financial Intelligence & Research Platform
 
-> **Current operational reconciliation (2026-11-14, production SHA `6ea232838a53e482753d5705ba533ad9ce041e44`):** See [Active work register](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md), [Integrated status addendum](docs/ARX_STATUS_ADDENDUM_2026_11_14.md), and [Operational holds register](docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md). Release qualification and surgical post-cycle queue remediation (#280), recommendation integrity (#279), queue execution (#278), confluence provenance (#277), tactical setups latency (#275), and UX touch targets (#273) are merged. Production worker is in fail-closed STANDBY (`ARX_SEC_EGRESS_ROLE=DISABLED`); one-shot live SEC qualification cycle is scheduled for Monday, Nov 16, 2026 at 22:30 EST under explicit OWNER GO. All six operational holds (`HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD`, `PHASE_A3_UX_HOLD`) remain strictly active.
+> **Current operational reconciliation (2026-11-17, production SHA `ee8ceab7b25be706292a5c38faedc03548073d0f`):** See [Active work register](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md), [Integrated status addendum](docs/ARX_STATUS_ADDENDUM_2026_11_17.md), and [Operational holds register](docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md). Release qualification and surgical post-launch releases through PR #298 (Catalyst card ticker sync, sector labels, FRED macro contract, SEC Form 4 presentation truth, v2.5.3 engine manifest, Radar evidence adapter, and Pre-Flight freshness safeguards) are merged and deployed to production. The one-shot SEC Form 4 pilot and supervised NVDA backfill under Issue #165 are complete; production database holds 16 of 16 accessions in the frozen NVDA backfill baseline. Production worker is in fail-closed STANDBY (`ARX_SEC_EGRESS_ROLE=DISABLED`) with 0 held locks and 0 active queue rows. Pre-Flight quote provenance and sizing authorization ([PR #300](https://github.com/daakara/finance/pull/300)) are deployed and production verified. Confluence drawer presentation ([PR #299](https://github.com/daakara/finance/pull/299)) is deployed and production verified. All six operational holds (`HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD`, `PHASE_A3_UX_HOLD`) remain strictly active.
 
 
 A professional-grade quantitative intelligence platform featuring real-time market surveillance, Mark Minervini Volatility Contraction Pattern (VCP) setup detection, dual-horizon candlestick geometry, multi-pillar Confluence scoring, and Cornish-Fisher Modified Value-at-Risk modeling.
@@ -18,17 +18,17 @@ A professional-grade quantitative intelligence platform featuring real-time mark
 
 ---
 
-## Current direction and status (2026-11-14)
+## Current direction and status (2026-11-17)
 
 For the current authoritative operational status across all five ARX engineering workstreams, see:
 
-- [Canonical sprint roadmap (2026-11-14)](docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md) — six-sprint backlog prioritization (Sprint 0–5), multi-perspective Project Brain architecture, capacity allocation, and Sprint 0 execution packet.
-- [Integrated status addendum — 2026-11-14](docs/ARX_STATUS_ADDENDUM_2026_11_14.md) — comprehensive reconciliation across Smart Money, Radar, Confluence, Frontend UX, and Infrastructure.
-- [Active work register — 2026-11-14](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md) — complete inventory, deduplication, and status of all 19 open issues and 22 open PRs.
+- [Canonical sprint roadmap (2026-11-17)](docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md) — six-sprint backlog prioritization (Sprint 0–5), multi-perspective Project Brain architecture, capacity allocation, and active execution packets.
+- [Integrated status addendum — 2026-11-17](docs/ARX_STATUS_ADDENDUM_2026_11_17.md) — comprehensive reconciliation across Smart Money, Radar, Confluence, Pre-Flight Decision Authority, Frontend UX, and Infrastructure.
+- [Active work register — 2026-11-17](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md) — complete inventory, deduplication, and status across all open issues, candidate PRs, and merged production releases.
 - [Operational holds register](docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md) — authoritative matrix of the 6 active fail-closed platform holds, enforcement, and exit criteria.
 - [Radar investment research direction](docs/architecture/ARX_RADAR_INVESTMENT_RESEARCH_DIRECTION_2026_11_07.md) — product scope, existing rule owners, Stage 2/VCP separation, data quality, and wave sequencing.
 
-The October 29 master status, November 7 addendum, and historical release notes remain preserved as immutable historical records. All operational holds remain strictly in force.
+The October 29 master status, November 7 and November 14 addenda, and historical release notes remain preserved as immutable historical records. All operational holds remain strictly in force.
 
 ---
 
@@ -38,10 +38,10 @@ The ARX Terminal documentation estate is consolidated into a canonical hierarchy
 
 | Dimension | Canonical Documentation Portal | Primary Focus & Governance Scope |
 | :--- | :--- | :--- |
-| **Canonical Sprint Roadmap (2026-11-14)** | [`ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md`](docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md) | Six-sprint execution plan (Sprint 0–5), capacity model, dependency graph, and Sprint 0 ready packet. |
+| **Canonical Sprint Roadmap (2026-11-17)** | [`ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md`](docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md) | Six-sprint execution plan (Sprint 0–5), capacity model, dependency graph, and Sprint 1 active packet. |
 | **Operational Holds Register** | [`ARX_OPERATIONAL_HOLDS_REGISTER.md`](docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md) | Authoritative matrix of 6 active fail-closed platform holds, live enforcement, and exit criteria. |
-| **Active Work Register (2026-11-14)** | [`ARX_ACTIVE_WORK_REGISTER_2026_11_14.md`](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md) | Authoritative inventory, deduplication, and status across all 19 open issues and 22 open PRs. |
-| **Integrated Status Addendum (2026-11-14)** | [`ARX_STATUS_ADDENDUM_2026_11_14.md`](docs/ARX_STATUS_ADDENDUM_2026_11_14.md) | Single source of operational truth across Smart Money, Radar, Confluence, UX, and DR. |
+| **Active Work Register (2026-11-17)** | [`ARX_ACTIVE_WORK_REGISTER_2026_11_17.md`](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md) | Authoritative inventory, deduplication, and status across all open issues, open PRs, and merged releases. |
+| **Integrated Status Addendum (2026-11-17)** | [`ARX_STATUS_ADDENDUM_2026_11_17.md`](docs/ARX_STATUS_ADDENDUM_2026_11_17.md) | Single source of operational truth across Smart Money, Radar, Confluence, Pre-Flight, UX, and DR. |
 | **Integrated Project Status (2026-10-29)** | [`ARX_MASTER_PROJECT_STATUS_2026_10_29.md`](docs/ARX_MASTER_PROJECT_STATUS_2026_10_29.md) | Historical master status across research, UX, engines, engineering, and hosting status. |
 | **Documentation Master Inventory** | [`ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md`](docs/planning/ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md) | Comprehensive audit and 8-tier authority classification of all 1,478 repository documents. |
 | **Engine Architecture & Contracts** | [`ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md`](docs/architecture/ARX_ARCHITECTURE_AND_ENGINE_CONTRACT_RECONCILIATION.md) | Full 12-engine contract reconciliation, input/output data boundaries, fallbacks, and sizing. |
@@ -76,11 +76,12 @@ ARX Terminal is an institutional financial intelligence and discretionary tradin
    - Guided Mode (Executive Summary), Standard Mode (Active Swing Trading), and Quant Mode (Factor Sensitivities).
 
 ### Experimental & Operationally Restricted Capabilities
-- **Market Opportunity Radar:** Single published universe (250 evaluated, 100 Stage 2) and recommendation integrity live on Cloudflare Pages (`page-7644a93d0a184821.js`, PR #279). Natural background scanning and cron schedulers remain held under `HOLD_SCAN_001`.
-- **Smart Money (SEC Form 4):** Post-cycle queue idempotency and calendar skip remediation deployed (PR #280). Worker runs in fail-closed `STANDBY` mode (`ARX_SEC_EGRESS_ROLE=DISABLED`). Exactly one bounded supervised cycle is authorized for Monday, Nov 16, 2026 at 22:30 EST under explicit OWNER GO. Continuous background ingestion is strictly held under `HOLD_SEC_001`.
-- **Multi-Pillar Confluence Scoring:** Provenance parity (PR #277) and latency SLA (PR #275) deployed. Live automated scoring promotion is held under `ARX_CONFLUENCE_INTEGRITY_HOLD` pending post-closure operational review.
+- **Market Opportunity Radar:** Single published universe (250 evaluated, 100 Stage 2), candidate narrative deduplication (PR #285), and read-only Smart Money evidence adapter (PR #294) live on Cloudflare Pages (`page-7644a93d0a184821.js`). Natural background scanning and cron schedulers remain held under `HOLD_SCAN_001`.
+- **Smart Money (SEC Form 4):** Supervised single-cycle pilot and subsequent supervised NVDA backfill under Issue #165 are complete. Production database holds 16 accessions (100% trailing 90-day coverage) with Parker amendment linked. SEC worker is in fail-closed `STANDBY` mode (`ARX_SEC_EGRESS_ROLE=DISABLED`) with 0 held locks and 0 active queue rows. Continuous background ingestion is strictly held under `HOLD_SEC_001`.
+- **Multi-Pillar Confluence Scoring:** Provenance parity (PR #277), latency SLA (PR #275), ratified engine manifest v2.5.3 (PR #291), unverified/held distinction (PR #295), FRED macro contract (PR #296), and drawer presentation truth ([PR #299](https://github.com/daakara/finance/pull/299)) deployed. Automated live signal promotion is held under `ARX_CONFLUENCE_INTEGRITY_HOLD`.
+- **Pre-Flight Decision Authority:** Epistemic separation (simulated/historical/live), decision freshness safeguards (PR #287), analysis cache authority (PR #288), and live quote provenance / canonical sizing authorization ([PR #300](https://github.com/daakara/finance/pull/300)) deployed or under qualification.
 - **Frontend UX Progressive Disclosure:** Progressive disclosure redesign (PR #274) is held under `PHASE_A3_UX_HOLD` awaiting a genuine 5-participant formative human usability study. Zero fabricated observations permitted.
-- **Corporate Events:** Held under `HOLD_SEC_001`. Live SEC EDGAR network egress is blocked in production; mock fixtures only.
+- **Corporate Events:** Held under `HOLD_SEC_001`. Live SEC EDGAR network egress is blocked in production; mock fixtures and primary-source confirmed schedules only.
 - **Financial Execution:** Held under `HOLD_EXEC_001`. Zero live trade execution code exists in the production runtime; all orders are simulated.
 
 ---
