@@ -2,6 +2,7 @@
 import hashlib
 import os
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,12 +10,26 @@ import pytest
 from analyst_dashboard.smart_money.continuous_pipeline import SmartMoneyContinuousPipeline
 from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
 from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
+from analyst_dashboard.smart_money.amendment_classifier import (
+    classify_amendment_effect,
+    SCOPE_FULL_REPLACEMENT,
+    SCOPE_PARTIAL_CORRECTION,
+    SCOPE_ADDITIONAL_TRANSACTION,
+    SCOPE_AMBIGUOUS,
+    SCOPE_UNRESOLVED,
+)
+from analyst_dashboard.smart_money.radar_adapter import RadarSmartMoneyAdapter
 
 BASE = '0002152188-26-000005'
 AMEND = '0002152188-26-000007'
 
 
-def filing(accession=BASE, form='4', owner='2152188', original='', date='2026-09-11'):
+def filing(accession=BASE, form='4', owner='2152188', original='', date='2026-09-11', remarks='', footnotes=None):
+    remarks_xml = f"<remarks>{remarks}</remarks>" if remarks else ""
+    fn_xml = ""
+    if footnotes:
+        fn_nodes = "".join([f'<footnote id="F{i}">{fn}</footnote>' for i, fn in enumerate(footnotes, 1)])
+        fn_xml = f"<footnotes>{fn_nodes}</footnotes>"
     xml = f'''<ownershipDocument><documentType>{form}</documentType>
       <periodOfReport>2026-09-10</periodOfReport>
       <dateOfOriginalSubmission>{original}</dateOfOriginalSubmission>
@@ -29,6 +44,8 @@ def filing(accession=BASE, form='4', owner='2152188', original='', date='2026-09
         <transactionPricePerShare><value>100</value></transactionPricePerShare>
         <transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode>
         </transactionAmounts></nonDerivativeTransaction></nonDerivativeTable>
+      {remarks_xml}
+      {fn_xml}
       </ownershipDocument>'''
     return dict(accession_number=accession, ticker='NVDA', cik='0001045810',
                 company_name='NVIDIA', filing_date=date, document_type=form,
@@ -96,7 +113,7 @@ def test_production_injection_cannot_restore_latest_only_fetch_path():
 
 def test_atomic_ingestion_resolves_amendment_first_and_is_idempotent(db):
     conn, repo, pipeline = db
-    inputs = [filing(AMEND, '4/A', original='2026-09-11', date='2026-10-13'), filing()]
+    inputs = [filing(AMEND, '4/A', original='2026-09-11', date='2026-10-13', remarks='This amendment is filed solely to correct the number of shares.'), filing()]
     txs, _ = pipeline._step7_parse_and_reconcile(inputs, 'cycle1')
     assert len(txs) == 2
     assert count(conn, 'form4_raw_filings') == 2
@@ -104,9 +121,9 @@ def test_atomic_ingestion_resolves_amendment_first_and_is_idempotent(db):
     assert count(conn, 'form4_parsed_transactions') == 2
     with conn.cursor() as cur:
         cur.execute('SELECT base_accession, resolution_status FROM sm_amendments')
-        assert cur.fetchone() == (BASE, 'RESOLVED')
+        assert cur.fetchone() == (BASE, 'PARTIAL_CORRECTION')
         cur.execute('SELECT public_availability_at FROM sm_source_availability_ledger WHERE accession_number=%s', (BASE,))
-        assert cur.fetchone()[0].isoformat() == '2026-09-11T21:04:47+00:00'
+        assert cur.fetchone()[0].astimezone(timezone.utc).isoformat() == '2026-09-11T21:04:47+00:00'
     pipeline._step7_parse_and_reconcile(inputs, 'cycle2')
     assert count(conn, 'form4_raw_filings') == 2
     assert count(conn, 'sm_source_availability_ledger') == 2
@@ -368,3 +385,228 @@ def test_historical_code_p_does_not_override_prohibited_buying_evidence():
         [], {'reconciliation_hash': 'hash'}, 'no-inference', as_of='2026-11-17',
     )
     assert snapshot['matched_count'] == 0
+
+
+def test_amendment_classifier_direct_signals():
+    # 1. Full replacement
+    f_full = filing(AMEND, '4/A', original='2026-09-11', remarks='This amendment amends and restates the original filing in its entirety.')
+    parsed_full = Form4XmlParser.parse_filing(f_full['xml_content'], AMEND)
+    scope, reason = classify_amendment_effect(parsed_full, base_filing=filing())
+    assert scope == SCOPE_FULL_REPLACEMENT
+    assert 'in its entirety' in reason
+
+    # 2. Partial correction via footnotes
+    f_part = filing(AMEND, '4/A', original='2026-09-11', footnotes=['This amendment is filed solely to correct the transaction price per share.'])
+    parsed_part = Form4XmlParser.parse_filing(f_part['xml_content'], AMEND)
+    scope, reason = classify_amendment_effect(parsed_part, base_filing=filing())
+    assert scope == SCOPE_PARTIAL_CORRECTION
+    assert 'solely to correct' in reason
+
+    # 3. Additional transaction via remarks
+    f_add = filing(AMEND, '4/A', original='2026-09-11', remarks='Filed to report additional transactions that were inadvertently omitted from the original Form 4.')
+    parsed_add = Form4XmlParser.parse_filing(f_add['xml_content'], AMEND)
+    scope, reason = classify_amendment_effect(parsed_add, base_filing=filing())
+    assert scope == SCOPE_ADDITIONAL_TRANSACTION
+    assert 'inadvertently omitted' in reason
+
+    # 4. Ambiguous case without scope phrases
+    f_ambig = filing(AMEND, '4/A', original='2026-09-11')
+    parsed_ambig = Form4XmlParser.parse_filing(f_ambig['xml_content'], AMEND)
+    scope, _ = classify_amendment_effect(parsed_ambig, base_filing=filing())
+    assert scope == SCOPE_AMBIGUOUS
+
+    # 5. Contradictory scope phrases fail closed
+    f_contra = filing(AMEND, '4/A', original='2026-09-11', remarks='Filed solely to correct shares and supersedes in its entirety.')
+    parsed_contra = Form4XmlParser.parse_filing(f_contra['xml_content'], AMEND)
+    scope, _ = classify_amendment_effect(parsed_contra, base_filing=filing())
+    assert scope == SCOPE_AMBIGUOUS
+
+    # 6. Unresolved base filing returns UNRESOLVED
+    scope, _ = classify_amendment_effect(parsed_full, base_filing=None)
+    assert scope == SCOPE_UNRESOLVED
+
+
+def test_end_to_end_amendment_classification_and_point_in_time_effect(db):
+    conn, repo, pipeline = db
+    # Base filing published 2026-09-21
+    base_item = pit_filing(BASE, '4', '2026-09-21')
+    # Full replacement amendment published 2026-10-13
+    amend_item = pit_filing(AMEND, '4/A', '2026-10-13', original='2026-09-21')
+    amend_item['xml_content'] = amend_item['xml_content'].replace(
+        '</ownershipDocument>',
+        '<remarks>This Form 4/A replaces the original Form 4 in its entirety.</remarks></ownershipDocument>'
+    )
+    amend_item['content_hash'] = hashlib.sha256(amend_item['xml_content'].encode()).hexdigest()
+
+    txs, receipt = pipeline._step7_parse_and_reconcile([base_item, amend_item], 'amend-e2e')
+    assert receipt['coverage_status'] == 'COMPLETE'
+
+    with conn.cursor() as cur:
+        cur.execute('SELECT resolution_status FROM sm_amendments WHERE amendment_accession=%s', (AMEND,))
+        assert cur.fetchone()[0] == SCOPE_FULL_REPLACEMENT
+
+    # Before amendment publication (2026-10-12): base filing transactions active
+    before = repo.get_bulk_transactions_as_of('2026-10-12T23:59:59Z', ['NVDA'], '2026-09-12')['NVDA']
+    assert [row['accession_number'] for row in before] == [BASE]
+
+    # After amendment publication (2026-10-14): base filing superseded, only amendment active
+    after = repo.get_bulk_transactions_as_of('2026-10-14T23:59:59Z', ['NVDA'], '2026-09-12')['NVDA']
+    assert [row['accession_number'] for row in after] == [AMEND]
+
+
+def test_record_issuer_coverage_receipt_and_authoritative_retrieval(db):
+    conn, repo, pipeline = db
+    pipeline._step7_parse_and_reconcile([pit_filing()], 'coverage-test')
+
+    # Record durable coverage receipt bound to NVDA CIK and interval
+    r_id = repo.record_issuer_coverage_receipt(
+        ticker='NVDA',
+        issuer_cik='0001045810',
+        interval_start='2026-08-01T00:00:00Z',
+        interval_end='2026-11-17T23:59:59Z',
+        certified_watermark='2026-11-17T23:59:59Z',
+        accession_inventory=[BASE],
+        source_hashes={BASE: 'dummy-hash'},
+        material_gaps=[],
+        coverage_status='COMPLETE',
+    )
+    assert r_id is not None
+
+    # Retrieve with issuer_cik
+    receipt = repo.get_authoritative_receipt_for_interval(
+        interval_start='2026-08-23',
+        interval_end='2026-09-22T12:00:00Z',
+        certified_watermark='2026-09-22T12:00:00Z',
+        issuer_cik='0001045810',
+    )
+    assert receipt is not None
+    assert receipt['ticker'] == 'NVDA'
+    assert receipt['issuer_cik'] == '0001045810'
+    assert receipt['accession_inventory'] == [BASE]
+    assert receipt['coverage_status'] == 'COMPLETE'
+    assert receipt['material_gap_count'] == 0
+
+    valid, reason = RadarSmartMoneyAdapter.validate_issuer_coverage_receipt(
+        receipt, 'NVDA', '0001045810', '2026-08-23', '2026-09-22T12:00:00Z',
+    )
+    assert valid is True
+    assert reason is None
+
+    # Snapshot evidence read succeeds with the durable receipt
+    evidence = repo.get_snapshot_evidence_as_of('2026-09-22T12:00:00Z', pipeline.issuers[:1], '2026-08-23')
+    assert [row['accession_number'] for row in evidence['transactions']['NVDA']] == [BASE]
+    assert r_id in evidence['coverage_receipt_ids']
+
+
+def test_unbound_global_cycle_receipt_cannot_certify_issuer_historical_coverage(db):
+    conn, repo, pipeline = db
+    # Global cycle receipt without issuer binding
+    global_receipt = {
+        'receipt_id': '00000000-0000-0000-0000-000000000099',
+        'interval_start': '2026-08-01T00:00:00Z',
+        'interval_end': '2026-11-17T23:59:59Z',
+        'certified_watermark': '2026-11-17T23:59:59Z',
+        'receipt_version': 1,
+        'expected_count': 5,
+        'accounted_count': 5,
+        'missing_count': 0,
+        'material_gap_count': 0,
+        'coverage_status': 'COMPLETE',
+        'failure_reasons': [],
+        'reconciliation_hash': 'generic-global-hash',
+    }
+    repo.save_reconciliation_receipt(global_receipt)
+
+    # Query with specific issuer CIK must NOT match the unbound receipt
+    receipt = repo.get_authoritative_receipt_for_interval(
+        interval_start='2026-08-23',
+        interval_end='2026-09-22T12:00:00Z',
+        certified_watermark='2026-09-22T12:00:00Z',
+        issuer_cik='0001045810',
+    )
+    assert receipt is None
+
+    with pytest.raises(RuntimeError, match='SNAPSHOT_HISTORICAL_COVERAGE_UNVERIFIED'):
+        repo.get_snapshot_evidence_as_of('2026-09-22T12:00:00Z', pipeline.issuers[:1], '2026-08-23')
+
+
+def test_missing_coverage_blocks_snapshot_even_if_row_count_zero(db):
+    conn, repo, pipeline = db
+    # AAPL (CIK 0000320193) has zero rows in the DB and no coverage receipt
+    aapl_issuer = [{'ticker': 'AAPL', 'cik': '0000320193', 'company_name': 'APPLE INC'}]
+    with pytest.raises(RuntimeError, match='SNAPSHOT_HISTORICAL_COVERAGE_UNVERIFIED'):
+        repo.get_snapshot_evidence_as_of('2026-11-17T12:00:00Z', aapl_issuer, '2026-10-18')
+
+
+def test_verified_zero_activity_requires_and_accepts_authoritative_coverage_receipt(db):
+    conn, repo, pipeline = db
+    aapl_issuer = [{'ticker': 'AAPL', 'cik': '0000320193', 'company_name': 'APPLE INC'}]
+
+    # Record genuine coverage receipt proving zero activity for AAPL over 30d
+    r_id = repo.record_issuer_coverage_receipt(
+        ticker='AAPL',
+        issuer_cik='0000320193',
+        interval_start='2026-10-01T00:00:00Z',
+        interval_end='2026-11-17T23:59:59Z',
+        certified_watermark='2026-11-17T23:59:59Z',
+        accession_inventory=[],
+        source_hashes={},
+        material_gaps=[],
+        coverage_status='COMPLETE',
+    )
+    evidence = repo.get_snapshot_evidence_as_of('2026-11-17T12:00:00Z', aapl_issuer, '2026-10-18')
+    assert evidence['transactions']['AAPL'] == []
+    assert r_id in evidence['coverage_receipt_ids']
+
+
+def test_superseding_coverage_receipt_preserves_immutable_history(db):
+    conn, repo, pipeline = db
+    import uuid
+    r1 = str(uuid.uuid4())
+    r2 = str(uuid.uuid4())
+
+    # Receipt v1
+    repo.record_issuer_coverage_receipt(
+        ticker='NVDA',
+        issuer_cik='0001045810',
+        interval_start='2026-08-01T00:00:00Z',
+        interval_end='2026-11-17T23:59:59Z',
+        certified_watermark='2026-11-17T23:59:59Z',
+        accession_inventory=[BASE],
+        coverage_status='COMPLETE',
+        receipt_version=1,
+        receipt_id=r1,
+    )
+
+    # Superseding receipt v2
+    repo.record_issuer_coverage_receipt(
+        ticker='NVDA',
+        issuer_cik='0001045810',
+        interval_start='2026-08-01T00:00:00Z',
+        interval_end='2026-11-17T23:59:59Z',
+        certified_watermark='2026-11-17T23:59:59Z',
+        accession_inventory=[BASE, AMEND],
+        coverage_status='COMPLETE',
+        receipt_version=2,
+        supersedes_receipt_id=r1,
+        receipt_id=r2,
+    )
+
+    # Attempting to UPDATE sm_reconciliation_receipts must fail via trigger
+    with conn.cursor() as cur:
+        with pytest.raises(Exception, match='IMMUTABILITY_VIOLATION'):
+            cur.execute("UPDATE sm_reconciliation_receipts SET coverage_status='TAMPERED' WHERE receipt_id=%s", (r1,))
+    conn.rollback()
+
+    # Query returns highest version v2
+    active = repo.get_authoritative_receipt_for_interval(
+        interval_start='2026-08-23',
+        interval_end='2026-09-22T12:00:00Z',
+        certified_watermark='2026-09-22T12:00:00Z',
+        issuer_cik='0001045810',
+    )
+    assert active is not None
+    assert str(active['receipt_id']) == r2
+    assert active['receipt_version'] == 2
+    assert str(active['supersedes_receipt_id']) == r1
+    assert sorted(active['accession_inventory']) == sorted([BASE, AMEND])

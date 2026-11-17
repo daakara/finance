@@ -73,6 +73,13 @@ from analyst_dashboard.smart_money.form4_models import (
     SmartMoneyIssuerState,
 )
 from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
+from analyst_dashboard.smart_money.amendment_classifier import (
+    classify_amendment_effect,
+    SCOPE_FULL_REPLACEMENT,
+    SCOPE_PARTIAL_CORRECTION,
+    SCOPE_ADDITIONAL_TRANSACTION,
+    SCOPE_AMBIGUOUS,
+)
 from analyst_dashboard.smart_money.form4_scanner import SmartMoneyForm4Scanner
 from analyst_dashboard.analyzers.scanner_contract import (
     ScannerCandidateResult,
@@ -1234,10 +1241,25 @@ class SmartMoneyContinuousPipeline:
                 )
                 if not base_acc:
                     unresolved_amendments.append(accession)
+                    rel_status = "UNRESOLVED"
+                else:
+                    base_raw = self.repository.get_raw_filing(base_acc, conn=conn)
+                    base_txs = self.repository.get_parsed_transactions_for_accession(base_acc, conn=conn)
+                    scope, _ = classify_amendment_effect(
+                        amendment_filing=parsed_filing,
+                        base_filing=base_raw,
+                        base_transactions=base_txs,
+                        raw_xml=xml,
+                    )
+                    if scope in (SCOPE_FULL_REPLACEMENT, SCOPE_PARTIAL_CORRECTION, SCOPE_ADDITIONAL_TRANSACTION):
+                        rel_status = scope
+                    else:
+                        rel_status = "RESOLVED"
+
                 self.repository.save_amendment(
                     amendment_accession=accession, base_accession=base_acc,
                     amendment_number=1,
-                    resolution_status="RESOLVED" if base_acc else "UNRESOLVED",
+                    resolution_status=rel_status,
                     resolved_at=now_iso if base_acc else None, conn=conn,
                 )
 
@@ -1247,6 +1269,11 @@ class SmartMoneyContinuousPipeline:
         # Cryptographic reconciliation receipt
         reconcile_str = f"{cycle_id}:{watermark}:{len(raw_filings)}:{len(parsed_tx_objs)}"
         reconciliation_hash = hashlib.sha256(reconcile_str.encode("utf-8")).hexdigest()
+
+        cycle_ciks = [i["cik"] for i in self.issuers]
+        cycle_tickers = [i["ticker"] for i in self.issuers]
+        acc_inventory = [f.get("accession_number") for f in raw_filings if f.get("accession_number")]
+        source_hashes = {f.get("accession_number"): f.get("content_hash") for f in raw_filings if f.get("accession_number")}
 
         receipt_meta = {
             "receipt_id": str(uuid.uuid4()),
@@ -1260,6 +1287,10 @@ class SmartMoneyContinuousPipeline:
             "material_gap_count": len(unresolved_amendments),
             "coverage_status": "PARTIAL" if unresolved_amendments else "COMPLETE",
             "failure_reasons": [f"UNRESOLVED_AMENDMENT:{a}" for a in unresolved_amendments],
+            "covered_ciks": cycle_ciks,
+            "covered_tickers": cycle_tickers,
+            "accession_inventory": acc_inventory,
+            "source_hashes": source_hashes,
             "reconciliation_hash": reconciliation_hash,
             "release_sha": os.environ.get("ARX_RELEASE_SHA", "b9588f95188ab7e204474773f67dacbc9f6afb1f"),
         }

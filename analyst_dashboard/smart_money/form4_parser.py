@@ -371,6 +371,8 @@ class Form4XmlParser:
             acceptance_datetime=acceptance_datetime,
             original_submission_date=cls._get_text(root, "dateOfOriginalSubmission") or None,
             reporting_owner_ciks=[o["cik"] for o in owners if o["cik"] != "0000000000"],
+            remarks=cls._get_text(root, "remarks") or None,
+            all_footnotes=[fn.text.strip() for fn in root.findall(".//footnotes/footnote") if fn.text and fn.text.strip()],
             document_type=doc_type,
             is_amendment=is_amendment,
             transactions=transactions,

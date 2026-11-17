@@ -6,6 +6,7 @@ point-in-time ledgers, append-only reconciliation receipts, immutable snapshots,
 and atomic active-pointer publication.
 """
 
+import os
 import json
 import uuid
 import hashlib
@@ -107,6 +108,7 @@ class PostgresSmartMoneyRepository:
                      SELECT 1 FROM sm_amendments a
                      WHERE a.amendment_accession = f.accession_number
                        AND a.resolution_status <> 'RESOLVED'
+                       AND a.resolution_status NOT IN ('FULL_REPLACEMENT', 'PARTIAL_CORRECTION', 'ADDITIONAL_TRANSACTION')
                    );""",
                 (ticker,),
             )
@@ -166,6 +168,26 @@ class PostgresSmartMoneyRepository:
         else:
             with transaction(dsn=self.dsn) as cur:
                 return _exec(cur)
+
+    def get_raw_filing(
+        self,
+        accession_number: str,
+        conn: Optional[PgConnection] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieves raw filing metadata and XML content by accession number."""
+        query = "SELECT * FROM form4_raw_filings WHERE accession_number = %s;"
+        def _exec(cur):
+            cur.execute(query, (accession_number,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        else:
+            with get_connection(dsn=self.dsn) as c:
+                with c.cursor(cursor_factory=RealDictCursor) as cur:
+                    return _exec(cur)
 
     # ── Parsed Transactions ───────────────────────────────────────────────────
 
@@ -235,6 +257,26 @@ class PostgresSmartMoneyRepository:
             with transaction(dsn=self.dsn) as cur:
                 return _exec(cur)
 
+    def get_parsed_transactions_for_accession(
+        self,
+        accession_number: str,
+        conn: Optional[PgConnection] = None,
+    ) -> List[Dict[str, Any]]:
+        """Retrieves parsed transactions for a specific accession number."""
+        query = "SELECT * FROM form4_parsed_transactions WHERE accession_number = %s ORDER BY transaction_date ASC;"
+        def _exec(cur):
+            cur.execute(query, (accession_number,))
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        else:
+            with get_connection(dsn=self.dsn) as c:
+                with c.cursor(cursor_factory=RealDictCursor) as cur:
+                    return _exec(cur)
+
     # ── Availability Ledger ───────────────────────────────────────────────────
 
     def save_availability(
@@ -299,6 +341,7 @@ class PostgresSmartMoneyRepository:
         """
         Persists an immutable reconciliation receipt.
         Assigns UUID if not provided. Supports supersedes_receipt_id for corrections.
+        Preserves durable issuer and coverage metadata within failure_reasons JSONB.
         """
         receipt_id = receipt.get("receipt_id") or str(uuid.uuid4())
         reasons = receipt.get("failure_reasons", [])
@@ -307,6 +350,21 @@ class PostgresSmartMoneyRepository:
                 reasons = json.loads(reasons)
             except Exception:
                 reasons = [reasons]
+        elif not isinstance(reasons, (list, dict)):
+            reasons = [str(reasons)]
+
+        if isinstance(reasons, list) and any(k in receipt for k in ("issuer_cik", "ticker", "covered_ciks", "covered_tickers", "accession_inventory", "source_hashes", "material_gaps")):
+            reasons = {
+                "reasons": reasons,
+                "ticker": receipt.get("ticker"),
+                "issuer_cik": receipt.get("issuer_cik"),
+                "covered_tickers": receipt.get("covered_tickers") or ([receipt["ticker"]] if "ticker" in receipt else []),
+                "covered_ciks": receipt.get("covered_ciks") or ([receipt["issuer_cik"]] if "issuer_cik" in receipt else []),
+                "accession_inventory": receipt.get("accession_inventory", []),
+                "source_hashes": receipt.get("source_hashes", {}),
+                "material_gaps": receipt.get("material_gaps", []),
+                "public_availability_cutoff": receipt.get("certified_watermark"),
+            }
 
         def _exec(cur):
             cur.execute("""
@@ -342,6 +400,74 @@ class PostgresSmartMoneyRepository:
             with transaction(dsn=self.dsn) as cur:
                 return _exec(cur)
 
+    def record_issuer_coverage_receipt(
+        self,
+        ticker: str,
+        issuer_cik: str,
+        interval_start: str,
+        interval_end: str,
+        certified_watermark: str,
+        accession_inventory: Optional[List[str]] = None,
+        source_hashes: Optional[Dict[str, str]] = None,
+        material_gaps: Optional[List[Dict[str, Any]]] = None,
+        coverage_status: str = "COMPLETE",
+        receipt_version: int = 1,
+        supersedes_receipt_id: Optional[str] = None,
+        release_sha: Optional[str] = None,
+        receipt_id: Optional[str] = None,
+        conn: Optional[PgConnection] = None,
+    ) -> str:
+        """
+        Persists a durable issuer-bound historical coverage receipt certifying an observation interval.
+        Binds exact issuer ticker, CIK, observation interval, certified watermark, accession inventory,
+        cryptographic source hashes, and material gaps within sm_reconciliation_receipts (0-DDL compliant).
+        """
+        r_id = receipt_id or str(uuid.uuid4())
+        acc_inv = sorted(list(set(accession_inventory or [])))
+        s_hashes = dict(source_hashes or {})
+        m_gaps = list(material_gaps or [])
+        clean_ticker = ticker.upper().strip()
+        clean_cik = str(issuer_cik).strip().zfill(10)
+
+        hash_payload = (
+            f"{clean_ticker}:{clean_cik}:{interval_start}:{interval_end}:{certified_watermark}:"
+            f"{json.dumps(acc_inv)}:{json.dumps(s_hashes, sort_keys=True)}:{len(m_gaps)}"
+        )
+        recon_hash = hashlib.sha256(hash_payload.encode("utf-8")).hexdigest()
+
+        reasons = [g.get("description", str(g)) if isinstance(g, dict) else str(g) for g in m_gaps]
+
+        structured_metadata = {
+            "reasons": reasons,
+            "ticker": clean_ticker,
+            "issuer_cik": clean_cik,
+            "covered_tickers": [clean_ticker],
+            "covered_ciks": [clean_cik],
+            "accession_inventory": acc_inv,
+            "source_hashes": s_hashes,
+            "material_gaps": m_gaps,
+            "public_availability_cutoff": certified_watermark,
+        }
+
+        receipt_payload = {
+            "receipt_id": r_id,
+            "interval_start": interval_start,
+            "interval_end": interval_end,
+            "certified_watermark": certified_watermark,
+            "receipt_version": receipt_version,
+            "supersedes_receipt_id": supersedes_receipt_id,
+            "expected_count": len(acc_inv) + len(m_gaps),
+            "accounted_count": len(acc_inv),
+            "missing_count": len(m_gaps),
+            "material_gap_count": len(m_gaps),
+            "coverage_status": coverage_status,
+            "failure_reasons": structured_metadata,
+            "reconciliation_hash": recon_hash,
+            "release_sha": release_sha or os.environ.get("ARX_RELEASE_SHA", "b72ea23937cf6ed7b8c4b60096630767a7c4592b"),
+        }
+
+        return self.save_reconciliation_receipt(receipt_payload, conn=conn)
+
     def get_authoritative_receipt_for_interval(
         self,
         interval_start: str,
@@ -349,12 +475,17 @@ class PostgresSmartMoneyRepository:
         certified_watermark: str,
         conn: Optional[PgConnection] = None,
         issuer_cik: Optional[str] = None,
+        ticker: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Queries the authoritative reconciliation receipt certifying watermark W.
         Requires full interval coverage, certified watermark >= W, COMPLETE coverage status,
         and zero missing count or material gaps.
+        If issuer_cik or ticker is provided, strictly requires the receipt to be bound to that issuer.
         """
+        clean_cik = str(issuer_cik).strip().zfill(10) if issuer_cik else None
+        clean_ticker = ticker.upper().strip() if ticker else None
+
         query = """
             SELECT * FROM sm_reconciliation_receipts
             WHERE interval_start <= %s
@@ -363,8 +494,7 @@ class PostgresSmartMoneyRepository:
               AND coverage_status = 'COMPLETE'
               AND missing_count = 0
               AND material_gap_count = 0
-            ORDER BY receipt_version DESC, created_at DESC
-            LIMIT 1;
+            ORDER BY receipt_version DESC, created_at DESC;
         """
         eod_end = f"{interval_end[:10]}T23:59:59Z" if len(interval_end) >= 10 else interval_end
         eod_wm = f"{certified_watermark[:10]}T23:59:59Z" if len(certified_watermark) >= 10 else certified_watermark
@@ -372,8 +502,43 @@ class PostgresSmartMoneyRepository:
 
         def _exec(cur):
             cur.execute(query, params)
-            row = cur.fetchone()
-            return dict(row) if row else None
+            rows = cur.fetchall()
+            for r in rows:
+                receipt = dict(r)
+                reasons_val = receipt.get("failure_reasons")
+                if isinstance(reasons_val, dict):
+                    for k in ("ticker", "issuer_cik", "covered_tickers", "covered_ciks",
+                              "accession_inventory", "source_hashes", "material_gaps",
+                              "public_availability_cutoff"):
+                        if k in reasons_val and k not in receipt:
+                            receipt[k] = reasons_val[k]
+                    receipt["failure_reasons"] = reasons_val.get("reasons", [])
+                elif isinstance(reasons_val, list):
+                    for item in reasons_val:
+                        if isinstance(item, dict):
+                            for k in ("ticker", "issuer_cik", "covered_tickers", "covered_ciks",
+                                      "accession_inventory", "source_hashes", "material_gaps",
+                                      "public_availability_cutoff"):
+                                if k in item and k not in receipt:
+                                    receipt[k] = item[k]
+
+                if clean_cik or clean_ticker:
+                    r_cik = str(receipt.get("issuer_cik") or "").strip().zfill(10) if receipt.get("issuer_cik") else None
+                    c_ciks = [str(c).strip().zfill(10) for c in (receipt.get("covered_ciks") or [])]
+                    r_sym = str(receipt.get("ticker") or receipt.get("symbol") or "").strip().upper() if (receipt.get("ticker") or receipt.get("symbol")) else None
+                    c_syms = [str(s).strip().upper() for s in (receipt.get("covered_tickers") or receipt.get("covered_symbols") or [])]
+
+                    matched = False
+                    if clean_cik and (r_cik == clean_cik or clean_cik in c_ciks):
+                        matched = True
+                    elif clean_ticker and (r_sym == clean_ticker or clean_ticker in c_syms):
+                        matched = True
+
+                    if not matched:
+                        continue
+
+                return receipt
+            return None
 
         if conn is not None:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -530,7 +695,7 @@ class PostgresSmartMoneyRepository:
             )
             cur.execute(query, params)
             rows = cur.fetchall()
-            out: Dict[str, List[Dict[str, Any]]] = {}
+            out: Dict[str, List[Dict[str, Any]]] = {s.upper().strip(): [] for s in symbols}
             for r in rows:
                 sym = r["symbol"].upper()
                 if sym not in out:
@@ -579,7 +744,7 @@ class PostgresSmartMoneyRepository:
             JOIN form4_raw_filings f ON am.amendment_accession = f.accession_number
             JOIN sm_source_availability_ledger av ON am.amendment_accession = av.accession_number
             WHERE {time_predicate}
-              AND am.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'RESOLVED')
+              AND am.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'RESOLVED', 'AMENDMENT_SCOPE_AMBIGUOUS')
               AND f.ticker = ANY(%s);
         """
 
@@ -602,6 +767,7 @@ class PostgresSmartMoneyRepository:
         symbols = [issuer["ticker"] for issuer in issuers]
         with get_connection(dsn=self.dsn) as conn:
             try:
+                conn.rollback()
                 with conn.cursor() as cur:
                     cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
                 ambiguous = self.get_ambiguous_amendment_symbols_as_of(
