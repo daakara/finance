@@ -693,7 +693,7 @@ export interface ConfluencePillar {
   label: string;
   plainLabel: string;
   score: number;
-  status: "positive" | "neutral" | "warning" | "unavailable";
+  status: "positive" | "neutral" | "warning" | "unavailable" | "unverified" | "pipeline_held" | "synthetic" | "not_applicable" | string;
   detail: string;
   plainDetail: string;
   icon: string;
@@ -702,6 +702,13 @@ export interface ConfluencePillar {
 export interface ConfluenceData {
   symbol: string;
   confluenceScore: number;
+  rawConfluenceScore?: number;
+  rawComposite?: number;
+  coverageCap?: number;
+  verifiedPillarCount?: number;
+  coverageRatio?: number;
+  incompleteCoverage?: boolean;
+  evidenceConfidence?: string;
   confluenceRating: string;
   plainRating: string;
   confluenceBadge: string;
@@ -712,6 +719,8 @@ export interface ConfluenceData {
   positivesCount: number;
   warningsCount: number;
   warnings?: string[];
+  reasons?: string[];
+  plainReasons?: string[];
 }
 
 export type MarketDataSource = "live" | "historical" | "fallback" | "unavailable";
