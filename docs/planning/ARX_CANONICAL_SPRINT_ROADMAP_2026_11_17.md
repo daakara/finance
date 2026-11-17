@@ -2,7 +2,7 @@
 
 **Document ID:** `PLN-ROADMAP-2026-11-17`  
 **Effective Date:** 2026-11-17  
-**Authoritative Production Baseline:** `release/production` @ SHA [`a42601eed6c09f7608b8f439b6f7f45ef743310d`](https://github.com/daakara/finance/commit/a42601eed6c09f7608b8f439b6f7f45ef743310d)  
+**Authoritative Production Baseline:** `release/production` @ SHA [`bb9fdcf412b8ed55af94f944f09c39541a122e17`](https://github.com/daakara/finance/commit/bb9fdcf412b8ed55af94f944f09c39541a122e17)  
 **Classification:** Canonical Project Brain Sprint Roadmap & Execution Architecture  
 **Supersedes:** `docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md`
 
@@ -42,7 +42,7 @@ To ensure architectural coherence and eliminate cognitive blind spots, Project B
 ```
 
 ### Perspective 1: Product Strategy
-- **Evaluation:** Recent releases (PR #281 through #298) successfully stabilized the Learn Hub, Radar recommendation integrity, and Pre-Flight decision authority. However, candidate PR #299 (Confluence drawer presentation) and PR #300 (Pre-Flight quote provenance and sizing authorization) represent vital decision-truth gates that protect users from false live clearance.
+- **Evaluation:** Recent releases (PR #281 through #298) successfully stabilized the Learn Hub, Radar recommendation integrity, and Pre-Flight decision authority. However, PR #300 deployed the Pre-Flight safeguards and passed production smoke checks. PR #299 covers the Confluence drawer.
 - **Recommendation:** Scope Sprint 1 to qualifying and releasing PR #299, PR #300, and the three newly uncovered defects (DEF-TP2-001, DEF-CAT-001, DEF-CAT-002) before opening broader architectural refactors.
 
 ### Perspective 2: Engineering Architecture
@@ -87,7 +87,7 @@ flowchart TD
 
     subgraph S1["Sprint 1: Candidate Qualification & Defect Remediation (Active)"]
         S1_1["Promote PR #299 (Confluence Drawer Presentation)"]
-        S1_2["Promote PR #300 (Pre-Flight Quote Provenance & Sizing)"]
+        S1_2["PR #300 Deployed and Verified"]
         S1_3["Resolve DEF-TP2-001 (Bind Canonical take_profit_2)"]
         S1_4["Resolve DEF-CAT-001 (NVDA Primary IR 16:20/17:00 Schedule)"]
         S1_5["Resolve DEF-CAT-002 (Empty 5-Year Forecast State)"]
@@ -119,10 +119,10 @@ flowchart TD
 
 ### Detailed Sprint 1 Specification (Active Sprint)
 
-- **Objective:** Finalize, qualify, and deploy the two open candidate PRs (#299, #300) and resolve the three newly documented presentation defects (DEF-TP2-001, DEF-CAT-001, DEF-CAT-002) to establish 100% decision and presentation truth across the terminal.
+- **Objective:** Complete candidate promotion for PR #299, record the verified production release of PR #300, and resolve the three newly documented presentation defects (DEF-TP2-001, DEF-CAT-001, DEF-CAT-002) to establish 100% decision and presentation truth across the terminal.
 - **Ordered Task Deliverables:**
   1. **Task 1.1 — Confluence Drawer Presentation Truth (PR #299):** Reconcile `scripts/release/release_manifest.json` and merge PR #299.
-  2. **Task 1.2 — Pre-Flight Quote Provenance & Sizing Safeguards (PR #300):** Reconcile `scripts/release/release_manifest.json` and merge PR #300.
+  2. **Task 1.2 — Pre-Flight Quote Provenance & Sizing Safeguards (PR #300):** **Deployed and verified.** See the [production verification record](../ARX_STATUS_ADDENDUM_2026_11_17.md).
   3. **Task 1.3 — Target 2 Mismatch Remediation (DEF-TP2-001):** Pass canonical `take_profit_2` from execution ladder into `PreFlightChecklistInputs` and remove synthetic 12% calculation in `preflightEvaluator.ts`.
   4. **Task 1.4 — NVDA Corporate Schedule Disentanglement (DEF-CAT-001):** Add primary-source schedule for NVDA in `corporate_events.py` separating 16:20 results release from 17:00 conference call.
   5. **Task 1.5 — 5-Year Simulation Empty State (DEF-CAT-002):** Add informative institutional disclosure in `CatalystForecastCard.tsx` when `multi_year_forecast` is empty.
