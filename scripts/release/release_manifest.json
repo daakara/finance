@@ -1,81 +1,41 @@
 {
-  "release_candidate_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
-  "base_anchor_commit": "a42601eed6c09f7608b8f439b6f7f45ef743310d",
-  "total_files": 9,
+  "release_candidate_commit": "168c45ef71afac3b03feac9f824b2a9af316f5ef",
+  "base_anchor_commit": "bb9fdcf412b8ed55af94f944f09c39541a122e17",
+  "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001",
+  "directive": "ARX-CONFLUENCE-DRAWER-PRESENTATION-001",
   "files": {
-    "frontend/components/__tests__/ExecutionAuthorityPrecedence.test.tsx": {
+    "frontend/components/AdaptiveTerminal.tsx": {
       "operation": "M",
-      "originating_pr_number": 300,
-      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
-      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Pass verified live quote provenance and canSizeTrade to PreFlightReadinessBar fixtures.",
-      "sha256": "3035122d22a9759199adb3d7410cf78ff24d9ebe7d84f0813bf13d4c36893cab",
-      "size_bytes": 5796
+      "originating_pr_number": 299,
+      "originating_commit": "077efc18d7da5a01aa3072db9e8184392a019190",
+      "governing_requirement": "ARX-CONFLUENCE-DRAWER-PRESENTATION-001: Pass canonical Confluence attribution to the drawer.",
+      "sha256": "45bb5f1db6bbe1d231e984c2953e6706ed3930b4e342302c478e5576711bc849",
+      "size_bytes": 13150
     },
-    "frontend/components/__tests__/PreFlightDecisionIntegrity197.test.tsx": {
+    "frontend/components/WhyInspectModal.tsx": {
       "operation": "M",
-      "originating_pr_number": 300,
-      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
-      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: End-to-end component verification for delayed quote, missing canSizeTrade, live clearance, and audited NVDA snapshot.",
-      "sha256": "d4ff33b93e6b56a72665c7f6924d61e259266e02fdb6ae811307e3ac88382a44",
-      "size_bytes": 10049
+      "originating_pr_number": 299,
+      "originating_commit": "077efc18d7da5a01aa3072db9e8184392a019190",
+      "governing_requirement": "ARX-CONFLUENCE-DRAWER-PRESENTATION-001: Render backend pillar scores, coverage, and warnings.",
+      "sha256": "9f6abee1e8f1888681a53db1d52540567fcb094d515b990249ba8258c414847b",
+      "size_bytes": 22535
     },
-    "frontend/components/__tests__/PreFlightMandatoryClearanceScenarios.test.tsx": {
+    "frontend/lib/api.ts": {
       "operation": "M",
-      "originating_pr_number": 300,
-      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
-      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Explicit sizing authorization and live quote provenance in mandatory clearance baseline fixture.",
-      "sha256": "f8e3a28ba90b195271ac93623a417a6f2145298a5c9e1a354f6cd1c6cccf479b",
-      "size_bytes": 17026
+      "originating_pr_number": 299,
+      "originating_commit": "077efc18d7da5a01aa3072db9e8184392a019190",
+      "governing_requirement": "ARX-CONFLUENCE-DRAWER-PRESENTATION-001: Expose canonical Confluence fields to the frontend.",
+      "sha256": "8fc9120b5deafa4d9c5dc1ce3174a32ef1a65cce35dcbf34a0ce280ff2b140f8",
+      "size_bytes": 193328
     },
-    "frontend/components/__tests__/PreFlightReadinessBar.test.tsx": {
-      "operation": "M",
-      "originating_pr_number": 300,
-      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
-      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Explicit sizing authorization and live quote provenance in pristine actionable readiness fixture.",
-      "sha256": "62b10ff86248da89269c41f752a1aabd84e91d01549e6876515c0c951da5c5fe",
-      "size_bytes": 4971
-    },
-    "frontend/lib/__tests__/authorityPrecisionAndConfirmation.test.ts": {
-      "operation": "M",
-      "originating_pr_number": 300,
-      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
-      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Explicit sizing authorization and live quote provenance in precision authority baseline fixture.",
-      "sha256": "90e0ea588cc4a8aadb21a432db33b03fccb0e01d684cc7a3e7adee357c177728",
-      "size_bytes": 16437
-    },
-    "frontend/lib/__tests__/integratedAuthorityMatrix.test.ts": {
-      "operation": "M",
-      "originating_pr_number": 300,
-      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
-      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Explicit sizing authorization and live quote provenance in cross-component regression matrix fixture.",
-      "sha256": "573468e58026c2ca87c9489ec92432691d721710e57193eeecebcca0accf4f7e",
-      "size_bytes": 6973
-    },
-    "frontend/lib/__tests__/provenanceAuthorityInvariants.test.ts": {
-      "operation": "M",
-      "originating_pr_number": 300,
-      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
-      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Fail-closed assertion ensuring unverified quote provenance strictly blocks live clearance.",
-      "sha256": "e7b2030027f121c4060f647f556efd086d41a3a99753d3e68e07fb6f45daae48",
-      "size_bytes": 7294
-    },
-    "frontend/lib/preflightEvaluator.ts": {
-      "operation": "M",
-      "originating_pr_number": 300,
-      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
-      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Require explicit canSizeTrade === true, detect delayed quotes, and fail closed on unverified quote provenance.",
-      "sha256": "69a5f8ad2b29cb81c8ae694bf33cbf3531432ab430d137fe05789e1ab8e25d21",
-      "size_bytes": 48844
-    },
-    "frontend/tests/preflightDecisionIntegrity197.test.ts": {
-      "operation": "M",
-      "originating_pr_number": 300,
-      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
-      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Automated test assertions for delayed quote, unverified quote provenance, missing sizing, false sizing, and audited NVDA snapshot.",
-      "sha256": "0572846fdd8c5ec54db069c83b2b4bd858498ac0830153f98e502e21bb3969f7",
-      "size_bytes": 17334
+    "frontend/tests/confluenceDrawerPresentation.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 299,
+      "originating_commit": "077efc18d7da5a01aa3072db9e8184392a019190",
+      "governing_requirement": "ARX-CONFLUENCE-DRAWER-PRESENTATION-001: Exercise Confluence drawer presentation regressions.",
+      "sha256": "d4988d5ea8361f72e5010d47ec917a19231b3d80a0f6cc21aa249d6b1fa071a9",
+      "size_bytes": 11038
     }
   },
   "qualification_framework_files": {
@@ -85,8 +45,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "9630ea4d1f2d18ce32578c21d31ab9aa8b9ced3cd847773c96dc5772b475b205",
-      "size_bytes": 58161,
+      "sha256": "6ff99654afa42a8ad26be4d386ff3a2e8a05a6ecc45770e45f5fd74d3a5f1545",
+      "size_bytes": 58166,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
