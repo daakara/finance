@@ -1,49 +1,41 @@
 {
-  "release_candidate_commit": "802c73858087f18e29951300695d749d67d1747d",
-  "base_anchor_commit": "ee8ceab7b25be706292a5c38faedc03548073d0f",
-  "total_files": 5,
+  "release_candidate_commit": "8bcc0584ce4168006c1b19481eb69ad109ba116e",
+  "base_anchor_commit": "ece65937af10f29886d802aa776907df9e5526bf",
+  "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027",
+  "directive": "DEF-TP2-001",
   "files": {
-    "README.md": {
+    "frontend/lib/preflightEvaluator.ts": {
       "operation": "M",
-      "originating_pr_number": 301,
-      "originating_commit": "802c73858087f18e29951300695d749d67d1747d",
-      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027: Reconcile production status, operational holds, and sprint planning.",
-      "sha256": "3be226f035ca77703a4cb2981d7e54a07da58918ea1afdb45c656396e5ecb6db",
-      "size_bytes": 17548
+      "originating_pr_number": 302,
+      "originating_commit": "8bcc0584ce4168006c1b19481eb69ad109ba116e",
+      "governing_requirement": "DEF-TP2-001: Source Target 2 from the authoritative execution plan for Pre-Flight and journal copy.",
+      "sha256": "ae79afb9d3d928f407c30d71fdd79cdc3ce3193929a7c4771bcf7f94f8ce3b86",
+      "size_bytes": 49130
     },
-    "docs/ARX_STATUS_ADDENDUM_2026_11_17.md": {
-      "operation": "A",
-      "originating_pr_number": 301,
-      "originating_commit": "802c73858087f18e29951300695d749d67d1747d",
-      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027: Reconcile production status, operational holds, and sprint planning.",
-      "sha256": "18421b039e1713b95b904837ee1caa562e95898cbe4e24bed0230d830c73e3cb",
-      "size_bytes": 13244
-    },
-    "docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md": {
+    "frontend/app/page.tsx": {
       "operation": "M",
-      "originating_pr_number": 301,
-      "originating_commit": "802c73858087f18e29951300695d749d67d1747d",
-      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027: Reconcile production status, operational holds, and sprint planning.",
-      "sha256": "4a64ab0011d9dc255943f5189e5c513eaca11a789376b02020e01a85466ce631",
-      "size_bytes": 8837
+      "originating_pr_number": 302,
+      "originating_commit": "8bcc0584ce4168006c1b19481eb69ad109ba116e",
+      "governing_requirement": "DEF-TP2-001: Source Target 2 from the authoritative execution plan for Pre-Flight and journal copy.",
+      "sha256": "5a5f8e2e6749de36af2bb61593f2b0c0a600029042a79affad01a311b01662d5",
+      "size_bytes": 45248
     },
-    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md": {
-      "operation": "A",
-      "originating_pr_number": 301,
-      "originating_commit": "802c73858087f18e29951300695d749d67d1747d",
-      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027: Reconcile production status, operational holds, and sprint planning.",
-      "sha256": "548523d2e9aa27fd8de15569642ab88e7f6e62a4d50eaeac9cec615166258374",
-      "size_bytes": 12978
+    "frontend/components/PreFlightChecklistModal.tsx": {
+      "operation": "M",
+      "originating_pr_number": 302,
+      "originating_commit": "8bcc0584ce4168006c1b19481eb69ad109ba116e",
+      "governing_requirement": "DEF-TP2-001: Source Target 2 from the authoritative execution plan for Pre-Flight and journal copy.",
+      "sha256": "4cf653f6c6f7cd3e8614653cc6046d4a892840a5fbe5849a2b0a6afcb7877cc6",
+      "size_bytes": 40163
     },
-    "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md": {
-      "operation": "A",
-      "originating_pr_number": 301,
-      "originating_commit": "802c73858087f18e29951300695d749d67d1747d",
-      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-027: Reconcile production status, operational holds, and sprint planning.",
-      "sha256": "2516200cf5ac7e9db0a336203b43e6ef23c58f7df1c791c5248c5b75f61c6944",
-      "size_bytes": 10664
+    "frontend/components/__tests__/PreFlightDecisionIntegrity197.test.tsx": {
+      "operation": "M",
+      "originating_pr_number": 302,
+      "originating_commit": "8bcc0584ce4168006c1b19481eb69ad109ba116e",
+      "governing_requirement": "DEF-TP2-001: Source Target 2 from the authoritative execution plan for Pre-Flight and journal copy.",
+      "sha256": "138763cf0033821b5f836c08cceebb71cb5c59e4ffd8b637b2ba87038e38835e",
+      "size_bytes": 10917
     }
   },
   "qualification_framework_files": {
@@ -53,8 +45,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "f6a3687c8a82e08d77edeac6a65b70d507fc66fd03958dd4a8570d934cfb8381",
-      "size_bytes": 58171,
+      "sha256": "51b0e4cdd572617caa3d01864492b2d18faa4a0710b096c13765c3cfda4f8bfc",
+      "size_bytes": 58176,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {

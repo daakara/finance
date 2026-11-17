@@ -46,6 +46,7 @@ export interface PreFlightChecklistInputs {
   currentPrice?: number | null;
   stopLoss?: number | null;
   takeProfit1?: number | null;
+  takeProfit2?: number | null;
   riskRewardRatio?: number | null;
   setupPattern?: string;
   isDayTrader?: boolean;
@@ -290,6 +291,7 @@ export function evaluatePreFlightChecks(
     currentPrice,
     stopLoss,
     takeProfit1,
+    takeProfit2,
     riskRewardRatio,
     setupPattern = "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
     isDayTrader = false,
@@ -1079,9 +1081,15 @@ export function evaluatePreFlightChecks(
   const entryZoneStr = (safeEntryMin !== null && safeEntryMax !== null) ? `$${safeEntryMin.toFixed(2)} – $${safeEntryMax.toFixed(2)}` : "Unavailable (Awaiting Technical Structure)";
   const stopLossStr = safeStop !== null ? `$${safeStop.toFixed(2)} (${stopLossPct}%)` : "Unavailable (Trader Defined Stop Required)";
   const target1Str = safeTarget !== null ? `$${safeTarget.toFixed(2)} (+${target1Pct}%)` : "Unavailable (Trader Defined Target Required)";
-  const safeTarget2 = (safePrice > 0 && safeTarget !== null) ? Number((safeTarget * 1.12).toFixed(2)) : null;
-  const target2Pct = (safePrice > 0 && safeTarget2 !== null) ? (((safeTarget2 - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
-  const target2Str = safeTarget2 !== null ? `$${safeTarget2.toFixed(2)} (+${target2Pct}%)` : "Unavailable";
+  const safeTarget2 = typeof takeProfit2 === "number" && Number.isFinite(takeProfit2) && takeProfit2 > 0
+    ? takeProfit2
+    : null;
+  const target2Return = Number.isFinite(safePrice) && safePrice > 0 && safeTarget2 !== null
+    ? ((safeTarget2 - safePrice) / safePrice) * 100
+    : null;
+  const target2Pct = target2Return === null ? "N/A" : target2Return.toFixed(2);
+  const target2Distance = target2Return === null ? "" : ` (${target2Return > 0 ? "+" : ""}${target2Pct}%)`;
+  const target2Str = safeTarget2 === null ? "Unavailable" : `$${safeTarget2.toFixed(2)}${target2Distance}`;
 
   // Invariants 1-4: Canonical evidenceMeta evaluation
   const evidenceMeta = (() => {

@@ -377,6 +377,7 @@ function TerminalContent() {
       currentPrice: data?.currentPrice ?? (selectedSymbol ? (SpotPriceRegistry.get(selectedSymbol)?.price || 0) : 0),
       stopLoss: data?.optimalExecution?.stop_loss ?? undefined,
       takeProfit1: data?.optimalExecution?.take_profit_1 ?? undefined,
+      takeProfit2: data?.optimalExecution?.take_profit_2 ?? undefined,
       riskRewardRatio: data?.optimalExecution?.risk_reward_ratio ?? undefined,
       setupPattern: data?.optimalExecution?.setup_pattern,
       isDayTrader: userRole === "DAY_TRADER",

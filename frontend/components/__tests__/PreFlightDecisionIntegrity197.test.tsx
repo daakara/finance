@@ -199,6 +199,25 @@ describe("Pre-Flight Decision Integrity & Epistemic Separation (Issue #197)", ()
     expect(copiedText).not.toContain("NOT EXECUTABLE");
   });
 
+  it.each([
+    [258, "$258.00 (+17.27%)"],
+    [215, "$215.00 (-2.27%)"],
+    [undefined, "Unavailable"],
+    [null, "Unavailable"],
+    [Infinity, "Unavailable"],
+    [0, "Unavailable"],
+  ])("uses the plan Target 2 value %s in the modal and journal copy", async (takeProfit2, expected) => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    render(<PreFlightChecklistModal {...baseLiveProps} isOpen onClose={vi.fn()} takeProfit2={takeProfit2} />);
+
+    expect(screen.getByTestId("preflight-target-2").textContent).toContain(expected);
+    screen.getByRole("button", { name: /Copy Trade Plan for Journal/i }).click();
+    expect(writeText.mock.calls[0]?.[0]).toContain(`**Profit Goal 2 (TP2 Runner)**: ${expected}`);
+    expect(writeText.mock.calls[0]?.[0]).not.toContain("$274.40");
+  });
+
   it("8. Audited NVDA snapshot returns 2/5 checks passed and Not cleared across bar and modal", () => {
     const auditedNvdaProps = {
       symbol: "NVDA",
