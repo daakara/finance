@@ -56,6 +56,10 @@ describe("Execution Authority & Preflight Clearance Precedence (Gate 2 Adversari
         riskRewardRatio={2.0}
         setupPattern="Minervini VCP"
         isActionable={true}
+        canSizeTrade={true}
+        dataSource="live"
+        liveSource="ALPACA_IEX"
+        liveFreshnessStatus="LIVE"
         vix={16.5}
         isStage4={false}
         optimalEntryMin={290.79}
@@ -102,6 +106,10 @@ describe("Execution Authority & Preflight Clearance Precedence (Gate 2 Adversari
         takeProfit1={340.00}
         riskRewardRatio={2.0}
         isActionable={true}
+        canSizeTrade={true}
+        dataSource="live"
+        liveSource="ALPACA_IEX"
+        liveFreshnessStatus="LIVE"
         vix={28.5} // Extreme volatility regime
         isStage4={false}
         optimalEntryMin={290.79}

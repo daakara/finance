@@ -845,12 +845,13 @@ export function evaluatePreFlightChecks(
     isCatalystPassed &&
     isMacroPassed;
 
-  const canSizeTradeGranted = canSizeTrade !== false;
+  const canSizeTradeGranted = canSizeTrade === true;
 
   // ── Provenance & Epistemic Authority Classification (Gate 2 Invariants) ──
   const rawDataSource = (inputs.dataSource || "").toLowerCase();
   const rawQuoteStatus = (inputs.quoteStatus || "").toUpperCase();
   const rawEvidenceStatus = (inputs.evidenceStatus || "").trim();
+  const rawFreshnessStatus = (inputs.liveFreshnessStatus || "").toUpperCase();
 
   const isSyntheticFixture = Boolean(
     inputs.isSynthetic ||
@@ -882,8 +883,8 @@ export function evaluatePreFlightChecks(
   );
 
   const hasLivePriceFreshness = Boolean(
-    inputs.liveFreshnessStatus === "LIVE" ||
-    inputs.liveFreshnessStatus === "REALTIME"
+    rawFreshnessStatus === "LIVE" ||
+    rawFreshnessStatus === "REALTIME"
   );
 
   const isLiveObservation = Boolean(
@@ -907,10 +908,30 @@ export function evaluatePreFlightChecks(
   const isPriceStale = Boolean(
     !isSyntheticFixture &&
     !isHistoricalEOD &&
-    inputs.liveFreshnessStatus &&
-    (inputs.liveFreshnessStatus === "STALE" ||
-     inputs.liveFreshnessStatus === "EXPIRED" ||
-     inputs.liveFreshnessStatus === "UNAVAILABLE")
+    (rawFreshnessStatus === "STALE" ||
+     rawFreshnessStatus === "EXPIRED" ||
+     rawFreshnessStatus === "UNAVAILABLE" ||
+     rawQuoteStatus === "STALE" ||
+     rawQuoteStatus === "EXPIRED" ||
+     rawQuoteStatus === "UNAVAILABLE")
+  );
+
+  // Delayed price verification:
+  // Delayed live price observations (e.g. 15-minute exchange delay) fail closed.
+  const isPriceDelayed = Boolean(
+    !isSyntheticFixture &&
+    !isHistoricalEOD &&
+    (rawFreshnessStatus === "DELAYED" ||
+     rawQuoteStatus === "DELAYED" ||
+     rawDataSource === "delayed")
+  );
+
+  // Unverified price provenance verification:
+  // For live clearance, unverified quote provenance fails closed.
+  const isPriceUnverified = Boolean(
+    !isSyntheticFixture &&
+    !isHistoricalEOD &&
+    provenanceCategory === "UNVERIFIED"
   );
 
   // Active Blockers Resolution (collecting all active blockers for discoverability)
@@ -919,6 +940,8 @@ export function evaluatePreFlightChecks(
   if (!canSizeTradeGranted) allBlockers.push("CANONICAL SIZING PROHIBITED");
   if (!isPriceValid || !hasExecutionLevels) allBlockers.push("UNVERIFIED EXECUTION LEVELS");
   if (isPriceStale) allBlockers.push("STALE PRICE OBSERVATION");
+  if (isPriceDelayed) allBlockers.push("DELAYED PRICE OBSERVATION");
+  if (isPriceUnverified && !isPriceStale) allBlockers.push("UNVERIFIED PRICE PROVENANCE");
   if (!isLevelDirectionValid) allBlockers.push("INVERTED EXECUTION BOUNDARIES");
   if (isStage4) allBlockers.push("STAGE 4 DISTRIBUTION STRUCTURE");
   if (!isRRPassed) allBlockers.push("REWARD/RISK ASYMMETRY (< 2.0:1)");
@@ -938,11 +961,22 @@ export function evaluatePreFlightChecks(
   }
   const activeBlocker = allBlockers.length > 0 ? allBlockers[0] : "NONE";
 
+  // Epistemic Clearance Eligibility:
+  // Live clearance strictly requires genuine real-time live observation (LIVE_OBSERVATION).
+  // Delayed, stale, or unverified market quotes CANNOT receive live clearance.
+  // Historical EOD and Synthetic Fixture retain their dedicated non-live clearance pathways.
+  const hasLiveClearanceProvenance =
+    isSyntheticFixture ||
+    isHistoricalEOD ||
+    (provenanceCategory === "LIVE_OBSERVATION" && !isPriceDelayed);
+
   const isCleared =
     isActionableGranted &&
     canSizeTradeGranted &&
     isPriceValid &&
     !isPriceStale &&
+    !isPriceDelayed &&
+    hasLiveClearanceProvenance &&
     isLevelDirectionValid &&
     !isStage4 &&
     mandatoryChecksVerified;
@@ -963,6 +997,12 @@ export function evaluatePreFlightChecks(
     }
     if (isPriceStale) {
       return "Wait for live exchange price feed to refresh. Execution clearance is blocked on stale or expired market data.";
+    }
+    if (isPriceDelayed) {
+      return "Wait for real-time exchange feed. Execution clearance is blocked on delayed quote observations (15-min tape delay).";
+    }
+    if (isPriceUnverified) {
+      return "Establish verified real-time exchange quote provenance. Execution clearance requires authenticated live market tape.";
     }
     if (!isLevelDirectionValid) {
       return safeStop! >= safePrice
@@ -1017,10 +1057,16 @@ export function evaluatePreFlightChecks(
           : "CLEARED")
     : passedCount === 5 && !isActionableGranted
     ? "NOT CLEARED · 5/5 PASS (AWAITING CONFIRMATION)"
+    : passedCount === 5 && !canSizeTradeGranted
+    ? "NOT CLEARED · 5/5 PASS (SIZING LOCKED)"
     : isStage4
     ? "NOT CLEARED — STAGE 4 WAIT"
     : isPriceStale
     ? `NOT CLEARED · STALE PRICE (${passedCount}/5)`
+    : isPriceDelayed
+    ? `NOT CLEARED · DELAYED QUOTE (${passedCount}/5)`
+    : isPriceUnverified && passedCount === 5
+    ? `NOT CLEARED · UNVERIFIED PROVENANCE (5/5)`
     : `NOT CLEARED (${passedCount}/5)`;
 
   const clearanceStatusBadgeClass = isCleared
