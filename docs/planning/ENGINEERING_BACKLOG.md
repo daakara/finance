@@ -2,7 +2,8 @@
 
 > [!IMPORTANT]
 > **GOVERNANCE ARCHIVAL NOTICE**: This document represents the historical Sprint 1 engineering activity register.
-> In accordance with the ARX Closure Model v2 and Governance Directive GOV-001, the sole, machine-readable single source of truth for all enterprise initiatives, sprint assignments, and operational dimensions across Sprint 1 through Sprint 5 is [`docs/planning/arx_canonical_backlog.json`](file:///c:/Users/akara/Documents/Projects/finance/docs/planning/arx_canonical_backlog.json).
+> In accordance with the ARX Closure Model v2 and Governance Directive GOV-001, the sole, machine-readable single source of truth for all enterprise initiatives, sprint assignments, and operational dimensions across Sprint 1 through Sprint 5 is [`docs/planning/arx_canonical_backlog.json`](arx_canonical_backlog.json).
+> Active sprint execution and roadmap tracking are governed by the dated canonical roadmap [`ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md`](ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md) and active work register [`ARX_ACTIVE_WORK_REGISTER_2026_11_17.md`](ARX_ACTIVE_WORK_REGISTER_2026_11_17.md).
 > Do not use this historical markdown document for active task tracking, prioritization, or closure claims.
 
 **Document ID**: `BACKLOG-ARX-SPRINT-1-CLOSEOUT-RECONCILIATION`  

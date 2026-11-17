@@ -1,5 +1,9 @@
 # ARX Terminal — Active Work Register and Backlog Reconciliation Matrix
 
+> [!IMPORTANT]
+> **SUPERSEDED REGISTER NOTICE (2026-11-17)**: This document represents the prior active work register dated 2026-11-14.
+> The active, authoritative work register is [`ARX_ACTIVE_WORK_REGISTER_2026_11_17.md`](ARX_ACTIVE_WORK_REGISTER_2026_11_17.md), accompanied by the dated sprint roadmap [`ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md`](ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md).
+
 **Document ID:** `PLN-REG-WORK-2026-11-14`  
 **Effective Date:** 2026-11-14  
 **Authoritative Production Baseline:** `release/production` @ SHA `6ea232838a53e482753d5705ba533ad9ce041e44`  

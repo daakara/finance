@@ -1,5 +1,9 @@
 # ARX Terminal — Canonical Sprint Roadmap, Backlog Prioritization & Execution Architecture
 
+> [!IMPORTANT]
+> **SUPERSEDED ROADMAP NOTICE (2026-11-17)**: This document represents the prior sprint roadmap dated 2026-11-14.
+> The active, authoritative sprint roadmap and backlog prioritization is [`ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md`](ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md), anchored to production baseline [`ee8ceab7b25be706292a5c38faedc03548073d0f`](https://github.com/daakara/finance/commit/ee8ceab7b25be706292a5c38faedc03548073d0f).
+
 **Document ID:** `PLN-ROADMAP-2026-11-14`  
 **Effective Date:** 2026-11-14  
 **Authoritative Production Baseline:** `release/production` @ SHA [`c5a134de456485daec6a18aaf5b1bfd2c5f6908c`](https://github.com/daakara/finance/commit/c5a134de456485daec6a18aaf5b1bfd2c5f6908c)  

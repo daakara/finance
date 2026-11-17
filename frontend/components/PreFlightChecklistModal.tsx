@@ -263,9 +263,12 @@ export default function PreFlightChecklistModal({
         : `Catalyst Buffer: Clean window indicated (${catalystEvidence?.daysToEarnings ? catalystEvidence.daysToEarnings.toFixed(1) + "d DTE" : ">7d"}), but corporate event confirmation is unverified.`;
     }
     if (resolvedCatalystState === "WARN") {
+      const releaseTimeTag = catalystEvidence?.resultsReleaseTimeEt
+        ? ` (${catalystEvidence.resultsReleaseTimeEt} ET Release)`
+        : " (Time Unverified)";
       return isPlain
-        ? `⚠️ High Risk: Scheduled earnings announcement ${catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null ? (catalystEvidence.daysToEarnings <= 1.0 ? "in <= 24h" : `in ${catalystEvidence.daysToEarnings.toFixed(1)} days`) : "within 7-day window"}${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate})` : ""}.`
-        : `⚠️ Binary Gap Risk: Earnings announcement scheduled for ${catalystEvidence?.eventDate || "imminent"}${catalystEvidence?.callTimeEt ? ` (${catalystEvidence.callTimeEt} ET Call)` : ""}. Position sizing restricted.`;
+        ? `⚠️ High Risk: Scheduled earnings announcement ${catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null ? (catalystEvidence.daysToEarnings <= 1.0 ? "in <= 24h" : `in ${catalystEvidence.daysToEarnings.toFixed(1)} days`) : "within 7-day window"}${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate})` : ""}${releaseTimeTag}.`
+        : `⚠️ Binary Gap Risk: Earnings announcement scheduled for ${catalystEvidence?.eventDate || "imminent"}${releaseTimeTag}. Position sizing restricted.`;
     }
     if (resolvedCatalystState === "ERROR") {
       return isPlain

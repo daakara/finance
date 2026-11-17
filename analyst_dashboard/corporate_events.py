@@ -41,6 +41,15 @@ VERIFIED_PRIMARY_SCHEDULES: Dict[str, Dict[str, Any]] = {
         "confirmation_status": "CONFIRMED",
         "event_type": "EARNINGS_ANNOUNCEMENT",
     },
+    "NVDA": {
+        "event_date": "2026-11-17",
+        "results_release_time_et": "16:20",
+        "conference_call_time_et": "17:00",
+        "source_name": "NVIDIA Investor Relations",
+        "source_url": "https://investor.nvidia.com",
+        "confirmation_status": "CONFIRMED",
+        "event_type": "EARNINGS_ANNOUNCEMENT",
+    },
     "DHLGY": {
         "event_date": "2027-03-05",
         "last_reported_date": "2026-11-05",

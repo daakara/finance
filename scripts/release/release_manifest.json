@@ -1,41 +1,153 @@
 {
-  "release_candidate_commit": "8bcc0584ce4168006c1b19481eb69ad109ba116e",
-  "base_anchor_commit": "ece65937af10f29886d802aa776907df9e5526bf",
-  "total_files": 4,
+  "release_candidate_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+  "base_anchor_commit": "7a0f76763a15ddb4191883e751f50ea73bfaa680",
+  "total_files": 18,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "DEF-TP2-001",
+  "directive": "DEF-CAT-001",
   "files": {
-    "frontend/lib/preflightEvaluator.ts": {
+    "README.md": {
       "operation": "M",
-      "originating_pr_number": 302,
-      "originating_commit": "8bcc0584ce4168006c1b19481eb69ad109ba116e",
-      "governing_requirement": "DEF-TP2-001: Source Target 2 from the authoritative execution plan for Pre-Flight and journal copy.",
-      "sha256": "ae79afb9d3d928f407c30d71fdd79cdc3ce3193929a7c4771bcf7f94f8ce3b86",
-      "size_bytes": 49130
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "8ac8c74124de1ae0c4c3183d97ca348375f25d55b4b60aefc979a215ac9bf5aa",
+      "size_bytes": 17710
     },
-    "frontend/app/page.tsx": {
+    "analyst_dashboard/analyzers/catalysts.py": {
       "operation": "M",
-      "originating_pr_number": 302,
-      "originating_commit": "8bcc0584ce4168006c1b19481eb69ad109ba116e",
-      "governing_requirement": "DEF-TP2-001: Source Target 2 from the authoritative execution plan for Pre-Flight and journal copy.",
-      "sha256": "5a5f8e2e6749de36af2bb61593f2b0c0a600029042a79affad01a311b01662d5",
-      "size_bytes": 45248
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "d5a3810ee593d1b1353e50b1353568eb2380b6be46ddf87463ff3e7bff95f77d",
+      "size_bytes": 37846
+    },
+    "analyst_dashboard/corporate_events.py": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "8169fa572b71cd71d56d60030d6c2ca2c98a662b8122d3c0cacbaef4403da786",
+      "size_bytes": 20862
+    },
+    "docs/ARX_STATUS_ADDENDUM_2026_11_14.md": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "ef42cfbe95e5625df77202e011a181afc0ae8edc12c8b639bb54d75f556a3d73",
+      "size_bytes": 12368
+    },
+    "docs/ARX_STATUS_ADDENDUM_2026_11_17.md": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "3f36477849657688be61e6b49e7c60d36a7c0153bbdaa951c8322c397bcd9346",
+      "size_bytes": 14190
+    },
+    "docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "310ad93794a533d0cbe50b3d850e765c10a83d899822a75eac7b6bc8078ece9b",
+      "size_bytes": 8839
+    },
+    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "c93bce623f2b38d4e3a79fe47176e85dd4503c1f13c4c1f1133d5582121c7fa8",
+      "size_bytes": 18504
+    },
+    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "a0b5a7da7adaf68697a5a7e0e30b7906de561a02b14805aef2123dc445dc9cb7",
+      "size_bytes": 15003
+    },
+    "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "d9984a807df4e0e72d326619c3d47a73f2beb90b0e387891c792fb2d27a6140d",
+      "size_bytes": 29171
+    },
+    "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "fa44417fe675f7cb93f3bcc32912fd6abcc3dadb603088afae3cf1c1b20fd614",
+      "size_bytes": 11019
+    },
+    "docs/planning/ENGINEERING_BACKLOG.md": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "04303b4630032b5c8ac380554688cb3dee93e6e590df5016bfb8676a9df0b426",
+      "size_bytes": 34301
+    },
+    "frontend/components/CatalystForecastCard.tsx": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "603b5a52826293171774077f7988502a35d0a06e00dd0f3a52407c63284c746b",
+      "size_bytes": 17168
+    },
+    "frontend/components/OptimalEntryExitCard.tsx": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "8bd45a651826a8b0acfda77dc710d0295e2260c2b925b151385dcbcec451a077",
+      "size_bytes": 49572
     },
     "frontend/components/PreFlightChecklistModal.tsx": {
       "operation": "M",
-      "originating_pr_number": 302,
-      "originating_commit": "8bcc0584ce4168006c1b19481eb69ad109ba116e",
-      "governing_requirement": "DEF-TP2-001: Source Target 2 from the authoritative execution plan for Pre-Flight and journal copy.",
-      "sha256": "4cf653f6c6f7cd3e8614653cc6046d4a892840a5fbe5849a2b0a6afcb7877cc6",
-      "size_bytes": 40163
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "7afe15d5b3a27e2238c9c72de9188158f93c0cd41cfb3c9fd01fd086d4eea67d",
+      "size_bytes": 40282
     },
-    "frontend/components/__tests__/PreFlightDecisionIntegrity197.test.tsx": {
+    "frontend/components/__tests__/PreFlightCatalystRisk.test.tsx": {
       "operation": "M",
-      "originating_pr_number": 302,
-      "originating_commit": "8bcc0584ce4168006c1b19481eb69ad109ba116e",
-      "governing_requirement": "DEF-TP2-001: Source Target 2 from the authoritative execution plan for Pre-Flight and journal copy.",
-      "sha256": "138763cf0033821b5f836c08cceebb71cb5c59e4ffd8b637b2ba87038e38835e",
-      "size_bytes": 10917
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "bcec7b84edcbe0398e0da504f8e7111881d441f0fe903b26b6355e79a285fb6c",
+      "size_bytes": 7782
+    },
+    "frontend/lib/api.ts": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "45191418e1ec2dcf5b4ce8b623cbe2be4a449927ce5ac1527eab7e67ba7b74f0",
+      "size_bytes": 193433
+    },
+    "frontend/lib/preflightEvaluator.ts": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "a4aaf92e847191d2d36a66d37c09ddaad4ab779bb6065e384b1b5c5fb32dae41",
+      "size_bytes": 49389
+    },
+    "tests/test_corporate_events_earnings_audit.py": {
+      "operation": "M",
+      "originating_pr_number": 303,
+      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
+      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
+      "sha256": "896f2b56946d436af59c8a06dedde9b456b71bfc3a613da21595144fef6e155d",
+      "size_bytes": 14076
     }
   },
   "qualification_framework_files": {
@@ -45,8 +157,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "51b0e4cdd572617caa3d01864492b2d18faa4a0710b096c13765c3cfda4f8bfc",
-      "size_bytes": 58176,
+      "sha256": "145955744bdf7c52a6fe63f0b9f2cac8f1723bb2838f3484e93de8b2ae5044ac",
+      "size_bytes": 58181,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {

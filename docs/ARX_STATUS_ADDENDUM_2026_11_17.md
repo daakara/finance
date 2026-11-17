@@ -1,6 +1,6 @@
 # ARX Terminal — Integrated Status Addendum (2026-11-17)
 
-> **Authoritative Operational Reconciliation (2026-11-17, Production Baseline SHA `ee8ceab7b25be706292a5c38faedc03548073d0f`):**  
+> **Authoritative Operational Reconciliation (2026-11-17, Production Baseline SHA `7a0f76763a15ddb4191883e751f50ea73bfaa680`):**  
 > This document provides the single authoritative operational status across all five ARX Terminal engineering workstreams. It supersedes the status portion of [the 2026-11-14 addendum](ARX_STATUS_ADDENDUM_2026_11_14.md) and historical registers. All immutable receipts, historical evidence, and audit logs are preserved untouched.
 
 ---
@@ -48,7 +48,7 @@ A feature may be **fully implemented** and **deployed to production** while rema
 - **Supervised NVDA Production Backfill (Nov 17, 2026, 10:50 UTC):**
   - Following isolated qualification on disposable PostgreSQL restore, single-run production executor (`execute_nvda_backfill_production.py`) executed once with verified SHA `a2607ef0254bc4e8c82e008ef47099273af76bf53038049387d4a76e9ff77308`.
   - Exactly 7 missing raw filings, 8 availability ledger rows, 1 Parker amendment linkage (`0002152188-26-000007` $\to$ base `0002152188-26-000005`), and 21 parsed transactions written in a single atomic transaction.
-  - Production NVDA inventory elevated from 9 to 16 accessions (100% trailing 90-day coverage).
+  - Production NVDA inventory elevated from 9 to 16 of 16 accessions in the frozen August 18 – November 16, 2026 baseline (100% coverage of the frozen evaluation interval).
 - **Production Truth Verification:**
   - Live query to production SEC filings API confirmed all 16 accessions returned with full metadata, confirmed Parker amendment linkage, and verified availability timestamps:
     - Base filing `0002152188-26-000005`: `2026-09-11T21:04:47Z`.
@@ -107,13 +107,17 @@ A feature may be **fully implemented** and **deployed to production** while rema
     - Verified surface agreement across readiness bar, checklist modal, and copied report.
     - Audited NVDA snapshot returns exactly 2/5 checks passed and `NOT CLEARED — STAGE 4 WAIT`.
     - **Production verification:** Squash-merged as `bb9fdcf412b8ed55af94f944f09c39541a122e17`. [Release Qualification](https://github.com/daakara/finance/actions/runs/44103586783) passed on `4145fe60`. [PR #300 preview](https://bb5d8def.finance-xp8.pages.dev) serves `4145fe60`. [Manual production deployment](https://36c3c2e1.finance-xp8.pages.dev) succeeded at 16:18 CET on 2026-11-17. Both public hosts serve the merged SHA. All 12 merged-code acceptance tests passed. The live NVDA readiness bar and modal showed 2/5 checks passed with clearance blocked. The original audit inputs replayed with CHK-1 `Invalid Levels`.
+  - **PR #302 ([daakara/finance#302](https://github.com/daakara/finance/pull/302)):** Canonical second profit target resolution (DEF-TP2-001):
+    - Passed Release Qualification on candidate `8bcc0584` and squash-merged to `release/production` as commit `7a0f76763a15ddb4191883e751f50ea73bfaa680`.
+    - Bound `takeProfit2?: number | null` into `PreFlightChecklistInputs`, passed ATR-anchored `take_profit_2` from execution ladder in `AdaptiveTerminal`, and eliminated synthetic client-side `safeTarget * 1.12` markup in `preflightEvaluator.ts` and `PreFlightChecklistModal.tsx`.
+    - Deployed to Cloudflare Pages and verified live in production (revision `7a0f76763a15ddb4191883e751f50ea73bfaa680`).
 - **Hold State: `PHASE_A3_UX_HOLD=ACTIVE`.** Progressive disclosure redesign (PR #274) remains held in draft awaiting authentic 5-participant formative usability study.
 
 ---
 
 ### Workstream 5: Infrastructure & Production Telemetry
 
-- **Production Deployment Baseline:** Cloudflare Pages production deployment verified at commit SHA `ee8ceab7b25be706292a5c38faedc03548073d0f` via `<meta name="arx-release-sha">`.
+- **Production Deployment Baseline:** Cloudflare Pages production deployment verified at commit SHA `7a0f76763a15ddb4191883e751f50ea73bfaa680` via `<meta name="arx-release-sha">`.
 - **Railway Services:**
   - `web` (`analyst-dashboard`): FastAPI online, serving live endpoints.
   - `smart-money-worker`: In `STANDBY` loop, `ARX_SEC_EGRESS_ROLE=DISABLED`, 0 held advisory locks, 0 active queue rows.
@@ -125,6 +129,6 @@ A feature may be **fully implemented** and **deployed to production** while rema
 
 | Defect ID | Defect Summary | Code Location & Root Cause | Target Sprint / Next Action |
 | :--- | :--- | :--- | :--- |
-| **DEF-TP2-001** | **Target 2 Mismatch (Pre-Flight Modal)** | `frontend/lib/preflightEvaluator.ts` (line 1036) computes synthetic `safeTarget * 1.12` markup because `PreFlightChecklistInputs` omits `takeProfit2`. Backend computes canonical ATR-based `take_profit_2` in `optimal_execution.py`. | **Sprint 1 Active:** Pass canonical `take_profit_2` from execution ladder into `PreFlightChecklistInputs` and remove synthetic 12% fallback. |
-| **DEF-CAT-001** | **Earnings Call Time Conflation (`16:00 ET Call`)** | `analyst_dashboard/corporate_events.py` (lines 280–281) assigns Yahoo Finance market-close epoch timestamp (16:00 ET) to `conference_call_time_et`. For NVDA, IR call is at 17:00 ET (results at 16:20 ET). | **Sprint 1 Active:** Add NVDA to `VERIFIED_PRIMARY_SCHEDULES` with confirmed `results_release_time_et: "16:20"` and `conference_call_time_et: "17:00"`. |
+| **DEF-TP2-001** | **Target 2 Mismatch (Pre-Flight Modal)** | `frontend/lib/preflightEvaluator.ts` computed synthetic `safeTarget * 1.12` markup because `PreFlightChecklistInputs` omitted `takeProfit2`. Backend computes canonical ATR-based `take_profit_2` in `optimal_execution.py`. | **DEPLOYED & VERIFIED IN PRODUCTION (PR #302, SHA `7a0f7676`):** Passed canonical `take_profit_2` from execution ladder into `PreFlightChecklistInputs` and eliminated synthetic 12% calculation. |
+| **DEF-CAT-001** | **Earnings Call Time Conflation (`16:00 ET Call`)** | `analyst_dashboard/corporate_events.py` (lines 280–281) assigns Yahoo Finance market-close epoch timestamp (16:00 ET) to `conference_call_time_et`. For NVDA, IR call is at 17:00 ET (results at 16:20 ET). | **Sprint 1 Active (PR #303 Candidate):** Added NVDA to `VERIFIED_PRIMARY_SCHEDULES` with confirmed `results_release_time_et: "16:20"` and `conference_call_time_et: "17:00"`. Disentangled results release from conference call in Catalyst card and Pre-Flight earnings warning. |
 | **DEF-CAT-002** | **Empty 5-Year Revenue & Earnings Simulation Panel** | `analyst_dashboard/analyzers/catalysts.py` (lines 383–388) strips `multi_year_forecast` to `[]` under live-only invariant. `CatalystForecastCard.tsx` renders table headers with blank rows. | **Sprint 1 Active:** Add explicit empty-state disclosure in `CatalystForecastCard.tsx`: *"Forward multi-year projections awaiting verified consensus disclosures under live-only governance."* |
