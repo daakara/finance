@@ -342,11 +342,12 @@ export default function AdaptiveTerminal({
         isOpen={isWhyOpen}
         onClose={() => setIsWhyOpen(false)}
         symbol={symbol}
-        setupScore={insight.setupScore}
+        setupScore={confluence?.confluenceScore !== undefined ? Math.round(confluence.confluenceScore) : insight.setupScore}
         terminalState={insight.terminalState}
         items={insight.scoreAttribution.items}
         catalystToIncreaseScore={insight.scoreAttribution.catalystToIncreaseScore}
         whatWouldChangeAssessment={insight.whatWouldChangeAssessment}
+        confluence={confluence}
       />
 
       {/* Institutional Position Sizer Modal */}
