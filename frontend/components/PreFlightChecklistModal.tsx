@@ -17,6 +17,7 @@ export default function PreFlightChecklistModal({
   currentPrice,
   stopLoss,
   takeProfit1,
+  takeProfit2,
   riskRewardRatio,
   setupPattern = "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
   isDayTrader = false,
@@ -112,6 +113,7 @@ export default function PreFlightChecklistModal({
       currentPrice,
       stopLoss,
       takeProfit1,
+      takeProfit2,
       riskRewardRatio,
       setupPattern,
       isDayTrader,
@@ -162,8 +164,6 @@ export default function PreFlightChecklistModal({
     currentVix,
     stopLossPct,
     target1Pct,
-    target2Pct,
-    safeTarget2,
     entryZoneStr,
     stopLossStr,
     target1Str,
@@ -507,6 +507,10 @@ export default function PreFlightChecklistModal({
               </ul>
             </div>
           )}
+
+          <p className="px-3 text-xs text-[var(--text-2)]" data-testid="preflight-target-2">
+            <span className="font-semibold">Target 2</span> · {target2Str}
+          </p>
 
           {/* 5-Point Validation Checklist */}
           <div className="space-y-2.5 text-xs">
