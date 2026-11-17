@@ -1,25 +1,33 @@
 {
-  "release_candidate_commit": "9199a36d5d765ca0d96f1b4406095811c8f9c35a",
-  "base_anchor_commit": "2fec4d2c9d5aa5442d501482699196606c2e6026",
-  "total_files": 2,
+  "release_candidate_commit": "3a8252c305883afc9b2220bbdeef2a6a06693492",
+  "base_anchor_commit": "5845e056c34ed563ef6e29db600507db7dc0d7b6",
+  "total_files": 3,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-CATALYST-FORECAST-LABELS-001",
+  "directive": "ARX-CATALYST-FORECAST-LOADING-DESYNC-001",
   "files": {
+    "frontend/app/page.tsx": {
+      "operation": "M",
+      "originating_pr_number": 298,
+      "originating_commit": "3a8252c305883afc9b2220bbdeef2a6a06693492",
+      "governing_requirement": "ARX-CATALYST-FORECAST-LOADING-DESYNC-001: Pass selectedSymbol and loading props into CatalystForecastCard to bind display to active ticker.",
+      "sha256": "f47b7fcb84e0197d210d73b51ff8943282b10d562a825bbc3628145936bce101",
+      "size_bytes": 45177
+    },
     "frontend/components/CatalystForecastCard.tsx": {
       "operation": "M",
-      "originating_pr_number": 297,
-      "originating_commit": "9199a36d5d765ca0d96f1b4406095811c8f9c35a",
-      "governing_requirement": "ARX-CATALYST-FORECAST-LABELS-001: Sector-appropriate labeling for technology, healthcare, financials, and business catalysts; clear sticky ETF allocations on stock switch.",
-      "sha256": "b23adadeb4778c5ce69f65b38bac25c4196cd2793daeed8baf5f3c9d62a87c4b",
-      "size_bytes": 15992
+      "originating_pr_number": 298,
+      "originating_commit": "3a8252c305883afc9b2220bbdeef2a6a06693492",
+      "governing_requirement": "ARX-CATALYST-FORECAST-LOADING-DESYNC-001: Normalize and match ticker payload with selectedSymbol; suppress stale forecast cards during fetch intervals and out-of-order responses.",
+      "sha256": "51d273d2f45445539a543b8eecd9d2ff308b2bc311facfb273108b2d96b02566",
+      "size_bytes": 16426
     },
     "frontend/components/__tests__/CockpitEtfRouting.test.tsx": {
       "operation": "M",
-      "originating_pr_number": 297,
-      "originating_commit": "9199a36d5d765ca0d96f1b4406095811c8f9c35a",
-      "governing_requirement": "ARX-CATALYST-FORECAST-LABELS-001: Regression test suite covering NVDA tech labels, NVO biotech labels, JPM business catalyst labels, and ETF-to-stock switch allocation reset.",
-      "sha256": "5969be242d8f1c7d514473d233512dfef936cd9b96ca9b64a1b5782ace1f6fe2",
-      "size_bytes": 13692
+      "originating_pr_number": 298,
+      "originating_commit": "3a8252c305883afc9b2220bbdeef2a6a06693492",
+      "governing_requirement": "ARX-CATALYST-FORECAST-LOADING-DESYNC-001: Regression test proving delayed and out-of-order responses cannot display previous ticker card under newly selected ticker.",
+      "sha256": "f20b8e3a56452aa3fbc77e42b4aac27921b020c5334a310da4df204a86a07041",
+      "size_bytes": 16772
     }
   },
   "qualification_framework_files": {
@@ -29,8 +37,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "8eb79d42e1d4ac6b9b570e189f65c100828a18c61855d60c2bb9e267d08e44e4",
-      "size_bytes": 58151,
+      "sha256": "84e0a7af95ac0d6f744853ed5cc4314b75396d0183a3b7057c0a0c647746a73a",
+      "size_bytes": 58156,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
