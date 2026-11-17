@@ -201,4 +201,54 @@ describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed St
       screen.getByText(/2\. Trend & Moving Averages \(Stage Discipline & Buying Range\)/i)
     ).toBeDefined();
   });
+
+  it("9. DEF-CAT-001: Verified results release time renders in earnings warning", () => {
+    render(
+      <PreFlightChecklistModal
+        {...baseProps}
+        symbol="NVDA"
+        catalystState="WARN"
+        hasImminentEarnings={true}
+        catalystEvidence={{
+          daysToEarnings: 0.45,
+          eventDate: "2026-11-17",
+          resultsReleaseTimeEt: "16:20",
+          callTimeEt: "17:00",
+          confirmationStatus: "CONFIRMED",
+          coverageStatus: "CONFIRMED_UPCOMING",
+          freshnessStatus: "LIVE",
+          riskTier: "ACUTE_BINARY_GAP_RISK",
+        }}
+      />
+    );
+
+    expect(screen.getByText("HAZARD")).toBeDefined();
+    expect(
+      screen.getByText(/16:20 ET Release/i)
+    ).toBeDefined();
+  });
+
+  it("10. DEF-CAT-001: When only date is known without release time, marks Time Unverified", () => {
+    render(
+      <PreFlightChecklistModal
+        {...baseProps}
+        symbol="XYZ"
+        catalystState="WARN"
+        hasImminentEarnings={true}
+        catalystEvidence={{
+          daysToEarnings: 0.5,
+          eventDate: "2026-11-18",
+          confirmationStatus: "CONFIRMED",
+          coverageStatus: "CONFIRMED_UPCOMING",
+          freshnessStatus: "LIVE",
+          riskTier: "ACUTE_BINARY_GAP_RISK",
+        }}
+      />
+    );
+
+    expect(screen.getByText("HAZARD")).toBeDefined();
+    expect(
+      screen.getByText(/Time Unverified/i)
+    ).toBeDefined();
+  });
 });

@@ -747,6 +747,12 @@ export function evaluatePreFlightChecks(
     ? "Imminent Earnings Event"
     : "Coverage Unavailable";
 
+  const releaseTimeDetail = catalystEvidence?.resultsReleaseTimeEt
+    ? ` ${catalystEvidence.resultsReleaseTimeEt} ET Release`
+    : catalystEvidence?.eventDate
+    ? " Time Unverified"
+    : "";
+
   const chk4Detail = isEtf
     ? (isPlain
         ? "Exchange-Traded Fund (ETF): Does not report single-stock corporate earnings. Event runway clear."
@@ -756,7 +762,7 @@ export function evaluatePreFlightChecks(
         ? `Clean runway verified (>7 days to confirmed binary earnings event${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}).`
         : `Clean runway indicated (>7 days to estimated earnings${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}), but event confirmation is unverified by primary source.`)
     : resolvedCatalystState === "WARN"
-    ? `Scheduled earnings announcement within 7-day risk window${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate})` : ""}. Position sizing restricted.`
+    ? `Scheduled earnings announcement within 7-day risk window${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate}${releaseTimeDetail ? ` · ${releaseTimeDetail.trim()}` : ""})` : ""}. Position sizing restricted.`
     : resolvedCatalystState === "ERROR"
     ? "Technical error retrieving corporate earnings schedule."
     : catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0

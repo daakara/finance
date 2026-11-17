@@ -297,9 +297,21 @@ export default function CatalystForecastCard({
           <div className="space-y-2">
             {data.upcoming_milestones.map((m, idx) => (
               <div key={idx} className="flex items-start justify-between gap-2 p-2 rounded-lg bg-[#111722] border border-[#1e293b]">
-                <div>
-                  <span className="text-[10px] font-black text-cyan-400 block">{m.date}</span>
-                  <span className="text-xs text-slate-200 leading-tight">{m.event}</span>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-black text-cyan-400 block">{m.date}</span>
+                    {m.results_release_time_et && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-800/80">
+                        Results: {m.results_release_time_et} ET
+                      </span>
+                    )}
+                    {m.conference_call_time_et && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-950/80 text-sky-300 border border-sky-800/80">
+                        Call: {m.conference_call_time_et} ET
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-slate-200 leading-tight block">{m.event}</span>
                 </div>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap ${
                   m.impact.includes("Transformational")

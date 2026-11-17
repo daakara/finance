@@ -54,7 +54,7 @@ To ensure architectural coherence and eliminate cognitive blind spots, Project B
 - **Recommendation:** Implement an explicit institutional empty-state message in `CatalystForecastCard.tsx` explaining that static multi-year projections are withheld under live-only governance.
 
 ### Perspective 4: Reliability & Security
-- **Evaluation:** The supervised one-shot SEC Form 4 pilot and NVDA production backfill under Issue #165 are complete. Production database holds 16 accessions (100% trailing 90-day coverage).
+- **Evaluation:** The supervised one-shot SEC Form 4 pilot and NVDA production backfill under Issue #165 are complete. Production database holds 16 of 16 accessions in the frozen August 18 – November 16, 2026 baseline (100% coverage of the frozen evaluation interval).
 - **Recommendation:** Maintain the SEC worker strictly in `STANDBY` mode (`ARX_SEC_EGRESS_ROLE=DISABLED`). Reaffirm that recurring ingestion is held under `HOLD_SEC_001`.
 
 ### Perspective 5: Quality Assurance
@@ -78,17 +78,17 @@ To ensure architectural coherence and eliminate cognitive blind spots, Project B
 ```mermaid
 flowchart TD
     subgraph S0["Sprint 0: Completed & Verified (Nov 14–17)"]
-        S0_1["SM Pilot & Supervised Backfill (#165) — 16 Accessions in DB"]
+        S0_1["SM Pilot & Supervised Backfill (#165) — 16/16 Accessions in Frozen Baseline"]
         S0_2["Pre-Flight Freshness & R:R (#181, #197, #198) — Merged #286/#287/#288"]
         S0_3["Radar Narrative & Evidence Adapter (#230) — Merged #285/#294"]
         S0_4["Engine Manifest v2.5.3 & Macro Contract — Merged #291/#296"]
-        S0_5["Deployed & Verified Live on arxterminal.com (a42601ee)"]
+        S0_5["Deployed & Verified Live on arxterminal.com (ee8ceab7)"]
     end
 
-    subgraph S1["Sprint 1: Candidate Qualification & Defect Remediation (Active)"]
-        S1_1["PR #299 Deployed and Verified"]
-        S1_2["PR #300 Deployed and Verified"]
-        S1_3["Resolve DEF-TP2-001 (Bind Canonical take_profit_2)"]
+    subgraph S1["Sprint 1: Defect Remediation & Verification (Active)"]
+        S1_1["PR #299 Deployed and Verified (Confluence Drawer Presentation)"]
+        S1_2["PR #300 Deployed and Verified (Pre-Flight Quote Provenance & Sizing)"]
+        S1_3["PR #302 Deployed and Verified (Canonical take_profit_2 / DEF-TP2-001)"]
         S1_4["Resolve DEF-CAT-001 (NVDA Primary IR 16:20/17:00 Schedule)"]
         S1_5["Resolve DEF-CAT-002 (Empty 5-Year Forecast State)"]
     end
@@ -123,8 +123,8 @@ flowchart TD
 - **Ordered Task Deliverables:**
   1. **Task 1.1 — Confluence Drawer Presentation Truth (PR #299):** **Deployed and verified.** See the [production verification record](../ARX_STATUS_ADDENDUM_2026_11_17.md).
   2. **Task 1.2 — Pre-Flight Quote Provenance & Sizing Safeguards (PR #300):** **Deployed and verified.** See the [production verification record](../ARX_STATUS_ADDENDUM_2026_11_17.md).
-  3. **Task 1.3 — Target 2 Mismatch Remediation (DEF-TP2-001):** Pass canonical `take_profit_2` from execution ladder into `PreFlightChecklistInputs` and remove synthetic 12% calculation in `preflightEvaluator.ts`.
-  4. **Task 1.4 — NVDA Corporate Schedule Disentanglement (DEF-CAT-001):** Add primary-source schedule for NVDA in `corporate_events.py` separating 16:20 results release from 17:00 conference call.
+  3. **Task 1.3 — Target 2 Mismatch Remediation (DEF-TP2-001):** **Deployed and verified in production (PR #302, SHA `7a0f7676`).** Bound canonical `take_profit_2` from execution ladder into `PreFlightChecklistInputs` and eliminated synthetic 12% calculation.
+  4. **Task 1.4 — NVDA Corporate Schedule Disentanglement (DEF-CAT-001):** **Active candidate in PR #303.** Added primary-source schedule for NVDA in `corporate_events.py` separating 16:20 results release from 17:00 conference call; disentangled results release from conference call in Catalyst card and Pre-Flight earnings warning.
   5. **Task 1.5 — 5-Year Simulation Empty State (DEF-CAT-002):** Add informative institutional disclosure in `CatalystForecastCard.tsx` when `multi_year_forecast` is empty.
 - **Dependencies:** PR #299, PR #300, `optimal_execution.py`, `corporate_events.py`, `CatalystForecastCard.tsx`.
 - **Measurable Exit Criteria:**

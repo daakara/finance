@@ -239,6 +239,9 @@ export interface CatalystMilestone {
   date: string;
   event: string;
   impact: string;
+  source?: string;
+  results_release_time_et?: string | null;
+  conference_call_time_et?: string | null;
 }
 
 export interface MultiYearForecastItem {

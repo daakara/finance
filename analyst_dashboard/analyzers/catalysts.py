@@ -396,12 +396,21 @@ class CatalystEngine:
                 data["has_imminent_earnings"] = corporate_event.get("has_imminent_earnings", False)
                 data["event_date_et"] = corporate_event.get("event_date_et")
                 if corporate_event.get("days_to_earnings") is not None and corporate_event["days_to_earnings"] >= 0:
-                    call_desc = f" ({corporate_event.get('conference_call_time_et')} ET Call)" if corporate_event.get('conference_call_time_et') else ""
+                    rel_time = corporate_event.get("results_release_time_et")
+                    call_time = corporate_event.get("conference_call_time_et")
+                    time_parts = []
+                    if rel_time:
+                        time_parts.append(f"Results: {rel_time} ET")
+                    if call_time:
+                        time_parts.append(f"Call: {call_time} ET")
+                    time_desc = f" ({' · '.join(time_parts)})" if time_parts else " (Time Unverified)"
                     data["upcoming_milestones"] = [{
                         "date": corporate_event.get("event_date_et", "Upcoming"),
-                        "event": f"Quarterly Earnings Announcement{call_desc}",
+                        "event": f"Quarterly Earnings Announcement{time_desc}",
                         "impact": "High Binary",
                         "source": corporate_event.get("source_name", "Primary IR"),
+                        "results_release_time_et": rel_time,
+                        "conference_call_time_et": call_time,
                     }]
             return data
 
@@ -436,12 +445,21 @@ class CatalystEngine:
             has_imminent = corporate_event.get("has_imminent_earnings", False)
             event_date_et = corporate_event.get("event_date_et")
             if days_to_earnings is not None and days_to_earnings >= 0:
-                call_desc = f" ({corporate_event.get('conference_call_time_et')} ET Call)" if corporate_event.get('conference_call_time_et') else ""
+                rel_time = corporate_event.get("results_release_time_et")
+                call_time = corporate_event.get("conference_call_time_et")
+                time_parts = []
+                if rel_time:
+                    time_parts.append(f"Results: {rel_time} ET")
+                if call_time:
+                    time_parts.append(f"Call: {call_time} ET")
+                time_desc = f" ({' · '.join(time_parts)})" if time_parts else " (Time Unverified)"
                 milestones.append({
                     "date": event_date_et or "Upcoming",
-                    "event": f"Quarterly Earnings Announcement{call_desc}",
+                    "event": f"Quarterly Earnings Announcement{time_desc}",
                     "impact": "High Binary",
                     "source": corporate_event.get("source_name", "Primary IR"),
+                    "results_release_time_et": rel_time,
+                    "conference_call_time_et": call_time,
                 })
 
         return {

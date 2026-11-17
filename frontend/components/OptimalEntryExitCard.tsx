@@ -537,7 +537,15 @@ export default function OptimalEntryExitCard({
                     ? (resolvedDaysToEarnings !== null && resolvedDaysToEarnings <= 1.0
                         ? `Earnings Imminent (<=${Math.max(1, Math.round(resolvedDaysToEarnings * 24))}h)`
                         : `Earnings ${resolvedCorporateEvent.event_date_et || "Scheduled"}`)
-                    : `Catalyst: ${resolvedCorporateEvent.event_date_et || "Earnings"}${resolvedCorporateEvent.conference_call_time_et ? ` (${resolvedCorporateEvent.conference_call_time_et} ET Call)` : ""}`}
+                    : `Catalyst: ${resolvedCorporateEvent.event_date_et || "Earnings"}${
+                        resolvedCorporateEvent.results_release_time_et
+                          ? ` (${resolvedCorporateEvent.results_release_time_et} ET Release)`
+                          : resolvedCorporateEvent.conference_call_time_et
+                          ? ` (${resolvedCorporateEvent.conference_call_time_et} ET Call)`
+                          : resolvedCorporateEvent.event_date_et
+                          ? " (Time Unverified)"
+                          : ""
+                      }`}
                 </span>
                 <span className="text-[9px] opacity-75 font-sans">
                   ({resolvedCorporateEvent.confirmation_status === "CONFIRMED" ? "IR Confirmed" : "Estimate"})

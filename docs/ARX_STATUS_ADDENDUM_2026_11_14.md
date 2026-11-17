@@ -1,5 +1,9 @@
 # ARX Terminal — Integrated Status Addendum (2026-11-14)
 
+> [!IMPORTANT]
+> **SUPERSEDED STATUS NOTICE (2026-11-17)**: This document represents the prior status addendum dated 2026-11-14.
+> The active, authoritative operational status addendum is [`ARX_STATUS_ADDENDUM_2026_11_17.md`](ARX_STATUS_ADDENDUM_2026_11_17.md), anchored to production baseline [`ee8ceab7b25be706292a5c38faedc03548073d0f`](https://github.com/daakara/finance/commit/ee8ceab7b25be706292a5c38faedc03548073d0f).
+
 > **Authoritative Operational Reconciliation (2026-11-14, Production Baseline SHA `6ea232838a53e482753d5705ba533ad9ce041e44`):**  
 > This document provides the single authoritative operational status across all five ARX Terminal engineering workstreams. It supersedes the status portion of [the 2026-11-07 addendum](ARX_STATUS_ADDENDUM_2026_11_07.md) and historical registers. All immutable receipts, historical evidence, and audit logs are preserved untouched.
 

@@ -256,3 +256,25 @@ class TestCorporateEventsAndEarningsAudit:
         assert event["confirmation_status"] == "CONFIRMED"
         assert event["coverage_status"] == "CONFIRMED_UPCOMING"
         assert event["news_sentiment_status"] == "UNAVAILABLE"
+
+    def test_17_nvda_primary_schedule_disentanglement(self):
+        """Scenario 17 (DEF-CAT-001): NVDA primary schedule disentangles 16:20 ET results release from 17:00 ET call."""
+        from analyst_dashboard.analyzers.catalysts import CatalystEngine
+        now = datetime(2026, 11, 17, 10, 0, tzinfo=timezone.utc)
+        event = normalize_corporate_event("NVDA", info={}, calendar={}, now_utc=now)
+        assert event["symbol"] == "NVDA"
+        assert event["event_date_et"] == "2026-11-17"
+        assert event["results_release_time_et"] == "16:20"
+        assert event["conference_call_time_et"] == "17:00"
+        assert event["confirmation_status"] == "CONFIRMED"
+        assert event["source_name"] == "NVIDIA Investor Relations"
+        assert event["preflight_state"] == "WARN"
+
+        engine = CatalystEngine()
+        cat = engine.get_asset_catalyst_report("NVDA", current_price=145.0, corporate_event=event)
+        milestones = cat.get("upcoming_milestones", [])
+        assert len(milestones) >= 1
+        m0 = milestones[0]
+        assert m0["results_release_time_et"] == "16:20"
+        assert m0["conference_call_time_et"] == "17:00"
+        assert "Results: 16:20 ET · Call: 17:00 ET" in m0["event"]
