@@ -492,8 +492,6 @@ class SmartMoneyIngestionWorker:
         self._last_stale_recovery_at = 0.0
         self._is_executing_cycle = False
         self._shutdown_requested = False
-        from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher, SecRateLimiter
-        self._sec_fetcher = SecEdgarFetcher(rate_limiter=SecRateLimiter(max_per_second=5.0))
 
     def validate_preflight(self) -> bool:
         """
@@ -709,7 +707,6 @@ class SmartMoneyIngestionWorker:
                 repository=self.repository,
                 allow_test_mode=False,
                 cancellation_token=lambda: getattr(self, "_shutdown_requested", False),
-                sec_fetcher=self._sec_fetcher,
                 preacquired_lock_conn=self._owner_conn,
             )
             res = pipeline.execute_cycle(

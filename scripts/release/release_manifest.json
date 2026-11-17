@@ -1,153 +1,89 @@
 {
-  "release_candidate_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-  "base_anchor_commit": "7a0f76763a15ddb4191883e751f50ea73bfaa680",
-  "total_files": 18,
+  "release_candidate_commit": "9c8673b6a114414eb281f179b412580557e19360",
+  "base_anchor_commit": "933295cc07cd170dcb4a47e5b62a14384470a342",
+  "total_files": 10,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "DEF-CAT-001",
+  "directive": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001",
   "files": {
-    "README.md": {
+    ".github/workflows/sm-continuous-authorization.yml": {
       "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "8ac8c74124de1ae0c4c3183d97ca348375f25d55b4b60aefc979a215ac9bf5aa",
-      "size_bytes": 17710
+      "originating_pr_number": 304,
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
+      "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
+      "sha256": "6467ec324c34dca7c966ccc64dcde0eb699f5f163e63283d948f81019b52b1e7",
+      "size_bytes": 1667
     },
-    "analyst_dashboard/analyzers/catalysts.py": {
+    "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "d5a3810ee593d1b1353e50b1353568eb2380b6be46ddf87463ff3e7bff95f77d",
-      "size_bytes": 37846
+      "originating_pr_number": 304,
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
+      "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
+      "sha256": "daadfec45621747a879adc874f0b429b342bc44c4b8ff7c6f643f97adc962269",
+      "size_bytes": 79764
     },
-    "analyst_dashboard/corporate_events.py": {
+    "analyst_dashboard/smart_money/form4_models.py": {
       "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "8169fa572b71cd71d56d60030d6c2ca2c98a662b8122d3c0cacbaef4403da786",
-      "size_bytes": 20862
+      "originating_pr_number": 304,
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
+      "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
+      "sha256": "ee1af1cb699eff960a4a36a42934123e5d0c5368fd581d5ea8adaf56b1698dcc",
+      "size_bytes": 10855
     },
-    "docs/ARX_STATUS_ADDENDUM_2026_11_14.md": {
+    "analyst_dashboard/smart_money/form4_parser.py": {
       "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "ef42cfbe95e5625df77202e011a181afc0ae8edc12c8b639bb54d75f556a3d73",
-      "size_bytes": 12368
+      "originating_pr_number": 304,
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
+      "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
+      "sha256": "4328066c4bf1f31b9c7dd4264c64bfe8847fc60d195846175374eda6f07b2789",
+      "size_bytes": 16627
     },
-    "docs/ARX_STATUS_ADDENDUM_2026_11_17.md": {
+    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
       "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "3f36477849657688be61e6b49e7c60d36a7c0153bbdaa951c8322c397bcd9346",
-      "size_bytes": 14190
+      "originating_pr_number": 304,
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
+      "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
+      "sha256": "663f457d7d677ba76db1030ac3cae5a6f220a61cd15b9f9adff3861795a2b5cf",
+      "size_bytes": 57463
     },
-    "docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md": {
+    "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "310ad93794a533d0cbe50b3d850e765c10a83d899822a75eac7b6bc8078ece9b",
-      "size_bytes": 8839
+      "originating_pr_number": 304,
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
+      "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
+      "sha256": "7f1e2c6954d2117d38aac670cb57bbbc0e8546043ada203969cca6bcc648d8bc",
+      "size_bytes": 45429
     },
-    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_14.md": {
+    "tests/test_sm_act_020_filing_coverage.py": {
       "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "c93bce623f2b38d4e3a79fe47176e85dd4503c1f13c4c1f1133d5582121c7fa8",
-      "size_bytes": 18504
+      "originating_pr_number": 304,
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
+      "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
+      "sha256": "af51476bf06701fc14a82a1d94cbb67436d671effe0abd8beb617e00eca96ac7",
+      "size_bytes": 5017
     },
-    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md": {
+    "tests/test_smart_money_continuous_ingestion.py": {
       "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "a0b5a7da7adaf68697a5a7e0e30b7906de561a02b14805aef2123dc445dc9cb7",
-      "size_bytes": 15003
+      "originating_pr_number": 304,
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
+      "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
+      "sha256": "632d14b46dc47cc4b2ff99f0f59a644d9bb9ce96b69a74332a550edad0ffd4dd",
+      "size_bytes": 34801
     },
-    "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md": {
-      "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "d9984a807df4e0e72d326619c3d47a73f2beb90b0e387891c792fb2d27a6140d",
-      "size_bytes": 29171
+    "tests/test_sec_ingestion_evidence_integrity.py": {
+      "operation": "A",
+      "originating_pr_number": 304,
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
+      "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
+      "sha256": "6f2c5d091bfc744ba0f7f0de7873317ca46c68f5177e0e37f318f22604d81173",
+      "size_bytes": 19288
     },
-    "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md": {
-      "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "fa44417fe675f7cb93f3bcc32912fd6abcc3dadb603088afae3cf1c1b20fd614",
-      "size_bytes": 11019
-    },
-    "docs/planning/ENGINEERING_BACKLOG.md": {
-      "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "04303b4630032b5c8ac380554688cb3dee93e6e590df5016bfb8676a9df0b426",
-      "size_bytes": 34301
-    },
-    "frontend/components/CatalystForecastCard.tsx": {
-      "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "603b5a52826293171774077f7988502a35d0a06e00dd0f3a52407c63284c746b",
-      "size_bytes": 17168
-    },
-    "frontend/components/OptimalEntryExitCard.tsx": {
-      "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "8bd45a651826a8b0acfda77dc710d0295e2260c2b925b151385dcbcec451a077",
-      "size_bytes": 49572
-    },
-    "frontend/components/PreFlightChecklistModal.tsx": {
-      "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "7afe15d5b3a27e2238c9c72de9188158f93c0cd41cfb3c9fd01fd086d4eea67d",
-      "size_bytes": 40282
-    },
-    "frontend/components/__tests__/PreFlightCatalystRisk.test.tsx": {
-      "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "bcec7b84edcbe0398e0da504f8e7111881d441f0fe903b26b6355e79a285fb6c",
-      "size_bytes": 7782
-    },
-    "frontend/lib/api.ts": {
-      "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "45191418e1ec2dcf5b4ce8b623cbe2be4a449927ce5ac1527eab7e67ba7b74f0",
-      "size_bytes": 193433
-    },
-    "frontend/lib/preflightEvaluator.ts": {
-      "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "a4aaf92e847191d2d36a66d37c09ddaad4ab779bb6065e384b1b5c5fb32dae41",
-      "size_bytes": 49389
-    },
-    "tests/test_corporate_events_earnings_audit.py": {
-      "operation": "M",
-      "originating_pr_number": 303,
-      "originating_commit": "4b205f7570a05492eee8a5c3aa17b182806d0618",
-      "governing_requirement": "DEF-CAT-001: Disentangle NVDA earnings results release time from conference call time and mark unverified times.",
-      "sha256": "896f2b56946d436af59c8a06dedde9b456b71bfc3a613da21595144fef6e155d",
-      "size_bytes": 14076
+    "docs/reports/SEC_RECURRING_INGESTION_REMEDIATION_2026_11_17.md": {
+      "operation": "A",
+      "originating_pr_number": 304,
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
+      "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
+      "sha256": "6b38ad33e4718a47fda64fd23ceada609ae6b5e72e0f7cfca60650fbb7da76a7",
+      "size_bytes": 5864
     }
   },
   "qualification_framework_files": {
@@ -157,8 +93,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "145955744bdf7c52a6fe63f0b9f2cac8f1723bb2838f3484e93de8b2ae5044ac",
-      "size_bytes": 58181,
+      "sha256": "73488c85bb82a58fe087a09df58073d66acad87662d827ae01f4243fe85d8a3e",
+      "size_bytes": 58186,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
