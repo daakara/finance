@@ -1,33 +1,81 @@
 {
-  "release_candidate_commit": "3a8252c305883afc9b2220bbdeef2a6a06693492",
-  "base_anchor_commit": "5845e056c34ed563ef6e29db600507db7dc0d7b6",
-  "total_files": 3,
+  "release_candidate_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
+  "base_anchor_commit": "a42601eed6c09f7608b8f439b6f7f45ef743310d",
+  "total_files": 9,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-CATALYST-FORECAST-LOADING-DESYNC-001",
+  "directive": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001",
   "files": {
-    "frontend/app/page.tsx": {
+    "frontend/components/__tests__/ExecutionAuthorityPrecedence.test.tsx": {
       "operation": "M",
-      "originating_pr_number": 298,
-      "originating_commit": "3a8252c305883afc9b2220bbdeef2a6a06693492",
-      "governing_requirement": "ARX-CATALYST-FORECAST-LOADING-DESYNC-001: Pass selectedSymbol and loading props into CatalystForecastCard to bind display to active ticker.",
-      "sha256": "f47b7fcb84e0197d210d73b51ff8943282b10d562a825bbc3628145936bce101",
-      "size_bytes": 45177
+      "originating_pr_number": 300,
+      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
+      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Pass verified live quote provenance and canSizeTrade to PreFlightReadinessBar fixtures.",
+      "sha256": "3035122d22a9759199adb3d7410cf78ff24d9ebe7d84f0813bf13d4c36893cab",
+      "size_bytes": 5796
     },
-    "frontend/components/CatalystForecastCard.tsx": {
+    "frontend/components/__tests__/PreFlightDecisionIntegrity197.test.tsx": {
       "operation": "M",
-      "originating_pr_number": 298,
-      "originating_commit": "3a8252c305883afc9b2220bbdeef2a6a06693492",
-      "governing_requirement": "ARX-CATALYST-FORECAST-LOADING-DESYNC-001: Normalize and match ticker payload with selectedSymbol; suppress stale forecast cards during fetch intervals and out-of-order responses.",
-      "sha256": "51d273d2f45445539a543b8eecd9d2ff308b2bc311facfb273108b2d96b02566",
-      "size_bytes": 16426
+      "originating_pr_number": 300,
+      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
+      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: End-to-end component verification for delayed quote, missing canSizeTrade, live clearance, and audited NVDA snapshot.",
+      "sha256": "d4ff33b93e6b56a72665c7f6924d61e259266e02fdb6ae811307e3ac88382a44",
+      "size_bytes": 10049
     },
-    "frontend/components/__tests__/CockpitEtfRouting.test.tsx": {
+    "frontend/components/__tests__/PreFlightMandatoryClearanceScenarios.test.tsx": {
       "operation": "M",
-      "originating_pr_number": 298,
-      "originating_commit": "3a8252c305883afc9b2220bbdeef2a6a06693492",
-      "governing_requirement": "ARX-CATALYST-FORECAST-LOADING-DESYNC-001: Regression test proving delayed and out-of-order responses cannot display previous ticker card under newly selected ticker.",
-      "sha256": "f20b8e3a56452aa3fbc77e42b4aac27921b020c5334a310da4df204a86a07041",
-      "size_bytes": 16772
+      "originating_pr_number": 300,
+      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
+      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Explicit sizing authorization and live quote provenance in mandatory clearance baseline fixture.",
+      "sha256": "f8e3a28ba90b195271ac93623a417a6f2145298a5c9e1a354f6cd1c6cccf479b",
+      "size_bytes": 17026
+    },
+    "frontend/components/__tests__/PreFlightReadinessBar.test.tsx": {
+      "operation": "M",
+      "originating_pr_number": 300,
+      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
+      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Explicit sizing authorization and live quote provenance in pristine actionable readiness fixture.",
+      "sha256": "62b10ff86248da89269c41f752a1aabd84e91d01549e6876515c0c951da5c5fe",
+      "size_bytes": 4971
+    },
+    "frontend/lib/__tests__/authorityPrecisionAndConfirmation.test.ts": {
+      "operation": "M",
+      "originating_pr_number": 300,
+      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
+      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Explicit sizing authorization and live quote provenance in precision authority baseline fixture.",
+      "sha256": "90e0ea588cc4a8aadb21a432db33b03fccb0e01d684cc7a3e7adee357c177728",
+      "size_bytes": 16437
+    },
+    "frontend/lib/__tests__/integratedAuthorityMatrix.test.ts": {
+      "operation": "M",
+      "originating_pr_number": 300,
+      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
+      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Explicit sizing authorization and live quote provenance in cross-component regression matrix fixture.",
+      "sha256": "573468e58026c2ca87c9489ec92432691d721710e57193eeecebcca0accf4f7e",
+      "size_bytes": 6973
+    },
+    "frontend/lib/__tests__/provenanceAuthorityInvariants.test.ts": {
+      "operation": "M",
+      "originating_pr_number": 300,
+      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
+      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Fail-closed assertion ensuring unverified quote provenance strictly blocks live clearance.",
+      "sha256": "e7b2030027f121c4060f647f556efd086d41a3a99753d3e68e07fb6f45daae48",
+      "size_bytes": 7294
+    },
+    "frontend/lib/preflightEvaluator.ts": {
+      "operation": "M",
+      "originating_pr_number": 300,
+      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
+      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Require explicit canSizeTrade === true, detect delayed quotes, and fail closed on unverified quote provenance.",
+      "sha256": "69a5f8ad2b29cb81c8ae694bf33cbf3531432ab430d137fe05789e1ab8e25d21",
+      "size_bytes": 48844
+    },
+    "frontend/tests/preflightDecisionIntegrity197.test.ts": {
+      "operation": "M",
+      "originating_pr_number": 300,
+      "originating_commit": "18c82bf8c715dcf737c26f314c6d42d204b875ce",
+      "governing_requirement": "ARX-PREFLIGHT-CLEARANCE-SAFEGUARDS-001: Automated test assertions for delayed quote, unverified quote provenance, missing sizing, false sizing, and audited NVDA snapshot.",
+      "sha256": "0572846fdd8c5ec54db069c83b2b4bd858498ac0830153f98e502e21bb3969f7",
+      "size_bytes": 17334
     }
   },
   "qualification_framework_files": {
@@ -37,8 +85,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "84e0a7af95ac0d6f744853ed5cc4314b75396d0183a3b7057c0a0c647746a73a",
-      "size_bytes": 58156,
+      "sha256": "9630ea4d1f2d18ce32578c21d31ab9aa8b9ced3cd847773c96dc5772b475b205",
+      "size_bytes": 58161,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {

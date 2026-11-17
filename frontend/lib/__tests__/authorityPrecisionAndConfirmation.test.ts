@@ -17,6 +17,10 @@ describe("Gate 1: CHK-1 Reward/Risk Threshold Full Numeric Precision", () => {
     optimalEntryMin: 95.0,
     optimalEntryMax: 102.0,
     isActionable: true,
+    canSizeTrade: true,
+    dataSource: "live",
+    liveSource: "ALPACA_IEX",
+    liveFreshnessStatus: "LIVE",
     vix: 15.0,
     vixObservationTime: new Date().toISOString(),
     catalystEvidence: {
@@ -231,6 +235,10 @@ describe("Gate 2: CHK-4 Catalyst Confirmation Semantics & Evidence Hierarchy", (
     optimalEntryMin: 95.0,
     optimalEntryMax: 102.0,
     isActionable: true,
+    canSizeTrade: true,
+    dataSource: "live",
+    liveSource: "ALPACA_IEX",
+    liveFreshnessStatus: "LIVE",
     vix: 15.0,
     vixObservationTime: new Date().toISOString(),
   };

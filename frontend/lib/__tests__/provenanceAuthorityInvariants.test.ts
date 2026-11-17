@@ -11,6 +11,7 @@ const BASE_CLEARED_INPUTS: PreFlightChecklistInputs = {
   optimalEntryMax: 296.61,
   breakoutPivot: 292.0,
   isActionable: true,
+  canSizeTrade: true,
   isStage4: false,
   catalystState: "PASS",
   catalystEvidence: {
@@ -34,12 +35,13 @@ describe("PreFlight Provenance & Epistemic Authority Invariants (Gate 2 & Gate 3
     // Inputs have 5/5 passing checks and isActionable=true, but NO dataSource specified
     const res = evaluatePreFlightChecks(BASE_CLEARED_INPUTS);
 
-    expect(res.isCleared).toBe(true);
+    expect(res.isCleared).toBe(false);
     expect(res.passedCount).toBe(5);
     expect(res.provenanceCategory).toBe("UNVERIFIED");
+    expect(res.allBlockers).toContain("UNVERIFIED PRICE PROVENANCE");
     expect(res.evidenceMeta).not.toContain("LIVE MARKET OBSERVATION");
     expect(res.evidenceMeta).toBe("Evidence: UNVERIFIED PROVENANCE · Feed Verification Required");
-    expect(res.whatNeedsToChange).toContain("Notice: Unverified market feed — requires verified real-time data before execution.");
+    expect(res.whatNeedsToChange).toContain("Establish verified real-time exchange quote provenance");
   });
 
   it("Invariant 2: Historical EOD evidence must NEVER be labeled live even with 5/5 passing checks", () => {
@@ -155,10 +157,11 @@ describe("PreFlight Provenance & Epistemic Authority Invariants (Gate 2 & Gate 3
     const synthRes = evaluatePreFlightChecks({ ...BASE_CLEARED_INPUTS, dataSource: "synthetic", isSynthetic: true });
     const unverRes = evaluatePreFlightChecks(BASE_CLEARED_INPUTS);
 
-    // Clearance and check pass states must be invariant
-    expect(liveRes.isCleared).toBe(histRes.isCleared);
-    expect(histRes.isCleared).toBe(synthRes.isCleared);
-    expect(synthRes.isCleared).toBe(unverRes.isCleared);
+    // Clearance for live, hist, synth passes with full authorization; unverified fails closed
+    expect(liveRes.isCleared).toBe(true);
+    expect(histRes.isCleared).toBe(true);
+    expect(synthRes.isCleared).toBe(true);
+    expect(unverRes.isCleared).toBe(false);
     expect(liveRes.passedCount).toBe(histRes.passedCount);
     expect(liveRes.safeRR).toBe(synthRes.safeRR);
     expect(liveRes.safePrice).toBe(histRes.safePrice);
