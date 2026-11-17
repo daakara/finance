@@ -124,7 +124,7 @@ def test_failed_evidence_write_rolls_back_entire_batch(db, fault):
         item['content_hash'] = hashlib.sha256(item['xml_content'].encode()).hexdigest()
         context = patch.object(repo, 'save_reconciliation_receipt', wraps=repo.save_reconciliation_receipt)
     else:
-        method = {'availability': 'record_source_availability', 'amendment': 'save_amendment',
+        method = {'availability': 'save_availability', 'amendment': 'save_amendment',
                   'receipt': 'save_reconciliation_receipt'}[fault]
         context = patch.object(repo, method, side_effect=RuntimeError('injected'))
     with context, pytest.raises(RuntimeError):
@@ -169,7 +169,7 @@ def test_repository_transaction_propagates_failure_and_rolls_back():
 
 
 def test_reconciliation_uses_one_shared_connection_and_propagates_lineage_failure():
-    repo = MagicMock()
+    repo = MagicMock(spec=PostgresSmartMoneyRepository)
     conn = repo.ingestion_transaction.return_value.__enter__.return_value
     repo.resolve_amendment_base.return_value = BASE
     pipeline = SmartMoneyContinuousPipeline(repository=repo, allow_test_mode=True)
@@ -177,7 +177,7 @@ def test_reconciliation_uses_one_shared_connection_and_propagates_lineage_failur
         [filing(AMEND, '4/A', original='2026-09-11'), filing()], 'offline'
     )
     assert len(txs) == 2
-    for method in [repo.save_raw_filing, repo.record_source_availability,
+    for method in [repo.save_raw_filing, repo.save_availability,
                    repo.save_amendment, repo.save_parsed_transactions, repo.save_reconciliation_receipt]:
         assert method.called
         assert all(c.kwargs['conn'] is conn for c in method.call_args_list)
@@ -190,7 +190,7 @@ def test_reconciliation_uses_one_shared_connection_and_propagates_lineage_failur
 
 @pytest.mark.parametrize('xml', ['not xml', '<ownershipDocument>broken'])
 def test_invalid_payload_fails_before_reconciliation_receipt(xml):
-    repo = MagicMock()
+    repo = MagicMock(spec=PostgresSmartMoneyRepository)
     pipeline = SmartMoneyContinuousPipeline(repository=repo, allow_test_mode=True)
     item = filing()
     item['xml_content'] = xml
@@ -200,7 +200,7 @@ def test_invalid_payload_fails_before_reconciliation_receipt(xml):
 
 
 def test_unresolved_amendment_cannot_publish_complete_snapshot():
-    repo = MagicMock()
+    repo = MagicMock(spec=PostgresSmartMoneyRepository)
     repo.resolve_amendment_base.return_value = None
     pipeline = SmartMoneyContinuousPipeline(repository=repo, allow_test_mode=True)
     txs, receipt = pipeline._step7_parse_and_reconcile([filing(AMEND, '4/A')], 'unknown-base')

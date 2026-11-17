@@ -1171,7 +1171,7 @@ class SmartMoneyContinuousPipeline:
                 if not f.get("accepted_datetime"):
                     raise RuntimeError("SEC_PUBLIC_AVAILABILITY_MISSING")
                 self.repository.save_raw_filing(f, conn=conn)
-                self.repository.record_source_availability(
+                self.repository.save_availability(
                     f["accession_number"], f["accepted_datetime"], source="SEC_INDEX",
                     source_reference=f.get("source_url"), conn=conn,
                 )
