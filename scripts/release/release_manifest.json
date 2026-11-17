@@ -1,65 +1,25 @@
 {
-  "release_candidate_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
-  "base_anchor_commit": "b485e44141fc2435c33c71eb7e4af107b02fa129",
-  "total_files": 7,
+  "release_candidate_commit": "9199a36d5d765ca0d96f1b4406095811c8f9c35a",
+  "base_anchor_commit": "2fec4d2c9d5aa5442d501482699196606c2e6026",
+  "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001",
+  "directive": "ARX-CATALYST-FORECAST-LABELS-001",
   "files": {
-    "analyst_dashboard/data/fred_fetcher.py": {
+    "frontend/components/CatalystForecastCard.tsx": {
       "operation": "M",
-      "originating_pr_number": 296,
-      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
-      "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Fetch DFII10 10Y real rate, capture series observations timestamps, and normalize macro payload.",
-      "sha256": "cd299f0a63ad688119932341a7b4a824a459e5c18bdab1870c1e39ef8a99bb42",
-      "size_bytes": 22784
+      "originating_pr_number": 297,
+      "originating_commit": "9199a36d5d765ca0d96f1b4406095811c8f9c35a",
+      "governing_requirement": "ARX-CATALYST-FORECAST-LABELS-001: Sector-appropriate labeling for technology, healthcare, financials, and business catalysts; clear sticky ETF allocations on stock switch.",
+      "sha256": "b23adadeb4778c5ce69f65b38bac25c4196cd2793daeed8baf5f3c9d62a87c4b",
+      "size_bytes": 15992
     },
-    "api/routes/regimes.py": {
+    "frontend/components/__tests__/CockpitEtfRouting.test.tsx": {
       "operation": "M",
-      "originating_pr_number": 296,
-      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
-      "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Expose authoritative FRED macro contract on /regimes/current with strict live qualification and zero multiplier fabrication.",
-      "sha256": "0e244dbb290bc952fa0d23446caf984dce8f3efc73fe5f8ee90db911435ec0d9",
-      "size_bytes": 14088
-    },
-    "frontend/components/InstitutionalFeeds.tsx": {
-      "operation": "M",
-      "originating_pr_number": 296,
-      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
-      "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Render unavailable macro warning banner with FRED series IDs and display unparsed Form 4 filings as regulatory disclosures rather than open-market purchases.",
-      "sha256": "97ca6e3907a54df00a6b560baa3f433d85eb49c3bf5dea383e988d510ae8abd3",
-      "size_bytes": 24163
-    },
-    "frontend/components/discovery/DiscoveryLandingView.tsx": {
-      "operation": "M",
-      "originating_pr_number": 296,
-      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
-      "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Null-safe rendering for yield curve, real rate, and credit spread under unavailable macroeconomic telemetry.",
-      "sha256": "99793a994c7bbed22b36dd7a45532bac8f49287146b08b6e2af96717e03fa11c",
-      "size_bytes": 17286
-    },
-    "frontend/lib/institutionalFeeds.ts": {
-      "operation": "M",
-      "originating_pr_number": 296,
-      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
-      "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Eliminate silent historical macro snapshot fallback, map unparsed Form 4 filings to null shares/price/value, and preserve EDGAR accession metadata.",
-      "sha256": "cfdd2bb213618b739e286f7096306aae121c65ab4fc93f4153aa41d3d54c7a67",
-      "size_bytes": 15902
-    },
-    "frontend/tests/fredSecPresentationIntegrity.test.ts": {
-      "operation": "A",
-      "originating_pr_number": 296,
-      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
-      "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Frontend TypeScript verification suite for unparsed Form 4 null mapping, macro live contract ingestion, and fail-closed unavailable state.",
-      "sha256": "6c02a9081ff5e92654a5a41413f070fa3d32dbc7bce50dc27a812e19e9c99517",
-      "size_bytes": 19966
-    },
-    "tests/test_fred_sec_presentation_integrity.py": {
-      "operation": "A",
-      "originating_pr_number": 296,
-      "originating_commit": "f4ddb5b4522439d8ba282ee295811b3f63668165",
-      "governing_requirement": "ARX-FRED-SEC-PRESENTATION-INTEGRITY-001: Backend pytest suite verifying macro contract schemas, live qualification guards, zero multiplier fabrication, and SEC filing metadata preservation.",
-      "sha256": "94e122ac8846a02625faf7b5ebaad692a4f96d41a409061d30c92162e4285638",
-      "size_bytes": 21386
+      "originating_pr_number": 297,
+      "originating_commit": "9199a36d5d765ca0d96f1b4406095811c8f9c35a",
+      "governing_requirement": "ARX-CATALYST-FORECAST-LABELS-001: Regression test suite covering NVDA tech labels, NVO biotech labels, JPM business catalyst labels, and ETF-to-stock switch allocation reset.",
+      "sha256": "5969be242d8f1c7d514473d233512dfef936cd9b96ca9b64a1b5782ace1f6fe2",
+      "size_bytes": 13692
     }
   },
   "qualification_framework_files": {
@@ -69,8 +29,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "aa30bc9b8865efe261dade6b232950ecf35c574084f9d86e3eb543248de6b096",
-      "size_bytes": 58146,
+      "sha256": "8eb79d42e1d4ac6b9b570e189f65c100828a18c61855d60c2bb9e267d08e44e4",
+      "size_bytes": 58151,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
