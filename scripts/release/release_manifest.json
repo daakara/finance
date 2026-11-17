@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+  "release_candidate_commit": "9c8673b6a114414eb281f179b412580557e19360",
   "base_anchor_commit": "933295cc07cd170dcb4a47e5b62a14384470a342",
   "total_files": 10,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -8,7 +8,7 @@
     ".github/workflows/sm-continuous-authorization.yml": {
       "operation": "M",
       "originating_pr_number": 304,
-      "originating_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
       "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
       "sha256": "6467ec324c34dca7c966ccc64dcde0eb699f5f163e63283d948f81019b52b1e7",
       "size_bytes": 1667
@@ -16,15 +16,15 @@
     "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
       "originating_pr_number": 304,
-      "originating_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
       "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
-      "sha256": "a05b8f58aaeb08fb2ff49883f003ac61107629b69f20e4bd7e72bbb3f5255c1d",
-      "size_bytes": 76632
+      "sha256": "daadfec45621747a879adc874f0b429b342bc44c4b8ff7c6f643f97adc962269",
+      "size_bytes": 79764
     },
     "analyst_dashboard/smart_money/form4_models.py": {
       "operation": "M",
       "originating_pr_number": 304,
-      "originating_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
       "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
       "sha256": "ee1af1cb699eff960a4a36a42934123e5d0c5368fd581d5ea8adaf56b1698dcc",
       "size_bytes": 10855
@@ -32,7 +32,7 @@
     "analyst_dashboard/smart_money/form4_parser.py": {
       "operation": "M",
       "originating_pr_number": 304,
-      "originating_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
       "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
       "sha256": "4328066c4bf1f31b9c7dd4264c64bfe8847fc60d195846175374eda6f07b2789",
       "size_bytes": 16627
@@ -40,15 +40,15 @@
     "analyst_dashboard/smart_money/storage/postgres_repository.py": {
       "operation": "M",
       "originating_pr_number": 304,
-      "originating_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
       "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
-      "sha256": "afce333683451d6ed8a5379e60181468c1ecac741e966e6d1546ce89d3970934",
-      "size_bytes": 55402
+      "sha256": "663f457d7d677ba76db1030ac3cae5a6f220a61cd15b9f9adff3861795a2b5cf",
+      "size_bytes": 57463
     },
     "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
       "originating_pr_number": 304,
-      "originating_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
       "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
       "sha256": "7f1e2c6954d2117d38aac670cb57bbbc0e8546043ada203969cca6bcc648d8bc",
       "size_bytes": 45429
@@ -56,7 +56,7 @@
     "tests/test_sm_act_020_filing_coverage.py": {
       "operation": "M",
       "originating_pr_number": 304,
-      "originating_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
       "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
       "sha256": "af51476bf06701fc14a82a1d94cbb67436d671effe0abd8beb617e00eca96ac7",
       "size_bytes": 5017
@@ -64,7 +64,7 @@
     "tests/test_smart_money_continuous_ingestion.py": {
       "operation": "M",
       "originating_pr_number": 304,
-      "originating_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
       "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
       "sha256": "632d14b46dc47cc4b2ff99f0f59a644d9bb9ce96b69a74332a550edad0ffd4dd",
       "size_bytes": 34801
@@ -72,18 +72,18 @@
     "tests/test_sec_ingestion_evidence_integrity.py": {
       "operation": "A",
       "originating_pr_number": 304,
-      "originating_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
       "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
-      "sha256": "fe0481f0ea0f2da09a1787e399dbcaf5fd752f16f5045eb9bac486bc29d1e390",
-      "size_bytes": 10730
+      "sha256": "6f2c5d091bfc744ba0f7f0de7873317ca46c68f5177e0e37f318f22604d81173",
+      "size_bytes": 19288
     },
     "docs/reports/SEC_RECURRING_INGESTION_REMEDIATION_2026_11_17.md": {
       "operation": "A",
       "originating_pr_number": 304,
-      "originating_commit": "3944dadbb5269d989057129acee1b6bdb93c9467",
+      "originating_commit": "9c8673b6a114414eb281f179b412580557e19360",
       "governing_requirement": "ARX-SEC-RECURRING-INGESTION-INTEGRITY-001: atomic evidence and guarded recurring ingestion; no production activation",
-      "sha256": "e8b35adc3090c993a630e9ac0a4209f97af11efac23bbd6f3d779d939b137f0c",
-      "size_bytes": 3176
+      "sha256": "6b38ad33e4718a47fda64fd23ceada609ae6b5e72e0f7cfca60650fbb7da76a7",
+      "size_bytes": 5864
     }
   },
   "qualification_framework_files": {
