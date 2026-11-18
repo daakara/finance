@@ -2,19 +2,19 @@
   "control_id": "RQ-11",
   "name": "Rollback Readiness & Target Authority",
   "status": "PASS",
-  "start_time": "2026-11-18T11:57:51.878587+00:00",
-  "end_time": "2026-11-18T11:57:51.985572+00:00",
-  "duration_sec": 0.106,
-  "candidate_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-  "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-  "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "start_time": "2026-11-18T22:05:40.026386+00:00",
+  "end_time": "2026-11-18T22:05:40.146464+00:00",
+  "duration_sec": 0.119,
+  "candidate_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+  "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+  "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-    "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+    "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -33,7 +33,7 @@
     {
       "assertion": "Git Rollback Anchors Retention: Production base and ancestor commits exist in object database",
       "observed": {
-        "production_base_anchor": "c6e3c03b88a0729d18284fbf9786135d2a7d4a81",
+        "production_base_anchor": "308f5392d7518a95bf4170ec5c1beaf64d2cba0b",
         "production_base_retained": true,
         "ancestor_baseline_anchor": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
         "ancestor_baseline_retained": true
@@ -68,7 +68,7 @@
     "scripts/release/rq_rollback_targets.json"
   ],
   "evidence_digests": {
-    "scripts/release/rq_rollback_targets.json": "07a1e167735f3063191965128b8508639eb8b63c2fe4a643ce549e409e5d6c58"
+    "scripts/release/rq_rollback_targets.json": "70573fb7bb28106d7d7a14a487b37dbadccd2a410eedf650de0613a4fd66a7ea"
   },
   "errors": [],
   "metadata": {
@@ -76,5 +76,5 @@
     "live_mutation_barred": true,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "f359372ba45438eb5b24bebaf76f6c18ead420e181dd659cff962f98f2eabf80"
+  "receipt_digest": "d873d67ef5352deb289e8d3eb000cb55e3cceb22e5597310cb2bb61e1ce137c1"
 }

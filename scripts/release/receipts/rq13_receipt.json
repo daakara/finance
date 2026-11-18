@@ -2,19 +2,19 @@
   "control_id": "RQ-13",
   "name": "Financial Evidence & Decision Integrity",
   "status": "PASS",
-  "start_time": "2026-11-18T11:57:53.633890+00:00",
-  "end_time": "2026-11-18T11:57:53.652985+00:00",
-  "duration_sec": 0.004,
-  "candidate_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-  "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-  "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "start_time": "2026-11-18T22:05:42.588790+00:00",
+  "end_time": "2026-11-18T22:05:42.617869+00:00",
+  "duration_sec": 0.006,
+  "candidate_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+  "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+  "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-    "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+    "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -71,5 +71,5 @@
   "metadata": {
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "85824d01f3b9fc729a804d4fa713c8f93bb534bda60739f7eb362c9070dde08c"
+  "receipt_digest": "0b0a7946f4d285afa1cd5c5650912220d4100853e5e26065fc3745a45189d22e"
 }

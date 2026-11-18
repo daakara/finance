@@ -2,19 +2,19 @@
   "control_id": "RQ-01",
   "name": "Candidate Identity & Lineage",
   "status": "PASS",
-  "start_time": "2026-11-18T11:57:19.247794+00:00",
-  "end_time": "2026-11-18T11:57:19.375776+00:00",
-  "duration_sec": 0.128,
-  "candidate_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-  "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-  "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "start_time": "2026-11-18T22:04:49.211435+00:00",
+  "end_time": "2026-11-18T22:04:49.358299+00:00",
+  "duration_sec": 0.146,
+  "candidate_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+  "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+  "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-    "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+    "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -24,12 +24,12 @@
   "assertions": [
     {
       "assertion": "HEAD is valid 40-char hex SHA",
-      "observed": "7674061672c7a276796746df5d3156a66ef02f1d",
+      "observed": "7c997d33dc5fad0c469476eb71af323baad42537",
       "passed": true
     },
     {
       "assertion": "Base anchor exists in repo history",
-      "observed": "c6e3c03b88a0729d18284fbf9786135d2a7d4a81",
+      "observed": "308f5392d7518a95bf4170ec5c1beaf64d2cba0b",
       "passed": true
     },
     {
@@ -45,8 +45,8 @@
     {
       "assertion": "Candidate SHA incorporates authorized candidate",
       "observed": {
-        "candidate_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-        "expected": "f9677c04dc9256cbb4a9bdd474fb9ac628c37d8a",
+        "candidate_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+        "expected": "15f9c80db2fd9fb553eefc8975d97e6e3194b854",
         "ancestor": true
       },
       "passed": true
@@ -61,8 +61,8 @@
   "errors": [],
   "metadata": {
     "is_merge_commit": false,
-    "checked_out_head": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "checked_out_head": "7c997d33dc5fad0c469476eb71af323baad42537",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "d6419e7a8eada2dccad5fc59889f597d8cac0bae5ecc74c30040ed3513041bdb"
+  "receipt_digest": "3c6a2d0bfc09a66daeab8781960ac5a0614f048b73bc10c57ed889f71cc4a9b1"
 }
