@@ -296,23 +296,26 @@ def validate_catalog_evidence(
 
         # Extract raw page bytes to verify cryptographic digest
         raw_page_b: bytes
-        page_raw = art_val
-        if isinstance(art_val, bytes):
-            raw_page_b = art_val
-            page_raw = art_val
+        if isinstance(art_val, (bytes, bytearray)):
+            raw_page_b = bytes(art_val)
         elif isinstance(art_val, str):
             raw_page_b = art_val.encode("utf-8")
-            page_raw = art_val
         elif isinstance(art_val, dict):
-            if "bytes" in art_val and art_val["bytes"]:
-                raw_page_b = art_val["bytes"].encode("utf-8") if isinstance(art_val["bytes"], str) else art_val["bytes"]
-                page_raw = art_val.get("content") or art_val.get("data") or art_val.get("recent") or art_val["bytes"]
-            elif "content" in art_val and art_val["content"]:
-                raw_page_b = art_val["content"].encode("utf-8") if isinstance(art_val["content"], str) else art_val["content"]
-                page_raw = art_val["content"]
+            if "bytes" in art_val and art_val["bytes"] is not None:
+                b_val = art_val["bytes"]
+                raw_page_b = b_val.encode("utf-8") if isinstance(b_val, str) else bytes(b_val)
+            elif "content" in art_val and art_val["content"] is not None:
+                c_val = art_val["content"]
+                raw_page_b = c_val.encode("utf-8") if isinstance(c_val, str) else (
+                    bytes(c_val) if isinstance(c_val, (bytes, bytearray)) else json.dumps(c_val, sort_keys=True).encode("utf-8")
+                )
+            elif "data" in art_val and art_val["data"] is not None:
+                d_val = art_val["data"]
+                raw_page_b = d_val.encode("utf-8") if isinstance(d_val, str) else (
+                    bytes(d_val) if isinstance(d_val, (bytes, bytearray)) else json.dumps(d_val, sort_keys=True).encode("utf-8")
+                )
             else:
                 raw_page_b = json.dumps(art_val, sort_keys=True).encode("utf-8")
-                page_raw = art_val
         else:
             raise ValueError(f"MALFORMED_PAGINATION_ARTIFACT: Unexpected artifact type for '{fname}'.")
 
@@ -322,15 +325,44 @@ def validate_catalog_evidence(
 
         bound_manifest[fname] = clean_pinned_h
 
-        if isinstance(page_raw, (bytes, str)):
-            try:
-                page_data = json.loads(page_raw if isinstance(page_raw, str) else page_raw.decode("utf-8"))
-            except Exception as e:
-                raise ValueError(f"MALFORMED_PAGINATION_JSON: Failed to parse pagination file '{fname}': {e}") from e
-        elif isinstance(page_raw, dict):
-            page_data = page_raw
-        else:
-            raise ValueError(f"MALFORMED_PAGINATION_ARTIFACT: Unexpected artifact type for '{fname}'.")
+        # 1. Parse EXCLUSIVELY from the exact bytes whose digest was verified
+        try:
+            page_data = json.loads(raw_page_b.decode("utf-8"))
+        except Exception as e:
+            raise ValueError(f"MALFORMED_PAGINATION_JSON: Failed to parse pagination file '{fname}': {e}") from e
+
+        if not isinstance(page_data, dict):
+            raise ValueError(f"MALFORMED_PAGINATION_SCHEMA: File '{fname}' root must be a JSON object.")
+
+        # 2. Reject alternate parsed-content overrides or conflicting fields (content, data, recent)
+        if isinstance(art_val, dict):
+            for field in ("content", "data", "recent"):
+                if field in art_val and art_val[field] is not None:
+                    field_val = art_val[field]
+                    if field == "recent":
+                        expected_recent = page_data.get("recent") if ("recent" in page_data and isinstance(page_data["recent"], dict)) else page_data
+                        if field_val != expected_recent:
+                            raise ValueError(
+                                f"ARTIFACT_PAYLOAD_MISMATCH: Historical page '{fname}' has conflicting 'recent' field "
+                                f"that does not match verified artifact bytes."
+                            )
+                    else:
+                        if isinstance(field_val, (bytes, bytearray, str)):
+                            try:
+                                parsed_field = json.loads(field_val if isinstance(field_val, str) else field_val.decode("utf-8"))
+                            except Exception:
+                                parsed_field = None
+                            if parsed_field != page_data and field_val != raw_page_b and field_val != raw_page_b.decode("utf-8"):
+                                raise ValueError(
+                                    f"ARTIFACT_PAYLOAD_MISMATCH: Historical page '{fname}' has conflicting '{field}' field "
+                                    f"that does not match verified artifact bytes."
+                                )
+                        elif isinstance(field_val, dict):
+                            if field_val != page_data:
+                                raise ValueError(
+                                    f"ARTIFACT_PAYLOAD_MISMATCH: Historical page '{fname}' has conflicting '{field}' field "
+                                    f"that does not match verified artifact bytes."
+                                )
 
         p_cols = page_data.get("recent") if isinstance(page_data.get("recent"), dict) else page_data
         p_required = ("accessionNumber", "filingDate", "acceptanceDateTime", "form")
@@ -1123,7 +1155,20 @@ class PostgresSmartMoneyRepository:
                         "ZERO_ACTIVITY_UNPROVED: Bare empty inventory without authoritative catalog proof "
                         "cannot certify COMPLETE coverage."
                     )
-                cat_content = zero_activity_proof.get("catalog_content") or zero_activity_proof.get("catalog_bytes")
+                cat_content = zero_activity_proof.get("catalog_bytes") or zero_activity_proof.get("catalog_content")
+                if "catalog_bytes" in zero_activity_proof and "catalog_content" in zero_activity_proof:
+                    b_raw = zero_activity_proof["catalog_bytes"]
+                    c_raw = zero_activity_proof["catalog_content"]
+                    b_bytes = b_raw.encode("utf-8") if isinstance(b_raw, str) else bytes(b_raw)
+                    c_bytes = c_raw.encode("utf-8") if isinstance(c_raw, str) else (
+                        bytes(c_raw) if isinstance(c_raw, (bytes, bytearray)) else json.dumps(c_raw, sort_keys=True).encode("utf-8")
+                    )
+                    if b_bytes != c_bytes:
+                        try:
+                            if json.loads(b_bytes.decode("utf-8")) != (c_raw if isinstance(c_raw, dict) else json.loads(c_bytes.decode("utf-8"))):
+                                raise RuntimeError("CATALOG_PAYLOAD_MISMATCH: Conflicting 'catalog_bytes' and 'catalog_content' in zero_activity_proof.")
+                        except Exception as e:
+                            raise RuntimeError(f"CATALOG_PAYLOAD_MISMATCH: Conflicting 'catalog_bytes' and 'catalog_content' in zero_activity_proof: {e}") from e
                 cat_hash = zero_activity_proof.get("source_catalog_hash") or zero_activity_proof.get("catalog_sha256")
                 if not cat_hash:
                     for k, v in s_hashes.items():
@@ -1353,25 +1398,39 @@ class PostgresSmartMoneyRepository:
                         continue
                     if cat_hash.lower() == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855":
                         continue
-                    cat_content = z_proof.get("catalog_content") or z_proof.get("catalog_bytes")
-                    if cat_content:
-                        try:
-                            validate_catalog_evidence(
-                                catalog_bytes=cat_content,
-                                catalog_sha256=cat_hash,
-                                ticker=r_sym,
-                                issuer_cik=r_cik,
-                                interval_start=receipt["interval_start"],
-                                interval_end=receipt["interval_end"],
-                                certified_watermark=receipt["certified_watermark"],
-                                accession_inventory=acc_inv,
-                                source_hashes=s_hashes,
-                                material_gaps=m_gaps,
-                                pagination_artifacts=z_proof.get("pagination_artifacts"),
-                                historical_manifest=z_proof.get("historical_manifest"),
-                            )
-                        except Exception:
-                            continue
+                    cat_content = z_proof.get("catalog_bytes") or z_proof.get("catalog_content")
+                    if not cat_content:
+                        continue
+                    if "catalog_bytes" in z_proof and "catalog_content" in z_proof:
+                        b_raw = z_proof["catalog_bytes"]
+                        c_raw = z_proof["catalog_content"]
+                        b_bytes = b_raw.encode("utf-8") if isinstance(b_raw, str) else bytes(b_raw)
+                        c_bytes = c_raw.encode("utf-8") if isinstance(c_raw, str) else (
+                            bytes(c_raw) if isinstance(c_raw, (bytes, bytearray)) else json.dumps(c_raw, sort_keys=True).encode("utf-8")
+                        )
+                        if b_bytes != c_bytes:
+                            try:
+                                if json.loads(b_bytes.decode("utf-8")) != (c_raw if isinstance(c_raw, dict) else json.loads(c_bytes.decode("utf-8"))):
+                                    continue
+                            except Exception:
+                                continue
+                    try:
+                        validate_catalog_evidence(
+                            catalog_bytes=cat_content,
+                            catalog_sha256=cat_hash,
+                            ticker=r_sym,
+                            issuer_cik=r_cik,
+                            interval_start=receipt["interval_start"],
+                            interval_end=receipt["interval_end"],
+                            certified_watermark=receipt["certified_watermark"],
+                            accession_inventory=acc_inv,
+                            source_hashes=s_hashes,
+                            material_gaps=m_gaps,
+                            pagination_artifacts=z_proof.get("pagination_artifacts"),
+                            historical_manifest=z_proof.get("historical_manifest"),
+                        )
+                    except Exception:
+                        continue
 
                     hist_man = z_proof.get("historical_manifest")
                     if isinstance(hist_man, dict):

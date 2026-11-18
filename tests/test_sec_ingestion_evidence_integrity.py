@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
@@ -1976,6 +1977,389 @@ def test_coverage_receipt_binds_historical_manifest_and_revalidates_on_read(db):
     assert auth_receipt["receipt_id"] == r_id
     z_proof = auth_receipt.get("structured_metadata", {}).get("zero_activity_proof", {})
     assert z_proof.get("historical_manifest") == {"page-001.json": page_hash}
+
+
+def test_artifact_conflicting_bytes_and_content_rejected():
+    """
+    QUALITY GATE:
+    An artifact supplying verified bytes containing a Form 4, but supplying an alternate
+    'content' field omitting that Form 4, must be rejected with ARTIFACT_PAYLOAD_MISMATCH.
+    """
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000050"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00Z"],
+                "form": ["8-K"],
+            },
+            "files": [{
+                "name": "page-001.json",
+                "filingCount": 100,
+                "filingFrom": "2026-08-15",
+                "filingTo": "2026-10-31",
+            }],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    page_content = {
+        "accessionNumber": ["0001045810-26-000099"],
+        "filingDate": ["2026-08-15"],
+        "acceptanceDateTime": ["2026-08-15T16:00:00Z"],
+        "form": ["4"],
+    }
+    page_bytes = json.dumps(page_content).encode("utf-8")
+    page_hash = hashlib.sha256(page_bytes).hexdigest()
+
+    deceptive_content = {
+        "accessionNumber": ["0001045810-26-000088"],
+        "filingDate": ["2026-08-15"],
+        "acceptanceDateTime": ["2026-08-15T16:00:00Z"],
+        "form": ["8-K"],
+    }
+
+    artifact = {
+        "bytes": page_bytes,
+        "sha256": page_hash,
+        "content": deceptive_content,
+    }
+
+    with pytest.raises(ValueError, match="ARTIFACT_PAYLOAD_MISMATCH.*conflicting 'content' field"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-15T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+            pagination_artifacts={"page-001.json": artifact},
+            accession_inventory=[],
+        )
+
+
+def test_artifact_conflicting_bytes_and_data_rejected():
+    """
+    QUALITY GATE:
+    An artifact supplying verified bytes containing a Form 4, but supplying an alternate
+    'data' field omitting that Form 4, must be rejected with ARTIFACT_PAYLOAD_MISMATCH.
+    """
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000050"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00Z"],
+                "form": ["8-K"],
+            },
+            "files": [{
+                "name": "page-001.json",
+                "filingCount": 100,
+                "filingFrom": "2026-08-15",
+                "filingTo": "2026-10-31",
+            }],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    page_content = {
+        "accessionNumber": ["0001045810-26-000099"],
+        "filingDate": ["2026-08-15"],
+        "acceptanceDateTime": ["2026-08-15T16:00:00Z"],
+        "form": ["4"],
+    }
+    page_bytes = json.dumps(page_content).encode("utf-8")
+    page_hash = hashlib.sha256(page_bytes).hexdigest()
+
+    deceptive_data = {
+        "accessionNumber": ["0001045810-26-000088"],
+        "filingDate": ["2026-08-15"],
+        "acceptanceDateTime": ["2026-08-15T16:00:00Z"],
+        "form": ["8-K"],
+    }
+
+    artifact = {
+        "bytes": page_bytes,
+        "sha256": page_hash,
+        "data": deceptive_data,
+    }
+
+    with pytest.raises(ValueError, match="ARTIFACT_PAYLOAD_MISMATCH.*conflicting 'data' field"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-15T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+            pagination_artifacts={"page-001.json": artifact},
+            accession_inventory=[],
+        )
+
+
+def test_artifact_conflicting_bytes_and_recent_rejected():
+    """
+    QUALITY GATE:
+    An artifact supplying verified bytes containing a Form 4, but supplying an alternate
+    'recent' field omitting that Form 4, must be rejected with ARTIFACT_PAYLOAD_MISMATCH.
+    """
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000050"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00Z"],
+                "form": ["8-K"],
+            },
+            "files": [{
+                "name": "page-001.json",
+                "filingCount": 100,
+                "filingFrom": "2026-08-15",
+                "filingTo": "2026-10-31",
+            }],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    page_content = {
+        "accessionNumber": ["0001045810-26-000099"],
+        "filingDate": ["2026-08-15"],
+        "acceptanceDateTime": ["2026-08-15T16:00:00Z"],
+        "form": ["4"],
+    }
+    page_bytes = json.dumps(page_content).encode("utf-8")
+    page_hash = hashlib.sha256(page_bytes).hexdigest()
+
+    deceptive_recent = {
+        "accessionNumber": ["0001045810-26-000088"],
+        "filingDate": ["2026-08-15"],
+        "acceptanceDateTime": ["2026-08-15T16:00:00Z"],
+        "form": ["8-K"],
+    }
+
+    artifact = {
+        "bytes": page_bytes,
+        "sha256": page_hash,
+        "recent": deceptive_recent,
+    }
+
+    with pytest.raises(ValueError, match="ARTIFACT_PAYLOAD_MISMATCH.*conflicting 'recent' field"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-15T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+            pagination_artifacts={"page-001.json": artifact},
+            accession_inventory=[],
+        )
+
+
+def test_artifact_bytes_parsed_exclusively_eligible_filing_cannot_disappear():
+    """
+    QUALITY GATE:
+    Eligible filings in verified artifact bytes are parsed exclusively from those bytes
+    and cannot disappear. An empty caller inventory is rejected with CALLER_INVENTORY_OMISSION.
+    """
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000050"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00Z"],
+                "form": ["8-K"],
+            },
+            "files": [{
+                "name": "page-001.json",
+                "filingCount": 100,
+                "filingFrom": "2026-08-15",
+                "filingTo": "2026-10-31",
+            }],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    page_content = {
+        "accessionNumber": ["0001045810-26-000099"],
+        "filingDate": ["2026-08-15"],
+        "acceptanceDateTime": ["2026-08-15T16:00:00Z"],
+        "form": ["4"],
+    }
+    page_bytes = json.dumps(page_content).encode("utf-8")
+    page_hash = hashlib.sha256(page_bytes).hexdigest()
+
+    artifact = {
+        "bytes": page_bytes,
+        "sha256": page_hash,
+    }
+
+    with pytest.raises(ValueError, match="CALLER_INVENTORY_OMISSION.*0001045810-26-000099"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-15T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+            pagination_artifacts={"page-001.json": artifact},
+            accession_inventory=[],
+        )
+
+
+def test_receipt_read_revalidation_rejects_conflicting_artifact_payload(db):
+    """
+    QUALITY GATE:
+    Receipt read revalidation in get_authoritative_receipt_for_interval applies the exact
+    same artifact payload integrity rule, failing closed on conflicting fields.
+    """
+    conn, repo, pipeline = db
+
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000050"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00Z"],
+                "form": ["8-K"],
+            },
+            "files": [{
+                "name": "page-001.json",
+                "filingCount": 100,
+                "filingFrom": "2026-08-15",
+                "filingTo": "2026-10-31",
+            }],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    page_content = {
+        "accessionNumber": ["0001045810-26-000099"],
+        "filingDate": ["2026-08-15"],
+        "acceptanceDateTime": ["2026-08-15T16:00:00Z"],
+        "form": ["8-K"],
+    }
+    page_bytes = json.dumps(page_content).encode("utf-8")
+    page_hash = hashlib.sha256(page_bytes).hexdigest()
+
+    conflicting_artifact = {
+        "bytes": page_bytes,
+        "sha256": page_hash,
+        "content": {
+            "accessionNumber": ["0001045810-26-000099"],
+            "filingDate": ["2026-08-15"],
+            "acceptanceDateTime": ["2026-08-15T16:00:00Z"],
+            "form": ["4"],
+        },
+    }
+
+    # Recording with conflicting artifact fails closed on write:
+    with pytest.raises(RuntimeError, match="AUTHORITATIVE_CATALOG_PROOF_FAILED.*ARTIFACT_PAYLOAD_MISMATCH"):
+        repo.record_issuer_coverage_receipt(
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-15T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+            accession_inventory=[],
+            source_hashes={"page-001.json": page_hash},
+            coverage_status="COMPLETE",
+            zero_activity_proof={
+                "catalog_bytes": cat_bytes,
+                "catalog_sha256": cat_hash,
+                "pagination_artifacts": {"page-001.json": conflicting_artifact},
+                "historical_manifest": {"page-001.json": page_hash},
+            },
+            conn=conn,
+        )
+
+    # Read revalidation of a corrupt record in DB fails closed:
+    from psycopg2.extras import Json
+    fake_id = str(uuid.uuid4())
+    conflicting_artifact_str = {
+        "bytes": page_bytes.decode("utf-8"),
+        "sha256": page_hash,
+        "content": {
+            "accessionNumber": ["0001045810-26-000099"],
+            "filingDate": ["2026-08-15"],
+            "acceptanceDateTime": ["2026-08-15T16:00:00Z"],
+            "form": ["4"],
+        },
+    }
+    fake_reasons = {
+        "ticker": "NVDA",
+        "issuer_cik": "0001045810",
+        "covered_tickers": ["NVDA"],
+        "covered_ciks": ["0001045810"],
+        "accession_inventory": [],
+        "source_hashes": {"page-001.json": page_hash},
+        "material_gaps": [],
+        "public_availability_cutoff": "2026-11-17T23:59:59Z",
+        "zero_activity_proof": {
+            "catalog_bytes": cat_bytes.decode("utf-8"),
+            "catalog_sha256": cat_hash,
+            "pagination_artifacts": {"page-001.json": conflicting_artifact_str},
+            "historical_manifest": {"page-001.json": page_hash},
+        },
+    }
+    with conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO sm_reconciliation_receipts (
+                receipt_id, interval_start, interval_end, certified_watermark,
+                receipt_version, supersedes_receipt_id, expected_count, accounted_count,
+                missing_count, material_gap_count, coverage_status, failure_reasons,
+                reconciliation_hash, release_sha
+            ) VALUES (%s, %s, %s, %s, 1, NULL, 0, 0, 0, 0, 'COMPLETE', %s, 'fakehash', 'release')
+        """, (
+            fake_id,
+            "2026-08-15T00:00:00Z",
+            "2026-11-17T23:59:59Z",
+            "2026-11-17T23:59:59Z",
+            Json(fake_reasons),
+        ))
+
+    auth_receipt = repo.get_authoritative_receipt_for_interval(
+        ticker="NVDA",
+        interval_start="2026-08-15T00:00:00Z",
+        interval_end="2026-11-17T23:59:59Z",
+        certified_watermark="2026-11-17T23:59:59Z",
+        conn=conn,
+    )
+    assert auth_receipt is None
 
 
 
