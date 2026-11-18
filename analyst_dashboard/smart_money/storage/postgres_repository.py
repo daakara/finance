@@ -14,7 +14,7 @@ import hashlib
 import logging
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional, Set, Union
+from typing import Dict, Any, List, Optional, Set, Union, Tuple
 
 try:
     import psycopg2
@@ -111,12 +111,14 @@ def validate_catalog_evidence(
     accession_inventory: Optional[List[str]] = None,
     source_hashes: Optional[Dict[str, str]] = None,
     material_gaps: Optional[List[Dict[str, Any]]] = None,
-    pagination_artifacts: Optional[Dict[str, Union[bytes, str]]] = None,
+    pagination_artifacts: Optional[Dict[str, Union[bytes, str, Dict[str, Any]]]] = None,
 ) -> Dict[str, Any]:
     """
     Validates authoritative SEC submissions catalog evidence for an issuer and observation interval.
     Enforces authentic artifact bytes, 64-char lowercase SHA-256 digest, exact issuer binding,
-    exhaustive interval traversal, derived accession inventory, and per-accession source hashes.
+    exhaustive interval traversal across recent and historical pagination files, derived accession inventory,
+    and per-accession source hashes.
+    Empty recent data must not bypass traversal, interval coverage, or cutoff validation.
     Distinguishes 'NO_ELIGIBLE_FILINGS' from 'NO_QUALIFYING_TRANSACTIONS'.
     """
     if not isinstance(catalog_sha256, str) or not re.match(r"^[0-9a-f]{64}$", catalog_sha256.strip().lower()):
@@ -175,40 +177,153 @@ def validate_catalog_evidence(
         if len(recent[col]) != n_rows:
             raise ValueError(f"MALFORMED_CATALOG_COLUMNS: Column '{col}' length {len(recent[col])} does not match accessionNumber length {n_rows}.")
 
-    # 4. Exhaustive interval traversal
+    # 4. Dates & Watermark
     start_date = str(interval_start)[:10]
     end_date = str(interval_end)[:10]
+    if start_date > end_date:
+        raise ValueError(f"INVALID_INTERVAL: interval_start '{interval_start}' is after interval_end '{interval_end}'.")
     watermark_iso = _to_iso(certified_watermark)
 
-    filing_dates = recent["filingDate"]
-    if filing_dates:
-        earliest_date = min(str(d)[:10] for d in filing_dates)
-        if earliest_date > start_date:
-            pagination_files = filings.get("files") or []
-            if pagination_files:
+    # 5. Historical pagination files inspection (filings.files)
+    hist_files = filings.get("files") or []
+    if not isinstance(hist_files, list):
+        raise ValueError("MALFORMED_CATALOG_SCHEMA: 'filings.files' must be a list if present.")
+
+    def _get_file_bounds(f_info: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
+        f_from = (
+            f_info.get("filingFrom")
+            or f_info.get("from")
+            or f_info.get("startDate")
+            or (f_info.get("filingDate") if isinstance(f_info.get("filingDate"), dict) else {}).get("min")
+        )
+        f_to = (
+            f_info.get("filingTo")
+            or f_info.get("to")
+            or f_info.get("endDate")
+            or (f_info.get("filingDate") if isinstance(f_info.get("filingDate"), dict) else {}).get("max")
+        )
+        s_from = str(f_from)[:10] if f_from else None
+        s_to = str(f_to)[:10] if f_to else None
+        return s_from, s_to
+
+    def _file_overlaps(f_from: Optional[str], f_to: Optional[str], start_d: str, end_d: str) -> bool:
+        if f_from and f_to:
+            return f_from <= end_d and f_to >= start_d
+        if f_from and not f_to:
+            return f_from <= end_d
+        if f_to and not f_from:
+            return f_to >= start_d
+        # If dates are unspecified in catalog metadata, conservatively assume potential overlap
+        return True
+
+    overlapping_files: List[Tuple[str, Optional[str], Optional[str], Dict[str, Any]]] = []
+    for f_entry in hist_files:
+        if isinstance(f_entry, dict):
+            fname = str(f_entry.get("name") or "").strip()
+            f_from, f_to = _get_file_bounds(f_entry)
+            if _file_overlaps(f_from, f_to, start_date, end_date):
+                overlapping_files.append((fname, f_from, f_to, f_entry))
+
+    # 6. Verify provided pagination artifacts
+    provided_artifacts = dict(pagination_artifacts or {})
+    unverified_overlapping = [
+        fname for fname, _, _, _ in overlapping_files
+        if not fname or fname not in provided_artifacts
+    ]
+    if unverified_overlapping:
+        raise ValueError(
+            f"CATALOG_INTERVAL_INCOMPLETE: Historical submission files {unverified_overlapping} overlap "
+            f"observation interval [{start_date}, {end_date}] but were not verified in pagination_artifacts."
+        )
+
+    # 7. Collect records across recent and verified pagination artifacts
+    all_records: List[Dict[str, Any]] = []
+
+    for i in range(n_rows):
+        all_records.append({
+            "accessionNumber": str(recent["accessionNumber"][i]).strip(),
+            "filingDate": str(recent["filingDate"][i]).strip()[:10],
+            "acceptanceDateTime": _to_iso(recent["acceptanceDateTime"][i]),
+            "form": str(recent["form"][i]).strip().upper(),
+        })
+
+    for fname, art_val in provided_artifacts.items():
+        if source_hashes and fname in source_hashes:
+            expected_h = source_hashes[fname].strip().lower()
+            raw_page_b = art_val.encode("utf-8") if isinstance(art_val, str) else (
+                art_val if isinstance(art_val, bytes) else json.dumps(art_val).encode("utf-8")
+            )
+            calc_h = hashlib.sha256(raw_page_b).hexdigest()
+            if calc_h != expected_h:
+                raise ValueError(f"PAGINATION_DIGEST_MISMATCH: Pagination file '{fname}' SHA-256 digest mismatch: {calc_h} != {expected_h}.")
+
+        page_raw = art_val
+        if isinstance(page_raw, (bytes, str)):
+            try:
+                page_data = json.loads(page_raw if isinstance(page_raw, str) else page_raw.decode("utf-8"))
+            except Exception as e:
+                raise ValueError(f"MALFORMED_PAGINATION_JSON: Failed to parse pagination file '{fname}': {e}") from e
+        elif isinstance(page_raw, dict):
+            page_data = page_raw
+        else:
+            raise ValueError(f"MALFORMED_PAGINATION_ARTIFACT: Unexpected artifact type for '{fname}'.")
+
+        p_cols = page_data.get("recent") if isinstance(page_data.get("recent"), dict) else page_data
+        p_required = ("accessionNumber", "filingDate", "acceptanceDateTime", "form")
+        for col in p_required:
+            if col not in p_cols or not isinstance(p_cols[col], list):
+                raise ValueError(f"MALFORMED_PAGINATION_SCHEMA: File '{fname}' missing required column '{col}'.")
+        p_rows = len(p_cols["accessionNumber"])
+        for col in p_required:
+            if len(p_cols[col]) != p_rows:
+                raise ValueError(f"MALFORMED_PAGINATION_COLUMNS: File '{fname}' column '{col}' length mismatch.")
+
+        for i in range(p_rows):
+            all_records.append({
+                "accessionNumber": str(p_cols["accessionNumber"][i]).strip(),
+                "filingDate": str(p_cols["filingDate"][i]).strip()[:10],
+                "acceptanceDateTime": _to_iso(p_cols["acceptanceDateTime"][i]),
+                "form": str(p_cols["form"][i]).strip().upper(),
+            })
+
+    # 8. Traversal, interval coverage, and cutoff validation
+    all_dates = [r["filingDate"] for r in all_records if r.get("filingDate")]
+    if all_dates:
+        overall_earliest = min(all_dates)
+        if overall_earliest > start_date:
+            remaining_unverified = [
+                f.get("name") for f in hist_files
+                if isinstance(f, dict) and f.get("name") not in provided_artifacts
+            ]
+            if remaining_unverified:
                 raise ValueError(
-                    f"CATALOG_INTERVAL_INCOMPLETE: Earliest date in recent ({earliest_date}) is after interval start ({start_date}), "
-                    f"and {len(pagination_files)} historical pagination files were not verified."
+                    f"CATALOG_INTERVAL_INCOMPLETE: Earliest date in verified evidence ({overall_earliest}) "
+                    f"is after interval start ({start_date}), and {len(remaining_unverified)} historical pagination files were not verified."
                 )
             raise ValueError(
-                f"CATALOG_INTERVAL_INCOMPLETE: Earliest date in recent ({earliest_date}) is after interval start ({start_date})."
+                f"CATALOG_INTERVAL_INCOMPLETE: Earliest date in verified evidence ({overall_earliest}) is after interval start ({start_date})."
+            )
+    else:
+        # No records in recent and no records in verified artifacts
+        if hist_files:
+            unverified_names = [f.get("name") for f in hist_files if isinstance(f, dict)]
+            raise ValueError(
+                f"CATALOG_INTERVAL_INCOMPLETE: Catalog recent data is empty, but historical files {unverified_names} were not verified."
             )
 
-    # 5. Derive eligible accession inventory
+    # 9. Derive eligible accession inventory
     derived_accessions: Set[str] = set()
-    for i in range(n_rows):
-        form_name = str(recent["form"][i]).strip().upper()
-        if form_name in ("4", "4/A", "4A"):
-            f_date = str(recent["filingDate"][i]).strip()[:10]
+    for rec in all_records:
+        if rec["form"] in ("4", "4/A", "4A"):
+            f_date = rec["filingDate"]
             if start_date <= f_date <= end_date:
-                acc_dt = _to_iso(recent["acceptanceDateTime"][i])
+                acc_dt = rec["acceptanceDateTime"]
                 if not watermark_iso or (acc_dt and acc_dt <= watermark_iso):
-                    acc_num = str(recent["accessionNumber"][i]).strip()
-                    derived_accessions.add(acc_num)
+                    derived_accessions.add(rec["accessionNumber"])
 
     derived_inventory = sorted(list(derived_accessions))
 
-    # 6. Compare with caller inventory if provided
+    # 10. Compare with caller inventory if provided
     if accession_inventory is not None:
         caller_set = set(accession_inventory)
         derived_set = set(derived_inventory)
@@ -219,7 +334,7 @@ def validate_catalog_evidence(
         if unsupported:
             raise ValueError(f"CALLER_INVENTORY_UNSUPPORTED: Caller inventory includes unsupported accessions: {sorted(list(unsupported))}.")
 
-    # 7. Validate per-accession source hashes for all derived accessions
+    # 11. Validate per-accession source hashes for all derived accessions
     clean_source_hashes = dict(source_hashes or {})
     if derived_inventory:
         for acc in derived_inventory:
@@ -968,6 +1083,7 @@ class PostgresSmartMoneyRepository:
                         accession_inventory=acc_inv,
                         source_hashes=s_hashes,
                         material_gaps=m_gaps,
+                        pagination_artifacts=zero_activity_proof.get("pagination_artifacts"),
                     )
                 except Exception as e:
                     raise RuntimeError(f"AUTHORITATIVE_CATALOG_PROOF_FAILED: {e}") from e
@@ -1178,6 +1294,7 @@ class PostgresSmartMoneyRepository:
                                 accession_inventory=acc_inv,
                                 source_hashes=s_hashes,
                                 material_gaps=m_gaps,
+                                pagination_artifacts=z_proof.get("pagination_artifacts"),
                             )
                         except Exception:
                             continue

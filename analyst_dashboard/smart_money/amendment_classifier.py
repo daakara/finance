@@ -112,6 +112,79 @@ ADDITIONAL_TRANSACTION_PATTERNS = [
 ]
 
 
+ORDINAL_MAP = {
+    "first": 1, "1st": 1, "second": 2, "2nd": 2, "third": 3, "3rd": 3,
+    "fourth": 4, "4th": 4, "fifth": 5, "5th": 5, "sixth": 6, "6th": 6,
+    "seventh": 7, "7th": 7, "eighth": 8, "8th": 8, "ninth": 9, "9th": 9, "tenth": 10, "10th": 10,
+    "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10,
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+}
+
+PAT_ORD_NOUN = re.compile(
+    r"\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|1st|2nd|3rd|4th|5th|6th|7th|8th|9th|10th)\s+"
+    r"(?:(?:non-derivative|derivative|table\s+[i|ii|1|2])\s+)?(?:transaction|line|row|trade|entry|item)\b",
+    re.IGNORECASE,
+)
+PAT_NOUN_ORD = re.compile(
+    r"\b(?:transaction|line|row|trade|entry|item)\s+(?:number\s+|no\.\s*|#\s*)?"
+    r"(10|[1-9]|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|one|two|three|four|five)\b",
+    re.IGNORECASE,
+)
+PAT_FIELD_ORD = re.compile(
+    r"\b(?:price|shares?|date|code|amount|exercise\s+price)\s+(?:of|for|on)\s+(?:the\s+)?"
+    r"(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|1st|2nd|3rd|4th|5th|6th|7th|8th|9th|10th)\s+"
+    r"(?:transaction|line|row|trade|entry|item)\b",
+    re.IGNORECASE,
+)
+PAT_OF_TXS = re.compile(
+    r"\b(?:the\s+)?(first|second|third|fourth|fifth|1st|2nd|3rd|4th|5th)\s+of\s+(?:the\s+)?(?:\w+\s+)?transactions\b",
+    re.IGNORECASE,
+)
+
+
+def extract_target_transaction_ordinals(text: str) -> List[int]:
+    """
+    Extracts explicit 1-based transaction target ordinals from narrative context.
+    Unrelated ordinals (such as 'first quarter award', 'first half', 'first grant', etc.)
+    are excluded because they do not modify or reference a transaction/line/row.
+    """
+    ords: List[int] = []
+    for m in PAT_ORD_NOUN.finditer(text):
+        val = ORDINAL_MAP.get(m.group(1).lower())
+        if val is not None:
+            ords.append(val)
+    for m in PAT_NOUN_ORD.finditer(text):
+        val = ORDINAL_MAP.get(m.group(1).lower())
+        if val is not None:
+            ords.append(val)
+    for m in PAT_FIELD_ORD.finditer(text):
+        val = ORDINAL_MAP.get(m.group(1).lower())
+        if val is not None:
+            ords.append(val)
+    for m in PAT_OF_TXS.finditer(text):
+        val = ORDINAL_MAP.get(m.group(1).lower())
+        if val is not None:
+            ords.append(val)
+    return ords
+
+
+def get_base_tx_source_sequence(tx: Dict[str, Any]) -> Optional[int]:
+    """
+    Resolves the verified source table sequence (0-indexed) of a transaction independently of database result order.
+    """
+    for k in ("source_sequence", "line_number", "row_number", "sequence"):
+        if k in tx and tx[k] is not None:
+            try:
+                return int(tx[k])
+            except (ValueError, TypeError):
+                pass
+    raw_id = str(tx.get("transaction_id") or tx.get("record_key") or "")
+    parts = raw_id.strip().split(":")
+    if len(parts) >= 4 and parts[-1].isdigit():
+        return int(parts[-1])
+    return None
+
+
 def extract_amendment_narrative(
     raw_xml: Optional[str] = None,
     filing_obj: Optional[Any] = None,
@@ -284,35 +357,72 @@ def classify_amendment_effect(
             # Multiple base transactions, single amendment transaction
             if len(base_txs) > 1 and len(amend_txs) == 1:
                 a_tx = amend_txs[0]
-                a_id = getattr(a_tx, "record_key", None) or (a_tx.get("transaction_id") or a_tx.get("record_key") if isinstance(a_tx, dict) else None)
-                a_der = bool(getattr(a_tx, "is_derivative", False) if hasattr(a_tx, "is_derivative") else (a_tx.get("is_derivative", False) if isinstance(a_tx, dict) else False))
+                a_id = getattr(a_tx, "record_key", None) or (
+                    a_tx.get("transaction_id") or a_tx.get("record_key") if isinstance(a_tx, dict) else None
+                )
+                a_der = bool(
+                    getattr(a_tx, "is_derivative", False) if hasattr(a_tx, "is_derivative")
+                    else (a_tx.get("is_derivative", False) if isinstance(a_tx, dict) else False)
+                )
 
-                target_idx = None
-                if re.search(r"\b(?:first|1st|line\s+1|row\s+1|transaction\s+1)\b", full_narrative, re.IGNORECASE):
-                    target_idx = 0
-                elif re.search(r"\b(?:second|2nd|line\s+2|row\s+2|transaction\s+2)\b", full_narrative, re.IGNORECASE):
-                    target_idx = 1
-                elif re.search(r"\b(?:third|3rd|line\s+3|row\s+3|transaction\s+3)\b", full_narrative, re.IGNORECASE):
-                    target_idx = 2
-                elif re.search(r"\b(?:fourth|4th|line\s+4|row\s+4|transaction\s+4)\b", full_narrative, re.IGNORECASE):
-                    target_idx = 3
-                elif re.search(r"\b(?:fifth|5th|line\s+5|row\s+5|transaction\s+5)\b", full_narrative, re.IGNORECASE):
-                    target_idx = 4
+                # Filter base transactions matching the amendment transaction table type (derivative vs non-derivative)
+                matching_base = [b for b in base_txs if bool(b.get("is_derivative", False)) == a_der]
+                if not matching_base:
+                    return ClassificationResult(
+                        SCOPE_AMBIGUOUS,
+                        "Partial correction table mismatch: No base transactions match amendment table type.",
+                        mappings=[],
+                    )
 
-                if target_idx is not None and target_idx < len(base_txs):
-                    b_tx = base_txs[target_idx]
-                    b_id = b_tx.get("transaction_id") or b_tx.get("record_key")
-                    b_der = bool(b_tx.get("is_derivative", False))
-                    if b_der == a_der:
+                target_ordinals = extract_target_transaction_ordinals(full_narrative)
+                distinct_ordinals = sorted(list(set(target_ordinals)))
+
+                if len(distinct_ordinals) > 1:
+                    return ClassificationResult(
+                        SCOPE_AMBIGUOUS,
+                        f"Conflicting or ambiguous transaction references in narrative: ordinals {distinct_ordinals}.",
+                        mappings=[],
+                    )
+
+                if len(distinct_ordinals) == 1:
+                    target_ord = distinct_ordinals[0]
+                    target_seq = target_ord - 1  # 0-indexed sequence
+
+                    # Resolve against verified source sequence independently of list/query result ordering
+                    seq_map: Dict[int, Dict[str, Any]] = {}
+                    has_unresolved_seq = False
+                    for b in matching_base:
+                        seq = get_base_tx_source_sequence(b)
+                        if seq is None or seq in seq_map:
+                            has_unresolved_seq = True
+                            break
+                        seq_map[seq] = b
+
+                    if has_unresolved_seq or not seq_map:
+                        return ClassificationResult(
+                            SCOPE_AMBIGUOUS,
+                            "Cannot verify source row identity across base transactions independently of result ordering.",
+                            mappings=[],
+                        )
+
+                    if target_seq in seq_map:
+                        target_b = seq_map[target_seq]
+                        b_id = target_b.get("transaction_id") or target_b.get("record_key")
                         mapping = [{
                             "amendment_transaction_id": a_id,
                             "base_transaction_id": b_id,
-                            "rationale": f"Partial correction narrative identified line {target_idx + 1}.",
+                            "rationale": f"Partial correction narrative identified source line {target_ord}.",
                         }]
                         return ClassificationResult(
                             SCOPE_PARTIAL_CORRECTION,
-                            f"Explicit partial correction targeting line {target_idx + 1}.",
+                            f"Explicit partial correction targeting source line {target_ord}.",
                             mappings=mapping,
+                        )
+                    else:
+                        return ClassificationResult(
+                            SCOPE_AMBIGUOUS,
+                            f"Narrative target line {target_ord} exceeds available base transactions in matching table.",
+                            mappings=[],
                         )
 
                 # Narrative lacks unambiguous line identification across multiple base transactions

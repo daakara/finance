@@ -1394,3 +1394,403 @@ def test_amendment_chain_point_in_time_supersession_retains_unamended_lines(db):
     assert prices_p3 == [100.0, 250.0]
 
 
+def test_reproduction_gate2a_empty_recent_catalog_with_overlapping_files_rejected():
+    """
+    REPRODUCTION GATE 1:
+    validate_catalog_evidence must NOT accept an empty filings.recent catalog with an
+    overlapping unread filings.files entry as COMPLETE / NO_ELIGIBLE_FILINGS.
+    It must reject incomplete catalog evidence.
+    """
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": [],
+                "filingDate": [],
+                "reportDate": [],
+                "acceptanceDateTime": [],
+                "form": [],
+            },
+            "files": [{
+                "name": "CIK0001045810-submissions-001.json",
+                "filingCount": 500,
+                "filingFrom": "2026-08-01",
+                "filingTo": "2026-10-31",
+            }],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    with pytest.raises(ValueError, match="CATALOG_INTERVAL_INCOMPLETE|HISTORICAL_FILES_UNREAD"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+            accession_inventory=[],
+        )
+
+
+def test_reproduction_gate2b_unrelated_ordinal_second_transaction_not_first():
+    """
+    REPRODUCTION GATE 2:
+    classify_amendment_effect must NOT map:
+    'This amendment is filed solely to correct the price of the second transaction. The first quarter award is otherwise unchanged.'
+    to the FIRST base transaction. It must contextually identify the second transaction.
+    """
+    amend_filing = {
+        "document_type": "4/A",
+        "is_amendment": True,
+        "transactions": [{"record_key": "amend_acc:0001045810:NON_DERIVATIVE:0", "is_derivative": False}],
+    }
+    base_filing = {"accession_number": "base_acc", "content_hash": "h1"}
+    base_txs = [
+        {"transaction_id": "base_acc:0001045810:NON_DERIVATIVE:0", "is_derivative": False},
+        {"transaction_id": "base_acc:0001045810:NON_DERIVATIVE:1", "is_derivative": False},
+    ]
+    narrative = (
+        "This amendment is filed solely to correct the price of the second transaction. "
+        "The first quarter award is otherwise unchanged."
+    )
+    raw_xml = f"<ownershipDocument><remarks>{narrative}</remarks></ownershipDocument>"
+
+    res = classify_amendment_effect(
+        amendment_filing=amend_filing,
+        base_filing=base_filing,
+        base_transactions=base_txs,
+        raw_xml=raw_xml,
+    )
+    assert res.status == "PARTIAL_CORRECTION"
+    assert len(res.mappings) == 1
+    # Must map to the SECOND transaction (index 1 / seq 1), NOT the first transaction
+    assert res.mappings[0]["base_transaction_id"] == "base_acc:0001045810:NON_DERIVATIVE:1"
+
+
+def test_catalog_evidence_missing_pagination_pages_rejected():
+    """QUALITY GATE: Rejection when overlapping historical pagination files are missing from pagination_artifacts."""
+    cat_pages = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000050"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00Z"],
+                "form": ["8-K"],
+            },
+            "files": [
+                {"name": "page-001.json", "filingCount": 100, "filingFrom": "2026-09-01", "filingTo": "2026-10-01"},
+                {"name": "page-002.json", "filingCount": 100, "filingFrom": "2026-08-01", "filingTo": "2026-08-31"},
+            ],
+        },
+    }
+    cat_bytes = json.dumps(cat_pages).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    page1_content = {
+        "accessionNumber": ["0001045810-26-000040"],
+        "filingDate": ["2026-09-15"],
+        "acceptanceDateTime": ["2026-09-15T16:00:00Z"],
+        "form": ["4"],
+    }
+
+    with pytest.raises(ValueError, match="CATALOG_INTERVAL_INCOMPLETE.*page-002.json"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+            pagination_artifacts={"page-001.json": page1_content},  # page-002 is MISSING
+        )
+
+
+def test_catalog_evidence_valid_complete_with_verified_pagination_artifacts():
+    """QUALITY GATE: Acceptance of complete evidence across recent and historical pagination files."""
+    cat_pages = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000050"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00Z"],
+                "form": ["8-K"],
+            },
+            "files": [
+                {"name": "page-001.json", "filingCount": 100, "filingFrom": "2026-09-01", "filingTo": "2026-10-01"},
+                {"name": "page-002.json", "filingCount": 100, "filingFrom": "2026-08-01", "filingTo": "2026-08-31"},
+            ],
+        },
+    }
+    cat_bytes = json.dumps(cat_pages).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    page1_content = {
+        "accessionNumber": ["0001045810-26-000040"],
+        "filingDate": ["2026-09-15"],
+        "acceptanceDateTime": ["2026-09-15T16:00:00Z"],
+        "form": ["4"],
+    }
+    page2_content = {
+        "accessionNumber": ["0001045810-26-000030"],
+        "filingDate": ["2026-08-01"],
+        "acceptanceDateTime": ["2026-08-01T16:00:00Z"],
+        "form": ["4"],
+    }
+
+    res = validate_catalog_evidence(
+        catalog_bytes=cat_bytes,
+        catalog_sha256=cat_hash,
+        ticker="NVDA",
+        issuer_cik="0001045810",
+        interval_start="2026-08-01T00:00:00Z",
+        interval_end="2026-11-17T23:59:59Z",
+        certified_watermark="2026-11-17T23:59:59Z",
+        pagination_artifacts={
+            "page-001.json": page1_content,
+            "page-002.json": page2_content,
+        },
+        accession_inventory=["0001045810-26-000030", "0001045810-26-000040"],
+        source_hashes={
+            "0001045810-26-000030": "a" * 64,
+            "0001045810-26-000040": "b" * 64,
+        },
+    )
+    assert res["coverage_status"] == "COMPLETE"
+    assert res["derived_inventory"] == ["0001045810-26-000030", "0001045810-26-000040"]
+    assert res["zero_activity_reason"] is None
+
+
+def test_catalog_evidence_genuine_verified_zero_activity_accepted():
+    """QUALITY GATE: Genuine verified-zero activity accepted when empty recent has zero historical files."""
+    cat_zero = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": [],
+                "filingDate": [],
+                "reportDate": [],
+                "acceptanceDateTime": [],
+                "form": [],
+            },
+            "files": [],
+        },
+    }
+    cat_bytes = json.dumps(cat_zero).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    res = validate_catalog_evidence(
+        catalog_bytes=cat_bytes,
+        catalog_sha256=cat_hash,
+        ticker="NVDA",
+        issuer_cik="0001045810",
+        interval_start="2026-08-01T00:00:00Z",
+        interval_end="2026-11-17T23:59:59Z",
+        certified_watermark="2026-11-17T23:59:59Z",
+        accession_inventory=[],
+    )
+    assert res["coverage_status"] == "COMPLETE"
+    assert res["derived_inventory"] == []
+    assert res["zero_activity_reason"] == "NO_ELIGIBLE_FILINGS"
+
+
+def test_classify_amendment_effect_unrelated_ordinals_ignored():
+    """QUALITY GATE: Unrelated ordinal words (first quarter, first grant, first half) must not map to line 1."""
+    amend_filing = {
+        "document_type": "4/A",
+        "is_amendment": True,
+        "transactions": [{"record_key": "amend_acc:0001045810:NON_DERIVATIVE:0", "is_derivative": False}],
+    }
+    base_filing = {"accession_number": "base_acc", "content_hash": "h1"}
+    base_txs = [
+        {"transaction_id": "base_acc:0001045810:NON_DERIVATIVE:0", "is_derivative": False},
+        {"transaction_id": "base_acc:0001045810:NON_DERIVATIVE:1", "is_derivative": False},
+    ]
+
+    # 1. First quarter award with no transaction ordinal -> must fail closed to AMENDMENT_SCOPE_AMBIGUOUS
+    xml_no_tx = (
+        "<ownershipDocument><remarks>"
+        "This amendment is filed solely to correct an error. The first quarter award is otherwise unchanged."
+        "</remarks></ownershipDocument>"
+    )
+    res_no_tx = classify_amendment_effect(
+        amendment_filing=amend_filing,
+        base_filing=base_filing,
+        base_transactions=base_txs,
+        raw_xml=xml_no_tx,
+    )
+    assert res_no_tx.status == "AMENDMENT_SCOPE_AMBIGUOUS"
+    assert res_no_tx.mappings == []
+
+    # 2. First grant and first half with second transaction -> maps to second transaction
+    xml_second = (
+        "<ownershipDocument><remarks>"
+        "This amendment is filed solely to correct the second transaction price. "
+        "The first grant from the first half of the year is unchanged."
+        "</remarks></ownershipDocument>"
+    )
+    res_second = classify_amendment_effect(
+        amendment_filing=amend_filing,
+        base_filing=base_filing,
+        base_transactions=base_txs,
+        raw_xml=xml_second,
+    )
+    assert res_second.status == "PARTIAL_CORRECTION"
+    assert len(res_second.mappings) == 1
+    assert res_second.mappings[0]["base_transaction_id"] == "base_acc:0001045810:NON_DERIVATIVE:1"
+
+
+def test_classify_amendment_effect_conflicting_ordinals_fails_closed():
+    """QUALITY GATE: Conflicting or ambiguous transaction ordinal references in narrative must fail closed."""
+    amend_filing = {
+        "document_type": "4/A",
+        "is_amendment": True,
+        "transactions": [{"record_key": "amend_acc:0001045810:NON_DERIVATIVE:0", "is_derivative": False}],
+    }
+    base_filing = {"accession_number": "base_acc", "content_hash": "h1"}
+    base_txs = [
+        {"transaction_id": "base_acc:0001045810:NON_DERIVATIVE:0", "is_derivative": False},
+        {"transaction_id": "base_acc:0001045810:NON_DERIVATIVE:1", "is_derivative": False},
+    ]
+    # Narrative refers to both the first transaction and the second transaction
+    xml_conflict = (
+        "<ownershipDocument><remarks>"
+        "This amendment is filed solely to correct the first transaction and the second transaction."
+        "</remarks></ownershipDocument>"
+    )
+    res = classify_amendment_effect(
+        amendment_filing=amend_filing,
+        base_filing=base_filing,
+        base_transactions=base_txs,
+        raw_xml=xml_conflict,
+    )
+    assert res.status == "AMENDMENT_SCOPE_AMBIGUOUS"
+    assert res.mappings == []
+
+
+def test_classify_amendment_effect_reordered_base_transactions():
+    """QUALITY GATE: Resolving source ordinals against source sequence independently of database result order."""
+    amend_filing = {
+        "document_type": "4/A",
+        "is_amendment": True,
+        "transactions": [{"record_key": "amend_acc:0001045810:NON_DERIVATIVE:0", "is_derivative": False}],
+    }
+    base_filing = {"accession_number": "base_acc", "content_hash": "h1"}
+    # Base transactions provided in REVERSED order (seq 1 first, seq 0 second)
+    base_txs_reversed = [
+        {"transaction_id": "base_acc:0001045810:NON_DERIVATIVE:1", "is_derivative": False, "price": 200},
+        {"transaction_id": "base_acc:0001045810:NON_DERIVATIVE:0", "is_derivative": False, "price": 100},
+    ]
+    narrative = (
+        "This amendment is filed solely to correct the price of the second transaction. "
+        "The first quarter award is otherwise unchanged."
+    )
+    raw_xml = f"<ownershipDocument><remarks>{narrative}</remarks></ownershipDocument>"
+
+    res = classify_amendment_effect(
+        amendment_filing=amend_filing,
+        base_filing=base_filing,
+        base_transactions=base_txs_reversed,
+        raw_xml=raw_xml,
+    )
+    assert res.status == "PARTIAL_CORRECTION"
+    assert len(res.mappings) == 1
+    # Must correctly map to seq 1 (base_acc:0001045810:NON_DERIVATIVE:1) despite list order
+    assert res.mappings[0]["base_transaction_id"] == "base_acc:0001045810:NON_DERIVATIVE:1"
+
+
+def test_amendment_reordered_base_transactions_preserves_unaffected_transactions_in_db(db):
+    """
+    QUALITY GATE: End-to-end database replay test on disposable PostgreSQL.
+    Proves that correcting the second transaction preserves unaffected base transaction (seq 0) active.
+    """
+    conn, repo, pipeline = db
+
+    base_acc = "0002152188-26-000088"
+    amend_acc = "0002152188-26-000089"
+
+    base_xml = """<ownershipDocument><documentType>4</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>10</value></transactionShares><transactionPricePerShare><value>100</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>200</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+    </ownershipDocument>"""
+
+    amend_xml = """<ownershipDocument><documentType>4/A</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <dateOfOriginalSubmission>2026-09-01</dateOfOriginalSubmission>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>250</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+      <remarks>This amendment is filed solely to correct the price of the second transaction. The first quarter award is otherwise unchanged.</remarks>
+    </ownershipDocument>"""
+
+    t_base = "2026-09-01T21:00:00Z"
+    t_amend = "2026-09-05T21:00:00Z"
+
+    f_base = dict(accession_number=base_acc, ticker="NVDA", cik="0001045810",
+                  company_name="NVIDIA", filing_date="2026-09-01", document_type="4",
+                  accepted_datetime=t_base, xml_content=base_xml,
+                  source_url=f"https://www.sec.gov/Archives/{base_acc}.xml",
+                  content_hash=hashlib.sha256(base_xml.encode()).hexdigest(),
+                  public_availability_at=t_base)
+
+    f_amend = dict(accession_number=amend_acc, ticker="NVDA", cik="0001045810",
+                   company_name="NVIDIA", filing_date="2026-09-05", document_type="4/A",
+                   accepted_datetime=t_amend, xml_content=amend_xml,
+                   source_url=f"https://www.sec.gov/Archives/{amend_acc}.xml",
+                   content_hash=hashlib.sha256(amend_xml.encode()).hexdigest(),
+                   public_availability_at=t_amend)
+
+    pipeline._step7_parse_and_reconcile([f_base], "reordered-test-base")
+    pipeline._step7_parse_and_reconcile([f_amend], "reordered-test-amend")
+
+    # Query before amendment: Base A ($100) and Base B ($200)
+    txs_before = repo.get_bulk_transactions_as_of("2026-09-03T00:00:00Z", ["NVDA"], "2026-08-01")["NVDA"]
+    prices_before = sorted([float(t["price_per_share"]) for t in txs_before])
+    assert prices_before == [100.0, 200.0]
+
+    # Query after amendment: Base A ($100) remains ACTIVE; Base B ($200) replaced by Amendment B ($250)
+    txs_after = repo.get_bulk_transactions_as_of("2026-09-10T00:00:00Z", ["NVDA"], "2026-08-01")["NVDA"]
+    prices_after = sorted([float(t["price_per_share"]) for t in txs_after])
+    assert prices_after == [100.0, 250.0]
+
+
+
+
