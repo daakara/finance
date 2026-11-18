@@ -73,6 +73,13 @@ from analyst_dashboard.smart_money.form4_models import (
     SmartMoneyIssuerState,
 )
 from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
+from analyst_dashboard.smart_money.amendment_classifier import (
+    classify_amendment_effect,
+    SCOPE_FULL_REPLACEMENT,
+    SCOPE_PARTIAL_CORRECTION,
+    SCOPE_ADDITIONAL_TRANSACTION,
+    SCOPE_AMBIGUOUS,
+)
 from analyst_dashboard.smart_money.form4_scanner import SmartMoneyForm4Scanner
 from analyst_dashboard.analyzers.scanner_contract import (
     ScannerCandidateResult,
@@ -1176,6 +1183,7 @@ class SmartMoneyContinuousPipeline:
                     source_reference=f.get("source_url"), conn=conn,
                 )
 
+        parsed_filings_info = []
         for f in raw_filings:
             xml = f.get("xml_content")
             if not xml:
@@ -1192,6 +1200,7 @@ class SmartMoneyContinuousPipeline:
                 raise RuntimeError("SEC_FORM4_PARSE_FAILED")
             if parsed_filing.issuer_cik != str(f.get("cik", "")).zfill(10):
                 raise RuntimeError("SEC_FORM4_ISSUER_MISMATCH")
+            parsed_filings_info.append((f, xml, accession, parsed_filing))
             if parsed_filing.transactions:
                 for tx in parsed_filing.transactions:
                     if not tx.issuer_symbol:
@@ -1225,7 +1234,12 @@ class SmartMoneyContinuousPipeline:
                     }
                     raw_tx_dicts.append(tx_dict)
 
-            # Record amendment relationship in repository if Form 4/A
+        # Persist parsed transactions first so amendment mapping can reference both base and amendment transactions
+        if self.repository and raw_tx_dicts:
+            self.repository.save_parsed_transactions(raw_tx_dicts, conn=conn)
+
+        # Process amendment relationships and evidence-backed transaction mappings
+        for f, xml, accession, parsed_filing in parsed_filings_info:
             is_amend = getattr(parsed_filing, "is_amendment", False) or f.get("document_type") in ("4/A", "4A")
             if is_amend and self.repository:
                 base_acc = self.repository.resolve_amendment_base(
@@ -1234,19 +1248,51 @@ class SmartMoneyContinuousPipeline:
                 )
                 if not base_acc:
                     unresolved_amendments.append(accession)
+                    rel_status = "UNRESOLVED"
+                else:
+                    base_raw = self.repository.get_raw_filing(base_acc, conn=conn)
+                    base_txs = self.repository.get_parsed_transactions_for_accession(base_acc, conn=conn)
+                    clf_res = classify_amendment_effect(
+                        amendment_filing=parsed_filing,
+                        base_filing=base_raw,
+                        base_transactions=base_txs,
+                        raw_xml=xml,
+                    )
+                    scope, _ = clf_res
+                    mappings = getattr(clf_res, "mappings", [])
+                    if scope == SCOPE_PARTIAL_CORRECTION:
+                        if mappings:
+                            rel_status = SCOPE_PARTIAL_CORRECTION
+                            self.repository.record_amendment_transaction_mappings(
+                                base_accession=base_acc,
+                                amendment_accession=accession,
+                                mappings=mappings,
+                                base_content_hash=base_raw.get("content_hash"),
+                                amendment_content_hash=f.get("content_hash"),
+                                conn=conn,
+                            )
+                        else:
+                            rel_status = SCOPE_AMBIGUOUS
+                    elif scope in (SCOPE_FULL_REPLACEMENT, SCOPE_ADDITIONAL_TRANSACTION):
+                        rel_status = scope
+                    else:
+                        rel_status = SCOPE_AMBIGUOUS
+
                 self.repository.save_amendment(
                     amendment_accession=accession, base_accession=base_acc,
                     amendment_number=1,
-                    resolution_status="RESOLVED" if base_acc else "UNRESOLVED",
+                    resolution_status=rel_status,
                     resolved_at=now_iso if base_acc else None, conn=conn,
                 )
-
-        if self.repository and raw_tx_dicts:
-            self.repository.save_parsed_transactions(raw_tx_dicts, conn=conn)
 
         # Cryptographic reconciliation receipt
         reconcile_str = f"{cycle_id}:{watermark}:{len(raw_filings)}:{len(parsed_tx_objs)}"
         reconciliation_hash = hashlib.sha256(reconcile_str.encode("utf-8")).hexdigest()
+
+        cycle_ciks = [i["cik"] for i in self.issuers]
+        cycle_tickers = [i["ticker"] for i in self.issuers]
+        acc_inventory = [f.get("accession_number") for f in raw_filings if f.get("accession_number")]
+        source_hashes = {f.get("accession_number"): f.get("content_hash") for f in raw_filings if f.get("accession_number")}
 
         receipt_meta = {
             "receipt_id": str(uuid.uuid4()),
@@ -1260,6 +1306,10 @@ class SmartMoneyContinuousPipeline:
             "material_gap_count": len(unresolved_amendments),
             "coverage_status": "PARTIAL" if unresolved_amendments else "COMPLETE",
             "failure_reasons": [f"UNRESOLVED_AMENDMENT:{a}" for a in unresolved_amendments],
+            "covered_ciks": cycle_ciks,
+            "covered_tickers": cycle_tickers,
+            "accession_inventory": acc_inventory,
+            "source_hashes": source_hashes,
             "reconciliation_hash": reconciliation_hash,
             "release_sha": os.environ.get("ARX_RELEASE_SHA", "b9588f95188ab7e204474773f67dacbc9f6afb1f"),
         }

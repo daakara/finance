@@ -1,0 +1,51 @@
+{
+  "control_id": "RQ-12",
+  "name": "Qualification Summary Aggregation",
+  "status": "PASS",
+  "start_time": "2026-11-18T11:57:53.808722+00:00",
+  "end_time": "2026-11-18T11:57:53.840220+00:00",
+  "duration_sec": 0.031,
+  "candidate_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "target_branch": "release/production",
+  "execution_context": {
+    "repository": "daakara/finance",
+    "event_name": "local_execution",
+    "pr_number": null,
+    "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "target_branch": "release/production",
+    "workflow_run_id": "local_run",
+    "workflow_run_attempt": 1,
+    "qualification_policy_version": "2.2.0-D074A4"
+  },
+  "assertions": [
+    {
+      "assertion": "All 11 mandatory release qualification stages passed",
+      "observed": {
+        "total": 12,
+        "passed": 12,
+        "failed": 0,
+        "blocked": 0,
+        "missing": 0
+      },
+      "passed": true
+    }
+  ],
+  "evidence_paths": [
+    "scripts/release/release_qualification_summary.json"
+  ],
+  "evidence_digests": {
+    "scripts/release/release_qualification_summary.json": "8195078956b5dc809d894a5960a23ea0e8d9c6956755ba21fd9f99c8aff50fb7"
+  },
+  "errors": [],
+  "metadata": {
+    "summary_verdict": "RELEASE_QUALIFIED",
+    "passed_controls": 12,
+    "total_controls": 12,
+    "policy_version": "2.2.0-D074A4"
+  },
+  "receipt_digest": "5c6cce6a28696f807398c65fdd6bcd378f5972a74aef9ff75b34134bddfb389c"
+}

@@ -1,0 +1,59 @@
+{
+  "control_id": "RQ-06",
+  "name": "Governance & Backlog Invariants",
+  "status": "PASS",
+  "start_time": "2026-11-18T11:57:49.794667+00:00",
+  "end_time": "2026-11-18T11:57:50.385490+00:00",
+  "duration_sec": 0.576,
+  "candidate_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "target_branch": "release/production",
+  "execution_context": {
+    "repository": "daakara/finance",
+    "event_name": "local_execution",
+    "pr_number": null,
+    "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "target_branch": "release/production",
+    "workflow_run_id": "local_run",
+    "workflow_run_attempt": 1,
+    "qualification_policy_version": "2.2.0-D074A4"
+  },
+  "assertions": [
+    {
+      "assertion": "Backlog schema and dependency integrity validated",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Sprint 5 remains UNAUTHORIZED (Rule P5-010 enforced)",
+      "observed": {
+        "active_sprint": "SPRINT_4",
+        "sprint5_execution_authorized": false,
+        "decision": "BLOCKED_PENDING_OWNER_AUTHORIZATION"
+      },
+      "passed": true
+    }
+  ],
+  "evidence_paths": [
+    "tools/governance/validate_backlog_integrity.py",
+    "docs/planning/arx_canonical_backlog.json",
+    "docs/planning/arx_canonical_backlog.schema.json"
+  ],
+  "evidence_digests": {
+    "tools/governance/validate_backlog_integrity.py": "bb8a65d95d4c53f1ff364a2eb5aaecd6843f0705ae301ec9a1f2e39ecba65dce",
+    "docs/planning/arx_canonical_backlog.json": "d28bab6b31b1c12482cd10889094c47fc0adc83d1f1d937602fe8366c4f3aa4f",
+    "docs/planning/arx_canonical_backlog.schema.json": "b416db0914a2c1ff5ed3b7250d1cfc71216129481f69e1f20d3d04139391a90e"
+  },
+  "errors": [],
+  "metadata": {
+    "sprint_5_rule": "P5-010",
+    "backlog_validator_exit": 0,
+    "policy_version": "2.2.0-D074A4"
+  },
+  "receipt_digest": "8b8714d963785b27f152086358a0bfd6ebfdd439aafaf2d8506c7ca130503750"
+}

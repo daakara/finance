@@ -136,6 +136,8 @@ class SmartMoneyFiling:
     amendment_of_accession: Optional[str] = None
     original_submission_date: Optional[str] = None
     reporting_owner_ciks: List[str] = field(default_factory=list)
+    remarks: Optional[str] = None
+    all_footnotes: List[str] = field(default_factory=list)
 
 
 @dataclass

@@ -30,6 +30,7 @@ Responsibilities & Governance:
 """
 
 import os
+import re
 import sqlite3
 import logging
 from datetime import datetime, date, timedelta, timezone
@@ -105,6 +106,26 @@ class RadarSmartMoneyAdapter:
             return False, f"Coverage receipt status is '{cov_st}', not 'COMPLETE'."
         if missing_cnt > 0 or gap_cnt > 0:
             return False, f"Coverage receipt contains missing filings ({missing_cnt}) or material gaps ({gap_cnt})."
+
+        # 5. Verified Zero-Activity Check (Finding 1)
+        if "accession_inventory" in receipt:
+            is_zero_activity = len(receipt["accession_inventory"]) == 0
+        else:
+            is_zero_activity = (receipt.get("accounted_count", 0) == 0)
+
+        if is_zero_activity:
+            zero_proof = receipt.get("zero_activity_proof")
+            s_hashes = receipt.get("source_hashes") or {}
+            catalog_hash = None
+            if isinstance(zero_proof, dict):
+                catalog_hash = zero_proof.get("source_catalog_hash") or zero_proof.get("catalog_sha256")
+            if not catalog_hash:
+                for k, v in s_hashes.items():
+                    if ("catalog" in str(k).lower() or "submissions" in str(k).lower()) and isinstance(v, str) and len(v.strip()) == 64:
+                        catalog_hash = v.strip().lower()
+                        break
+            if not catalog_hash or catalog_hash == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" or not re.match(r"^[0-9a-f]{64}$", catalog_hash):
+                return False, f"Coverage receipt {receipt.get('receipt_id')} claims complete coverage with zero inventory but lacks authoritative source catalog proof."
 
         return True, None
 

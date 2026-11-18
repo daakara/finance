@@ -1,12 +1,12 @@
 {
   "harness_version": "2.2.0-D074A4",
-  "execution_timestamp": "2026-10-28T14:25:20.532Z",
+  "execution_timestamp": "2026-11-18T11:57:51.583Z",
   "frontend_artifacts": {
-    "candidate_digest": "df43a56181b3d6b4ee1eabd7a787a84c0eb48d1f4e30c33e79d8ae73eaa452b1",
+    "candidate_digest": "4d53f201629f24f136a48eac54b33c0b2bf121ba055846732a00d45ae69ccd29",
     "baseline_digest": "e07041c035d4508c2b91b9342af0103848f3c65f5f9f11dd2703c6cf4c9f96de"
   },
   "backend_artifacts": {
-    "candidate_digest": "9df887574c4efc128fceb7b1ff4191bff701bfb323e0b9453240646f1a29e9ec",
+    "candidate_digest": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
     "baseline_digest": "75ea2687886b0624f7961848c8ec127fa176b80531e52b4a9e274fe83bd5a4e4"
   },
   "combinations": [
@@ -67,7 +67,7 @@
       "combination_name": "Candidate Frontend + Baseline Backend (Frontend-First Rollout)",
       "frontend_type": "Candidate",
       "backend_type": "Baseline",
-      "frontend_digest": "df43a56181b3d6b4ee1eabd7a787a84c0eb48d1f4e30c33e79d8ae73eaa452b1",
+      "frontend_digest": "4d53f201629f24f136a48eac54b33c0b2bf121ba055846732a00d45ae69ccd29",
       "backend_digest": "75ea2687886b0624f7961848c8ec127fa176b80531e52b4a9e274fe83bd5a4e4",
       "fixture_id": "FIX-01-SUB1SHARE",
       "backend_input_payload": {
@@ -120,7 +120,7 @@
       "frontend_type": "Baseline",
       "backend_type": "Candidate",
       "frontend_digest": "e07041c035d4508c2b91b9342af0103848f3c65f5f9f11dd2703c6cf4c9f96de",
-      "backend_digest": "9df887574c4efc128fceb7b1ff4191bff701bfb323e0b9453240646f1a29e9ec",
+      "backend_digest": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
       "fixture_id": "FIX-01-SUB1SHARE",
       "backend_input_payload": {
         "accountEquity": 300,
@@ -171,8 +171,8 @@
       "combination_name": "Candidate Frontend + Candidate Backend (Target Release State)",
       "frontend_type": "Candidate",
       "backend_type": "Candidate",
-      "frontend_digest": "df43a56181b3d6b4ee1eabd7a787a84c0eb48d1f4e30c33e79d8ae73eaa452b1",
-      "backend_digest": "9df887574c4efc128fceb7b1ff4191bff701bfb323e0b9453240646f1a29e9ec",
+      "frontend_digest": "4d53f201629f24f136a48eac54b33c0b2bf121ba055846732a00d45ae69ccd29",
+      "backend_digest": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
       "fixture_id": "FIX-01-SUB1SHARE",
       "backend_input_payload": {
         "accountEquity": 300,
@@ -223,8 +223,8 @@
       "combination_name": "Candidate Frontend + Candidate Backend (Standard Sizing Disclosure)",
       "frontend_type": "Candidate",
       "backend_type": "Candidate",
-      "frontend_digest": "df43a56181b3d6b4ee1eabd7a787a84c0eb48d1f4e30c33e79d8ae73eaa452b1",
-      "backend_digest": "9df887574c4efc128fceb7b1ff4191bff701bfb323e0b9453240646f1a29e9ec",
+      "frontend_digest": "4d53f201629f24f136a48eac54b33c0b2bf121ba055846732a00d45ae69ccd29",
+      "backend_digest": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
       "fixture_id": "FIX-02-DISCLOSURE",
       "backend_input_payload": {
         "confluence_score": 82.5,
@@ -348,7 +348,7 @@
       "description": "Baseline and candidate frontend digests must be distinct to prevent version spoofing.",
       "observed_status": "DISTINCT_REVISIONS_VERIFIED",
       "passed": true,
-      "diagnostics": "Base digest: e07041c035..., Cand digest: df43a56181..."
+      "diagnostics": "Base digest: e07041c035..., Cand digest: 4d53f20162..."
     },
     {
       "scenario_id": "ADV-13",

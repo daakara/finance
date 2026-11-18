@@ -2,7 +2,7 @@
 
 **Document ID:** `PLN-ROADMAP-2026-11-17`  
 **Effective Date:** 2026-11-17  
-**Authoritative Production Baseline:** `release/production` @ SHA [`ee8ceab7b25be706292a5c38faedc03548073d0f`](https://github.com/daakara/finance/commit/ee8ceab7b25be706292a5c38faedc03548073d0f)  
+**Authoritative Production Baseline:** `release/production` @ SHA [`c6e3c03b88a0729d18284fbf9786135d2a7d4a81`](https://github.com/daakara/finance/commit/c6e3c03b88a0729d18284fbf9786135d2a7d4a81)
 **Classification:** Canonical Project Brain Sprint Roadmap & Execution Architecture  
 **Supersedes:** `docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_14.md`
 
@@ -89,8 +89,10 @@ flowchart TD
         S1_1["PR #299 Deployed and Verified (Confluence Drawer Presentation)"]
         S1_2["PR #300 Deployed and Verified (Pre-Flight Quote Provenance & Sizing)"]
         S1_3["PR #302 Deployed and Verified (Canonical take_profit_2 / DEF-TP2-001)"]
-        S1_4["Resolve DEF-CAT-001 (NVDA Primary IR 16:20/17:00 Schedule)"]
-        S1_5["Resolve DEF-CAT-002 (Empty 5-Year Forecast State)"]
+        S1_4["PR #303 Deployed and Verified (NVDA Primary IR 16:20/17:00 Schedule / DEF-CAT-001)"]
+        S1_5["PR #304 Deployed and Verified (SEC Atomic Evidence & Historical PIT Snapshots)"]
+        S1_6["Resolve DEF-CAT-002 (Empty 5-Year Forecast State)"]
+        S1_7["PR #305 Qualified Offline (Issuer-Bound Coverage & Amendment-Effect Classification)"]
     end
 
     subgraph S2["Sprint 2: Architecture & Security Hardening (Weeks 3–4)"]
@@ -119,16 +121,19 @@ flowchart TD
 
 ### Detailed Sprint 1 Specification (Active Sprint)
 
-- **Objective:** Build on the verified production releases of PR #299 and PR #300 and resolve the three newly documented presentation defects (DEF-TP2-001, DEF-CAT-001, DEF-CAT-002) to establish 100% decision and presentation truth across the terminal.
+- **Objective:** Build on the verified production releases of PR #299, PR #300, PR #302, PR #303, and PR #304 to establish 100% decision and presentation truth across the terminal while resolving remaining activation blockers for SEC Form 4 offline qualification.
 - **Ordered Task Deliverables:**
   1. **Task 1.1 — Confluence Drawer Presentation Truth (PR #299):** **Deployed and verified.** See the [production verification record](../ARX_STATUS_ADDENDUM_2026_11_17.md).
   2. **Task 1.2 — Pre-Flight Quote Provenance & Sizing Safeguards (PR #300):** **Deployed and verified.** See the [production verification record](../ARX_STATUS_ADDENDUM_2026_11_17.md).
   3. **Task 1.3 — Target 2 Mismatch Remediation (DEF-TP2-001):** **Deployed and verified in production (PR #302, SHA `7a0f7676`).** Bound canonical `take_profit_2` from execution ladder into `PreFlightChecklistInputs` and eliminated synthetic 12% calculation.
-  4. **Task 1.4 — NVDA Corporate Schedule Disentanglement (DEF-CAT-001):** **Active candidate in PR #303.** Added primary-source schedule for NVDA in `corporate_events.py` separating 16:20 results release from 17:00 conference call; disentangled results release from conference call in Catalyst card and Pre-Flight earnings warning.
-  5. **Task 1.5 — 5-Year Simulation Empty State (DEF-CAT-002):** Add informative institutional disclosure in `CatalystForecastCard.tsx` when `multi_year_forecast` is empty.
-- **Dependencies:** PR #299, PR #300, `optimal_execution.py`, `corporate_events.py`, `CatalystForecastCard.tsx`.
+  4. **Task 1.4 — NVDA Corporate Schedule Disentanglement (DEF-CAT-001):** **Deployed and verified in production (PR #303, Cloudflare frontend SHA `933295cc`).** Added primary-source schedule for NVDA in `corporate_events.py` separating 16:20 results release from 17:00 conference call; disentangled results release from conference call in Catalyst card and Pre-Flight earnings warning.
+  5. **Task 1.5 — SEC Ingestion Evidence Integrity (PR #304):** **Deployed and verified on Railway backend (`c6e3c03b`).** Guarded Step 6 SEC fetcher, atomic Step 7 commit of raw XML, availability ledger, parsed transactions, amendment links and receipts, and repeatable-read historical point-in-time snapshot retrieval.
+  6. **Task 1.6 — Issuer-Bound Historical Coverage & Amendment Classification (PR #305 Candidate):** **Qualified offline on disposable PostgreSQL (72/72 evidence integrity tests pass across Gates 1–4).** Solved both PR #304 activation blockers without DDL schema migrations: binds issuer CIK/interval/accession inventory to receipts via JSONB envelope, implements statutory XML remarks/footnotes amendment classification (`FULL_REPLACEMENT`, `PARTIAL_CORRECTION`, `ADDITIONAL_TRANSACTION`), authoritative catalog evidence validation & zero-activity proof (rejecting empty recent catalogs with unread overlapping files, requiring pinned 64-char lowercase SHA-256 digests for all historical pages, rejecting unhashed substitute pages or changed bytes, parsing exclusively from verified artifact bytes, rejecting conflicting content/data/recent payload overrides, binding historical artifact manifests into canonical receipts, and revalidating on read), evidence-backed partial correction mapping with 0-DDL audit event ledger (resolving contextual source ordinals against source row sequence independently of database result order and ignoring unrelated ordinals), canonical receipt payload hashing, and preserves 0-DDL compliance. Deployment held pending hosted CI pipeline qualification; operational activation HELD under `HOLD_SEC_001` (worker in `STANDBY`, egress `DISABLED`).
+  7. **Task 1.7 — 5-Year Simulation Empty State (DEF-CAT-002):** Add informative institutional disclosure in `CatalystForecastCard.tsx` when `multi_year_forecast` is empty.
+- **Dependencies:** PR #299, PR #300, PR #302, PR #303, PR #304, `optimal_execution.py`, `corporate_events.py`, `CatalystForecastCard.tsx`.
 - **Measurable Exit Criteria:**
   - 100% pass across TypeScript (`tsc --noEmit`), unit tests (`vitest run`), and parity tests (`test:parity`).
   - Zero false live clearance under unverified/delayed quotes or missing sizing authorization.
   - Zero synthetic 12% Target 2 markup in copied trade plans.
   - Verification in live production DOM on `https://www.arxterminal.com`.
+  - Zero unverified issuer historical coverage or ambiguous amendment replacements admitted to snapshots.

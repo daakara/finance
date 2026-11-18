@@ -1,0 +1,156 @@
+{
+  "control_id": "RQ-09",
+  "name": "Four-Way Cross-Platform Compatibility",
+  "status": "PASS",
+  "start_time": "2026-11-18T11:57:50.672779+00:00",
+  "end_time": "2026-11-18T11:57:51.688297+00:00",
+  "duration_sec": 0.998,
+  "candidate_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "target_branch": "release/production",
+  "execution_context": {
+    "repository": "daakara/finance",
+    "event_name": "local_execution",
+    "pr_number": null,
+    "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "target_branch": "release/production",
+    "workflow_run_id": "local_run",
+    "workflow_run_attempt": 1,
+    "qualification_policy_version": "2.2.0-D074A4"
+  },
+  "assertions": [
+    {
+      "assertion": "C1: Baseline governor suppresses sub-1-share trade to 0 shares; backend returns 1 share bug.",
+      "observed": {
+        "recommended_shares": 0,
+        "stop_distance": 20,
+        "clean_room_rationale": "Position sizing suppressed (0 shares): Allowed risk budget ($3) is smaller than ..."
+      },
+      "passed": true
+    },
+    {
+      "assertion": "C2: Candidate governor strictly shields user from baseline 1-share bug by suppressing to 0 shares with clean room rationale.",
+      "observed": {
+        "recommended_shares": 0,
+        "stop_distance": 20,
+        "clean_room_rationale": "Position sizing suppressed (0 shares): Allowed risk budget ($3) is smaller than ..."
+      },
+      "passed": true
+    },
+    {
+      "assertion": "C3: Candidate backend floored 0 shares is safely ingested by baseline frontend without schema rejection.",
+      "observed": {
+        "recommended_shares": 0,
+        "stop_distance": 20,
+        "clean_room_rationale": "Position sizing suppressed (0 shares): Allowed risk budget ($3) is smaller than ..."
+      },
+      "passed": true
+    },
+    {
+      "assertion": "C4: Full end-to-end alignment: candidate backend floors shares to 0, candidate governor confirms 0 shares, clean room disclosures present.",
+      "observed": {
+        "recommended_shares": 0,
+        "stop_distance": 20,
+        "clean_room_rationale": "Position sizing suppressed (0 shares): Allowed risk budget ($3) is smaller than ..."
+      },
+      "passed": true
+    },
+    {
+      "assertion": "C4: Candidate frontend includes mandatory modeled risk disclosure in clean room rationale for standard authorized sizing.",
+      "observed": {
+        "recommended_shares": 20,
+        "stop_distance": 5,
+        "clean_room_rationale": "Standard position risk authorized ($100). No Governor risk reduction applied und..."
+      },
+      "passed": true
+    },
+    {
+      "assertion": "ADV-01: Risk Budget Below One Share Cost",
+      "observed": "FAIL_CLOSED_ZERO_SHARES",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-02: Zero Risk Budget",
+      "observed": "FAIL_CLOSED_ZERO_SHARES",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-03: Negative or Invalid Stop Distance",
+      "observed": "REJECTED_INVALID_GEOMETRY",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-04: Fractional Share Output Prevention",
+      "observed": "INTEGER_FLOORED",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-05: Missing Backend Fields",
+      "observed": "HANDLED_GRACEFULLY",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-06: Renamed Backend Fields",
+      "observed": "ROBUST_SCHEMA_HANDLING",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-07: Null Backend Response",
+      "observed": "FAIL_CLOSED_NULL_SAFE",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-08: Unexpected Numeric Types",
+      "observed": "FAIL_CLOSED_TYPE_GUARD",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-09: Missing Smart Money Evidence",
+      "observed": "TRUTHFUL_SCORE_FORMAT",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-10: Unsupported Confidence Claims",
+      "observed": "ZERO_UNSUPPORTED_CLAIMS",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-11: Mandatory Modeled Risk Disclosure",
+      "observed": "DISCLOSURE_VERIFIED",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-12: Version Substitution Prevention",
+      "observed": "DISTINCT_REVISIONS_VERIFIED",
+      "passed": true
+    },
+    {
+      "assertion": "ADV-13: Frontend Implementation Integrity",
+      "observed": "IMPLEMENTATION_INTEGRITY_VERIFIED",
+      "passed": true
+    }
+  ],
+  "evidence_paths": [
+    "frontend/tests/fourWayCompatibilityHarness.ts",
+    "scripts/release/rq_compatibility_results.json"
+  ],
+  "evidence_digests": {
+    "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
+    "scripts/release/rq_compatibility_results.json": "a662513ea322f58bad374ef314a44d3f0e22572394452726f251ec455413ffb8"
+  },
+  "errors": [],
+  "metadata": {
+    "combinations_count": 5,
+    "adversarial_count": 13,
+    "baseline_backend_digest": "75ea2687886b0624f7961848c8ec127fa176b80531e52b4a9e274fe83bd5a4e4",
+    "candidate_backend_digest": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
+    "baseline_frontend_digest": "e07041c035d4508c2b91b9342af0103848f3c65f5f9f11dd2703c6cf4c9f96de",
+    "candidate_frontend_digest": "4d53f201629f24f136a48eac54b33c0b2bf121ba055846732a00d45ae69ccd29",
+    "harness_version": "2.2.0-D074A4",
+    "policy_version": "2.2.0-D074A4"
+  },
+  "receipt_digest": "b67159f31cee0ec2d1862820b9921f45b228b006eb22c6d78161481bf0310fb1"
+}

@@ -1,0 +1,53 @@
+{
+  "control_id": "RQ-05",
+  "name": "Cross-Engine Invariants",
+  "status": "PASS",
+  "start_time": "2026-11-18T11:57:49.724504+00:00",
+  "end_time": "2026-11-18T11:57:49.740542+00:00",
+  "duration_sec": 0.003,
+  "candidate_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "target_branch": "release/production",
+  "execution_context": {
+    "repository": "daakara/finance",
+    "event_name": "local_execution",
+    "pr_number": null,
+    "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "target_branch": "release/production",
+    "workflow_run_id": "local_run",
+    "workflow_run_attempt": 1,
+    "qualification_policy_version": "2.2.0-D074A4"
+  },
+  "assertions": [
+    {
+      "assertion": "Invariant 1: Sub-1-share capital yields 0 integer shares",
+      "passed": true
+    },
+    {
+      "assertion": "Invariant 2: Missing smart money suppressed from positive narrative",
+      "passed": true
+    },
+    {
+      "assertion": "Invariant 3: Zero occurrences of 'HARD MAX LOSS', presence of 'MODELED STOP RISK'",
+      "passed": true
+    }
+  ],
+  "evidence_paths": [
+    "analyst_dashboard/analyzers/confluence_engine.py",
+    "frontend/components/PositionSizerModal.tsx",
+    "frontend/components/DayTraderPositionSizer.tsx"
+  ],
+  "evidence_digests": {
+    "analyst_dashboard/analyzers/confluence_engine.py": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
+    "frontend/components/PositionSizerModal.tsx": "356d5c6a8b50c5783a079f24ad41bcfa2012e245681af435232d224a0513462f",
+    "frontend/components/DayTraderPositionSizer.tsx": "42da126c220577bcefe78a1e218998e988b390334c33f0e0c292f4a3723bb534"
+  },
+  "errors": [],
+  "metadata": {
+    "policy_version": "2.2.0-D074A4"
+  },
+  "receipt_digest": "87eeeae590ae4fad0ba5f27605d540990670a9cafc3eba59763ba6d888479ab8"
+}

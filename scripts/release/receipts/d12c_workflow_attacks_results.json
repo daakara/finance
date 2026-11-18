@@ -1,0 +1,141 @@
+{
+  "suite": "Gate H: 12 Adversarial Workflow Attacks (ARX-036-D12C)",
+  "candidate_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "candidate_tree": "c056764635e0ce47da82ed724d574269c6134622",
+  "timestamp": "2026-11-18T11:57:33.239913+00:00",
+  "execution_context": {
+    "is_ci": false,
+    "github_run_id": null,
+    "github_job": null
+  },
+  "total_scenarios": 12,
+  "passed_scenarios": 12,
+  "failed_scenarios": 0,
+  "all_passed": true,
+  "receipt_isolation_verified": true,
+  "canonical_evidence_mutated": false,
+  "scenarios": [
+    {
+      "scenario": 1,
+      "name": "Candidate changes its own validator and expected hashes",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "UNAUTHORIZED_QUALIFICATION_FRAMEWORK_MODIFICATION"
+    },
+    {
+      "scenario": 2,
+      "name": "Candidate supplies an unauthorized descendant",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "Candidate does not incorporate authorized candidate"
+    },
+    {
+      "scenario": 3,
+      "name": "Manifest claims a permitted PR that did not modify the file",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "UNAPPROVED_PR_ATTRIBUTION"
+    },
+    {
+      "scenario": 4,
+      "name": "Candidate changes policy without independent approval",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "UNAUTHORIZED_QUALIFICATION_FRAMEWORK_MODIFICATION"
+    },
+    {
+      "scenario": 5,
+      "name": "Old release approval replayed against new source",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "Unapproved file in diff"
+    },
+    {
+      "scenario": 6,
+      "name": "CI receipt from a different candidate is substituted",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "CANDIDATE_SHA_MISMATCH in stage receipt"
+    },
+    {
+      "scenario": 7,
+      "name": "Wrong production baseline is selected",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "BASE_ANCHOR_MISMATCH"
+    },
+    {
+      "scenario": 8,
+      "name": "Manifest file is missing but matching disk copy exists",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "Release manifest not found"
+    },
+    {
+      "scenario": 9,
+      "name": "Framework file hashes match only candidate-controlled manifest values",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "UNAUTHORIZED_QUALIFICATION_FRAMEWORK_MODIFICATION"
+    },
+    {
+      "scenario": 10,
+      "name": "Dynamic receipt exemption carries policy-relevant modification",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "Unexpected or rogue receipt file detected"
+    },
+    {
+      "scenario": 11,
+      "name": "Forbidden qualification bypass attempts rejected",
+      "tier": "Release Qualification",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "sub_tests": {
+        "attempt_allow_uncommitted": {
+          "rc": 1,
+          "rejected": true
+        },
+        "attempt_skip_framework_check": {
+          "rc": 1,
+          "rejected": true
+        },
+        "attempt_both_bypass_flags": {
+          "rc": 1,
+          "rejected": true
+        }
+      },
+      "observed_error": "FORBIDDEN_QUALIFICATION_BYPASS: All forbidden bypass attempts rejected with rc=1"
+    },
+    {
+      "scenario": 12,
+      "name": "Valid engineering PR receives an invalid production-release claim",
+      "tier": "Deployment Authorization",
+      "expected_rc": 1,
+      "actual_rc": 1,
+      "passed": true,
+      "observed_error": "Target branch is not authorized"
+    }
+  ]
+}
