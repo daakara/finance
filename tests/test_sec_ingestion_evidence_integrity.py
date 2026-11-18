@@ -316,8 +316,9 @@ def test_missing_issuer_coverage_blocks_even_empty_historical_snapshot(db):
     assert conn.status == 1  # read-only transaction ended; no pooled transaction leak
 
 
-def pit_filing(accession=BASE, form='4', public_date='2026-09-21', original=''):
-    item = filing(accession, form, original=original, date=public_date)
+def pit_filing(accession=BASE, form='4', public_date='2026-09-21', original='', filing_date=None):
+    d = filing_date or public_date
+    item = filing(accession, form, original=original, date=d)
     item['xml_content'] = item['xml_content'].replace('2026-09-10', '2026-09-20')
     item['content_hash'] = hashlib.sha256(item['xml_content'].encode()).hexdigest()
     return item
@@ -363,12 +364,14 @@ def test_resolved_lineage_without_amendment_scope_blocks_snapshot(db):
 
 def test_snapshot_evidence_read_uses_repeatable_read_and_bound_coverage(db):
     conn, repo, pipeline = db
-    pipeline._step7_parse_and_reconcile([pit_filing()], 'persisted-history')
+    f_base = pit_filing()
+    pipeline._step7_parse_and_reconcile([f_base], 'persisted-history')
     # Explicit isolated coverage fixture; production must obtain equivalent issuer-bound evidence.
     coverage = dict(receipt_id='offline-coverage', ticker='NVDA', issuer_cik='0001045810',
                     interval_start='2026-08-01', interval_end='2026-11-17',
                     certified_watermark='2026-11-17T23:59:59Z', coverage_status='COMPLETE',
-                    missing_count=0, material_gap_count=0)
+                    missing_count=0, material_gap_count=0,
+                    accession_inventory=[BASE], source_hashes={BASE: f_base['content_hash']})
     with patch.object(repo, 'get_authoritative_receipt_for_interval', return_value=coverage):
         result = repo.get_snapshot_evidence_as_of('2026-09-22T12:00:00Z', pipeline.issuers[:1], '2026-08-23')
     assert [row['accession_number'] for row in result['transactions']['NVDA']] == [BASE]
@@ -456,7 +459,8 @@ def test_end_to_end_amendment_classification_and_point_in_time_effect(db):
 
 def test_record_issuer_coverage_receipt_and_authoritative_retrieval(db):
     conn, repo, pipeline = db
-    pipeline._step7_parse_and_reconcile([pit_filing()], 'coverage-test')
+    f_base = pit_filing()
+    pipeline._step7_parse_and_reconcile([f_base], 'coverage-test')
 
     # Record durable coverage receipt bound to NVDA CIK and interval
     r_id = repo.record_issuer_coverage_receipt(
@@ -466,7 +470,7 @@ def test_record_issuer_coverage_receipt_and_authoritative_retrieval(db):
         interval_end='2026-11-17T23:59:59Z',
         certified_watermark='2026-11-17T23:59:59Z',
         accession_inventory=[BASE],
-        source_hashes={BASE: 'dummy-hash'},
+        source_hashes={BASE: f_base['content_hash']},
         material_gaps=[],
         coverage_status='COMPLETE',
     )
@@ -542,7 +546,7 @@ def test_verified_zero_activity_requires_and_accepts_authoritative_coverage_rece
     conn, repo, pipeline = db
     aapl_issuer = [{'ticker': 'AAPL', 'cik': '0000320193', 'company_name': 'APPLE INC'}]
 
-    # Record genuine coverage receipt proving zero activity for AAPL over 30d
+    # Record genuine coverage receipt proving zero activity for AAPL over 30d with authoritative catalog proof
     r_id = repo.record_issuer_coverage_receipt(
         ticker='AAPL',
         issuer_cik='0000320193',
@@ -550,13 +554,35 @@ def test_verified_zero_activity_requires_and_accepts_authoritative_coverage_rece
         interval_end='2026-11-17T23:59:59Z',
         certified_watermark='2026-11-17T23:59:59Z',
         accession_inventory=[],
-        source_hashes={},
+        source_hashes={'sec_submissions_index_sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'},
         material_gaps=[],
         coverage_status='COMPLETE',
+        zero_activity_proof={
+            'source_catalog_hash': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            'catalog_watermark': '2026-11-17T23:59:59Z',
+            'catalog_type': 'SEC_SUBMISSIONS_INDEX',
+        },
     )
     evidence = repo.get_snapshot_evidence_as_of('2026-11-17T12:00:00Z', aapl_issuer, '2026-10-18')
     assert evidence['transactions']['AAPL'] == []
     assert r_id in evidence['coverage_receipt_ids']
+
+
+def test_empty_inventory_without_catalog_proof_fails_closed(db):
+    conn, repo, pipeline = db
+    # Attempting to record zero-activity COMPLETE receipt without proof must raise
+    with pytest.raises(RuntimeError, match='ZERO_ACTIVITY_UNPROVED'):
+        repo.record_issuer_coverage_receipt(
+            ticker='AAPL',
+            issuer_cik='0000320193',
+            interval_start='2026-10-01T00:00:00Z',
+            interval_end='2026-11-17T23:59:59Z',
+            certified_watermark='2026-11-17T23:59:59Z',
+            accession_inventory=[],
+            source_hashes={},
+            material_gaps=[],
+            coverage_status='COMPLETE',
+        )
 
 
 def test_superseding_coverage_receipt_preserves_immutable_history(db):
@@ -564,6 +590,10 @@ def test_superseding_coverage_receipt_preserves_immutable_history(db):
     import uuid
     r1 = str(uuid.uuid4())
     r2 = str(uuid.uuid4())
+
+    f_base = pit_filing(BASE, public_date='2026-08-15')
+    f_amend = pit_filing(AMEND, '4/A', public_date='2026-09-10', original='2026-08-15')
+    pipeline._step7_parse_and_reconcile([f_base, f_amend], 'super-test')
 
     # Receipt v1
     repo.record_issuer_coverage_receipt(
@@ -573,6 +603,7 @@ def test_superseding_coverage_receipt_preserves_immutable_history(db):
         interval_end='2026-11-17T23:59:59Z',
         certified_watermark='2026-11-17T23:59:59Z',
         accession_inventory=[BASE],
+        source_hashes={BASE: f_base['content_hash']},
         coverage_status='COMPLETE',
         receipt_version=1,
         receipt_id=r1,
@@ -586,6 +617,7 @@ def test_superseding_coverage_receipt_preserves_immutable_history(db):
         interval_end='2026-11-17T23:59:59Z',
         certified_watermark='2026-11-17T23:59:59Z',
         accession_inventory=[BASE, AMEND],
+        source_hashes={BASE: f_base['content_hash'], AMEND: f_amend['content_hash']},
         coverage_status='COMPLETE',
         receipt_version=2,
         supersedes_receipt_id=r1,
@@ -610,3 +642,199 @@ def test_superseding_coverage_receipt_preserves_immutable_history(db):
     assert active['receipt_version'] == 2
     assert str(active['supersedes_receipt_id']) == r1
     assert sorted(active['accession_inventory']) == sorted([BASE, AMEND])
+
+
+# ── Adversarial Tests for Review Findings 1 - 5 ───────────────────────────────
+
+def test_amendment_classifier_review_regression_cases():
+    base = {'accession_number': '0001', 'ticker': 'NVDA'}
+
+    # Case 1: "The entire filing remains unchanged except for a footnote."
+    f1 = {'document_type': '4/A', 'is_amendment': True, 'remarks': 'The entire filing remains unchanged except for a footnote.'}
+    st1, r1 = classify_amendment_effect(f1, base_filing=base, raw_xml='<ownershipDocument><remarks>The entire filing remains unchanged except for a footnote.</remarks></ownershipDocument>')
+    assert st1 == SCOPE_PARTIAL_CORRECTION
+    assert st1 != SCOPE_FULL_REPLACEMENT
+
+    # Case 2: "The reporting person entered into an amended and restated voting agreement."
+    f2 = {'document_type': '4/A', 'is_amendment': True, 'remarks': 'The reporting person entered into an amended and restated voting agreement.'}
+    st2, r2 = classify_amendment_effect(f2, base_filing=base, raw_xml='<ownershipDocument><remarks>The reporting person entered into an amended and restated voting agreement.</remarks></ownershipDocument>')
+    assert st2 == SCOPE_AMBIGUOUS
+    assert st2 != SCOPE_FULL_REPLACEMENT
+
+    # Case 3: Line-item subset overlap alone must NOT classify as PARTIAL_CORRECTION
+    f3 = {'document_type': '4/A', 'is_amendment': True, 'remarks': 'General update', 'transactions': [{'reporting_owner_name': 'Alice'}]}
+    base_txs = [{'reporting_owner_name': 'Alice'}, {'reporting_owner_name': 'Alice'}]
+    st3, r3 = classify_amendment_effect(f3, base_filing=base, base_transactions=base_txs, raw_xml='<ownershipDocument><remarks>General update</remarks></ownershipDocument>')
+    assert st3 == SCOPE_AMBIGUOUS
+
+
+def test_partial_correction_date_and_code_changes_prevent_duplicates(db):
+    conn, repo, pipeline = db
+    today = datetime.now(timezone.utc).date().isoformat()
+    acc_base = '0000000001-26-000010'
+    acc_amend = '0000000001-26-000011'
+    base_t_at = '2026-09-01T10:00:00Z'
+    amend_t_at = '2026-09-15T10:00:00Z'
+
+    # 1. Ingest base filing (transaction date 2026-08-28, code S)
+    f_base = pit_filing(acc_base, public_date='2026-09-01')
+    f_base['public_availability_at'] = base_t_at
+    pipeline._step7_parse_and_reconcile([f_base], 'pit-base')
+
+    with conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO form4_parsed_transactions (
+                transaction_id, accession_number, transaction_date, transaction_code,
+                shares, price_per_share, total_value_usd, reporting_owner_name,
+                reporting_owner_role, is_director, is_officer, is_ten_percent,
+                officer_title, ownership_type, is_derivative, signal_type,
+                acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+        """, (
+            f"{acc_base}:0001045810:I:1", acc_base, "2026-08-28", "S",
+            5000.0, 120.0, 600000.0, "Alice Executive",
+            "VP", False, True, False, "VP", "D", False, "OPEN_MARKET_SALE",
+            "D", False, False,
+        ))
+
+    # 2. Ingest partial correction amendment (corrects date to 2026-08-29, code to P)
+    f_amend = pit_filing(acc_amend, '4/A', public_date='2026-09-15', original='2026-09-01')
+    f_amend['public_availability_at'] = amend_t_at
+    f_amend['xml_content'] = f_amend['xml_content'].replace(
+        '</ownershipDocument>',
+        '<remarks>This Form 4/A is filed solely to correct the transaction date and code.</remarks></ownershipDocument>'
+    )
+    f_amend['content_hash'] = hashlib.sha256(f_amend['xml_content'].encode()).hexdigest()
+    pipeline._step7_parse_and_reconcile([f_amend], 'pit-amend')
+
+    with conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO form4_parsed_transactions (
+                transaction_id, accession_number, transaction_date, transaction_code,
+                shares, price_per_share, total_value_usd, reporting_owner_name,
+                reporting_owner_role, is_director, is_officer, is_ten_percent,
+                officer_title, ownership_type, is_derivative, signal_type,
+                acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+        """, (
+            f"{acc_amend}:0001045810:I:1", acc_amend, "2026-08-29", "P",
+            6000.0, 125.0, 750000.0, "Alice Executive",
+            "VP", False, True, False, "VP", "D", False, "OPEN_MARKET_PURCHASE",
+            "A", True, True,
+        ))
+
+    # Set amendment status to PARTIAL_CORRECTION
+    repo.save_amendment(acc_amend, acc_base, 1, SCOPE_PARTIAL_CORRECTION, resolved_at=amend_t_at)
+
+    # 3. Before amendment cutoff (2026-09-10): ONLY base transaction is returned
+    before_txs = repo.get_bulk_transactions_as_of('2026-09-10T23:59:59Z', ['NVDA'], '2026-08-01')['NVDA']
+    assert len(before_txs) == 1
+    assert before_txs[0]['accession_number'] == acc_base
+    assert str(before_txs[0]['transaction_date']) == '2026-08-28'
+    assert before_txs[0]['transaction_code'] == 'S'
+
+    # 4. After amendment cutoff (2026-09-16): ONLY amended transaction is returned (never both!)
+    after_txs = repo.get_bulk_transactions_as_of('2026-09-16T23:59:59Z', ['NVDA'], '2026-08-01')['NVDA']
+    assert len(after_txs) == 1
+    assert after_txs[0]['accession_number'] == acc_amend
+    assert str(after_txs[0]['transaction_date']) == '2026-08-29'
+    assert after_txs[0]['transaction_code'] == 'P'
+    assert float(after_txs[0]['shares']) == 6000.0
+
+
+def test_amendment_state_transition_from_resolved_and_conflict_detection(db):
+    conn, repo, pipeline = db
+    acc_amend = '0002152188-26-000007'
+    acc_base = '0002152188-26-000005'
+
+    # 1. Simulate Parker-style legacy RESOLVED record
+    repo.save_amendment(acc_amend, acc_base, 1, 'RESOLVED')
+    with conn.cursor() as cur:
+        cur.execute("SELECT resolution_status FROM sm_amendments WHERE amendment_accession=%s", (acc_amend,))
+        assert cur.fetchone()[0] == 'RESOLVED'
+
+    # 2. Transition from RESOLVED to PARTIAL_CORRECTION
+    repo.save_amendment(acc_amend, acc_base, 1, SCOPE_PARTIAL_CORRECTION)
+    with conn.cursor() as cur:
+        cur.execute("SELECT resolution_status FROM sm_amendments WHERE amendment_accession=%s", (acc_amend,))
+        assert cur.fetchone()[0] == SCOPE_PARTIAL_CORRECTION
+
+    # 3. Idempotent re-execution of PARTIAL_CORRECTION succeeds
+    repo.save_amendment(acc_amend, acc_base, 1, SCOPE_PARTIAL_CORRECTION)
+    with conn.cursor() as cur:
+        cur.execute("SELECT resolution_status FROM sm_amendments WHERE amendment_accession=%s", (acc_amend,))
+        assert cur.fetchone()[0] == SCOPE_PARTIAL_CORRECTION
+
+    # 4. Conflicting transition (e.g. attempting to downgrade to UNRESOLVED or change base) fails closed
+    with pytest.raises(RuntimeError, match='AMENDMENT_TRANSITION_CONFLICT'):
+        repo.save_amendment(acc_amend, '0002152188-26-999999', 1, 'UNRESOLVED')
+
+
+def test_tampered_reconciliation_hash_rejected(db):
+    conn, repo, pipeline = db
+    import uuid
+    f_base = pit_filing(BASE, public_date='2026-08-15')
+    pipeline._step7_parse_and_reconcile([f_base], 'hash-test')
+
+    # Save a receipt with a forged/tampered reconciliation_hash
+    receipt_payload = {
+        'receipt_id': str(uuid.uuid4()),
+        'interval_start': '2026-08-01T00:00:00Z',
+        'interval_end': '2026-11-17T23:59:59Z',
+        'certified_watermark': '2026-11-17T23:59:59Z',
+        'receipt_version': 1,
+        'expected_count': 1,
+        'accounted_count': 1,
+        'missing_count': 0,
+        'material_gap_count': 0,
+        'coverage_status': 'COMPLETE',
+        'failure_reasons': {
+            'reasons': [],
+            'ticker': 'NVDA',
+            'issuer_cik': '0001045810',
+            'accession_inventory': [BASE],
+            'source_hashes': {BASE: f_base['content_hash']},
+            'material_gaps': [],
+        },
+        'reconciliation_hash': 'forged_deadbeef_hash_value',
+    }
+    repo.save_reconciliation_receipt(receipt_payload)
+
+    # Retrieval must reject tampered hash
+    receipt = repo.get_authoritative_receipt_for_interval(
+        interval_start='2026-08-23',
+        interval_end='2026-09-22T12:00:00Z',
+        certified_watermark='2026-09-22T12:00:00Z',
+        issuer_cik='0001045810',
+    )
+    assert receipt is None
+
+
+def test_incomplete_inventory_with_omitted_filing_rejected(db):
+    conn, repo, pipeline = db
+    # Persist two filings in the interval
+    f1 = pit_filing('0000000001-26-000020', public_date='2026-08-15')
+    f2 = pit_filing('0000000001-26-000021', public_date='2026-08-20')
+    pipeline._step7_parse_and_reconcile([f1, f2], 'omitted-test')
+
+    # Record receipt that claims complete coverage but only includes f1 in accession_inventory (omitting f2)
+    r_id = repo.record_issuer_coverage_receipt(
+        ticker='NVDA',
+        issuer_cik='0001045810',
+        interval_start='2026-08-01T00:00:00Z',
+        interval_end='2026-11-17T23:59:59Z',
+        certified_watermark='2026-11-17T23:59:59Z',
+        accession_inventory=['0000000001-26-000020'],
+        source_hashes={'0000000001-26-000020': f1['content_hash']},
+        coverage_status='COMPLETE',
+    )
+
+    # Retrieval must detect omitted filing in interval and reject receipt
+    receipt = repo.get_authoritative_receipt_for_interval(
+        interval_start='2026-08-01',
+        interval_end='2026-11-17T23:59:59Z',
+        certified_watermark='2026-11-17T23:59:59Z',
+        issuer_cik='0001045810',
+    )
+    assert receipt is None
+

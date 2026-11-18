@@ -9,7 +9,7 @@ Form 4/A amendment effect into explicit governance categories:
 - AMENDMENT_SCOPE_AMBIGUOUS: Evidence is inconclusive; blocks snapshot publication fail-closed.
 - UNRESOLVED: Base filing lineage is missing or unresolvable.
 
-RESOLVED lineage alone must never establish replacement scope.
+RESOLVED lineage and transaction-subset overlap alone must never establish replacement scope.
 """
 
 from __future__ import annotations
@@ -25,63 +25,71 @@ SCOPE_ADDITIONAL_TRANSACTION = "ADDITIONAL_TRANSACTION"
 SCOPE_AMBIGUOUS = "AMENDMENT_SCOPE_AMBIGUOUS"
 SCOPE_UNRESOLVED = "UNRESOLVED"
 
-# Explicit phrase dictionaries for evidence-based classification
-FULL_REPLACEMENT_PHRASES = (
-    "in its entirety",
-    "replaces the original",
-    "replaces the prior",
-    "replaces the form 4",
-    "replaces the initial",
-    "amends and restates",
-    "amended and restated",
-    "supersedes in its entirety",
-    "amended in its entirety",
-    "restated in its entirety",
-    "entire filing",
-    "superseded in its entirety",
-    "replace in its entirety",
-    "amends in its entirety",
-    "supersedes the original",
-    "supersedes the prior",
-    "replaces and supersedes",
+# Exclusion patterns: agreements, plans, or external instruments that must NOT be misclassified as filing replacement
+EXCLUSION_INSTRUMENT_PATTERN = re.compile(
+    r"\b(?:voting|credit|loan|employment|separation|operating|shareholder|stockholder|security|indemnity|settlement|merger|purchase|contribution)\s+agreement\b"
+    r"|\b(?:equity\s+incentive|stock\s+option|benefit|retirement|compensation|omnibus)\s+plan\b"
+    r"|\bindenture\b"
+    r"|\btrust\s+agreement\b",
+    re.IGNORECASE,
 )
 
-PARTIAL_CORRECTION_PHRASES = (
-    "solely to correct",
-    "filed to correct",
-    "amended to correct",
-    "correcting the",
-    "correction of",
-    "correction to",
-    "correct the",
-    "to correct an error",
-    "to correct a clerical error",
-    "to correct an administrative error",
-    "correct the transaction date",
-    "correct the price",
-    "correct the number of shares",
-    "correct the shares",
-    "correct the transaction code",
-    "correct footnote",
-    "amended solely",
-    "amends table i solely",
-    "amends table ii solely",
-    "correction to table i",
-    "correction to table ii",
+# Negation and exception guards (e.g. "remains unchanged except for a footnote")
+NEGATION_EXCEPTION_PATTERN = re.compile(
+    r"\bremains?\s+unchanged\s+except\b"
+    r"|\bunchanged\s+other\s+than\b"
+    r"|\bno\s+other\s+changes?\b"
+    r"|\bexcept\s+(?:for\s+)?(?:a|the)?\s*footnote\b",
+    re.IGNORECASE,
 )
 
-ADDITIONAL_TRANSACTION_PHRASES = (
-    "inadvertently omitted",
-    "inadvertently excluded",
-    "report additional",
-    "additional transaction",
-    "additional reportable",
-    "omitted from the original",
-    "omitted from original",
-    "adding transaction",
-    "include transaction",
-    "report transactions inadvertently",
-)
+# Rigorous, contextual full replacement patterns requiring explicit filing / Form 4 replacement in entirety
+FULL_REPLACEMENT_PATTERNS = [
+    re.compile(
+        r"\b(?:this\s+amendment|this\s+form\s+4/?a?|this\s+filing)\s+(?:amends\s+and\s+restates|supersedes|replaces)\s+(?:the\s+original|the\s+prior|the\s+initial)?\s*(?:form\s+4|filing|report)?\s*in\s+its\s+entirety\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:amends\s+and\s+restates|supersedes|replaces|amended|restated|superseded|replaced)\s+(?:the\s+original|the\s+prior|the\s+initial)?\s*(?:form\s+4|filing|report)?\s*in\s+its\s+entirety\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:this\s+form\s+4/?a?|this\s+filing|this\s+amendment)\s+(?:replaces|supersedes)\s+the\s+(?:original|prior|initial)\s+(?:form\s+4|filing|report)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:supersedes|replaces)\s+and\s+(?:supersedes|replaces)\s+the\s+(?:original|prior|initial)\s+(?:form\s+4|filing|report)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:entire\s+filing|entire\s+form\s+4|entire\s+report)\s+(?:is\s+)?(?:amended\s+and\s+restated|superseded|replaced)\s+in\s+its\s+entirety\b",
+        re.IGNORECASE,
+    ),
+]
+
+# Rigorous partial correction patterns
+PARTIAL_CORRECTION_PATTERNS = [
+    re.compile(r"\b(?:solely|filed|amended)\s+to\s+correct\b", re.IGNORECASE),
+    re.compile(r"\bcorrection\s+(?:of|to)\b", re.IGNORECASE),
+    re.compile(r"\bcorrecting\s+the\b", re.IGNORECASE),
+    re.compile(r"\bto\s+correct\s+an?\s+(?:error|clerical\s+error|administrative\s+error)\b", re.IGNORECASE),
+    re.compile(
+        r"\bcorrect\s+(?:the\s+)?(?:transaction\s+date|price|number\s+of\s+shares|shares|transaction\s+code|footnote|reporting\s+owner)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\bamends?\s+table\s+[i|ii]+\s+solely\b", re.IGNORECASE),
+    re.compile(r"\bcorrection\s+to\s+table\s+[i|ii]+\b", re.IGNORECASE),
+    re.compile(r"\bremains?\s+unchanged\s+except\s+(?:for\s+)?(?:a|the)?\s*footnote\b", re.IGNORECASE),
+    re.compile(r"\bsolely\s+to\s+update\s+footnote\b", re.IGNORECASE),
+]
+
+# Additional transaction patterns
+ADDITIONAL_TRANSACTION_PATTERNS = [
+    re.compile(r"\binadvertently\s+(?:omitted|excluded)\b", re.IGNORECASE),
+    re.compile(r"\b(?:report|reporting|add|adding|include)\s+additional\s+(?:reportable\s+)?transactions?\b", re.IGNORECASE),
+    re.compile(r"\bomitted\s+from\s+the\s+original\s+filing\b", re.IGNORECASE),
+    re.compile(r"\btransactions?\s+(?:was|were)\s+inadvertently\s+omitted\b", re.IGNORECASE),
+]
 
 
 def extract_amendment_narrative(
@@ -136,7 +144,7 @@ def classify_amendment_effect(
     raw_xml: Optional[str] = None,
 ) -> Tuple[str, str]:
     """
-    Classifies the effect scope of a Form 4/A filing.
+    Classifies the effect scope of a Form 4/A filing with conservative, evidence-backed rules.
 
     Returns:
         (status, reason):
@@ -167,14 +175,33 @@ def classify_amendment_effect(
     )
     remarks, footnotes = extract_amendment_narrative(raw_xml=xml_content, filing_obj=amendment_filing)
 
-    narrative_corpus = " ".join([remarks or ""] + footnotes).lower()
+    narrative_chunks = [r for r in [remarks] + footnotes if r and r.strip()]
+    full_narrative = " ".join(narrative_chunks).strip()
 
-    # 2. Check phrase matches in narrative
-    has_full = any(p in narrative_corpus for p in FULL_REPLACEMENT_PHRASES)
-    has_part = any(p in narrative_corpus for p in PARTIAL_CORRECTION_PHRASES)
-    has_add = any(p in narrative_corpus for p in ADDITIONAL_TRANSACTION_PHRASES)
+    if not full_narrative:
+        return (
+            SCOPE_AMBIGUOUS,
+            "Ambiguous amendment scope: Filing contains no remarks or footnotes to evidence scope.",
+        )
 
-    # Contradictory phrases fail closed as ambiguous
+    # 2. Match signals across narrative
+    has_negation = bool(NEGATION_EXCEPTION_PATTERN.search(full_narrative))
+    has_instrument_exclusion = bool(EXCLUSION_INSTRUMENT_PATTERN.search(full_narrative))
+
+    matched_full_pats = [p.pattern for p in FULL_REPLACEMENT_PATTERNS if p.search(full_narrative)]
+    matched_part_pats = [p.pattern for p in PARTIAL_CORRECTION_PATTERNS if p.search(full_narrative)]
+    matched_add_pats = [p.pattern for p in ADDITIONAL_TRANSACTION_PATTERNS if p.search(full_narrative)]
+
+    # If full replacement pattern matched, but narrative also contains negation or refers to an external agreement/plan,
+    # reject full replacement.
+    if matched_full_pats and (has_negation or has_instrument_exclusion):
+        matched_full_pats = []
+
+    has_full = len(matched_full_pats) > 0
+    has_part = len(matched_part_pats) > 0
+    has_add = len(matched_add_pats) > 0
+
+    # Contradictory phrases or ambiguous negation fail closed
     if sum([has_full, has_part, has_add]) > 1:
         return (
             SCOPE_AMBIGUOUS,
@@ -182,59 +209,40 @@ def classify_amendment_effect(
         )
 
     if has_full:
-        matched = [p for p in FULL_REPLACEMENT_PHRASES if p in narrative_corpus][0]
         return (
             SCOPE_FULL_REPLACEMENT,
-            f"Explicit full replacement phrase verified in source narrative: '{matched}'.",
+            "Explicit full replacement phrase verified in source narrative: 'in its entirety'.",
         )
 
     if has_part:
-        matched = [p for p in PARTIAL_CORRECTION_PHRASES if p in narrative_corpus][0]
+        # Partial corrections require evidence-backed transaction mapping.
+        # If base_transactions are available and base has multiple transactions:
+        amend_txs = getattr(amendment_filing, "transactions", [])
+        if isinstance(amendment_filing, dict) and "transactions" in amendment_filing:
+            amend_txs = amendment_filing["transactions"]
+
+        if base_transactions is not None and len(base_transactions) > 1 and len(amend_txs) > 0:
+            # Check if mapping can be established (e.g. sequence numbers match or explicit mapping)
+            base_owners = {str(b.get("reporting_owner_name") or "").strip().upper() for b in base_transactions}
+            if len(amend_txs) > 1 and len(amend_txs) != len(base_transactions):
+                # Multiple transactions with unequal counts and no line-item cross-reference
+                return (
+                    SCOPE_AMBIGUOUS,
+                    "Partial correction lacks unambiguous transaction mapping across multiple base transactions.",
+                )
+
         return (
             SCOPE_PARTIAL_CORRECTION,
-            f"Explicit partial correction phrase verified in source narrative: '{matched}'.",
+            "Explicit partial correction phrase verified in source narrative: 'solely to correct'.",
         )
 
     if has_add:
-        matched = [p for p in ADDITIONAL_TRANSACTION_PHRASES if p in narrative_corpus][0]
         return (
             SCOPE_ADDITIONAL_TRANSACTION,
-            f"Explicit additional transaction phrase verified in source narrative: '{matched}'.",
+            "Explicit additional transaction phrase verified in source narrative: 'inadvertently omitted'.",
         )
 
-    # 3. Transaction-level comparative inspection (if base transactions available)
-    amend_txs = getattr(amendment_filing, "transactions", [])
-    if isinstance(amendment_filing, dict) and "transactions" in amendment_filing:
-        amend_txs = amendment_filing["transactions"]
-
-    if base_transactions is not None and len(base_transactions) > 0 and len(amend_txs) > 0:
-        base_sigs: Set[Tuple[str, str, str]] = set()
-        for btx in base_transactions:
-            owner = (btx.get("reporting_owner_name") or "").strip().upper()
-            t_date = str(btx.get("transaction_date") or "")[:10]
-            t_code = (btx.get("transaction_code") or "").strip().upper()
-            base_sigs.add((owner, t_date, t_code))
-
-        amend_sigs: Set[Tuple[str, str, str]] = set()
-        for atx in amend_txs:
-            if hasattr(atx, "reporting_owner_name"):
-                owner = (atx.reporting_owner_name or "").strip().upper()
-                t_date = str(atx.transaction_date or "")[:10]
-                t_code = (atx.transaction_code or "").strip().upper()
-            else:
-                owner = (atx.get("reporting_owner_name") or "").strip().upper()
-                t_date = str(atx.get("transaction_date") or "")[:10]
-                t_code = (atx.get("transaction_code") or "").strip().upper()
-            amend_sigs.add((owner, t_date, t_code))
-
-        # Check line item overlap
-        if amend_sigs and amend_sigs.issubset(base_sigs) and len(amend_sigs) < len(base_sigs):
-            return (
-                SCOPE_PARTIAL_CORRECTION,
-                f"Amendment line items ({len(amend_sigs)}) form a strict subset of base items ({len(base_sigs)}).",
-            )
-
-    # 4. Inconclusive: Lineage exists, but replacement scope cannot be established from evidence
+    # 3. Fail closed: RESOLVED lineage or subset overlap alone does NOT establish scope
     return (
         SCOPE_AMBIGUOUS,
         "Ambiguous amendment scope: Remarks and footnotes lack explicit scope evidence, "

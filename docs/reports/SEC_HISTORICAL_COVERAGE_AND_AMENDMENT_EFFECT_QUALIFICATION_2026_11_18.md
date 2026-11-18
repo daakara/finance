@@ -14,7 +14,13 @@ Merged PR #304 (`c6e3c03b88a0729d18284fbf9786135d2a7d4a81`) qualified atomic evi
 1. **Issuer-bound historical coverage:** Inability to durably bind reconciliation receipts to specific issuers, exact observation intervals, and accession inventories, creating the hazard that global cycle receipts or row counts might be used to falsely certify zero activity.
 2. **Amendment-effect classification:** Inability to discern whether a Form 4/A amendment was a full replacement, partial correction, or additional transaction, requiring that any `RESOLVED` base lineage alone block snapshot publication.
 
-This qualification package resolves both blockers completely using offline, fail-closed, 0-DDL compliant mechanisms verified against disposable PostgreSQL (`pgserver`).
+Following code review, a targeted remediation addressed six critical findings to ensure fail-closed rigor across both blockers:
+- **Coverage Proved, Never Inferred:** Strict rejection of `COMPLETE` coverage without authoritative source-inventory evidence for the exact issuer, interval, and public cutoff. An empty database query or stored row count cannot establish verified-zero activity; zero activity strictly requires explicit source catalog proof (`zero_activity_proof`).
+- **Conservative Amendment Classification:** Broad substring rules replaced with strict contextual regular expressions and exclusion patterns (rejecting agreements, plans, indentures, and negation phrasing). Transaction-subset overlap and lineage alone do not establish replacement; uncertain cases fail closed to `AMENDMENT_SCOPE_AMBIGUOUS`.
+- **Evidence-Backed Partial Correction Mapping:** Base and amended transactions are matched using immutable owner CIK and table/sequence from `transaction_id` or 1-to-1 table matches, ensuring price, share, date, and code corrections supersede base records point-in-time without duplicates or missing transactions.
+- **Controlled State Transitions:** `save_amendment` supports valid transitions from `UNRESOLVED`, `RESOLVED`, and `AMENDMENT_SCOPE_AMBIGUOUS` to classified scopes, detects conflicting mutations (`AMENDMENT_TRANSITION_CONFLICT`), and enables recovery of existing records.
+- **Complete Receipt Payload Binding:** Deterministic SHA-256 canonical hashing across structured fields (schema version, ticker, CIK, UTC ISO 8601 timestamps, receipt version, supersedes reference, inventory, source hashes, complete canonical material gap objects, and zero-activity proof).
+- **Read-Only Preflight & Lock Safety:** Advisory lock check replaced with a true read-only `pg_locks` query; execution acquisition and teardown documented with explicit timeouts and abort conditions.
 
 ---
 
@@ -33,27 +39,32 @@ This qualification package resolves both blockers completely using offline, fail
     "accession_inventory": ["0002152188-26-000005"],
     "source_hashes": {"0002152188-26-000005": "6f2c5d..."},
     "material_gaps": [],
-    "public_availability_cutoff": "2026-11-17T23:59:59Z"
+    "public_availability_cutoff": "2026-11-17T23:59:59Z",
+    "zero_activity_proof": null
   }
   ```
+- **Canonical Payload Hashing:** `compute_canonical_receipt_hash` computes a deterministic SHA-256 hash across `schema_version`, `ticker`, `issuer_cik`, ISO 8601 UTC timestamps (`%Y-%m-%dT%H:%M:%SZ`), `receipt_version`, `supersedes_receipt_id`, sorted `accession_inventory`, sorted `source_hashes`, full canonical `material_gaps` objects, and `zero_activity_proof`.
 - **Repository Methods:**
-  - `record_issuer_coverage_receipt`: Computes a deterministic SHA-256 cryptographic hash over `(ticker, cik, interval_start, interval_end, certified_watermark, accession_inventory, source_hashes, material_gaps)` and persists an immutable receipt. Supports versioned supersession (`receipt_version`, `supersedes_receipt_id`) while preserving append-only immutability enforced by PostgreSQL trigger `trg_receipts_append_only`.
-  - `get_authoritative_receipt_for_interval`: Enforces exact issuer filtering when `issuer_cik` or `ticker` is provided. Global cycle receipts lacking issuer binding are strictly excluded.
-  - `validate_issuer_coverage_receipt`: Validates exact issuer matching, full observation interval coverage ($r_{\text{start}} \le \text{req}_{\text{start}}$ and $r_{\text{end}} \ge \text{req}_{\text{end}}$), watermark freshness, and zero missing filings or material gaps.
-- **Anti-Inference Invariant:** Verified zero activity requires an authoritative issuer-bound coverage receipt. An empty database query or stored count of 0 alone strictly fails with `SNAPSHOT_HISTORICAL_COVERAGE_UNVERIFIED`.
+  - `record_issuer_coverage_receipt`: Validates payload completeness, computes canonical hash, and persists an immutable receipt. If `accession_inventory` is empty for `COMPLETE` coverage, an authoritative `zero_activity_proof` is strictly required; otherwise fails closed with `ZERO_ACTIVITY_UNPROVED`. Supports versioned supersession (`receipt_version`, `supersedes_receipt_id`) while preserving append-only immutability.
+  - `get_authoritative_receipt_for_interval`: Enforces exact issuer filtering when `issuer_cik` or `ticker` is provided. Global cycle receipts lacking issuer binding are strictly excluded. Validates canonical hash, public availability cutoff, raw filing presence in DB, source-hash match, accession inventory completeness, and supersession chains. Unpacks `failure_reasons` to `List[str]` for backward compatibility.
+  - `validate_issuer_coverage_receipt`: Validates exact issuer matching, full observation interval coverage ($r_{\text{start}} \le \text{req}_{\text{start}}$ and $r_{\text{end}} \ge \text{req}_{\text{end}}$), watermark freshness, zero missing filings, and zero material gaps.
+- **Anti-Inference Invariant:** Verified zero activity requires an authoritative issuer-bound coverage receipt with source catalog proof. An empty database query or stored count of 0 alone strictly fails with `SNAPSHOT_HISTORICAL_COVERAGE_UNVERIFIED`.
 
 ### 2.2 Blocker 2: Evidence-Based Amendment-Effect Classification
-- **Problem:** When an amendment's base accession was identified, the base link alone (`RESOLVED`) could not prove whether the amendment superseded the prior filing, corrected a price/share error, or reported an omitted transaction. Inferring full replacement would erroneously erase historical evidence; ignoring it would double-count transactions.
+- **Problem:** Broad substring rules previously misclassified unrelated legal narrative (e.g., voting agreements or footnotes) as full replacements. Furthermore, lineage alone (`RESOLVED`) could not prove whether an amendment superseded the prior filing, corrected an error, or reported an omitted transaction.
 - **Architectural Solution:**
-  - Built `analyst_dashboard/smart_money/amendment_classifier.py` implementing `classify_amendment_effect`.
-  - Form 4/A XML parser updated to parse `<remarks>` text and all `<footnotes/footnote>` text elements.
-  - Classification inspects explicit statutory phrasing:
-    - `FULL_REPLACEMENT`: E.g., *"in its entirety"*, *"replaces the original"*, *"amends and restates"*.
-    - `PARTIAL_CORRECTION`: E.g., *"solely to correct"*, *"filed to correct the transaction date/price/shares"*. Strict subsetting of line items against base transactions also confirms partial correction.
-    - `ADDITIONAL_TRANSACTION`: E.g., *"inadvertently omitted from original"*, *"report additional transactions"*.
-    - `AMENDMENT_SCOPE_AMBIGUOUS`: Any contradictory phrasing or absence of conclusive evidence fails closed as ambiguous.
-  - In `continuous_pipeline.py`: A resolved base link with ambiguous scope is stored as `RESOLVED` (lineage established, scope unverified). In `get_ambiguous_amendment_symbols_as_of`, any filing with `resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'RESOLVED', 'AMENDMENT_SCOPE_AMBIGUOUS')` strictly blocks snapshot publication with `SNAPSHOT_AMENDMENT_EFFECT_UNVERIFIED`.
-  - Point-in-time availability cutoffs are strictly enforced in `get_bulk_transactions_as_of`: Base filing transactions remain fully visible prior to the amendment's public availability cutoff; replacement or correction is applied only after public availability.
+  - Built `analyst_dashboard/smart_money/amendment_classifier.py` implementing `classify_amendment_effect` with strict contextual regular expressions:
+    - `FULL_REPLACEMENT`: Explicit statutory language replacing the Form 4/report in its entirety (e.g. `r"(?i)\bthis\s+amendment\s+(?:amends\s+and\s+restates|replaces)\s+the\s+(?:original\s+)?(?:form\s+4|filing|report)\s+in\s+its\s+entirety\b"`).
+    - `PARTIAL_CORRECTION`: Explicit correction phrasing (e.g. `r"(?i)\bfiled\s+(?:solely\s+)?to\s+correct\b"`).
+    - `ADDITIONAL_TRANSACTION`: Explicit omission phrasing (e.g. `r"(?i)\b(?:inadvertently\s+omitted|report\s+additional\s+transactions)\b"`).
+    - `EXCLUSION_INSTRUMENT_PATTERN`: Excludes non-filing instruments such as voting agreements, credit agreements, equity incentive plans, indentures, and trusts from triggering replacement.
+    - `NEGATION_EXCEPTION_PATTERN`: Excludes narrative stating the filing remains unchanged except for a specific item (e.g. "The entire filing remains unchanged except for a footnote.").
+    - `AMENDMENT_SCOPE_AMBIGUOUS`: Any ambiguous, conflicting, or non-filing narrative fails closed to ambiguous. Transaction-subset overlap alone does not infer replacement.
+  - Form 4/A XML parser extracts `<remarks>` and `<footnotes/footnote>` text elements.
+  - **Evidence-Backed Partial Correction Mapping:** In `get_bulk_transactions_as_of`, amended and base transactions are matched using explicit immutable evidence: reporting owner CIK and table/sequence from `transaction_id` (`{accession}:{owner_cik}:{table}:{seq}`) or 1-to-1 table matches. Date, code, share, or price corrections supersede base transactions point-in-time without keeping duplicate records or dropping unrelated transactions.
+  - **State Transitions & Conflict Detection:** In `save_amendment`, updates allow valid transitions (`UNRESOLVED` -> classified scope, `RESOLVED` -> classified scope, `AMENDMENT_SCOPE_AMBIGUOUS` -> classified scope, and idempotent re-execution). Conflicting mutations raise `AMENDMENT_TRANSITION_CONFLICT`.
+  - In `continuous_pipeline.py`: A resolved base link with ambiguous scope is stored as `AMENDMENT_SCOPE_AMBIGUOUS`. In `get_ambiguous_amendment_symbols_as_of`, any filing with `resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'RESOLVED', 'AMENDMENT_SCOPE_AMBIGUOUS')` strictly blocks snapshot publication with `SNAPSHOT_AMENDMENT_EFFECT_UNVERIFIED`.
+  - Point-in-time availability cutoffs are strictly enforced: Base filing transactions remain visible prior to the amendment's public availability cutoff; replacement or correction is applied only after public availability.
 
 ---
 
@@ -63,7 +74,7 @@ All qualification executed locally using disposable PostgreSQL (`pgserver`) with
 
 | Test Suite / Quality Gate | Scope | Status | Notes |
 | :--- | :--- | :---: | :--- |
-| `test_sec_ingestion_evidence_integrity.py` | 40 unit/integration tests | **PASS (40/40)** | Isolated PostgreSQL rollback, cutoffs, classification, bound coverage receipts, verified zero activity. |
+| `test_sec_ingestion_evidence_integrity.py` | 46 unit/integration tests | **PASS (46/46)** | Isolated PostgreSQL rollback, cutoffs, contextual classification, regression cases, bound coverage receipts, verified zero activity, conflict detection, tampered hash rejection. |
 | `test_smart_money_continuous_ingestion.py` | 30 integration tests | **PASS (30/30)** | Atomic cycle execution, Step 6 fetch isolation, Step 7 transaction commit. |
 | `test_radar_smart_money_adapter_adversarial.py` | 15 adversarial tests | **PASS (15/15)** | Watermark freshness, interval coverage, missing receipt rejection. |
 | `test_radar_postgres_schema_acceptance.py` | 9 schema acceptance tests | **PASS (9/9)** | Append-only triggers, constraint integrity, transaction isolation. |
@@ -87,15 +98,24 @@ Prior to any operational execution, the following runbook must be followed in st
    SELECT count(*) FROM sm_run_requests WHERE status IN ('PENDING', 'RUNNING', 'RETRY_ELIGIBLE');
    -- Must return 0.
    ```
-4. **Advisory Lock Check:** Confirm global advisory lock is unheld:
+4. **Advisory Lock Check (Strict Read-Only):** Query `pg_locks` to confirm global advisory lock 401007311509093371 is unheld without acquiring any lock:
    ```sql
-   SELECT pg_advisory_xact_lock_shared(401007311509093371);
-   -- Must acquire immediately without blocking.
+   SELECT count(*) FROM pg_locks 
+   WHERE locktype = 'advisory' 
+     AND (classid::bigint << 32 | (objid::bigint & 4294967295)) = 401007311509093371;
+   -- Must return 0. If count > 0, an active cycle or stale session holds the lock; abort immediately.
    ```
 5. **Fresh Backup Check:** Verify backup evidence with `VERIFIED_RECOVERABLE` status generated within the last 12 hours.
 6. **Active Baseline Check:** Confirm active snapshot ID and 16/16 NVDA Form 4 accessions in the frozen August 18 – November 16, 2026 baseline.
 
 ### Phase 2: Supervised Execution Guardrails
+- **Session Configuration & Lock Acquisition:**
+  ```sql
+  SET statement_timeout = '10s';
+  SET lock_timeout = '5s';
+  SELECT pg_try_advisory_lock(401007311509093371);
+  -- Must return true. If false or error, abort immediately.
+  ```
 - **Actual Transmission Ceilings:**
   - Maximum 40 requests per cycle across all issuers.
   - Maximum 4 requests per issuer.
@@ -109,24 +129,35 @@ Prior to any operational execution, the following runbook must be followed in st
   - Form 4/A amendment with unresolvable base filing (`UNRESOLVED`).
   - Form 4/A amendment with ambiguous scope (`AMENDMENT_SCOPE_AMBIGUOUS`).
   - Inability to acquire lease or lost lease token during cycle.
+  - Advisory lock acquisition failure (`pg_try_advisory_lock` returns false).
 - **Transaction Atomicity:** All writes (raw filings, availability records, parsed transactions, amendment linkages, reconciliation receipts) must commit within a single atomic database transaction or roll back completely.
 
 ### Phase 3: Post-Execution Teardown & Invariant Verification
-1. Worker returned to `STANDBY` (`ARX_SEC_EGRESS_ROLE=DISABLED`).
-2. Advisory lock 401007311509093371 verified unheld.
-3. Queue contains 0 `RUNNING` or `PENDING` requests.
-4. Reconciliation receipt verified in `sm_reconciliation_receipts` with cryptographic hash matching payload.
-5. If any unresolved amendment or coverage gap was detected, verify `coverage_status = 'PARTIAL'` and snapshot publication was blocked.
+1. **Advisory Lock Release:**
+   ```sql
+   SELECT pg_advisory_unlock(401007311509093371);
+   -- Must return true.
+   ```
+2. Worker returned to `STANDBY` (`ARX_SEC_EGRESS_ROLE=DISABLED`).
+3. Advisory lock 401007311509093371 verified unheld via `pg_locks`.
+4. Queue contains 0 `RUNNING` or `PENDING` requests.
+5. Reconciliation receipt verified in `sm_reconciliation_receipts` with cryptographic hash matching payload.
+6. If any unresolved amendment or coverage gap was detected, verify `coverage_status = 'PARTIAL'` and snapshot publication was blocked.
 
 ---
 
-## 5. Formal Activation Recommendation: GO / NO-GO
+## 5. Formal Deployment & Activation Recommendation
 
-- **Code & Test Qualification Verdict: GO**
+- **Implementation Qualification Verdict: QUALIFIED**
   - Both activation blockers (issuer-bound coverage and amendment-effect classification) are fully implemented and verified offline.
-  - All 40 evidence integrity tests, 58 smart money tests, and 85 backend regression tests pass cleanly.
-  - 0-DDL compliance verified.
-- **Production Operational Activation Verdict: NO-GO (HELD)**
+  - All 46 evidence integrity tests, 58 smart money tests, and 85 backend regression tests pass cleanly.
+  - Strict 0-DDL compliance verified.
+- **Hosted Pipeline Qualification Verdict: PENDING**
+  - Hosted CI pipeline execution on GitHub Actions pending PR candidate qualification run.
+- **Deployment Verdict: NO-GO / HOLD**
+  - Production deployment is held pending hosted qualification and explicit authorization.
+  - Premature deployment claims are removed.
+- **Production Operational Activation Verdict: NO-GO / HOLD (`HOLD_SEC_001`)**
   - Supervised code qualification does **not** authorize production activation.
   - `HOLD_SEC_001` remains strictly active.
   - The production worker remains in `STANDBY` (`ARX_SEC_EGRESS_ROLE=DISABLED`).

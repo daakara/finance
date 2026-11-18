@@ -106,6 +106,22 @@ class RadarSmartMoneyAdapter:
         if missing_cnt > 0 or gap_cnt > 0:
             return False, f"Coverage receipt contains missing filings ({missing_cnt}) or material gaps ({gap_cnt})."
 
+        # 5. Verified Zero-Activity Check (Finding 1)
+        if "accession_inventory" in receipt:
+            is_zero_activity = len(receipt["accession_inventory"]) == 0
+        else:
+            is_zero_activity = (receipt.get("accounted_count", 0) == 0)
+
+        if is_zero_activity:
+            zero_proof = receipt.get("zero_activity_proof")
+            s_hashes = receipt.get("source_hashes") or {}
+            has_catalog_proof = (
+                (isinstance(zero_proof, dict) and bool(zero_proof.get("source_catalog_hash")))
+                or any("catalog" in str(k).lower() or "submissions" in str(k).lower() for k in s_hashes.keys())
+            )
+            if not has_catalog_proof:
+                return False, f"Coverage receipt {receipt.get('receipt_id')} claims complete coverage with zero inventory but lacks authoritative source catalog proof."
+
         return True, None
 
     @classmethod

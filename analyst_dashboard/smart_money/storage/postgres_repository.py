@@ -12,7 +12,7 @@ import uuid
 import hashlib
 import logging
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional, Set
 
 try:
@@ -30,6 +30,73 @@ except ImportError:
 from analyst_dashboard.smart_money.storage.postgres_connection import get_connection, transaction
 
 logger = logging.getLogger(__name__)
+
+
+def _to_iso(val: Any) -> str:
+    if val is None:
+        return ""
+    if isinstance(val, str):
+        try:
+            val = datetime.fromisoformat(val.replace("Z", "+00:00"))
+        except Exception:
+            return val
+    if hasattr(val, "astimezone"):
+        return val.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if hasattr(val, "strftime"):
+        return val.strftime("%Y-%m-%dT%H:%M:%SZ")
+    s = str(val)
+    if s.endswith("+00:00"):
+        s = s[:-6] + "Z"
+    return s
+
+
+def compute_canonical_receipt_hash(
+    schema_version: int,
+    ticker: str,
+    issuer_cik: str,
+    interval_start: Any,
+    interval_end: Any,
+    certified_watermark: Any,
+    receipt_version: int,
+    supersedes_receipt_id: Optional[str],
+    accession_inventory: List[str],
+    source_hashes: Dict[str, str],
+    material_gaps: List[Dict[str, Any]],
+    zero_activity_proof: Optional[Dict[str, Any]] = None,
+) -> str:
+    """
+    Computes a deterministic cryptographic hash across canonical structured receipt fields.
+    Includes complete material gap records, source inventory, and catalog proofs.
+    """
+    sorted_gaps = []
+    for g in sorted(
+        material_gaps or [],
+        key=lambda x: (
+            str(x.get("accession_number", "")),
+            str(x.get("gap_type", "")),
+            str(x.get("description", "")),
+        ) if isinstance(x, dict) else ("", "", str(x)),
+    ):
+        sorted_gaps.append({k: g[k] for k in sorted(g.keys())} if isinstance(g, dict) else {"description": str(g)})
+
+    payload: Dict[str, Any] = {
+        "schema_version": schema_version,
+        "ticker": str(ticker).upper().strip(),
+        "issuer_cik": str(issuer_cik).strip().zfill(10),
+        "interval_start": _to_iso(interval_start),
+        "interval_end": _to_iso(interval_end),
+        "certified_watermark": _to_iso(certified_watermark),
+        "receipt_version": receipt_version,
+        "supersedes_receipt_id": supersedes_receipt_id,
+        "accession_inventory": sorted(list(set(accession_inventory or []))),
+        "source_hashes": {k: source_hashes[k] for k in sorted((source_hashes or {}).keys())},
+        "material_gaps": sorted_gaps,
+    }
+    if zero_activity_proof:
+        payload["zero_activity_proof"] = {k: zero_activity_proof[k] for k in sorted(zero_activity_proof.keys())}
+
+    raw_bytes = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(raw_bytes).hexdigest()
 
 
 class StaleLeaseOwnershipLostError(RuntimeError):
@@ -314,26 +381,60 @@ class PostgresSmartMoneyRepository:
         resolved_at: Optional[str] = None,
         conn: Optional[PgConnection] = None,
     ) -> None:
-        """Records a Form 4/A amendment linkage."""
+        """
+        Records or updates a Form 4/A amendment linkage and governance classification.
+        Supports controlled state transitions:
+        - UNRESOLVED -> RESOLVED, FULL_REPLACEMENT, PARTIAL_CORRECTION, ADDITIONAL_TRANSACTION, AMENDMENT_SCOPE_AMBIGUOUS
+        - RESOLVED -> FULL_REPLACEMENT, PARTIAL_CORRECTION, ADDITIONAL_TRANSACTION, AMENDMENT_SCOPE_AMBIGUOUS
+        - AMENDMENT_SCOPE_AMBIGUOUS -> FULL_REPLACEMENT, PARTIAL_CORRECTION, ADDITIONAL_TRANSACTION
+        - Idempotent re-execution of the same status
+        Fails closed with AMENDMENT_TRANSITION_CONFLICT on unauthorized transitions or base accession mutations.
+        """
         query = """
             INSERT INTO sm_amendments (
                 amendment_accession, base_accession, amendment_number, resolution_status, resolved_at
-            ) VALUES (%s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, COALESCE(%s::timestamptz, NOW()))
             ON CONFLICT (amendment_accession) DO UPDATE SET
-                base_accession = EXCLUDED.base_accession,
+                base_accession = COALESCE(EXCLUDED.base_accession, sm_amendments.base_accession),
+                amendment_number = EXCLUDED.amendment_number,
                 resolution_status = EXCLUDED.resolution_status,
-                resolved_at = EXCLUDED.resolved_at
-            WHERE sm_amendments.resolution_status = 'UNRESOLVED'
-              AND EXCLUDED.resolution_status = 'RESOLVED';
+                resolved_at = COALESCE(EXCLUDED.resolved_at, sm_amendments.resolved_at, NOW())
+            WHERE (
+                -- 1. Idempotent re-execution
+                (sm_amendments.resolution_status = EXCLUDED.resolution_status AND (sm_amendments.base_accession IS NOT DISTINCT FROM EXCLUDED.base_accession))
+                -- 2. Transitions from unclassified, lineage-only, or ambiguous to classified scope
+                OR (
+                    sm_amendments.resolution_status IN ('UNRESOLVED', 'AMENDMENT_TARGET_AMBIGUOUS', 'RESOLVED', 'AMENDMENT_SCOPE_AMBIGUOUS')
+                    AND EXCLUDED.resolution_status IN ('RESOLVED', 'FULL_REPLACEMENT', 'PARTIAL_CORRECTION', 'ADDITIONAL_TRANSACTION', 'AMENDMENT_SCOPE_AMBIGUOUS')
+                    AND (sm_amendments.base_accession IS NULL OR sm_amendments.base_accession = EXCLUDED.base_accession OR EXCLUDED.base_accession IS NULL)
+                )
+            )
+            RETURNING sm_amendments.resolution_status, sm_amendments.base_accession;
         """
         params = (amendment_accession, base_accession, amendment_number, resolution_status, resolved_at)
 
+        def _exec(cur):
+            cur.execute(query, params)
+            res = cur.fetchone()
+            if res is None:
+                cur.execute(
+                    "SELECT resolution_status, base_accession FROM sm_amendments WHERE amendment_accession = %s;",
+                    (amendment_accession,),
+                )
+                existing = cur.fetchone()
+                ex_st = existing["resolution_status"] if isinstance(existing, dict) else (existing[0] if existing else "UNKNOWN")
+                ex_b = existing["base_accession"] if isinstance(existing, dict) else (existing[1] if existing else "UNKNOWN")
+                raise RuntimeError(
+                    f"AMENDMENT_TRANSITION_CONFLICT: Cannot transition amendment {amendment_accession} "
+                    f"from status='{ex_st}', base='{ex_b}' to status='{resolution_status}', base='{base_accession}'."
+                )
+
         if conn is not None:
             with conn.cursor() as cur:
-                cur.execute(query, params)
+                _exec(cur)
         else:
             with transaction(dsn=self.dsn) as cur:
-                cur.execute(query, params)
+                _exec(cur)
 
     # ── Reconciliation Receipts (Append-Only) ─────────────────────────────────
 
@@ -416,11 +517,12 @@ class PostgresSmartMoneyRepository:
         release_sha: Optional[str] = None,
         receipt_id: Optional[str] = None,
         conn: Optional[PgConnection] = None,
+        zero_activity_proof: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Persists a durable issuer-bound historical coverage receipt certifying an observation interval.
         Binds exact issuer ticker, CIK, observation interval, certified watermark, accession inventory,
-        cryptographic source hashes, and material gaps within sm_reconciliation_receipts (0-DDL compliant).
+        cryptographic source hashes, material gaps, and zero-activity proofs within sm_reconciliation_receipts (0-DDL compliant).
         """
         r_id = receipt_id or str(uuid.uuid4())
         acc_inv = sorted(list(set(accession_inventory or [])))
@@ -429,16 +531,39 @@ class PostgresSmartMoneyRepository:
         clean_ticker = ticker.upper().strip()
         clean_cik = str(issuer_cik).strip().zfill(10)
 
-        hash_payload = (
-            f"{clean_ticker}:{clean_cik}:{interval_start}:{interval_end}:{certified_watermark}:"
-            f"{json.dumps(acc_inv)}:{json.dumps(s_hashes, sort_keys=True)}:{len(m_gaps)}"
+        # Verified zero-activity check (Finding 1):
+        if coverage_status == "COMPLETE" and len(acc_inv) == 0:
+            has_catalog_proof = (
+                (isinstance(zero_activity_proof, dict) and bool(zero_activity_proof.get("source_catalog_hash")))
+                or any("catalog" in str(k).lower() or "submissions" in str(k).lower() for k in s_hashes.keys())
+            )
+            if not has_catalog_proof:
+                raise RuntimeError(
+                    "ZERO_ACTIVITY_UNPROVED: Bare empty inventory without authoritative catalog proof "
+                    "cannot certify COMPLETE coverage."
+                )
+
+        schema_ver = 1
+        recon_hash = compute_canonical_receipt_hash(
+            schema_version=schema_ver,
+            ticker=clean_ticker,
+            issuer_cik=clean_cik,
+            interval_start=interval_start,
+            interval_end=interval_end,
+            certified_watermark=certified_watermark,
+            receipt_version=receipt_version,
+            supersedes_receipt_id=supersedes_receipt_id,
+            accession_inventory=acc_inv,
+            source_hashes=s_hashes,
+            material_gaps=m_gaps,
+            zero_activity_proof=zero_activity_proof,
         )
-        recon_hash = hashlib.sha256(hash_payload.encode("utf-8")).hexdigest()
 
         reasons = [g.get("description", str(g)) if isinstance(g, dict) else str(g) for g in m_gaps]
 
         structured_metadata = {
             "reasons": reasons,
+            "schema_version": schema_ver,
             "ticker": clean_ticker,
             "issuer_cik": clean_cik,
             "covered_tickers": [clean_ticker],
@@ -448,6 +573,8 @@ class PostgresSmartMoneyRepository:
             "material_gaps": m_gaps,
             "public_availability_cutoff": certified_watermark,
         }
+        if zero_activity_proof:
+            structured_metadata["zero_activity_proof"] = zero_activity_proof
 
         receipt_payload = {
             "receipt_id": r_id,
@@ -481,7 +608,8 @@ class PostgresSmartMoneyRepository:
         Queries the authoritative reconciliation receipt certifying watermark W.
         Requires full interval coverage, certified watermark >= W, COMPLETE coverage status,
         and zero missing count or material gaps.
-        If issuer_cik or ticker is provided, strictly requires the receipt to be bound to that issuer.
+        Validates exact issuer binding, canonical hash integrity, supersession chains,
+        inventory existence and completeness, and zero-activity proof.
         """
         clean_cik = str(issuer_cik).strip().zfill(10) if issuer_cik else None
         clean_ticker = ticker.upper().strip() if ticker else None
@@ -505,11 +633,17 @@ class PostgresSmartMoneyRepository:
             rows = cur.fetchall()
             for r in rows:
                 receipt = dict(r)
+                if receipt.get("receipt_id"):
+                    receipt["receipt_id"] = str(receipt["receipt_id"])
+                if receipt.get("supersedes_receipt_id"):
+                    receipt["supersedes_receipt_id"] = str(receipt["supersedes_receipt_id"])
+                else:
+                    receipt["supersedes_receipt_id"] = None
                 reasons_val = receipt.get("failure_reasons")
                 if isinstance(reasons_val, dict):
                     for k in ("ticker", "issuer_cik", "covered_tickers", "covered_ciks",
                               "accession_inventory", "source_hashes", "material_gaps",
-                              "public_availability_cutoff"):
+                              "public_availability_cutoff", "zero_activity_proof", "schema_version"):
                         if k in reasons_val and k not in receipt:
                             receipt[k] = reasons_val[k]
                     receipt["failure_reasons"] = reasons_val.get("reasons", [])
@@ -518,10 +652,11 @@ class PostgresSmartMoneyRepository:
                         if isinstance(item, dict):
                             for k in ("ticker", "issuer_cik", "covered_tickers", "covered_ciks",
                                       "accession_inventory", "source_hashes", "material_gaps",
-                                      "public_availability_cutoff"):
+                                      "public_availability_cutoff", "zero_activity_proof", "schema_version"):
                                 if k in item and k not in receipt:
                                     receipt[k] = item[k]
 
+                # 1. Exact Issuer Binding Validation
                 if clean_cik or clean_ticker:
                     r_cik = str(receipt.get("issuer_cik") or "").strip().zfill(10) if receipt.get("issuer_cik") else None
                     c_ciks = [str(c).strip().zfill(10) for c in (receipt.get("covered_ciks") or [])]
@@ -536,6 +671,93 @@ class PostgresSmartMoneyRepository:
 
                     if not matched:
                         continue
+
+                # 2. Supersession Chain Validation
+                sup_id = receipt.get("supersedes_receipt_id")
+                if sup_id:
+                    cur.execute(
+                        "SELECT receipt_version, failure_reasons FROM sm_reconciliation_receipts WHERE receipt_id = %s;",
+                        (sup_id,),
+                    )
+                    sup_row = cur.fetchone()
+                    if not sup_row:
+                        continue
+                    if sup_row["receipt_version"] >= receipt["receipt_version"]:
+                        continue
+
+                # 3. Canonical Reconciliation Hash Verification
+                acc_inv = receipt.get("accession_inventory", [])
+                s_hashes = receipt.get("source_hashes", {})
+                m_gaps = receipt.get("material_gaps", [])
+                z_proof = receipt.get("zero_activity_proof")
+                r_sym = receipt.get("ticker") or clean_ticker or ""
+                r_cik = receipt.get("issuer_cik") or clean_cik or ""
+
+                expected_hash = compute_canonical_receipt_hash(
+                    schema_version=receipt.get("schema_version", 1),
+                    ticker=r_sym,
+                    issuer_cik=r_cik,
+                    interval_start=receipt["interval_start"],
+                    interval_end=receipt["interval_end"],
+                    certified_watermark=receipt["certified_watermark"],
+                    receipt_version=receipt.get("receipt_version", 1),
+                    supersedes_receipt_id=receipt.get("supersedes_receipt_id"),
+                    accession_inventory=acc_inv,
+                    source_hashes=s_hashes,
+                    material_gaps=m_gaps,
+                    zero_activity_proof=z_proof,
+                )
+                legacy_payload = (
+                    f"{r_sym.upper().strip()}:{str(r_cik).strip().zfill(10)}:{_to_iso(receipt['interval_start'])}:{_to_iso(receipt['interval_end'])}:{_to_iso(receipt['certified_watermark'])}:"
+                    f"{json.dumps(sorted(list(set(acc_inv))))}:{json.dumps(s_hashes, sort_keys=True)}:{len(m_gaps)}"
+                )
+                legacy_hash = hashlib.sha256(legacy_payload.encode("utf-8")).hexdigest()
+
+                if receipt["reconciliation_hash"] != expected_hash and receipt["reconciliation_hash"] != legacy_hash:
+                    continue
+
+                # 4. Inventory & Zero-Activity Validation
+                if len(acc_inv) == 0:
+                    has_proof = (
+                        (isinstance(z_proof, dict) and bool(z_proof.get("source_catalog_hash")))
+                        or any("catalog" in str(k).lower() or "submissions" in str(k).lower() for k in s_hashes.keys())
+                    )
+                    if not has_proof:
+                        continue
+                else:
+                    cur.execute("""
+                        SELECT f.accession_number, f.cik, f.ticker, f.content_hash, av.public_availability_at
+                        FROM form4_raw_filings f
+                        JOIN sm_source_availability_ledger av ON f.accession_number = av.accession_number
+                        WHERE f.accession_number = ANY(%s);
+                    """, (acc_inv,))
+                    found = {row["accession_number"]: row for row in cur.fetchall()}
+                    if len(found) != len(acc_inv):
+                        continue
+
+                    inv_valid = True
+                    for acc in acc_inv:
+                        f_row = found[acc]
+                        if r_cik and f_row["cik"] != r_cik and (f_row["ticker"] or "").upper() != r_sym.upper():
+                            inv_valid = False
+                            break
+                        if acc in s_hashes and s_hashes[acc] != f_row["content_hash"]:
+                            inv_valid = False
+                            break
+                    if not inv_valid:
+                        continue
+
+                    if r_cik:
+                        cur.execute("""
+                            SELECT count(*) AS cnt FROM form4_raw_filings
+                            WHERE cik = %s
+                              AND filing_date >= %s::date
+                              AND filing_date <= %s::date
+                              AND accession_number != ALL(%s);
+                        """, (r_cik, _to_iso(receipt["interval_start"])[:10], _to_iso(receipt["interval_end"])[:10], acc_inv))
+                        cnt_row = cur.fetchone()
+                        if cnt_row and cnt_row["cnt"] > 0:
+                            continue
 
                 return receipt
             return None
@@ -658,9 +880,36 @@ class PostgresSmartMoneyRepository:
                   JOIN form4_raw_filings part_f ON part_am.amendment_accession = part_f.accession_number
                   WHERE part_am.base_accession = tx.accession_number
                     AND part_am.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
-                    AND amend_tx.reporting_owner_name = tx.reporting_owner_name
-                    AND amend_tx.transaction_date = tx.transaction_date
-                    AND amend_tx.transaction_code = tx.transaction_code
+                    -- Evidence-backed line mapping: never match solely on mutable date/code/owner
+                    AND (
+                        (position(':' in amend_tx.transaction_id) > 0 AND position(':' in tx.transaction_id) > 0
+                         AND split_part(amend_tx.transaction_id, ':', 2) = split_part(tx.transaction_id, ':', 2)
+                         AND split_part(amend_tx.transaction_id, ':', 3) = split_part(tx.transaction_id, ':', 3)
+                         AND (
+                             split_part(amend_tx.transaction_id, ':', 4) = split_part(tx.transaction_id, ':', 4)
+                             OR (
+                                 (SELECT count(*) FROM form4_parsed_transactions sub_b
+                                  WHERE sub_b.accession_number = tx.accession_number
+                                    AND split_part(sub_b.transaction_id, ':', 2) = split_part(tx.transaction_id, ':', 2)
+                                    AND split_part(sub_b.transaction_id, ':', 3) = split_part(tx.transaction_id, ':', 3)
+                                 ) = 1
+                                 AND
+                                 (SELECT count(*) FROM form4_parsed_transactions sub_a
+                                  WHERE sub_a.accession_number = part_am.amendment_accession
+                                    AND split_part(sub_a.transaction_id, ':', 2) = split_part(amend_tx.transaction_id, ':', 2)
+                                    AND split_part(sub_a.transaction_id, ':', 3) = split_part(amend_tx.transaction_id, ':', 3)
+                                 ) = 1
+                             )
+                         )
+                        )
+                        OR (
+                            amend_tx.reporting_owner_name = tx.reporting_owner_name
+                            AND (
+                                (SELECT count(*) FROM form4_parsed_transactions sub_b WHERE sub_b.accession_number = tx.accession_number) = 1
+                                AND (SELECT count(*) FROM form4_parsed_transactions sub_a WHERE sub_a.accession_number = part_am.amendment_accession) = 1
+                            )
+                        )
+                    )
                     AND {part_time_predicate}
               )
               -- 4. Exclude amendments that were themselves superseded by subsequent amendments available <= W
