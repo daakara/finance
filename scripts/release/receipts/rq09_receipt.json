@@ -2,19 +2,19 @@
   "control_id": "RQ-09",
   "name": "Four-Way Cross-Platform Compatibility",
   "status": "PASS",
-  "start_time": "2026-11-18T00:04:49.461933+00:00",
-  "end_time": "2026-11-18T00:04:50.647008+00:00",
-  "duration_sec": 1.163,
-  "candidate_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
-  "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
-  "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "start_time": "2026-11-18T05:36:30.639153+00:00",
+  "end_time": "2026-11-18T05:36:31.666479+00:00",
+  "duration_sec": 1.012,
+  "candidate_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
+  "source_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
+  "execution_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
-    "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "source_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
+    "execution_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -139,7 +139,7 @@
   ],
   "evidence_digests": {
     "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-    "scripts/release/rq_compatibility_results.json": "295140944af2be55ba4e8842e137c8ddd4d60e8617ad45fb9d08c19f399f77e3"
+    "scripts/release/rq_compatibility_results.json": "4bba5c31ec7ccbe0024f7da46a6d1800fa625969bb57a7202023a5333ed2ea5e"
   },
   "errors": [],
   "metadata": {
@@ -152,5 +152,5 @@
     "harness_version": "2.2.0-D074A4",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "6ee3a85faca18e8de79b2dbecfdcdeacbae2f32f06d3d46fc2e7859ca65a849f"
+  "receipt_digest": "195745642b5fd47bc7967ff40136b4aab932bf278ddc33f6e120b4012188b1df"
 }

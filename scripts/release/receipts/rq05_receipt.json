@@ -2,19 +2,19 @@
   "control_id": "RQ-05",
   "name": "Cross-Engine Invariants",
   "status": "PASS",
-  "start_time": "2026-11-18T00:04:48.633334+00:00",
-  "end_time": "2026-11-18T00:04:48.652464+00:00",
-  "duration_sec": 0.004,
-  "candidate_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
-  "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
-  "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "start_time": "2026-11-18T05:36:29.895648+00:00",
+  "end_time": "2026-11-18T05:36:29.912474+00:00",
+  "duration_sec": 0.003,
+  "candidate_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
+  "source_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
+  "execution_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
-    "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "source_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
+    "execution_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -49,5 +49,5 @@
   "metadata": {
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "5de1da9a934a06743323c95a35b28a4616805f503ce542455510d7fa6db09c74"
+  "receipt_digest": "b49d8ae2d3e419da7a667eb47813b18450ba90f0e8737ca7366fc695e4d8f83d"
 }
