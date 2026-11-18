@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "dc51dfcc95584d5748394bd98be4e382df10dafd",
+  "release_candidate_commit": "bd0162617462075df8e707bf7f25d971cff04eb6",
   "base_anchor_commit": "c6e3c03b88a0729d18284fbf9786135d2a7d4a81",
   "total_files": 11,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -50,32 +50,32 @@
       "originating_pr_number": 305,
       "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
       "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "f7e64c00b35438d263aeea7f91567d33407ac2a62940de5f022c77de3a34fdc5",
-      "size_bytes": 110133
+      "sha256": "ff4d69a37fbc77ae3914809e2ac35f2095e9a40e859767693f29e4552067b7e8",
+      "size_bytes": 114413
     },
     "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md": {
       "operation": "M",
       "originating_pr_number": 305,
       "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
       "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "3567c2a3ef27730d707a759b3790526afc1f774bf07892e96014a929b7d26655",
-      "size_bytes": 16591
+      "sha256": "39cd9f0026503e42263bf6b5b0580c8135c9e38e3ae2cc81778298b05c7fdb57",
+      "size_bytes": 16786
     },
     "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md": {
       "operation": "M",
       "originating_pr_number": 305,
       "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
       "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "ca7ce21dc914720c96ef9fdd86d80be7242787823906c7b7c6687d304e0e7d25",
-      "size_bytes": 12855
+      "sha256": "b6e2fe072164ed9d286db3bfbbeba511629787cf1f898ce433d1bdf33a942f0d",
+      "size_bytes": 13029
     },
     "docs/reports/SEC_HISTORICAL_COVERAGE_AND_AMENDMENT_EFFECT_QUALIFICATION_2026_11_18.md": {
       "operation": "A",
       "originating_pr_number": 305,
       "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
       "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "7f17d6ea6d955defa31ae395e61f7283a298d84baa6b86784aaecb2ac774d2e3",
-      "size_bytes": 15340
+      "sha256": "9d8faede8aaf3d6a4cf18ac08d625d1a864061bca9ef9eff33f2feb0c0105c85",
+      "size_bytes": 16126
     },
     "scripts/release/rq02_diff_integrity.py": {
       "operation": "M",
@@ -90,8 +90,8 @@
       "originating_pr_number": 305,
       "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
       "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "6b4c05bc93d72e46b0da06b31ab9afdc67fee4256db549d01f0fd5a6da16232b",
-      "size_bytes": 89416
+      "sha256": "f1324e257d2e0d1fea265e67fb1075277d6844b95dcbc0774c1e3b2a18ab6470",
+      "size_bytes": 96308
     }
   },
   "qualification_framework_files": {
