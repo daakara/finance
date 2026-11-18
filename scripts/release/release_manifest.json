@@ -1,97 +1,65 @@
 {
-  "release_candidate_commit": "f9677c04dc9256cbb4a9bdd474fb9ac628c37d8a",
-  "base_anchor_commit": "c6e3c03b88a0729d18284fbf9786135d2a7d4a81",
-  "total_files": 11,
+  "release_candidate_commit": "15f9c80db2fd9fb553eefc8975d97e6e3194b854",
+  "base_anchor_commit": "308f5392d7518a95bf4170ec5c1beaf64d2cba0b",
+  "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001",
+  "directive": "ARX-SEC-ONESHOT-NVDA-EXECUTOR-001",
   "files": {
-    "analyst_dashboard/smart_money/amendment_classifier.py": {
-      "operation": "A",
-      "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "b6bbf5dd4ffe0fbc6f6a792f27d3b0101657b06f2ef1059ceb4bb78dbbd02ef9",
-      "size_bytes": 20763
-    },
-    "analyst_dashboard/smart_money/continuous_pipeline.py": {
+    "analyst_dashboard/smart_money/canary_runner.py": {
       "operation": "M",
       "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "f7de1ebc83e8720b1cc91af2d81a776042c02c2d5e3afcd50580da2a49dcf9c1",
-      "size_bytes": 82349
+      "originating_commit": "15f9c80db2fd9fb553eefc8975d97e6e3194b854",
+      "governing_requirement": "ARX-SEC-ONESHOT-NVDA-EXECUTOR-001: bounded one-shot NVDA ingestion executor preparation and disposable qualification; no production activation",
+      "sha256": "b0971c1d7ef3323c0570afc1c8ccb07519cc043ed20e4e2f8c2215b48947565c",
+      "size_bytes": 45618
     },
-    "analyst_dashboard/smart_money/form4_models.py": {
+    "analyst_dashboard/smart_money/storage/postgres_coordination.py": {
       "operation": "M",
       "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "c7111457655cfffb13c8614ad3f71ee5232c9a1a36a94814889c24b2f53b16e3",
-      "size_bytes": 10948
-    },
-    "analyst_dashboard/smart_money/form4_parser.py": {
-      "operation": "M",
-      "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "68d95e24feaa72cefad219b95c421cbedb85fda06a94fc9772e8473564c07031",
-      "size_bytes": 16811
-    },
-    "analyst_dashboard/smart_money/radar_adapter.py": {
-      "operation": "M",
-      "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "8da8ccc1112ab37d303acfac03aa9710c2a2f3cdd43a092e29137b6b4c2b266b",
-      "size_bytes": 29253
-    },
-    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
-      "operation": "M",
-      "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "c5dc02e6bf8e7c1be1c2503a5eb36af8b28e7fbb6e0fb6c688c25cc45edb022e",
-      "size_bytes": 118667
+      "originating_commit": "15f9c80db2fd9fb553eefc8975d97e6e3194b854",
+      "governing_requirement": "ARX-SEC-ONESHOT-NVDA-EXECUTOR-001: bounded one-shot NVDA ingestion executor preparation and disposable qualification; no production activation",
+      "sha256": "010e9ba975e6122f4fd7af532ff047e94225604f7cb8e5ed77c2c64b0d516b45",
+      "size_bytes": 4702
     },
     "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md": {
       "operation": "M",
       "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "fd68664fd59b7dec21e04cbfd4c1cb7ec160a3a638ad858d24fa98df83599ac7",
-      "size_bytes": 16900
+      "originating_commit": "15f9c80db2fd9fb553eefc8975d97e6e3194b854",
+      "governing_requirement": "ARX-SEC-ONESHOT-NVDA-EXECUTOR-001: bounded one-shot NVDA ingestion executor preparation and disposable qualification; no production activation",
+      "sha256": "ef8713f1b8c77b463ae2096d9c5c630780581ff5203bddfbce855f5f00b36f4c",
+      "size_bytes": 18668
     },
     "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md": {
       "operation": "M",
       "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "427ec0806ab3ee8881768d0f2fcf2712e0814cce672f078484824542be39a235",
-      "size_bytes": 13140
+      "originating_commit": "15f9c80db2fd9fb553eefc8975d97e6e3194b854",
+      "governing_requirement": "ARX-SEC-ONESHOT-NVDA-EXECUTOR-001: bounded one-shot NVDA ingestion executor preparation and disposable qualification; no production activation",
+      "sha256": "0bcc781ec4d5c7b3bda087b4ce32cda1335dbc8b9e1b431991c8f29f48ac185d",
+      "size_bytes": 13217
     },
     "docs/reports/SEC_HISTORICAL_COVERAGE_AND_AMENDMENT_EFFECT_QUALIFICATION_2026_11_18.md": {
+      "operation": "M",
+      "originating_pr_number": 305,
+      "originating_commit": "15f9c80db2fd9fb553eefc8975d97e6e3194b854",
+      "governing_requirement": "ARX-SEC-ONESHOT-NVDA-EXECUTOR-001: bounded one-shot NVDA ingestion executor preparation and disposable qualification; no production activation",
+      "sha256": "ac54f3ec07b8163e20b9d823b8ad583399555264d42efb6e8e8f457755aab9ef",
+      "size_bytes": 22879
+    },
+    "scripts/execute_nvda_oneshot_cycle.py": {
       "operation": "A",
       "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "68b896701da81c932339ae203e671cf58bba8f15adae50fa6485222180c18e25",
-      "size_bytes": 16945
+      "originating_commit": "15f9c80db2fd9fb553eefc8975d97e6e3194b854",
+      "governing_requirement": "ARX-SEC-ONESHOT-NVDA-EXECUTOR-001: bounded one-shot NVDA ingestion executor preparation and disposable qualification; no production activation",
+      "sha256": "dc9317fc29dae2cae0956edf1834d059118fdae762f034f7d53911925e3d036f",
+      "size_bytes": 12330
     },
-    "scripts/release/rq02_diff_integrity.py": {
+    "tests/test_smart_money_nvda_canary_runner.py": {
       "operation": "M",
       "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "305e93cd9433bc20ccc55665f29559f805e8e945bae7bde919a0bd6c381e3f4a",
-      "size_bytes": 58191
-    },
-    "tests/test_sec_ingestion_evidence_integrity.py": {
-      "operation": "M",
-      "originating_pr_number": 305,
-      "originating_commit": "fc7df48ab86c288fe3aa2d81f3687cb85f910151",
-      "governing_requirement": "ARX-SEC-HISTORICAL-COVERAGE-AND-AMENDMENT-EFFECT-001: issuer-bound historical coverage and amendment effect classification; no production activation",
-      "sha256": "eefd9fccf7a773ef5faf0e31bb357538601e7740fe1f776224a5becb20fca481",
-      "size_bytes": 109617
+      "originating_commit": "15f9c80db2fd9fb553eefc8975d97e6e3194b854",
+      "governing_requirement": "ARX-SEC-ONESHOT-NVDA-EXECUTOR-001: bounded one-shot NVDA ingestion executor preparation and disposable qualification; no production activation",
+      "sha256": "afb76a37f121144b6d738e278b8b853f41ca32ae79db4a1ef89a83e2b8b62d51",
+      "size_bytes": 57439
     }
   },
   "qualification_framework_files": {
