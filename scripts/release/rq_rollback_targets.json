@@ -1,8 +1,8 @@
 {
   "control_id": "RQ-11",
   "status": "PASS",
-  "timestamp": "2026-11-18T10:23:46.464267+00:00",
-  "candidate_sha": "2862a227c5bdb404f8d7c5b52e7fa37247e4e63b",
+  "timestamp": "2026-11-18T10:35:27.385828+00:00",
+  "candidate_sha": "173c89319868e734f7f01f0e8e28ba6059318365",
   "production_base_anchor": "c6e3c03b88a0729d18284fbf9786135d2a7d4a81",
   "ancestor_baseline_anchor": "6d4020ca3fef3ae07ac01204b03e0629b6a7cc79",
   "railway_recovery_anchor": {
