@@ -1,8 +1,8 @@
 {
   "suite": "RQ-02 Adversarial Falsification Suite (ARX-036-D12A)",
-  "candidate_sha": "9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc",
-  "candidate_tree": "65affe8f6676ecb4238fb91f34ca88dde4af784d",
-  "timestamp": "2026-11-18T05:36:12.535849+00:00",
+  "candidate_sha": "72fc6437055c231be6734704f98eab0684b7930c",
+  "candidate_tree": "0ae578698e814b220418c30389bafe444e9b2bca",
+  "timestamp": "2026-11-18T07:28:25.431885+00:00",
   "execution_context": {
     "is_ci": false,
     "github_run_id": null,
@@ -55,7 +55,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - Hash mismatch in analyst_dashboard/smart_money/continuous_pipeline.py: expected 1111111111 got c432133a0b"
+        "  - Hash mismatch in analyst_dashboard/smart_money/continuous_pipeline.py: expected 1111111111 got f7de1ebc83"
       ]
     },
     {
@@ -64,7 +64,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 9c9ae8cc51e293b2e51ba865fbb3b27549ca01fc does not match manifest candidate 0000000000000000000000000000000000000000"
+        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 72fc6437055c231be6734704f98eab0684b7930c does not match manifest candidate 0000000000000000000000000000000000000000"
       ]
     },
     {
