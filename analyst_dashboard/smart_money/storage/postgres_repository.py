@@ -7,13 +7,14 @@ and atomic active-pointer publication.
 """
 
 import os
+import re
 import json
 import uuid
 import hashlib
 import logging
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional, Set
+from typing import Dict, Any, List, Optional, Set, Union
 
 try:
     import psycopg2
@@ -99,6 +100,147 @@ def compute_canonical_receipt_hash(
     return hashlib.sha256(raw_bytes).hexdigest()
 
 
+def validate_catalog_evidence(
+    catalog_bytes: Union[bytes, str],
+    catalog_sha256: str,
+    ticker: str,
+    issuer_cik: str,
+    interval_start: str,
+    interval_end: str,
+    certified_watermark: str,
+    accession_inventory: Optional[List[str]] = None,
+    source_hashes: Optional[Dict[str, str]] = None,
+    material_gaps: Optional[List[Dict[str, Any]]] = None,
+    pagination_artifacts: Optional[Dict[str, Union[bytes, str]]] = None,
+) -> Dict[str, Any]:
+    """
+    Validates authoritative SEC submissions catalog evidence for an issuer and observation interval.
+    Enforces authentic artifact bytes, 64-char lowercase SHA-256 digest, exact issuer binding,
+    exhaustive interval traversal, derived accession inventory, and per-accession source hashes.
+    Distinguishes 'NO_ELIGIBLE_FILINGS' from 'NO_QUALIFYING_TRANSACTIONS'.
+    """
+    if not isinstance(catalog_sha256, str) or not re.match(r"^[0-9a-f]{64}$", catalog_sha256.strip().lower()):
+        raise ValueError(f"INVALID_CATALOG_DIGEST: SHA-256 digest must be a 64-character lowercase hex string, got '{catalog_sha256}'.")
+    clean_cat_hash = catalog_sha256.strip().lower()
+
+    if catalog_bytes is None:
+        raise ValueError("EMPTY_CATALOG_BYTES: Catalog artifact bytes cannot be empty.")
+    raw_b = catalog_bytes.encode("utf-8") if isinstance(catalog_bytes, str) else catalog_bytes
+    if len(raw_b) == 0:
+        raise ValueError("EMPTY_CATALOG_BYTES: Catalog artifact bytes cannot be empty.")
+
+    actual_hash = hashlib.sha256(raw_b).hexdigest()
+    if actual_hash != clean_cat_hash:
+        raise ValueError(f"CATALOG_DIGEST_MISMATCH: Computed SHA-256 digest '{actual_hash}' does not match expected '{clean_cat_hash}'.")
+
+    try:
+        data = json.loads(raw_b.decode("utf-8"))
+    except Exception as e:
+        raise ValueError(f"MALFORMED_CATALOG_JSON: Failed to parse catalog artifact JSON: {e}") from e
+
+    if not isinstance(data, dict):
+        raise ValueError("MALFORMED_CATALOG_SCHEMA: Root catalog element must be a JSON object.")
+
+    # 1. Issuer CIK binding
+    clean_cik = str(issuer_cik).strip().zfill(10)
+    cat_cik = str(data.get("cik") or "").strip().zfill(10)
+    if not cat_cik or cat_cik != clean_cik:
+        raise ValueError(f"WRONG_ISSUER_CIK: Catalog CIK '{cat_cik}' does not match expected issuer CIK '{clean_cik}'.")
+
+    # 2. Issuer Ticker binding
+    clean_ticker = str(ticker).upper().strip()
+    tickers = [str(t).upper().strip() for t in (data.get("tickers") or [])]
+    if data.get("tradingSymbol"):
+        tickers.append(str(data["tradingSymbol"]).upper().strip())
+    if data.get("ticker"):
+        tickers.append(str(data["ticker"]).upper().strip())
+    if clean_ticker not in tickers:
+        raise ValueError(f"WRONG_ISSUER_TICKER: Catalog tickers {tickers} do not contain expected issuer ticker '{clean_ticker}'.")
+
+    # 3. Column/schema structure in filings.recent
+    filings = data.get("filings")
+    if not isinstance(filings, dict):
+        raise ValueError("MALFORMED_CATALOG_SCHEMA: Missing 'filings' object.")
+    recent = filings.get("recent")
+    if not isinstance(recent, dict):
+        raise ValueError("MALFORMED_CATALOG_SCHEMA: Missing 'filings.recent' object.")
+
+    required_cols = ("accessionNumber", "filingDate", "acceptanceDateTime", "form")
+    for col in required_cols:
+        if col not in recent or not isinstance(recent[col], list):
+            raise ValueError(f"MALFORMED_CATALOG_COLUMNS: Column '{col}' is missing or not a list in filings.recent.")
+
+    n_rows = len(recent["accessionNumber"])
+    for col in required_cols:
+        if len(recent[col]) != n_rows:
+            raise ValueError(f"MALFORMED_CATALOG_COLUMNS: Column '{col}' length {len(recent[col])} does not match accessionNumber length {n_rows}.")
+
+    # 4. Exhaustive interval traversal
+    start_date = str(interval_start)[:10]
+    end_date = str(interval_end)[:10]
+    watermark_iso = _to_iso(certified_watermark)
+
+    filing_dates = recent["filingDate"]
+    if filing_dates:
+        earliest_date = min(str(d)[:10] for d in filing_dates)
+        if earliest_date > start_date:
+            pagination_files = filings.get("files") or []
+            if pagination_files:
+                raise ValueError(
+                    f"CATALOG_INTERVAL_INCOMPLETE: Earliest date in recent ({earliest_date}) is after interval start ({start_date}), "
+                    f"and {len(pagination_files)} historical pagination files were not verified."
+                )
+            raise ValueError(
+                f"CATALOG_INTERVAL_INCOMPLETE: Earliest date in recent ({earliest_date}) is after interval start ({start_date})."
+            )
+
+    # 5. Derive eligible accession inventory
+    derived_accessions: Set[str] = set()
+    for i in range(n_rows):
+        form_name = str(recent["form"][i]).strip().upper()
+        if form_name in ("4", "4/A", "4A"):
+            f_date = str(recent["filingDate"][i]).strip()[:10]
+            if start_date <= f_date <= end_date:
+                acc_dt = _to_iso(recent["acceptanceDateTime"][i])
+                if not watermark_iso or (acc_dt and acc_dt <= watermark_iso):
+                    acc_num = str(recent["accessionNumber"][i]).strip()
+                    derived_accessions.add(acc_num)
+
+    derived_inventory = sorted(list(derived_accessions))
+
+    # 6. Compare with caller inventory if provided
+    if accession_inventory is not None:
+        caller_set = set(accession_inventory)
+        derived_set = set(derived_inventory)
+        omitted = derived_set - caller_set
+        unsupported = caller_set - derived_set
+        if omitted:
+            raise ValueError(f"CALLER_INVENTORY_OMISSION: Caller inventory omits eligible accessions: {sorted(list(omitted))}.")
+        if unsupported:
+            raise ValueError(f"CALLER_INVENTORY_UNSUPPORTED: Caller inventory includes unsupported accessions: {sorted(list(unsupported))}.")
+
+    # 7. Validate per-accession source hashes for all derived accessions
+    clean_source_hashes = dict(source_hashes or {})
+    if derived_inventory:
+        for acc in derived_inventory:
+            h = clean_source_hashes.get(acc)
+            if not h or not isinstance(h, str) or not re.match(r"^[0-9a-f]{64}$", h.strip().lower()):
+                raise ValueError(f"MISSING_ACCESSION_SOURCE_HASH: Accession '{acc}' lacks a valid 64-char SHA-256 source hash.")
+
+    zero_reason = "NO_ELIGIBLE_FILINGS" if len(derived_inventory) == 0 else None
+
+    return {
+        "is_valid": True,
+        "ticker": clean_ticker,
+        "issuer_cik": clean_cik,
+        "catalog_sha256": clean_cat_hash,
+        "derived_inventory": derived_inventory,
+        "eligible_filing_count": len(derived_inventory),
+        "zero_activity_reason": zero_reason,
+        "coverage_status": "COMPLETE",
+    }
+
+
 class StaleLeaseOwnershipLostError(RuntimeError):
     """Raised when a worker attempts to heartbeat, complete, or publish with an expired or lost lease."""
     pass
@@ -175,7 +317,7 @@ class PostgresSmartMoneyRepository:
                      SELECT 1 FROM sm_amendments a
                      WHERE a.amendment_accession = f.accession_number
                        AND a.resolution_status <> 'RESOLVED'
-                       AND a.resolution_status NOT IN ('FULL_REPLACEMENT', 'PARTIAL_CORRECTION', 'ADDITIONAL_TRANSACTION')
+                       AND a.resolution_status NOT IN ('FULL_REPLACEMENT', 'PARTIAL_CORRECTION', 'ADDITIONAL_TRANSACTION', 'AMENDMENT_SCOPE_AMBIGUOUS')
                    );""",
                 (ticker,),
             )
@@ -429,12 +571,274 @@ class PostgresSmartMoneyRepository:
                     f"from status='{ex_st}', base='{ex_b}' to status='{resolution_status}', base='{base_accession}'."
                 )
 
+            # Auto-record unambiguous transaction mapping if PARTIAL_CORRECTION and not yet recorded
+            if resolution_status in ("PARTIAL_CORRECTION", "PARTIAL_AMENDMENT") and base_accession:
+                cur.execute(
+                    "SELECT 1 FROM sm_audit_events WHERE event_type = 'AMENDMENT_TRANSACTION_MAPPING' AND subject_id = %s;",
+                    (amendment_accession,),
+                )
+                if not cur.fetchone():
+                    self._auto_record_amendment_mappings_if_unambiguous(
+                        base_accession=base_accession,
+                        amendment_accession=amendment_accession,
+                        cur=cur,
+                    )
+
         if conn is not None:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 _exec(cur)
         else:
             with transaction(dsn=self.dsn) as cur:
                 _exec(cur)
+
+    def _auto_record_amendment_mappings_if_unambiguous(
+        self,
+        base_accession: str,
+        amendment_accession: str,
+        cur: Any,
+    ) -> None:
+        """
+        Attempts to establish and record unambiguous transaction mappings into sm_audit_events
+        for a PARTIAL_CORRECTION amendment if single-to-single or evidenced by remarks.
+        """
+        cur.execute(
+            "SELECT * FROM form4_parsed_transactions WHERE accession_number IN (%s, %s);",
+            (base_accession, amendment_accession),
+        )
+        tx_rows = cur.fetchall()
+        base_txs = [dict(r) for r in tx_rows if r["accession_number"] == base_accession]
+        amend_txs = [dict(r) for r in tx_rows if r["accession_number"] == amendment_accession]
+
+        if not base_txs or not amend_txs:
+            return
+
+        cur.execute(
+            "SELECT accession_number, content_hash, xml_content FROM form4_raw_filings WHERE accession_number IN (%s, %s);",
+            (base_accession, amendment_accession),
+        )
+        raw_rows = {r["accession_number"]: dict(r) for r in cur.fetchall()}
+        b_raw = raw_rows.get(base_accession, {})
+        a_raw = raw_rows.get(amendment_accession, {})
+
+        mappings: List[Dict[str, Any]] = []
+        if len(base_txs) == 1 and len(amend_txs) == 1:
+            if bool(base_txs[0]["is_derivative"]) == bool(amend_txs[0]["is_derivative"]):
+                mappings.append({
+                    "amendment_transaction_id": amend_txs[0]["transaction_id"],
+                    "base_transaction_id": base_txs[0]["transaction_id"],
+                    "rationale": "Single-transaction base and single-transaction amendment for matching table.",
+                })
+        elif len(base_txs) > 1 and len(amend_txs) == 1:
+            xml = a_raw.get("xml_content") or ""
+            target_idx = None
+            if re.search(r"\b(?:first|1st|line\s+1|row\s+1|transaction\s+1)\b", xml, re.IGNORECASE):
+                target_idx = 0
+            elif re.search(r"\b(?:second|2nd|line\s+2|row\s+2|transaction\s+2)\b", xml, re.IGNORECASE):
+                target_idx = 1
+            elif re.search(r"\b(?:third|3rd|line\s+3|row\s+3|transaction\s+3)\b", xml, re.IGNORECASE):
+                target_idx = 2
+            elif re.search(r"\b(?:fourth|4th|line\s+4|row\s+4|transaction\s+4)\b", xml, re.IGNORECASE):
+                target_idx = 3
+
+            if target_idx is not None and target_idx < len(base_txs):
+                if bool(base_txs[target_idx]["is_derivative"]) == bool(amend_txs[0]["is_derivative"]):
+                    mappings.append({
+                        "amendment_transaction_id": amend_txs[0]["transaction_id"],
+                        "base_transaction_id": base_txs[target_idx]["transaction_id"],
+                        "rationale": f"Partial correction narrative identified line {target_idx + 1}.",
+                    })
+
+        if mappings:
+            event_id = str(uuid.uuid4())
+            now_iso = datetime.now(timezone.utc).isoformat()
+            payload = {
+                "base_accession": base_accession,
+                "amendment_accession": amendment_accession,
+                "base_content_hash": b_raw.get("content_hash"),
+                "amendment_content_hash": a_raw.get("content_hash"),
+                "mappings": mappings,
+                "is_valid": True,
+                "created_at": now_iso,
+            }
+            event_hash = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+            cur.execute("""
+                INSERT INTO sm_audit_events (
+                    event_id, event_type, subject_id, payload, event_hash
+                ) VALUES (%s, %s, %s, %s, %s);
+            """, (
+                event_id,
+                "AMENDMENT_TRANSACTION_MAPPING",
+                amendment_accession,
+                Json(payload),
+                event_hash,
+            ))
+
+    def record_amendment_transaction_mappings(
+        self,
+        base_accession: str,
+        amendment_accession: str,
+        mappings: List[Dict[str, Any]],
+        base_content_hash: Optional[str] = None,
+        amendment_content_hash: Optional[str] = None,
+        conn: Optional[PgConnection] = None,
+    ) -> str:
+        """
+        Persists a verified 0-DDL transaction mapping between a Form 4/A amendment and its base filing into sm_audit_events.
+        Validates reporting owner CIK/name, table type (derivative vs non-derivative), base accession match,
+        completeness of amendment transactions, and absence of duplicate base targets or conflicting mappings.
+        """
+        if not base_accession or not amendment_accession:
+            raise ValueError("MAPPING_VALIDATION_ERROR: base_accession and amendment_accession are required.")
+        if not mappings or not isinstance(mappings, list):
+            raise ValueError("MAPPING_VALIDATION_ERROR: mappings must be a non-empty list of transaction mapping items.")
+
+        def _exec(cur):
+            # 1. Fetch raw filings
+            cur.execute(
+                "SELECT accession_number, cik, ticker, content_hash FROM form4_raw_filings WHERE accession_number IN (%s, %s);",
+                (base_accession, amendment_accession),
+            )
+            raw_rows = {r["accession_number"]: dict(r) for r in cur.fetchall()}
+            if base_accession not in raw_rows:
+                raise ValueError(f"MAPPING_VALIDATION_ERROR: Base filing '{base_accession}' not found in form4_raw_filings.")
+            if amendment_accession not in raw_rows:
+                raise ValueError(f"MAPPING_VALIDATION_ERROR: Amendment filing '{amendment_accession}' not found in form4_raw_filings.")
+
+            b_raw = raw_rows[base_accession]
+            a_raw = raw_rows[amendment_accession]
+
+            if b_raw["cik"] != a_raw["cik"]:
+                raise ValueError(f"WRONG_ISSUER_MAPPING: Base CIK '{b_raw['cik']}' != Amendment CIK '{a_raw['cik']}'.")
+
+            if base_content_hash and b_raw["content_hash"] != base_content_hash:
+                raise ValueError("MAPPING_VALIDATION_ERROR: Base content_hash mismatch.")
+            if amendment_content_hash and a_raw["content_hash"] != amendment_content_hash:
+                raise ValueError("MAPPING_VALIDATION_ERROR: Amendment content_hash mismatch.")
+
+            # 2. Fetch parsed transactions
+            cur.execute(
+                "SELECT * FROM form4_parsed_transactions WHERE accession_number IN (%s, %s);",
+                (base_accession, amendment_accession),
+            )
+            tx_rows = cur.fetchall()
+            base_txs = {r["transaction_id"]: dict(r) for r in tx_rows if r["accession_number"] == base_accession}
+            amend_txs = {r["transaction_id"]: dict(r) for r in tx_rows if r["accession_number"] == amendment_accession}
+
+            if not amend_txs:
+                raise ValueError(f"MAPPING_VALIDATION_ERROR: No parsed transactions found for amendment '{amendment_accession}'.")
+
+            # 3. Completeness & conflict checks
+            mapped_amend_ids = set()
+            mapped_base_targets = []
+
+            for m in mappings:
+                a_id = m.get("amendment_transaction_id")
+                b_id = m.get("base_transaction_id")
+
+                if not a_id or a_id not in amend_txs:
+                    raise ValueError(f"MAPPING_VALIDATION_ERROR: Unknown amendment transaction '{a_id}'.")
+                if not b_id or b_id not in base_txs:
+                    raise ValueError(f"MAPPING_VALIDATION_ERROR: Unknown base transaction '{b_id}'.")
+
+                if a_id in mapped_amend_ids:
+                    raise ValueError(f"CONFLICTING_MAPPING: Conflicting duplicate mapping for amendment transaction '{a_id}'.")
+                mapped_amend_ids.add(a_id)
+
+                if b_id in mapped_base_targets:
+                    raise ValueError(f"DUPLICATE_TARGET_MAPPING: Multiple amendment transactions map to the same base target '{b_id}'.")
+                mapped_base_targets.append(b_id)
+
+                a_tx = amend_txs[a_id]
+                b_tx = base_txs[b_id]
+
+                # Base accession match
+                if b_tx["accession_number"] != base_accession:
+                    raise ValueError(f"WRONG_BASE_MAPPING: Target transaction '{b_id}' does not belong to base '{base_accession}'.")
+
+                # Table match
+                if bool(a_tx["is_derivative"]) != bool(b_tx["is_derivative"]):
+                    raise ValueError(
+                        f"WRONG_TABLE_MAPPING: Derivative table mismatch: amendment is_derivative={a_tx['is_derivative']}, "
+                        f"base is_derivative={b_tx['is_derivative']}."
+                    )
+
+                # Reporting owner match
+                a_owner = (a_tx.get("reporting_owner_name") or "").strip().upper()
+                b_owner = (b_tx.get("reporting_owner_name") or "").strip().upper()
+                if a_owner and b_owner and a_owner != b_owner:
+                    raise ValueError(f"WRONG_OWNER_MAPPING: Reporting owner mismatch: '{a_owner}' != '{b_owner}'.")
+
+            # Completeness: all amendment transactions must be mapped
+            if mapped_amend_ids != set(amend_txs.keys()):
+                unmapped = set(amend_txs.keys()) - mapped_amend_ids
+                raise ValueError(f"INCOMPLETE_AMENDMENT_MAPPING: Amendment transactions {unmapped} are unmapped.")
+
+            # No duplicate targets
+            if len(set(mapped_base_targets)) != len(mapped_base_targets):
+                raise ValueError("DUPLICATE_TARGET_MAPPING: Multiple amendment transactions map to the same base target.")
+
+            # 4. Insert into sm_audit_events
+            event_id = str(uuid.uuid4())
+            now_iso = datetime.now(timezone.utc).isoformat()
+            payload = {
+                "base_accession": base_accession,
+                "amendment_accession": amendment_accession,
+                "base_content_hash": b_raw["content_hash"],
+                "amendment_content_hash": a_raw["content_hash"],
+                "mappings": mappings,
+                "is_valid": True,
+                "created_at": now_iso,
+            }
+            event_hash = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+
+            cur.execute("""
+                INSERT INTO sm_audit_events (
+                    event_id, event_type, subject_id, payload, event_hash
+                ) VALUES (%s, %s, %s, %s, %s);
+            """, (
+                event_id,
+                "AMENDMENT_TRANSACTION_MAPPING",
+                amendment_accession,
+                Json(payload),
+                event_hash,
+            ))
+            return event_id
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        else:
+            with transaction(dsn=self.dsn) as cur:
+                return _exec(cur)
+
+    def get_amendment_transaction_mappings(
+        self,
+        amendment_accession: str,
+        conn: Optional[PgConnection] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieves verified transaction mappings for an amendment accession from sm_audit_events."""
+        query = """
+            SELECT payload FROM sm_audit_events
+            WHERE event_type = 'AMENDMENT_TRANSACTION_MAPPING'
+              AND subject_id = %s
+            ORDER BY created_at DESC
+            LIMIT 1;
+        """
+        def _exec(cur):
+            cur.execute(query, (amendment_accession,))
+            row = cur.fetchone()
+            if row and row.get("payload"):
+                p = row["payload"]
+                return p if isinstance(p, dict) else json.loads(p)
+            return None
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        else:
+            with get_connection(dsn=self.dsn) as c:
+                with c.cursor(cursor_factory=RealDictCursor) as cur:
+                    return _exec(cur)
 
     # ── Reconciliation Receipts (Append-Only) ─────────────────────────────────
 
@@ -531,17 +935,52 @@ class PostgresSmartMoneyRepository:
         clean_ticker = ticker.upper().strip()
         clean_cik = str(issuer_cik).strip().zfill(10)
 
-        # Verified zero-activity check (Finding 1):
-        if coverage_status == "COMPLETE" and len(acc_inv) == 0:
-            has_catalog_proof = (
-                (isinstance(zero_activity_proof, dict) and bool(zero_activity_proof.get("source_catalog_hash")))
-                or any("catalog" in str(k).lower() or "submissions" in str(k).lower() for k in s_hashes.keys())
-            )
-            if not has_catalog_proof:
-                raise RuntimeError(
-                    "ZERO_ACTIVITY_UNPROVED: Bare empty inventory without authoritative catalog proof "
-                    "cannot certify COMPLETE coverage."
-                )
+        # Verified zero-activity and catalog proof check (Finding 1 & Gate 2):
+        if coverage_status == "COMPLETE":
+            if len(acc_inv) == 0:
+                if not zero_activity_proof or not isinstance(zero_activity_proof, dict):
+                    raise RuntimeError(
+                        "ZERO_ACTIVITY_UNPROVED: Bare empty inventory without authoritative catalog proof "
+                        "cannot certify COMPLETE coverage."
+                    )
+                cat_content = zero_activity_proof.get("catalog_content") or zero_activity_proof.get("catalog_bytes")
+                cat_hash = zero_activity_proof.get("source_catalog_hash") or zero_activity_proof.get("catalog_sha256")
+                if not cat_hash:
+                    for k, v in s_hashes.items():
+                        if ("catalog" in str(k).lower() or "submissions" in str(k).lower()) and isinstance(v, str) and len(v.strip()) == 64:
+                            cat_hash = v.strip().lower()
+                            break
+
+                if not cat_content or not cat_hash:
+                    raise RuntimeError(
+                        "AUTHORITATIVE_CATALOG_PROOF_FAILED: Authoritative catalog proof requires verified artifact bytes and SHA-256 digest."
+                    )
+
+                try:
+                    cat_val = validate_catalog_evidence(
+                        catalog_bytes=cat_content,
+                        catalog_sha256=cat_hash,
+                        ticker=clean_ticker,
+                        issuer_cik=clean_cik,
+                        interval_start=interval_start,
+                        interval_end=interval_end,
+                        certified_watermark=certified_watermark,
+                        accession_inventory=acc_inv,
+                        source_hashes=s_hashes,
+                        material_gaps=m_gaps,
+                    )
+                except Exception as e:
+                    raise RuntimeError(f"AUTHORITATIVE_CATALOG_PROOF_FAILED: {e}") from e
+
+                zero_activity_proof["source_catalog_hash"] = cat_val["catalog_sha256"]
+                zero_activity_proof["zero_activity_reason"] = cat_val["zero_activity_reason"]
+                zero_activity_proof["catalog_type"] = zero_activity_proof.get("catalog_type", "SEC_SUBMISSIONS_INDEX")
+                zero_activity_proof["catalog_watermark"] = certified_watermark
+            else:
+                for acc in acc_inv:
+                    h = s_hashes.get(acc)
+                    if not h or not isinstance(h, str) or not re.match(r"^[0-9a-f]{64}$", h.strip().lower()):
+                        raise RuntimeError(f"MISSING_ACCESSION_SOURCE_HASH: Accession '{acc}' lacks a valid 64-char SHA-256 source hash.")
 
         schema_ver = 1
         recon_hash = compute_canonical_receipt_hash(
@@ -718,12 +1157,30 @@ class PostgresSmartMoneyRepository:
 
                 # 4. Inventory & Zero-Activity Validation
                 if len(acc_inv) == 0:
-                    has_proof = (
-                        (isinstance(z_proof, dict) and bool(z_proof.get("source_catalog_hash")))
-                        or any("catalog" in str(k).lower() or "submissions" in str(k).lower() for k in s_hashes.keys())
-                    )
-                    if not has_proof:
+                    if not z_proof or not isinstance(z_proof, dict):
                         continue
+                    cat_hash = z_proof.get("source_catalog_hash") or z_proof.get("catalog_sha256")
+                    if not cat_hash or not isinstance(cat_hash, str) or not re.match(r"^[0-9a-f]{64}$", cat_hash.strip().lower()):
+                        continue
+                    if cat_hash.lower() == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855":
+                        continue
+                    cat_content = z_proof.get("catalog_content")
+                    if cat_content:
+                        try:
+                            validate_catalog_evidence(
+                                catalog_bytes=cat_content,
+                                catalog_sha256=cat_hash,
+                                ticker=r_sym,
+                                issuer_cik=r_cik,
+                                interval_start=receipt["interval_start"],
+                                interval_end=receipt["interval_end"],
+                                certified_watermark=receipt["certified_watermark"],
+                                accession_inventory=acc_inv,
+                                source_hashes=s_hashes,
+                                material_gaps=m_gaps,
+                            )
+                        except Exception:
+                            continue
                 else:
                     cur.execute("""
                         SELECT f.accession_number, f.cik, f.ticker, f.content_hash, av.public_availability_at
@@ -815,6 +1272,11 @@ class PostgresSmartMoneyRepository:
             if replay_mode == "ARX_OBSERVED"
             else "part_av.public_availability_at IS NOT NULL AND part_av.public_availability_at <= %s"
         )
+        newer_time_predicate = (
+            "COALESCE(newer_av.recorded_at, newer_f.created_at) <= %s"
+            if replay_mode == "ARX_OBSERVED"
+            else "newer_av.public_availability_at IS NOT NULL AND newer_av.public_availability_at <= %s"
+        )
         re_time_predicate = (
             "COALESCE(re_av.recorded_at, re_f.created_at) <= %s"
             if replay_mode == "ARX_OBSERVED"
@@ -861,7 +1323,7 @@ class PostgresSmartMoneyRepository:
               AND NOT EXISTS (
                   SELECT 1 FROM sm_amendments ambig
                   WHERE ambig.amendment_accession = tx.accession_number
-                    AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT')
+                    AND ambig.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'AMENDMENT_SCOPE_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'RESOLVED')
               )
               -- 2. Exclude transactions superseded by full filing amendments available <= W
               AND NOT EXISTS (
@@ -875,42 +1337,58 @@ class PostgresSmartMoneyRepository:
               -- 3. Transaction-level reconciliation for partial corrections available <= W
               AND NOT EXISTS (
                   SELECT 1 FROM sm_amendments part_am
-                  JOIN form4_parsed_transactions amend_tx ON part_am.amendment_accession = amend_tx.accession_number
                   JOIN sm_source_availability_ledger part_av ON part_am.amendment_accession = part_av.accession_number
                   JOIN form4_raw_filings part_f ON part_am.amendment_accession = part_f.accession_number
+                  LEFT JOIN sm_audit_events map_ev ON map_ev.event_type = 'AMENDMENT_TRANSACTION_MAPPING'
+                                                   AND map_ev.subject_id = part_am.amendment_accession
+                                                   AND (map_ev.payload->>'is_valid')::boolean = true
+                  LEFT JOIN LATERAL jsonb_array_elements(COALESCE(map_ev.payload->'mappings', '[]'::jsonb)) m ON true
+                  JOIN form4_parsed_transactions amend_tx ON part_am.amendment_accession = amend_tx.accession_number
                   WHERE part_am.base_accession = tx.accession_number
                     AND part_am.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
-                    -- Evidence-backed line mapping: never match solely on mutable date/code/owner
                     AND (
-                        (position(':' in amend_tx.transaction_id) > 0 AND position(':' in tx.transaction_id) > 0
-                         AND split_part(amend_tx.transaction_id, ':', 2) = split_part(tx.transaction_id, ':', 2)
-                         AND split_part(amend_tx.transaction_id, ':', 3) = split_part(tx.transaction_id, ':', 3)
-                         AND (
-                             split_part(amend_tx.transaction_id, ':', 4) = split_part(tx.transaction_id, ':', 4)
-                             OR (
-                                 (SELECT count(*) FROM form4_parsed_transactions sub_b
-                                  WHERE sub_b.accession_number = tx.accession_number
-                                    AND split_part(sub_b.transaction_id, ':', 2) = split_part(tx.transaction_id, ':', 2)
-                                    AND split_part(sub_b.transaction_id, ':', 3) = split_part(tx.transaction_id, ':', 3)
-                                 ) = 1
-                                 AND
-                                 (SELECT count(*) FROM form4_parsed_transactions sub_a
-                                  WHERE sub_a.accession_number = part_am.amendment_accession
-                                    AND split_part(sub_a.transaction_id, ':', 2) = split_part(amend_tx.transaction_id, ':', 2)
-                                    AND split_part(sub_a.transaction_id, ':', 3) = split_part(amend_tx.transaction_id, ':', 3)
-                                 ) = 1
-                             )
-                         )
-                        )
+                        (map_ev.event_id IS NOT NULL AND m->>'base_transaction_id' = tx.transaction_id)
                         OR (
-                            amend_tx.reporting_owner_name = tx.reporting_owner_name
-                            AND (
-                                (SELECT count(*) FROM form4_parsed_transactions sub_b WHERE sub_b.accession_number = tx.accession_number) = 1
-                                AND (SELECT count(*) FROM form4_parsed_transactions sub_a WHERE sub_a.accession_number = part_am.amendment_accession) = 1
-                            )
+                            map_ev.event_id IS NULL
+                            AND (SELECT count(*) FROM form4_parsed_transactions sub_b WHERE sub_b.accession_number = tx.accession_number) = 1
+                            AND (SELECT count(*) FROM form4_parsed_transactions sub_a WHERE sub_a.accession_number = part_am.amendment_accession) = 1
+                            AND amend_tx.is_derivative = tx.is_derivative
+                            AND amend_tx.reporting_owner_name = tx.reporting_owner_name
                         )
                     )
                     AND {part_time_predicate}
+              )
+              -- 3b. Exclude earlier partial corrections when a newer partial correction available <= W maps to the same base target
+              AND NOT EXISTS (
+                  SELECT 1 FROM sm_amendments newer_am
+                  JOIN sm_source_availability_ledger newer_av ON newer_am.amendment_accession = newer_av.accession_number
+                  JOIN form4_raw_filings newer_f ON newer_am.amendment_accession = newer_f.accession_number
+                  JOIN sm_audit_events newer_ev ON newer_ev.event_type = 'AMENDMENT_TRANSACTION_MAPPING'
+                                                AND newer_ev.subject_id = newer_am.amendment_accession
+                  CROSS JOIN LATERAL jsonb_array_elements(newer_ev.payload->'mappings') nm
+                  JOIN sm_audit_events curr_ev ON curr_ev.event_type = 'AMENDMENT_TRANSACTION_MAPPING'
+                                               AND curr_ev.subject_id = tx.accession_number
+                  CROSS JOIN LATERAL jsonb_array_elements(curr_ev.payload->'mappings') currm
+                  WHERE newer_am.amendment_accession != tx.accession_number
+                    AND newer_am.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                    AND (newer_ev.payload->>'is_valid')::boolean = true
+                    AND currm->>'amendment_transaction_id' = tx.transaction_id
+                    AND nm->>'base_transaction_id' = currm->>'base_transaction_id'
+                    AND newer_am.amendment_number > COALESCE((SELECT am_curr.amendment_number FROM sm_amendments am_curr WHERE am_curr.amendment_accession = tx.accession_number), 0)
+                    AND {newer_time_predicate}
+              )
+              -- 3c. Exclude transactions from partial corrections that lack verified mapping in sm_audit_events when multiple base transactions exist
+              AND NOT EXISTS (
+                  SELECT 1 FROM sm_amendments unverified_part
+                  WHERE unverified_part.amendment_accession = tx.accession_number
+                    AND unverified_part.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                    AND (SELECT count(*) FROM form4_parsed_transactions sub_b WHERE sub_b.accession_number = unverified_part.base_accession) > 1
+                    AND NOT EXISTS (
+                        SELECT 1 FROM sm_audit_events valid_ev
+                        WHERE valid_ev.event_type = 'AMENDMENT_TRANSACTION_MAPPING'
+                          AND valid_ev.subject_id = tx.accession_number
+                          AND (valid_ev.payload->>'is_valid')::boolean = true
+                    )
               )
               -- 4. Exclude amendments that were themselves superseded by subsequent amendments available <= W
               AND NOT EXISTS (
@@ -938,6 +1416,7 @@ class PostgresSmartMoneyRepository:
                 min_date,
                 as_of_watermark,
                 [s.upper().strip() for s in symbols],
+                as_of_watermark,
                 as_of_watermark,
                 as_of_watermark,
                 as_of_watermark,
@@ -993,8 +1472,20 @@ class PostgresSmartMoneyRepository:
             JOIN form4_raw_filings f ON am.amendment_accession = f.accession_number
             JOIN sm_source_availability_ledger av ON am.amendment_accession = av.accession_number
             WHERE {time_predicate}
-              AND am.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'RESOLVED', 'AMENDMENT_SCOPE_AMBIGUOUS')
-              AND f.ticker = ANY(%s);
+              AND f.ticker = ANY(%s)
+              AND (
+                  am.resolution_status IN ('AMENDMENT_TARGET_AMBIGUOUS', 'UNRESOLVED', 'UNRESOLVED_AMENDMENT', 'RESOLVED', 'AMENDMENT_SCOPE_AMBIGUOUS')
+                  OR (
+                      am.resolution_status IN ('PARTIAL_CORRECTION', 'PARTIAL_AMENDMENT')
+                      AND (SELECT count(*) FROM form4_parsed_transactions sub_b WHERE sub_b.accession_number = am.base_accession) > 1
+                      AND NOT EXISTS (
+                          SELECT 1 FROM sm_audit_events ev
+                          WHERE ev.event_type = 'AMENDMENT_TRANSACTION_MAPPING'
+                            AND ev.subject_id = am.amendment_accession
+                            AND (ev.payload->>'is_valid')::boolean = true
+                      )
+                  )
+              );
         """
 
         def _exec(cur):

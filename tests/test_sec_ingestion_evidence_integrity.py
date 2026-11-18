@@ -1,5 +1,6 @@
 """Offline continuous ingestion acceptance, including real isolated PG rollback."""
 import hashlib
+import json
 import os
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -9,7 +10,10 @@ import pytest
 
 from analyst_dashboard.smart_money.continuous_pipeline import SmartMoneyContinuousPipeline
 from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
-from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
+from analyst_dashboard.smart_money.storage.postgres_repository import (
+    PostgresSmartMoneyRepository,
+    validate_catalog_evidence,
+)
 from analyst_dashboard.smart_money.amendment_classifier import (
     classify_amendment_effect,
     SCOPE_FULL_REPLACEMENT,
@@ -546,6 +550,26 @@ def test_verified_zero_activity_requires_and_accepts_authoritative_coverage_rece
     conn, repo, pipeline = db
     aapl_issuer = [{'ticker': 'AAPL', 'cik': '0000320193', 'company_name': 'APPLE INC'}]
 
+    # Authentic SEC submissions index catalog for AAPL covering the interval with zero Form 4 filings
+    aapl_catalog = {
+        "cik": "0000320193",
+        "entityType": "operating",
+        "name": "Apple Inc.",
+        "tickers": ["AAPL"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0000320193-26-000001"],
+                "filingDate": ["2026-09-01"],
+                "reportDate": ["2026-08-31"],
+                "acceptanceDateTime": ["2026-09-01T16:30:00.000Z"],
+                "form": ["8-K"],
+            },
+            "files": [],
+        },
+    }
+    cat_bytes = json.dumps(aapl_catalog).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
     # Record genuine coverage receipt proving zero activity for AAPL over 30d with authoritative catalog proof
     r_id = repo.record_issuer_coverage_receipt(
         ticker='AAPL',
@@ -554,11 +578,12 @@ def test_verified_zero_activity_requires_and_accepts_authoritative_coverage_rece
         interval_end='2026-11-17T23:59:59Z',
         certified_watermark='2026-11-17T23:59:59Z',
         accession_inventory=[],
-        source_hashes={'sec_submissions_index_sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'},
+        source_hashes={'sec_submissions_index_sha256': cat_hash},
         material_gaps=[],
         coverage_status='COMPLETE',
         zero_activity_proof={
-            'source_catalog_hash': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+            'catalog_content': cat_bytes.decode('utf-8'),
+            'source_catalog_hash': cat_hash,
             'catalog_watermark': '2026-11-17T23:59:59Z',
             'catalog_type': 'SEC_SUBMISSIONS_INDEX',
         },
@@ -676,55 +701,55 @@ def test_partial_correction_date_and_code_changes_prevent_duplicates(db):
     base_t_at = '2026-09-01T10:00:00Z'
     amend_t_at = '2026-09-15T10:00:00Z'
 
+    base_xml = """<ownershipDocument><documentType>4</documentType>
+      <periodOfReport>2026-08-28</periodOfReport>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName>
+        <issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0001045810</rptOwnerCik>
+        <rptOwnerName>Alice Executive</rptOwnerName></reportingOwnerId>
+        <reportingOwnerRelationship><isOfficer>true</isOfficer><officerTitle>VP</officerTitle></reportingOwnerRelationship>
+      </reportingOwner>
+      <nonDerivativeTable><nonDerivativeTransaction>
+        <transactionDate><value>2026-08-28</value></transactionDate>
+        <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+        <transactionAmounts><transactionShares><value>5000</value></transactionShares>
+        <transactionPricePerShare><value>120</value></transactionPricePerShare>
+        <transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode>
+        </transactionAmounts></nonDerivativeTransaction></nonDerivativeTable>
+      </ownershipDocument>"""
+
+    amend_xml = """<ownershipDocument><documentType>4/A</documentType>
+      <periodOfReport>2026-08-28</periodOfReport>
+      <dateOfOriginalSubmission>2026-09-01</dateOfOriginalSubmission>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName>
+        <issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0001045810</rptOwnerCik>
+        <rptOwnerName>Alice Executive</rptOwnerName></reportingOwnerId>
+        <reportingOwnerRelationship><isOfficer>true</isOfficer><officerTitle>VP</officerTitle></reportingOwnerRelationship>
+      </reportingOwner>
+      <nonDerivativeTable><nonDerivativeTransaction>
+        <transactionDate><value>2026-08-29</value></transactionDate>
+        <transactionCoding><transactionCode>P</transactionCode></transactionCoding>
+        <transactionAmounts><transactionShares><value>6000</value></transactionShares>
+        <transactionPricePerShare><value>125</value></transactionPricePerShare>
+        <transactionAcquiredDisposedCode><value>A</value></transactionAcquiredDisposedCode>
+        </transactionAmounts></nonDerivativeTransaction></nonDerivativeTable>
+      <remarks>This Form 4/A is filed solely to correct the transaction date and code.</remarks>
+      </ownershipDocument>"""
+
     # 1. Ingest base filing (transaction date 2026-08-28, code S)
     f_base = pit_filing(acc_base, public_date='2026-09-01')
+    f_base['xml_content'] = base_xml
+    f_base['content_hash'] = hashlib.sha256(base_xml.encode()).hexdigest()
     f_base['public_availability_at'] = base_t_at
     pipeline._step7_parse_and_reconcile([f_base], 'pit-base')
-
-    with conn.cursor() as cur:
-        cur.execute("""
-            INSERT INTO form4_parsed_transactions (
-                transaction_id, accession_number, transaction_date, transaction_code,
-                shares, price_per_share, total_value_usd, reporting_owner_name,
-                reporting_owner_role, is_director, is_officer, is_ten_percent,
-                officer_title, ownership_type, is_derivative, signal_type,
-                acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
-        """, (
-            f"{acc_base}:0001045810:I:1", acc_base, "2026-08-28", "S",
-            5000.0, 120.0, 600000.0, "Alice Executive",
-            "VP", False, True, False, "VP", "D", False, "OPEN_MARKET_SALE",
-            "D", False, False,
-        ))
 
     # 2. Ingest partial correction amendment (corrects date to 2026-08-29, code to P)
     f_amend = pit_filing(acc_amend, '4/A', public_date='2026-09-15', original='2026-09-01')
     f_amend['public_availability_at'] = amend_t_at
-    f_amend['xml_content'] = f_amend['xml_content'].replace(
-        '</ownershipDocument>',
-        '<remarks>This Form 4/A is filed solely to correct the transaction date and code.</remarks></ownershipDocument>'
-    )
-    f_amend['content_hash'] = hashlib.sha256(f_amend['xml_content'].encode()).hexdigest()
+    f_amend['xml_content'] = amend_xml
+    f_amend['content_hash'] = hashlib.sha256(amend_xml.encode()).hexdigest()
     pipeline._step7_parse_and_reconcile([f_amend], 'pit-amend')
-
-    with conn.cursor() as cur:
-        cur.execute("""
-            INSERT INTO form4_parsed_transactions (
-                transaction_id, accession_number, transaction_date, transaction_code,
-                shares, price_per_share, total_value_usd, reporting_owner_name,
-                reporting_owner_role, is_director, is_officer, is_ten_percent,
-                officer_title, ownership_type, is_derivative, signal_type,
-                acquired_disposed, is_positive_buying_conviction, is_open_market_purchase_evidence
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
-        """, (
-            f"{acc_amend}:0001045810:I:1", acc_amend, "2026-08-29", "P",
-            6000.0, 125.0, 750000.0, "Alice Executive",
-            "VP", False, True, False, "VP", "D", False, "OPEN_MARKET_PURCHASE",
-            "A", True, True,
-        ))
-
-    # Set amendment status to PARTIAL_CORRECTION
-    repo.save_amendment(acc_amend, acc_base, 1, SCOPE_PARTIAL_CORRECTION, resolved_at=amend_t_at)
 
     # 3. Before amendment cutoff (2026-09-10): ONLY base transaction is returned
     before_txs = repo.get_bulk_transactions_as_of('2026-09-10T23:59:59Z', ['NVDA'], '2026-08-01')['NVDA']
@@ -837,4 +862,535 @@ def test_incomplete_inventory_with_omitted_filing_rejected(db):
         issuer_cik='0001045810',
     )
     assert receipt is None
+
+
+def test_reproduction_gate1a_false_verified_zero_coverage_rejected(db):
+    """
+    GATE 1A: False verified-zero coverage reproduction.
+    Caller supplies empty accession inventory with source_hashes={"catalog": ""}.
+    Rejection is required: record_issuer_coverage_receipt must refuse to certify COMPLETE coverage
+    without valid, verified catalog artifact bytes and SHA-256 digest, and get_authoritative_receipt_for_interval
+    must reject any such receipt.
+    """
+    conn, repo, pipeline = db
+
+    # Rejection is required at writer level
+    with pytest.raises(RuntimeError, match="ZERO_ACTIVITY_UNPROVED|AUTHORITATIVE_CATALOG_PROOF"):
+        repo.record_issuer_coverage_receipt(
+            ticker='NVDA',
+            issuer_cik='0001045810',
+            interval_start='2026-08-01T00:00:00Z',
+            interval_end='2026-11-17T23:59:59Z',
+            certified_watermark='2026-11-17T23:59:59Z',
+            accession_inventory=[],
+            source_hashes={"catalog": ""},
+            coverage_status='COMPLETE',
+        )
+
+
+def test_reproduction_gate1b_incorrect_partial_correction_positional_mapping_rejected(db):
+    """
+    GATE 1B: Incorrect partial-correction mapping reproduction.
+    Base filing contains transaction A at sequence 0 ($100) and B at sequence 1 ($200).
+    Amendment contains only corrected B, indexed locally at sequence 0 ($250).
+    Positional sequence matching erroneously suppresses A and retains both original B and corrected B.
+    Rejection is required: positional matching is invalid; the system must retain A ($100) and replace ONLY B ($200 -> $250)
+    when explicit evidence-backed mapping is provided, or block if unproven.
+    """
+    conn, repo, pipeline = db
+
+    base_xml = """<ownershipDocument><documentType>4</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>10</value></transactionShares><transactionPricePerShare><value>100</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>200</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+    </ownershipDocument>"""
+
+    f_base = dict(accession_number="0002152188-26-000005", ticker="NVDA", cik="0001045810",
+                  company_name="NVIDIA", filing_date="2026-09-01", document_type="4",
+                  accepted_datetime="2026-09-01T21:00:00Z", xml_content=base_xml,
+                  source_url="https://www.sec.gov/Archives/0002152188-26-000005.xml",
+                  content_hash=hashlib.sha256(base_xml.encode()).hexdigest())
+
+    amend_xml = """<ownershipDocument><documentType>4/A</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <dateOfOriginalSubmission>2026-09-01</dateOfOriginalSubmission>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>250</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+      <remarks>This Form 4/A is filed solely to correct the transaction price of the second transaction.</remarks>
+    </ownershipDocument>"""
+
+    f_amend = dict(accession_number="0002152188-26-000007", ticker="NVDA", cik="0001045810",
+                   company_name="NVIDIA", filing_date="2026-09-05", document_type="4/A",
+                   accepted_datetime="2026-09-05T21:00:00Z", xml_content=amend_xml,
+                   source_url="https://www.sec.gov/Archives/0002152188-26-000007.xml",
+                   content_hash=hashlib.sha256(amend_xml.encode()).hexdigest())
+
+    pipeline._step7_parse_and_reconcile([f_base], "cycle1")
+    pipeline._step7_parse_and_reconcile([f_amend], "cycle2")
+
+    tx_map = repo.get_bulk_transactions_as_of("2026-09-10T00:00:00Z", ["NVDA"], "2026-08-01")
+    nvda_txs = tx_map.get("NVDA", [])
+
+    prices = sorted([float(t["price_per_share"]) for t in nvda_txs])
+    assert prices == [100.0, 250.0], f"Positional matching error: expected [100.0, 250.0] but got {prices}"
+
+
+def test_catalog_evidence_digest_tampering_and_mismatch_rejected():
+    """GATE 4: Digest tampering and invalid format rejection."""
+    valid_cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000001"],
+                "filingDate": ["2026-07-15"],
+                "reportDate": ["2026-07-15"],
+                "acceptanceDateTime": ["2026-07-15T16:00:00.000Z"],
+                "form": ["8-K"],
+            },
+            "files": [],
+        },
+    }
+    cat_bytes = json.dumps(valid_cat).encode("utf-8")
+    actual_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    # Tampered / mismatched hash
+    with pytest.raises(ValueError, match="CATALOG_DIGEST_MISMATCH"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256="0" * 64,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+        )
+
+    # Malformed digest (not 64 lowercase hex)
+    with pytest.raises(ValueError, match="INVALID_CATALOG_DIGEST"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256="not_a_valid_hex",
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+        )
+
+    # Empty bytes
+    with pytest.raises(ValueError, match="EMPTY_CATALOG_BYTES"):
+        validate_catalog_evidence(
+            catalog_bytes=b"",
+            catalog_sha256=actual_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+        )
+
+
+def test_catalog_evidence_wrong_issuer_cik_and_ticker_rejected():
+    """GATE 4: Rejection of catalog evidence when CIK or ticker does not match."""
+    cat = {
+        "cik": "0000320193",  # AAPL CIK
+        "entityType": "operating",
+        "name": "Apple Inc.",
+        "tickers": ["AAPL"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0000320193-26-000001"],
+                "filingDate": ["2026-07-15"],
+                "reportDate": ["2026-07-15"],
+                "acceptanceDateTime": ["2026-07-15T16:00:00.000Z"],
+                "form": ["8-K"],
+            },
+            "files": [],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    # Wrong CIK (passing NVDA CIK 0001045810 for AAPL catalog)
+    with pytest.raises(ValueError, match="WRONG_ISSUER_CIK"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="AAPL",
+            issuer_cik="0001045810",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+        )
+
+    # Wrong Ticker (passing MSFT for AAPL catalog)
+    with pytest.raises(ValueError, match="WRONG_ISSUER_TICKER"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="MSFT",
+            issuer_cik="0000320193",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+        )
+
+
+def test_catalog_evidence_incomplete_interval_rejected():
+    """GATE 4: Rejection of catalog that does not exhaustively cover the observation interval."""
+    # Earliest date in catalog is 2026-10-15, but interval starts 2026-08-01
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000010"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00.000Z"],
+                "form": ["8-K"],
+            },
+            "files": [{"name": "CIK0001045810-submissions-001.json", "filingCount": 1000}],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    with pytest.raises(ValueError, match="CATALOG_INTERVAL_INCOMPLETE"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+        )
+
+
+def test_catalog_evidence_caller_inventory_omission_rejected():
+    """GATE 4: Rejection when caller inventory omits an eligible filing found in catalog."""
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000005", "0001045810-26-000001"],
+                "filingDate": ["2026-09-01", "2026-07-01"],
+                "reportDate": ["2026-09-01", "2026-07-01"],
+                "acceptanceDateTime": ["2026-09-01T16:00:00.000Z", "2026-07-01T16:00:00.000Z"],
+                "form": ["4", "8-K"],
+            },
+            "files": [],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    # Caller claims empty inventory, but catalog has Form 4 0001045810-26-000005
+    with pytest.raises(ValueError, match="CALLER_INVENTORY_OMISSION"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+            accession_inventory=[],
+        )
+
+
+def test_record_amendment_mappings_validation_wrong_base_duplicate_target(db):
+    """GATE 4: Validation rules in record_amendment_transaction_mappings."""
+    conn, repo, pipeline = db
+
+    base_acc = "0001045810-26-000100"
+    amend_acc = "0001045810-26-000101"
+
+    base_xml = """<ownershipDocument><documentType>4</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>10</value></transactionShares><transactionPricePerShare><value>100</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>200</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+    </ownershipDocument>"""
+
+    amend_xml = """<ownershipDocument><documentType>4/A</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <dateOfOriginalSubmission>2026-09-01</dateOfOriginalSubmission>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>250</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+      <derivativeTable>
+        <derivativeTransaction>
+          <securityTitle><value>Option</value></securityTitle>
+          <conversionOrExercisePrice><value>100</value></conversionOrExercisePrice>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>M</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>50</value></transactionShares><transactionPricePerShare><value>0</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>A</value></transactionAcquiredDisposedCode></transactionAmounts>
+          <exerciseDate><value>2026-09-01</value></exerciseDate>
+          <expirationDate><value>2028-09-01</value></expirationDate>
+          <underlyingSecurity><underlyingSecurityTitle><value>Common</value></underlyingSecurityTitle><underlyingSecurityShares><value>50</value></underlyingSecurityShares></underlyingSecurity>
+        </derivativeTransaction>
+      </derivativeTable>
+      <remarks>Solely to correct.</remarks>
+    </ownershipDocument>"""
+
+    f_base = dict(accession_number=base_acc, ticker="NVDA", cik="0001045810",
+                  company_name="NVIDIA", filing_date="2026-09-01", document_type="4",
+                  accepted_datetime="2026-09-01T21:00:00Z", xml_content=base_xml,
+                  source_url=f"https://www.sec.gov/Archives/{base_acc}.xml",
+                  content_hash=hashlib.sha256(base_xml.encode()).hexdigest())
+
+    f_amend = dict(accession_number=amend_acc, ticker="NVDA", cik="0001045810",
+                   company_name="NVIDIA", filing_date="2026-09-05", document_type="4/A",
+                   accepted_datetime="2026-09-05T21:00:00Z", xml_content=amend_xml,
+                   source_url=f"https://www.sec.gov/Archives/{amend_acc}.xml",
+                   content_hash=hashlib.sha256(amend_xml.encode()).hexdigest())
+
+    pipeline._step7_parse_and_reconcile([f_base], "m-base")
+    pipeline._step7_parse_and_reconcile([f_amend], "m-amend")
+
+    b_txs = repo.get_parsed_transactions_for_accession(base_acc)
+    a_txs = repo.get_parsed_transactions_for_accession(amend_acc)
+    b_tx_ids = sorted([t["transaction_id"] for t in b_txs])
+
+    deriv_a_id = [t["transaction_id"] for t in a_txs if t.get("is_derivative")][0]
+    non_deriv_a_id = [t["transaction_id"] for t in a_txs if not t.get("is_derivative")][0]
+
+    # Table mismatch
+    with pytest.raises(ValueError, match="WRONG_TABLE_MAPPING"):
+        repo.record_amendment_transaction_mappings(
+            base_accession=base_acc,
+            amendment_accession=amend_acc,
+            mappings=[
+                {"amendment_transaction_id": deriv_a_id, "base_transaction_id": b_tx_ids[0]},
+                {"amendment_transaction_id": non_deriv_a_id, "base_transaction_id": b_tx_ids[1]},
+            ],
+        )
+
+    # Duplicate target mapping
+    with pytest.raises(ValueError, match="DUPLICATE_TARGET_MAPPING"):
+        repo.record_amendment_transaction_mappings(
+            base_accession=base_acc,
+            amendment_accession=amend_acc,
+            mappings=[
+                {"amendment_transaction_id": non_deriv_a_id, "base_transaction_id": b_tx_ids[0]},
+                {"amendment_transaction_id": deriv_a_id, "base_transaction_id": b_tx_ids[0]},
+            ],
+        )
+
+
+def test_unproven_mapping_blocks_snapshot_publication_fail_closed(db):
+    """GATE 4: Unproven mapping for multi-transaction base blocks snapshot publication fail-closed."""
+    conn, repo, pipeline = db
+
+    base_acc = "0001045810-26-000200"
+    amend_acc = "0001045810-26-000201"
+
+    base_xml = """<ownershipDocument><documentType>4</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>10</value></transactionShares><transactionPricePerShare><value>100</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>200</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+    </ownershipDocument>"""
+
+    amend_xml = """<ownershipDocument><documentType>4/A</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <dateOfOriginalSubmission>2026-09-01</dateOfOriginalSubmission>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>250</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+      <remarks>This Form 4/A is filed solely to correct the transaction price.</remarks>
+    </ownershipDocument>"""
+
+    f_base = dict(accession_number=base_acc, ticker="NVDA", cik="0001045810",
+                  company_name="NVIDIA", filing_date="2026-09-01", document_type="4",
+                  accepted_datetime="2026-09-01T21:00:00Z", xml_content=base_xml,
+                  source_url=f"https://www.sec.gov/Archives/{base_acc}.xml",
+                  content_hash=hashlib.sha256(base_xml.encode()).hexdigest())
+
+    f_amend = dict(accession_number=amend_acc, ticker="NVDA", cik="0001045810",
+                   company_name="NVIDIA", filing_date="2026-09-05", document_type="4/A",
+                   accepted_datetime="2026-09-05T21:00:00Z", xml_content=amend_xml,
+                   source_url=f"https://www.sec.gov/Archives/{amend_acc}.xml",
+                   content_hash=hashlib.sha256(amend_xml.encode()).hexdigest())
+
+    pipeline._step7_parse_and_reconcile([f_base], "unprov-base")
+    pipeline._step7_parse_and_reconcile([f_amend], "unprov-amend")
+
+    ambig_symbols = repo.get_ambiguous_amendment_symbols_as_of("2026-09-10T00:00:00Z", ["NVDA"])
+    assert "NVDA" in ambig_symbols
+
+    tx_map = repo.get_bulk_transactions_as_of("2026-09-10T00:00:00Z", ["NVDA"], "2026-08-01")
+    accs = [t["accession_number"] for t in tx_map["NVDA"]]
+    assert amend_acc not in accs
+    assert len(accs) == 2
+
+
+def test_amendment_chain_point_in_time_supersession_retains_unamended_lines(db):
+    """GATE 4: Amendment chain supersession: Base -> Amend1 (corrects line 2) -> Amend2 (corrects line 2 again).
+    Verify Amend2 supersedes Amend1 at Amend2 cutoff while retaining unamended base line 1 throughout."""
+    conn, repo, pipeline = db
+
+    base_acc = "0001045810-26-000300"
+    amend1_acc = "0001045810-26-000301"
+    amend2_acc = "0001045810-26-000302"
+
+    t_base = "2026-09-01T10:00:00Z"
+    t_amend1 = "2026-09-05T10:00:00Z"
+    t_amend2 = "2026-09-10T10:00:00Z"
+
+    base_xml = """<ownershipDocument><documentType>4</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>10</value></transactionShares><transactionPricePerShare><value>100</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>200</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+    </ownershipDocument>"""
+
+    amend1_xml = """<ownershipDocument><documentType>4/A</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <dateOfOriginalSubmission>2026-09-01</dateOfOriginalSubmission>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>220</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+      <remarks>Solely to correct the second transaction price.</remarks>
+    </ownershipDocument>"""
+
+    amend2_xml = """<ownershipDocument><documentType>4/A</documentType>
+      <periodOfReport>2026-09-01</periodOfReport>
+      <dateOfOriginalSubmission>2026-09-01</dateOfOriginalSubmission>
+      <issuer><issuerCik>0001045810</issuerCik><issuerName>NVIDIA</issuerName><issuerTradingSymbol>NVDA</issuerTradingSymbol></issuer>
+      <reportingOwner><reportingOwnerId><rptOwnerCik>0002152188</rptOwnerCik><rptOwnerName>Parker</rptOwnerName></reportingOwnerId></reportingOwner>
+      <nonDerivativeTable>
+        <nonDerivativeTransaction>
+          <transactionDate><value>2026-09-01</value></transactionDate>
+          <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+          <transactionAmounts><transactionShares><value>20</value></transactionShares><transactionPricePerShare><value>250</value></transactionPricePerShare><transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode></transactionAmounts>
+        </nonDerivativeTransaction>
+      </nonDerivativeTable>
+      <remarks>Solely to correct the second transaction price.</remarks>
+    </ownershipDocument>"""
+
+    f_base = dict(accession_number=base_acc, ticker="NVDA", cik="0001045810",
+                  company_name="NVIDIA", filing_date="2026-09-01", document_type="4",
+                  accepted_datetime=t_base, xml_content=base_xml,
+                  source_url=f"https://www.sec.gov/Archives/{base_acc}.xml",
+                  content_hash=hashlib.sha256(base_xml.encode()).hexdigest(),
+                  public_availability_at=t_base)
+
+    f_amend1 = dict(accession_number=amend1_acc, ticker="NVDA", cik="0001045810",
+                    company_name="NVIDIA", filing_date="2026-09-05", document_type="4/A",
+                    accepted_datetime=t_amend1, xml_content=amend1_xml,
+                    source_url=f"https://www.sec.gov/Archives/{amend1_acc}.xml",
+                    content_hash=hashlib.sha256(amend1_xml.encode()).hexdigest(),
+                    public_availability_at=t_amend1)
+
+    f_amend2 = dict(accession_number=amend2_acc, ticker="NVDA", cik="0001045810",
+                    company_name="NVIDIA", filing_date="2026-09-10", document_type="4/A",
+                    accepted_datetime=t_amend2, xml_content=amend2_xml,
+                    source_url=f"https://www.sec.gov/Archives/{amend2_acc}.xml",
+                    content_hash=hashlib.sha256(amend2_xml.encode()).hexdigest(),
+                    public_availability_at=t_amend2)
+
+    pipeline._step7_parse_and_reconcile([f_base], "chain-base")
+    pipeline._step7_parse_and_reconcile([f_amend1], "chain-amend1")
+
+    # Set amendment_number = 2 for amend2 to reflect sequence
+    repo.save_amendment(amend2_acc, base_acc, 2, "PARTIAL_CORRECTION", resolved_at=t_amend2)
+    pipeline._step7_parse_and_reconcile([f_amend2], "chain-amend2")
+    repo.save_amendment(amend2_acc, base_acc, 2, "PARTIAL_CORRECTION", resolved_at=t_amend2)
+
+    # Point 1: Before Amend 1 (2026-09-03): Base A ($100) and Base B ($200)
+    txs_p1 = repo.get_bulk_transactions_as_of("2026-09-03T00:00:00Z", ["NVDA"], "2026-08-01")["NVDA"]
+    prices_p1 = sorted([float(t["price_per_share"]) for t in txs_p1])
+    assert prices_p1 == [100.0, 200.0]
+
+    # Point 2: Between Amend 1 and Amend 2 (2026-09-07): Base A ($100) and Amend1 B ($220)
+    txs_p2 = repo.get_bulk_transactions_as_of("2026-09-07T00:00:00Z", ["NVDA"], "2026-08-01")["NVDA"]
+    prices_p2 = sorted([float(t["price_per_share"]) for t in txs_p2])
+    assert prices_p2 == [100.0, 220.0]
+
+    # Point 3: After Amend 2 (2026-09-12): Base A ($100) and Amend2 B ($250) (Amend1 B is superseded!)
+    txs_p3 = repo.get_bulk_transactions_as_of("2026-09-12T00:00:00Z", ["NVDA"], "2026-08-01")["NVDA"]
+    prices_p3 = sorted([float(t["price_per_share"]) for t in txs_p3])
+    assert prices_p3 == [100.0, 250.0]
+
 

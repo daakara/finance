@@ -14,13 +14,11 @@ Merged PR #304 (`c6e3c03b88a0729d18284fbf9786135d2a7d4a81`) qualified atomic evi
 1. **Issuer-bound historical coverage:** Inability to durably bind reconciliation receipts to specific issuers, exact observation intervals, and accession inventories, creating the hazard that global cycle receipts or row counts might be used to falsely certify zero activity.
 2. **Amendment-effect classification:** Inability to discern whether a Form 4/A amendment was a full replacement, partial correction, or additional transaction, requiring that any `RESOLVED` base lineage alone block snapshot publication.
 
-Following code review, a targeted remediation addressed six critical findings to ensure fail-closed rigor across both blockers:
-- **Coverage Proved, Never Inferred:** Strict rejection of `COMPLETE` coverage without authoritative source-inventory evidence for the exact issuer, interval, and public cutoff. An empty database query or stored row count cannot establish verified-zero activity; zero activity strictly requires explicit source catalog proof (`zero_activity_proof`).
-- **Conservative Amendment Classification:** Broad substring rules replaced with strict contextual regular expressions and exclusion patterns (rejecting agreements, plans, indentures, and negation phrasing). Transaction-subset overlap and lineage alone do not establish replacement; uncertain cases fail closed to `AMENDMENT_SCOPE_AMBIGUOUS`.
-- **Evidence-Backed Partial Correction Mapping:** Base and amended transactions are matched using immutable owner CIK and table/sequence from `transaction_id` or 1-to-1 table matches, ensuring price, share, date, and code corrections supersede base records point-in-time without duplicates or missing transactions.
-- **Controlled State Transitions:** `save_amendment` supports valid transitions from `UNRESOLVED`, `RESOLVED`, and `AMENDMENT_SCOPE_AMBIGUOUS` to classified scopes, detects conflicting mutations (`AMENDMENT_TRANSITION_CONFLICT`), and enables recovery of existing records.
-- **Complete Receipt Payload Binding:** Deterministic SHA-256 canonical hashing across structured fields (schema version, ticker, CIK, UTC ISO 8601 timestamps, receipt version, supersedes reference, inventory, source hashes, complete canonical material gap objects, and zero-activity proof).
-- **Read-Only Preflight & Lock Safety:** Advisory lock check replaced with a true read-only `pg_locks` query; execution acquisition and teardown documented with explicit timeouts and abort conditions.
+Following code review of PR #305, two critical offline reproductions demonstrated missing safeguards that required immediate remediation:
+- **Blocker A (False Verified-Zero Coverage):** Receipt writers and readers previously accepted `COMPLETE` coverage with empty inventory and empty string hash (`e3b0c442...`). Remediated by requiring `validate_catalog_evidence` with authentic pinned SEC submissions catalog JSON bytes, 64-char lowercase hex digest, exact CIK/ticker matching, interval traversal exhaustiveness, derived inventory vs caller assertions, and distinguishing `NO_ELIGIBLE_FILINGS` from `NO_QUALIFYING_TRANSACTIONS`.
+- **Blocker B (Positional Sequence Matching Elimination):** Positional sequence matching (`split_part(..., ':', 4)`) caused single-line amendments to erroneously overwrite sequence 0 transactions. Remediated by eliminating positional matching, requiring explicit evidence-backed line mapping stored in `sm_audit_events` (`AMENDMENT_TRANSACTION_MAPPING`), retaining unamended base transactions, and fail-closed blocking of snapshot publication when multi-transaction bases have unproven mappings.
+
+All 4 qualification gates are fully verified with 55/55 evidence integrity tests passing offline on disposable PostgreSQL. Operational activation remains strictly HELD (`HOLD_SEC_001`); Railway worker remains in `STANDBY` with egress `DISABLED`. Local qualification receipts are segregated and not conflated with hosted CI.
 
 ---
 
@@ -74,10 +72,10 @@ All qualification executed locally using disposable PostgreSQL (`pgserver`) with
 
 | Test Suite / Quality Gate | Scope | Status | Notes |
 | :--- | :--- | :---: | :--- |
-| `test_sec_ingestion_evidence_integrity.py` | 46 unit/integration tests | **PASS (46/46)** | Isolated PostgreSQL rollback, cutoffs, contextual classification, regression cases, bound coverage receipts, verified zero activity, conflict detection, tampered hash rejection. |
+| `test_sec_ingestion_evidence_integrity.py` | 55 unit/integration tests | **PASS (55/55)** | Gate 1A/B reproductions, Gate 2 catalog validation, Gate 3 amendment mapping with 0-DDL audit event ledger, Gate 4 acceptance suite (tampered hash, CIK/ticker mismatch, incomplete interval, caller omission, table/owner mismatch, unproven mapping blocking, and amendment chain PIT supersession). |
 | `test_smart_money_continuous_ingestion.py` | 30 integration tests | **PASS (30/30)** | Atomic cycle execution, Step 6 fetch isolation, Step 7 transaction commit. |
 | `test_radar_smart_money_adapter_adversarial.py` | 15 adversarial tests | **PASS (15/15)** | Watermark freshness, interval coverage, missing receipt rejection. |
-| `test_radar_postgres_schema_acceptance.py` | 9 schema acceptance tests | **PASS (9/9)** | Append-only triggers, constraint integrity, transaction isolation. |
+| `test_sm_act_020_filing_coverage.py` | 7 coverage tests | **PASS (7/7)** | 4-request wire transmission ceiling, zero-archive fetch on known accessions, parameterized DB read-only. |
 | `test_smart_money_radar_contract.py` | 4 contract tests | **PASS (4/4)** | Radar to Smart Money contract compliance. |
 | **RQ-03 Backend Regression** | 85 regression tests | **PASS (85/85)** | All multi-pillar backend scoring and macro models clean. |
 | **RQ-04 Frontend Regression** | 17 typecheck & parity tests | **PASS (17/17)** | Clean TypeScript compile (`tsc --noEmit`), CDNS parity verified. |

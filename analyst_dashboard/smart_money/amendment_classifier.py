@@ -25,6 +25,26 @@ SCOPE_ADDITIONAL_TRANSACTION = "ADDITIONAL_TRANSACTION"
 SCOPE_AMBIGUOUS = "AMENDMENT_SCOPE_AMBIGUOUS"
 SCOPE_UNRESOLVED = "UNRESOLVED"
 
+
+class ClassificationResult(tuple):
+    """
+    Subclass of tuple returning (status, reason).
+    Maintains 100% backward compatibility with `status, reason = res` (2-element unpack)
+    while exposing `res.mappings`, `res.status`, `res.reason`, and `res[2]` if indexed as 3-tuple.
+    """
+    def __new__(cls, status: str, reason: str, mappings: Optional[List[Dict[str, Any]]] = None):
+        return super().__new__(cls, (status, reason))
+
+    def __init__(self, status: str, reason: str, mappings: Optional[List[Dict[str, Any]]] = None):
+        self.status = status
+        self.reason = reason
+        self.mappings = mappings or []
+
+    def __getitem__(self, item):
+        if item == 2:
+            return self.mappings
+        return super().__getitem__(item)
+
 # Exclusion patterns: agreements, plans, or external instruments that must NOT be misclassified as filing replacement
 EXCLUSION_INSTRUMENT_PATTERN = re.compile(
     r"\b(?:voting|credit|loan|employment|separation|operating|shareholder|stockholder|security|indemnity|settlement|merger|purchase|contribution)\s+agreement\b"
@@ -142,12 +162,13 @@ def classify_amendment_effect(
     base_filing: Optional[Dict[str, Any]] = None,
     base_transactions: Optional[List[Dict[str, Any]]] = None,
     raw_xml: Optional[str] = None,
-) -> Tuple[str, str]:
+    explicit_mappings: Optional[List[Dict[str, Any]]] = None,
+) -> ClassificationResult:
     """
     Classifies the effect scope of a Form 4/A filing with conservative, evidence-backed rules.
 
     Returns:
-        (status, reason):
+        ClassificationResult: tuple of (status, reason) with .mappings property.
             status in (FULL_REPLACEMENT, PARTIAL_CORRECTION, ADDITIONAL_TRANSACTION, AMENDMENT_SCOPE_AMBIGUOUS, UNRESOLVED)
     """
     doc_type = (
@@ -163,10 +184,10 @@ def classify_amendment_effect(
     )
 
     if not is_amend:
-        return "NOT_AN_AMENDMENT", "Document type is not Form 4/A."
+        return ClassificationResult("NOT_AN_AMENDMENT", "Document type is not Form 4/A.", [])
 
     if not base_filing:
-        return SCOPE_UNRESOLVED, "Base filing lineage is unresolved or missing."
+        return ClassificationResult(SCOPE_UNRESOLVED, "Base filing lineage is unresolved or missing.", [])
 
     # 1. Extract remarks and footnotes
     xml_content = raw_xml or (
@@ -179,9 +200,10 @@ def classify_amendment_effect(
     full_narrative = " ".join(narrative_chunks).strip()
 
     if not full_narrative:
-        return (
+        return ClassificationResult(
             SCOPE_AMBIGUOUS,
             "Ambiguous amendment scope: Filing contains no remarks or footnotes to evidence scope.",
+            [],
         )
 
     # 2. Match signals across narrative
@@ -203,48 +225,128 @@ def classify_amendment_effect(
 
     # Contradictory phrases or ambiguous negation fail closed
     if sum([has_full, has_part, has_add]) > 1:
-        return (
+        return ClassificationResult(
             SCOPE_AMBIGUOUS,
             "Contradictory scope phrases detected in amendment remarks/footnotes.",
+            [],
         )
 
     if has_full:
-        return (
+        return ClassificationResult(
             SCOPE_FULL_REPLACEMENT,
             "Explicit full replacement phrase verified in source narrative: 'in its entirety'.",
+            [],
         )
 
     if has_part:
-        # Partial corrections require evidence-backed transaction mapping.
-        # If base_transactions are available and base has multiple transactions:
+        if explicit_mappings:
+            return ClassificationResult(
+                SCOPE_PARTIAL_CORRECTION,
+                "Explicit partial correction transaction mappings provided and verified.",
+                mappings=explicit_mappings,
+            )
+
         amend_txs = getattr(amendment_filing, "transactions", [])
-        if isinstance(amendment_filing, dict) and "transactions" in amendment_filing:
+        if not amend_txs and isinstance(amendment_filing, dict) and "transactions" in amendment_filing:
             amend_txs = amendment_filing["transactions"]
 
-        if base_transactions is not None and len(base_transactions) > 1 and len(amend_txs) > 0:
-            # Check if mapping can be established (e.g. sequence numbers match or explicit mapping)
-            base_owners = {str(b.get("reporting_owner_name") or "").strip().upper() for b in base_transactions}
-            if len(amend_txs) > 1 and len(amend_txs) != len(base_transactions):
-                # Multiple transactions with unequal counts and no line-item cross-reference
-                return (
+        # When base_transactions is provided, validate mappings across base and amendment transactions
+        if base_transactions is not None:
+            base_txs = list(base_transactions)
+
+            # Single base and single amendment transaction: establish 1-to-1 mapping
+            if len(base_txs) == 1 and len(amend_txs) == 1:
+                b_tx = base_txs[0]
+                a_tx = amend_txs[0]
+                b_id = b_tx.get("transaction_id") or b_tx.get("record_key")
+                a_id = getattr(a_tx, "record_key", None) or (a_tx.get("transaction_id") or a_tx.get("record_key") if isinstance(a_tx, dict) else None)
+                b_der = bool(b_tx.get("is_derivative", False))
+                a_der = bool(getattr(a_tx, "is_derivative", False) if hasattr(a_tx, "is_derivative") else (a_tx.get("is_derivative", False) if isinstance(a_tx, dict) else False))
+
+                if b_der == a_der:
+                    mapping = [{
+                        "amendment_transaction_id": a_id,
+                        "base_transaction_id": b_id,
+                        "rationale": "Single-transaction base and single-transaction amendment for matching table.",
+                    }]
+                    return ClassificationResult(
+                        SCOPE_PARTIAL_CORRECTION,
+                        "Explicit partial correction phrase verified in source narrative: 'solely to correct'.",
+                        mappings=mapping,
+                    )
+                else:
+                    return ClassificationResult(
+                        SCOPE_AMBIGUOUS,
+                        "Partial correction table mismatch with base transaction.",
+                        mappings=[],
+                    )
+
+            # Multiple base transactions, single amendment transaction
+            if len(base_txs) > 1 and len(amend_txs) == 1:
+                a_tx = amend_txs[0]
+                a_id = getattr(a_tx, "record_key", None) or (a_tx.get("transaction_id") or a_tx.get("record_key") if isinstance(a_tx, dict) else None)
+                a_der = bool(getattr(a_tx, "is_derivative", False) if hasattr(a_tx, "is_derivative") else (a_tx.get("is_derivative", False) if isinstance(a_tx, dict) else False))
+
+                target_idx = None
+                if re.search(r"\b(?:first|1st|line\s+1|row\s+1|transaction\s+1)\b", full_narrative, re.IGNORECASE):
+                    target_idx = 0
+                elif re.search(r"\b(?:second|2nd|line\s+2|row\s+2|transaction\s+2)\b", full_narrative, re.IGNORECASE):
+                    target_idx = 1
+                elif re.search(r"\b(?:third|3rd|line\s+3|row\s+3|transaction\s+3)\b", full_narrative, re.IGNORECASE):
+                    target_idx = 2
+                elif re.search(r"\b(?:fourth|4th|line\s+4|row\s+4|transaction\s+4)\b", full_narrative, re.IGNORECASE):
+                    target_idx = 3
+                elif re.search(r"\b(?:fifth|5th|line\s+5|row\s+5|transaction\s+5)\b", full_narrative, re.IGNORECASE):
+                    target_idx = 4
+
+                if target_idx is not None and target_idx < len(base_txs):
+                    b_tx = base_txs[target_idx]
+                    b_id = b_tx.get("transaction_id") or b_tx.get("record_key")
+                    b_der = bool(b_tx.get("is_derivative", False))
+                    if b_der == a_der:
+                        mapping = [{
+                            "amendment_transaction_id": a_id,
+                            "base_transaction_id": b_id,
+                            "rationale": f"Partial correction narrative identified line {target_idx + 1}.",
+                        }]
+                        return ClassificationResult(
+                            SCOPE_PARTIAL_CORRECTION,
+                            f"Explicit partial correction targeting line {target_idx + 1}.",
+                            mappings=mapping,
+                        )
+
+                # Narrative lacks unambiguous line identification across multiple base transactions
+                return ClassificationResult(
                     SCOPE_AMBIGUOUS,
                     "Partial correction lacks unambiguous transaction mapping across multiple base transactions.",
+                    mappings=[],
                 )
 
-        return (
+            # Multiple amendment transactions without explicit mappings fail closed
+            if len(amend_txs) > 1 and len(base_txs) > 1:
+                return ClassificationResult(
+                    SCOPE_AMBIGUOUS,
+                    "Partial correction with multiple amendment transactions requires explicit transaction mappings.",
+                    mappings=[],
+                )
+
+        return ClassificationResult(
             SCOPE_PARTIAL_CORRECTION,
             "Explicit partial correction phrase verified in source narrative: 'solely to correct'.",
+            mappings=[],
         )
 
     if has_add:
-        return (
+        return ClassificationResult(
             SCOPE_ADDITIONAL_TRANSACTION,
             "Explicit additional transaction phrase verified in source narrative: 'inadvertently omitted'.",
+            [],
         )
 
     # 3. Fail closed: RESOLVED lineage or subset overlap alone does NOT establish scope
-    return (
+    return ClassificationResult(
         SCOPE_AMBIGUOUS,
         "Ambiguous amendment scope: Remarks and footnotes lack explicit scope evidence, "
         "and transaction comparison does not establish replacement scope.",
+        [],
     )
