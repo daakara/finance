@@ -1,0 +1,75 @@
+{
+  "control_id": "RQ-13",
+  "name": "Financial Evidence & Decision Integrity",
+  "status": "PASS",
+  "start_time": "2026-11-18T00:04:52.701423+00:00",
+  "end_time": "2026-11-18T00:04:52.727290+00:00",
+  "duration_sec": 0.006,
+  "candidate_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "target_branch": "release/production",
+  "execution_context": {
+    "repository": "daakara/finance",
+    "event_name": "local_execution",
+    "pr_number": null,
+    "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "target_branch": "release/production",
+    "workflow_run_id": "local_run",
+    "workflow_run_attempt": 1,
+    "qualification_policy_version": "2.2.0-D074A4"
+  },
+  "assertions": [
+    {
+      "assertion": "Form 4 SEC transaction code mapping integrity",
+      "passed": true
+    },
+    {
+      "assertion": "Production screener classify_sec_trades accurately classifies purchases vs sales",
+      "passed": true
+    },
+    {
+      "assertion": "Form 4 sale does not award open-market purchase points",
+      "passed": true
+    },
+    {
+      "assertion": "Deterministic ConfluenceEngine coverage caps enforced (50/72/84/96)",
+      "passed": true
+    },
+    {
+      "assertion": "Synthetic fundamentals fail closed to EVIDENCE_INCOMPLETE",
+      "passed": true
+    },
+    {
+      "assertion": "ETF corporate exemption preserves eligibility without phantom score",
+      "passed": true
+    },
+    {
+      "assertion": "Relative rank cannot promote score 45.0 candidate to ACTIONABLE_SETUP",
+      "passed": true
+    }
+  ],
+  "evidence_paths": [
+    "analyst_dashboard/analyzers/confluence_engine.py",
+    "analyst_dashboard/analyzers/decision_hierarchy.py",
+    "analyst_dashboard/smart_money/form4_parser.py",
+    "analyst_dashboard/smart_money/form4_models.py",
+    "api/routes/screener.py",
+    "frontend/lib/insightGenerator.ts"
+  ],
+  "evidence_digests": {
+    "analyst_dashboard/analyzers/confluence_engine.py": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
+    "analyst_dashboard/analyzers/decision_hierarchy.py": "b0d41de56c34a46000496e2cf80afdfd76a3ff19ffc18fbdd80f430050c375b3",
+    "analyst_dashboard/smart_money/form4_parser.py": "68d95e24feaa72cefad219b95c421cbedb85fda06a94fc9772e8473564c07031",
+    "analyst_dashboard/smart_money/form4_models.py": "c7111457655cfffb13c8614ad3f71ee5232c9a1a36a94814889c24b2f53b16e3",
+    "api/routes/screener.py": "71511d94b6467e2c6819f0a70d634f40b5fec51d75a789710ff606eb0496c2dc",
+    "frontend/lib/insightGenerator.ts": "6de7fd382cd91c3c56b197a593f50061c1c829d1eebafca38df1c784fc95c0c9"
+  },
+  "errors": [],
+  "metadata": {
+    "policy_version": "2.2.0-D074A4"
+  },
+  "receipt_digest": "1607c958c5403ae83568fc7830517d1d08fe168c587220c708fea77b47e9924b"
+}

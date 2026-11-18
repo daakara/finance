@@ -1,0 +1,68 @@
+{
+  "control_id": "RQ-01",
+  "name": "Candidate Identity & Lineage",
+  "status": "PASS",
+  "start_time": "2026-11-18T00:04:21.379899+00:00",
+  "end_time": "2026-11-18T00:04:21.500425+00:00",
+  "duration_sec": 0.12,
+  "candidate_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "target_branch": "release/production",
+  "execution_context": {
+    "repository": "daakara/finance",
+    "event_name": "local_execution",
+    "pr_number": null,
+    "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "target_branch": "release/production",
+    "workflow_run_id": "local_run",
+    "workflow_run_attempt": 1,
+    "qualification_policy_version": "2.2.0-D074A4"
+  },
+  "assertions": [
+    {
+      "assertion": "HEAD is valid 40-char hex SHA",
+      "observed": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+      "passed": true
+    },
+    {
+      "assertion": "Base anchor exists in repo history",
+      "observed": "c6e3c03b88a0729d18284fbf9786135d2a7d4a81",
+      "passed": true
+    },
+    {
+      "assertion": "Base anchor is ancestor of Candidate SHA",
+      "observed": true,
+      "passed": true
+    },
+    {
+      "assertion": "Target branch is authorized for qualification",
+      "observed": "release/production",
+      "passed": true
+    },
+    {
+      "assertion": "Candidate SHA incorporates authorized candidate",
+      "observed": {
+        "candidate_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+        "expected": "112c10a10cd0b98652e3cb82b7a0331906dfe1f8",
+        "ancestor": true
+      },
+      "passed": true
+    }
+  ],
+  "evidence_paths": [
+    ".github/workflows/release-qualification.yml"
+  ],
+  "evidence_digests": {
+    ".github/workflows/release-qualification.yml": "d6e2ae03c4f25e297bb2743a834945b9388b82143153ee3696d13c7934040188"
+  },
+  "errors": [],
+  "metadata": {
+    "is_merge_commit": false,
+    "checked_out_head": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "policy_version": "2.2.0-D074A4"
+  },
+  "receipt_digest": "b210eb4f2f6512f767b47be3335196d51f0003e567522c3159e0e823bee71324"
+}

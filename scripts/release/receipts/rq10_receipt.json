@@ -1,0 +1,71 @@
+{
+  "control_id": "RQ-10",
+  "name": "Release Configuration Integrity",
+  "status": "PASS",
+  "start_time": "2026-11-18T00:04:50.726341+00:00",
+  "end_time": "2026-11-18T00:04:50.786983+00:00",
+  "duration_sec": 0.038,
+  "candidate_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "target_branch": "release/production",
+  "execution_context": {
+    "repository": "daakara/finance",
+    "event_name": "local_execution",
+    "pr_number": null,
+    "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "target_branch": "release/production",
+    "workflow_run_id": "local_run",
+    "workflow_run_attempt": 1,
+    "qualification_policy_version": "2.2.0-D074A4"
+  },
+  "assertions": [
+    {
+      "assertion": "Ratified v2.5.3 manifest and three engine hashes match production source",
+      "observed": {
+        "manifest_version": "2.5.3",
+        "ratified": true,
+        "engine_hashes": {
+          "confluence_engine": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
+          "decision_hierarchy": "b0d41de56c34a46000496e2cf80afdfd76a3ff19ffc18fbdd80f430050c375b3",
+          "optimal_execution": "df2dc6050bf6fe91cae442e1872a3eccc40520b990f4efb4af63f79311a31dec"
+        }
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Required frontend environment contracts satisfied",
+      "observed": {
+        "found": {
+          "NEXT_PUBLIC_API_URL": "CONFIGURED_IN_PROD_ENV (https://web-production-e3...)"
+        },
+        "missing": []
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Zero plaintext credentials in repository configuration files",
+      "observed": {
+        "suspicious_files_count": 0
+      },
+      "passed": true
+    }
+  ],
+  "evidence_paths": [
+    "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json",
+    "analyst_dashboard/analyzers/confluence_engine.py",
+    "frontend/.env.production"
+  ],
+  "evidence_digests": {
+    "CANDIDATE_ENGINE_MANIFEST_SPRINT_4.json": "c94f1889febbb568ead6997bd6ffe3cd15cc1be0485bbe7315d8c97e2caa3f9d",
+    "analyst_dashboard/analyzers/confluence_engine.py": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
+    "frontend/.env.production": "943e3e13bd7afc3089758df335edcb451b42d0f67160de98e6b2aa20bbd280ea"
+  },
+  "errors": [],
+  "metadata": {
+    "policy_version": "2.2.0-D074A4"
+  },
+  "receipt_digest": "7209a73b08d9c5b751b91e53a067fe13d383dffbb6618fa77da24ded7ce79d28"
+}

@@ -1,0 +1,78 @@
+{
+  "control_id": "RQ-04",
+  "name": "Frontend Regression & Typecheck",
+  "status": "PASS",
+  "start_time": "2026-11-18T00:04:40.070869+00:00",
+  "end_time": "2026-11-18T00:04:48.567515+00:00",
+  "duration_sec": 8.48,
+  "candidate_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "target_branch": "release/production",
+  "execution_context": {
+    "repository": "daakara/finance",
+    "event_name": "local_execution",
+    "pr_number": null,
+    "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "target_branch": "release/production",
+    "workflow_run_id": "local_run",
+    "workflow_run_attempt": 1,
+    "qualification_policy_version": "2.2.0-D074A4"
+  },
+  "assertions": [
+    {
+      "assertion": "Frontend TypeScript compiler typecheck passes",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Governor sizing permanent regression suite passes",
+      "observed": {
+        "passed_tests": 17,
+        "exit_code": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Production Spotlight predicate and 0/1/2/N card count regression suite passes",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "CDNS Price Trend moving-average parity and explanation suite passes",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
+    }
+  ],
+  "evidence_paths": [
+    "frontend/tests/governorSizingEngine.test.ts",
+    "frontend/lib/simulation/governorSizingEngine.ts",
+    "frontend/components/PositionSizerModal.tsx",
+    "frontend/components/WeeklyConfluenceSpotlight.tsx",
+    "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts",
+    "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts"
+  ],
+  "evidence_digests": {
+    "frontend/tests/governorSizingEngine.test.ts": "b1677d4c11467f966ab67a3d0aac27701cc27e6a491e6399b4ef1fa9dfcab2e4",
+    "frontend/lib/simulation/governorSizingEngine.ts": "4d53f201629f24f136a48eac54b33c0b2bf121ba055846732a00d45ae69ccd29",
+    "frontend/components/PositionSizerModal.tsx": "356d5c6a8b50c5783a079f24ad41bcfa2012e245681af435232d224a0513462f",
+    "frontend/components/WeeklyConfluenceSpotlight.tsx": "abe14b2f9e847e9fd79280acbb1c1d45834d83b14fcd5fd3acf2e9fe8c959178",
+    "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts": "124f69ebb4d86b0d5f60417c8bb0e2ec29e70d3206f2a9d2d2b4aab87e4ee844",
+    "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts": "9ab57fe7d09c9b4ec44165d9a5d464e418cb98abf0578c177cc49b3853b84147"
+  },
+  "errors": [],
+  "metadata": {
+    "typecheck_exit": 0,
+    "sizing_tests_passed": 17,
+    "policy_version": "2.2.0-D074A4"
+  },
+  "receipt_digest": "96030d0ea9b4f38c18d0d381f468577926ffa272d73d7fd8c89c93305fb8a95b"
+}

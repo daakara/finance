@@ -1,109 +1,102 @@
 {
   "summary_id": "ARX_RELEASE_QUALIFICATION_SUMMARY",
-  "verdict": "RELEASE_QUALIFICATION_BLOCKED",
+  "verdict": "RELEASE_QUALIFIED",
   "policy_version": "2.2.0-D074A4",
-  "candidate_sha": "eb897a77bcaa47c7bed3101b1868728b5ce63754",
-  "source_sha": "eb897a77bcaa47c7bed3101b1868728b5ce63754",
-  "execution_sha": "eb897a77bcaa47c7bed3101b1868728b5ce63754",
+  "candidate_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "eb897a77bcaa47c7bed3101b1868728b5ce63754",
-    "execution_sha": "eb897a77bcaa47c7bed3101b1868728b5ce63754",
+    "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
     "workflow_run_attempt": 1,
     "qualification_policy_version": "2.2.0-D074A4"
   },
-  "timestamp": "2026-11-14T18:56:48.993670+00:00",
-  "total_controls": 11,
-  "passed_count": 0,
+  "timestamp": "2026-11-18T00:04:52.955454+00:00",
+  "total_controls": 12,
+  "passed_count": 12,
   "failed_count": 0,
-  "blocked_count": 1,
-  "missing_count": 11,
+  "blocked_count": 0,
+  "missing_count": 0,
   "stages": {
     "RQ-01": {
       "name": "Candidate Identity & Lineage",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-01 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 0.12
     },
     "RQ-02": {
       "name": "Release Diff Integrity",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-02 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 0.86
     },
     "RQ-03": {
       "name": "Backend Regression Suite",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-03 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 4.387
     },
     "RQ-04": {
       "name": "Frontend Regression & Typecheck",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-04 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 8.48
     },
     "RQ-05": {
       "name": "Cross-Engine Invariants",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-05 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 0.004
     },
     "RQ-06": {
       "name": "Governance & Backlog Invariants",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-06 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 0.462
     },
     "RQ-07": {
       "name": "Deployment Safety & Secret Isolation",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-07 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 0.057
     },
     "RQ-08": {
       "name": "Artifact Provenance & Digest Binding",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-08 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 0.033
     },
     "RQ-09": {
       "name": "Four-Way Cross-Platform Compatibility",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-09 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 1.163
     },
     "RQ-10": {
       "name": "Release Configuration Integrity",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-10 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 0.038
     },
     "RQ-11": {
       "name": "Rollback Readiness & Target Verification",
-      "status": "MISSING",
-      "valid": false,
-      "reason": "Receipt file for RQ-11 not found in /var/folders/9x/dth567nj5695242nrrscj9d80000gn/T/arx_gate_h_attacks_yzeb31j4/receipts_s10"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 0.097
+    },
+    "RQ-13": {
+      "name": "Financial Evidence & Decision Integrity",
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 0.006
     }
   },
-  "errors": [
-    "Unexpected or rogue receipt file detected: rogue_backdoor_receipt.json",
-    "Missing receipt for mandatory stage RQ-01",
-    "Missing receipt for mandatory stage RQ-02",
-    "Missing receipt for mandatory stage RQ-03",
-    "Missing receipt for mandatory stage RQ-04",
-    "Missing receipt for mandatory stage RQ-05",
-    "Missing receipt for mandatory stage RQ-06",
-    "Missing receipt for mandatory stage RQ-07",
-    "Missing receipt for mandatory stage RQ-08",
-    "Missing receipt for mandatory stage RQ-09",
-    "Missing receipt for mandatory stage RQ-10",
-    "Missing receipt for mandatory stage RQ-11"
-  ]
+  "errors": []
 }

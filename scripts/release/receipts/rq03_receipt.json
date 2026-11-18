@@ -1,0 +1,63 @@
+{
+  "control_id": "RQ-03",
+  "name": "Backend Regression Suite",
+  "status": "PASS",
+  "start_time": "2026-11-18T00:04:35.601040+00:00",
+  "end_time": "2026-11-18T00:04:40.004374+00:00",
+  "duration_sec": 4.387,
+  "candidate_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+  "target_branch": "release/production",
+  "execution_context": {
+    "repository": "daakara/finance",
+    "event_name": "local_execution",
+    "pr_number": null,
+    "source_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "execution_sha": "63acd4006efd5b79ef0f724d0ed328295a8657b5",
+    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "target_branch": "release/production",
+    "workflow_run_id": "local_run",
+    "workflow_run_attempt": 1,
+    "qualification_policy_version": "2.2.0-D074A4"
+  },
+  "assertions": [
+    {
+      "assertion": "All backend regression tests pass",
+      "observed": {
+        "passed": 85,
+        "failed": 0,
+        "exit_code": 0
+      },
+      "passed": true
+    }
+  ],
+  "evidence_paths": [
+    "tests/test_directive_057_remediation.py",
+    "tests/test_confluence_engine.py",
+    "tests/test_confluence_integrity_002.py",
+    "tests/test_confluence_provenance_wiring_003.py",
+    "tests/test_confluence_cross_component_parity.py",
+    "tests/test_financial_correctness_authority_035.py",
+    "tests/test_smart_money_backup_retention_safety.py",
+    "tests/test_rq10_manifest_authority_negative_cases.py"
+  ],
+  "evidence_digests": {
+    "tests/test_directive_057_remediation.py": "3b9514d235f2ac1462e904444912c0bea616404de2d521a26d87a6ea7db5e348",
+    "tests/test_confluence_engine.py": "aa2e9f1221270549aa48265146a52d817aadf96e4c9ada83e5e169f35e01e907",
+    "tests/test_confluence_integrity_002.py": "2b6240c721255478cb2401bf763daf559144f71fc4931dcccfdca2b4d6a38675",
+    "tests/test_confluence_provenance_wiring_003.py": "c23970f3938a30fbdf80cc5d535e65cbd3bbd590df6baddae9ee8caaed45cd18",
+    "tests/test_confluence_cross_component_parity.py": "c3a8c2d6dc3b09d227681deb92a26611e77bec4504a6279daa1fca0d7ddef042",
+    "tests/test_financial_correctness_authority_035.py": "514bc9375a5b73b003a05132a4c608ede23fb964c383608290c122e880965b00",
+    "tests/test_smart_money_backup_retention_safety.py": "6d6345f459b43c1d61975d913d785f754abfcdd00d0ebe7e8c4e0e2be6fa0a56",
+    "tests/test_rq10_manifest_authority_negative_cases.py": "a2e36908703d125f44067812e594f487de00aeda56a50024b0d2f589067423e9"
+  },
+  "errors": [],
+  "metadata": {
+    "pytest_passed": 85,
+    "pytest_failed": 0,
+    "pytest_duration": 4.387480020523071,
+    "policy_version": "2.2.0-D074A4"
+  },
+  "receipt_digest": "da85d5885e77e4f609c0a167e36ea6e8e53fc92c65b7fe48019336549757e5ac"
+}
