@@ -1553,6 +1553,10 @@ def test_catalog_evidence_valid_complete_with_verified_pagination_artifacts():
         "acceptanceDateTime": ["2026-08-01T16:00:00Z"],
         "form": ["4"],
     }
+    page1_bytes = json.dumps(page1_content).encode("utf-8")
+    page2_bytes = json.dumps(page2_content).encode("utf-8")
+    page1_hash = hashlib.sha256(page1_bytes).hexdigest()
+    page2_hash = hashlib.sha256(page2_bytes).hexdigest()
 
     res = validate_catalog_evidence(
         catalog_bytes=cat_bytes,
@@ -1563,18 +1567,24 @@ def test_catalog_evidence_valid_complete_with_verified_pagination_artifacts():
         interval_end="2026-11-17T23:59:59Z",
         certified_watermark="2026-11-17T23:59:59Z",
         pagination_artifacts={
-            "page-001.json": page1_content,
-            "page-002.json": page2_content,
+            "page-001.json": page1_bytes,
+            "page-002.json": page2_bytes,
         },
         accession_inventory=["0001045810-26-000030", "0001045810-26-000040"],
         source_hashes={
             "0001045810-26-000030": "a" * 64,
             "0001045810-26-000040": "b" * 64,
+            "page-001.json": page1_hash,
+            "page-002.json": page2_hash,
         },
     )
     assert res["coverage_status"] == "COMPLETE"
     assert res["derived_inventory"] == ["0001045810-26-000030", "0001045810-26-000040"]
     assert res["zero_activity_reason"] is None
+    assert res["historical_manifest"] == {
+        "page-001.json": page1_hash,
+        "page-002.json": page2_hash,
+    }
 
 
 def test_catalog_evidence_genuine_verified_zero_activity_accepted():
@@ -1790,6 +1800,184 @@ def test_amendment_reordered_base_transactions_preserves_unaffected_transactions
     txs_after = repo.get_bulk_transactions_as_of("2026-09-10T00:00:00Z", ["NVDA"], "2026-08-01")["NVDA"]
     prices_after = sorted([float(t["price_per_share"]) for t in txs_after])
     assert prices_after == [100.0, 250.0]
+
+
+def test_reproduction_unhashed_substitute_page_cannot_certify_complete_rejected():
+    """
+    REPRODUCTION:
+    An unhashed substitute historical page must NOT certify COMPLETE / NO_ELIGIBLE_FILINGS.
+    validate_catalog_evidence must require a pinned, valid 64-char SHA-256 digest for every
+    historical page used to certify coverage.
+    """
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000050"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00Z"],
+                "form": ["8-K"],
+            },
+            "files": [{
+                "name": "page-001.json",
+                "filingCount": 100,
+                "filingFrom": "2026-08-01",
+                "filingTo": "2026-10-31",
+            }],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    # Unhashed substitute page with zero Form 4 filings
+    substitute_page = {
+        "accessionNumber": ["0001045810-26-000099"],
+        "filingDate": ["2026-08-01"],
+        "acceptanceDateTime": ["2026-08-01T16:00:00Z"],
+        "form": ["8-K"],
+    }
+
+    with pytest.raises(ValueError, match="MISSING_PAGINATION_DIGEST|UNHASHED_PAGINATION_PAGE"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+            pagination_artifacts={"page-001.json": substitute_page},
+            accession_inventory=[],
+            source_hashes={},  # No hash provided for page-001.json!
+        )
+
+
+def test_catalog_evidence_substituted_page_digest_mismatch_rejected():
+    """
+    QUALITY GATE:
+    Changed page bytes or substituted historical artifacts must be rejected with PAGINATION_DIGEST_MISMATCH.
+    """
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000050"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00Z"],
+                "form": ["8-K"],
+            },
+            "files": [{
+                "name": "page-001.json",
+                "filingCount": 100,
+                "filingFrom": "2026-08-01",
+                "filingTo": "2026-10-31",
+            }],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    page_bytes = b'{"accessionNumber": ["0001045810-26-000099"], "filingDate": ["2026-08-01"], "acceptanceDateTime": ["2026-08-01T16:00:00Z"], "form": ["8-K"]}'
+    fake_hash = "f" * 64
+
+    with pytest.raises(ValueError, match="PAGINATION_DIGEST_MISMATCH"):
+        validate_catalog_evidence(
+            catalog_bytes=cat_bytes,
+            catalog_sha256=cat_hash,
+            ticker="NVDA",
+            issuer_cik="0001045810",
+            interval_start="2026-08-01T00:00:00Z",
+            interval_end="2026-11-17T23:59:59Z",
+            certified_watermark="2026-11-17T23:59:59Z",
+            pagination_artifacts={"page-001.json": page_bytes},
+            accession_inventory=[],
+            source_hashes={"page-001.json": fake_hash},
+        )
+
+
+def test_coverage_receipt_binds_historical_manifest_and_revalidates_on_read(db):
+    """
+    QUALITY GATE:
+    record_issuer_coverage_receipt binds the historical artifact manifest into the receipt envelope,
+    and get_authoritative_receipt_for_interval revalidates it on read.
+    """
+    conn, repo, pipeline = db
+
+    cat = {
+        "cik": "0001045810",
+        "entityType": "operating",
+        "name": "NVIDIA CORP",
+        "tickers": ["NVDA"],
+        "filings": {
+            "recent": {
+                "accessionNumber": ["0001045810-26-000050"],
+                "filingDate": ["2026-10-15"],
+                "reportDate": ["2026-10-15"],
+                "acceptanceDateTime": ["2026-10-15T16:00:00Z"],
+                "form": ["8-K"],
+            },
+            "files": [{
+                "name": "page-001.json",
+                "filingCount": 100,
+                "filingFrom": "2026-08-01",
+                "filingTo": "2026-10-31",
+            }],
+        },
+    }
+    cat_bytes = json.dumps(cat).encode("utf-8")
+    cat_hash = hashlib.sha256(cat_bytes).hexdigest()
+
+    page_content = {
+        "accessionNumber": ["0001045810-26-000099"],
+        "filingDate": ["2026-08-01"],
+        "acceptanceDateTime": ["2026-08-01T16:00:00Z"],
+        "form": ["8-K"],
+    }
+    page_bytes = json.dumps(page_content).encode("utf-8")
+    page_hash = hashlib.sha256(page_bytes).hexdigest()
+
+    # 1. Record receipt with valid pinned historical manifest
+    r_id = repo.record_issuer_coverage_receipt(
+        ticker="NVDA",
+        issuer_cik="0001045810",
+        interval_start="2026-08-01T00:00:00Z",
+        interval_end="2026-11-17T23:59:59Z",
+        certified_watermark="2026-11-17T23:59:59Z",
+        accession_inventory=[],
+        source_hashes={"page-001.json": page_hash},
+        coverage_status="COMPLETE",
+        zero_activity_proof={
+            "catalog_bytes": cat_bytes,
+            "catalog_sha256": cat_hash,
+            "pagination_artifacts": {"page-001.json": page_bytes},
+            "historical_manifest": {"page-001.json": page_hash},
+        },
+        conn=conn,
+    )
+    assert r_id is not None
+
+    # 2. Read authoritative receipt -> verifies historical_manifest revalidation on read
+    auth_receipt = repo.get_authoritative_receipt_for_interval(
+        ticker="NVDA",
+        interval_start="2026-08-01T00:00:00Z",
+        interval_end="2026-11-17T23:59:59Z",
+        certified_watermark="2026-11-17T23:59:59Z",
+        conn=conn,
+    )
+    assert auth_receipt is not None
+    assert auth_receipt["receipt_id"] == r_id
+    z_proof = auth_receipt.get("structured_metadata", {}).get("zero_activity_proof", {})
+    assert z_proof.get("historical_manifest") == {"page-001.json": page_hash}
+
+
 
 
 

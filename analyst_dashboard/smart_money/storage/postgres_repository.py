@@ -51,6 +51,28 @@ def _to_iso(val: Any) -> str:
     return s
 
 
+def _json_serial(obj: Any) -> Any:
+    if isinstance(obj, bytes):
+        try:
+            return obj.decode("utf-8")
+        except UnicodeDecodeError:
+            return obj.hex()
+    return str(obj)
+
+
+def _sanitize_bytes_to_str(obj: Any) -> Any:
+    if isinstance(obj, bytes):
+        try:
+            return obj.decode("utf-8")
+        except UnicodeDecodeError:
+            return obj.hex()
+    elif isinstance(obj, dict):
+        return {k: _sanitize_bytes_to_str(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_sanitize_bytes_to_str(x) for x in obj]
+    return obj
+
+
 def compute_canonical_receipt_hash(
     schema_version: int,
     ticker: str,
@@ -94,9 +116,10 @@ def compute_canonical_receipt_hash(
         "material_gaps": sorted_gaps,
     }
     if zero_activity_proof:
-        payload["zero_activity_proof"] = {k: zero_activity_proof[k] for k in sorted(zero_activity_proof.keys())}
+        clean_proof = _sanitize_bytes_to_str(zero_activity_proof)
+        payload["zero_activity_proof"] = {k: clean_proof[k] for k in sorted(clean_proof.keys())}
 
-    raw_bytes = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    raw_bytes = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=_json_serial).encode("utf-8")
     return hashlib.sha256(raw_bytes).hexdigest()
 
 
@@ -112,12 +135,14 @@ def validate_catalog_evidence(
     source_hashes: Optional[Dict[str, str]] = None,
     material_gaps: Optional[List[Dict[str, Any]]] = None,
     pagination_artifacts: Optional[Dict[str, Union[bytes, str, Dict[str, Any]]]] = None,
+    historical_manifest: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """
     Validates authoritative SEC submissions catalog evidence for an issuer and observation interval.
     Enforces authentic artifact bytes, 64-char lowercase SHA-256 digest, exact issuer binding,
     exhaustive interval traversal across recent and historical pagination files, derived accession inventory,
     and per-accession source hashes.
+    Every historical page used to certify coverage MUST have a pinned, valid 64-character SHA-256 digest.
     Empty recent data must not bypass traversal, interval coverage, or cutoff validation.
     Distinguishes 'NO_ELIGIBLE_FILINGS' from 'NO_QUALIFYING_TRANSACTIONS'.
     """
@@ -238,6 +263,7 @@ def validate_catalog_evidence(
 
     # 7. Collect records across recent and verified pagination artifacts
     all_records: List[Dict[str, Any]] = []
+    bound_manifest: Dict[str, str] = {}
 
     for i in range(n_rows):
         all_records.append({
@@ -248,16 +274,54 @@ def validate_catalog_evidence(
         })
 
     for fname, art_val in provided_artifacts.items():
-        if source_hashes and fname in source_hashes:
-            expected_h = source_hashes[fname].strip().lower()
-            raw_page_b = art_val.encode("utf-8") if isinstance(art_val, str) else (
-                art_val if isinstance(art_val, bytes) else json.dumps(art_val).encode("utf-8")
-            )
-            calc_h = hashlib.sha256(raw_page_b).hexdigest()
-            if calc_h != expected_h:
-                raise ValueError(f"PAGINATION_DIGEST_MISMATCH: Pagination file '{fname}' SHA-256 digest mismatch: {calc_h} != {expected_h}.")
+        # Require a pinned, valid SHA-256 digest for every historical page used to certify coverage
+        pinned_h = None
+        if isinstance(art_val, dict) and "sha256" in art_val and art_val["sha256"]:
+            pinned_h = art_val["sha256"]
+        elif historical_manifest and fname in historical_manifest:
+            pinned_h = historical_manifest[fname]
+        elif source_hashes and fname in source_hashes:
+            pinned_h = source_hashes[fname]
+        elif source_hashes and fname.lower() in source_hashes:
+            pinned_h = source_hashes[fname.lower()]
 
+        if not pinned_h or not isinstance(pinned_h, str) or not pinned_h.strip():
+            raise ValueError(f"MISSING_PAGINATION_DIGEST: Historical page '{fname}' lacks a pinned SHA-256 digest.")
+
+        clean_pinned_h = pinned_h.strip().lower()
+        if not re.match(r"^[0-9a-f]{64}$", clean_pinned_h):
+            raise ValueError(f"INVALID_PAGINATION_DIGEST: Historical page '{fname}' digest must be a 64-character lowercase hex string, got '{pinned_h}'.")
+        if clean_pinned_h == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855":
+            raise ValueError(f"INVALID_PAGINATION_DIGEST: Historical page '{fname}' digest cannot be empty string hash.")
+
+        # Extract raw page bytes to verify cryptographic digest
+        raw_page_b: bytes
         page_raw = art_val
+        if isinstance(art_val, bytes):
+            raw_page_b = art_val
+            page_raw = art_val
+        elif isinstance(art_val, str):
+            raw_page_b = art_val.encode("utf-8")
+            page_raw = art_val
+        elif isinstance(art_val, dict):
+            if "bytes" in art_val and art_val["bytes"]:
+                raw_page_b = art_val["bytes"].encode("utf-8") if isinstance(art_val["bytes"], str) else art_val["bytes"]
+                page_raw = art_val.get("content") or art_val.get("data") or art_val.get("recent") or art_val["bytes"]
+            elif "content" in art_val and art_val["content"]:
+                raw_page_b = art_val["content"].encode("utf-8") if isinstance(art_val["content"], str) else art_val["content"]
+                page_raw = art_val["content"]
+            else:
+                raw_page_b = json.dumps(art_val, sort_keys=True).encode("utf-8")
+                page_raw = art_val
+        else:
+            raise ValueError(f"MALFORMED_PAGINATION_ARTIFACT: Unexpected artifact type for '{fname}'.")
+
+        calc_h = hashlib.sha256(raw_page_b).hexdigest()
+        if calc_h != clean_pinned_h:
+            raise ValueError(f"PAGINATION_DIGEST_MISMATCH: Computed SHA-256 digest '{calc_h}' for historical page '{fname}' does not match pinned digest '{clean_pinned_h}'.")
+
+        bound_manifest[fname] = clean_pinned_h
+
         if isinstance(page_raw, (bytes, str)):
             try:
                 page_data = json.loads(page_raw if isinstance(page_raw, str) else page_raw.decode("utf-8"))
@@ -353,6 +417,7 @@ def validate_catalog_evidence(
         "eligible_filing_count": len(derived_inventory),
         "zero_activity_reason": zero_reason,
         "coverage_status": "COMPLETE",
+        "historical_manifest": bound_manifest,
     }
 
 
@@ -1007,7 +1072,7 @@ class PostgresSmartMoneyRepository:
                 receipt["missing_count"],
                 receipt["material_gap_count"],
                 receipt["coverage_status"],
-                Json(reasons),
+                Json(reasons, dumps=lambda x: json.dumps(x, default=_json_serial)),
                 receipt["reconciliation_hash"],
                 receipt.get("release_sha", "b72ea23937cf6ed7b8c4b60096630767a7c4592b"),
             ))
@@ -1084,6 +1149,7 @@ class PostgresSmartMoneyRepository:
                         source_hashes=s_hashes,
                         material_gaps=m_gaps,
                         pagination_artifacts=zero_activity_proof.get("pagination_artifacts"),
+                        historical_manifest=zero_activity_proof.get("historical_manifest"),
                     )
                 except Exception as e:
                     raise RuntimeError(f"AUTHORITATIVE_CATALOG_PROOF_FAILED: {e}") from e
@@ -1092,6 +1158,10 @@ class PostgresSmartMoneyRepository:
                 zero_activity_proof["zero_activity_reason"] = cat_val["zero_activity_reason"]
                 zero_activity_proof["catalog_type"] = zero_activity_proof.get("catalog_type", "SEC_SUBMISSIONS_INDEX")
                 zero_activity_proof["catalog_watermark"] = certified_watermark
+                bound_hist = cat_val.get("historical_manifest", {})
+                zero_activity_proof["historical_manifest"] = bound_hist
+                for fname, fhash in bound_hist.items():
+                    s_hashes[fname] = fhash
             else:
                 for acc in acc_inv:
                     h = s_hashes.get(acc)
@@ -1099,6 +1169,7 @@ class PostgresSmartMoneyRepository:
                         raise RuntimeError(f"MISSING_ACCESSION_SOURCE_HASH: Accession '{acc}' lacks a valid 64-char SHA-256 source hash.")
 
         schema_ver = 1
+        clean_z_proof = _sanitize_bytes_to_str(zero_activity_proof) if zero_activity_proof else None
         recon_hash = compute_canonical_receipt_hash(
             schema_version=schema_ver,
             ticker=clean_ticker,
@@ -1111,7 +1182,7 @@ class PostgresSmartMoneyRepository:
             accession_inventory=acc_inv,
             source_hashes=s_hashes,
             material_gaps=m_gaps,
-            zero_activity_proof=zero_activity_proof,
+            zero_activity_proof=clean_z_proof,
         )
 
         reasons = [g.get("description", str(g)) if isinstance(g, dict) else str(g) for g in m_gaps]
@@ -1128,8 +1199,8 @@ class PostgresSmartMoneyRepository:
             "material_gaps": m_gaps,
             "public_availability_cutoff": certified_watermark,
         }
-        if zero_activity_proof:
-            structured_metadata["zero_activity_proof"] = zero_activity_proof
+        if clean_z_proof:
+            structured_metadata["zero_activity_proof"] = clean_z_proof
 
         receipt_payload = {
             "receipt_id": r_id,
@@ -1201,6 +1272,7 @@ class PostgresSmartMoneyRepository:
                               "public_availability_cutoff", "zero_activity_proof", "schema_version"):
                         if k in reasons_val and k not in receipt:
                             receipt[k] = reasons_val[k]
+                    receipt["structured_metadata"] = reasons_val
                     receipt["failure_reasons"] = reasons_val.get("reasons", [])
                 elif isinstance(reasons_val, list):
                     for item in reasons_val:
@@ -1210,6 +1282,7 @@ class PostgresSmartMoneyRepository:
                                       "public_availability_cutoff", "zero_activity_proof", "schema_version"):
                                 if k in item and k not in receipt:
                                     receipt[k] = item[k]
+                            receipt["structured_metadata"] = item
 
                 # 1. Exact Issuer Binding Validation
                 if clean_cik or clean_ticker:
@@ -1280,7 +1353,7 @@ class PostgresSmartMoneyRepository:
                         continue
                     if cat_hash.lower() == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855":
                         continue
-                    cat_content = z_proof.get("catalog_content")
+                    cat_content = z_proof.get("catalog_content") or z_proof.get("catalog_bytes")
                     if cat_content:
                         try:
                             validate_catalog_evidence(
@@ -1295,8 +1368,19 @@ class PostgresSmartMoneyRepository:
                                 source_hashes=s_hashes,
                                 material_gaps=m_gaps,
                                 pagination_artifacts=z_proof.get("pagination_artifacts"),
+                                historical_manifest=z_proof.get("historical_manifest"),
                             )
                         except Exception:
+                            continue
+
+                    hist_man = z_proof.get("historical_manifest")
+                    if isinstance(hist_man, dict):
+                        manifest_valid = True
+                        for fname, fhash in hist_man.items():
+                            if s_hashes.get(fname) != fhash:
+                                manifest_valid = False
+                                break
+                        if not manifest_valid:
                             continue
                 else:
                     cur.execute("""
