@@ -2,19 +2,19 @@
   "control_id": "RQ-08",
   "name": "Artifact Provenance & Digest Binding",
   "status": "PASS",
-  "start_time": "2026-11-18T07:28:54.387473+00:00",
-  "end_time": "2026-11-18T07:28:54.420891+00:00",
-  "duration_sec": 0.033,
-  "candidate_sha": "72fc6437055c231be6734704f98eab0684b7930c",
-  "source_sha": "72fc6437055c231be6734704f98eab0684b7930c",
-  "execution_sha": "72fc6437055c231be6734704f98eab0684b7930c",
+  "start_time": "2026-11-18T08:46:15.544424+00:00",
+  "end_time": "2026-11-18T08:46:15.579298+00:00",
+  "duration_sec": 0.035,
+  "candidate_sha": "6d3734397da97c0cb11f7f9346a1c4720292c695",
+  "source_sha": "6d3734397da97c0cb11f7f9346a1c4720292c695",
+  "execution_sha": "6d3734397da97c0cb11f7f9346a1c4720292c695",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "72fc6437055c231be6734704f98eab0684b7930c",
-    "execution_sha": "72fc6437055c231be6734704f98eab0684b7930c",
+    "source_sha": "6d3734397da97c0cb11f7f9346a1c4720292c695",
+    "execution_sha": "6d3734397da97c0cb11f7f9346a1c4720292c695",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -24,7 +24,7 @@
   "assertions": [
     {
       "assertion": "Release manifest exists and is hashed",
-      "observed": "bd23cd63a9120f828ae4b4a31f0a16a2da16cbedbcf43612eba0e82516670e86",
+      "observed": "b1c7a15ae9c8f14434eccb29e6a12d7c58dd33ce6523a43d578e2e7e5d71621a",
       "passed": true
     },
     {
@@ -49,13 +49,13 @@
     "scripts/release/rq_provenance_receipt.json"
   ],
   "evidence_digests": {
-    "scripts/release/release_manifest.json": "bd23cd63a9120f828ae4b4a31f0a16a2da16cbedbcf43612eba0e82516670e86",
-    "scripts/release/rq_provenance_receipt.json": "613769c8e94859f6eca956104e4879146d0780fe9c09de75127be682e78f3e41"
+    "scripts/release/release_manifest.json": "b1c7a15ae9c8f14434eccb29e6a12d7c58dd33ce6523a43d578e2e7e5d71621a",
+    "scripts/release/rq_provenance_receipt.json": "437f25007340662542269dfd996b7155523180a4678fc0318d939457c97a70fb"
   },
   "errors": [],
   "metadata": {
     "policy_version": "2.2.0-D074A4",
-    "bound_tree": "0ae578698e814b220418c30389bafe444e9b2bca"
+    "bound_tree": "fa9d247e767966318086e0e07e840eab95f9cc61"
   },
-  "receipt_digest": "2b112a3b8b8a6cabf79377f9eeddfd86afd978b1b14e6616458fcab6004fba21"
+  "receipt_digest": "232c9ee1b5e1f2c53d20855c8f1251520a17de05d5b24c4d02f75ed7944badee"
 }

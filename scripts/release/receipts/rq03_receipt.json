@@ -2,19 +2,19 @@
   "control_id": "RQ-03",
   "name": "Backend Regression Suite",
   "status": "PASS",
-  "start_time": "2026-11-18T07:28:30.460775+00:00",
-  "end_time": "2026-11-18T07:28:36.609374+00:00",
-  "duration_sec": 6.131,
-  "candidate_sha": "72fc6437055c231be6734704f98eab0684b7930c",
-  "source_sha": "72fc6437055c231be6734704f98eab0684b7930c",
-  "execution_sha": "72fc6437055c231be6734704f98eab0684b7930c",
+  "start_time": "2026-11-18T08:45:59.306530+00:00",
+  "end_time": "2026-11-18T08:46:03.770021+00:00",
+  "duration_sec": 4.448,
+  "candidate_sha": "6d3734397da97c0cb11f7f9346a1c4720292c695",
+  "source_sha": "6d3734397da97c0cb11f7f9346a1c4720292c695",
+  "execution_sha": "6d3734397da97c0cb11f7f9346a1c4720292c695",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "72fc6437055c231be6734704f98eab0684b7930c",
-    "execution_sha": "72fc6437055c231be6734704f98eab0684b7930c",
+    "source_sha": "6d3734397da97c0cb11f7f9346a1c4720292c695",
+    "execution_sha": "6d3734397da97c0cb11f7f9346a1c4720292c695",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -56,8 +56,8 @@
   "metadata": {
     "pytest_passed": 85,
     "pytest_failed": 0,
-    "pytest_duration": 6.13091778755188,
+    "pytest_duration": 4.448267936706543,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "bf6d46b069e31db9cdd34108a3bde099340c98484a5caa82a9e579a4d5f1c4d8"
+  "receipt_digest": "d9e4be5fcdfdb3a42c6c17d51efe1c7f8ac6a4060d34c9957b31286a0df6db96"
 }
