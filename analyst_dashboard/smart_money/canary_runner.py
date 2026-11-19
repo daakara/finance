@@ -72,6 +72,17 @@ logger = logging.getLogger("smart_money.canary_runner")
 CANARY_TICKER = "NVDA"
 CANARY_CIK = "0001045810"
 
+# Authoritative explicitly allowlisted canary scopes
+AUTHORIZED_CANARY_ISSUERS: Dict[str, str] = {
+    "NVDA": "0001045810",
+    "AAPL": "0000320193",
+}
+
+AUTHORIZED_CANARY_COMPANY_NAMES: Dict[str, str] = {
+    "NVDA": "NVIDIA CORP",
+    "AAPL": "Apple Inc.",
+}
+
 # Strict, non-overridable safety ceilings
 CANARY_MAX_REQUESTS_CEILING = 4
 CANARY_MAX_DURATION_SEC_CEILING = 30.0
@@ -219,6 +230,9 @@ class NvdaCanaryRunner:
         public_availability_cutoff: Optional[Any] = None,
         auth_issued_at: Optional[Any] = None,
         auth_expires_at: Optional[Any] = None,
+        ticker: str = CANARY_TICKER,
+        cik: Optional[str] = None,
+        accession: Optional[str] = None,
     ):
         import math
 
@@ -240,9 +254,35 @@ class NvdaCanaryRunner:
                 f"CANARY_CEILING_EXCEEDED: max_duration_sec ({max_duration_sec}) must be a finite number between 0.0 and {CANARY_MAX_DURATION_SEC_CEILING}s."
             )
 
+        # 2. Enforce strict allowlisted issuer scope and statutory format
+        ticker_clean = (ticker or CANARY_TICKER).upper().strip()
+        if ticker_clean not in AUTHORIZED_CANARY_ISSUERS:
+            raise CanarySecurityError(
+                f"UNAUTHORIZED_CANARY_SCOPE: Canary runner is strictly locked to authorized issuers "
+                f"({list(AUTHORIZED_CANARY_ISSUERS.keys())}). Attempted: ticker='{ticker}'."
+            )
+        expected_cik = AUTHORIZED_CANARY_ISSUERS[ticker_clean]
+        cik_clean = str(cik).strip().zfill(10) if cik else expected_cik
+        if cik_clean != expected_cik:
+            raise CanarySecurityError(
+                f"UNAUTHORIZED_CANARY_SCOPE: Canary runner scope mismatch for {ticker_clean}. "
+                f"Expected CIK {expected_cik}, attempted: cik='{cik}'."
+            )
+
+        if accession is not None:
+            import re
+            acc_clean = accession.strip()
+            if not re.match(r"^\d{10}-\d{2}-\d{6}$", acc_clean):
+                raise CanarySecurityError(
+                    f"INVALID_ACCESSION_FORMAT: Accession '{accession}' does not match statutory EDGAR format (##########-##-######)."
+                )
+            self.accession = acc_clean
+        else:
+            self.accession = None
+
         self.dsn = dsn or os.environ.get("SMART_MONEY_DATABASE_URL") or os.environ.get("DATABASE_URL")
-        self.ticker = CANARY_TICKER
-        self.cik = CANARY_CIK
+        self.ticker = ticker_clean
+        self.cik = cik_clean
         self.max_requests = max_requests
         self.max_duration_sec = float(max_duration_sec)
         self.max_rps = float(max_rps)
@@ -310,8 +350,9 @@ class NvdaCanaryRunner:
 
     def validate_preflight(
         self,
-        ticker: str = CANARY_TICKER,
-        cik: str = CANARY_CIK,
+        ticker: Optional[str] = None,
+        cik: Optional[str] = None,
+        accession: Optional[str] = None,
         auth_issued_at: Optional[Any] = None,
         auth_expires_at: Optional[Any] = None,
         interval_start: Optional[Any] = None,
@@ -321,7 +362,7 @@ class NvdaCanaryRunner:
     ) -> bool:
         """
         Validates all fail-closed preflight gates prior to claiming lock or executing network requests:
-        1. Issuer Scope: NVDA / 0001045810 only.
+        1. Issuer Scope: Authorized allowlist (NVDA, AAPL) and matching configured instance scope.
         2. Emergency Stop: ARX_EMERGENCY_STOP_ACTIVE must not be TRUE.
         3. Containment Ratification: ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED must be TRUE.
         4. User Agent: SEC_USER_AGENT must be valid non-placeholder.
@@ -330,11 +371,28 @@ class NvdaCanaryRunner:
         7. Queue Isolation: sm_run_requests contains 0 active requests (if conn provided).
         """
         # 1. Target scope constraint
-        if ticker.upper().strip() != CANARY_TICKER or str(cik).zfill(10) != CANARY_CIK:
+        t = (ticker if ticker is not None else self.ticker).upper().strip()
+        c = str(cik if cik is not None else self.cik).strip().zfill(10)
+
+        if t not in AUTHORIZED_CANARY_ISSUERS or c != AUTHORIZED_CANARY_ISSUERS.get(t):
             raise CanarySecurityError(
-                f"UNAUTHORIZED_CANARY_SCOPE: Canary runner is strictly locked to {CANARY_TICKER} "
-                f"(CIK {CANARY_CIK}). Attempted: ticker='{ticker}', cik='{cik}'."
+                f"UNAUTHORIZED_CANARY_SCOPE: Canary runner scope unauthorized. "
+                f"Authorized issuers: {list(AUTHORIZED_CANARY_ISSUERS.keys())}. "
+                f"Attempted: ticker='{ticker or t}', cik='{cik or c}'."
             )
+        if t != self.ticker or c != self.cik:
+            raise CanarySecurityError(
+                f"UNAUTHORIZED_CANARY_SCOPE: Canary runner instance is locked to {self.ticker} "
+                f"(CIK {self.cik}). Attempted: ticker='{ticker or t}', cik='{cik or c}'."
+            )
+
+        acc = accession if accession is not None else self.accession
+        if acc is not None:
+            import re
+            if not re.match(r"^\d{10}-\d{2}-\d{6}$", acc.strip()):
+                raise CanarySecurityError(
+                    f"INVALID_ACCESSION_FORMAT: Accession '{acc}' does not match statutory EDGAR format."
+                )
 
         # 2. Emergency stop check
         if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() == "TRUE":
@@ -662,8 +720,9 @@ class NvdaCanaryRunner:
         telemetry: Dict[str, Any] = {
             "directive": "SM-ACT-014R",
             "timestamp_start": datetime.now(timezone.utc).isoformat(),
-            "issuer": CANARY_TICKER,
-            "cik": CANARY_CIK,
+            "issuer": self.ticker,
+            "cik": self.cik,
+            "accession": self.accession,
             "request_budget": self.max_requests,
             "unseen_docs_budget": self.max_unseen_docs,
             "requests_made": 0,
@@ -731,9 +790,9 @@ class NvdaCanaryRunner:
             # Check authorization before any egress
             self.check_authorization_not_expired()
 
-            # Step 4: Fetch NVDA Submissions Metadata (CIK 0001045810)
-            sub_url = f"https://data.sec.gov/submissions/CIK{CANARY_CIK}.json"
-            logger.info(f"Fetching submissions catalog: {sub_url}")
+            # Step 4: Fetch Submissions Metadata
+            sub_url = f"https://data.sec.gov/submissions/CIK{self.cik}.json"
+            logger.info(f"Fetching submissions catalog for {self.ticker} (CIK {self.cik}): {sub_url}")
             sub_resp = self.tracked_get(sub_url)
             if sub_resp.status_code != 200:
                 raise RuntimeError(f"SEC EDGAR submissions returned HTTP {sub_resp.status_code}")
@@ -750,7 +809,7 @@ class NvdaCanaryRunner:
             existing_accs = set()
             if conn:
                 with conn.cursor() as cur:
-                    cur.execute("SELECT accession_number FROM form4_raw_filings WHERE ticker = 'NVDA';")
+                    cur.execute("SELECT accession_number FROM form4_raw_filings WHERE ticker = %s;", (self.ticker,))
                     existing_accs = {r[0] for r in cur.fetchall()}
 
             # Filter filings by pinned observation interval and publication cutoff
@@ -767,6 +826,10 @@ class NvdaCanaryRunner:
                 p_doc = primary_docs[idx] if idx < len(primary_docs) else ""
 
                 if not acc or not f_date:
+                    continue
+
+                # Filter by pinned accession if specified
+                if self.accession and acc != self.accession:
                     continue
 
                 # Verify filing date falls within pinned observation interval
@@ -815,10 +878,11 @@ class NvdaCanaryRunner:
                 )
 
             if not unseen_eligible_filings:
+                acc_msg = f" matching accession {self.accession}" if self.accession else ""
                 raise CanaryDataIntegrityError(
-                    f"NO_UNSEEN_ELIGIBLE_FILINGS: No unseen Form 4 filings found for {CANARY_TICKER} "
+                    f"NO_UNSEEN_ELIGIBLE_FILINGS: No unseen Form 4 filings found for {self.ticker} "
                     f"within pinned interval ({self.interval_start.isoformat()} to {self.interval_end.isoformat()}) "
-                    f"and cutoff ({self.public_availability_cutoff.isoformat()})."
+                    f"and cutoff ({self.public_availability_cutoff.isoformat()}){acc_msg}."
                 )
 
             target_filing = unseen_eligible_filings[0]
@@ -843,7 +907,7 @@ class NvdaCanaryRunner:
 
             # Step 6: Fetch Primary XML Document
             clean_p_doc = p_doc.split("/")[-1] if p_doc else ""
-            cik_int = int(CANARY_CIK)
+            cik_int = int(self.cik)
             xml_url = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{clean_p_doc}"
             doc_resp = self.tracked_get(xml_url)
 
@@ -896,10 +960,15 @@ class NvdaCanaryRunner:
             # Strict issuer verification
             parsed_ticker = raw_ticker.upper().strip()
             parsed_cik = str(raw_cik).strip().zfill(10)
-            if parsed_ticker != CANARY_TICKER or parsed_cik != CANARY_CIK:
+            if parsed_ticker != self.ticker or parsed_cik != self.cik:
                 raise CanarySecurityError(
                     f"SEC_FORM4_ISSUER_MISMATCH: Parsed filing issuer ({parsed_ticker}, CIK {parsed_cik}) "
-                    f"does not match canary scope ({CANARY_TICKER}, CIK {CANARY_CIK})."
+                    f"does not match canary scope ({self.ticker}, CIK {self.cik})."
+                )
+            if self.accession and acc_num != self.accession:
+                raise CanarySecurityError(
+                    f"SEC_FORM4_ACCESSION_MISMATCH: Parsed filing accession ({acc_num}) "
+                    f"does not match pinned canary accession ({self.accession})."
                 )
 
             logger.info(f"Parsed {len(filing_obj.transactions)} transaction(s) from {acc_num}")
@@ -923,8 +992,8 @@ class NvdaCanaryRunner:
 
                 if not base_acc and conn:
                     filing_dict_meta = {
-                        "cik": CANARY_CIK,
-                        "ticker": CANARY_TICKER,
+                        "cik": self.cik,
+                        "ticker": self.ticker,
                         "accession_number": acc_num,
                         "accepted_datetime": acc_dt,
                     }
@@ -986,12 +1055,13 @@ class NvdaCanaryRunner:
                     repo = PostgresSmartMoneyRepository(dsn=self.dsn)
 
                     # 1. Raw filing persistence (checks source-hash conflicts via repo contract)
+                    company_name = AUTHORIZED_CANARY_COMPANY_NAMES.get(self.ticker, f"{self.ticker} INC.")
                     repo.save_raw_filing(
                         {
                             "accession_number": acc_num,
-                            "cik": CANARY_CIK,
-                            "ticker": CANARY_TICKER,
-                            "company_name": "NVIDIA CORP",
+                            "cik": self.cik,
+                            "ticker": self.ticker,
+                            "company_name": company_name,
                             "filing_date": f_date,
                             "accepted_datetime": acc_dt,
                             "xml_content": raw_xml,
@@ -1068,7 +1138,7 @@ class NvdaCanaryRunner:
                     with conn.cursor() as cur:
                         # 6. Audit event
                         ev_payload = json.dumps({
-                            "ticker": CANARY_TICKER,
+                            "ticker": self.ticker,
                             "accession_number": acc_num,
                             "form_type": form_type,
                             "transactions_count": persisted_tx_count,
@@ -1094,8 +1164,8 @@ class NvdaCanaryRunner:
 
                     cat_hash = hashlib.sha256(json.dumps(sub_data, sort_keys=True).encode("utf-8")).hexdigest()
                     coverage_receipt_id = repo.record_issuer_coverage_receipt(
-                        ticker=CANARY_TICKER,
-                        issuer_cik=CANARY_CIK,
+                        ticker=self.ticker,
+                        issuer_cik=self.cik,
                         interval_start=i_start_str,
                         interval_end=i_end_str,
                         certified_watermark=cutoff_str,
@@ -1217,10 +1287,17 @@ class NvdaCanaryRunner:
         checks: Dict[str, Dict[str, str]] = {}
 
         # 1. Scope
-        if self.ticker == CANARY_TICKER and self.cik == CANARY_CIK:
-            checks["scope_check"] = {"status": "PASS", "detail": f"Target scope locked to {CANARY_TICKER} (CIK {CANARY_CIK})"}
+        if self.ticker in AUTHORIZED_CANARY_ISSUERS and self.cik == AUTHORIZED_CANARY_ISSUERS[self.ticker]:
+            acc_detail = f", pinned accession={self.accession}" if self.accession else ""
+            checks["scope_check"] = {
+                "status": "PASS",
+                "detail": f"Target scope locked to authorized issuer {self.ticker} (CIK {self.cik}{acc_detail})",
+            }
         else:
-            checks["scope_check"] = {"status": "FAIL", "detail": f"Scope mismatch: ticker='{self.ticker}', cik='{self.cik}'"}
+            checks["scope_check"] = {
+                "status": "FAIL",
+                "detail": f"Scope mismatch: ticker='{self.ticker}', cik='{self.cik}' not in authorized allowlist",
+            }
 
         # 2. Emergency stop
         if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() == "TRUE":
@@ -1404,11 +1481,12 @@ class NvdaCanaryRunner:
         }
 
         receipt = {
-            "receipt_type": "ARX_NVDA_ONESHOT_INGESTION_RECEIPT",
-            "version": "1.2.0",
+            "receipt_type": f"ARX_{self.ticker}_ONESHOT_INGESTION_RECEIPT",
+            "version": "1.3.0",
             "mode": "DRY_RUN",
-            "issuer": CANARY_TICKER,
-            "cik": CANARY_CIK,
+            "issuer": self.ticker,
+            "cik": self.cik,
+            "accession": self.accession,
             "preflight_verdict": preflight_verdict,
             "preflight_checks": checks,
             "governance_matrix": governance_matrix,
@@ -1443,8 +1521,11 @@ def run_nvda_canary(
     max_rps: float = CANARY_MAX_RPS,
     max_unseen_docs: int = CANARY_MAX_UNSEEN_DOCS,
     dry_run: bool = False,
+    ticker: str = CANARY_TICKER,
+    cik: Optional[str] = None,
+    accession: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Convenience entrypoint for running the bounded NVDA canary."""
+    """Convenience entrypoint for running the bounded canary."""
     runner = NvdaCanaryRunner(
         dsn=dsn,
         mode=mode,
@@ -1457,17 +1538,24 @@ def run_nvda_canary(
         max_duration_sec=max_duration_sec,
         max_rps=max_rps,
         max_unseen_docs=max_unseen_docs,
+        ticker=ticker,
+        cik=cik,
+        accession=accession,
     )
     if dry_run:
         return runner.execute_dry_run()
     return runner.execute()
 
 
+run_canary = run_nvda_canary
+ArxCanaryRunner = NvdaCanaryRunner
+
+
 def build_canary_parser(prog: Optional[str] = None) -> argparse.ArgumentParser:
-    """Constructs the canonical argument parser for the NVDA canary runner."""
+    """Constructs the canonical argument parser for the canary runner."""
     parser = argparse.ArgumentParser(
         prog=prog or "canary_runner",
-        description="ARX Terminal — Dedicated NVDA Bounded SEC Ingestion One-Shot Executor",
+        description="ARX Terminal — Dedicated Bounded SEC Ingestion One-Shot Executor",
     )
     parser.add_argument(
         "--mode",
@@ -1479,13 +1567,19 @@ def build_canary_parser(prog: Optional[str] = None) -> argparse.ArgumentParser:
         "--ticker",
         type=str,
         default=CANARY_TICKER,
-        help="Target ticker symbol (strictly NVDA).",
+        help=f"Target ticker symbol (strictly authorized: {', '.join(AUTHORIZED_CANARY_ISSUERS.keys())}). Default: {CANARY_TICKER}.",
     )
     parser.add_argument(
         "--cik",
         type=str,
-        default=CANARY_CIK,
-        help="Target CIK (strictly 0001045810).",
+        default=None,
+        help="Target CIK (must match authorized issuer CIK). Default: auto-resolved from --ticker.",
+    )
+    parser.add_argument(
+        "--accession",
+        type=str,
+        default=None,
+        help="Optional pinned Form 4 accession number (format: ##########-##-######).",
     )
     parser.add_argument(
         "--interval-start",
@@ -1578,13 +1672,33 @@ def run_canary_cli(argv: Optional[List[str]] = None, prog: Optional[str] = None)
     logging.basicConfig(level=log_level, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
     # Scope validation
-    if args.ticker.upper().strip() != CANARY_TICKER or args.cik.strip().zfill(10) != CANARY_CIK:
+    ticker = (args.ticker or CANARY_TICKER).upper().strip()
+    if ticker not in AUTHORIZED_CANARY_ISSUERS:
         print(
-            f"FATAL: Scope mismatch. Only {CANARY_TICKER} (CIK {CANARY_CIK}) is authorized. "
-            f"Got ticker={args.ticker}, cik={args.cik}.",
+            f"FATAL: Scope mismatch. Ticker '{ticker}' is not authorized. "
+            f"Authorized issuers: {list(AUTHORIZED_CANARY_ISSUERS.keys())}.",
             file=sys.stderr,
         )
         return 1
+
+    expected_cik = AUTHORIZED_CANARY_ISSUERS[ticker]
+    cik = args.cik.strip().zfill(10) if args.cik else expected_cik
+    if cik != expected_cik:
+        print(
+            f"FATAL: Scope mismatch for {ticker}. Expected CIK {expected_cik}, got {args.cik}.",
+            file=sys.stderr,
+        )
+        return 1
+
+    accession = args.accession.strip() if getattr(args, "accession", None) else None
+    if accession:
+        import re
+        if not re.match(r"^\d{10}-\d{2}-\d{6}$", accession):
+            print(
+                f"FATAL: Invalid accession format '{accession}'. Must match EDGAR format (##########-##-######).",
+                file=sys.stderr,
+            )
+            return 1
 
     # Require explicit authorization timestamps
     if not args.auth_issued_at or not args.auth_expires_at:
@@ -1610,6 +1724,9 @@ def run_canary_cli(argv: Optional[List[str]] = None, prog: Optional[str] = None)
             public_availability_cutoff=public_cutoff_arg,
             auth_issued_at=args.auth_issued_at,
             auth_expires_at=args.auth_expires_at,
+            ticker=ticker,
+            cik=cik,
+            accession=accession,
         )
     except CanarySecurityError as cse:
         print(f"FATAL: Canary initialization security error: {cse}", file=sys.stderr)
@@ -1618,7 +1735,7 @@ def run_canary_cli(argv: Optional[List[str]] = None, prog: Optional[str] = None)
         print(f"FATAL: Failed to initialize canary runner: {init_err}", file=sys.stderr)
         return 1
 
-    print("=== EXECUTING ARX NVDA SEC CANARY ===")
+    print(f"=== EXECUTING ARX {ticker} SEC CANARY ===")
     if args.dry_run:
         print("[DRY-RUN] Executing read-only preflight and queue inspection...")
         receipt = runner.execute_dry_run()
@@ -1654,6 +1771,9 @@ def execute_oneshot(args: argparse.Namespace) -> Dict[str, Any]:
 
     timeout_arg = getattr(args, "max_duration_sec", getattr(args, "timeout", CANARY_MAX_DURATION_SEC))
     public_cutoff_arg = getattr(args, "public_availability_cutoff", None) or getattr(args, "public_cutoff", None)
+    ticker = (getattr(args, "ticker", None) or CANARY_TICKER).upper().strip()
+    cik = getattr(args, "cik", None)
+    accession = getattr(args, "accession", None)
 
     runner = NvdaCanaryRunner(
         dsn=args.dsn,
@@ -1667,6 +1787,9 @@ def execute_oneshot(args: argparse.Namespace) -> Dict[str, Any]:
         public_availability_cutoff=public_cutoff_arg,
         auth_issued_at=args.auth_issued_at,
         auth_expires_at=args.auth_expires_at,
+        ticker=ticker,
+        cik=cik,
+        accession=accession,
     )
 
     if getattr(args, "dry_run", False):

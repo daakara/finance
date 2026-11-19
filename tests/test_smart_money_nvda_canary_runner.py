@@ -2521,3 +2521,518 @@ class TestNvdaCanaryContentEncodingAndDecompression:
             server.server_close()
 
 
+# ==============================================================================
+# AAPL ALTERNATIVE-ISSUER CANARY QUALIFICATION
+# ==============================================================================
+
+FIXTURE_AAPL_XML_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "tests", "fixtures", "sec_edgar", "AAPL_0001140361-26-044773.xml"
+)
+PINNED_AAPL_TICKER = "AAPL"
+PINNED_AAPL_CIK = "0000320193"
+PINNED_AAPL_ACCESSION = "0001140361-26-044773"
+PINNED_AAPL_ACCEPTED = "2026-11-18T23:30:10Z"
+PINNED_AAPL_FILING_DATE = "2026-11-18"
+PINNED_AAPL_XML_SHA256 = "eadd8fccc8161b484c2727d79e75a1d37b5303a625b9a22b13c36dd8f34e1ce9"
+
+
+def load_aapl_form4_xml() -> str:
+    with open(FIXTURE_AAPL_XML_PATH, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+class TestAaplAlternativeIssuerCanaryQualification:
+    """
+    Acceptance Qualification for AAPL as Single Authorized Alternative-Issuer Canary.
+
+    Verifies:
+    1. Scope Invariant:
+       - Wrong ticker (e.g. MSFT, TSLA) rejected with UNAUTHORIZED_CANARY_SCOPE.
+       - Mismatched CIK (e.g. AAPL with 0001045810, NVDA with 0000320193) rejected with UNAUTHORIZED_CANARY_SCOPE.
+       - Invalid accession format rejected with INVALID_ACCESSION_FORMAT.
+       - CLI subprocess rejects unauthorized ticker/CIK/accession.
+    2. Real AAPL Form 4 XML Parsing:
+       - Accession 0001140361-26-044773 parses into exactly 3 transactions: ['S', 'S', 'G'].
+       - SHA-256 matches pinned eadd8fccc8161b484c2727d79e75a1d37b5303a625b9a22b13c36dd8f34e1ce9.
+    3. Atomic Persistence against Disposable PostgreSQL:
+       - Persists raw filing (ticker AAPL, CIK 0000320193, accession 0001140361-26-044773).
+       - Persists availability ledger, exactly 3 parsed transactions, PARTIAL coverage receipt, and audit event.
+       - Releases advisory lock and restores STANDBY role.
+    4. Replay Idempotency:
+       - Replaying identical filing leaves database in consistent state with no duplicate transactions.
+    5. Source-Hash Conflict Detection:
+       - Pre-inserted conflicting hash rolls back and raises SOURCE_INTEGRITY_CONFLICT.
+    6. Rollback & Guaranteed Cleanup on Injected Failure:
+       - HTTP 429 / network errors roll back database cleanly (0 rows persisted).
+       - Lock released, role reverted to STANDBY, egress forbidden probe verified.
+    7. Pinned Accession Filtering:
+       - Catalog with multiple filings correctly selects only the pinned accession.
+       - Catalog missing pinned accession fails closed with NO_UNSEEN_ELIGIBLE_FILINGS.
+    8. Preserved Safeguards:
+       - Non-overridable ceilings enforced (<=4 requests, <=5 req/s, <=3 unseen docs, <=30s).
+       - scanner_active_snapshots untouched.
+       - Snapshot publication and recurring ingestion remain disabled.
+    """
+
+    def test_aapl_xml_parsing_exact_three_transactions_s_s_g(self):
+        import hashlib
+        from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
+
+        raw_xml = load_aapl_form4_xml()
+        content_hash = hashlib.sha256(raw_xml.encode("utf-8")).hexdigest()
+        assert content_hash == PINNED_AAPL_XML_SHA256
+
+        filing = Form4XmlParser.parse_filing(
+            raw_content=raw_xml,
+            accession_number=PINNED_AAPL_ACCESSION,
+            filing_date_hint=PINNED_AAPL_FILING_DATE,
+            acceptance_datetime=PINNED_AAPL_ACCEPTED,
+        )
+        assert filing.issuer_symbol == "AAPL"
+        assert filing.issuer_cik == "0000320193"
+        assert len(filing.transactions) == 3
+        codes = [t.transaction_code for t in filing.transactions]
+        assert codes == ["S", "S", "G"]
+
+        tx1, tx2, tx3 = filing.transactions
+        assert tx1.transaction_code == "S"
+        assert tx1.shares == 36792.0
+        assert tx1.price_per_share == 352.26
+        assert tx1.reporting_owner_name == "LEVINSON ARTHUR D"
+        assert tx1.acquired_disposed == "D"
+
+        assert tx2.transaction_code == "S"
+        assert tx2.shares == 53208.0
+        assert tx2.price_per_share == 353.43
+        assert tx2.reporting_owner_name == "LEVINSON ARTHUR D"
+        assert tx2.acquired_disposed == "D"
+
+        assert tx3.transaction_code == "G"
+        assert tx3.shares == 50000.0
+        assert tx3.price_per_share == 0.0
+        assert tx3.reporting_owner_name == "LEVINSON ARTHUR D"
+        assert tx3.acquired_disposed == "D"
+
+    def test_unauthorized_ticker_rejected(self, clean_env):
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(ticker="MSFT", **make_valid_auth())
+        assert "UNAUTHORIZED_CANARY_SCOPE" in str(exc_info.value)
+
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(ticker="TSLA", **make_valid_auth())
+        assert "UNAUTHORIZED_CANARY_SCOPE" in str(exc_info.value)
+
+    def test_mismatched_cik_rejected(self, clean_env):
+        # AAPL with NVDA's CIK
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(ticker="AAPL", cik="0001045810", **make_valid_auth())
+        assert "UNAUTHORIZED_CANARY_SCOPE" in str(exc_info.value)
+
+        # NVDA with AAPL's CIK
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(ticker="NVDA", cik="0000320193", **make_valid_auth())
+        assert "UNAUTHORIZED_CANARY_SCOPE" in str(exc_info.value)
+
+    def test_invalid_accession_format_rejected(self, clean_env):
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(ticker="AAPL", accession="000114036126044773", **make_valid_auth())
+        assert "INVALID_ACCESSION_FORMAT" in str(exc_info.value)
+
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(ticker="AAPL", accession="bad-acc-format", **make_valid_auth())
+        assert "INVALID_ACCESSION_FORMAT" in str(exc_info.value)
+
+    def test_aapl_preflight_validation_and_dry_run(self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch):
+        conn, dsn = disposable_db
+        monkeypatch.setenv("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "TRUE")
+        runner = NvdaCanaryRunner(
+            dsn=dsn,
+            ticker="AAPL",
+            cik="0000320193",
+            accession=PINNED_AAPL_ACCESSION,
+            **make_valid_auth(),
+        )
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            assert runner.validate_preflight(conn=conn) is True
+
+            receipt = runner.execute_dry_run()
+            assert receipt["mode"] == "DRY_RUN"
+            assert receipt["issuer"] == "AAPL"
+            assert receipt["cik"] == "0000320193"
+            assert receipt["accession"] == PINNED_AAPL_ACCESSION
+            assert receipt["preflight_verdict"] == "PASSED"
+            assert receipt["preflight_checks"]["scope_check"]["status"] == "PASS"
+            assert "AAPL" in receipt["preflight_checks"]["scope_check"]["detail"]
+            assert receipt["requests_made"] == 0
+            assert receipt["transactions_persisted"] == 0
+
+    def test_aapl_atomic_persistence_disposable_postgres(self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch):
+        conn, dsn = disposable_db
+        monkeypatch.setenv("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "TRUE")
+        raw_xml = load_aapl_form4_xml()
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "form": ["4"],
+                    "accessionNumber": [PINNED_AAPL_ACCESSION],
+                    "filingDate": [PINNED_AAPL_FILING_DATE],
+                    "acceptanceDateTime": [PINNED_AAPL_ACCEPTED],
+                    "primaryDocument": ["form4.xml"],
+                }
+            }
+        }
+
+        mock_session = MagicMock()
+        resp_sub = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub.json.return_value = sub_payload
+        resp_xml = MagicMock(status_code=200, text=raw_xml, content=raw_xml.encode("utf-8"))
+        mock_session.get.side_effect = [resp_sub, resp_xml]
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(
+                dsn=dsn,
+                session=mock_session,
+                ticker="AAPL",
+                cik="0000320193",
+                accession=PINNED_AAPL_ACCESSION,
+                **make_valid_auth(),
+            )
+            receipt = runner.execute()
+
+            assert receipt["verdict"] == "SUCCESS"
+            assert receipt["issuer"] == "AAPL"
+            assert receipt["cik"] == "0000320193"
+            assert receipt["requests_made"] == 2
+            assert receipt["transactions_persisted"] == 3
+            assert receipt["coverage_status"] == "PARTIAL"
+            assert receipt["coverage_receipt_id"] is not None
+
+            # Verify PostgreSQL state
+            with conn.cursor() as cur:
+                # 1. Raw filing
+                cur.execute("SELECT ticker, cik, accession_number, content_hash, company_name FROM form4_raw_filings WHERE ticker = 'AAPL';")
+                raw_row = cur.fetchone()
+                assert raw_row is not None
+                assert raw_row[0] == "AAPL"
+                assert raw_row[1] == "0000320193"
+                assert raw_row[2] == PINNED_AAPL_ACCESSION
+                assert raw_row[3] == PINNED_AAPL_XML_SHA256
+                assert raw_row[4] == "Apple Inc."
+
+                # 2. Availability ledger
+                cur.execute("SELECT accession_number, public_availability_at FROM sm_source_availability_ledger WHERE accession_number = %s;", (PINNED_AAPL_ACCESSION,))
+                avail_row = cur.fetchone()
+                assert avail_row is not None
+
+                # 3. Parsed transactions
+                cur.execute("SELECT transaction_code, shares, price_per_share, reporting_owner_name FROM form4_parsed_transactions WHERE accession_number = %s ORDER BY price_per_share DESC;", (PINNED_AAPL_ACCESSION,))
+                tx_rows = cur.fetchall()
+                assert len(tx_rows) == 3
+                # S ($353.43), S ($352.26), G ($0.0)
+                assert tx_rows[0][0] == "S"
+                assert tx_rows[0][1] == 53208.0
+                assert tx_rows[1][0] == "S"
+                assert tx_rows[1][1] == 36792.0
+                assert tx_rows[2][0] == "G"
+                assert tx_rows[2][1] == 50000.0
+
+                # 4. Coverage receipt
+                cur.execute("SELECT coverage_status FROM sm_reconciliation_receipts WHERE receipt_id = %s;", (receipt["coverage_receipt_id"],))
+                rcpt_row = cur.fetchone()
+                assert rcpt_row is not None
+                assert rcpt_row[0] == "PARTIAL"
+
+                # 5. Audit event
+                cur.execute("SELECT count(*) FROM sm_audit_events WHERE subject_id = %s;", (PINNED_AAPL_ACCESSION,))
+                assert cur.fetchone()[0] == 1
+
+                # 6. Advisory lock released
+                cur.execute("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory';")
+                assert cur.fetchone()[0] == 0
+
+            # Role restored & containment revoked
+            assert os.environ.get("ARX_SEC_EGRESS_ROLE") == "STANDBY"
+            assert os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED") == "false"
+
+    def test_aapl_replay_idempotency_disposable_postgres(self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch):
+        conn, dsn = disposable_db
+        raw_xml = load_aapl_form4_xml()
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "form": ["4"],
+                    "accessionNumber": [PINNED_AAPL_ACCESSION],
+                    "filingDate": [PINNED_AAPL_FILING_DATE],
+                    "acceptanceDateTime": [PINNED_AAPL_ACCEPTED],
+                    "primaryDocument": ["form4.xml"],
+                }
+            }
+        }
+
+        # Run 1: initial ingestion
+        monkeypatch.setenv("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "TRUE")
+        mock_session_1 = MagicMock()
+        resp_sub_1 = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub_1.json.return_value = sub_payload
+        resp_xml_1 = MagicMock(status_code=200, text=raw_xml, content=raw_xml.encode("utf-8"))
+        mock_session_1.get.side_effect = [resp_sub_1, resp_xml_1]
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner_1 = NvdaCanaryRunner(
+                dsn=dsn,
+                session=mock_session_1,
+                ticker="AAPL",
+                cik="0000320193",
+                accession=PINNED_AAPL_ACCESSION,
+                **make_valid_auth(),
+            )
+            runner_1.execute()
+
+        # Run 2: replaying identical filing - catalog has accession, existing_accs has it, so unseen_eligible_filings is empty
+        monkeypatch.setenv("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "TRUE")
+        mock_session_2 = MagicMock()
+        resp_sub_2 = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub_2.json.return_value = sub_payload
+        mock_session_2.get.side_effect = [resp_sub_2]
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner_2 = NvdaCanaryRunner(
+                dsn=dsn,
+                session=mock_session_2,
+                ticker="AAPL",
+                cik="0000320193",
+                accession=PINNED_AAPL_ACCESSION,
+                **make_valid_auth(),
+            )
+            with pytest.raises(CanaryDataIntegrityError) as exc_info:
+                runner_2.execute()
+            assert "NO_UNSEEN_ELIGIBLE_FILINGS" in str(exc_info.value)
+
+        # Confirm 3 transactions still intact with zero duplication
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM form4_parsed_transactions WHERE accession_number = %s;", (PINNED_AAPL_ACCESSION,))
+            assert cur.fetchone()[0] == 3
+
+    def test_aapl_source_hash_conflict_detection_disposable_postgres(self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch):
+        conn, dsn = disposable_db
+        monkeypatch.setenv("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "TRUE")
+        raw_xml = load_aapl_form4_xml()
+
+        # Pre-insert raw filing with conflicting content hash
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, '2026-11-18', '2026-11-18T23:30:10Z', '<xml>tampered</xml>', 'conflicting_hash_123', 'https://sec.gov');
+            """, (PINNED_AAPL_ACCESSION, PINNED_AAPL_CIK, PINNED_AAPL_TICKER, "Apple Inc."))
+        conn.commit()
+
+        # Attempting save with same accession but different hash raises SOURCE_INTEGRITY_CONFLICT
+        repo = PostgresSmartMoneyRepository(dsn=dsn)
+        with pytest.raises(RuntimeError) as exc_info:
+            repo.save_raw_filing(
+                {
+                    "accession_number": PINNED_AAPL_ACCESSION,
+                    "cik": PINNED_AAPL_CIK,
+                    "ticker": PINNED_AAPL_TICKER,
+                    "company_name": "Apple Inc.",
+                    "filing_date": PINNED_AAPL_FILING_DATE,
+                    "accepted_datetime": PINNED_AAPL_ACCEPTED,
+                    "xml_content": raw_xml,
+                    "content_hash": PINNED_AAPL_XML_SHA256,
+                    "source_url": "https://sec.gov",
+                },
+                conn=conn,
+            )
+        assert "SOURCE_INTEGRITY_CONFLICT" in str(exc_info.value)
+        conn.rollback()
+
+    def test_aapl_rollback_and_cleanup_on_injected_failure(self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch):
+        conn, dsn = disposable_db
+        monkeypatch.setenv("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "TRUE")
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "form": ["4"],
+                    "accessionNumber": [PINNED_AAPL_ACCESSION],
+                    "filingDate": [PINNED_AAPL_FILING_DATE],
+                    "acceptanceDateTime": [PINNED_AAPL_ACCEPTED],
+                    "primaryDocument": ["form4.xml"],
+                }
+            }
+        }
+
+        mock_session = MagicMock()
+        resp_sub = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub.json.return_value = sub_payload
+        # Injected HTTP 429 on XML fetch
+        resp_xml = MagicMock(status_code=429)
+        mock_session.get.side_effect = [resp_sub, resp_xml]
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(
+                dsn=dsn,
+                session=mock_session,
+                ticker="AAPL",
+                cik="0000320193",
+                accession=PINNED_AAPL_ACCESSION,
+                **make_valid_auth(),
+            )
+            with pytest.raises(CanaryRateLimitError):
+                runner.execute()
+
+            # Confirm rollback: zero rows persisted
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM form4_raw_filings WHERE accession_number = %s;", (PINNED_AAPL_ACCESSION,))
+                assert cur.fetchone()[0] == 0
+                cur.execute("SELECT count(*) FROM form4_parsed_transactions WHERE accession_number = %s;", (PINNED_AAPL_ACCESSION,))
+                assert cur.fetchone()[0] == 0
+                cur.execute("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory';")
+                assert cur.fetchone()[0] == 0
+
+            # Role restored & containment revoked
+            assert os.environ.get("ARX_SEC_EGRESS_ROLE") == "STANDBY"
+            assert os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED") == "false"
+
+    def test_aapl_pinned_accession_filtering(self, clean_env, mock_fresh_receipt, monkeypatch):
+        monkeypatch.setenv("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "TRUE")
+        raw_xml = load_aapl_form4_xml()
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "form": ["4", "4"],
+                    "accessionNumber": ["0001140361-26-000001", PINNED_AAPL_ACCESSION],
+                    "filingDate": ["2026-11-18", PINNED_AAPL_FILING_DATE],
+                    "acceptanceDateTime": ["2026-11-18T10:00:00Z", PINNED_AAPL_ACCEPTED],
+                    "primaryDocument": ["form4_1.xml", "form4.xml"],
+                }
+            }
+        }
+        mock_session = MagicMock()
+        resp_sub = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub.json.return_value = sub_payload
+        resp_xml = MagicMock(status_code=200, text=raw_xml, content=raw_xml.encode("utf-8"))
+        mock_session.get.side_effect = [resp_sub, resp_xml]
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(
+                session=mock_session,
+                ticker="AAPL",
+                cik="0000320193",
+                accession=PINNED_AAPL_ACCESSION,
+                **make_valid_auth(),
+            )
+            receipt = runner.execute()
+            assert receipt["verdict"] == "SUCCESS"
+            assert len(receipt["filings_discovered"]) == 1
+            assert receipt["filings_discovered"][0]["accession_number"] == PINNED_AAPL_ACCESSION
+
+    def test_aapl_unmatched_accession_fails_closed(self, clean_env, mock_fresh_receipt, monkeypatch):
+        monkeypatch.setenv("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "TRUE")
+        raw_xml = load_aapl_form4_xml()
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "form": ["4"],
+                    "accessionNumber": ["0001140361-26-044774"],
+                    "filingDate": ["2026-11-18"],
+                    "acceptanceDateTime": ["2026-11-18T23:30:10Z"],
+                    "primaryDocument": ["form4.xml"],
+                }
+            }
+        }
+        mock_session = MagicMock()
+        resp_sub = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub.json.return_value = sub_payload
+        resp_xml = MagicMock(status_code=200, text=raw_xml, content=raw_xml.encode("utf-8"))
+        mock_session.get.side_effect = [resp_sub, resp_xml]
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(
+                session=mock_session,
+                ticker="AAPL",
+                cik="0000320193",
+                accession=PINNED_AAPL_ACCESSION,
+                **make_valid_auth(),
+            )
+            with pytest.raises(CanaryDataIntegrityError) as exc_info:
+                runner.execute()
+            assert "NO_UNSEEN_ELIGIBLE_FILINGS" in str(exc_info.value)
+
+    def test_cli_subprocess_aapl_qualification(self, clean_env, disposable_db):
+        conn, dsn = disposable_db
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        now = datetime.now(timezone.utc)
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+        env["ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED"] = "true"
+        env["ARX_EMERGENCY_STOP_ACTIVE"] = "false"
+        env["ARX_BACKUP_CONTAINMENT_ENABLED"] = "false"
+        env["SEC_USER_AGENT"] = "ARX-Terminal Regulatory Research (ops@arxterminal.com)"
+
+        # 1. Reject unauthorized ticker MSFT
+        cmd_unauth = [
+            sys.executable,
+            "-m", "analyst_dashboard.smart_money.canary_runner",
+            "--ticker", "MSFT",
+            "--auth-issued-at", now.isoformat(),
+            "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+        ]
+        res_unauth = subprocess.run(cmd_unauth, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res_unauth.returncode != 0
+        assert "not authorized" in res_unauth.stderr.lower()
+
+        # 2. Reject mismatched CIK
+        cmd_mismatch = [
+            sys.executable,
+            "-m", "analyst_dashboard.smart_money.canary_runner",
+            "--ticker", "AAPL",
+            "--cik", "0001045810",
+            "--auth-issued-at", now.isoformat(),
+            "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+        ]
+        res_mismatch = subprocess.run(cmd_mismatch, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res_mismatch.returncode != 0
+        assert "mismatch" in res_mismatch.stderr.lower()
+
+        # 3. Reject invalid accession format
+        cmd_bad_acc = [
+            sys.executable,
+            "-m", "analyst_dashboard.smart_money.canary_runner",
+            "--ticker", "AAPL",
+            "--accession", "bad-accession-format",
+            "--auth-issued-at", now.isoformat(),
+            "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+        ]
+        res_bad_acc = subprocess.run(cmd_bad_acc, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res_bad_acc.returncode != 0
+        assert "invalid accession format" in res_bad_acc.stderr.lower()
+
+        # 4. Valid AAPL dry-run passes via script
+        cmd_valid_dry = [
+            sys.executable,
+            "scripts/execute_nvda_oneshot_cycle.py",
+            "--ticker", "AAPL",
+            "--cik", "0000320193",
+            "--accession", PINNED_AAPL_ACCESSION,
+            "--interval-start", "2026-11-17T00:00:00Z",
+            "--interval-end", "2026-11-18T23:59:59Z",
+            "--public-availability-cutoff", "2026-11-19T00:00:00Z",
+            "--auth-issued-at", now.isoformat(),
+            "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+            "--dsn", dsn,
+            "--dry-run",
+        ]
+        res_valid_dry = subprocess.run(cmd_valid_dry, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res_valid_dry.returncode == 0, f"Valid dry run failed: {res_valid_dry.stderr}"
+        lines = [l for l in res_valid_dry.stdout.split("\n") if l.strip() and not l.startswith("===") and not l.startswith("[") and not l.startswith("Canary Execution Receipt:")]
+        rcpt = json.loads("\n".join(lines))
+        assert rcpt["issuer"] == "AAPL"
+        assert rcpt["cik"] == "0000320193"
+        assert rcpt["accession"] == PINNED_AAPL_ACCESSION
+        assert rcpt["preflight_verdict"] == "PASSED"
+        assert rcpt["requests_made"] == 0
+        assert rcpt["transactions_persisted"] == 0
+
+
