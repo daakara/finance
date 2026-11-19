@@ -2,23 +2,23 @@
   "summary_id": "ARX_RELEASE_QUALIFICATION_SUMMARY",
   "verdict": "RELEASE_QUALIFIED",
   "policy_version": "2.2.0-D074A4",
-  "candidate_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
-  "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
-  "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+  "candidate_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+  "source_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+  "execution_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
-    "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+    "source_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+    "execution_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
     "workflow_run_attempt": 1,
     "qualification_policy_version": "2.2.0-D074A4"
   },
-  "timestamp": "2026-11-18T22:05:42.898649+00:00",
+  "timestamp": "2026-11-19T00:33:55.170074+00:00",
   "total_controls": 12,
   "passed_count": 12,
   "failed_count": 0,
@@ -29,25 +29,25 @@
       "name": "Candidate Identity & Lineage",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.146
+      "duration_sec": 0.185
     },
     "RQ-02": {
       "name": "Release Diff Integrity",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.827
+      "duration_sec": 0.813
     },
     "RQ-03": {
       "name": "Backend Regression Suite",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 18.269
+      "duration_sec": 19.77
     },
     "RQ-04": {
       "name": "Frontend Regression & Typecheck",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 12.134
+      "duration_sec": 13.631
     },
     "RQ-05": {
       "name": "Cross-Engine Invariants",
@@ -59,43 +59,43 @@
       "name": "Governance & Backlog Invariants",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.589
+      "duration_sec": 0.595
     },
     "RQ-07": {
       "name": "Deployment Safety & Secret Isolation",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.057
+      "duration_sec": 0.058
     },
     "RQ-08": {
       "name": "Artifact Provenance & Digest Binding",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.046
+      "duration_sec": 0.048
     },
     "RQ-09": {
       "name": "Four-Way Cross-Platform Compatibility",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 1.073
+      "duration_sec": 1.213
     },
     "RQ-10": {
       "name": "Release Configuration Integrity",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.051
+      "duration_sec": 0.065
     },
     "RQ-11": {
       "name": "Rollback Readiness & Target Verification",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.119
+      "duration_sec": 0.12
     },
     "RQ-13": {
       "name": "Financial Evidence & Decision Integrity",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.006
+      "duration_sec": 0.004
     }
   },
   "errors": []

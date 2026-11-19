@@ -2,19 +2,19 @@
   "control_id": "RQ-12",
   "name": "Qualification Summary Aggregation",
   "status": "PASS",
-  "start_time": "2026-11-18T22:05:42.848371+00:00",
-  "end_time": "2026-11-18T22:05:42.898940+00:00",
-  "duration_sec": 0.05,
-  "candidate_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
-  "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
-  "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+  "start_time": "2026-11-19T00:33:55.124800+00:00",
+  "end_time": "2026-11-19T00:33:55.170385+00:00",
+  "duration_sec": 0.045,
+  "candidate_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+  "source_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+  "execution_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
-    "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+    "source_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+    "execution_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -38,7 +38,7 @@
     "scripts/release/release_qualification_summary.json"
   ],
   "evidence_digests": {
-    "scripts/release/release_qualification_summary.json": "b2bdffdd3763d81d9824de1f24f58f8f98cdfa800bfbe8fe0321a7ac34588162"
+    "scripts/release/release_qualification_summary.json": "62212c3f736e85481e651d2fe06fc677b620971dcc5fe44440f7165425f4bb8c"
   },
   "errors": [],
   "metadata": {
@@ -47,5 +47,5 @@
     "total_controls": 12,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "4ab994406dc4b2fe1e9a94c0c1094d965b9125ca6a68e6599d67ea3fb4fb1047"
+  "receipt_digest": "3e8b00818078d3c53decabb159e0eb9598a3f8c1445022aa7fafdf2129a712a6"
 }

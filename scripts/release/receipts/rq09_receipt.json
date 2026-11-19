@@ -2,19 +2,19 @@
   "control_id": "RQ-09",
   "name": "Four-Way Cross-Platform Compatibility",
   "status": "PASS",
-  "start_time": "2026-11-18T22:05:38.730348+00:00",
-  "end_time": "2026-11-18T22:05:39.824308+00:00",
-  "duration_sec": 1.073,
-  "candidate_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
-  "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
-  "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+  "start_time": "2026-11-19T00:33:51.192672+00:00",
+  "end_time": "2026-11-19T00:33:52.431078+00:00",
+  "duration_sec": 1.213,
+  "candidate_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+  "source_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+  "execution_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
-    "execution_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
+    "source_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+    "execution_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -139,7 +139,7 @@
   ],
   "evidence_digests": {
     "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-    "scripts/release/rq_compatibility_results.json": "7db88e2a6f05e85d6603cee497baff36443a16b4ee3b0acbf1b04cd98cafabef"
+    "scripts/release/rq_compatibility_results.json": "66376d7c7f9fababd51ca96d9668eae440879e644812e20340800c31d77fb969"
   },
   "errors": [],
   "metadata": {
@@ -152,5 +152,5 @@
     "harness_version": "2.2.0-D074A4",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "8a3b7bea6111e4c2f0ae4e40b9ffff9e82bfb5efb5095d8e31a9bab62b48df8e"
+  "receipt_digest": "a3e40f8fd912ab0a544a94429fc41a5873775cb0bbbfaa7af85837e865fc219e"
 }

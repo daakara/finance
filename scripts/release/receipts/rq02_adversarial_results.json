@@ -1,8 +1,8 @@
 {
   "suite": "RQ-02 Adversarial Falsification Suite (ARX-036-D12A)",
-  "candidate_sha": "7c997d33dc5fad0c469476eb71af323baad42537",
-  "candidate_tree": "e8b6850c02bbf4a7b533e3d64e571dae6ff6fa07",
-  "timestamp": "2026-11-18T22:05:00.085646+00:00",
+  "candidate_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+  "candidate_tree": "63cd36fcf0efbbe920e65fa0b4392f07bc9ca0a1",
+  "timestamp": "2026-11-19T00:33:09.998626+00:00",
   "execution_context": {
     "is_ci": false,
     "github_run_id": null,
@@ -37,7 +37,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  [UNAPPROVED (M)] analyst_dashboard/smart_money/canary_runner.py"
+        "  [UNAPPROVED (M)] .github/workflows/release-qualification.yml"
       ]
     },
     {
@@ -55,7 +55,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - Hash mismatch in analyst_dashboard/smart_money/canary_runner.py: expected 1111111111 got b0971c1d7e"
+        "  - Hash mismatch in .github/workflows/release-qualification.yml: expected 1111111111 got 1ee5cb46b3"
       ]
     },
     {
@@ -64,7 +64,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 7c997d33dc5fad0c469476eb71af323baad42537 does not match manifest candidate 0000000000000000000000000000000000000000"
+        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 9f916e4d73911f754eaa9c479e126df36572a686 does not match manifest candidate 0000000000000000000000000000000000000000"
       ]
     },
     {
@@ -82,7 +82,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - DIRTY_WORKING_TREE_MISMATCH: Candidate file 'analyst_dashboard/smart_money/canary_runner.py' has uncommitted modifications (M)"
+        "  - DIRTY_WORKING_TREE_MISMATCH: Candidate file '.github/workflows/release-qualification.yml' has uncommitted modifications (M)"
       ]
     },
     {
@@ -100,7 +100,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "FAIL: DUPLICATE_MANIFEST_ENTRY: DUPLICATE_MANIFEST_ENTRY: Duplicate key 'analyst_dashboard/smart_money/canary_runner.py' detected in manifest JSON."
+        "FAIL: DUPLICATE_MANIFEST_ENTRY: DUPLICATE_MANIFEST_ENTRY: Duplicate key '.github/workflows/release-qualification.yml' detected in manifest JSON."
       ]
     },
     {
@@ -109,7 +109,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "FAIL: UNAPPROVED_PR_ATTRIBUTION: File analyst_dashboard/smart_money/canary_runner.py attributed to unapproved or missing PR (999)"
+        "FAIL: UNAPPROVED_PR_ATTRIBUTION: File .github/workflows/release-qualification.yml attributed to unapproved or missing PR (999)"
       ]
     }
   ]
