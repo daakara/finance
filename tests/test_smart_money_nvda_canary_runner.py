@@ -30,6 +30,8 @@ import sys
 import time
 import json
 import uuid
+import gzip
+import zlib
 import subprocess
 import http.server
 import threading
@@ -2050,4 +2052,472 @@ class TestNvdaCanaryFunctionalCLI:
         res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
         assert res.returncode == 2
         assert "unrecognized arguments" in res.stderr
+
+    def test_cli_dry_run_reports_individual_checks_and_lock_inspection(self, clean_env, disposable_db):
+        conn, dsn = disposable_db
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        now = datetime.now(timezone.utc)
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "analyst_dashboard.smart_money.canary_runner",
+            "--dry-run",
+            "--auth-issued-at", now.isoformat(),
+            "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+            "--dsn", dsn,
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+        env["ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED"] = "true"
+        env["ARX_EMERGENCY_STOP_ACTIVE"] = "false"
+        env["ARX_BACKUP_CONTAINMENT_ENABLED"] = "false"
+        env["SEC_USER_AGENT"] = "ARX-Terminal Regulatory Research (ops@arxterminal.com)"
+
+        res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res.returncode == 0, f"CLI exited with {res.returncode}: {res.stderr}"
+
+        lines = [l for l in res.stdout.split("\n") if l.strip() and not l.startswith("===") and not l.startswith("[") and not l.startswith("Canary Execution Receipt:")]
+        receipt = json.loads("\n".join(lines))
+        assert receipt["mode"] == "DRY_RUN"
+        assert receipt["preflight_verdict"] == "PASSED"
+        assert receipt["verdict"] == "SUCCESS"
+
+        checks = receipt["preflight_checks"]
+        assert checks["scope_check"]["status"] == "PASS"
+        assert checks["emergency_stop_check"]["status"] == "PASS"
+        assert checks["containment_ratification_check"]["status"] == "PASS"
+        assert checks["user_agent_check"]["status"] == "PASS"
+        assert checks["backup_freshness_check"]["status"] == "PASS"
+        assert checks["authorization_window_check"]["status"] == "PASS"
+        assert checks["interval_and_cutoff_check"]["status"] == "PASS"
+        assert checks["database_connectivity"]["status"] == "PASS"
+        assert checks["queue_isolation_check"]["status"] == "PASS"
+        assert checks["advisory_lock_availability"]["status"] == "PASS"
+
+    def test_cli_dry_run_skipped_db_checks_reports_incomplete_and_blocks(self, clean_env):
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        now = datetime.now(timezone.utc)
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "analyst_dashboard.smart_money.canary_runner",
+            "--dry-run",
+            "--auth-issued-at", now.isoformat(),
+            "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+        env["ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED"] = "true"
+        env["ARX_EMERGENCY_STOP_ACTIVE"] = "false"
+        env["ARX_BACKUP_CONTAINMENT_ENABLED"] = "false"
+        env["SEC_USER_AGENT"] = "ARX-Terminal Regulatory Research (ops@arxterminal.com)"
+        env.pop("SMART_MONEY_DATABASE_URL", None)
+        env.pop("DATABASE_URL", None)
+
+        res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res.returncode == 1, "Should exit 1 when required database checks were skipped"
+
+        lines = [l for l in res.stdout.split("\n") if l.strip() and not l.startswith("===") and not l.startswith("[") and not l.startswith("Canary Execution Receipt:")]
+        receipt = json.loads("\n".join(lines))
+        assert receipt["preflight_verdict"] == "INCOMPLETE"
+        assert receipt["verdict"] == "BLOCKED"
+        assert receipt["preflight_checks"]["database_connectivity"]["status"] == "NOT_CHECKED"
+        assert receipt["preflight_checks"]["queue_isolation_check"]["status"] == "NOT_CHECKED"
+        assert receipt["preflight_checks"]["advisory_lock_availability"]["status"] == "NOT_CHECKED"
+
+    def test_cli_dry_run_with_active_queue_reports_fail(self, clean_env, disposable_db):
+        conn, dsn = disposable_db
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        now = datetime.now(timezone.utc)
+
+        # Insert active request into sm_run_requests
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO sm_run_requests (
+                    request_id, request_type, requested_by_subject_hash, status,
+                    requested_at, attempt_count, max_attempts
+                ) VALUES (
+                    %s, 'SCHEDULED_DISCOVERY', 'test_hash', 'PENDING', NOW(), 0, 3
+                );
+            """, (str(uuid.uuid4()),))
+        conn.commit()
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "analyst_dashboard.smart_money.canary_runner",
+            "--dry-run",
+            "--auth-issued-at", now.isoformat(),
+            "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+            "--dsn", dsn,
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+        env["ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED"] = "true"
+        env["ARX_EMERGENCY_STOP_ACTIVE"] = "false"
+        env["ARX_BACKUP_CONTAINMENT_ENABLED"] = "false"
+        env["SEC_USER_AGENT"] = "ARX-Terminal Regulatory Research (ops@arxterminal.com)"
+
+        res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res.returncode == 1
+
+        lines = [l for l in res.stdout.split("\n") if l.strip() and not l.startswith("===") and not l.startswith("[") and not l.startswith("Canary Execution Receipt:")]
+        receipt = json.loads("\n".join(lines))
+        assert receipt["preflight_verdict"] == "FAILED"
+        assert receipt["verdict"] == "FAILED"
+        assert receipt["preflight_checks"]["queue_isolation_check"]["status"] == "FAIL"
+
+    def test_cli_dry_run_with_lock_held_reports_fail(self, clean_env, disposable_db):
+        conn, dsn = disposable_db
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        now = datetime.now(timezone.utc)
+
+        # Acquire lock in external session
+        with conn.cursor() as cur:
+            cur.execute("SELECT pg_try_advisory_lock(%s);", (LOCK_SEC_EGRESS_OWNER,))
+            assert cur.fetchone()[0] is True
+
+        try:
+            cmd = [
+                sys.executable,
+                "-m",
+                "analyst_dashboard.smart_money.canary_runner",
+                "--dry-run",
+                "--auth-issued-at", now.isoformat(),
+                "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+                "--dsn", dsn,
+            ]
+            env = os.environ.copy()
+            env["PYTHONPATH"] = project_root
+            env["ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED"] = "true"
+            env["ARX_EMERGENCY_STOP_ACTIVE"] = "false"
+            env["ARX_BACKUP_CONTAINMENT_ENABLED"] = "false"
+            env["SEC_USER_AGENT"] = "ARX-Terminal Regulatory Research (ops@arxterminal.com)"
+
+            res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+            assert res.returncode == 1
+
+            lines = [l for l in res.stdout.split("\n") if l.strip() and not l.startswith("===") and not l.startswith("[") and not l.startswith("Canary Execution Receipt:")]
+            receipt = json.loads("\n".join(lines))
+            assert receipt["preflight_verdict"] == "FAILED"
+            assert receipt["verdict"] == "FAILED"
+            assert receipt["preflight_checks"]["advisory_lock_availability"]["status"] == "FAIL"
+        finally:
+            with conn.cursor() as cur:
+                cur.execute("SELECT pg_advisory_unlock(%s);", (LOCK_SEC_EGRESS_OWNER,))
+
+    def test_script_cli_dry_run_cannot_enter_live_execution(self, clean_env, disposable_db):
+        conn, dsn = disposable_db
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        script_path = os.path.join(project_root, "scripts", "execute_nvda_oneshot_cycle.py")
+        now = datetime.now(timezone.utc)
+
+        cmd = [
+            sys.executable,
+            script_path,
+            "--dry-run",
+            "--auth-issued-at", now.isoformat(),
+            "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+            "--dsn", dsn,
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+        env["ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED"] = "true"
+        env["ARX_EMERGENCY_STOP_ACTIVE"] = "false"
+        env["ARX_BACKUP_CONTAINMENT_ENABLED"] = "false"
+        env["SEC_USER_AGENT"] = "ARX-Terminal Regulatory Research (ops@arxterminal.com)"
+
+        res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res.returncode == 0, f"Script CLI exited with {res.returncode}: {res.stderr}"
+
+        lines = [l for l in res.stdout.split("\n") if l.strip() and not l.startswith("===") and not l.startswith("[") and not l.startswith("Canary Execution Receipt:")]
+        receipt = json.loads("\n".join(lines))
+        assert receipt["mode"] == "DRY_RUN"
+        assert receipt["preflight_verdict"] == "PASSED"
+        assert receipt["requests_made"] == 0
+        assert receipt["transactions_persisted"] == 0
+        assert receipt["verdict"] == "SUCCESS"
+
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM form4_raw_filings;")
+            assert cur.fetchone()[0] == 0
+
+    def test_script_cli_missing_authorization_fails(self, clean_env, disposable_db):
+        conn, dsn = disposable_db
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        script_path = os.path.join(project_root, "scripts", "execute_nvda_oneshot_cycle.py")
+
+        cmd = [
+            sys.executable,
+            script_path,
+            "--dry-run",
+            "--dsn", dsn,
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+
+        res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res.returncode == 1
+        assert "Missing authorization timestamps" in res.stderr
+
+    def test_script_cli_unknown_flags_are_rejected(self, clean_env):
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        script_path = os.path.join(project_root, "scripts", "execute_nvda_oneshot_cycle.py")
+
+        cmd = [
+            sys.executable,
+            script_path,
+            "--unknown-illegal-script-flag-999",
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+
+        res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res.returncode == 2
+        assert "unrecognized arguments" in res.stderr
+
+
+class TestNvdaCanaryContentEncodingAndDecompression:
+    """Acceptance: Content-Encoding (gzip and deflate) decoding and trickling deadline enforcement."""
+
+    def test_reproduction_gzip_json_response_decoded_and_parsed(self, clean_env):
+        payload = b"{\"filings\": {\"recent\": {\"form\": [\"4\"], \"accessionNumber\": [\"0001045810-26-000100\"]}}}"
+        compressed = gzip.compress(payload)
+
+        class GzipHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Encoding", "gzip")
+                self.send_header("Content-Length", str(len(compressed)))
+                self.end_headers()
+                self.wfile.write(compressed)
+
+            def log_message(self, format, *args):
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), GzipHandler)
+        port = server.server_address[1]
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+
+        session = requests.Session()
+        runner = NvdaCanaryRunner(
+            session=session,
+            max_duration_sec=10.0,
+            **make_valid_auth(),
+        )
+
+        try:
+            resp = runner.tracked_get(f"http://127.0.0.1:{port}")
+            assert resp.status_code == 200
+            # Reproduction check: response.json() MUST decode cleanly without JSONDecodeError
+            data = resp.json()
+            assert data["filings"]["recent"]["form"] == ["4"]
+            assert data["filings"]["recent"]["accessionNumber"] == ["0001045810-26-000100"]
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_deflate_zlib_json_response_decoded_and_parsed(self, clean_env):
+        payload = b"{\"filings\": {\"recent\": {\"form\": [\"4/A\"], \"accessionNumber\": [\"0001045810-26-000101\"]}}}"
+        compressed = zlib.compress(payload)
+
+        class DeflateHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Encoding", "deflate")
+                self.send_header("Content-Length", str(len(compressed)))
+                self.end_headers()
+                self.wfile.write(compressed)
+
+            def log_message(self, format, *args):
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), DeflateHandler)
+        port = server.server_address[1]
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+
+        session = requests.Session()
+        runner = NvdaCanaryRunner(
+            session=session,
+            max_duration_sec=10.0,
+            **make_valid_auth(),
+        )
+
+        try:
+            resp = runner.tracked_get(f"http://127.0.0.1:{port}")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["filings"]["recent"]["form"] == ["4/A"]
+            assert data["filings"]["recent"]["accessionNumber"] == ["0001045810-26-000101"]
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_deflate_raw_json_response_decoded_and_parsed(self, clean_env):
+        payload = b"{\"filings\": {\"recent\": {\"form\": [\"4\"], \"accessionNumber\": [\"0001045810-26-000102\"]}}}"
+        comp = zlib.compressobj(zlib.Z_DEFAULT_COMPRESSION, zlib.DEFLATED, -zlib.MAX_WBITS)
+        compressed = comp.compress(payload) + comp.flush()
+
+        class RawDeflateHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Encoding", "deflate")
+                self.send_header("Content-Length", str(len(compressed)))
+                self.end_headers()
+                self.wfile.write(compressed)
+
+            def log_message(self, format, *args):
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), RawDeflateHandler)
+        port = server.server_address[1]
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+
+        session = requests.Session()
+        runner = NvdaCanaryRunner(
+            session=session,
+            max_duration_sec=10.0,
+            **make_valid_auth(),
+        )
+
+        try:
+            resp = runner.tracked_get(f"http://127.0.0.1:{port}")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["filings"]["recent"]["form"] == ["4"]
+            assert data["filings"]["recent"]["accessionNumber"] == ["0001045810-26-000102"]
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_compressed_trickling_response_within_deadline(self, clean_env):
+        payload = b"{\"status\": \"trickling_gzip_success\", \"count\": 123}"
+        compressed = gzip.compress(payload)
+
+        class FastTrickleHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Encoding", "gzip")
+                self.send_header("Content-Length", str(len(compressed)))
+                self.end_headers()
+                # Trickle 2 bytes every 0.005s (total ~0.15s, within 5.0s budget)
+                for i in range(0, len(compressed), 2):
+                    self.wfile.write(compressed[i:i+2])
+                    self.wfile.flush()
+                    time.sleep(0.005)
+
+            def log_message(self, format, *args):
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), FastTrickleHandler)
+        port = server.server_address[1]
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+
+        session = requests.Session()
+        runner = NvdaCanaryRunner(
+            session=session,
+            max_duration_sec=5.0,
+            **make_valid_auth(),
+        )
+
+        try:
+            resp = runner.tracked_get(f"http://127.0.0.1:{port}")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["status"] == "trickling_gzip_success"
+            assert data["count"] == 123
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_compressed_trickling_response_exceeding_deadline_rejected(self, clean_env):
+        payload = b"{\"status\": \"trickling_gzip_exceeding_deadline\"}"
+        compressed = gzip.compress(payload)
+
+        class SlowTrickleHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Encoding", "gzip")
+                self.send_header("Content-Length", str(len(compressed)))
+                self.end_headers()
+                # Trickle 1 byte every 0.05s (total ~2.5s, exceeds 0.35s limit)
+                for b in compressed:
+                    time.sleep(0.05)
+                    self.wfile.write(bytes([b]))
+                    self.wfile.flush()
+
+            def log_message(self, format, *args):
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), SlowTrickleHandler)
+        port = server.server_address[1]
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+
+        session = requests.Session()
+        runner = NvdaCanaryRunner(
+            session=session,
+            max_duration_sec=0.35,
+            **make_valid_auth(),
+        )
+
+        try:
+            with pytest.raises(CanaryTimeoutError) as exc_info:
+                runner.tracked_get(f"http://127.0.0.1:{port}")
+            assert "DEADLINE" in str(exc_info.value).upper() or "TIMEOUT" in str(exc_info.value).upper()
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_deflate_trickling_response_exceeding_deadline_rejected(self, clean_env):
+        payload = b"{\"status\": \"trickling_deflate_exceeding_deadline\"}"
+        compressed = zlib.compress(payload)
+
+        class SlowDeflateHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Encoding", "deflate")
+                self.send_header("Content-Length", str(len(compressed)))
+                self.end_headers()
+                # Trickle 1 byte every 0.05s (total ~2.5s, exceeds 0.35s limit)
+                for b in compressed:
+                    time.sleep(0.05)
+                    self.wfile.write(bytes([b]))
+                    self.wfile.flush()
+
+            def log_message(self, format, *args):
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), SlowDeflateHandler)
+        port = server.server_address[1]
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+
+        session = requests.Session()
+        runner = NvdaCanaryRunner(
+            session=session,
+            max_duration_sec=0.35,
+            **make_valid_auth(),
+        )
+
+        try:
+            with pytest.raises(CanaryTimeoutError) as exc_info:
+                runner.tracked_get(f"http://127.0.0.1:{port}")
+            assert "DEADLINE" in str(exc_info.value).upper() or "TIMEOUT" in str(exc_info.value).upper()
+        finally:
+            server.shutdown()
+            server.server_close()
+
 

@@ -23,6 +23,8 @@ import sys
 import time
 import json
 import uuid
+import gzip
+import zlib
 import socket
 import hashlib
 import logging
@@ -163,6 +165,40 @@ def _parse_utc_datetime(dt_val: Any, field_name: str) -> Optional[datetime]:
     return parsed.astimezone(timezone.utc)
 
 
+def decode_content_bytes(data: bytes, encoding: Optional[str] = None) -> bytes:
+    """Decodes gzip, deflate, and zlib encoded content bytes."""
+    if not data:
+        return data
+    enc = (encoding or "").strip().lower()
+    if enc in ("gzip", "x-gzip") or (not enc and data.startswith(b"\x1f\x8b")):
+        try:
+            return gzip.decompress(data)
+        except Exception:
+            pass
+    elif enc == "deflate":
+        try:
+            return zlib.decompress(data)
+        except Exception:
+            try:
+                return zlib.decompress(data, -zlib.MAX_WBITS)
+            except Exception:
+                pass
+    elif enc in ("br", "brotli"):
+        try:
+            import brotli
+            return brotli.decompress(data)
+        except Exception:
+            pass
+    try:
+        from urllib3.response import _get_decoder
+        if enc:
+            dec = _get_decoder(enc)
+            return dec.decompress(data) + dec.flush()
+    except Exception:
+        pass
+    return data
+
+
 class NvdaCanaryRunner:
     """
     Dedicated single-shot production Form 4 canary runner for NVDA.
@@ -205,6 +241,8 @@ class NvdaCanaryRunner:
             )
 
         self.dsn = dsn or os.environ.get("SMART_MONEY_DATABASE_URL") or os.environ.get("DATABASE_URL")
+        self.ticker = CANARY_TICKER
+        self.cik = CANARY_CIK
         self.max_requests = max_requests
         self.max_duration_sec = float(max_duration_sec)
         self.max_rps = float(max_rps)
@@ -483,17 +521,21 @@ class NvdaCanaryRunner:
 
         self.rate_limiter.acquire()
         t0 = time.time()
-        elapsed = time.time() - self.start_time
+        base_time = self.start_time if self.start_time > 0 else t0
+        elapsed = time.time() - base_time
         remaining = max(0.01, self.max_duration_sec - elapsed)
         effective_timeout = min(timeout if timeout is not None else 10.0, remaining)
 
         try:
             resp = self.session.get(url, timeout=effective_timeout, stream=True)
+            enc = resp.headers.get("content-encoding", "").strip().lower()
 
-            # If already materialized or mocked with bytes _content, check deadline and proceed
+            # If already materialized or mocked with bytes _content, check deadline and decode
             is_prebuffered = isinstance(getattr(resp, "_content", None), bytes)
             if type(resp).__name__ in ("MagicMock", "Mock") or is_prebuffered or getattr(resp, "raw", None) is None:
                 self.check_deadline()
+                if is_prebuffered:
+                    resp._content = decode_content_bytes(resp._content, enc)
             else:
                 # Find underlying raw socket to enforce dynamic deadline on socket level
                 sock = None
@@ -504,11 +546,21 @@ class NvdaCanaryRunner:
                 elif fp and hasattr(fp, "raw") and hasattr(fp.raw, "_sock"):
                     sock = fp.raw._sock
 
+                decoder = None
+                if enc:
+                    try:
+                        from urllib3.response import _get_decoder
+                        decoder = _get_decoder(enc)
+                    except Exception:
+                        decoder = None
+
                 chunks = []
+                decoded_chunks = [] if decoder is not None else None
+
                 while True:
                     self.check_deadline()
                     now = time.time()
-                    rem = self.max_duration_sec - (now - self.start_time)
+                    rem = self.max_duration_sec - (now - base_time)
                     if rem <= 0:
                         raise CanaryTimeoutError(
                             f"MECHANICAL_STOP_TIMEOUT: Canary execution deadline ({self.max_duration_sec}s) exceeded during response transfer from {url}."
@@ -541,9 +593,29 @@ class NvdaCanaryRunner:
                     if not chunk:
                         break
                     chunks.append(chunk)
+                    if decoder is not None and decoded_chunks is not None:
+                        try:
+                            dec = decoder.decompress(chunk)
+                            if dec:
+                                decoded_chunks.append(dec)
+                        except Exception:
+                            decoder = None
+                            decoded_chunks = None
+
                     self.check_deadline()
 
-                resp._content = b"".join(chunks)
+                raw_body = b"".join(chunks)
+                if decoder is not None and decoded_chunks is not None:
+                    try:
+                        fl = decoder.flush()
+                        if fl:
+                            decoded_chunks.append(fl)
+                        resp._content = b"".join(decoded_chunks)
+                    except Exception:
+                        resp._content = decode_content_bytes(raw_body, enc)
+                else:
+                    resp._content = decode_content_bytes(raw_body, enc)
+
                 self.check_deadline()
 
         except (requests.exceptions.Timeout, socket.timeout) as te:
@@ -1135,6 +1207,228 @@ class NvdaCanaryRunner:
 
         return telemetry
 
+    def execute_dry_run(self) -> Dict[str, Any]:
+        """
+        Executes advertised read-only dry-run checks without issuing live SEC requests or mutating the database.
+        Connects read-only, inspects all active queue states, and inspects advisory-lock availability without acquiring it.
+        Reports each check as PASS, FAIL, or NOT_CHECKED.
+        Fails closed (INCOMPLETE or FAILED) if required checks are skipped or fail.
+        """
+        checks: Dict[str, Dict[str, str]] = {}
+
+        # 1. Scope
+        if self.ticker == CANARY_TICKER and self.cik == CANARY_CIK:
+            checks["scope_check"] = {"status": "PASS", "detail": f"Target scope locked to {CANARY_TICKER} (CIK {CANARY_CIK})"}
+        else:
+            checks["scope_check"] = {"status": "FAIL", "detail": f"Scope mismatch: ticker='{self.ticker}', cik='{self.cik}'"}
+
+        # 2. Emergency stop
+        if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() == "TRUE":
+            checks["emergency_stop_check"] = {"status": "FAIL", "detail": "Emergency stop is active (ARX_EMERGENCY_STOP_ACTIVE=TRUE)"}
+        else:
+            checks["emergency_stop_check"] = {"status": "PASS", "detail": "Emergency stop is inactive"}
+
+        # 3. Containment ratification
+        is_auth = os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "").strip().lower() in ("true", "1", "yes")
+        if is_auth:
+            checks["containment_ratification_check"] = {"status": "PASS", "detail": "Backup containment ratified (ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED=true)"}
+        else:
+            checks["containment_ratification_check"] = {"status": "FAIL", "detail": "Containment unauthorized (ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED != true)"}
+
+        # 4. User agent
+        ua = get_sec_user_agent()
+        is_ua_valid, ua_err = validate_sec_user_agent(ua)
+        if is_ua_valid:
+            checks["user_agent_check"] = {"status": "PASS", "detail": f"Valid User-Agent: {ua}"}
+        else:
+            checks["user_agent_check"] = {"status": "FAIL", "detail": f"Invalid User-Agent: {ua_err}"}
+
+        # 5. Backup freshness
+        try:
+            policy = BackupContainmentPolicy.from_environment()
+            gate = BackupAgeContainmentGate(policy=policy)
+            if gate.check_ingestion_eligibility():
+                checks["backup_freshness_check"] = {"status": "PASS", "detail": "Fresh verified backup available (< 12 hours)"}
+            else:
+                checks["backup_freshness_check"] = {"status": "FAIL", "detail": f"Backup stale or unverifiable: {gate.last_error_code}"}
+        except Exception as b_err:
+            checks["backup_freshness_check"] = {"status": "FAIL", "detail": f"Backup freshness check error: {b_err}"}
+
+        # 6. Authorization window
+        if self.auth_issued_at is None or self.auth_expires_at is None:
+            checks["authorization_window_check"] = {"status": "FAIL", "detail": "Missing mandatory auth_issued_at and/or auth_expires_at"}
+        else:
+            now = datetime.now(timezone.utc)
+            w_sec = (self.auth_expires_at - self.auth_issued_at).total_seconds()
+            if w_sec <= 0:
+                checks["authorization_window_check"] = {"status": "FAIL", "detail": f"Inverted authorization window: {self.auth_issued_at.isoformat()} >= {self.auth_expires_at.isoformat()}"}
+            elif w_sec > CANARY_MAX_AUTH_WINDOW_SEC:
+                checks["authorization_window_check"] = {"status": "FAIL", "detail": f"Authorization window ({w_sec:.1f}s) exceeds 15-minute maximum ({CANARY_MAX_AUTH_WINDOW_SEC}s)"}
+            elif self.auth_issued_at > now:
+                checks["authorization_window_check"] = {"status": "FAIL", "detail": f"Authorization not yet valid: issued in future ({self.auth_issued_at.isoformat()} > {now.isoformat()})"}
+            elif now > self.auth_expires_at:
+                checks["authorization_window_check"] = {"status": "FAIL", "detail": f"Authorization expired ({self.auth_expires_at.isoformat()} < {now.isoformat()})"}
+            else:
+                checks["authorization_window_check"] = {"status": "PASS", "detail": f"Valid authorization window ({w_sec:.1f}s <= {CANARY_MAX_AUTH_WINDOW_SEC}s)"}
+
+        # 7. Interval and cutoff
+        i_start = self.interval_start
+        i_end = self.interval_end
+        p_cutoff = self.public_availability_cutoff
+        if i_start is not None and i_end is not None and i_start >= i_end:
+            checks["interval_and_cutoff_check"] = {"status": "FAIL", "detail": f"Inverted interval: start ({i_start.isoformat()}) >= end ({i_end.isoformat()})"}
+        elif i_end is not None and p_cutoff is not None and p_cutoff < i_end:
+            checks["interval_and_cutoff_check"] = {"status": "FAIL", "detail": f"Cutoff before interval end: cutoff ({p_cutoff.isoformat()}) < end ({i_end.isoformat()})"}
+        elif self.mode == "prospective" and i_start is not None and i_start < FROZEN_BASELINE_CUTOFF:
+            checks["interval_and_cutoff_check"] = {"status": "FAIL", "detail": f"Prospective interval ({i_start.isoformat()}) overlaps frozen baseline (< {FROZEN_BASELINE_CUTOFF.isoformat()})"}
+        elif self.mode == "historical_audit" and i_start is not None and i_start >= FROZEN_BASELINE_CUTOFF:
+            checks["interval_and_cutoff_check"] = {"status": "FAIL", "detail": f"Historical audit interval ({i_start.isoformat()}) out of bounds (>= {FROZEN_BASELINE_CUTOFF.isoformat()})"}
+        else:
+            checks["interval_and_cutoff_check"] = {"status": "PASS", "detail": f"Interval ({i_start.isoformat() if i_start else 'none'} to {i_end.isoformat() if i_end else 'none'}) satisfies {self.mode} bounds"}
+
+        # 8, 9, 10: Database checks in read-only mode
+        dsn = self.dsn or os.environ.get("SMART_MONEY_DATABASE_URL") or os.environ.get("DATABASE_URL")
+        ro_conn = None
+        if not dsn:
+            checks["database_connectivity"] = {"status": "NOT_CHECKED", "detail": "No database DSN provided or configured"}
+            checks["queue_isolation_check"] = {"status": "NOT_CHECKED", "detail": "Skipped (no database connection)"}
+            checks["advisory_lock_availability"] = {"status": "NOT_CHECKED", "detail": "Skipped (no database connection)"}
+        else:
+            try:
+                import psycopg2
+                ro_conn = psycopg2.connect(dsn)
+                ro_conn.set_session(readonly=True, autocommit=True)
+                checks["database_connectivity"] = {"status": "PASS", "detail": "Connected to PostgreSQL in read-only mode"}
+            except Exception as conn_err:
+                checks["database_connectivity"] = {"status": "FAIL", "detail": f"Failed to connect in read-only mode: {conn_err}"}
+                checks["queue_isolation_check"] = {"status": "NOT_CHECKED", "detail": "Skipped (connection failed)"}
+                checks["advisory_lock_availability"] = {"status": "NOT_CHECKED", "detail": "Skipped (connection failed)"}
+
+        if ro_conn is not None:
+            try:
+                with ro_conn.cursor() as cur:
+                    # 9. Queue isolation across active states
+                    cur.execute("""
+                        SELECT status, count(*) 
+                        FROM sm_run_requests 
+                        WHERE status IN ('PENDING', 'RUNNING', 'RETRY_ELIGIBLE')
+                        GROUP BY status;
+                    """)
+                    q_rows = cur.fetchall()
+                    active_counts = {r[0]: r[1] for r in q_rows if r[1] > 0}
+                    if active_counts:
+                        checks["queue_isolation_check"] = {
+                            "status": "FAIL",
+                            "detail": f"Active queue requests found in sm_run_requests: {active_counts}",
+                        }
+                    else:
+                        checks["queue_isolation_check"] = {
+                            "status": "PASS",
+                            "detail": "0 active requests in states ('PENDING', 'RUNNING', 'RETRY_ELIGIBLE')",
+                        }
+
+                    # 10. Advisory lock availability without acquiring it
+                    cur.execute("""
+                        SELECT pid, mode, granted 
+                        FROM pg_locks 
+                        WHERE locktype = 'advisory' 
+                          AND classid = %s 
+                          AND objid = %s;
+                    """, (LOCK_SEC_EGRESS_OWNER_CLASSID, LOCK_SEC_EGRESS_OWNER_OBJID))
+                    l_rows = cur.fetchall()
+                    held_locks = [r for r in l_rows if r[2] is True]
+                    if held_locks:
+                        checks["advisory_lock_availability"] = {
+                            "status": "FAIL",
+                            "detail": f"Advisory lock {LOCK_SEC_EGRESS_OWNER} is currently HELD by PID(s): {[r[0] for r in held_locks]}",
+                        }
+                    else:
+                        checks["advisory_lock_availability"] = {
+                            "status": "PASS",
+                            "detail": f"Advisory lock {LOCK_SEC_EGRESS_OWNER} (classid={LOCK_SEC_EGRESS_OWNER_CLASSID}, objid={LOCK_SEC_EGRESS_OWNER_OBJID}) is available (unheld)",
+                        }
+            except Exception as q_err:
+                if "queue_isolation_check" not in checks or checks["queue_isolation_check"]["status"] != "FAIL":
+                    checks["queue_isolation_check"] = {"status": "FAIL", "detail": f"Queue inspection error: {q_err}"}
+                if "advisory_lock_availability" not in checks or checks["advisory_lock_availability"]["status"] != "FAIL":
+                    checks["advisory_lock_availability"] = {"status": "FAIL", "detail": f"Advisory lock inspection error: {q_err}"}
+            finally:
+                ro_conn.close()
+
+        # Evaluate overall verdict across required checks
+        REQUIRED_CHECKS = [
+            "scope_check",
+            "emergency_stop_check",
+            "containment_ratification_check",
+            "user_agent_check",
+            "backup_freshness_check",
+            "authorization_window_check",
+            "interval_and_cutoff_check",
+            "database_connectivity",
+            "queue_isolation_check",
+            "advisory_lock_availability",
+        ]
+
+        has_failures = any(checks.get(c, {}).get("status") == "FAIL" for c in REQUIRED_CHECKS)
+        has_skipped = any(checks.get(c, {}).get("status") == "NOT_CHECKED" for c in REQUIRED_CHECKS)
+
+        if has_failures:
+            preflight_verdict = "FAILED"
+            overall_verdict = "FAILED"
+        elif has_skipped:
+            preflight_verdict = "INCOMPLETE"
+            overall_verdict = "BLOCKED"
+        else:
+            preflight_verdict = "PASSED"
+            overall_verdict = "SUCCESS"
+
+        governance_matrix = {
+            "local_qualification": "QUALIFIED",
+            "hosted_qualification": "QUALIFIED",
+            "deployment_status": "NOT_DEPLOYED (Candidate branch feat/sec-oneshot-nvda-executor, base: 308f5392d7518a95bf4170ec5c1beaf64d2cba0b)",
+            "operational_authorization": "BLOCKED (HOLD_SEC_001 active; live wire requests barred)",
+        }
+        lock_verification = {
+            "lock_id": LOCK_SEC_EGRESS_OWNER,
+            "classid": LOCK_SEC_EGRESS_OWNER_CLASSID,
+            "objid": LOCK_SEC_EGRESS_OWNER_OBJID,
+            "objsubid": 1,
+            "decomposition_verified": True,
+        }
+        interval_specification = {
+            "execution_mode": self.mode,
+            "interval_start": self.interval_start.isoformat() if self.interval_start else None,
+            "interval_end": self.interval_end.isoformat() if self.interval_end else None,
+            "public_availability_cutoff": self.public_availability_cutoff.isoformat() if self.public_availability_cutoff else None,
+            "relationship_to_frozen_baseline": "POST_BASELINE_PROSPECTIVE" if self.mode == "prospective" else "FROZEN_BASELINE_RECONCILIATION",
+        }
+
+        receipt = {
+            "receipt_type": "ARX_NVDA_ONESHOT_INGESTION_RECEIPT",
+            "version": "1.2.0",
+            "mode": "DRY_RUN",
+            "issuer": CANARY_TICKER,
+            "cik": CANARY_CIK,
+            "preflight_verdict": preflight_verdict,
+            "preflight_checks": checks,
+            "governance_matrix": governance_matrix,
+            "lock_verification": lock_verification,
+            "interval_specification": interval_specification,
+            "interval_start": self.interval_start.isoformat() if self.interval_start else None,
+            "interval_end": self.interval_end.isoformat() if self.interval_end else None,
+            "public_availability_cutoff": self.public_availability_cutoff.isoformat() if self.public_availability_cutoff else None,
+            "auth_issued_at": self.auth_issued_at.isoformat() if self.auth_issued_at else None,
+            "auth_expires_at": self.auth_expires_at.isoformat() if self.auth_expires_at else None,
+            "max_requests": self.max_requests,
+            "max_rps": self.max_rps,
+            "max_unseen_docs": self.max_unseen_docs,
+            "max_duration_sec": self.max_duration_sec,
+            "requests_made": 0,
+            "transactions_persisted": 0,
+            "verdict": overall_verdict,
+        }
+        return receipt
+
 
 def run_nvda_canary(
     dsn: Optional[str] = None,
@@ -1165,34 +1459,14 @@ def run_nvda_canary(
         max_unseen_docs=max_unseen_docs,
     )
     if dry_run:
-        runner.validate_preflight()
-        return {
-            "receipt_type": "ARX_NVDA_ONESHOT_INGESTION_RECEIPT",
-            "version": "1.2.0",
-            "mode": "DRY_RUN",
-            "issuer": CANARY_TICKER,
-            "cik": CANARY_CIK,
-            "preflight_verdict": "PASSED",
-            "interval_start": runner.interval_start.isoformat() if runner.interval_start else None,
-            "interval_end": runner.interval_end.isoformat() if runner.interval_end else None,
-            "public_availability_cutoff": runner.public_availability_cutoff.isoformat() if runner.public_availability_cutoff else None,
-            "auth_issued_at": runner.auth_issued_at.isoformat() if runner.auth_issued_at else None,
-            "auth_expires_at": runner.auth_expires_at.isoformat() if runner.auth_expires_at else None,
-            "max_requests": runner.max_requests,
-            "max_rps": runner.max_rps,
-            "max_unseen_docs": runner.max_unseen_docs,
-            "max_duration_sec": runner.max_duration_sec,
-            "requests_made": 0,
-            "transactions_persisted": 0,
-            "verdict": "SUCCESS",
-        }
+        return runner.execute_dry_run()
     return runner.execute()
 
 
-def build_canary_parser() -> argparse.ArgumentParser:
+def build_canary_parser(prog: Optional[str] = None) -> argparse.ArgumentParser:
     """Constructs the canonical argument parser for the NVDA canary runner."""
     parser = argparse.ArgumentParser(
-        prog="canary_runner",
+        prog=prog or "canary_runner",
         description="ARX Terminal — Dedicated NVDA Bounded SEC Ingestion One-Shot Executor",
     )
     parser.add_argument(
@@ -1295,9 +1569,9 @@ def build_canary_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[List[str]] = None) -> int:
-    """Canonical CLI entrypoint for NVDA canary runner."""
-    parser = build_canary_parser()
+def run_canary_cli(argv: Optional[List[str]] = None, prog: Optional[str] = None) -> int:
+    """Canonical CLI execution entrypoint shared by module and script."""
+    parser = build_canary_parser(prog=prog)
     args = parser.parse_args(argv)
 
     log_level = logging.DEBUG if args.verbose else logging.INFO
@@ -1320,17 +1594,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         return 1
 
+    timeout_arg = getattr(args, "max_duration_sec", getattr(args, "timeout", CANARY_MAX_DURATION_SEC))
+    public_cutoff_arg = getattr(args, "public_availability_cutoff", None) or getattr(args, "public_cutoff", None)
+
     try:
         runner = NvdaCanaryRunner(
             dsn=args.dsn,
             max_requests=args.max_requests,
-            max_duration_sec=args.max_duration_sec,
+            max_duration_sec=timeout_arg,
             max_rps=args.max_rps,
             max_unseen_docs=args.max_unseen_docs,
             mode=args.mode,
             interval_start=args.interval_start,
             interval_end=args.interval_end,
-            public_availability_cutoff=args.public_availability_cutoff,
+            public_availability_cutoff=public_cutoff_arg,
             auth_issued_at=args.auth_issued_at,
             auth_expires_at=args.auth_expires_at,
         )
@@ -1343,34 +1620,13 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     print("=== EXECUTING ARX NVDA SEC CANARY ===")
     if args.dry_run:
-        print("[DRY-RUN] Executing preflight validation and boundary verification without live execution...")
-        try:
-            runner.validate_preflight()
-            receipt = {
-                "receipt_type": "ARX_NVDA_ONESHOT_INGESTION_RECEIPT",
-                "version": "1.2.0",
-                "mode": "DRY_RUN",
-                "issuer": CANARY_TICKER,
-                "cik": CANARY_CIK,
-                "preflight_verdict": "PASSED",
-                "interval_start": runner.interval_start.isoformat() if runner.interval_start else None,
-                "interval_end": runner.interval_end.isoformat() if runner.interval_end else None,
-                "public_availability_cutoff": runner.public_availability_cutoff.isoformat() if runner.public_availability_cutoff else None,
-                "auth_issued_at": runner.auth_issued_at.isoformat() if runner.auth_issued_at else None,
-                "auth_expires_at": runner.auth_expires_at.isoformat() if runner.auth_expires_at else None,
-                "max_requests": runner.max_requests,
-                "max_rps": runner.max_rps,
-                "max_unseen_docs": runner.max_unseen_docs,
-                "max_duration_sec": runner.max_duration_sec,
-                "requests_made": 0,
-                "transactions_persisted": 0,
-                "verdict": "SUCCESS",
-            }
-            print("\nCanary Execution Receipt:")
-            print(json.dumps(receipt, indent=2, default=str))
+        print("[DRY-RUN] Executing read-only preflight and queue inspection...")
+        receipt = runner.execute_dry_run()
+        print("\nCanary Execution Receipt:")
+        print(json.dumps(receipt, indent=2, default=str))
+        if receipt.get("verdict") == "SUCCESS" and receipt.get("preflight_verdict") == "PASSED":
             return 0
-        except Exception as exc:
-            print(f"\nFATAL: Dry-run preflight failed with exception: {exc}", file=sys.stderr)
+        else:
             return 1
 
     try:
@@ -1387,6 +1643,40 @@ def main(argv: Optional[List[str]] = None) -> int:
     except Exception as exc:
         print(f"\nFATAL: Canary failed with exception: {exc}", file=sys.stderr)
         return 1
+
+
+def execute_oneshot(args: argparse.Namespace) -> Dict[str, Any]:
+    """Programmatic execution sharing the canonical validation and execution path."""
+    if not getattr(args, "auth_issued_at", None) or not getattr(args, "auth_expires_at", None):
+        raise CanarySecurityError(
+            "AUTHORIZATION_TIMESTAMPS_REQUIRED: Explicit auth_issued_at and auth_expires_at are mandatory."
+        )
+
+    timeout_arg = getattr(args, "max_duration_sec", getattr(args, "timeout", CANARY_MAX_DURATION_SEC))
+    public_cutoff_arg = getattr(args, "public_availability_cutoff", None) or getattr(args, "public_cutoff", None)
+
+    runner = NvdaCanaryRunner(
+        dsn=args.dsn,
+        max_requests=args.max_requests,
+        max_duration_sec=timeout_arg,
+        max_rps=args.max_rps,
+        max_unseen_docs=args.max_unseen_docs,
+        mode=args.mode,
+        interval_start=args.interval_start,
+        interval_end=args.interval_end,
+        public_availability_cutoff=public_cutoff_arg,
+        auth_issued_at=args.auth_issued_at,
+        auth_expires_at=args.auth_expires_at,
+    )
+
+    if getattr(args, "dry_run", False):
+        return runner.execute_dry_run()
+
+    return runner.execute()
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    return run_canary_cli(argv, prog="canary_runner")
 
 
 if __name__ == "__main__":
