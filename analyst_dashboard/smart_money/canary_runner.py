@@ -26,6 +26,7 @@ import uuid
 import socket
 import hashlib
 import logging
+import argparse
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone, timedelta
 
@@ -487,7 +488,64 @@ class NvdaCanaryRunner:
         effective_timeout = min(timeout if timeout is not None else 10.0, remaining)
 
         try:
-            resp = self.session.get(url, timeout=effective_timeout)
+            resp = self.session.get(url, timeout=effective_timeout, stream=True)
+
+            # If already materialized or mocked with bytes _content, check deadline and proceed
+            is_prebuffered = isinstance(getattr(resp, "_content", None), bytes)
+            if type(resp).__name__ in ("MagicMock", "Mock") or is_prebuffered or getattr(resp, "raw", None) is None:
+                self.check_deadline()
+            else:
+                # Find underlying raw socket to enforce dynamic deadline on socket level
+                sock = None
+                fp = getattr(resp.raw, "_fp", None)
+                raw_fp = getattr(fp, "fp", None) if fp else None
+                if raw_fp and hasattr(raw_fp, "raw") and hasattr(raw_fp.raw, "_sock"):
+                    sock = raw_fp.raw._sock
+                elif fp and hasattr(fp, "raw") and hasattr(fp.raw, "_sock"):
+                    sock = fp.raw._sock
+
+                chunks = []
+                while True:
+                    self.check_deadline()
+                    now = time.time()
+                    rem = self.max_duration_sec - (now - self.start_time)
+                    if rem <= 0:
+                        raise CanaryTimeoutError(
+                            f"MECHANICAL_STOP_TIMEOUT: Canary execution deadline ({self.max_duration_sec}s) exceeded during response transfer from {url}."
+                        )
+                    if sock is not None:
+                        try:
+                            sock.settimeout(max(0.001, rem))
+                        except Exception:
+                            pass
+
+                    try:
+                        if hasattr(resp.raw, "read1"):
+                            chunk = resp.raw.read1(65536)
+                        elif raw_fp and hasattr(raw_fp, "read1"):
+                            chunk = raw_fp.read1(65536)
+                        else:
+                            chunk = resp.raw.read(1024)
+                    except (socket.timeout, requests.exceptions.Timeout) as te:
+                        raise CanaryTimeoutError(
+                            f"MECHANICAL_STOP_TIMEOUT: Outbound response transfer from {url} timed out and exceeded execution ceiling ({self.max_duration_sec}s)."
+                        ) from te
+                    except Exception as read_err:
+                        err_str = str(read_err).lower()
+                        if "timed out" in err_str or "timeout" in err_str:
+                            raise CanaryTimeoutError(
+                                f"MECHANICAL_STOP_TIMEOUT: Outbound response transfer from {url} timed out and exceeded execution ceiling ({self.max_duration_sec}s)."
+                            ) from read_err
+                        raise
+
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                    self.check_deadline()
+
+                resp._content = b"".join(chunks)
+                self.check_deadline()
+
         except (requests.exceptions.Timeout, socket.timeout) as te:
             elapsed_total = time.time() - self.start_time if self.start_time > 0 else 0.0
             if self.start_time > 0 and (elapsed_total >= (self.max_duration_sec - 0.05) or remaining <= 0.1):
@@ -495,6 +553,8 @@ class NvdaCanaryRunner:
                     f"MECHANICAL_STOP_TIMEOUT: Outbound SEC request to {url} blocked for {effective_timeout:.2f}s "
                     f"and exceeded wall-clock execution ceiling ({self.max_duration_sec}s)."
                 ) from te
+            raise
+        except CanaryTimeoutError:
             raise
         except Exception as e:
             logger.error(f"Network request to {url} failed: {e}")
@@ -980,6 +1040,9 @@ class NvdaCanaryRunner:
                     # Re-verify authorization not expired before commit
                     self.check_authorization_not_expired()
 
+                    # Re-verify execution deadline before commit
+                    self.check_deadline()
+
                     # Re-verify advisory lock before commit
                     if not self._has_verified_owner_lock(conn):
                         conn.rollback()
@@ -1081,6 +1144,11 @@ def run_nvda_canary(
     public_availability_cutoff: Optional[Any] = None,
     auth_issued_at: Optional[Any] = None,
     auth_expires_at: Optional[Any] = None,
+    max_requests: int = CANARY_MAX_REQUESTS,
+    max_duration_sec: float = CANARY_MAX_DURATION_SEC,
+    max_rps: float = CANARY_MAX_RPS,
+    max_unseen_docs: int = CANARY_MAX_UNSEEN_DOCS,
+    dry_run: bool = False,
 ) -> Dict[str, Any]:
     """Convenience entrypoint for running the bounded NVDA canary."""
     runner = NvdaCanaryRunner(
@@ -1091,21 +1159,235 @@ def run_nvda_canary(
         public_availability_cutoff=public_availability_cutoff,
         auth_issued_at=auth_issued_at,
         auth_expires_at=auth_expires_at,
+        max_requests=max_requests,
+        max_duration_sec=max_duration_sec,
+        max_rps=max_rps,
+        max_unseen_docs=max_unseen_docs,
     )
+    if dry_run:
+        runner.validate_preflight()
+        return {
+            "receipt_type": "ARX_NVDA_ONESHOT_INGESTION_RECEIPT",
+            "version": "1.2.0",
+            "mode": "DRY_RUN",
+            "issuer": CANARY_TICKER,
+            "cik": CANARY_CIK,
+            "preflight_verdict": "PASSED",
+            "interval_start": runner.interval_start.isoformat() if runner.interval_start else None,
+            "interval_end": runner.interval_end.isoformat() if runner.interval_end else None,
+            "public_availability_cutoff": runner.public_availability_cutoff.isoformat() if runner.public_availability_cutoff else None,
+            "auth_issued_at": runner.auth_issued_at.isoformat() if runner.auth_issued_at else None,
+            "auth_expires_at": runner.auth_expires_at.isoformat() if runner.auth_expires_at else None,
+            "max_requests": runner.max_requests,
+            "max_rps": runner.max_rps,
+            "max_unseen_docs": runner.max_unseen_docs,
+            "max_duration_sec": runner.max_duration_sec,
+            "requests_made": 0,
+            "transactions_persisted": 0,
+            "verdict": "SUCCESS",
+        }
     return runner.execute()
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    print("=== EXECUTING ARX NVDA SEC CANARY ===")
+def build_canary_parser() -> argparse.ArgumentParser:
+    """Constructs the canonical argument parser for the NVDA canary runner."""
+    parser = argparse.ArgumentParser(
+        prog="canary_runner",
+        description="ARX Terminal — Dedicated NVDA Bounded SEC Ingestion One-Shot Executor",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["prospective", "historical_audit"],
+        default="prospective",
+        help="Execution mode: 'prospective' (intended post-baseline window 2026-11-17 onward) or 'historical_audit' (frozen baseline reconciliation). Default: prospective.",
+    )
+    parser.add_argument(
+        "--ticker",
+        type=str,
+        default=CANARY_TICKER,
+        help="Target ticker symbol (strictly NVDA).",
+    )
+    parser.add_argument(
+        "--cik",
+        type=str,
+        default=CANARY_CIK,
+        help="Target CIK (strictly 0001045810).",
+    )
+    parser.add_argument(
+        "--interval-start",
+        type=str,
+        default=None,
+        help="UTC ISO timestamp for observation interval start (defaults based on --mode).",
+    )
+    parser.add_argument(
+        "--interval-end",
+        type=str,
+        default=None,
+        help="UTC ISO timestamp for observation interval end (defaults based on --mode).",
+    )
+    parser.add_argument(
+        "--public-availability-cutoff",
+        "--public-cutoff",
+        dest="public_availability_cutoff",
+        type=str,
+        default=None,
+        help="UTC ISO timestamp for public-availability cutoff (defaults based on --mode).",
+    )
+    parser.add_argument(
+        "--auth-issued-at",
+        type=str,
+        default=None,
+        help="UTC ISO timestamp when operator authorization was issued (mandatory for execution).",
+    )
+    parser.add_argument(
+        "--auth-expires-at",
+        type=str,
+        default=None,
+        help="UTC ISO timestamp when operator authorization expires (mandatory for execution, max 15m window).",
+    )
+    parser.add_argument(
+        "--max-requests",
+        type=int,
+        default=CANARY_MAX_REQUESTS,
+        help=f"Strict cap on SEC HTTP requests (non-overridable ceiling: {CANARY_MAX_REQUESTS_CEILING}).",
+    )
+    parser.add_argument(
+        "--max-rps",
+        type=float,
+        default=CANARY_MAX_RPS,
+        help=f"Strict rate limit ceiling (non-overridable ceiling: {CANARY_MAX_RPS_CEILING} req/s).",
+    )
+    parser.add_argument(
+        "--max-unseen-docs",
+        type=int,
+        default=CANARY_MAX_UNSEEN_DOCS,
+        help=f"Strict cap on unseen XML Form 4 documents (non-overridable ceiling: {CANARY_MAX_UNSEEN_DOCS_CEILING}).",
+    )
+    parser.add_argument(
+        "--max-duration-sec",
+        "--timeout",
+        dest="max_duration_sec",
+        type=float,
+        default=CANARY_MAX_DURATION_SEC,
+        help=f"Total execution duration timeout in seconds (non-overridable ceiling: {CANARY_MAX_DURATION_SEC_CEILING}s).",
+    )
+    parser.add_argument(
+        "--dsn",
+        type=str,
+        default=None,
+        help="PostgreSQL connection string (defaults to SMART_MONEY_DATABASE_URL or DATABASE_URL).",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate preflight gates and boundaries without network egress or database mutation.",
+    )
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Acknowledge live SEC EDGAR network execution when operational holds permit.",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable debug logging output.",
+    )
+    return parser
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    """Canonical CLI entrypoint for NVDA canary runner."""
+    parser = build_canary_parser()
+    args = parser.parse_args(argv)
+
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(level=log_level, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+    # Scope validation
+    if args.ticker.upper().strip() != CANARY_TICKER or args.cik.strip().zfill(10) != CANARY_CIK:
+        print(
+            f"FATAL: Scope mismatch. Only {CANARY_TICKER} (CIK {CANARY_CIK}) is authorized. "
+            f"Got ticker={args.ticker}, cik={args.cik}.",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Require explicit authorization timestamps
+    if not args.auth_issued_at or not args.auth_expires_at:
+        print(
+            "FATAL: Missing authorization timestamps. Both --auth-issued-at and --auth-expires-at are mandatory.",
+            file=sys.stderr,
+        )
+        return 1
+
     try:
-        receipt = run_nvda_canary()
+        runner = NvdaCanaryRunner(
+            dsn=args.dsn,
+            max_requests=args.max_requests,
+            max_duration_sec=args.max_duration_sec,
+            max_rps=args.max_rps,
+            max_unseen_docs=args.max_unseen_docs,
+            mode=args.mode,
+            interval_start=args.interval_start,
+            interval_end=args.interval_end,
+            public_availability_cutoff=args.public_availability_cutoff,
+            auth_issued_at=args.auth_issued_at,
+            auth_expires_at=args.auth_expires_at,
+        )
+    except CanarySecurityError as cse:
+        print(f"FATAL: Canary initialization security error: {cse}", file=sys.stderr)
+        return 1
+    except Exception as init_err:
+        print(f"FATAL: Failed to initialize canary runner: {init_err}", file=sys.stderr)
+        return 1
+
+    print("=== EXECUTING ARX NVDA SEC CANARY ===")
+    if args.dry_run:
+        print("[DRY-RUN] Executing preflight validation and boundary verification without live execution...")
+        try:
+            runner.validate_preflight()
+            receipt = {
+                "receipt_type": "ARX_NVDA_ONESHOT_INGESTION_RECEIPT",
+                "version": "1.2.0",
+                "mode": "DRY_RUN",
+                "issuer": CANARY_TICKER,
+                "cik": CANARY_CIK,
+                "preflight_verdict": "PASSED",
+                "interval_start": runner.interval_start.isoformat() if runner.interval_start else None,
+                "interval_end": runner.interval_end.isoformat() if runner.interval_end else None,
+                "public_availability_cutoff": runner.public_availability_cutoff.isoformat() if runner.public_availability_cutoff else None,
+                "auth_issued_at": runner.auth_issued_at.isoformat() if runner.auth_issued_at else None,
+                "auth_expires_at": runner.auth_expires_at.isoformat() if runner.auth_expires_at else None,
+                "max_requests": runner.max_requests,
+                "max_rps": runner.max_rps,
+                "max_unseen_docs": runner.max_unseen_docs,
+                "max_duration_sec": runner.max_duration_sec,
+                "requests_made": 0,
+                "transactions_persisted": 0,
+                "verdict": "SUCCESS",
+            }
+            print("\nCanary Execution Receipt:")
+            print(json.dumps(receipt, indent=2, default=str))
+            return 0
+        except Exception as exc:
+            print(f"\nFATAL: Dry-run preflight failed with exception: {exc}", file=sys.stderr)
+            return 1
+
+    try:
+        receipt = runner.execute()
         print("\nCanary Execution Receipt:")
         print(json.dumps(receipt, indent=2, default=str))
         if receipt.get("verdict") == "SUCCESS":
-            sys.exit(0)
+            return 0
         else:
-            sys.exit(1)
+            return 1
+    except KeyboardInterrupt:
+        print("\nABORT: Execution interrupted by operator (SIGINT). Safe teardown completed.", file=sys.stderr)
+        return 130
     except Exception as exc:
-        print(f"\nFATAL: Canary failed with exception: {exc}")
-        sys.exit(1)
+        print(f"\nFATAL: Canary failed with exception: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

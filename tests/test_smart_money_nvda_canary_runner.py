@@ -26,9 +26,11 @@ Acceptance Gates 1-5 (PR #305 Verification):
 from __future__ import annotations
 
 import os
+import sys
 import time
 import json
 import uuid
+import subprocess
 import http.server
 import threading
 import urllib.parse
@@ -1812,4 +1814,240 @@ class TestNvdaCanaryStalledHttpServerDeadline:
         finally:
             server.shutdown()
             server.server_close()
+
+
+class TestNvdaCanaryTricklingServerAndPreCommitDeadline:
+    """Acceptance: Wall-clock timeout enforcement against continuously trickling response and pre-commit check."""
+
+    def test_reproduction_trickling_server_rejected_within_deadline(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+
+        class TricklingHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                # 22 chunks of 1 byte, sleeping 0.05s between chunks = 1.10s total
+                for _ in range(22):
+                    time.sleep(0.05)
+                    self.wfile.write(b"x")
+                    self.wfile.flush()
+
+            def log_message(self, format, *args):
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), TricklingHandler)
+        port = server.server_address[1]
+        server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+
+        class LocalRedirectAdapter(requests.adapters.HTTPAdapter):
+            def send(self, req, **kwargs):
+                parsed = urllib.parse.urlparse(req.url)
+                req.url = urllib.parse.urlunparse(parsed._replace(scheme="http", netloc=f"127.0.0.1:{port}"))
+                return super().send(req, **kwargs)
+
+        session = requests.Session()
+        session.mount("https://", LocalRedirectAdapter())
+
+        t0 = time.time()
+        try:
+            with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+                runner = NvdaCanaryRunner(
+                    dsn=dsn,
+                    session=session,
+                    max_duration_sec=0.35,
+                    **make_valid_auth(),
+                )
+                with pytest.raises(CanaryTimeoutError) as exc_info:
+                    runner.execute()
+                assert "DEADLINE" in str(exc_info.value).upper() or "TIMEOUT" in str(exc_info.value).upper()
+
+                elapsed = time.time() - t0
+                # Must abort near 0.35s, well before the 1.10s trickling finishes
+                assert elapsed < 0.75, f"Execution took {elapsed:.2f}s, did not enforce 0.35s deadline on trickling transfer!"
+
+                # Guaranteed transactional rollback: 0 records
+                with conn.cursor() as cur:
+                    cur.execute("SELECT count(*) FROM form4_raw_filings;")
+                    assert cur.fetchone()[0] == 0
+                    cur.execute("""
+                        SELECT count(*) FROM pg_locks
+                        WHERE locktype = 'advisory'
+                          AND classid = %s
+                          AND objid = %s;
+                    """, (LOCK_SEC_EGRESS_OWNER_CLASSID, LOCK_SEC_EGRESS_OWNER_OBJID))
+                    assert cur.fetchone()[0] == 0
+
+                assert os.environ.get("ARX_SEC_EGRESS_ROLE") == "STANDBY"
+                assert os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED") == "false"
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_deadline_enforced_immediately_before_commit(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+        acc = "0001045810-26-000099"
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "accessionNumber": [acc],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
+                    "form": ["4"],
+                    "primaryDocument": ["doc.xml"],
+                }
+            }
+        }
+        xml_content = make_sample_nvda_form4_xml(accession=acc, date="2026-11-17")
+
+        mock_session = MagicMock()
+        resp_sub = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub.json.return_value = sub_payload
+        resp_xml = MagicMock(status_code=200, text=xml_content, content=xml_content.encode())
+        mock_session.get.side_effect = [resp_sub, resp_xml]
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, max_duration_sec=30.0, **make_valid_auth())
+
+            # Advance start_time right before pre-commit check by wrapping _has_verified_owner_lock
+            orig_verify = runner._has_verified_owner_lock
+            def advance_time_and_verify(c):
+                runner.start_time = time.time() - 31.0
+                return orig_verify(c)
+
+            runner._has_verified_owner_lock = advance_time_and_verify
+
+            with pytest.raises(CanaryTimeoutError) as exc_info:
+                runner.execute()
+            assert "DEADLINE" in str(exc_info.value).upper() or "TIMEOUT" in str(exc_info.value).upper()
+
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM form4_raw_filings WHERE accession_number = %s;", (acc,))
+                assert cur.fetchone()[0] == 0
+                cur.execute("""
+                    SELECT count(*) FROM pg_locks
+                    WHERE locktype = 'advisory'
+                      AND classid = %s
+                      AND objid = %s;
+                """, (LOCK_SEC_EGRESS_OWNER_CLASSID, LOCK_SEC_EGRESS_OWNER_OBJID))
+                assert cur.fetchone()[0] == 0
+
+            assert os.environ.get("ARX_SEC_EGRESS_ROLE") == "STANDBY"
+            assert os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED") == "false"
+
+
+class TestNvdaCanaryFunctionalCLI:
+    """Acceptance: Functional CLI entrypoint via subprocess tests."""
+
+    def test_cli_dry_run_cannot_enter_live_execution(self, clean_env, disposable_db):
+        conn, dsn = disposable_db
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        now = datetime.now(timezone.utc)
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "analyst_dashboard.smart_money.canary_runner",
+            "--dry-run",
+            "--auth-issued-at", now.isoformat(),
+            "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+            "--dsn", dsn,
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+        env["ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED"] = "true"
+        env["ARX_EMERGENCY_STOP_ACTIVE"] = "false"
+        env["ARX_BACKUP_CONTAINMENT_ENABLED"] = "false"
+        env["SEC_USER_AGENT"] = "ARX-Terminal Regulatory Research (ops@arxterminal.com)"
+
+        res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res.returncode == 0, f"CLI exited with {res.returncode}: {res.stderr}"
+
+        # Parse receipt from stdout
+        lines = [l for l in res.stdout.split("\n") if l.strip() and not l.startswith("===") and not l.startswith("[") and not l.startswith("Canary Execution Receipt:")]
+        receipt = json.loads("\n".join(lines))
+        assert receipt["mode"] == "DRY_RUN"
+        assert receipt["preflight_verdict"] == "PASSED"
+        assert receipt["requests_made"] == 0
+        assert receipt["transactions_persisted"] == 0
+        assert receipt["verdict"] == "SUCCESS"
+
+        # Verify zero database mutations
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM form4_raw_filings;")
+            assert cur.fetchone()[0] == 0
+            cur.execute("SELECT count(*) FROM sm_audit_events;")
+            assert cur.fetchone()[0] == 0
+
+    def test_cli_supplied_boundaries_are_honored(self, clean_env, disposable_db):
+        conn, dsn = disposable_db
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        now = datetime.now(timezone.utc)
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "analyst_dashboard.smart_money.canary_runner",
+            "--dry-run",
+            "--interval-start", "2026-11-17T00:00:00Z",
+            "--interval-end", "2026-11-18T23:59:59Z",
+            "--public-availability-cutoff", "2026-11-19T00:00:00Z",
+            "--auth-issued-at", now.isoformat(),
+            "--auth-expires-at", (now + timedelta(minutes=10)).isoformat(),
+            "--max-requests", "2",
+            "--max-duration-sec", "15.0",
+            "--dsn", dsn,
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+        env["ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED"] = "true"
+        env["ARX_EMERGENCY_STOP_ACTIVE"] = "false"
+        env["ARX_BACKUP_CONTAINMENT_ENABLED"] = "false"
+        env["SEC_USER_AGENT"] = "ARX-Terminal Regulatory Research (ops@arxterminal.com)"
+
+        res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res.returncode == 0, f"CLI exited with {res.returncode}: {res.stderr}"
+
+        lines = [l for l in res.stdout.split("\n") if l.strip() and not l.startswith("===") and not l.startswith("[") and not l.startswith("Canary Execution Receipt:")]
+        receipt = json.loads("\n".join(lines))
+        assert receipt["interval_start"] == "2026-11-17T00:00:00+00:00"
+        assert receipt["interval_end"] == "2026-11-18T23:59:59+00:00"
+        assert receipt["public_availability_cutoff"] == "2026-11-19T00:00:00+00:00"
+        assert receipt["max_requests"] == 2
+        assert receipt["max_duration_sec"] == 15.0
+
+    def test_cli_missing_authorization_fails(self, clean_env, disposable_db):
+        conn, dsn = disposable_db
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "analyst_dashboard.smart_money.canary_runner",
+            "--dry-run",
+            "--dsn", dsn,
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+
+        res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res.returncode == 1
+        assert "Missing authorization timestamps" in res.stderr
+
+    def test_cli_unknown_flags_are_rejected(self, clean_env):
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "analyst_dashboard.smart_money.canary_runner",
+            "--unknown-illegal-flag-12345",
+        ]
+        env = os.environ.copy()
+        env["PYTHONPATH"] = project_root
+
+        res = subprocess.run(cmd, cwd=project_root, env=env, capture_output=True, text=True)
+        assert res.returncode == 2
+        assert "unrecognized arguments" in res.stderr
 

@@ -44,6 +44,7 @@ from analyst_dashboard.smart_money.canary_runner import (
     CANARY_MAX_RPS,
     CANARY_MAX_UNSEEN_DOCS,
     _parse_utc_datetime,
+    build_canary_parser,
 )
 from analyst_dashboard.smart_money.storage.postgres_coordination import (
     LOCK_SEC_EGRESS_OWNER,
@@ -78,86 +79,7 @@ def compute_file_sha256(filepath: str) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="ARX Terminal — Dedicated NVDA Bounded SEC Ingestion One-Shot Executor"
-    )
-    parser.add_argument(
-        "--mode",
-        choices=["prospective", "historical_audit"],
-        default="prospective",
-        help="Execution mode: 'prospective' (intended post-baseline window 2026-11-17 onward) or 'historical_audit' (frozen baseline reconciliation). Default: prospective.",
-    )
-    parser.add_argument(
-        "--dsn",
-        type=str,
-        default=None,
-        help="PostgreSQL connection string (defaults to SMART_MONEY_DATABASE_URL or DATABASE_URL)",
-    )
-    parser.add_argument(
-        "--interval-start",
-        type=str,
-        default=None,
-        help="UTC ISO timestamp for observation interval start (defaults based on --mode)",
-    )
-    parser.add_argument(
-        "--interval-end",
-        type=str,
-        default=None,
-        help="UTC ISO timestamp for observation interval end (defaults based on --mode)",
-    )
-    parser.add_argument(
-        "--public-cutoff",
-        type=str,
-        default=None,
-        help="UTC ISO timestamp for public-availability cutoff (defaults based on --mode)",
-    )
-    parser.add_argument(
-        "--auth-issued-at",
-        type=str,
-        default=None,
-        help="UTC ISO timestamp when operational authorization was issued (default: now UTC)",
-    )
-    parser.add_argument(
-        "--auth-expires-at",
-        type=str,
-        default=None,
-        help="UTC ISO timestamp when operational authorization expires (default: now UTC + 15 min)",
-    )
-    parser.add_argument(
-        "--timeout",
-        type=float,
-        default=CANARY_MAX_DURATION_SEC,
-        help=f"Wall-clock execution ceiling in seconds (default: {CANARY_MAX_DURATION_SEC}s)",
-    )
-    parser.add_argument(
-        "--max-requests",
-        type=int,
-        default=CANARY_MAX_REQUESTS,
-        help=f"Maximum outbound HTTPS requests allowed (default: {CANARY_MAX_REQUESTS})",
-    )
-    parser.add_argument(
-        "--max-rps",
-        type=float,
-        default=CANARY_MAX_RPS,
-        help=f"Maximum request rate in req/s (default: {CANARY_MAX_RPS})",
-    )
-    parser.add_argument(
-        "--max-unseen-docs",
-        type=int,
-        default=CANARY_MAX_UNSEEN_DOCS,
-        help=f"Maximum unseen Form 4 documents per issuer allowed (default: {CANARY_MAX_UNSEEN_DOCS})",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Perform preflight validations, queue inspection, and lock checks without mutating database or issuing live SEC requests",
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable DEBUG logging",
-    )
-    return parser.parse_args()
+    return build_canary_parser().parse_args()
 
 
 def execute_oneshot(args: argparse.Namespace) -> Dict[str, Any]:
@@ -172,16 +94,19 @@ def execute_oneshot(args: argparse.Namespace) -> Dict[str, Any]:
     auth_issued = args.auth_issued_at or now_utc.isoformat()
     auth_expires = args.auth_expires_at or (now_utc + timedelta(minutes=15)).isoformat()
 
+    public_cutoff_arg = getattr(args, "public_availability_cutoff", None) or getattr(args, "public_cutoff", None)
+    timeout_arg = getattr(args, "max_duration_sec", getattr(args, "timeout", CANARY_MAX_DURATION_SEC))
+
     # Resolve interval defaults based on execution mode
     if args.mode == "prospective":
         interval_start = args.interval_start or PROSPECTIVE_INTERVAL_START
         interval_end = args.interval_end or PROSPECTIVE_INTERVAL_END
-        public_cutoff = args.public_cutoff or PROSPECTIVE_PUBLIC_CUTOFF
+        public_cutoff = public_cutoff_arg or PROSPECTIVE_PUBLIC_CUTOFF
         relationship = "POST_BASELINE_PROSPECTIVE"
     else:
         interval_start = args.interval_start or HISTORICAL_BASELINE_INTERVAL_START
         interval_end = args.interval_end or HISTORICAL_BASELINE_INTERVAL_END
-        public_cutoff = args.public_cutoff or HISTORICAL_BASELINE_PUBLIC_CUTOFF
+        public_cutoff = public_cutoff_arg or HISTORICAL_BASELINE_PUBLIC_CUTOFF
         relationship = "FROZEN_BASELINE_RECONCILIATION"
 
     logger.info("Initializing NvdaCanaryRunner with pinned boundaries:")
@@ -195,13 +120,13 @@ def execute_oneshot(args: argparse.Namespace) -> Dict[str, Any]:
     logger.info(f"  Request Budget: {args.max_requests}")
     logger.info(f"  Max RPS: {args.max_rps}")
     logger.info(f"  Unseen Docs Budget: {args.max_unseen_docs}")
-    logger.info(f"  Wall-Clock Timeout: {args.timeout}s")
+    logger.info(f"  Wall-Clock Timeout: {timeout_arg}s")
     logger.info(f"  Advisory Lock Key: {LOCK_SEC_EGRESS_OWNER} (classid={LOCK_SEC_EGRESS_OWNER_CLASSID}, objid={LOCK_SEC_EGRESS_OWNER_OBJID})")
 
     runner = NvdaCanaryRunner(
         dsn=args.dsn,
         max_requests=args.max_requests,
-        max_duration_sec=args.timeout,
+        max_duration_sec=timeout_arg,
         max_rps=args.max_rps,
         max_unseen_docs=args.max_unseen_docs,
         mode=args.mode,
