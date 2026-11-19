@@ -2,19 +2,19 @@
   "control_id": "RQ-09",
   "name": "Four-Way Cross-Platform Compatibility",
   "status": "PASS",
-  "start_time": "2026-11-19T00:33:51.192672+00:00",
-  "end_time": "2026-11-19T00:33:52.431078+00:00",
-  "duration_sec": 1.213,
-  "candidate_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
-  "source_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
-  "execution_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+  "start_time": "2026-11-19T01:52:15.648227+00:00",
+  "end_time": "2026-11-19T01:52:16.709476+00:00",
+  "duration_sec": 1.047,
+  "candidate_sha": "af7d13cdb3eb0b22a2d917e607d8ae6d39e7f207",
+  "source_sha": "af7d13cdb3eb0b22a2d917e607d8ae6d39e7f207",
+  "execution_sha": "af7d13cdb3eb0b22a2d917e607d8ae6d39e7f207",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
-    "execution_sha": "9f916e4d73911f754eaa9c479e126df36572a686",
+    "source_sha": "af7d13cdb3eb0b22a2d917e607d8ae6d39e7f207",
+    "execution_sha": "af7d13cdb3eb0b22a2d917e607d8ae6d39e7f207",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -139,7 +139,7 @@
   ],
   "evidence_digests": {
     "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-    "scripts/release/rq_compatibility_results.json": "66376d7c7f9fababd51ca96d9668eae440879e644812e20340800c31d77fb969"
+    "scripts/release/rq_compatibility_results.json": "f33abca2f77fbdbe2debfebbfdff6fcd826769a2b992eb337ff285c98a9604dd"
   },
   "errors": [],
   "metadata": {
@@ -152,5 +152,5 @@
     "harness_version": "2.2.0-D074A4",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "a3e40f8fd912ab0a544a94429fc41a5873775cb0bbbfaa7af85837e865fc219e"
+  "receipt_digest": "b04d09abe75169e472bf395f659bc1d28b98a3bd19fc158d9c7f2eb33212d089"
 }
