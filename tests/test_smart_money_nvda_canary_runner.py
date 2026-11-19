@@ -3036,3 +3036,220 @@ class TestAaplAlternativeIssuerCanaryQualification:
         assert rcpt["transactions_persisted"] == 0
 
 
+
+
+class TestTwoIssuerSequentialQualification:
+    """Offline qualification of two existing one-shot runs, not a recurring runner.
+
+    The batch is exactly AAPL then NVDA. Each retains its own atomic transaction
+    and four-request/30-second ceiling; a shared limiter preserves the aggregate
+    five-request/second policy. There is no retry or cross-issuer publication.
+    """
+
+    @staticmethod
+    def _session(ticker, accession=None, xml=None):
+        if accession is None:
+            recent = {key: [] for key in (
+                "form", "accessionNumber", "filingDate", "acceptanceDateTime", "primaryDocument"
+            )}
+        else:
+            recent = {
+                "form": ["4"], "accessionNumber": [accession],
+                "filingDate": ["2026-11-18"],
+                "acceptanceDateTime": ["2026-11-18T23:30:10Z"],
+                "primaryDocument": ["form4.xml"],
+            }
+        payload = {"filings": {"recent": recent}}
+        session = MagicMock()
+        catalog = MagicMock(status_code=200, content=json.dumps(payload).encode())
+        catalog.json.return_value = payload
+        responses = [catalog]
+        if xml is not None:
+            responses.append(MagicMock(status_code=200, text=xml, content=xml.encode()))
+        session.get.side_effect = responses
+        return session
+
+    @staticmethod
+    def _state(conn):
+        """Compare row contents, including audit/receipt/snapshot data, not counts alone."""
+        state = {}
+        for table in (
+            "form4_raw_filings", "form4_parsed_transactions",
+            "sm_source_availability_ledger", "sm_amendments", "sm_audit_events",
+            "sm_reconciliation_receipts", "scanner_snapshots",
+            "scanner_active_snapshots", "sm_run_requests",
+        ):
+            with conn.cursor() as cur:
+                cur.execute("SELECT to_jsonb(t) FROM " + table + " AS t")
+                state[table] = sorted(json.dumps(row[0], sort_keys=True) for row in cur.fetchall())
+        conn.rollback()
+        return state
+
+    @staticmethod
+    def _seed_snapshot(conn):
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO scanner_snapshots VALUES (
+                    'SNAP_SM_1792939989_48f30db6', 'SMART_MONEY', 'run-pair-test',
+                    '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0',
+                    '06f1ffdf', 'pair-test-fingerprint', '2026-10-01T20:00:00Z',
+                    '2026-10-01T20:00:00Z', 'AVAILABLE', 'UNIV-1', 2, 2,
+                    '[{"symbol":"AAPL"},{"symbol":"NVDA"}]', '{}', '{}', 'PUBLISH'
+                );
+            """)
+            cur.execute("""
+                INSERT INTO scanner_active_snapshots
+                    (scan_type, active_snapshot_id, published_at, published_by)
+                VALUES ('SMART_MONEY', 'SNAP_SM_1792939989_48f30db6', NOW(), 'PAIR_TEST');
+            """)
+        conn.commit()
+
+    @staticmethod
+    def _assert_safe(conn):
+        assert os.environ["ARX_SEC_EGRESS_ROLE"] == "STANDBY"
+        assert os.environ["ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED"] == "false"
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT count(*) FROM pg_locks WHERE locktype = 'advisory'
+                    AND classid = %s AND objid = %s AND objsubid = 1;
+            """, (LOCK_SEC_EGRESS_OWNER_CLASSID, LOCK_SEC_EGRESS_OWNER_OBJID))
+            assert cur.fetchone()[0] == 0
+            cur.execute("""
+                SELECT count(*) FROM sm_run_requests
+                WHERE status IN ('PENDING', 'RUNNING', 'RETRY_ELIGIBLE');
+            """)
+            assert cur.fetchone()[0] == 0
+        conn.rollback()
+
+    @staticmethod
+    def _pair(dsn, sessions, monkeypatch):
+        from analyst_dashboard.data.sec_edgar_fetcher import SecRateLimiter
+        plan = (("AAPL", "0000320193", PINNED_AAPL_ACCESSION),
+                ("NVDA", "0001045810", None))
+        shared_limiter = SecRateLimiter(max_per_second=5.0)
+        results, runners = [], []
+        started = time.monotonic()
+        for ticker, cik, accession in plan:
+            remaining = 60.0 - (time.monotonic() - started)
+            assert remaining > 0, "Two-run qualification batch deadline exceeded"
+            # Each independent one-shot requires a separately scoped authorization.
+            # Only this offline harness issues it; no persistent service is changed.
+            monkeypatch.setenv("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "TRUE")
+            runner = NvdaCanaryRunner(
+                dsn=dsn, session=sessions[ticker], ticker=ticker, cik=cik,
+                accession=accession, max_requests=4, max_rps=5.0,
+                max_unseen_docs=3, max_duration_sec=min(30.0, remaining),
+                **make_valid_auth(),
+            )
+            runner.rate_limiter = shared_limiter
+            runners.append(runner)
+            try:
+                results.append(runner.execute())
+            except CanaryDataIntegrityError as error:
+                if "NO_UNSEEN_ELIGIBLE_FILINGS" not in str(error):
+                    raise
+                results.append({"issuer": ticker, "verdict": "NO_ELIGIBLE_WORK"})
+            assert sum(r.request_count for r in runners) <= 8
+            assert time.monotonic() - started <= 60.0
+            assert os.environ["ARX_SEC_EGRESS_ROLE"] == "STANDBY"
+            assert os.environ["ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED"] == "false"
+        assert [r.ticker for r in runners] == ["AAPL", "NVDA"]
+        assert runners[0].rate_limiter is runners[1].rate_limiter
+        return results, runners
+
+    def test_pair_aapl_duplicate_nvda_no_work_preserves_all_rows(
+        self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch
+    ):
+        conn, dsn = disposable_db
+        # Seed the real AAPL fixture with the already-qualified atomic path.
+        TestAaplAlternativeIssuerCanaryQualification().test_aapl_atomic_persistence_disposable_postgres(
+            clean_env, mock_fresh_receipt, disposable_db, monkeypatch
+        )
+        self._seed_snapshot(conn)
+        before = self._state(conn)
+        sessions = {
+            "AAPL": self._session("AAPL", PINNED_AAPL_ACCESSION),
+            "NVDA": self._session("NVDA"),
+        }
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            results, runners = self._pair(dsn, sessions, monkeypatch)
+        assert [r["verdict"] for r in results] == ["NO_ELIGIBLE_WORK", "NO_ELIGIBLE_WORK"]
+        assert [r.request_count for r in runners] == [1, 1]
+        assert self._state(conn) == before
+        for ticker, cik in (("AAPL", "0000320193"), ("NVDA", "0001045810")):
+            assert sessions[ticker].get.call_count == 1
+            assert sessions[ticker].get.call_args.args[0] == f"https://data.sec.gov/submissions/CIK{cik}.json"
+        self._assert_safe(conn)
+
+    def test_pair_real_work_has_separate_issuer_rows_and_receipts(
+        self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch
+    ):
+        conn, dsn = disposable_db
+        self._seed_snapshot(conn)
+        before_snapshots = self._state(conn)["scanner_active_snapshots"]
+        nvda_acc = "0001045810-26-000099"
+        sessions = {
+            "AAPL": self._session("AAPL", PINNED_AAPL_ACCESSION, load_aapl_form4_xml()),
+            "NVDA": self._session("NVDA", nvda_acc, make_sample_nvda_form4_xml(accession=nvda_acc)),
+        }
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            results, runners = self._pair(dsn, sessions, monkeypatch)
+        assert [r["verdict"] for r in results] == ["SUCCESS", "SUCCESS"]
+        assert [r["transactions_persisted"] for r in results] == [3, 1]
+        assert sum(r.request_count for r in runners) == 4
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT f.ticker, f.cik, count(t.transaction_id)
+                FROM form4_raw_filings f JOIN form4_parsed_transactions t USING (accession_number)
+                GROUP BY f.ticker, f.cik ORDER BY f.ticker;
+            """)
+            assert cur.fetchall() == [("AAPL", "0000320193", 3), ("NVDA", "0001045810", 1)]
+            cur.execute("SELECT failure_reasons, coverage_status FROM sm_reconciliation_receipts")
+            receipts = cur.fetchall()
+            assert {r[0]["ticker"] for r in receipts} == {"AAPL", "NVDA"}
+            assert all(r[1] == "PARTIAL" for r in receipts)
+        conn.rollback()
+        assert self._state(conn)["scanner_active_snapshots"] == before_snapshots
+        self._assert_safe(conn)
+
+    def test_pair_rejects_cross_issuer_payload_without_writes(
+        self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch
+    ):
+        conn, dsn = disposable_db
+        self._seed_snapshot(conn)
+        before = self._state(conn)
+        sessions = {
+            "AAPL": self._session("AAPL", PINNED_AAPL_ACCESSION, make_sample_nvda_form4_xml()),
+            "NVDA": self._session("NVDA"),
+        }
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            with pytest.raises(CanarySecurityError, match="ISSUER_MISMATCH"):
+                self._pair(dsn, sessions, monkeypatch)
+        assert sessions["NVDA"].get.call_count == 0, "Failure must not silently advance or retry"
+        assert self._state(conn) == before
+        self._assert_safe(conn)
+
+    def test_pair_mid_transaction_failure_rolls_back_and_releases_ownership(
+        self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch
+    ):
+        conn, dsn = disposable_db
+        self._seed_snapshot(conn)
+        before = self._state(conn)
+        sessions = {
+            "AAPL": self._session("AAPL", PINNED_AAPL_ACCESSION, load_aapl_form4_xml()),
+            "NVDA": self._session("NVDA"),
+        }
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            with patch.object(PostgresSmartMoneyRepository, "record_issuer_coverage_receipt", side_effect=RuntimeError("PAIR_TEST_INJECTED_AFTER_TRANSACTION_WRITES")):
+                with pytest.raises(RuntimeError, match="PAIR_TEST_INJECTED"):
+                    self._pair(dsn, sessions, monkeypatch)
+        assert sessions["AAPL"].get.call_count == 2
+        assert sessions["NVDA"].get.call_count == 0
+        assert self._state(conn) == before
+        self._assert_safe(conn)
+        # A fresh session can immediately acquire the exact owner lock after rollback.
+        import psycopg2
+        with psycopg2.connect(dsn) as other:
+            assert acquire_sec_owner_lock(other)
+            assert release_sec_owner_lock(other)
+
