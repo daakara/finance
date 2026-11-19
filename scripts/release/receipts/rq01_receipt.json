@@ -2,19 +2,19 @@
   "control_id": "RQ-01",
   "name": "Candidate Identity & Lineage",
   "status": "PASS",
-  "start_time": "2026-11-19T08:27:35.992593+00:00",
-  "end_time": "2026-11-19T08:27:36.088471+00:00",
-  "duration_sec": 0.096,
-  "candidate_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
-  "source_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
-  "execution_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
+  "start_time": "2026-11-19T20:00:48.477596+00:00",
+  "end_time": "2026-11-19T20:00:48.632351+00:00",
+  "duration_sec": 0.154,
+  "candidate_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
+  "source_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
+  "execution_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
-    "execution_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
+    "source_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
+    "execution_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -24,12 +24,12 @@
   "assertions": [
     {
       "assertion": "HEAD is valid 40-char hex SHA",
-      "observed": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
+      "observed": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
       "passed": true
     },
     {
       "assertion": "Base anchor exists in repo history",
-      "observed": "308f5392d7518a95bf4170ec5c1beaf64d2cba0b",
+      "observed": "8b3a40fc52fc9c54697c27b6c60a92398f01ae7d",
       "passed": true
     },
     {
@@ -45,8 +45,8 @@
     {
       "assertion": "Candidate SHA incorporates authorized candidate",
       "observed": {
-        "candidate_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
-        "expected": "1f1f74a903a2071fca03c9a0784903b56e33d9a1",
+        "candidate_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
+        "expected": "53d773afb1b28ad1fc4ef76d8bd15b148b9a8ce7",
         "ancestor": true
       },
       "passed": true
@@ -61,8 +61,8 @@
   "errors": [],
   "metadata": {
     "is_merge_commit": false,
-    "checked_out_head": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
+    "checked_out_head": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "11147a2474d1fa0c0c2ea5d180926f535a9b309b7284075241397207b61e499a"
+  "receipt_digest": "df6c68c5fc59f73a3cc7e815385d96eead23571cee341ba7e1c0bce3324c95d0"
 }
