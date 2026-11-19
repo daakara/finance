@@ -68,6 +68,14 @@ logger = logging.getLogger("smart_money.canary_runner")
 
 CANARY_TICKER = "NVDA"
 CANARY_CIK = "0001045810"
+
+# Strict, non-overridable safety ceilings
+CANARY_MAX_REQUESTS_CEILING = 4
+CANARY_MAX_DURATION_SEC_CEILING = 30.0
+CANARY_MAX_RPS_CEILING = 5.0
+CANARY_MAX_UNSEEN_DOCS_CEILING = 3
+CANARY_MAX_AUTH_WINDOW_SEC = 900.0  # 15 minutes maximum authorization window
+
 CANARY_MAX_REQUESTS = 4
 CANARY_MAX_DURATION_SEC = 30.0
 CANARY_MAX_RPS = 5.0
@@ -175,10 +183,30 @@ class NvdaCanaryRunner:
         auth_issued_at: Optional[Any] = None,
         auth_expires_at: Optional[Any] = None,
     ):
+        import math
+
+        # 1. Enforce non-overridable ceilings and reject invalid/non-finite values
+        if not isinstance(max_requests, int) or isinstance(max_requests, bool) or max_requests <= 0 or max_requests > CANARY_MAX_REQUESTS_CEILING:
+            raise CanarySecurityError(
+                f"CANARY_CEILING_EXCEEDED: max_requests ({max_requests}) must be an integer between 1 and {CANARY_MAX_REQUESTS_CEILING}."
+            )
+        if not isinstance(max_rps, (int, float)) or isinstance(max_rps, bool) or not math.isfinite(max_rps) or max_rps <= 0.0 or max_rps > CANARY_MAX_RPS_CEILING:
+            raise CanarySecurityError(
+                f"CANARY_CEILING_EXCEEDED: max_rps ({max_rps}) must be a finite number between 0.0 and {CANARY_MAX_RPS_CEILING} req/s."
+            )
+        if not isinstance(max_unseen_docs, int) or isinstance(max_unseen_docs, bool) or max_unseen_docs <= 0 or max_unseen_docs > CANARY_MAX_UNSEEN_DOCS_CEILING:
+            raise CanarySecurityError(
+                f"CANARY_CEILING_EXCEEDED: max_unseen_docs ({max_unseen_docs}) must be an integer between 1 and {CANARY_MAX_UNSEEN_DOCS_CEILING}."
+            )
+        if not isinstance(max_duration_sec, (int, float)) or isinstance(max_duration_sec, bool) or not math.isfinite(max_duration_sec) or max_duration_sec <= 0.0 or max_duration_sec > CANARY_MAX_DURATION_SEC_CEILING:
+            raise CanarySecurityError(
+                f"CANARY_CEILING_EXCEEDED: max_duration_sec ({max_duration_sec}) must be a finite number between 0.0 and {CANARY_MAX_DURATION_SEC_CEILING}s."
+            )
+
         self.dsn = dsn or os.environ.get("SMART_MONEY_DATABASE_URL") or os.environ.get("DATABASE_URL")
         self.max_requests = max_requests
-        self.max_duration_sec = max_duration_sec
-        self.max_rps = max_rps
+        self.max_duration_sec = float(max_duration_sec)
+        self.max_rps = float(max_rps)
         self.max_unseen_docs = max_unseen_docs
         self.rate_limiter = SecRateLimiter(max_per_second=self.max_rps)
         self.session = session or requests.Session()
@@ -211,8 +239,35 @@ class NvdaCanaryRunner:
             if public_availability_cutoff
             else default_cutoff
         )
-        self.auth_issued_at = _parse_utc_datetime(auth_issued_at, "auth_issued_at") if auth_issued_at else None
-        self.auth_expires_at = _parse_utc_datetime(auth_expires_at, "auth_expires_at") if auth_expires_at else None
+        self.auth_issued_at = _parse_utc_datetime(auth_issued_at, "auth_issued_at") if auth_issued_at is not None else None
+        self.auth_expires_at = _parse_utc_datetime(auth_expires_at, "auth_expires_at") if auth_expires_at is not None else None
+
+        if self.auth_issued_at is not None and self.auth_expires_at is not None:
+            auth_window_sec = (self.auth_expires_at - self.auth_issued_at).total_seconds()
+            if auth_window_sec <= 0:
+                raise CanarySecurityError(
+                    f"INVALID_AUTHORIZATION_WINDOW: auth_issued_at ({self.auth_issued_at.isoformat()}) must precede auth_expires_at ({self.auth_expires_at.isoformat()})."
+                )
+            if auth_window_sec > CANARY_MAX_AUTH_WINDOW_SEC:
+                raise CanarySecurityError(
+                    f"AUTHORIZATION_WINDOW_EXCEEDED: Authorization window ({auth_window_sec:.1f}s) exceeds maximum allowed 15-minute window ({CANARY_MAX_AUTH_WINDOW_SEC}s)."
+                )
+
+    def check_authorization_not_expired(self) -> None:
+        """
+        Actively checks that process authorization has not expired before egress and before commit.
+        """
+        if self.auth_expires_at is None or self.auth_issued_at is None:
+            raise CanarySecurityError("AUTHORIZATION_TIMESTAMPS_REQUIRED: Explicit auth_issued_at and auth_expires_at are mandatory.")
+        now = datetime.now(timezone.utc)
+        if now > self.auth_expires_at:
+            raise CanarySecurityError(
+                f"AUTHORIZATION_EXPIRED: Current time ({now.isoformat()}) has expired past auth_expires_at ({self.auth_expires_at.isoformat()})."
+            )
+        if now < self.auth_issued_at:
+            raise CanarySecurityError(
+                f"AUTHORIZATION_NOT_YET_VALID: Current time ({now.isoformat()}) precedes auth_issued_at ({self.auth_issued_at.isoformat()})."
+            )
 
     def validate_preflight(
         self,
@@ -246,7 +301,30 @@ class NvdaCanaryRunner:
         if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() == "TRUE":
             raise CanarySecurityError("EMERGENCY_STOP_ACTIVE: Canary execution forbidden.")
 
-        # 3. Pinned UTC timestamps and authorization window validation
+        # 3. Containment ratification check
+        is_auth = os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "").strip().lower() in ("true", "1", "yes")
+        if not is_auth:
+            raise CanaryContainmentError(
+                "UNAUTHORIZED_PRODUCTION_BACKUP_CONTAINMENT: Canary execution requires explicit "
+                "ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED=True ratification."
+            )
+
+        # 4. User agent check
+        ua = get_sec_user_agent()
+        is_ua_valid, ua_err = validate_sec_user_agent(ua)
+        if not is_ua_valid:
+            raise CanarySecurityError(f"INVALID_SEC_USER_AGENT: {ua_err}")
+
+        # 5. Backup freshness containment check
+        policy = BackupContainmentPolicy.from_environment()
+        gate = BackupAgeContainmentGate(policy=policy)
+        if not gate.check_ingestion_eligibility():
+            raise CanaryContainmentError(
+                f"INGESTION_CONTAINMENT_BREACH: Ingestion suspended due to backup staleness "
+                f"or unverifiability: {gate.last_error_code}"
+            )
+
+        # 6. Pinned UTC timestamps and authorization window validation
         issued = _parse_utc_datetime(auth_issued_at, "auth_issued_at") if auth_issued_at is not None else self.auth_issued_at
         expires = _parse_utc_datetime(auth_expires_at, "auth_expires_at") if auth_expires_at is not None else self.auth_expires_at
         i_start = _parse_utc_datetime(interval_start, "interval_start") if interval_start is not None else self.interval_start
@@ -257,20 +335,31 @@ class NvdaCanaryRunner:
             else self.public_availability_cutoff
         )
 
+        # Require explicit authorization timestamps
+        if issued is None or expires is None:
+            raise CanarySecurityError(
+                "AUTHORIZATION_TIMESTAMPS_REQUIRED: Explicit auth_issued_at and auth_expires_at are mandatory."
+            )
+
+        auth_window_sec = (expires - issued).total_seconds()
+        if auth_window_sec <= 0:
+            raise CanarySecurityError(
+                f"INVALID_AUTHORIZATION_WINDOW: auth_issued_at ({issued.isoformat()}) must precede auth_expires_at ({expires.isoformat()})."
+            )
+        if auth_window_sec > CANARY_MAX_AUTH_WINDOW_SEC:
+            raise CanarySecurityError(
+                f"AUTHORIZATION_WINDOW_EXCEEDED: Authorization window ({auth_window_sec:.1f}s) exceeds maximum allowed 15-minute window ({CANARY_MAX_AUTH_WINDOW_SEC}s)."
+            )
+
         now = datetime.now(timezone.utc)
-        if issued is not None and issued > now:
+        if issued > now:
             raise CanarySecurityError(
                 f"AUTHORIZATION_NOT_YET_VALID: auth_issued_at ({issued.isoformat()}) is in the future relative to now ({now.isoformat()})."
             )
 
-        if expires is not None and now > expires:
+        if now > expires:
             raise CanarySecurityError(
                 f"AUTHORIZATION_EXPIRED: auth_expires_at ({expires.isoformat()}) has expired relative to now ({now.isoformat()})."
-            )
-
-        if issued is not None and expires is not None and issued > expires:
-            raise CanarySecurityError(
-                f"INVALID_AUTHORIZATION_WINDOW: auth_issued_at ({issued.isoformat()}) > auth_expires_at ({expires.isoformat()})."
             )
 
         if i_start is not None and i_end is not None and i_start >= i_end:
@@ -294,29 +383,6 @@ class NvdaCanaryRunner:
             raise CanarySecurityError(
                 f"HISTORICAL_AUDIT_OUT_OF_BOUNDS: Historical audit interval_start "
                 f"({i_start.isoformat()}) must be within frozen baseline (< {FROZEN_BASELINE_CUTOFF.isoformat()})."
-            )
-
-        # 4. Containment ratification check
-        is_auth = os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED", "").strip().lower() in ("true", "1", "yes")
-        if not is_auth:
-            raise CanaryContainmentError(
-                "UNAUTHORIZED_PRODUCTION_BACKUP_CONTAINMENT: Canary execution requires explicit "
-                "ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED=True ratification."
-            )
-
-        # 5. User agent check
-        ua = get_sec_user_agent()
-        is_ua_valid, ua_err = validate_sec_user_agent(ua)
-        if not is_ua_valid:
-            raise CanarySecurityError(f"INVALID_SEC_USER_AGENT: {ua_err}")
-
-        # 6. Backup freshness containment check
-        policy = BackupContainmentPolicy.from_environment()
-        gate = BackupAgeContainmentGate(policy=policy)
-        if not gate.check_ingestion_eligibility():
-            raise CanaryContainmentError(
-                f"INGESTION_CONTAINMENT_BREACH: Ingestion suspended due to backup staleness "
-                f"or unverifiability: {gate.last_error_code}"
             )
 
         # 7. Check queue isolation if connection is provided
@@ -406,6 +472,7 @@ class NvdaCanaryRunner:
         Enforces remaining wall-clock budget on socket connect/read to prevent hanging on blocked calls.
         """
         self.check_deadline()
+        self.check_authorization_not_expired()
         self.request_count += 1
         if self.request_count > self.max_requests:
             raise CanaryBudgetExceededError(
@@ -423,7 +490,7 @@ class NvdaCanaryRunner:
             resp = self.session.get(url, timeout=effective_timeout)
         except (requests.exceptions.Timeout, socket.timeout) as te:
             elapsed_total = time.time() - self.start_time if self.start_time > 0 else 0.0
-            if self.start_time > 0 and (elapsed_total >= self.max_duration_sec or remaining <= 0.05):
+            if self.start_time > 0 and (elapsed_total >= (self.max_duration_sec - 0.05) or remaining <= 0.1):
                 raise CanaryTimeoutError(
                     f"MECHANICAL_STOP_TIMEOUT: Outbound SEC request to {url} blocked for {effective_timeout:.2f}s "
                     f"and exceeded wall-clock execution ceiling ({self.max_duration_sec}s)."
@@ -482,43 +549,41 @@ class NvdaCanaryRunner:
             "verdict": "PENDING",
         }
 
-        # Step 1: Preflight Verification
-        logger.info("Executing preflight validations...")
-        self.validate_preflight()
-
-        # Step 2: Acquire Dedicated Advisory Lock & Database Session
-        logger.info(f"Acquiring PostgreSQL advisory lock {LOCK_SEC_EGRESS_OWNER}...")
-        pg_ctx = get_connection(self.dsn) if self.dsn else None
+        pg_ctx = None
         conn = None
-        if pg_ctx:
-            conn = pg_ctx.__enter__()
-            try:
-                with conn.cursor() as cur:
-                    cur.execute("SET statement_timeout = '10s';")
-                    cur.execute("SET lock_timeout = '5s';")
-            except Exception as set_err:
-                logger.warning(f"Unable to set statement/lock timeout: {set_err}")
-
-            has_lock = acquire_sec_owner_lock(conn)
-            if not has_lock:
-                pg_ctx.__exit__(None, None, None)
-                raise CanaryLockContentionError(
-                    f"EXCLUSIVE_OWNERSHIP_UNAVAILABLE: Could not acquire lock {LOCK_SEC_EGRESS_OWNER}."
-                )
-
-            # Actively verify lock ownership in pg_locks
-            if not self._has_verified_owner_lock(conn):
-                release_sec_owner_lock(conn)
-                pg_ctx.__exit__(None, None, None)
-                raise CanaryLockLostError("ADVISORY_LOCK_VERIFICATION_FAILED: Session does not hold LOCK_SEC_EGRESS_OWNER.")
-
-            telemetry["lock_acquired"] = True
-            logger.info("Exclusive advisory lock claimed and verified successfully.")
-
-            # Check queue isolation under lock
-            self.check_queue_isolation(conn)
-
         try:
+            # Step 1: Preflight Verification
+            logger.info("Executing preflight validations...")
+            self.validate_preflight()
+
+            # Step 2: Acquire Dedicated Advisory Lock & Database Session within guaranteed cleanup
+            if self.dsn:
+                logger.info(f"Acquiring PostgreSQL advisory lock {LOCK_SEC_EGRESS_OWNER}...")
+                pg_ctx = get_connection(self.dsn)
+                conn = pg_ctx.__enter__()
+                try:
+                    with conn.cursor() as cur:
+                        cur.execute("SET statement_timeout = '10s';")
+                        cur.execute("SET lock_timeout = '5s';")
+                except Exception as set_err:
+                    logger.warning(f"Unable to set statement/lock timeout: {set_err}")
+
+                has_lock = acquire_sec_owner_lock(conn)
+                if not has_lock:
+                    raise CanaryLockContentionError(
+                        f"EXCLUSIVE_OWNERSHIP_UNAVAILABLE: Could not acquire lock {LOCK_SEC_EGRESS_OWNER}."
+                    )
+                telemetry["lock_acquired"] = True
+
+                # Actively verify lock ownership in pg_locks
+                if not self._has_verified_owner_lock(conn):
+                    raise CanaryLockLostError("ADVISORY_LOCK_VERIFICATION_FAILED: Session does not hold LOCK_SEC_EGRESS_OWNER.")
+
+                logger.info("Exclusive advisory lock claimed and verified successfully.")
+
+                # Check queue isolation under lock
+                self.check_queue_isolation(conn)
+
             # Step 3: Temporary In-Process Egress Authorization
             logger.info("Applying temporary ARX_SEC_EGRESS_ROLE=OWNER in-process...")
             os.environ["ARX_SEC_EGRESS_ROLE"] = "OWNER"
@@ -530,6 +595,9 @@ class NvdaCanaryRunner:
                 "User-Agent": ua,
                 "Accept-Encoding": "gzip, deflate",
             })
+
+            # Check authorization before any egress
+            self.check_authorization_not_expired()
 
             # Step 4: Fetch NVDA Submissions Metadata (CIK 0001045810)
             sub_url = f"https://data.sec.gov/submissions/CIK{CANARY_CIK}.json"
@@ -553,39 +621,82 @@ class NvdaCanaryRunner:
                     cur.execute("SELECT accession_number FROM form4_raw_filings WHERE ticker = 'NVDA';")
                     existing_accs = {r[0] for r in cur.fetchall()}
 
-            unseen_form4_accs = []
-            for idx, f_type in enumerate(forms):
-                if f_type in ("4", "4/A"):
-                    acc = accessions[idx]
-                    if acc not in existing_accs:
-                        unseen_form4_accs.append(acc)
+            # Filter filings by pinned observation interval and publication cutoff
+            interval_start_date = self.interval_start.date()
+            interval_end_date = self.interval_end.date()
 
-            if len(unseen_form4_accs) > self.max_unseen_docs:
+            eligible_filings = []
+            for idx, f_type in enumerate(forms):
+                if f_type not in ("4", "4/A", "4A"):
+                    continue
+                acc = accessions[idx] if idx < len(accessions) else ""
+                f_date = filing_dates[idx] if idx < len(filing_dates) else ""
+                acc_dt = acceptance_dts[idx] if idx < len(acceptance_dts) else ""
+                p_doc = primary_docs[idx] if idx < len(primary_docs) else ""
+
+                if not acc or not f_date:
+                    continue
+
+                # Verify filing date falls within pinned observation interval
+                try:
+                    f_date_obj = datetime.strptime(f_date.strip(), "%Y-%m-%d").date()
+                except Exception:
+                    continue
+                if not (interval_start_date <= f_date_obj <= interval_end_date):
+                    continue
+
+                # Verify acceptance date time is present
+                if not acc_dt or not str(acc_dt).strip():
+                    raise CanaryDataIntegrityError(
+                        f"SEC_PUBLIC_AVAILABILITY_MISSING: Filing {acc} lacks valid acceptanceDateTime in catalog."
+                    )
+                try:
+                    acc_dt_obj = _parse_utc_datetime(acc_dt, "acceptanceDateTime")
+                except Exception:
+                    raise CanaryDataIntegrityError(
+                        f"SEC_PUBLIC_AVAILABILITY_MISSING: Filing {acc} has invalid acceptanceDateTime: {acc_dt}"
+                    )
+
+                # Filter out post-cutoff filings
+                if acc_dt_obj > self.public_availability_cutoff:
+                    continue
+
+                eligible_filings.append({
+                    "index": idx,
+                    "form": f_type,
+                    "accession": acc,
+                    "filing_date": f_date,
+                    "acceptance_datetime": acc_dt,
+                    "primary_doc": p_doc,
+                })
+
+            # Identify unseen eligible filings
+            unseen_eligible_filings = [
+                f for f in eligible_filings if f["accession"] not in existing_accs
+            ]
+
+            if len(unseen_eligible_filings) > self.max_unseen_docs:
                 raise CanaryBudgetExceededError(
                     f"SEC_NEW_FILINGS_EXCEED_ISSUER_BUDGET: SEC catalog advertises "
-                    f"{len(unseen_form4_accs)} unseen Form 4 filings, exceeding issuer budget limit ({self.max_unseen_docs})."
+                    f"{len(unseen_eligible_filings)} unseen Form 4 filings within interval, "
+                    f"exceeding issuer budget limit ({self.max_unseen_docs})."
                 )
 
-            target_idx = None
-            if unseen_form4_accs:
-                target_acc = unseen_form4_accs[0]
-                target_idx = accessions.index(target_acc)
-            else:
-                # Fallback to newest Form 4 for idempotency test if all exist
-                for idx, f_type in enumerate(forms):
-                    if f_type in ("4", "4/A"):
-                        target_idx = idx
-                        break
+            if not unseen_eligible_filings:
+                raise CanaryDataIntegrityError(
+                    f"NO_UNSEEN_ELIGIBLE_FILINGS: No unseen Form 4 filings found for {CANARY_TICKER} "
+                    f"within pinned interval ({self.interval_start.isoformat()} to {self.interval_end.isoformat()}) "
+                    f"and cutoff ({self.public_availability_cutoff.isoformat()})."
+                )
 
-            if target_idx is None:
-                raise RuntimeError(f"No Form 4 or 4/A filing found in recent filings for {CANARY_TICKER}!")
-
-            form_type = forms[target_idx]
-            acc_num = accessions[target_idx]
+            target_filing = unseen_eligible_filings[0]
+            target_idx = target_filing["index"]
+            form_type = target_filing["form"]
+            acc_num = target_filing["accession"]
             clean_acc = acc_num.replace("-", "")
-            f_date = filing_dates[target_idx]
-            acc_dt = acceptance_dts[target_idx] if target_idx < len(acceptance_dts) else ""
-            p_doc = primary_docs[target_idx]
+            f_date = target_filing["filing_date"]
+            acc_dt = target_filing["acceptance_datetime"]
+            p_doc = target_filing["primary_doc"]
 
             # Enforce availability timestamp presence
             if not acc_dt or not str(acc_dt).strip():
@@ -661,39 +772,61 @@ class NvdaCanaryRunner:
 
             logger.info(f"Parsed {len(filing_obj.transactions)} transaction(s) from {acc_num}")
 
-            # Step 8: Amendment Classification if Form 4/A
+            # Step 8: Amendment Classification if Form 4/A (reusing qualified repository contracts)
             amendment_scope = None
             amendment_mappings = []
             base_acc = None
+            base_content_hash = None
             if filing_obj.is_amendment or form_type in ("4/A", "4A"):
-                base_acc = filing_obj.amendment_of_accession
+                base_acc = getattr(filing_obj, "amendment_of_accession", None)
+                if not base_acc and "<amendmentOfAccessionNumber>" in raw_xml:
+                    import xml.etree.ElementTree as ET
+                    try:
+                        xroot = ET.fromstring(raw_xml)
+                        elem = xroot.find(".//amendmentOfAccessionNumber") or xroot.find("amendmentOfAccessionNumber")
+                        if elem is not None and elem.text and elem.text.strip():
+                            base_acc = elem.text.strip()
+                    except Exception:
+                        pass
+
                 if not base_acc and conn:
-                    with conn.cursor() as cur:
-                        cur.execute(
-                            """
-                            SELECT accession_number FROM form4_raw_filings
-                            WHERE ticker = 'NVDA' AND filing_date <= %s AND accession_number != %s
-                            ORDER BY filing_date DESC, accepted_datetime DESC LIMIT 1;
-                            """,
-                            (f_date, acc_num),
-                        )
-                        r = cur.fetchone()
-                        if r:
-                            base_acc = r[0]
+                    filing_dict_meta = {
+                        "cik": CANARY_CIK,
+                        "ticker": CANARY_TICKER,
+                        "accession_number": acc_num,
+                        "accepted_datetime": acc_dt,
+                    }
+                    orig_date = getattr(filing_obj, "original_submission_date", None) or getattr(filing_obj, "filing_date", None) or f_date
+                    owner_ciks = getattr(filing_obj, "reporting_owner_ciks", None)
+                    if not owner_ciks:
+                        import xml.etree.ElementTree as ET
+                        try:
+                            xroot = ET.fromstring(raw_xml)
+                            owner_ciks = [
+                                (elem.text or "").strip().zfill(10)
+                                for elem in xroot.findall(".//reportingOwner/reportingOwnerId/rptOwnerCik")
+                                if elem.text
+                            ]
+                        except Exception:
+                            owner_ciks = []
+                    repo = PostgresSmartMoneyRepository(dsn=self.dsn)
+                    base_acc = repo.resolve_amendment_base(filing_dict_meta, orig_date, owner_ciks, conn)
 
                 if not base_acc:
                     raise CanaryDataIntegrityError(
-                        f"UNRESOLVED: Form 4/A {acc_num} has unresolvable base filing lineage."
+                        f"AMENDMENT_BASE_UNRESOLVED: Form 4/A {acc_num} has unresolvable base filing lineage. "
+                        f"No unique base filing matching issuer, original date, and owner set was found."
                     )
 
                 base_raw_xml = ""
                 base_txs = []
                 if conn:
                     with conn.cursor() as cur:
-                        cur.execute("SELECT xml_content FROM form4_raw_filings WHERE accession_number = %s;", (base_acc,))
+                        cur.execute("SELECT xml_content, content_hash FROM form4_raw_filings WHERE accession_number = %s;", (base_acc,))
                         brow = cur.fetchone()
                         if brow:
                             base_raw_xml = brow[0]
+                            base_content_hash = brow[1]
                         cur.execute("SELECT * FROM form4_parsed_transactions WHERE accession_number = %s;", (base_acc,))
                         if cur.description:
                             colnames = [desc[0] for desc in cur.description]
@@ -713,21 +846,30 @@ class NvdaCanaryRunner:
                         f"AMENDMENT_SCOPE_AMBIGUOUS: Amendment {acc_num} classified as {amendment_scope}: {class_res.reason}"
                     )
 
-            # Step 9: Persist within Atomic Database Transaction
+            # Step 9: Persist within Atomic Database Transaction (reusing qualified repository contracts)
             persisted_tx_count = 0
             coverage_receipt_id = None
             if conn:
                 try:
-                    with conn.cursor() as cur:
-                        # 1. Raw filing persistence (append-only)
-                        cur.execute("""
-                            INSERT INTO form4_raw_filings (
-                                accession_number, cik, ticker, company_name, filing_date,
-                                accepted_datetime, xml_content, content_hash, source_url
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                            ON CONFLICT (accession_number) DO NOTHING;
-                        """, (acc_num, CANARY_CIK, CANARY_TICKER, "NVIDIA CORP", f_date, acc_dt, raw_xml, content_hash, source_url))
+                    repo = PostgresSmartMoneyRepository(dsn=self.dsn)
 
+                    # 1. Raw filing persistence (checks source-hash conflicts via repo contract)
+                    repo.save_raw_filing(
+                        {
+                            "accession_number": acc_num,
+                            "cik": CANARY_CIK,
+                            "ticker": CANARY_TICKER,
+                            "company_name": "NVIDIA CORP",
+                            "filing_date": f_date,
+                            "accepted_datetime": acc_dt,
+                            "xml_content": raw_xml,
+                            "content_hash": content_hash,
+                            "source_url": source_url,
+                        },
+                        conn=conn,
+                    )
+
+                    with conn.cursor() as cur:
                         # 2. Availability ledger
                         cur.execute("""
                             INSERT INTO sm_source_availability_ledger (
@@ -770,28 +912,29 @@ class NvdaCanaryRunner:
                             ))
                             persisted_tx_count += 1
 
-                        # 4. Amendment ledger if 4/A
-                        if amendment_scope and base_acc:
-                            cur.execute("""
-                                INSERT INTO sm_amendments (
-                                    amendment_accession, base_accession, amendment_number, resolution_status, resolved_at
-                                ) VALUES (%s, %s, %s, %s, NOW())
-                                ON CONFLICT (amendment_accession) DO UPDATE SET
-                                    base_accession = EXCLUDED.base_accession,
-                                    resolution_status = EXCLUDED.resolution_status;
-                            """, (acc_num, base_acc, 1, amendment_scope))
+                    # 4. Amendment ledger and controlled state transition via repo contract
+                    if amendment_scope and base_acc:
+                        repo.save_amendment(
+                            amendment_accession=acc_num,
+                            base_accession=base_acc,
+                            amendment_number=1,
+                            resolution_status=amendment_scope,
+                            conn=conn,
+                        )
 
-                            if amendment_mappings:
-                                for m in amendment_mappings:
-                                    m_payload = json.dumps(m)
-                                    m_hash = hashlib.sha256(m_payload.encode("utf-8")).hexdigest()
-                                    cur.execute("""
-                                        INSERT INTO sm_audit_events (
-                                            event_id, event_type, subject_id, payload, event_hash
-                                        ) VALUES (%s, %s, %s, %s, %s);
-                                    """, (str(uuid.uuid4()), "AMENDMENT_TRANSACTION_MAPPING", acc_num, m_payload, m_hash))
+                        # 5. Mapping persistence via repo contract into sm_audit_events
+                        if amendment_scope == SCOPE_PARTIAL_CORRECTION and amendment_mappings:
+                            repo.record_amendment_transaction_mappings(
+                                base_accession=base_acc,
+                                amendment_accession=acc_num,
+                                mappings=amendment_mappings,
+                                base_content_hash=base_content_hash,
+                                amendment_content_hash=content_hash,
+                                conn=conn,
+                            )
 
-                        # 5. Audit event
+                    with conn.cursor() as cur:
+                        # 6. Audit event
                         ev_payload = json.dumps({
                             "ticker": CANARY_TICKER,
                             "accession_number": acc_num,
@@ -812,28 +955,30 @@ class NvdaCanaryRunner:
                             ev_hash,
                         ))
 
-                        # 6. Record Coverage Receipt (PARTIAL coverage certified for narrow single-shot cycle)
-                        repo = PostgresSmartMoneyRepository(dsn=self.dsn)
-                        i_start_str = self.interval_start.isoformat() if self.interval_start else "2026-08-18T00:00:00Z"
-                        i_end_str = self.interval_end.isoformat() if self.interval_end else "2026-11-16T23:59:59Z"
-                        cutoff_str = self.public_availability_cutoff.isoformat() if self.public_availability_cutoff else "2026-11-17T00:00:00Z"
+                    # 7. Record Coverage Receipt (PARTIAL coverage certified for narrow single-shot cycle)
+                    i_start_str = self.interval_start.isoformat() if self.interval_start else "2026-11-17T00:00:00Z"
+                    i_end_str = self.interval_end.isoformat() if self.interval_end else "2026-11-18T23:59:59Z"
+                    cutoff_str = self.public_availability_cutoff.isoformat() if self.public_availability_cutoff else "2026-11-19T00:00:00Z"
 
-                        cat_hash = hashlib.sha256(json.dumps(sub_data, sort_keys=True).encode("utf-8")).hexdigest()
-                        coverage_receipt_id = repo.record_issuer_coverage_receipt(
-                            ticker=CANARY_TICKER,
-                            issuer_cik=CANARY_CIK,
-                            interval_start=i_start_str,
-                            interval_end=i_end_str,
-                            certified_watermark=cutoff_str,
-                            accession_inventory=[acc_num],
-                            source_hashes={acc_num: content_hash, "catalog": cat_hash},
-                            material_gaps=[{
-                                "gap_type": "SINGLE_SHOT_CANARY_CYCLE",
-                                "description": "Narrow one-shot cycle does not establish complete historical interval coverage."
-                            }],
-                            coverage_status="PARTIAL",
-                            conn=conn,
-                        )
+                    cat_hash = hashlib.sha256(json.dumps(sub_data, sort_keys=True).encode("utf-8")).hexdigest()
+                    coverage_receipt_id = repo.record_issuer_coverage_receipt(
+                        ticker=CANARY_TICKER,
+                        issuer_cik=CANARY_CIK,
+                        interval_start=i_start_str,
+                        interval_end=i_end_str,
+                        certified_watermark=cutoff_str,
+                        accession_inventory=[acc_num],
+                        source_hashes={acc_num: content_hash, "catalog": cat_hash},
+                        material_gaps=[{
+                            "gap_type": "SINGLE_SHOT_CANARY_CYCLE",
+                            "description": "Narrow one-shot cycle does not establish complete historical interval coverage."
+                        }],
+                        coverage_status="PARTIAL",
+                        conn=conn,
+                    )
+
+                    # Re-verify authorization not expired before commit
+                    self.check_authorization_not_expired()
 
                     # Re-verify advisory lock before commit
                     if not self._has_verified_owner_lock(conn):
@@ -846,7 +991,8 @@ class NvdaCanaryRunner:
                         f"{coverage_receipt_id} to PostgreSQL."
                     )
                 except Exception as db_err:
-                    conn.rollback()
+                    if conn and not getattr(conn, "closed", True):
+                        conn.rollback()
                     logger.error(f"Database transaction rolled back due to error: {db_err}")
                     raise
 
@@ -898,17 +1044,17 @@ class NvdaCanaryRunner:
                         conn.rollback()
                 except Exception:
                     pass
+                if telemetry.get("lock_acquired"):
+                    try:
+                        release_sec_owner_lock(conn)
+                        telemetry["lock_released"] = True
+                    except Exception as lock_err:
+                        logger.warning(f"Advisory lock release warning: {lock_err}")
+            if pg_ctx:
                 try:
-                    release_sec_owner_lock(conn)
-                    telemetry["lock_released"] = True
-                except Exception as lock_err:
-                    logger.warning(f"Advisory lock release warning: {lock_err}")
-                finally:
-                    if pg_ctx:
-                        try:
-                            pg_ctx.__exit__(None, None, None)
-                        except Exception as ctx_err:
-                            logger.warning(f"Connection pool return error: {ctx_err}")
+                    pg_ctx.__exit__(None, None, None)
+                except Exception as ctx_err:
+                    logger.warning(f"Connection pool return error: {ctx_err}")
 
             # 4. Verify post-teardown egress blockage
             try:

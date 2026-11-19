@@ -29,6 +29,10 @@ import os
 import time
 import json
 import uuid
+import http.server
+import threading
+import urllib.parse
+from typing import Optional, Dict, Any, List
 import pytest
 import requests
 from datetime import datetime, timezone, timedelta
@@ -93,12 +97,31 @@ def mock_fresh_receipt():
     )
 
 
+def make_valid_auth(now: Optional[datetime] = None) -> Dict[str, Any]:
+    """Generates an explicit, valid 10-minute UTC authorization window."""
+    current = now or datetime.now(timezone.utc)
+    return {
+        "auth_issued_at": current - timedelta(seconds=5),
+        "auth_expires_at": current + timedelta(minutes=10),
+    }
+
+
+@pytest.fixture
+def valid_auth():
+    return make_valid_auth()
+
+
 @pytest.fixture(scope="module")
 def pg_server_instance(tmp_path_factory):
     """Module-scoped ephemeral PostgreSQL server via pgserver."""
     pgserver = pytest.importorskip("pgserver")
     tmp_dir = tmp_path_factory.mktemp("pg_canary_suite")
-    server = pgserver.get_server(tmp_dir)
+    try:
+        server = pgserver.get_server(tmp_dir)
+    except PermissionError:
+        if os.getenv("ARX_REQUIRE_LOCAL_POSTGRES_TESTS") == "true":
+            raise
+        pytest.skip("Runtime denies local sockets; required PostgreSQL acceptance runs in CI")
     yield server
     server.cleanup()
 
@@ -124,21 +147,24 @@ def disposable_db(pg_server_instance):
 
 def make_sample_nvda_form4_xml(
     accession: str = "0001045810-26-000099",
-    date: str = "2026-10-30",
+    date: str = "2026-11-17",
     ticker: str = "NVDA",
     cik: str = "0001045810",
     is_amendment: bool = False,
     amendment_of: str = "",
+    original_date: str = "",
     remarks: str = "",
 ) -> str:
     doc_type = "4/A" if is_amendment else "4"
     amend_node = f"<amendmentOfAccessionNumber>{amendment_of}</amendmentOfAccessionNumber>" if amendment_of else ""
+    orig_sub_node = f"<dateOfOriginalSubmission>{original_date}</dateOfOriginalSubmission>" if original_date else ""
     remarks_node = f"<remarks>{remarks}</remarks>" if remarks else ""
     return f"""<?xml version="1.0"?>
     <ownershipDocument>
         <schemaVersion>X0508</schemaVersion>
         <documentType>{doc_type}</documentType>
         <periodOfReport>{date}</periodOfReport>
+        {orig_sub_node}
         {amend_node}
         <issuer>
             <issuerCik>{cik}</issuerCik>
@@ -240,7 +266,7 @@ class TestNvdaCanaryHttpBoundaryEnforcement:
     """Tests runtime constraints enforced at the physical HTTP boundary."""
 
     def test_canary_enforces_max_4_requests_budget(self, clean_env):
-        runner = NvdaCanaryRunner(max_requests=4)
+        runner = NvdaCanaryRunner(max_requests=4, **make_valid_auth())
         mock_session = MagicMock()
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -259,7 +285,7 @@ class TestNvdaCanaryHttpBoundaryEnforcement:
         assert "exceeded strict cap (4)" in str(exc_info.value)
 
     def test_canary_enforces_30s_timeout_ceiling(self, clean_env):
-        runner = NvdaCanaryRunner(max_duration_sec=30.0)
+        runner = NvdaCanaryRunner(max_duration_sec=30.0, **make_valid_auth())
         runner.start_time = time.time() - 31.0  # Simulate 31 seconds elapsed
         with pytest.raises(CanaryTimeoutError) as exc_info:
             runner.check_deadline()
@@ -277,7 +303,7 @@ class TestNvdaCanaryLifecycleAndIsolation:
         with patch("analyst_dashboard.smart_money.canary_runner.get_connection", return_value=mock_ctx), \
              patch("analyst_dashboard.smart_money.canary_runner.acquire_sec_owner_lock", return_value=False), \
              patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn="postgresql://mock:mock@localhost:5432/mock")
+            runner = NvdaCanaryRunner(dsn="postgresql://mock:mock@localhost:5432/mock", **make_valid_auth())
             with pytest.raises(CanaryLockContentionError) as exc_info:
                 runner.execute()
             assert "EXCLUSIVE_OWNERSHIP_UNAVAILABLE" in str(exc_info.value)
@@ -296,7 +322,8 @@ class TestNvdaCanaryLifecycleAndIsolation:
              patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
             runner = NvdaCanaryRunner(
                 dsn="postgresql://mock:mock@localhost:5432/mock",
-                session=mock_session
+                session=mock_session,
+                **make_valid_auth(),
             )
             with pytest.raises(requests.exceptions.ConnectTimeout):
                 runner.execute()
@@ -322,8 +349,8 @@ class TestNvdaCanaryEndToEndSyntheticExecution:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": ["0001045810-26-000099"],
-                    "filingDate": ["2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_99.xml"],
                 }
             }
@@ -347,6 +374,7 @@ class TestNvdaCanaryEndToEndSyntheticExecution:
             runner = NvdaCanaryRunner(
                 dsn=None,  # In-memory execution without live DB
                 session=mock_session,
+                **make_valid_auth(),
             )
             receipt = runner.execute()
 
@@ -373,8 +401,8 @@ class TestNvdaCanaryGate1OneCycleRehearsal:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": ["0001045810-26-000099"],
-                    "filingDate": ["2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_99.xml"],
                 }
             }
@@ -388,7 +416,7 @@ class TestNvdaCanaryGate1OneCycleRehearsal:
         mock_session.get.side_effect = [resp_sub, resp_xml]
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             receipt = runner.execute()
 
             # Verify single-cycle execution receipt
@@ -427,13 +455,13 @@ class TestNvdaCanaryGate2FailClosedConstraints:
     """Acceptance Gate 2: Wrong issuer, expired authorization, concurrent execution, active queue, and excess budgets fail closed."""
 
     def test_gate2_wrong_issuer_ticker_fails_closed(self, clean_env):
-        runner = NvdaCanaryRunner()
+        runner = NvdaCanaryRunner(**make_valid_auth())
         with pytest.raises(CanarySecurityError) as exc_info:
             runner.validate_preflight(ticker="AAPL")
         assert "UNAUTHORIZED_CANARY_SCOPE" in str(exc_info.value)
 
     def test_gate2_wrong_issuer_cik_fails_closed(self, clean_env):
-        runner = NvdaCanaryRunner()
+        runner = NvdaCanaryRunner(**make_valid_auth())
         with pytest.raises(CanarySecurityError) as exc_info:
             runner.validate_preflight(cik="0000320193")
         assert "UNAUTHORIZED_CANARY_SCOPE" in str(exc_info.value)
@@ -444,8 +472,8 @@ class TestNvdaCanaryGate2FailClosedConstraints:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": ["0001045810-26-000099"],
-                    "filingDate": ["2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_99.xml"],
                 }
             }
@@ -460,42 +488,52 @@ class TestNvdaCanaryGate2FailClosedConstraints:
         mock_session.get.side_effect = [resp_sub, resp_xml]
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=None, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=None, session=mock_session, **make_valid_auth())
             with pytest.raises(CanarySecurityError) as exc_info:
                 runner.execute()
             assert "SEC_FORM4_ISSUER_MISMATCH" in str(exc_info.value)
 
-    def test_gate2_expired_authorization_fails_closed(self, clean_env):
-        runner = NvdaCanaryRunner()
-        past_expiry = datetime.now(timezone.utc) - timedelta(minutes=10)
-        with pytest.raises(CanarySecurityError) as exc_info:
-            runner.validate_preflight(auth_expires_at=past_expiry)
-        assert "AUTHORIZATION_EXPIRED" in str(exc_info.value)
+    def test_gate2_expired_authorization_fails_closed(self, clean_env, mock_fresh_receipt):
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner()
+            now = datetime.now(timezone.utc)
+            past_issued = now - timedelta(minutes=20)
+            past_expiry = now - timedelta(minutes=10)
+            with pytest.raises(CanarySecurityError) as exc_info:
+                runner.validate_preflight(auth_issued_at=past_issued, auth_expires_at=past_expiry)
+            assert "AUTHORIZATION_EXPIRED" in str(exc_info.value)
 
-    def test_gate2_future_authorization_issued_fails_closed(self, clean_env):
-        runner = NvdaCanaryRunner()
-        future_issued = datetime.now(timezone.utc) + timedelta(minutes=10)
-        with pytest.raises(CanarySecurityError) as exc_info:
-            runner.validate_preflight(auth_issued_at=future_issued)
-        assert "AUTHORIZATION_NOT_YET_VALID" in str(exc_info.value)
+    def test_gate2_future_authorization_issued_fails_closed(self, clean_env, mock_fresh_receipt):
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner()
+            now = datetime.now(timezone.utc)
+            future_issued = now + timedelta(minutes=10)
+            future_expires = now + timedelta(minutes=20)
+            with pytest.raises(CanarySecurityError) as exc_info:
+                runner.validate_preflight(auth_issued_at=future_issued, auth_expires_at=future_expires)
+            assert "AUTHORIZATION_NOT_YET_VALID" in str(exc_info.value)
 
-    def test_gate2_inverted_interval_fails_closed(self, clean_env):
-        runner = NvdaCanaryRunner()
-        with pytest.raises(CanarySecurityError) as exc_info:
-            runner.validate_preflight(
-                interval_start="2026-11-20T00:00:00Z",
-                interval_end="2026-11-10T00:00:00Z",
-            )
-        assert "INVALID_INTERVAL" in str(exc_info.value)
+    def test_gate2_inverted_interval_fails_closed(self, clean_env, mock_fresh_receipt):
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner()
+            with pytest.raises(CanarySecurityError) as exc_info:
+                runner.validate_preflight(
+                    interval_start="2026-11-20T00:00:00Z",
+                    interval_end="2026-11-10T00:00:00Z",
+                    **make_valid_auth(),
+                )
+            assert "INVALID_INTERVAL" in str(exc_info.value)
 
-    def test_gate2_cutoff_before_interval_end_fails_closed(self, clean_env):
-        runner = NvdaCanaryRunner()
-        with pytest.raises(CanarySecurityError) as exc_info:
-            runner.validate_preflight(
-                interval_end="2026-11-20T00:00:00Z",
-                public_availability_cutoff="2026-11-19T00:00:00Z",
-            )
-        assert "INVALID_CUTOFF" in str(exc_info.value)
+    def test_gate2_cutoff_before_interval_end_fails_closed(self, clean_env, mock_fresh_receipt):
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner()
+            with pytest.raises(CanarySecurityError) as exc_info:
+                runner.validate_preflight(
+                    interval_end="2026-11-20T00:00:00Z",
+                    public_availability_cutoff="2026-11-19T00:00:00Z",
+                    **make_valid_auth(),
+                )
+            assert "INVALID_CUTOFF" in str(exc_info.value)
 
     def test_gate2_prospective_post_baseline_interval_success(self, clean_env, mock_fresh_receipt):
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
@@ -504,19 +542,22 @@ class TestNvdaCanaryGate2FailClosedConstraints:
                 interval_start="2026-11-17T00:00:00Z",
                 interval_end="2026-11-18T23:59:59Z",
                 public_availability_cutoff="2026-11-19T00:00:00Z",
+                **make_valid_auth(),
             )
             assert runner.validate_preflight() is True
 
-    def test_gate2_prospective_mode_rejects_silent_frozen_baseline_substitution(self, clean_env):
-        runner = NvdaCanaryRunner(
-            mode="prospective",
-            interval_start="2026-08-18T00:00:00Z",
-            interval_end="2026-11-16T23:59:59Z",
-            public_availability_cutoff="2026-11-17T00:00:00Z",
-        )
-        with pytest.raises(CanarySecurityError) as exc_info:
-            runner.validate_preflight()
-        assert "PROSPECTIVE_INTERVAL_OVERLAPS_FROZEN_BASELINE" in str(exc_info.value)
+    def test_gate2_prospective_mode_rejects_silent_frozen_baseline_substitution(self, clean_env, mock_fresh_receipt):
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(
+                mode="prospective",
+                interval_start="2026-08-18T00:00:00Z",
+                interval_end="2026-11-16T23:59:59Z",
+                public_availability_cutoff="2026-11-17T00:00:00Z",
+                **make_valid_auth(),
+            )
+            with pytest.raises(CanarySecurityError) as exc_info:
+                runner.validate_preflight()
+            assert "PROSPECTIVE_INTERVAL_OVERLAPS_FROZEN_BASELINE" in str(exc_info.value)
 
     def test_gate2_historical_audit_mode_allows_frozen_baseline(self, clean_env, mock_fresh_receipt):
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
@@ -525,19 +566,22 @@ class TestNvdaCanaryGate2FailClosedConstraints:
                 interval_start="2026-08-18T00:00:00Z",
                 interval_end="2026-11-16T23:59:59Z",
                 public_availability_cutoff="2026-11-17T00:00:00Z",
+                **make_valid_auth(),
             )
             assert runner.validate_preflight() is True
 
-    def test_gate2_historical_audit_mode_rejects_post_baseline_interval(self, clean_env):
-        runner = NvdaCanaryRunner(
-            mode="historical_audit",
-            interval_start="2026-11-17T00:00:00Z",
-            interval_end="2026-11-18T23:59:59Z",
-            public_availability_cutoff="2026-11-19T00:00:00Z",
-        )
-        with pytest.raises(CanarySecurityError) as exc_info:
-            runner.validate_preflight()
-        assert "HISTORICAL_AUDIT_OUT_OF_BOUNDS" in str(exc_info.value)
+    def test_gate2_historical_audit_mode_rejects_post_baseline_interval(self, clean_env, mock_fresh_receipt):
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(
+                mode="historical_audit",
+                interval_start="2026-11-17T00:00:00Z",
+                interval_end="2026-11-18T23:59:59Z",
+                public_availability_cutoff="2026-11-19T00:00:00Z",
+                **make_valid_auth(),
+            )
+            with pytest.raises(CanarySecurityError) as exc_info:
+                runner.validate_preflight()
+            assert "HISTORICAL_AUDIT_OUT_OF_BOUNDS" in str(exc_info.value)
 
     def test_gate2_concurrent_execution_lock_contention_fails_closed(self, clean_env, mock_fresh_receipt, disposable_db):
         conn, dsn = disposable_db
@@ -549,7 +593,7 @@ class TestNvdaCanaryGate2FailClosedConstraints:
 
         try:
             with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-                runner = NvdaCanaryRunner(dsn=dsn)
+                runner = NvdaCanaryRunner(dsn=dsn, **make_valid_auth())
                 with pytest.raises(CanaryLockContentionError) as exc_info:
                     runner.execute()
                 assert "EXCLUSIVE_OWNERSHIP_UNAVAILABLE" in str(exc_info.value)
@@ -572,9 +616,9 @@ class TestNvdaCanaryGate2FailClosedConstraints:
         conn.commit()
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn)
+            runner = NvdaCanaryRunner(dsn=dsn, **make_valid_auth())
             with pytest.raises(CanaryQueueActiveError) as exc_info:
-                runner.validate_preflight(conn=conn)
+                runner.validate_preflight(conn=conn, **make_valid_auth())
             assert "ACTIVE_QUEUE_REQUESTS_PRESENT" in str(exc_info.value)
 
     def test_gate2_unseen_docs_budget_exceeded_fails_closed(self, clean_env, mock_fresh_receipt):
@@ -589,8 +633,8 @@ class TestNvdaCanaryGate2FailClosedConstraints:
                         "0001045810-26-000103",
                         "0001045810-26-000104",
                     ],
-                    "filingDate": ["2026-11-01", "2026-11-01", "2026-11-01", "2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"] * 4,
+                    "filingDate": ["2026-11-17", "2026-11-17", "2026-11-17", "2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"] * 4,
                     "primaryDocument": ["doc1.xml", "doc2.xml", "doc3.xml", "doc4.xml"],
                 }
             }
@@ -601,7 +645,7 @@ class TestNvdaCanaryGate2FailClosedConstraints:
         mock_session.get.return_value = resp_sub
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=None, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=None, session=mock_session, **make_valid_auth())
             with pytest.raises(CanaryBudgetExceededError) as exc_info:
                 runner.execute()
             assert "SEC_NEW_FILINGS_EXCEED_ISSUER_BUDGET" in str(exc_info.value)
@@ -617,7 +661,7 @@ class TestNvdaCanaryGate3InjectedFailuresAndRollback:
         mock_session.get.return_value = resp_429
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             with pytest.raises(CanaryRateLimitError) as exc_info:
                 runner.execute()
             assert "SEC_RATE_LIMIT_EXCEEDED" in str(exc_info.value)
@@ -642,7 +686,7 @@ class TestNvdaCanaryGate3InjectedFailuresAndRollback:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": ["0001045810-26-000099"],
-                    "filingDate": ["2026-11-01"],
+                    "filingDate": ["2026-11-17"],
                     "acceptanceDateTime": [""],  # Empty availability timestamp
                     "primaryDocument": ["form4_99.xml"],
                 }
@@ -654,7 +698,7 @@ class TestNvdaCanaryGate3InjectedFailuresAndRollback:
         mock_session.get.return_value = resp_sub
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             with pytest.raises(CanaryDataIntegrityError) as exc_info:
                 runner.execute()
             assert "SEC_PUBLIC_AVAILABILITY_MISSING" in str(exc_info.value)
@@ -670,8 +714,8 @@ class TestNvdaCanaryGate3InjectedFailuresAndRollback:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": ["0001045810-26-000099"],
-                    "filingDate": ["2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_99.xml"],
                 }
             }
@@ -685,7 +729,7 @@ class TestNvdaCanaryGate3InjectedFailuresAndRollback:
         mock_session.get.side_effect = [resp_sub, resp_xml]
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             with pytest.raises(CanaryDataIntegrityError) as exc_info:
                 runner.execute()
             assert "SEC_FORM4_PARSE_FAILED" in str(exc_info.value)
@@ -719,15 +763,15 @@ class TestNvdaCanaryGate3InjectedFailuresAndRollback:
                 "recent": {
                     "form": ["4/A"],
                     "accessionNumber": [amend_acc],
-                    "filingDate": ["2026-09-10"],
-                    "acceptanceDateTime": ["2026-09-10T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_amend.xml"],
                 }
             }
         }
         amend_xml = make_sample_nvda_form4_xml(
             accession=amend_acc,
-            date="2026-09-10",
+            date="2026-11-17",
             is_amendment=True,
             amendment_of=base_acc,
             remarks="This amendment is filed to correct the first transaction and also correct the second transaction.",
@@ -740,7 +784,7 @@ class TestNvdaCanaryGate3InjectedFailuresAndRollback:
         mock_session.get.side_effect = [resp_sub, resp_xml]
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             with pytest.raises(CanaryDataIntegrityError) as exc_info:
                 runner.execute()
             assert "AMENDMENT_SCOPE_AMBIGUOUS" in str(exc_info.value)
@@ -757,8 +801,8 @@ class TestNvdaCanaryGate3InjectedFailuresAndRollback:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": ["0001045810-26-000099"],
-                    "filingDate": ["2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_99.xml"],
                 }
             }
@@ -781,7 +825,7 @@ class TestNvdaCanaryGate3InjectedFailuresAndRollback:
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt), \
              patch.object(NvdaCanaryRunner, "_has_verified_owner_lock", side_effect=dynamic_lock_check):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             with pytest.raises(CanaryLockLostError) as exc_info:
                 runner.execute()
             assert "ADVISORY_LOCK_LOST" in str(exc_info.value)
@@ -853,8 +897,8 @@ class TestNvdaCanaryGate4BaselineAndSnapshotPreservation:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": [new_acc],
-                    "filingDate": ["2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_99.xml"],
                 }
             }
@@ -868,7 +912,7 @@ class TestNvdaCanaryGate4BaselineAndSnapshotPreservation:
         mock_session.get.side_effect = [resp_sub, resp_xml]
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             receipt = runner.execute()
             assert receipt["verdict"] == "SUCCESS"
 
@@ -913,8 +957,8 @@ class TestNvdaCanaryGate5CoverageCertification:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": ["0001045810-26-000099"],
-                    "filingDate": ["2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_99.xml"],
                 }
             }
@@ -928,7 +972,7 @@ class TestNvdaCanaryGate5CoverageCertification:
         mock_session.get.side_effect = [resp_sub, resp_xml]
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             receipt = runner.execute()
 
             assert receipt["coverage_status"] == "PARTIAL"
@@ -987,7 +1031,7 @@ class TestNvdaCanaryAdvisoryLockDecompositionAndLifecycle:
 
     def test_advisory_lock_acquisition_and_ownership_verification_in_pg_locks(self, disposable_db):
         conn, dsn = disposable_db
-        runner = NvdaCanaryRunner(dsn=dsn)
+        runner = NvdaCanaryRunner(dsn=dsn, **make_valid_auth())
 
         # Initially no lock held
         assert runner._has_verified_owner_lock(conn) is False
@@ -1060,8 +1104,8 @@ class TestNvdaCanaryAdvisoryLockDecompositionAndLifecycle:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": ["0001045810-26-000099"],
-                    "filingDate": ["2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_99.xml"],
                 }
             }
@@ -1088,7 +1132,7 @@ class TestNvdaCanaryAdvisoryLockDecompositionAndLifecycle:
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt), \
              patch.object(NvdaCanaryRunner, "_has_verified_owner_lock", drop_lock_on_second_check):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             with pytest.raises(CanaryLockLostError) as exc_info:
                 runner.execute()
             assert "ADVISORY_LOCK_LOST" in str(exc_info.value)
@@ -1105,8 +1149,8 @@ class TestNvdaCanaryAdvisoryLockDecompositionAndLifecycle:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": ["0001045810-26-000099"],
-                    "filingDate": ["2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_99.xml"],
                 }
             }
@@ -1120,7 +1164,7 @@ class TestNvdaCanaryAdvisoryLockDecompositionAndLifecycle:
         mock_session.get.side_effect = [resp_sub, resp_xml]
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             receipt = runner.execute()
             assert receipt["verdict"] == "SUCCESS"
             assert receipt.get("lock_released") is True
@@ -1146,8 +1190,8 @@ class TestNvdaCanaryInterruptionAndNetworkTimeout:
                 "recent": {
                     "form": ["4"],
                     "accessionNumber": ["0001045810-26-000099"],
-                    "filingDate": ["2026-11-01"],
-                    "acceptanceDateTime": ["2026-11-01T21:00:00Z"],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
                     "primaryDocument": ["form4_99.xml"],
                 }
             }
@@ -1160,7 +1204,7 @@ class TestNvdaCanaryInterruptionAndNetworkTimeout:
         mock_session.get.side_effect = [resp_sub, KeyboardInterrupt("Operator SIGINT interruption")]
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
             with pytest.raises(KeyboardInterrupt):
                 runner.execute()
 
@@ -1191,7 +1235,7 @@ class TestNvdaCanaryInterruptionAndNetworkTimeout:
         mock_session.get.side_effect = simulate_blocked_network_hang
 
         with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
-            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, max_duration_sec=0.5)
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, max_duration_sec=0.5, **make_valid_auth())
             with pytest.raises(CanaryTimeoutError) as exc_info:
                 runner.execute()
             assert "TIMEOUT" in str(exc_info.value)
@@ -1210,4 +1254,562 @@ class TestNvdaCanaryInterruptionAndNetworkTimeout:
 
             assert os.environ.get("ARX_SEC_EGRESS_ROLE") == "STANDBY"
             assert os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED") == "false"
+
+
+class TestNvdaCanaryNonOverridableCeilingsAndAuth:
+    """Tests non-overridable ceilings and explicit authorization timestamps."""
+
+    @pytest.mark.parametrize("bad_requests", [5, 10, 0, -1, True])
+    def test_rejects_invalid_or_excessive_max_requests(self, bad_requests):
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(max_requests=bad_requests, **make_valid_auth())
+        assert "CANARY_CEILING_EXCEEDED" in str(exc_info.value)
+
+    @pytest.mark.parametrize("bad_rps", [5.1, 10.0, 0.0, -1.0, float("nan"), float("inf"), True])
+    def test_rejects_invalid_or_excessive_max_rps(self, bad_rps):
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(max_rps=bad_rps, **make_valid_auth())
+        assert "CANARY_CEILING_EXCEEDED" in str(exc_info.value)
+
+    @pytest.mark.parametrize("bad_unseen", [4, 10, 0, -1, True])
+    def test_rejects_invalid_or_excessive_max_unseen_docs(self, bad_unseen):
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(max_unseen_docs=bad_unseen, **make_valid_auth())
+        assert "CANARY_CEILING_EXCEEDED" in str(exc_info.value)
+
+    @pytest.mark.parametrize("bad_dur", [30.1, 60.0, 0.0, -1.0, float("nan"), float("inf"), True])
+    def test_rejects_invalid_or_excessive_max_duration(self, bad_dur):
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(max_duration_sec=bad_dur, **make_valid_auth())
+        assert "CANARY_CEILING_EXCEEDED" in str(exc_info.value)
+
+    def test_rejects_missing_authorization_timestamps(self, clean_env, mock_fresh_receipt):
+        runner = NvdaCanaryRunner()
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            with pytest.raises(CanarySecurityError) as exc_info:
+                runner.validate_preflight()
+            assert "AUTHORIZATION_TIMESTAMPS_REQUIRED" in str(exc_info.value)
+
+    def test_rejects_auth_window_exceeding_15_minutes(self):
+        now = datetime.now(timezone.utc)
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(
+                auth_issued_at=now,
+                auth_expires_at=now + timedelta(seconds=901),
+            )
+        assert "AUTHORIZATION_WINDOW_EXCEEDED" in str(exc_info.value)
+
+    def test_rejects_inverted_auth_window(self):
+        now = datetime.now(timezone.utc)
+        with pytest.raises(CanarySecurityError) as exc_info:
+            NvdaCanaryRunner(
+                auth_issued_at=now + timedelta(seconds=60),
+                auth_expires_at=now,
+            )
+        assert "INVALID_AUTHORIZATION_WINDOW" in str(exc_info.value)
+
+    def test_active_expiry_check_before_egress_and_commit(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+        now = datetime.now(timezone.utc)
+        runner = NvdaCanaryRunner(
+            dsn=dsn,
+            auth_issued_at=now - timedelta(minutes=5),
+            auth_expires_at=now + timedelta(seconds=1),
+        )
+        runner.auth_expires_at = now - timedelta(seconds=1)
+        with pytest.raises(CanarySecurityError) as exc_info:
+            runner.check_authorization_not_expired()
+        assert "AUTHORIZATION_EXPIRED" in str(exc_info.value)
+
+
+class TestNvdaCanaryGuaranteedCleanupAndQueueInterruption:
+    """Tests guaranteed cleanup on queue check failure and immediate interruption after lock acquisition."""
+
+    def test_queue_check_failure_under_lock_releases_lock_and_revokes_auth(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO sm_run_requests (
+                    request_id, request_type, requested_by_subject_hash, status,
+                    requested_at, attempt_count, max_attempts
+                ) VALUES (
+                    %s, 'SCHEDULED_DISCOVERY', 'test_hash', 'PENDING', NOW(), 0, 3
+                );
+            """, (str(uuid.uuid4()),))
+        conn.commit()
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(dsn=dsn, **make_valid_auth())
+            with pytest.raises(CanaryQueueActiveError) as exc_info:
+                runner.execute()
+            assert "ACTIVE_QUEUE_REQUESTS_PRESENT" in str(exc_info.value)
+
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT count(*) FROM pg_locks
+                    WHERE locktype = 'advisory'
+                      AND classid = %s
+                      AND objid = %s;
+                """, (LOCK_SEC_EGRESS_OWNER_CLASSID, LOCK_SEC_EGRESS_OWNER_OBJID))
+                assert cur.fetchone()[0] == 0
+
+            assert os.environ.get("ARX_SEC_EGRESS_ROLE") == "STANDBY"
+            assert os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED") == "false"
+
+    def test_interruption_immediately_after_lock_acquisition(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+
+        def interrupt_after_lock(conn_arg):
+            raise KeyboardInterrupt("Simulated operator interrupt right after lock claim")
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt),              patch.object(NvdaCanaryRunner, "check_queue_isolation", side_effect=interrupt_after_lock):
+            runner = NvdaCanaryRunner(dsn=dsn, **make_valid_auth())
+            with pytest.raises(KeyboardInterrupt):
+                runner.execute()
+
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT count(*) FROM pg_locks
+                    WHERE locktype = 'advisory'
+                      AND classid = %s
+                      AND objid = %s;
+                """, (LOCK_SEC_EGRESS_OWNER_CLASSID, LOCK_SEC_EGRESS_OWNER_OBJID))
+                assert cur.fetchone()[0] == 0
+
+            assert os.environ.get("ARX_SEC_EGRESS_ROLE") == "STANDBY"
+            assert os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED") == "false"
+
+
+class TestNvdaCanaryFilingWindowFilteringAndNoFallback:
+    """Tests interval and cutoff filtering before unseen counts, and removal of newest-filing fallback."""
+
+    def test_out_of_window_filings_excluded_and_never_downloaded(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "form": ["4"],
+                    "accessionNumber": ["0001045810-26-000050"],
+                    "filingDate": ["2026-11-10"],
+                    "acceptanceDateTime": ["2026-11-10T21:00:00Z"],
+                    "primaryDocument": ["form4_50.xml"],
+                }
+            }
+        }
+        mock_session = MagicMock()
+        resp_sub = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub.json.return_value = sub_payload
+        mock_session.get.return_value = resp_sub
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
+            with pytest.raises(CanaryDataIntegrityError) as exc_info:
+                runner.execute()
+            assert "NO_UNSEEN_ELIGIBLE_FILINGS" in str(exc_info.value)
+            assert mock_session.get.call_count == 1
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM form4_raw_filings;")
+                assert cur.fetchone()[0] == 0
+
+    def test_post_cutoff_filings_excluded_and_never_downloaded(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "form": ["4"],
+                    "accessionNumber": ["0001045810-26-000099"],
+                    "filingDate": ["2026-11-18"],
+                    "acceptanceDateTime": ["2026-11-19T05:00:00Z"],  # Post cutoff
+                    "primaryDocument": ["form4_99.xml"],
+                }
+            }
+        }
+        mock_session = MagicMock()
+        resp_sub = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub.json.return_value = sub_payload
+        mock_session.get.return_value = resp_sub
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
+            with pytest.raises(CanaryDataIntegrityError) as exc_info:
+                runner.execute()
+            assert "NO_UNSEEN_ELIGIBLE_FILINGS" in str(exc_info.value)
+            assert mock_session.get.call_count == 1
+
+    def test_mixed_catalog_only_downloads_and_persists_in_window_filing(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "form": ["4", "4", "4"],
+                    "accessionNumber": [
+                        "0001045810-26-000010",
+                        "0001045810-26-000020",
+                        "0001045810-26-000030",
+                    ],
+                    "filingDate": ["2026-11-10", "2026-11-17", "2026-11-18"],
+                    "acceptanceDateTime": [
+                        "2026-11-10T21:00:00Z",
+                        "2026-11-17T21:00:00Z",
+                        "2026-11-20T10:00:00Z",
+                    ],
+                    "primaryDocument": ["f10.xml", "f20.xml", "f30.xml"],
+                }
+            }
+        }
+        xml_in_window = make_sample_nvda_form4_xml(accession="0001045810-26-000020", date="2026-11-17")
+
+        mock_session = MagicMock()
+        resp_sub = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub.json.return_value = sub_payload
+        resp_xml = MagicMock(status_code=200, text=xml_in_window, content=xml_in_window.encode())
+        mock_session.get.side_effect = [resp_sub, resp_xml]
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
+            receipt = runner.execute()
+
+            assert receipt["verdict"] == "SUCCESS"
+            assert receipt["filings_discovered"][0]["accession_number"] == "0001045810-26-000020"
+
+            with conn.cursor() as cur:
+                cur.execute("SELECT accession_number FROM form4_raw_filings;")
+                rows = cur.fetchall()
+                assert len(rows) == 1
+                assert rows[0][0] == "0001045810-26-000020"
+
+
+class TestNvdaCanaryRepositoryContractsAndLineage:
+    """Tests repository contract reuse: lineage, transitions, source-hash conflicts, and mapping persistence."""
+
+    def test_amendment_base_resolution_via_repo_contract(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+        base_acc = "0001045810-26-000080"
+        amend_acc = "0001045810-26-000085"
+
+        base_xml = make_sample_nvda_form4_xml(accession=base_acc, date="2026-11-16")
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, '2026-11-16', '2026-11-16T21:00:00Z', %s, 'base_hash', 'https://www.sec.gov/base.xml');
+            """, (base_acc, CANARY_CIK, CANARY_TICKER, "NVIDIA CORP", base_xml))
+            cur.execute("""
+                INSERT INTO form4_parsed_transactions (
+                    transaction_id, accession_number, transaction_date, transaction_code, shares, price_per_share, total_value_usd, reporting_owner_name, reporting_owner_role, ownership_type
+                ) VALUES ('base_tx1', %s, '2026-11-16', 'S', 100, 100, 10000, 'HUANG JEN HSUN', 'President and CEO', 'D');
+            """, (base_acc,))
+        conn.commit()
+
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "form": ["4/A"],
+                    "accessionNumber": [amend_acc],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
+                    "primaryDocument": ["form4_amend.xml"],
+                }
+            }
+        }
+        # Form 4/A without explicit amendment_of, testing repository resolution
+        amend_xml = make_sample_nvda_form4_xml(
+            accession=amend_acc,
+            date="2026-11-16",
+            is_amendment=True,
+            amendment_of="",
+            original_date="2026-11-16",
+            remarks="This amendment is filed solely to correct the transaction price of the first transaction.",
+        )
+
+        mock_session = MagicMock()
+        resp_sub = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub.json.return_value = sub_payload
+        resp_xml = MagicMock(status_code=200, text=amend_xml, content=amend_xml.encode())
+        mock_session.get.side_effect = [resp_sub, resp_xml]
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
+            receipt = runner.execute()
+            assert receipt["verdict"] == "SUCCESS"
+
+            with conn.cursor() as cur:
+                cur.execute("SELECT base_accession, resolution_status FROM sm_amendments WHERE amendment_accession = %s;", (amend_acc,))
+                row = cur.fetchone()
+                assert row is not None
+                assert row[0] == base_acc
+                assert row[1] == "PARTIAL_CORRECTION"
+
+    def test_unresolvable_amendment_base_fails_closed(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+        amend_acc = "0001045810-26-000085"
+        sub_payload = {
+            "filings": {
+                "recent": {
+                    "form": ["4/A"],
+                    "accessionNumber": [amend_acc],
+                    "filingDate": ["2026-11-17"],
+                    "acceptanceDateTime": ["2026-11-17T21:00:00Z"],
+                    "primaryDocument": ["form4_amend.xml"],
+                }
+            }
+        }
+        amend_xml = make_sample_nvda_form4_xml(
+            accession=amend_acc,
+            date="2026-11-17",
+            is_amendment=True,
+            amendment_of="",
+            remarks="Amendment with unresolvable base filing.",
+        )
+
+        mock_session = MagicMock()
+        resp_sub = MagicMock(status_code=200, content=json.dumps(sub_payload).encode())
+        resp_sub.json.return_value = sub_payload
+        resp_xml = MagicMock(status_code=200, text=amend_xml, content=amend_xml.encode())
+        mock_session.get.side_effect = [resp_sub, resp_xml]
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            runner = NvdaCanaryRunner(dsn=dsn, session=mock_session, **make_valid_auth())
+            with pytest.raises(CanaryDataIntegrityError) as exc_info:
+                runner.execute()
+            assert "AMENDMENT_BASE_UNRESOLVED" in str(exc_info.value)
+
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM form4_raw_filings WHERE accession_number = %s;", (amend_acc,))
+                assert cur.fetchone()[0] == 0
+
+    def test_source_content_hash_conflict_triggers_rollback(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+        acc = "0001045810-26-000099"
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url
+                ) VALUES (%s, %s, %s, %s, '2026-11-17', '2026-11-17T21:00:00Z', '<xml>prior</xml>', 'hash_orig_different', 'https://sec.gov');
+            """, (acc, CANARY_CIK, CANARY_TICKER, "NVIDIA CORP"))
+        conn.commit()
+
+        xml_sample = make_sample_nvda_form4_xml(accession=acc, date="2026-11-17")
+        repo = PostgresSmartMoneyRepository(dsn=dsn)
+        with pytest.raises(RuntimeError) as exc_info:
+            repo.save_raw_filing(
+                {
+                    "accession_number": acc,
+                    "cik": CANARY_CIK,
+                    "ticker": CANARY_TICKER,
+                    "company_name": "NVIDIA CORP",
+                    "filing_date": "2026-11-17",
+                    "accepted_datetime": "2026-11-17T21:00:00Z",
+                    "xml_content": xml_sample,
+                    "content_hash": "hash_tampered_new",
+                    "source_url": "https://sec.gov",
+                },
+                conn=conn,
+            )
+        assert "SOURCE_INTEGRITY_CONFLICT" in str(exc_info.value)
+        conn.rollback()
+
+    def test_persisted_amendment_mapping_readable_by_replay_path(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+        base_acc = "0001045810-26-000080"
+        amend_acc = "0001045810-26-000085"
+
+        repo = PostgresSmartMoneyRepository(dsn=dsn)
+
+        # 1. Base filing with 2 transactions: tx_A and tx_B
+        repo.save_raw_filing(
+            {
+                "accession_number": base_acc,
+                "cik": CANARY_CIK,
+                "ticker": CANARY_TICKER,
+                "company_name": "NVIDIA CORP",
+                "filing_date": "2026-11-16",
+                "accepted_datetime": "2026-11-16T21:00:00Z",
+                "xml_content": "<xml></xml>",
+                "content_hash": "base_hash_1",
+                "source_url": "https://sec.gov",
+            },
+            conn=conn,
+        )
+        base_tx_A = {
+            "transaction_id": "tx_A",
+            "accession_number": base_acc,
+            "transaction_date": "2026-11-16",
+            "transaction_code": "S",
+            "shares": 100,
+            "price_per_share": 100.0,
+            "total_value_usd": 10000.0,
+            "reporting_owner_name": "HUANG JEN HSUN",
+            "reporting_owner_role": "Director",
+            "ownership_type": "D",
+        }
+        base_tx_B = {
+            "transaction_id": "tx_B",
+            "accession_number": base_acc,
+            "transaction_date": "2026-11-16",
+            "transaction_code": "S",
+            "shares": 200,
+            "price_per_share": 100.0,
+            "total_value_usd": 20000.0,
+            "reporting_owner_name": "HUANG JEN HSUN",
+            "reporting_owner_role": "Director",
+            "ownership_type": "D",
+        }
+        repo.save_parsed_transactions([base_tx_A, base_tx_B], conn=conn)
+
+        # 2. Amendment correcting tx_B
+        repo.save_raw_filing(
+            {
+                "accession_number": amend_acc,
+                "cik": CANARY_CIK,
+                "ticker": CANARY_TICKER,
+                "company_name": "NVIDIA CORP",
+                "filing_date": "2026-11-17",
+                "accepted_datetime": "2026-11-17T21:00:00Z",
+                "xml_content": "<xml>amend</xml>",
+                "content_hash": "amend_hash_1",
+                "source_url": "https://sec.gov",
+            },
+            conn=conn,
+        )
+        amend_tx_B = {
+            "transaction_id": "tx_B_amended",
+            "accession_number": amend_acc,
+            "transaction_date": "2026-11-16",
+            "transaction_code": "S",
+            "shares": 200,
+            "price_per_share": 120.0,
+            "total_value_usd": 24000.0,
+            "reporting_owner_name": "HUANG JEN HSUN",
+            "reporting_owner_role": "Director",
+            "ownership_type": "D",
+        }
+        repo.save_parsed_transactions([amend_tx_B], conn=conn)
+        repo.save_amendment(
+            amendment_accession=amend_acc,
+            base_accession=base_acc,
+            amendment_number=1,
+            resolution_status="PARTIAL_CORRECTION",
+            conn=conn,
+        )
+        repo.record_amendment_transaction_mappings(
+            base_accession=base_acc,
+            amendment_accession=amend_acc,
+            mappings=[{
+                "base_transaction_id": "tx_B",
+                "amendment_transaction_id": "tx_B_amended",
+                "effect_type": "REPLACE_TRANSACTION",
+                "confidence": 1.0,
+                "rule_matched": "VERIFIED_SOURCE_POSITION_MAPPING",
+            }],
+            conn=conn,
+        )
+
+        # Ledger entries
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO sm_source_availability_ledger (
+                    accession_number, public_availability_at, source, source_reference
+                ) VALUES
+                    (%s, '2026-11-16T21:00:00Z', 'SEC_EDGAR_LIVE_PROD', 'test_base_url'),
+                    (%s, '2026-11-17T21:00:00Z', 'SEC_EDGAR_LIVE_PROD', 'test_amend_url');
+            """, (base_acc, amend_acc))
+        conn.commit()
+
+        # 3. Read back via production replay path: get_bulk_transactions_as_of
+        as_of_before = "2026-11-16T23:59:59Z"
+        res_before = repo.get_bulk_transactions_as_of(
+            as_of_watermark=as_of_before,
+            symbols=["NVDA"],
+            min_date="2026-11-01",
+            conn=conn,
+        )
+        txs_before = res_before.get("NVDA", [])
+        tx_map_before = {t["transaction_id"]: t for t in txs_before}
+        assert "tx_A" in tx_map_before
+        assert "tx_B" in tx_map_before
+        assert float(tx_map_before["tx_B"]["price_per_share"]) == 100.0
+
+        # After amendment: tx_A remains intact, tx_B replaced by tx_B_amended
+        as_of_after = "2026-11-17T23:59:59Z"
+        res_after = repo.get_bulk_transactions_as_of(
+            as_of_watermark=as_of_after,
+            symbols=["NVDA"],
+            min_date="2026-11-01",
+            conn=conn,
+        )
+        txs_after = res_after.get("NVDA", [])
+        tx_map_after = {t["transaction_id"]: t for t in txs_after}
+        assert "tx_A" in tx_map_after
+        assert float(tx_map_after["tx_A"]["price_per_share"]) == 100.0
+        assert "tx_B" not in tx_map_after
+        assert "tx_B_amended" in tx_map_after
+        assert float(tx_map_after["tx_B_amended"]["price_per_share"]) == 120.0
+
+
+class TestNvdaCanaryStalledHttpServerDeadline:
+    """Acceptance: Wall-clock timeout enforcement against an actual stalled HTTP server over real TCP sockets."""
+
+    def test_stalled_http_server_deadline_enforced_over_tcp(self, clean_env, mock_fresh_receipt, disposable_db):
+        conn, dsn = disposable_db
+
+        class StalledHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                # Stall longer than timeout (2.0s vs 0.5s timeout)
+                time.sleep(2.0)
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"delayed payload")
+
+            def log_message(self, format, *args):
+                pass
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), StalledHandler)
+        port = server.server_address[1]
+        server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+
+        class LocalRedirectAdapter(requests.adapters.HTTPAdapter):
+            def send(self, req, **kwargs):
+                parsed = urllib.parse.urlparse(req.url)
+                req.url = urllib.parse.urlunparse(parsed._replace(scheme="http", netloc=f"127.0.0.1:{port}"))
+                return super().send(req, **kwargs)
+
+        session = requests.Session()
+        session.mount("https://", LocalRedirectAdapter())
+
+        t0 = time.time()
+        try:
+            with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+                runner = NvdaCanaryRunner(
+                    dsn=dsn,
+                    session=session,
+                    max_duration_sec=0.5,
+                    **make_valid_auth(),
+                )
+                with pytest.raises(CanaryTimeoutError) as exc_info:
+                    runner.execute()
+                assert "TIMEOUT" in str(exc_info.value).upper() or "DEADLINE" in str(exc_info.value).upper()
+
+                elapsed = time.time() - t0
+                # Must abort near 0.5s, well before the 2.0s server sleep finishes
+                assert elapsed < 1.8
+
+                # Guaranteed transactional rollback: 0 records
+                with conn.cursor() as cur:
+                    cur.execute("SELECT count(*) FROM form4_raw_filings;")
+                    assert cur.fetchone()[0] == 0
+                    cur.execute("""
+                        SELECT count(*) FROM pg_locks
+                        WHERE locktype = 'advisory'
+                          AND classid = %s
+                          AND objid = %s;
+                    """, (LOCK_SEC_EGRESS_OWNER_CLASSID, LOCK_SEC_EGRESS_OWNER_OBJID))
+                    assert cur.fetchone()[0] == 0
+
+                assert os.environ.get("ARX_SEC_EGRESS_ROLE") == "STANDBY"
+                assert os.environ.get("ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED") == "false"
+        finally:
+            server.shutdown()
+            server.server_close()
 

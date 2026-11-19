@@ -163,11 +163,26 @@ Prior to any operational execution, the following runbook must be followed in st
     - `hosted_qualification`: `QUALIFIED`
     - `deployment_status`: `NOT_DEPLOYED` (or deployed release commit SHA)
     - `operational_authorization`: `BLOCKED (HOLD_SEC_001 active; live wire requests barred)`
-- **Transmission Ceilings:**
-  - Maximum rate: 5.0 requests/sec (token bucket).
-  - Maximum requests: 4 total HTTPS requests (satisfies ≤40 requests/cycle and ≤4 requests/issuer).
-  - Maximum unseen XML documents: 3 documents. If the SEC catalog advertises >3 unseen Form 4 accessions, execution aborts fail-closed (`CanaryBudgetExceededError`).
-  - Wall-clock timeout: 30.0 seconds ceiling.
+- **Transmission Ceilings (Non-Overridable Constructor & Runtime Invariants):**
+  - Maximum rate: strictly capped at `CANARY_MAX_RPS_CEILING = 5.0` req/s.
+  - Maximum requests: strictly capped at `CANARY_MAX_REQUESTS_CEILING = 4` requests (satisfies ≤40 requests/cycle and ≤4 requests/issuer).
+  - Maximum unseen XML documents: strictly capped at `CANARY_MAX_UNSEEN_DOCS_CEILING = 3` documents.
+  - Wall-clock timeout: strictly capped at `CANARY_MAX_DURATION_SEC_CEILING = 30.0` seconds.
+  - Maximum authorization window: strictly capped at `CANARY_MAX_AUTH_WINDOW_SEC = 900.0`s (15 minutes).
+  - Fail-closed validation: constructor rejects invalid types (`bool`), non-finite floats (`NaN`, `Inf`), negative/zero values, or values exceeding these hardcoded ceilings with `CanarySecurityError`.
+  - Active authorization checks: `check_authorization_not_expired()` runs before any outbound egress and immediately prior to database commit.
+- **Observation Interval & Cutoff Pre-Filtering (Zero Out-of-Window Downloads):**
+  - Filing candidates are filtered by the exact pinned observation interval (`interval_start <= date <= interval_end`) and public cutoff (`acceptance_datetime <= public_availability_cutoff`) *prior* to counting unseen documents or selecting download targets.
+  - Out-of-window and post-cutoff filings are excluded and never fetched over the network or persisted to the database.
+  - Unconditional newest-filing fallback is eliminated: if no unseen eligible filings exist in the pinned window, the executor aborts fail-closed with `CanaryDataIntegrityError("NO_UNSEEN_ELIGIBLE_FILINGS")`.
+- **Repository Contract Reuse for Amendments & Source Integrity:**
+  - Base accession resolution reuses `repo.resolve_amendment_base(filing_dict_meta, orig_date, owner_ciks, conn)` to strictly verify unique issuer and reporting owner set parity. Arbitrary `ORDER BY filing_date DESC LIMIT 1` heuristic is eliminated; unresolvable lineage aborts fail-closed (`AMENDMENT_BASE_UNRESOLVED`).
+  - Source integrity reuses `repo.save_raw_filing(filing_dict, conn=conn)`: identical content hashes return idempotent no-op; conflicting content hashes trigger `SOURCE_INTEGRITY_CONFLICT` and complete rollback.
+  - Amendment lifecycle reuses `repo.save_amendment(...)` for controlled status transitions and `repo.record_amendment_transaction_mappings(...)` for persisting granular transaction mapping audit events in `sm_audit_events`.
+- **Guaranteed Cleanup Scope & Stalled Server Deadline:**
+  - Dedicated database connection acquisition, advisory lock acquisition, queue checks, and execution are fully enclosed in an outer `try: ... finally:` guaranteed teardown block.
+  - If a queue check fails while the advisory lock is held, or if an interruption occurs immediately post-acquisition, the `finally:` block guarantees rollback, lock release via `pg_advisory_unlock(401007311509093371)`, role restoration to `STANDBY`, and containment revocation.
+  - Socket-level deadline verified over real TCP sockets against a stalled/trickling HTTP server: socket timeout clamps to remaining execution budget, raising `CanaryTimeoutError` after 30s and cleanly rolling back all state without orphan sessions.
 - **Fail-Closed Abort Conditions:**
   - HTTP 429 / SEC rate-limit trigger (`CanaryRateLimitError`).
   - Missing SEC acceptance timestamp (`CanaryDataIntegrityError`).
@@ -203,7 +218,8 @@ Prior to any operational execution, the following runbook must be followed in st
 
 - **Implementation Qualification Verdict: QUALIFIED**
   - Both activation blockers (issuer-bound coverage and amendment-effect classification) are fully implemented and verified.
-  - All 72 evidence integrity tests, 58 smart money tests, and 85 backend regression tests pass cleanly.
+  - Dedicated one-shot NVDA executor qualified with non-overridable ceilings (≤4 requests, ≤5 req/s, ≤3 unseen XML documents, ≤30s duration, ≤15 min auth window), observation window pre-filtering, guaranteed lock/session cleanup, and repository contract reuse.
+  - All 82 canary executor tests, 72 evidence integrity tests, 58 smart money tests, and 85 backend regression tests pass cleanly (100% pass rate, 0 skips, 0 failures).
   - Strict 0-DDL compliance verified.
 - **Hosted Pipeline Qualification Verdict: QUALIFIED & PASSED**
   - Hosted CI pipeline execution on GitHub Actions completed with green checks on head `f1f8b674b4b200cd0afc6f9f48c38ceae7b34208` (Run 44300439047 / Check 134788464194 and Run 44300439039 / Check 134788463404).
