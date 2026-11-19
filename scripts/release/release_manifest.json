@@ -1,33 +1,25 @@
 {
-  "release_candidate_commit": "53d773afb1b28ad1fc4ef76d8bd15b148b9a8ce7",
-  "base_anchor_commit": "8b3a40fc52fc9c54697c27b6c60a92398f01ae7d",
-  "total_files": 3,
+  "release_candidate_commit": "77dd5dc75dd45493c26ef6ce89e45c4b58474128",
+  "base_anchor_commit": "06f1ffdf82ef0dffec057b6acc7159017db57bb3",
+  "total_files": 2,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SEC-ONESHOT-AAPL-CANARY-001",
+  "directive": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001",
   "files": {
-    "analyst_dashboard/smart_money/canary_runner.py": {
-      "operation": "M",
-      "originating_pr_number": 305,
-      "originating_commit": "53d773afb1b28ad1fc4ef76d8bd15b148b9a8ce7",
-      "governing_requirement": "ARX-SEC-ONESHOT-AAPL-CANARY-001: qualify AAPL as single alternative-issuer canary",
-      "sha256": "a23c23de446e809169960ba5d199b4029a995129653756f352b23b28bfae90da",
-      "size_bytes": 85516
-    },
-    "tests/fixtures/sec_edgar/AAPL_0001140361-26-044773.xml": {
-      "operation": "A",
-      "originating_pr_number": 305,
-      "originating_commit": "53d773afb1b28ad1fc4ef76d8bd15b148b9a8ce7",
-      "governing_requirement": "ARX-SEC-ONESHOT-AAPL-CANARY-001: qualify AAPL as single alternative-issuer canary",
-      "sha256": "eadd8fccc8161b484c2727d79e75a1d37b5303a625b9a22b13c36dd8f34e1ce9",
-      "size_bytes": 7375
-    },
     "tests/test_smart_money_nvda_canary_runner.py": {
       "operation": "M",
-      "originating_pr_number": 305,
-      "originating_commit": "53d773afb1b28ad1fc4ef76d8bd15b148b9a8ce7",
-      "governing_requirement": "ARX-SEC-ONESHOT-AAPL-CANARY-001: qualify AAPL as single alternative-issuer canary",
-      "sha256": "8a29ba94812f92335b529c30fbb57ef306c4d73d897d4d1825386852de057a48",
-      "size_bytes": 143221
+      "originating_pr_number": 308,
+      "originating_commit": "77dd5dc75dd45493c26ef6ce89e45c4b58474128",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001: offline AAPL/NVDA isolation and rollback qualification",
+      "sha256": "6caf026967fb119efdb5998c045dfa046073166f7e89549fae963126c14c2e61",
+      "size_bytes": 154189
+    },
+    "docs/reports/SEC_TWO_ISSUER_OFFLINE_QUALIFICATION_2026_11_19.md": {
+      "operation": "A",
+      "originating_pr_number": 308,
+      "originating_commit": "77dd5dc75dd45493c26ef6ce89e45c4b58474128",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001: offline AAPL/NVDA isolation and rollback qualification",
+      "sha256": "49e8c465432fa4543c2890796d3fa8b6bd44c1d754938a6afe2fc57c7e6a866b",
+      "size_bytes": 3988
     }
   },
   "qualification_framework_files": {
@@ -37,8 +29,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "305e93cd9433bc20ccc55665f29559f805e8e945bae7bde919a0bd6c381e3f4a",
-      "size_bytes": 58191,
+      "sha256": "bf54d5de3de5b3aca16b8ac9ff4cdb583591e9284cb42e5fe6a14d901eb08ea1",
+      "size_bytes": 58196,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
