@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "807e6d5746efc67e5504da1e5eced56a1c92052f",
+  "release_candidate_commit": "8529e938880c6e2fd71b5365b81d06b0b4aa338e",
   "base_anchor_commit": "540075c85d34ec421c3da80e9cf7fdcf3e8d048f",
   "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -16,26 +16,26 @@
     "scripts/execute_sequential_canary_pair.py": {
       "operation": "A",
       "originating_pr_number": 309,
-      "originating_commit": "807e6d5746efc67e5504da1e5eced56a1c92052f",
+      "originating_commit": "8529e938880c6e2fd71b5365b81d06b0b4aa338e",
       "governing_requirement": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001: qualified sequential two-issuer canary wrapper",
-      "sha256": "700069fd9d185e72d5e4bf6f8e363d265f3c0c0e75c14d88ea7b28c22dcad324",
-      "size_bytes": 17517
+      "sha256": "512ec688ba55b171b0a75467ada722c993a316b56df754ee2fea35ccfeafd413",
+      "size_bytes": 13041
     },
     "tests/test_smart_money_nvda_canary_runner.py": {
       "operation": "M",
       "originating_pr_number": 309,
-      "originating_commit": "807e6d5746efc67e5504da1e5eced56a1c92052f",
+      "originating_commit": "8529e938880c6e2fd71b5365b81d06b0b4aa338e",
       "governing_requirement": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001: offline sequential wrapper regression and preservation qualification",
-      "sha256": "70df23ac17e96973948a690d355cd6416f83f99a802e08e5d9de296f89cb98fd",
-      "size_bytes": 165789
+      "sha256": "d0a00c1d6c510f49af799de2444fa4dd0912f0a82ac531dfa582d38f042d910a",
+      "size_bytes": 174309
     },
     "docs/reports/SEC_SEQUENTIAL_PAIR_WRAPPER_QUALIFICATION_2026_11_19.md": {
       "operation": "A",
       "originating_pr_number": 309,
-      "originating_commit": "807e6d5746efc67e5504da1e5eced56a1c92052f",
+      "originating_commit": "8529e938880c6e2fd71b5365b81d06b0b4aa338e",
       "governing_requirement": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001: sequential canary pair wrapper qualification specification and evidence report",
-      "sha256": "bcaab31a1fe48515476f83ce88fb6f4691bdd6382104731b7f3a5cfd450d791d",
-      "size_bytes": 6737
+      "sha256": "b4cfbb80ba6897e9bad166f24ae61fa168d82da3d1e446c37aac18ce5f752580",
+      "size_bytes": 4602
     }
   },
   "qualification_framework_files": {
