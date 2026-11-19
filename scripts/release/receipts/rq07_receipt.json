@@ -2,19 +2,19 @@
   "control_id": "RQ-07",
   "name": "Deployment Safety & Secret Isolation",
   "status": "PASS",
-  "start_time": "2026-11-19T08:28:00.325937+00:00",
-  "end_time": "2026-11-19T08:28:00.393854+00:00",
-  "duration_sec": 0.054,
-  "candidate_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
-  "source_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
-  "execution_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
+  "start_time": "2026-11-19T20:01:27.337313+00:00",
+  "end_time": "2026-11-19T20:01:27.421657+00:00",
+  "duration_sec": 0.064,
+  "candidate_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
+  "source_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
+  "execution_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
-    "execution_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
+    "source_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
+    "execution_sha": "6f573206cdf9c5ea702ffaa0af72e0d27d536b51",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -61,5 +61,5 @@
     "secrets_scanned": 5,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "68f55237753945583040541d326ddf32c2e6f548080f9e35563680a170ff9a44"
+  "receipt_digest": "315fc6f575679346f00e097ee93b18b369c23fd0936946e0fdee66d2e51c0a1d"
 }
