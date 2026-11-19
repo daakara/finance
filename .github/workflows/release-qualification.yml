@@ -34,7 +34,7 @@ jobs:
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest pytest-cov httpx pyyaml jsonschema
+          pip install -r requirements.txt pytest pytest-cov httpx pyyaml jsonschema pgserver psycopg2-binary
 
       - name: Set up Node.js 18
         uses: actions/setup-node@v4
@@ -60,6 +60,19 @@ jobs:
       - name: "[RQ-03] Run Backend Regression Suite"
         if: success() || failure()
         run: python scripts/release/rq03_backend_regression.py
+
+      # SEC Evidence Integrity & Canary Executor Suites
+      - name: "[RQ-SEC-EVIDENCE] Run SEC Ingestion Evidence Integrity Suite"
+        if: success() || failure()
+        env:
+          ARX_REQUIRE_LOCAL_POSTGRES_TESTS: "true"
+        run: python -m pytest tests/test_sec_ingestion_evidence_integrity.py -v -rs
+
+      - name: "[RQ-SEC-CANARY] Run NVDA Canary Executor Suite"
+        if: success() || failure()
+        env:
+          ARX_REQUIRE_LOCAL_POSTGRES_TESTS: "true"
+        run: python -m pytest tests/test_smart_money_nvda_canary_runner.py -v -rs
 
       # RQ-04: Frontend Regression & Typecheck
       - name: "[RQ-04] Run Frontend Regression & Typecheck"

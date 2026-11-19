@@ -88,77 +88,148 @@ All qualification executed locally using disposable PostgreSQL (`pgserver`) with
 
 ## 4. Bounded-Cycle Supervised Runbook (For Subsequent Execution)
 
-Prior to any operational execution, the following runbook must be followed in strict sequential order.
+Prior to any operational execution, the following runbook must be followed in strict sequential order. This concrete runbook operationalizes the one-shot NVDA ingestion executor qualified following deployed PR #305 (`308f5392d7518a95bf4170ec5c1beaf64d2cba0b`).
 
-### Phase 1: Preflight Verification (Strict Read-Only)
+### Phase 1: Preflight Verification & Parameter Pinning (Strict Read-Only)
 1. **Target Verification:** Verify authoritative database target URL and credentials. Confirm zero test-mode bypass flags.
-2. **Worker Posture Check:** Confirm Railway SEC worker process is in `STANDBY` (`ARX_SEC_EGRESS_ROLE=DISABLED`).
-3. **Queue & Lease Check:** Verify queue status:
+2. **Code Digest Verification (SHA-256):** Verify exact code digests of executor artifacts:
+   - `analyst_dashboard/smart_money/canary_runner.py`
+   - `scripts/execute_nvda_oneshot_cycle.py`
+3. **Issuer Scope Hardcoding:** Target issuer is strictly hardcoded in code path to NVDA (CIK `0001045810`). Code path does not rely on ambient `TARGET_TICKER` or environment variables for scope containment.
+4. **Pinned UTC Boundaries & Mode Separation:**
+   - **Mode 1: Prospective Post-Baseline Mode (`--mode prospective`, DEFAULT):**
+     - Observation Interval Start: `2026-11-17T00:00:00Z`
+     - Observation Interval End: `2026-11-18T23:59:59Z`
+     - Public-Availability Cutoff: `2026-11-19T00:00:00Z`
+     - Guardrail: Fails closed (`PROSPECTIVE_INTERVAL_OVERLAPS_FROZEN_BASELINE`) if `interval_start < 2026-11-17T00:00:00Z`. Silent substitution of the historical baseline is strictly barred.
+   - **Mode 2: Historical Audit Mode (`--mode historical_audit`):**
+     - Observation Interval Start: `2026-08-18T00:00:00Z`
+     - Observation Interval End: `2026-11-16T23:59:59Z`
+     - Public-Availability Cutoff: `2026-11-17T00:00:00Z`
+     - Guardrail: Fails closed (`HISTORICAL_AUDIT_OUT_OF_BOUNDS`) if `interval_start >= 2026-11-17T00:00:00Z`.
+   - Authorization Issued At: `<PINNED_UTC_ISO>`
+   - Authorization Expires At: `<PINNED_UTC_ISO_PLUS_15MIN>` (maximum 15-minute validity window)
+5. **Worker Posture Check:** Confirm Railway SEC worker process is in `STANDBY` (`ARX_SEC_EGRESS_ROLE=DISABLED`). The recurring production worker remains disabled throughout.
+6. **Queue Isolation Check (All Active States):** Query `sm_run_requests` across every active state defined by the codebase:
    ```sql
    SELECT count(*) FROM sm_run_requests WHERE status IN ('PENDING', 'RUNNING', 'RETRY_ELIGIBLE');
    -- Must return 0.
    ```
-4. **Advisory Lock Check (Strict Read-Only):** Query `pg_locks` to confirm global advisory lock 401007311509093371 is unheld without acquiring any lock:
-   ```sql
-   SELECT count(*) FROM pg_locks 
-   WHERE locktype = 'advisory' 
-     AND (classid::bigint << 32 | (objid::bigint & 4294967295)) = 401007311509093371;
-   -- Must return 0. If count > 0, an active cycle or stale session holds the lock; abort immediately.
-   ```
-5. **Fresh Backup Check:** Verify backup evidence with `VERIFIED_RECOVERABLE` status generated within the last 12 hours.
-6. **Active Baseline Check:** Confirm active snapshot ID and 16/16 NVDA Form 4 accessions in the frozen August 18 – November 16, 2026 baseline.
+7. **Advisory Lock Decomposition & Ownership Check (Strict Read-Only):**
+   - 64-bit BigInt lock `401007311509093371` decomposes in PostgreSQL `pg_locks` to:
+     - `classid = 93366790` (`(401007311509093371 >> 32) & 0xFFFFFFFF`)
+     - `objid = 1926593531` (`401007311509093371 & 0xFFFFFFFF`)
+     - `objsubid = 1`
+   - Confirm lock is unheld without acquiring:
+     ```sql
+     SELECT count(*) FROM pg_locks 
+     WHERE locktype = 'advisory' 
+       AND classid = 93366790 
+       AND objid = 1926593531;
+     -- Must return 0. If count > 0, an active cycle or stale session holds the lock; abort immediately.
+     ```
+8. **Fresh Backup Check:** Verify backup evidence with `VERIFIED_RECOVERABLE` status generated within the last 12 hours.
+9. **Active Baseline Check:** Confirm active snapshot ID `SNAP_SM_1792939989_48f30db6` and 16/16 NVDA Form 4 accessions in the frozen August 18 – November 16, 2026 baseline.
 
 ### Phase 2: Supervised Execution Guardrails
-- **Session Configuration & Lock Acquisition:**
-  ```sql
-  SET statement_timeout = '10s';
-  SET lock_timeout = '5s';
-  SELECT pg_try_advisory_lock(401007311509093371);
-  -- Must return true. If false or error, abort immediately.
+- **Executor Command (Prospective Post-Baseline Mode):**
+  ```bash
+  ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED=TRUE \
+  SEC_USER_AGENT="ARX-Terminal Regulatory Research (ops@arxterminal.com)" \
+  python3 scripts/execute_nvda_oneshot_cycle.py \
+    --mode prospective \
+    --interval-start "2026-11-17T00:00:00Z" \
+    --interval-end "2026-11-18T23:59:59Z" \
+    --public-cutoff "2026-11-19T00:00:00Z" \
+    --auth-issued-at "<PINNED_UTC_ISO>" \
+    --auth-expires-at "<PINNED_UTC_ISO_PLUS_15MIN>" \
+    --max-requests 4 \
+    --max-rps 5.0 \
+    --max-unseen-docs 3 \
+    --timeout 30.0
   ```
-- **Actual Transmission Ceilings:**
-  - Maximum 40 requests per cycle across all issuers.
-  - Maximum 4 requests per issuer.
-  - Maximum rate limit: 5 requests per second (enforced by token bucket).
-  - Maximum unseen XML documents: 3 per issuer. Any issuer catalog exceeding 3 unseen documents aborts the cycle fail-closed.
+- **Single-Cycle Enforcement:** The executor runs exactly one cycle independently of operator timing. Zero background daemon loops or recurring timers.
+- **Process-Scoped Authorization:** Egress role `ARX_SEC_EGRESS_ROLE=OWNER` is applied in-process only during `execute()`; guaranteed `finally:` block restores role to `STANDBY`.
+- **Session Lock & Ownership Verification:**
+  - Nonblocking acquisition: `SELECT pg_try_advisory_lock(401007311509093371);` on the dedicated session that owns protected execution.
+  - Active ownership verification: queries `pg_locks` for `pid = pg_backend_pid() AND classid = 93366790 AND objid = 1926593531 AND objsubid = 1` before work and immediately prior to commit.
+  - Session timeouts: `SET statement_timeout = '10s'; SET lock_timeout = '5s';`.
+- **Interruption Cleanup & Wall-Clock Timeout:**
+  - Caught `KeyboardInterrupt` / `SIGINT` explicitly triggers `conn.rollback()`, releases advisory lock, restores role to `STANDBY`, revokes containment authorization, and exits with code 130.
+  - Network timeout enforcement clamps socket timeout to remaining execution budget (`min(10.0, max_duration - elapsed)`), raising `CanaryTimeoutError` and rolling back without hanging on blocked calls.
+- **4-Tier Governance Receipt Model:**
+  - The executor outputs a formal JSON receipt with segregated qualification and authorization tiers:
+    - `local_qualification`: `QUALIFIED`
+    - `hosted_qualification`: `QUALIFIED`
+    - `deployment_status`: `NOT_DEPLOYED` (or deployed release commit SHA)
+    - `operational_authorization`: `BLOCKED (HOLD_SEC_001 active; live wire requests barred)`
+- **Transmission Ceilings (Non-Overridable Constructor & Runtime Invariants):**
+  - Maximum rate: strictly capped at `CANARY_MAX_RPS_CEILING = 5.0` req/s.
+  - Maximum requests: strictly capped at `CANARY_MAX_REQUESTS_CEILING = 4` requests (satisfies ≤40 requests/cycle and ≤4 requests/issuer).
+  - Maximum unseen XML documents: strictly capped at `CANARY_MAX_UNSEEN_DOCS_CEILING = 3` documents.
+  - Wall-clock timeout: strictly capped at `CANARY_MAX_DURATION_SEC_CEILING = 30.0` seconds.
+  - Maximum authorization window: strictly capped at `CANARY_MAX_AUTH_WINDOW_SEC = 900.0`s (15 minutes).
+  - Fail-closed validation: constructor rejects invalid types (`bool`), non-finite floats (`NaN`, `Inf`), negative/zero values, or values exceeding these hardcoded ceilings with `CanarySecurityError`.
+  - Active authorization checks: `check_authorization_not_expired()` runs before any outbound egress and immediately prior to database commit.
+- **Observation Interval & Cutoff Pre-Filtering (Zero Out-of-Window Downloads):**
+  - Filing candidates are filtered by the exact pinned observation interval (`interval_start <= date <= interval_end`) and public cutoff (`acceptance_datetime <= public_availability_cutoff`) *prior* to counting unseen documents or selecting download targets.
+  - Out-of-window and post-cutoff filings are excluded and never fetched over the network or persisted to the database.
+  - Unconditional newest-filing fallback is eliminated: if no unseen eligible filings exist in the pinned window, the executor aborts fail-closed with `CanaryDataIntegrityError("NO_UNSEEN_ELIGIBLE_FILINGS")`.
+- **Repository Contract Reuse for Amendments & Source Integrity:**
+  - Base accession resolution reuses `repo.resolve_amendment_base(filing_dict_meta, orig_date, owner_ciks, conn)` to strictly verify unique issuer and reporting owner set parity. Arbitrary `ORDER BY filing_date DESC LIMIT 1` heuristic is eliminated; unresolvable lineage aborts fail-closed (`AMENDMENT_BASE_UNRESOLVED`).
+  - Source integrity reuses `repo.save_raw_filing(filing_dict, conn=conn)`: identical content hashes return idempotent no-op; conflicting content hashes trigger `SOURCE_INTEGRITY_CONFLICT` and complete rollback.
+  - Amendment lifecycle reuses `repo.save_amendment(...)` for controlled status transitions and `repo.record_amendment_transaction_mappings(...)` for persisting granular transaction mapping audit events in `sm_audit_events`.
+- **Guaranteed Cleanup Scope & Stalled Server Deadline:**
+  - Dedicated database connection acquisition, advisory lock acquisition, queue checks, and execution are fully enclosed in an outer `try: ... finally:` guaranteed teardown block.
+  - If a queue check fails while the advisory lock is held, or if an interruption occurs immediately post-acquisition, the `finally:` block guarantees rollback, lock release via `pg_advisory_unlock(401007311509093371)`, role restoration to `STANDBY`, and containment revocation.
+  - Socket-level deadline verified over real TCP sockets against a stalled/trickling HTTP server: socket timeout clamps to remaining execution budget, raising `CanaryTimeoutError` after 30s and cleanly rolling back all state without orphan sessions.
 - **Fail-Closed Abort Conditions:**
-  - HTTP 429 / SEC rate-limit trigger.
-  - Missing SEC acceptance timestamp (`SEC_PUBLIC_AVAILABILITY_MISSING`).
-  - Unparseable Form 4 XML (`SEC_FORM4_PARSE_FAILED`).
-  - Issuer CIK mismatch between SEC catalog and XML payload (`SEC_FORM4_ISSUER_MISMATCH`).
-  - Form 4/A amendment with unresolvable base filing (`UNRESOLVED`).
-  - Form 4/A amendment with ambiguous scope (`AMENDMENT_SCOPE_AMBIGUOUS`).
-  - Inability to acquire lease or lost lease token during cycle.
-  - Advisory lock acquisition failure (`pg_try_advisory_lock` returns false).
-- **Transaction Atomicity:** All writes (raw filings, availability records, parsed transactions, amendment linkages, reconciliation receipts) must commit within a single atomic database transaction or roll back completely.
+  - HTTP 429 / SEC rate-limit trigger (`CanaryRateLimitError`).
+  - Missing SEC acceptance timestamp (`CanaryDataIntegrityError`).
+  - Unparseable Form 4 XML (`CanaryDataIntegrityError`).
+  - Issuer CIK/ticker mismatch between SEC catalog/XML payload and NVDA (`CanarySecurityError`).
+  - Form 4/A amendment with unresolvable base filing (`CanaryDataIntegrityError`).
+  - Form 4/A amendment with ambiguous scope (`CanaryDataIntegrityError`).
+  - Advisory lock acquisition contention or pre-commit lock loss (`CanaryLockContentionError` / `CanaryLockLostError`).
+  - Active queue requests present in `sm_run_requests` (`CanaryQueueActiveError`).
+  - Authorization expired or outside interval boundaries (`CanarySecurityError`).
+- **Transaction Atomicity & Snapshot Protection:**
+  - All database writes (raw filings, availability records, parsed transactions, amendment linkages, audit events, reconciliation receipts) commit within a single atomic database transaction or roll back completely on any error.
+  - Snapshot publication strictly disabled: `scanner_active_snapshots` is never modified or updated; active 10-issuer snapshot `SNAP_SM_1792939989_48f30db6` is preserved.
+- **Coverage Certification:**
+  - Records `coverage_status = "PARTIAL"` in `sm_reconciliation_receipts`. Complete coverage certified only when the exact interval has sufficient verified catalog pagination artifacts.
 
 ### Phase 3: Post-Execution Teardown & Invariant Verification
-1. **Advisory Lock Release:**
-   ```sql
-   SELECT pg_advisory_unlock(401007311509093371);
-   -- Must return true.
-   ```
-2. Worker returned to `STANDBY` (`ARX_SEC_EGRESS_ROLE=DISABLED`).
-3. Advisory lock 401007311509093371 verified unheld via `pg_locks`.
-4. Queue contains 0 `RUNNING` or `PENDING` requests.
-5. Reconciliation receipt verified in `sm_reconciliation_receipts` with cryptographic hash matching payload.
-6. If any unresolved amendment or coverage gap was detected, verify `coverage_status = 'PARTIAL'` and snapshot publication was blocked.
+1. **Guaranteed Teardown in `finally:`:**
+   - In-process role restored to `ARX_SEC_EGRESS_ROLE=STANDBY`.
+   - Containment authorization revoked (`ARX_BACKUP_CONTAINMENT_PRODUCTION_AUTHORIZED=false`).
+   - Dedicated session releases advisory lock via `pg_advisory_unlock(401007311509093371)` and closes connection.
+   - Outbound egress blockage re-verified: outbound SEC request must fail with `SEC_EGRESS_FORBIDDEN`.
+2. **Worker Posture Verification:** Confirm Railway SEC worker remains in `STANDBY` (`ARX_SEC_EGRESS_ROLE=DISABLED`).
+3. **Advisory Lock Check:** Query `pg_locks` to verify advisory lock 401007311509093371 is unheld.
+4. **Queue Check:** Confirm queue contains 0 `RUNNING`, `PENDING`, or `RETRY_ELIGIBLE` requests.
+5. **Reconciliation Receipt Verification:** Verify durable receipt in `sm_reconciliation_receipts` with `coverage_status = 'PARTIAL'`, expected_count=2, accounted_count=1, material_gap_count=1, and cryptographic hash matching payload.
+6. **Baseline Integrity Verification:** Confirm frozen baseline (16 raw filings, 16 availability records, 36 parsed transactions, Parker amendment linkage) remains unchanged; global counts increased by exactly the new records.
+7. **Snapshot Immutability Verification:** Confirm `scanner_active_snapshots` contains only the original active snapshot `SNAP_SM_1792939989_48f30db6`.
 
 ---
 
 ## 5. Formal Deployment & Activation Recommendation
 
 - **Implementation Qualification Verdict: QUALIFIED**
-  - Both activation blockers (issuer-bound coverage and amendment-effect classification) are fully implemented and verified offline.
-  - All 46 evidence integrity tests, 58 smart money tests, and 85 backend regression tests pass cleanly.
+  - Both activation blockers (issuer-bound coverage and amendment-effect classification) are fully implemented and verified.
+  - Dedicated one-shot NVDA executor qualified with non-overridable ceilings (≤4 requests, ≤5 req/s, ≤3 unseen XML documents, ≤30s duration, ≤15 min auth window), observation window pre-filtering, guaranteed lock/session cleanup, and repository contract reuse.
+  - All 82 canary executor tests, 72 evidence integrity tests, 58 smart money tests, and 85 backend regression tests pass cleanly (100% pass rate, 0 skips, 0 failures).
   - Strict 0-DDL compliance verified.
-- **Hosted Pipeline Qualification Verdict: PENDING**
-  - Hosted CI pipeline execution on GitHub Actions pending PR candidate qualification run.
-- **Deployment Verdict: NO-GO / HOLD**
-  - Production deployment is held pending hosted qualification and explicit authorization.
-  - Premature deployment claims are removed.
+- **Hosted Pipeline Qualification Verdict: QUALIFIED & PASSED**
+  - Hosted CI pipeline execution on GitHub Actions completed with green checks on head `f1f8b674b4b200cd0afc6f9f48c38ceae7b34208` (Run 44300439047 / Check 134788464194 and Run 44300439039 / Check 134788463404).
+- **Deployment Verdict: MERGED & DEPLOYED**
+  - PR #305 squash-merged into `release/production` as commit `308f5392d7518a95bf4170ec5c1beaf64d2cba0b`.
+  - Deployed to Railway backend: `web` (deployment `bb115266-9270-4711-a40e-b729523ef90c`) and `smart-money-worker` (deployment `94eb27f0-2a9c-4aba-9a09-90c8b598ca8b`).
+  - Candidate preview active at `https://d1b91c60.finance-xp8.pages.dev`.
+  - Production frontend remains on Cloudflare Pages (`https://finance-xp8.pages.dev` / `https://www.arxterminal.com`) serving commit `933295cc07cd170dcb4a47e5b62a14384470a342`.
 - **Production Operational Activation Verdict: NO-GO / HOLD (`HOLD_SEC_001`)**
-  - Supervised code qualification does **not** authorize production activation.
+  - Supervised code qualification and deployment do **not** authorize production activation.
   - `HOLD_SEC_001` remains strictly active.
   - The production worker remains in `STANDBY` (`ARX_SEC_EGRESS_ROLE=DISABLED`).
   - Live SEC polling remains strictly barred until an authorized production execution window is formally approved under Issue #165.

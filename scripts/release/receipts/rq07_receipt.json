@@ -2,19 +2,19 @@
   "control_id": "RQ-07",
   "name": "Deployment Safety & Secret Isolation",
   "status": "PASS",
-  "start_time": "2026-11-18T11:57:50.440699+00:00",
-  "end_time": "2026-11-18T11:57:50.520689+00:00",
-  "duration_sec": 0.06,
-  "candidate_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-  "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-  "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+  "start_time": "2026-11-19T08:28:00.325937+00:00",
+  "end_time": "2026-11-19T08:28:00.393854+00:00",
+  "duration_sec": 0.054,
+  "candidate_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
+  "source_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
+  "execution_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
-    "execution_sha": "7674061672c7a276796746df5d3156a66ef02f1d",
+    "source_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
+    "execution_sha": "524e96172b884d7c3b48025b4e475c023a5a9a7e",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -50,7 +50,7 @@
     ".github/workflows/release-qualification.yml"
   ],
   "evidence_digests": {
-    ".github/workflows/release-qualification.yml": "d6e2ae03c4f25e297bb2743a834945b9388b82143153ee3696d13c7934040188"
+    ".github/workflows/release-qualification.yml": "1ee5cb46b349c2b8cd7fd209cc969c8f7d5d949ba86c5fc6e4c178c8b7722d4e"
   },
   "errors": [],
   "metadata": {
@@ -61,5 +61,5 @@
     "secrets_scanned": 5,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "9132d044c13c1b1e0d460e54453b0f54ac9b8eec832c83e5bc81651922e00d16"
+  "receipt_digest": "68f55237753945583040541d326ddf32c2e6f548080f9e35563680a170ff9a44"
 }
