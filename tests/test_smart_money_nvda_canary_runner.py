@@ -73,6 +73,11 @@ from analyst_dashboard.smart_money.storage.postgres_coordination import (
     LOCK_SEC_EGRESS_OWNER_OBJID,
 )
 from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
+from analyst_dashboard.smart_money.storage.postgres_preservation import (
+    compute_database_preservation_fingerprint,
+    diff_preservation_fingerprints,
+)
+from scripts.execute_sequential_canary_pair import execute_sequential_pair
 
 
 @pytest.fixture
@@ -3252,4 +3257,220 @@ class TestTwoIssuerSequentialQualification:
         with psycopg2.connect(dsn) as other:
             assert acquire_sec_owner_lock(other)
             assert release_sec_owner_lock(other)
+
+
+class TestSequentialPairWrapperRegression:
+    """Offline qualification of the actual live sequential wrapper scripts/execute_sequential_canary_pair.py.
+
+    Covers:
+    - Dry-run mode: zero SEC calls, zero persistent writes, all preflight gates PASS.
+    - No-work scenario: AAPL duplicate + NVDA empty catalog -> both normalize to NO_ELIGIBLE_WORK,
+      2 requests, 0 writes, 100% content fingerprint match.
+    - Aggregate budget exhaustion: exceeding aggregate 60.0s deadline aborts before NVDA without retry.
+    - Second-issuer failure after first-issuer commit: AAPL commits atomically, NVDA rolls back cleanly;
+      pair reports failure without claiming pair-wide rollback.
+    - Cross-issuer rejection: halts without writes.
+    - Interruption (KeyboardInterrupt / SIGINT): clean rollback and lock release.
+    - Content fingerprint sensitivity: modifying a field (e.g. price) without changing row count
+      is detected by diff_preservation_fingerprints.
+    - Isolated recovery assurance: trigger behavior (abort_immutable_record) verified in disposable DB.
+    """
+
+    def test_wrapper_dry_run_zero_sec_calls_zero_writes(
+        self, clean_env, mock_fresh_receipt, disposable_db
+    ):
+        conn, dsn = disposable_db
+        TestTwoIssuerSequentialQualification._seed_snapshot(conn)
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            receipt = execute_sequential_pair(dsn, dry_run=True)
+        assert receipt["status"] == "SUCCESS"
+        assert receipt["mode"] == "DRY_RUN"
+        assert receipt["aggregate_requests_made"] == 0
+        assert len(receipt["issuer_results"]) == 2
+        for r in receipt["issuer_results"]:
+            assert r["verdict"] == "SUCCESS"
+            assert r["preflight_verdict"] == "PASSED"
+            assert r["requests_made"] == 0
+            assert r["transactions_persisted"] == 0
+        assert receipt["preservation_fingerprints"]["diff"]["matched"] is True
+        TestTwoIssuerSequentialQualification._assert_safe(conn)
+
+    def test_wrapper_no_work_both_normalize_to_no_eligible_work(
+        self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch
+    ):
+        conn, dsn = disposable_db
+        # Seed AAPL real fixture
+        TestAaplAlternativeIssuerCanaryQualification().test_aapl_atomic_persistence_disposable_postgres(
+            clean_env, mock_fresh_receipt, disposable_db, monkeypatch
+        )
+        TestTwoIssuerSequentialQualification._seed_snapshot(conn)
+        sessions = {
+            "AAPL": TestTwoIssuerSequentialQualification._session("AAPL", PINNED_AAPL_ACCESSION),
+            "NVDA": TestTwoIssuerSequentialQualification._session("NVDA"),
+        }
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            receipt = execute_sequential_pair(dsn, dry_run=False, sessions=sessions)
+        assert receipt["status"] == "SUCCESS"
+        assert receipt["aggregate_requests_made"] == 2
+        assert [r["verdict"] for r in receipt["issuer_results"]] == ["NO_ELIGIBLE_WORK", "NO_ELIGIBLE_WORK"]
+        assert [r["requests_made"] for r in receipt["issuer_results"]] == [1, 1]
+        assert receipt["preservation_fingerprints"]["diff"]["matched"] is True
+        TestTwoIssuerSequentialQualification._assert_safe(conn)
+
+    def test_wrapper_aggregate_budget_exhaustion_stops_before_second_issuer(
+        self, clean_env, mock_fresh_receipt, disposable_db
+    ):
+        conn, dsn = disposable_db
+        TestTwoIssuerSequentialQualification._seed_snapshot(conn)
+        sessions = {
+            "AAPL": TestTwoIssuerSequentialQualification._session("AAPL"),
+            "NVDA": TestTwoIssuerSequentialQualification._session("NVDA"),
+        }
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            with pytest.raises(CanaryBudgetExceededError, match="aggregate budget"):
+                execute_sequential_pair(
+                    dsn,
+                    dry_run=False,
+                    sessions=sessions,
+                    max_duration_sec=0.5,  # Too short for 1.0s gap
+                )
+        assert sessions["NVDA"].get.call_count == 0, "NVDA must not execute when aggregate budget is exhausted"
+        TestTwoIssuerSequentialQualification._assert_safe(conn)
+
+    def test_wrapper_second_issuer_failure_preserves_first_issuer_commit(
+        self, clean_env, mock_fresh_receipt, disposable_db
+    ):
+        conn, dsn = disposable_db
+        TestTwoIssuerSequentialQualification._seed_snapshot(conn)
+        nvda_acc = "0001045810-26-000099"
+        # AAPL succeeds with 3 transactions; NVDA catalog fails (HTTP 500)
+        aapl_session = TestTwoIssuerSequentialQualification._session(
+            "AAPL", PINNED_AAPL_ACCESSION, load_aapl_form4_xml()
+        )
+        nvda_session = MagicMock()
+        nvda_session.get.return_value = MagicMock(status_code=500, text="Internal Server Error")
+        sessions = {
+            "AAPL": aapl_session,
+            "NVDA": nvda_session,
+        }
+
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            with pytest.raises(RuntimeError, match="HTTP 500"):
+                execute_sequential_pair(dsn, dry_run=False, sessions=sessions)
+
+        # Verification of atomic separation:
+        # AAPL committed in its own transaction and is PERSISTED in the database
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM form4_raw_filings WHERE ticker = 'AAPL';")
+            assert cur.fetchone()[0] == 1
+            cur.execute(
+                "SELECT count(*) FROM form4_parsed_transactions WHERE accession_number = %s;",
+                (PINNED_AAPL_ACCESSION,),
+            )
+            assert cur.fetchone()[0] == 3
+            # NVDA failed and wrote NOTHING
+            cur.execute("SELECT count(*) FROM form4_raw_filings WHERE ticker = 'NVDA';")
+            assert cur.fetchone()[0] == 0
+            cur.execute(
+                "SELECT count(*) FROM form4_parsed_transactions WHERE accession_number = %s;",
+                (nvda_acc,),
+            )
+            assert cur.fetchone()[0] == 0
+        conn.rollback()
+        TestTwoIssuerSequentialQualification._assert_safe(conn)
+
+    def test_wrapper_cross_issuer_rejection_halts_without_writes(
+        self, clean_env, mock_fresh_receipt, disposable_db
+    ):
+        conn, dsn = disposable_db
+        TestTwoIssuerSequentialQualification._seed_snapshot(conn)
+        sessions = {
+            "AAPL": TestTwoIssuerSequentialQualification._session(
+                "AAPL", PINNED_AAPL_ACCESSION, make_sample_nvda_form4_xml()
+            ),
+            "NVDA": TestTwoIssuerSequentialQualification._session("NVDA"),
+        }
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            with pytest.raises(CanarySecurityError, match="ISSUER_MISMATCH"):
+                execute_sequential_pair(dsn, dry_run=False, sessions=sessions)
+        assert sessions["NVDA"].get.call_count == 0
+        TestTwoIssuerSequentialQualification._assert_safe(conn)
+
+    def test_wrapper_interruption_sigint_rolls_back_and_cleans_up(
+        self, clean_env, mock_fresh_receipt, disposable_db
+    ):
+        conn, dsn = disposable_db
+        TestTwoIssuerSequentialQualification._seed_snapshot(conn)
+        with patch("analyst_dashboard.smart_money.storage.backup.containment_gate.BackupFreshnessAuthority.evaluate_freshness", return_value=mock_fresh_receipt):
+            with patch.object(NvdaCanaryRunner, "execute", side_effect=KeyboardInterrupt):
+                with pytest.raises(KeyboardInterrupt):
+                    execute_sequential_pair(dsn, dry_run=False)
+        TestTwoIssuerSequentialQualification._assert_safe(conn)
+
+    def test_preservation_fingerprint_detects_mutation_with_same_row_count(
+        self, clean_env, mock_fresh_receipt, disposable_db, monkeypatch
+    ):
+        conn, dsn = disposable_db
+        TestAaplAlternativeIssuerCanaryQualification().test_aapl_atomic_persistence_disposable_postgres(
+            clean_env, mock_fresh_receipt, disposable_db, monkeypatch
+        )
+        TestTwoIssuerSequentialQualification._seed_snapshot(conn)
+
+        before = compute_database_preservation_fingerprint(conn, scope="TEST_BASELINE")
+        assert before["table_count"] >= 8
+        assert before["tables"]["form4_parsed_transactions"]["row_count"] == 3
+
+        # Mutate a single field without altering row count
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE form4_parsed_transactions 
+                SET price_per_share = 999.99 
+                WHERE accession_number = %s AND transaction_id LIKE '%%:0';
+            """, (PINNED_AAPL_ACCESSION,))
+        conn.commit()
+
+        after = compute_database_preservation_fingerprint(conn, scope="TEST_MUTATED")
+        assert after["tables"]["form4_parsed_transactions"]["row_count"] == 3
+
+        diff = diff_preservation_fingerprints(before, after)
+        assert diff["matched"] is False, "Fingerprint comparison must detect field mutation"
+        assert diff["difference_count"] == 1
+        d = diff["differences"][0]
+        assert d["table"] == "form4_parsed_transactions"
+        assert d["kind"] == "CONTENT_MUTATION_DETECTED"
+        assert d["row_count"] == 3
+        assert d["before_sha"] == before["tables"]["form4_parsed_transactions"]["content_sha256"]
+        assert d["after_sha"] == after["tables"]["form4_parsed_transactions"]["content_sha256"]
+        assert before["overall_fingerprint_sha256"] != after["overall_fingerprint_sha256"]
+
+    def test_recovery_verification_trigger_behavior_in_disposable_db(
+        self, disposable_db
+    ):
+        conn, dsn = disposable_db
+        import psycopg2
+        now_iso = datetime.now(timezone.utc).isoformat()
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO form4_raw_filings (
+                    accession_number, cik, ticker, company_name, filing_date, accepted_datetime,
+                    xml_content, content_hash, source_url
+                ) VALUES (
+                    '0000320193-26-999999', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-18', %s,
+                    '<test/>', 'hash-trigger-test', 'https://sec.gov/test'
+                );
+            """, (now_iso,))
+        conn.commit()
+
+        # Attempt DELETE directly on raw filing - must be blocked by abort_immutable_record trigger
+        with conn.cursor() as cur:
+            with pytest.raises(psycopg2.InternalError, match="abort_immutable_record"):
+                cur.execute("DELETE FROM form4_raw_filings WHERE accession_number = '0000320193-26-999999';")
+        conn.rollback()
+
+        # Verify row remains intact
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM form4_raw_filings WHERE accession_number = '0000320193-26-999999';")
+            assert cur.fetchone()[0] == 1
+        conn.rollback()
+
 
