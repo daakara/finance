@@ -423,3 +423,69 @@ def test_evidence_custody_and_dependency_governance(tmp_path: Path):
 
     blocker = payload["demonstrated_blockers_and_limitations"]["blocker_1_market_data_deficit_in_local_store"]
     assert "attributable, consistent export" in blocker["next_dependency"].lower()
+
+
+def test_custody_manifest_confirms_production_authority(tmp_path: Path):
+    """Verifies that providing an attributable custody manifest confirms production authority and updates disposition."""
+    market_db = tmp_path / "market.db"
+    universe_db = tmp_path / "universe.db"
+    scanner_db = tmp_path / "scanner.db"
+    cand_manifest = tmp_path / "cand.json"
+    prom_manifest = tmp_path / "prom.json"
+    custody_manifest = tmp_path / "custody_manifest.json"
+    out_json = tmp_path / "out.json"
+    out_md = tmp_path / "out.md"
+
+    _init_empty_aux_dbs(universe_db, scanner_db)
+    _init_synthetic_market_db(market_db, [])
+    cand_manifest.write_text(json.dumps({"symbols": ["AAPL"]}))
+    prom_manifest.write_text(json.dumps({"symbols": ["AAPL"]}))
+
+    custody_data = {
+        "acquisition_metadata": {
+            "target_service": "web",
+            "railway_service_id": "56e38249-b78c-4a60-80d7-303ce7451bd8",
+            "railway_deployment_id": "9f28fb4e-c804-4b6a-9a25-1092c496026d",
+            "running_revision": "868d7afcd528006c2323e6b79b5a17f2f20f677c",
+            "volume_mount": "/root",
+            "acquisition_start_utc": "2026-11-20T18:31:12.614167+00:00",
+            "acquisition_end_utc": "2026-11-20T18:31:39.403200+00:00",
+            "identifiers_unchanged": True,
+        },
+        "published_bindings": {
+            "universe_build_id": "UB-ARX-EXPANSION-500-20261108",
+            "membership_hash": "5f60b47d5402c0fc29fa545b244b778ca99a017f47448f47ebdfc257db8881b0",
+            "snapshot_id": "vcp-snap-1794130818-3c0eb357",
+        },
+        "transferred_exports": {},
+    }
+    custody_manifest.write_text(json.dumps(custody_data))
+
+    payload = run_audit(
+        market_db_path=market_db,
+        universe_db_path=universe_db,
+        scanner_db_path=scanner_db,
+        candidate_manifest_path=cand_manifest,
+        promoted_manifest_path=prom_manifest,
+        cutoff_str="2026-11-20",
+        output_json_path=out_json,
+        output_md_path=out_md,
+        custody_manifest_path=custody_manifest,
+    )
+
+    meta = payload["assessment_metadata"]
+    assert meta["production_authority_status"] == "AUTHORITY_CONFIRMED"
+    assert meta["final_disposition"] == "ASSESSED_AS_OF_PRODUCTION_EXPORT"
+
+    pop = payload["population_reconciliation"]
+    assert "CONFIRMED_PUBLISHED_PRODUCTION_BUILD" in pop["current_production_membership_status"]
+
+    custody = payload["evidence_custody"]["inspected_market_database"]
+    assert custody["source"] == "Attributable Production Store Export (sqlite3_backup with committed WAL frames)"
+    assert custody["acquisition_time_status"] == "CONFIRMED_VIA_CUSTODY_MANIFEST"
+    assert custody["universe_build_binding"] == "UB-ARX-EXPANSION-500-20261108"
+
+    assert out_md.exists()
+    md_text = out_md.read_text()
+    assert "AUTHORITY_CONFIRMED" in md_text
+    assert "ASSESSED_AS_OF_PRODUCTION_EXPORT" in md_text
