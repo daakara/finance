@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "b536191ed981b797ab4a7ed5bb46fbf077eda20b",
+  "release_candidate_commit": "979292356fecc90ab9a514e1406966a81a9ce8e3",
   "base_anchor_commit": "16549be1acb9fdafef3c6b97f9115b674f9f4842",
   "total_files": 11,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -80,10 +80,10 @@
     "tests/test_smart_money_two_issuer_trial.py": {
       "operation": "A",
       "originating_pr_number": 311,
-      "originating_commit": "b536191ed981b797ab4a7ed5bb46fbf077eda20b",
+      "originating_commit": "979292356fecc90ab9a514e1406966a81a9ce8e3",
       "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: two-issuer trial authorization, ceilings, monotonic deadlines, and postgres integration tests",
-      "sha256": "c708217187d502f2b099c97331c001602699aa035f93b7f8ef1631ba0115e5db",
-      "size_bytes": 66967
+      "sha256": "9bb1a30bb105792e3f9e5d6fbb08be221502dcde37a1190879e9af8f435d8978",
+      "size_bytes": 67078
     },
     "tests/test_smart_money_worker_lifecycle_and_fencing.py": {
       "operation": "M",
@@ -192,4 +192,3 @@
     }
   }
 }
-
