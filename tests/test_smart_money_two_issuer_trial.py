@@ -623,12 +623,12 @@ class TestTwoIssuerTrialPostgresIntegration:
         conn.close()
 
     def test_duplicate_delivery_protection_under_lock(self, disposable_db, monkeypatch):
-        """Second scheduled execution on same calendar date is skipped independently of active snapshot."""
+        """Duplicate delivery of the same trial slot is skipped independently of active snapshot."""
         repo = PostgresSmartMoneyRepository(dsn=disposable_db)
 
         # Plant reconciliation receipt with today's date in New York
         from analyst_dashboard.smart_money.freshness_authority import NY_TZ
-        now_ny = datetime.now(NY_TZ)
+        now_ny = datetime(2026, 11, 20, 9, 20, tzinfo=NY_TZ)
         today_iso = now_ny.strftime("%Y-%m-%dT22:30:00Z")
         target_slot = f"{now_ny.strftime('%Y-%m-%d')}:SLOT_1:0915"
         receipt_meta = {
@@ -663,7 +663,9 @@ class TestTwoIssuerTrialPostgresIntegration:
         pipeline.trial_scheduler.start_date = now_ny.date()
         pipeline.trial_scheduler.end_date = now_ny.date() + timedelta(days=5)
 
-        # Check date eligibility under lock without force for today
+        monkeypatch.setattr(pipeline.trial_scheduler, "get_ny_now", lambda now=None: now_ny)
+
+        # Check slot eligibility under lock without force for today
         should_run, reason = pipeline._step3_check_durable_date_eligibility_under_lock(
             force=False, as_of=now_ny.strftime("%Y-%m-%d")
         )
