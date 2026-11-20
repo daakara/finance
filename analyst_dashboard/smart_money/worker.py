@@ -787,7 +787,7 @@ class SmartMoneyIngestionWorker:
                 run_request_id=req_id,
                 lease_token=lease_token,
                 trigger_type="SCHEDULED" if claimed.get("request_type") == "TRIAL_SLOT_FORM4" else "OPERATOR",
-                expected_trial_slot_id=slot_id if claimed.get("request_type") == "TRIAL_SLOT_FORM4" else None,
+                **({"expected_trial_slot_id": slot_id} if claimed.get("request_type") == "TRIAL_SLOT_FORM4" else {}),
             )
             cycle_status = res.get("status")
             if cycle_status in ("SKIPPED_NOT_ELIGIBLE", "SKIPPED_ALREADY_EXECUTED_TODAY"):
