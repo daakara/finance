@@ -47,6 +47,158 @@ def _format_canonical_sec_timestamp(val: Any) -> Optional[str]:
     return None
 
 
+def _map_sec_transaction_type(
+    code: Optional[str],
+    acquired_disposed: Optional[str] = None,
+    is_derivative: bool = False,
+) -> str:
+    """Maps SEC Form 4 transaction codes to authoritative human-readable descriptions without sentiment."""
+    c = (code or "").strip().upper()
+    ad = (acquired_disposed or "").strip().upper()
+    code_map = {
+        "P": "Open Market Purchase (Code P)",
+        "S": "Open Market Sale (Code S)",
+        "A": "Grant / Award (Code A)",
+        "D": "Disposition to Issuer (Code D)",
+        "F": "Tax Withholding / Payment (Code F)",
+        "M": "Option Exercise (Code M)",
+        "G": "Bona Fide Gift (Code G)",
+        "C": "Conversion of Derivative (Code C)",
+        "W": "Inheritance / Will (Code W)",
+        "X": "Option Exercise (Code X)",
+        "J": "Other Acquisition / Disposition (Code J)",
+    }
+    if c in code_map:
+        return code_map[c]
+    if ad == "A":
+        return f"Acquisition (Code {c})" if c else "Acquisition"
+    if ad == "D":
+        return f"Disposition (Code {c})" if c else "Disposition"
+    return f"Regulatory Transaction (Code {c})" if c else "Regulatory Transaction"
+
+
+def _attach_parsed_transactions_to_filings(
+    results: List[Dict[str, Any]], tx_rows: List[Dict[str, Any]]
+) -> None:
+    """
+    Enriches filing dictionaries with individual parsed transaction evidence.
+    Preserves multiple transactions, distinguishes reported zero values from unparsed nulls,
+    and maintains backward compatibility without fabricating unparsed trade data.
+    """
+    txs_by_acc: Dict[str, List[Dict[str, Any]]] = {}
+    for r in tx_rows:
+        acc = str(r.get("accession_number") or "").strip()
+        if not acc:
+            continue
+        c = str(r.get("transaction_code") or "").strip().upper()
+        ad = str(r.get("acquired_disposed") or "").strip().upper()
+        is_deriv = bool(r.get("is_derivative"))
+        is_buy = (c == "P")
+        is_sell = (c == "S")
+        is_gift = (c == "G")
+        is_exercise = c in ("M", "X")
+
+        shares_val = float(r["shares"]) if r.get("shares") is not None else None
+        price_val = float(r["price_per_share"]) if r.get("price_per_share") is not None else None
+        total_val = float(r["total_value_usd"]) if r.get("total_value_usd") is not None else None
+
+        owner_name = str(r.get("reporting_owner_name") or "").strip()
+        officer_title = str(r.get("officer_title") or "").strip() or None
+        owner_role = str(officer_title or r.get("reporting_owner_role") or "Corporate Insider").strip()
+
+        tx_item = {
+            "transaction_id": str(r.get("transaction_id") or ""),
+            "accession_number": acc,
+            "transaction_date": str(r.get("transaction_date") or ""),
+            "transaction_code": c,
+            "transaction_type": _map_sec_transaction_type(c, ad, is_deriv),
+            "shares": shares_val,
+            "price_per_share": price_val,
+            "total_value_usd": total_val,
+            "reporting_owner_name": owner_name,
+            "reporting_owner_role": owner_role,
+            "officer_title": officer_title,
+            "is_director": bool(r.get("is_director")),
+            "is_officer": bool(r.get("is_officer")),
+            "is_ten_percent": bool(r.get("is_ten_percent") or r.get("is_ten_percent_owner")),
+            "ownership_type": str(r.get("ownership_type") or r.get("ownership_nature") or "D").upper(),
+            "is_derivative": is_deriv,
+            "acquired_disposed": ad,
+            "is_buy": is_buy,
+            "is_sell": is_sell,
+            "is_gift": is_gift,
+            "is_exercise": is_exercise,
+            "is_open_market_purchase_evidence": bool(r.get("is_open_market_purchase_evidence")),
+            "is_positive_buying_conviction": bool(r.get("is_positive_buying_conviction")),
+            "security_title": "Derivative Security" if is_deriv else "Common Stock",
+            "public_availability_at": _format_canonical_sec_timestamp(r.get("public_availability_at")),
+        }
+        if acc not in txs_by_acc:
+            txs_by_acc[acc] = []
+        txs_by_acc[acc].append(tx_item)
+
+    for item in results:
+        acc = item.get("accession_number")
+        item_txs = txs_by_acc.get(acc, [])
+        if item_txs:
+            item["has_parsed_transaction"] = True
+            item["transaction_count"] = len(item_txs)
+            item["transactions"] = item_txs
+            primary = item_txs[-1]
+            item["insider_name"] = primary["reporting_owner_name"]
+            item["insider_role"] = primary["reporting_owner_role"]
+            item["role"] = primary["reporting_owner_role"]
+            item["transaction_type"] = (
+                primary["transaction_type"]
+                if len(item_txs) == 1
+                else f"Multiple Transactions ({len(item_txs)})"
+            )
+            item["transaction_code"] = (
+                primary["transaction_code"] if len(item_txs) == 1 else "MIXED"
+            )
+            item["transaction_date"] = primary["transaction_date"]
+            item["shares_traded"] = (
+                primary["shares"]
+                if len(item_txs) == 1
+                else sum(t["shares"] for t in item_txs if t["shares"] is not None)
+            )
+            item["price_per_share"] = (
+                primary["price_per_share"]
+                if len(item_txs) == 1
+                else (
+                    primary["price_per_share"]
+                    if all(t["price_per_share"] == primary["price_per_share"] for t in item_txs)
+                    else None
+                )
+            )
+            item["total_value_usd"] = (
+                primary["total_value_usd"]
+                if len(item_txs) == 1
+                else sum(t["total_value_usd"] for t in item_txs if t["total_value_usd"] is not None)
+            )
+            item["is_buy"] = (
+                all(t["is_buy"] for t in item_txs) if len(item_txs) > 1 else primary["is_buy"]
+            )
+            item["is_sell"] = (
+                all(t["is_sell"] for t in item_txs) if len(item_txs) > 1 else primary["is_sell"]
+            )
+            item["is_gift"] = (
+                all(t["is_gift"] for t in item_txs) if len(item_txs) > 1 else primary["is_gift"]
+            )
+            item["is_exercise"] = (
+                all(t["is_exercise"] for t in item_txs)
+                if len(item_txs) > 1
+                else primary["is_exercise"]
+            )
+            item["is_significant_buy"] = bool(
+                item["is_buy"] and (item["total_value_usd"] or 0) >= 100000
+            )
+        else:
+            item["has_parsed_transaction"] = False
+            item["transaction_count"] = 0
+            item["transactions"] = []
+
+
 DISALLOWED_DOMAINS = {
     "internal", "local", "example.com", "sample.com", "test.com", "placeholder", "invalid"
 }
@@ -403,6 +555,102 @@ class SecEdgarFetcher:
         env = self.get_company_submissions_envelope(symbol)
         return env.get("data")
 
+    def _enrich_filings_with_stored_transactions(
+        self, results: List[Dict[str, Any]], symbol: str, cik: Optional[str] = None
+    ) -> None:
+        """Enriches filing items with parsed transactions from local store without throwing errors."""
+        try:
+            accs = [item["accession_number"] for item in results if item.get("accession_number")]
+            if not accs:
+                return
+            backend = "sqlite"
+            try:
+                from analyst_dashboard.smart_money.storage.config import get_storage_backend
+                backend = get_storage_backend()
+            except Exception:
+                backend = "sqlite"
+
+            if backend == "postgres":
+                from analyst_dashboard.smart_money.storage.postgres_connection import get_connection
+                from psycopg2.extras import RealDictCursor
+                with get_connection() as conn:
+                    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                        cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'form4_parsed_transactions'")
+                        if cur.fetchone():
+                            cur.execute(
+                                """
+                                SELECT
+                                    tx.transaction_id,
+                                    tx.accession_number,
+                                    tx.transaction_date,
+                                    tx.transaction_code,
+                                    tx.shares,
+                                    tx.price_per_share,
+                                    tx.total_value_usd,
+                                    tx.reporting_owner_name,
+                                    tx.reporting_owner_role,
+                                    tx.is_director,
+                                    tx.is_officer,
+                                    tx.is_ten_percent,
+                                    tx.officer_title,
+                                    tx.ownership_type,
+                                    tx.is_derivative,
+                                    tx.signal_type,
+                                    tx.acquired_disposed,
+                                    tx.is_positive_buying_conviction,
+                                    tx.is_open_market_purchase_evidence
+                                FROM form4_parsed_transactions tx
+                                WHERE tx.accession_number = ANY(%s)
+                                ORDER BY tx.transaction_date ASC, tx.transaction_id ASC;
+                                """,
+                                (accs,),
+                            )
+                            tx_rows = [dict(r) for r in cur.fetchall()]
+                            _attach_parsed_transactions_to_filings(results, tx_rows)
+            elif backend == "sqlite":
+                from analyst_dashboard.smart_money.form4_ingestion import connect_smart_money_db
+                conn = connect_smart_money_db()
+                conn.row_factory = sqlite3.Row
+                cur = conn.cursor()
+                try:
+                    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name = 'form4_parsed_transactions'")
+                    if cur.fetchone():
+                        placeholders = ",".join(["?"] * len(accs))
+                        cur.execute(
+                            f"""
+                            SELECT
+                                record_key AS transaction_id,
+                                accession_number,
+                                transaction_date,
+                                transaction_code,
+                                shares,
+                                price_per_share,
+                                total_value_usd,
+                                reporting_owner_name,
+                                is_officer,
+                                officer_title,
+                                is_director,
+                                is_ten_percent_owner AS is_ten_percent,
+                                ownership_nature AS ownership_type,
+                                is_derivative,
+                                signal_type,
+                                acquired_disposed,
+                                is_positive_buying_conviction,
+                                is_open_market_purchase_evidence,
+                                public_availability_at
+                            FROM form4_parsed_transactions
+                            WHERE accession_number IN ({placeholders})
+                            ORDER BY transaction_date ASC, record_key ASC;
+                            """,
+                            tuple(accs),
+                        )
+                        tx_rows = [dict(r) for r in cur.fetchall()]
+                        _attach_parsed_transactions_to_filings(results, tx_rows)
+                finally:
+                    conn.close()
+        except Exception as e:
+            logger.debug(f"Stored transactions enrichment skipped: {e}")
+
     def _get_cached_recent_filings_envelope(
         self, symbol: str, form_types: Optional[List[str]] = None
     ) -> Dict[str, Any]:
@@ -492,6 +740,10 @@ class SecEdgarFetcher:
                             select_parts.append("r.document_type")
                         if "xml_content" in raw_cols:
                             select_parts.append("r.xml_content")
+                        if "content_hash" in raw_cols:
+                            select_parts.append("r.content_hash")
+                        else:
+                            select_parts.append("NULL AS content_hash")
 
                         query = f"SELECT {', '.join(select_parts)} FROM form4_raw_filings r"
                         if has_ledger:
@@ -555,6 +807,8 @@ class SecEdgarFetcher:
                                 "sec_url": r.get("source_url") or f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
                                 "is_amendment": is_amend,
                             }
+                            if r.get("content_hash"):
+                                item["xml_hash"] = str(r["content_hash"])
                             if is_amend:
                                 if base_acc:
                                     item["base_accession"] = base_acc
@@ -562,6 +816,65 @@ class SecEdgarFetcher:
                                     item["amendment_number"] = amend_num
 
                             results.append(item)
+
+                        if results:
+                            accs = [item["accession_number"] for item in results if item.get("accession_number")]
+                            tx_rows = []
+                            if accs:
+                                cur.execute(
+                                    """
+                                    SELECT
+                                        tx.transaction_id,
+                                        tx.accession_number,
+                                        tx.transaction_date,
+                                        tx.transaction_code,
+                                        tx.shares,
+                                        tx.price_per_share,
+                                        tx.total_value_usd,
+                                        tx.reporting_owner_name,
+                                        tx.reporting_owner_role,
+                                        tx.is_director,
+                                        tx.is_officer,
+                                        tx.is_ten_percent,
+                                        tx.officer_title,
+                                        tx.ownership_type,
+                                        tx.is_derivative,
+                                        tx.signal_type,
+                                        tx.acquired_disposed,
+                                        tx.is_positive_buying_conviction,
+                                        tx.is_open_market_purchase_evidence
+                                    FROM form4_parsed_transactions tx
+                                    WHERE tx.accession_number = ANY(%s)
+                                    ORDER BY tx.transaction_date ASC, tx.transaction_id ASC;
+                                    """,
+                                    (accs,),
+                                )
+                                tx_rows = [dict(row_data) for row_data in cur.fetchall()]
+                            _attach_parsed_transactions_to_filings(results, tx_rows)
+
+                        cov_status = "SUPPORTED_SEC_ISSUER" if cik else "UNSUPPORTED_ISSUER"
+                        cert_watermark = None
+                        try:
+                            cur.execute(
+                                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'sm_reconciliation_receipts'"
+                            )
+                            if cur.fetchone():
+                                cur.execute(
+                                    """
+                                    SELECT coverage_status, certified_watermark
+                                    FROM sm_reconciliation_receipts
+                                    WHERE ticker = %s OR issuer_cik = %s
+                                    ORDER BY receipt_version DESC, created_at DESC
+                                    LIMIT 1;
+                                    """,
+                                    (clean_sym, str(cik).zfill(10) if cik else clean_sym),
+                                )
+                                rc = cur.fetchone()
+                                if rc:
+                                    cov_status = rc.get("coverage_status") or cov_status
+                                    cert_watermark = _format_canonical_sec_timestamp(rc.get("certified_watermark"))
+                        except Exception as rc_err:
+                            logger.debug(f"Coverage receipt check skipped: {rc_err}")
 
                         if results:
                             return {
@@ -572,6 +885,10 @@ class SecEdgarFetcher:
                                 "error_detail": None,
                                 "items": results,
                                 "cached": True,
+                                "coverage_status": cov_status,
+                                "certified_watermark": cert_watermark,
+                                "as_of": cert_watermark or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                "is_pipeline_held": True,
                             }
                         else:
                             return {
@@ -582,6 +899,10 @@ class SecEdgarFetcher:
                                 "error_detail": None,
                                 "items": [],
                                 "cached": True,
+                                "coverage_status": cov_status,
+                                "certified_watermark": cert_watermark,
+                                "as_of": cert_watermark or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                "is_pipeline_held": True,
                             }
             except Exception as e:
                 logger.error(f"Failed to query PostgreSQL filings store for {clean_sym}: {e}", exc_info=True)
@@ -624,12 +945,15 @@ class SecEdgarFetcher:
                 has_ledger = False
                 has_amendments = False
                 try:
-                    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('sm_source_availability_ledger', 'sm_amendments')")
+                    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('sm_source_availability_ledger', 'sm_amendments', 'form4_parsed_transactions', 'sm_reconciliation_receipts')")
                     tbls = {r[0] for r in cur.fetchall()}
                     has_ledger = "sm_source_availability_ledger" in tbls
                     has_amendments = "sm_amendments" in tbls
                 except Exception:
-                    pass
+                    tbls = set()
+
+                cur.execute("PRAGMA table_info(form4_raw_filings);")
+                raw_cols = {col_info[1] for col_info in cur.fetchall()}
 
                 select_cols = [
                     "r.accession_number",
@@ -639,6 +963,13 @@ class SecEdgarFetcher:
                     "r.source_url",
                     "r.document_type",
                 ]
+                if "source_content_hash" in raw_cols:
+                    select_cols.append("r.source_content_hash AS content_hash")
+                elif "content_hash" in raw_cols:
+                    select_cols.append("r.content_hash AS content_hash")
+                else:
+                    select_cols.append("NULL AS content_hash")
+
                 if has_ledger:
                     select_cols.append("l.public_availability_at")
                 else:
@@ -667,7 +998,6 @@ class SecEdgarFetcher:
                 query += " ORDER BY r.filing_date DESC, r.acceptance_datetime DESC LIMIT 25"
                 cur.execute(query, tuple(params))
                 rows = cur.fetchall()
-                conn.close()
 
                 for r in rows:
                     base_acc = r["base_accession"]
@@ -705,6 +1035,8 @@ class SecEdgarFetcher:
                         "sec_url": r["source_url"] or f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
                         "is_amendment": is_amend,
                     }
+                    if "content_hash" in r.keys() and r["content_hash"]:
+                        item["xml_hash"] = str(r["content_hash"])
                     if is_amend:
                         if base_acc:
                             item["base_accession"] = base_acc
@@ -712,6 +1044,68 @@ class SecEdgarFetcher:
                             item["amendment_number"] = amend_num
 
                     results.append(item)
+
+                if results and "form4_parsed_transactions" in tbls:
+                    accs = [item["accession_number"] for item in results if item.get("accession_number")]
+                    tx_rows = []
+                    if accs:
+                        try:
+                            placeholders = ",".join(["?"] * len(accs))
+                            cur.execute(
+                                f"""
+                                SELECT
+                                    record_key AS transaction_id,
+                                    accession_number,
+                                    transaction_date,
+                                    transaction_code,
+                                    shares,
+                                    price_per_share,
+                                    total_value_usd,
+                                    reporting_owner_name,
+                                    is_officer,
+                                    officer_title,
+                                    is_director,
+                                    is_ten_percent_owner AS is_ten_percent,
+                                    ownership_nature AS ownership_type,
+                                    is_derivative,
+                                    signal_type,
+                                    acquired_disposed,
+                                    is_positive_buying_conviction,
+                                    is_open_market_purchase_evidence,
+                                    public_availability_at
+                                FROM form4_parsed_transactions
+                                WHERE accession_number IN ({placeholders})
+                                ORDER BY transaction_date ASC, record_key ASC;
+                                """,
+                                tuple(accs),
+                            )
+                            tx_rows = [dict(row_data) for row_data in cur.fetchall()]
+                        except Exception as tx_err:
+                            logger.debug(f"SQLite parsed transactions query skipped: {tx_err}")
+                    _attach_parsed_transactions_to_filings(results, tx_rows)
+
+                cov_status = "SUPPORTED_SEC_ISSUER" if cik else "UNSUPPORTED_ISSUER"
+                cert_watermark = None
+                try:
+                    if "sm_reconciliation_receipts" in tbls:
+                        cur.execute(
+                            """
+                            SELECT coverage_status, certified_watermark
+                            FROM sm_reconciliation_receipts
+                            WHERE ticker = ? OR issuer_cik = ?
+                            ORDER BY receipt_version DESC, created_at DESC
+                            LIMIT 1;
+                            """,
+                            (clean_sym, str(cik).zfill(10) if cik else clean_sym),
+                        )
+                        rc = cur.fetchone()
+                        if rc:
+                            cov_status = rc["coverage_status"] or cov_status
+                            cert_watermark = _format_canonical_sec_timestamp(rc["certified_watermark"])
+                except Exception:
+                    pass
+
+                conn.close()
 
                 if results:
                     return {
@@ -722,6 +1116,10 @@ class SecEdgarFetcher:
                         "error_detail": None,
                         "items": results,
                         "cached": True,
+                        "coverage_status": cov_status,
+                        "certified_watermark": cert_watermark,
+                        "as_of": cert_watermark or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "is_pipeline_held": True,
                     }
                 else:
                     return {
@@ -732,6 +1130,10 @@ class SecEdgarFetcher:
                         "error_detail": None,
                         "items": [],
                         "cached": True,
+                        "coverage_status": cov_status,
+                        "certified_watermark": cert_watermark,
+                        "as_of": cert_watermark or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "is_pipeline_held": True,
                     }
 
             except Exception as e:
@@ -847,6 +1249,9 @@ class SecEdgarFetcher:
                     "sec_url": f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
                 })
 
+        if results:
+            self._enrich_filings_with_stored_transactions(results, symbol, cik)
+
         final_status = "AVAILABLE_WITH_RESULTS" if len(results) > 0 else "AVAILABLE_NO_RESULTS"
         return {
             "status": final_status,
@@ -855,6 +1260,10 @@ class SecEdgarFetcher:
             "reason": None,
             "error_detail": None,
             "items": results,
+            "coverage_status": "SUPPORTED_SEC_ISSUER" if cik else "UNSUPPORTED_ISSUER",
+            "certified_watermark": None,
+            "as_of": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "is_pipeline_held": True,
         }
 
     def get_recent_filings(self, symbol: str, form_types: Optional[List[str]] = None) -> List[Dict[str, Any]]:

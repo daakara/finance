@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Response
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
@@ -159,12 +159,21 @@ def get_sec_filings(symbol: str, response: Response = None):
     coverage = "Supported SEC Issuer" if cik else "Unsupported Issuer / Foreign FPI (Exempt from Form 4)"
     is_supported = cik is not None
 
+    cov_status = envelope.get("coverage_status") or ("SUPPORTED_SEC_ISSUER" if cik else "UNSUPPORTED_ISSUER")
+    cert_watermark = envelope.get("certified_watermark")
+    as_of = envelope.get("as_of") or cert_watermark or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    is_held = envelope.get("is_pipeline_held", True)
+
     return {
         "symbol": valid_sym,
         "status": status,
         "available": is_supported,
         "cik": cik,
         "coverage": coverage,
+        "coverage_status": cov_status,
+        "certified_watermark": cert_watermark,
+        "as_of": as_of,
+        "is_pipeline_held": is_held,
         "status_code": envelope.get("status_code"),
         "reason": envelope.get("reason"),
         "items": items,
