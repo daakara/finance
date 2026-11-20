@@ -173,33 +173,43 @@ export default function CatalystForecastCard({
               <span>📈</span>
               <span>5-Year Revenue & Earnings Simulation</span>
             </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#1b2434] text-[10px] text-slate-400">
-                    <th className="pb-1.5">Year</th>
-                    <th className="pb-1.5">Revenue</th>
-                    <th className="pb-1.5">Net Margin</th>
-                    <th className="pb-1.5">Proj. EPS</th>
-                    <th className="pb-1.5 text-right">Target (P/E)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#162030] text-[11px] tabular-nums font-semibold">
-                  {data.multi_year_forecast.map((f) => (
-                    <tr key={f.year} className="hover:bg-[#131c2c]">
-                      <td className="py-2 text-cyan-400 font-bold">{f.year}</td>
-                      <td className="py-2 text-slate-200">${f.revenue_billions}B</td>
-                      <td className="py-2 text-slate-400">{f.net_margin_pct}%</td>
-                      <td className="py-2 text-emerald-400 font-bold">${f.projected_eps.toFixed(2)}</td>
-                      <td className="py-2 text-right text-purple-300 font-bold">${f.implied_target.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-[10px] text-slate-500 leading-tight">
-              *Macro index simulation tracks aggregated S&P 500 / Nasdaq constituent earnings growth and consensus EPS trajectories.
-            </p>
+            {Array.isArray(data.multi_year_forecast) && data.multi_year_forecast.length > 0 ? (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-[#1b2434] text-[10px] text-slate-400">
+                        <th className="pb-1.5">Year</th>
+                        <th className="pb-1.5">Revenue</th>
+                        <th className="pb-1.5">Net Margin</th>
+                        <th className="pb-1.5">Proj. EPS</th>
+                        <th className="pb-1.5 text-right">Target (P/E)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#162030] text-[11px] tabular-nums font-semibold">
+                      {data.multi_year_forecast.map((f) => (
+                        <tr key={f.year} className="hover:bg-[#131c2c]">
+                          <td className="py-2 text-cyan-400 font-bold">{f.year}</td>
+                          <td className="py-2 text-slate-200">${f.revenue_billions}B</td>
+                          <td className="py-2 text-slate-400">{f.net_margin_pct}%</td>
+                          <td className="py-2 text-emerald-400 font-bold">${f.projected_eps.toFixed(2)}</td>
+                          <td className="py-2 text-right text-purple-300 font-bold">${f.implied_target.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[10px] text-slate-500 leading-tight">
+                  *Macro index simulation tracks aggregated S&P 500 / Nasdaq constituent earnings growth and consensus EPS trajectories.
+                </p>
+              </>
+            ) : (
+              <div className="py-6 px-3 text-center border border-dashed border-[#1b2434] rounded-lg bg-[#0e1420]/60">
+                <p className="text-xs text-slate-400 font-mono leading-relaxed">
+                  Verified multi-year revenue and earnings projections are unavailable.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -331,33 +341,43 @@ export default function CatalystForecastCard({
             <span>📈</span>
             <span>5-Year Revenue & Earnings Simulation</span>
           </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#1b2434] text-[10px] text-slate-400">
-                  <th className="pb-1.5">Year</th>
-                  <th className="pb-1.5">Revenue</th>
-                  <th className="pb-1.5">Net Margin</th>
-                  <th className="pb-1.5">Proj. EPS</th>
-                  <th className="pb-1.5 text-right">Target (P/E)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#162030] text-[11px] tabular-nums font-semibold">
-                {data.multi_year_forecast.map((f) => (
-                  <tr key={f.year} className="hover:bg-[#131c2c]">
-                    <td className="py-2 text-cyan-400 font-bold">{f.year}</td>
-                    <td className="py-2 text-slate-200">${f.revenue_billions}B</td>
-                    <td className="py-2 text-slate-400">{f.net_margin_pct}%</td>
-                    <td className="py-2 text-emerald-400 font-bold">${f.projected_eps.toFixed(2)}</td>
-                    <td className="py-2 text-right text-purple-300 font-bold">${f.implied_target.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-[10px] text-slate-500 leading-tight">
-            {archetypeConfig.disclaimer}
-          </p>
+          {Array.isArray(data.multi_year_forecast) && data.multi_year_forecast.length > 0 ? (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#1b2434] text-[10px] text-slate-400">
+                      <th className="pb-1.5">Year</th>
+                      <th className="pb-1.5">Revenue</th>
+                      <th className="pb-1.5">Net Margin</th>
+                      <th className="pb-1.5">Proj. EPS</th>
+                      <th className="pb-1.5 text-right">Target (P/E)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#162030] text-[11px] tabular-nums font-semibold">
+                    {data.multi_year_forecast.map((f) => (
+                      <tr key={f.year} className="hover:bg-[#131c2c]">
+                        <td className="py-2 text-cyan-400 font-bold">{f.year}</td>
+                        <td className="py-2 text-slate-200">${f.revenue_billions}B</td>
+                        <td className="py-2 text-slate-400">{f.net_margin_pct}%</td>
+                        <td className="py-2 text-emerald-400 font-bold">${f.projected_eps.toFixed(2)}</td>
+                        <td className="py-2 text-right text-purple-300 font-bold">${f.implied_target.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[10px] text-slate-500 leading-tight">
+                {archetypeConfig.disclaimer}
+              </p>
+            </>
+          ) : (
+            <div className="py-6 px-3 text-center border border-dashed border-[#1b2434] rounded-lg bg-[#0e1420]/60">
+              <p className="text-xs text-slate-400 font-mono leading-relaxed">
+                Verified multi-year revenue and earnings projections are unavailable.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>
