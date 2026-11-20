@@ -1,6 +1,6 @@
 # ARX Radar 500 Market Data Refresh Plan (Issue #166)
 
-- **Document Version:** 2.1.0-IMPLEMENTED
+- **Document Version:** 2.2.0-DEFECTS-RESOLVED
 - **Plan Reference:** `RADAR-500-MARKET-DATA-REFRESH-PLAN-166`
 - **Issue Reference:** Issue #166
 - **Date:** 2026-11-20
@@ -82,11 +82,14 @@ To maintain strict epistemic hygiene, writer mechanisms demonstrated in code and
 To prevent legacy or background writers from invalidating refreshed provenance after completion, recurrence has been addressed directly in production application code:
 
 ### A. Smallest Production Guard Implementation
-1. **Core Database Engine Guard ([`analyst_dashboard/data/market_db.py`](file:///Users/iDavid/Projects/finance-clean/analyst_dashboard/data/market_db.py#L254-L285)):**
+1. **Core Database Engine Guard ([`analyst_dashboard/data/market_db.py`](file:///Users/iDavid/Projects/finance-clean/analyst_dashboard/data/market_db.py#L254-L330)):**
    - Implemented `MarketDatabaseEngine.has_authoritative_provenance(symbol: str) -> bool`:
      Executes a fast indexed query against `asset_ohlcv_provenance` asserting `provider = 'ALPACA'` and `adjustment_state = 'SPLIT_ADJUSTED_ONLY'`.
    - Updated `save_daily_candles(symbol, data, reject_if_authoritative: bool = False)`:
-     When `reject_if_authoritative=True` and `has_authoritative_provenance(symbol)` returns True, the unprovenanced write is safely bypassed, logging `RECURRENCE_GUARD: Bypassed unprovenanced write for '{symbol}'`.
+     When `reject_if_authoritative=True`, provenance verification and candle insertion execute as **ONE atomic immediate transaction (`BEGIN IMMEDIATE`) under an exclusive write lock**.
+     If authoritative Alpaca SIP provenance exists, the transaction is rolled back immediately, logging `RECURRENCE_GUARD: Bypassed unprovenanced write for '{symbol}'`.
+   - Concurrency & Race Immunity:
+     Because the provenance query and write logic are locked under `BEGIN IMMEDIATE`, concurrent writers on competing connections cannot interleave or overwrite protected bars. Qualified in `test_writer_concurrency_provenance_atomic_protection`.
 2. **Background Writers Guard ([`api/routes/analytics.py`](file:///Users/iDavid/Projects/finance-clean/api/routes/analytics.py#L504-L528)):**
    - `_schedule_background_refresh`: Immediately returns without queueing if candidate has authoritative provenance.
    - `_background_refresh_symbol`: Checks `has_authoritative_provenance` before making external HTTP requests, and passes `reject_if_authoritative=True` to `save_daily_candles`.
@@ -162,13 +165,13 @@ flowchart TD
 
 ---
 
-## 6. Aggregate Request Limits, Budgets, Deadlines & Checkpoints
+## 6. Aggregate Request Limits, Budgets, Deadlines, Checkpoints & Resume Contract
 
 All network interactions and database writes are strictly governed by `SharedExecutionBudget` in `scripts/ingest_alpaca_historical.py`:
 
 | Parameter | CLI Flag | Budget / Ceiling | Basis & Enforcement |
 | :--- | :--- | :--- | :--- |
-| **Strict Aggregate Request Cap** | `--max-aggregate-requests` | **550 requests** | Hard ceiling across all candidates, pages, and retries. Exceeding raises `EXECUTION_BUDGET_EXHAUSTED`. |
+| **Strict Aggregate Request Cap** | `--max-aggregate-requests` | **550 requests** | Hard ceiling across all candidates, pages, and retries. Every transmission (initial request or retry) is charged immediately before sending over the wire. Exceeding raises `EXECUTION_BUDGET_EXHAUSTED`. |
 | **Cumulative Retry Ceiling** | `--max-cumulative-retries` | **30 retries** | Shared retry budget across all pages. Exceeding raises `RETRY_BUDGET_EXHAUSTED`. |
 | **Fallback Budget** | `--max-fallback-requests` | **0 requests** | Polygon fallback strictly disabled for batch refresh. |
 | **Per-Request Timeout** | (HTTP Session) | 5.0 seconds | Enforced on every Alpaca HTTP GET call. |
@@ -178,18 +181,43 @@ All network interactions and database writes are strictly governed by `SharedExe
 | **Checkpoint Interval** | `--checkpoint-interval` | 50 candidates | Incremental state written to `--checkpoint-summary-path`. |
 | **Safe Resume Support** | `--resume` | Flag | Resumes from checkpoint, skipping already-committed symbols without duplicate requests. |
 
-### Failure Injection & Invariant Enforcement
-Injected failure tests in `test_aggregate_request_limits_and_checkpoint_behavior` verify:
-1. Cap exhaustion halts execution immediately without writing uncommitted candidates.
-2. Retry exhaustion triggers immediate fail-closed abort.
-3. Timeout and interruption persist completed candidate checkpoints and mark remaining symbols `UNPROCESSED`.
-4. Resumption cleanly processes remaining candidates without re-fetching completed symbols.
+### A. Request Accounting & Retry Sequence Exhaustion
+1. **Immediate Charging Before Transmission:**
+   `SharedExecutionBudget.record_transmission(is_retry=False)` is invoked immediately before issuing every HTTP GET call. Initial attempts charge against `requests_transmitted`.
+2. **Retry Charging to Aggregate Cap:**
+   Each retry attempt calls `record_transmission(is_retry=True)`, charging **both** the cumulative retry ceiling (`retries_transmitted`) and the aggregate request cap (`requests_transmitted`).
+3. **Exhaustion Inside Retry Sequence:**
+   If the aggregate cap is exhausted during a retry sequence for an incomplete symbol, execution aborts immediately before the retry request can be transmitted over the wire. Qualified in `test_aggregate_request_limits_and_checkpoint_behavior`.
+
+### B. Resume Contract & Binding Invariants
+1. **Cryptographic & Scope Binding:**
+   Checkpoints are bound to:
+   - `target_identity`: Target database canonical path.
+   - `manifest_binding`: `manifest_sha256`, candidate `membership_hash`, and candidate count.
+   - `scope_binding`: `cutoff` ($T_{\text{completed}}$), `requested_start`, `requested_end`, `feed`, `adjustment`, and execution `mode`.
+   - `execution_identity`: `execution_id`, `timestamp_utc`, runtime deployment ID, and git revision.
+2. **Fail-Closed Rejection of Incompatible Checkpoints:**
+   Any mismatch in target path, manifest SHA, membership hash, cutoff, requested dates, feed, or adjustment aborts immediately with `INCOMPATIBLE_CHECKPOINT_REJECTED`. Unparseable or malformed files fail closed with `CORRUPTED_CHECKPOINT_REJECTED`.
+3. **Preservation of Consumed Budgets Across Resume:**
+   Resuming an execution restores `requests_transmitted`, `retries_transmitted`, and `fallbacks_transmitted` from the checkpoint. Resumed attempts cannot reset or exceed aggregate limits; if consumed requests already equal or exceed the cap, the resumed process halts immediately with `EXECUTION_BUDGET_EXHAUSTED`.
+4. **Verification of Completed Work Before Skipping:**
+   Before skipping any candidate recorded as `APPLIED` in a checkpoint, the engine connects to the target store in read-only mode (`?mode=ro`) and asserts that valid bars and split-adjusted Alpaca SIP provenance actually exist in SQLite. Any candidate lacking verified store records is re-processed.
+5. **Handling of Crash Between Commit and Checkpoint:**
+   Database writes for each candidate execute in a single atomic SQLite transaction (`save_daily_candles_with_evidence`). If an abnormal process termination occurs after a candidate transaction commits but before the checkpoint file is updated on disk:
+   - Committed bars and provenance remain safely and durably persisted in SQLite.
+   - On subsequent resumed execution, the uncheckpointed symbol is re-evaluated.
+   - The engine's pre-flight inspection detects that the symbol already has complete, valid Alpaca SIP history through the requested end session and classifies the candidate as `SKIPPED` without issuing redundant network requests or performing redundant writes. Idempotency is fully preserved.
 
 ---
 
 ## 7. Pre-Execution Backup & Quiesced WAL-Safe Recovery Protocol
 
-Live file-copy rollback is strictly prohibited because SQLite WAL mode maintains active shared memory (`-shm`) and write-ahead log (`-wal`) state that can corrupt or desynchronize stores on copy. The documented recovery procedure is implemented in `quiesce_and_recover_database` (`scripts/ingest_alpaca_historical.py`) and qualified on disposable stores in `test_wal_safe_quiesced_recovery_rehearsal`:
+Live file-copy rollback is strictly prohibited because SQLite WAL mode maintains active shared memory (`-shm`) and write-ahead log (`-wal`) state that can corrupt or desynchronize stores on copy. The recovery procedure implemented in `quiesce_and_recover_database` (`scripts/ingest_alpaca_historical.py`) enforces strict maintenance quiescence:
+
+### Pre-Condition: Independently Established Maintenance Quiescence
+> [!IMPORTANT]
+> **A checkpoint is NOT proof that users are stopped.**
+> Recovery requires independently established maintenance quiescence before any destructive restore operations. Callers must independently halt serving containers, background workers, and scheduler jobs, passing `maintenance_quiescence_verified=True`. If unverified, the recovery procedure refuses the target immediately without modifying or deleting anything on disk (`UNQUIESCED_TARGET_REFUSED`).
 
 ### Phase 1: Pre-Refresh Consistent Backup Creation
 ```bash
@@ -203,40 +231,40 @@ src.close()
 print('Pre-refresh consistent backup completed successfully.')
 "
 ```
-Verify the pre-refresh backup SHA-256 and byte size before proceeding.
+Verify the pre-refresh backup SHA-256, byte size, and `PRAGMA integrity_check` before proceeding.
 
 ### Phase 2: Quiesced WAL-Safe Recovery Procedure
 In the event of an aborted run, partial failure, or need to restore pre-refresh state:
 
-1. **Quiesce Database Users & Checkpoint WAL:**
-   Ensure all writer and reader processes are quiesced. Connect to the target database and execute:
-   ```sql
-   PRAGMA wal_checkpoint(TRUNCATE);
-   ```
-   This flushes all committed WAL frames back into the main database file and truncates the WAL file to zero bytes.
-2. **Remove Unquiesced Sidecars & Target File:**
-   Safely unlink `/root/.finance_market_store.db-wal` and `/root/.finance_market_store.db-shm` to prevent stale frame replay. Unlink `/root/.finance_market_store.db`.
-3. **Byte-for-Byte Restoration:**
+1. **Verify Backup Integrity Before Touching Target:**
+   Before touching, modifying, or unlinking the target database or its sidecars, the backup file is validated: exists, non-empty, and passes `PRAGMA integrity_check` in read-only mode (`?mode=ro`). Corrupted or unreadable backups abort immediately (`BACKUP_CORRUPTED`), leaving the target database completely untouched.
+2. **Validate Target Quiescence & Checkpoint Zero-Contention:**
+   Connect to the target database with a short timeout and acquire an exclusive lock (`BEGIN EXCLUSIVE`) to verify no other readers or writers hold active locks. Run `PRAGMA wal_checkpoint(TRUNCATE)` and assert `busy == 0` and complete frame synchronization. Any lock contention or checkpoint busy flag aborts immediately (`TARGET_LOCK_CONTENTION_DETECTED` / `CHECKPOINT_CONTENTION_DETECTED`) without modifying or unlinking anything.
+3. **Remove Sidecars & Target File:**
+   Only after backup integrity and target quiescence are proven, safely unlink `/root/.finance_market_store.db-wal`, `/root/.finance_market_store.db-shm`, and `/root/.finance_market_store.db`.
+4. **Byte-for-Byte Restoration:**
    Copy the pre-refresh backup to the target path using byte-preserving copy (`shutil.copy2`):
    ```bash
    cp /root/backup_finance_market_store_pre_refresh_166.db /root/.finance_market_store.db
    ```
-4. **Integrity & Digest Verification:**
+5. **Integrity & Digest Verification:**
    Open the recovered database in read-only mode (`?mode=ro`) to prevent header modification:
    ```sql
    PRAGMA integrity_check;
    ```
    Unlink any ephemeral sidecars created during inspection. Assert that `hashlib.sha256(recovered_bytes) == hashlib.sha256(backup_bytes)`.
-5. **Programmatic Recovery API:**
-   The entire procedure can be invoked via Python:
+6. **Programmatic Recovery API:**
+   The entire procedure is invoked via Python with verified quiescence:
    ```python
    from scripts.ingest_alpaca_historical import quiesce_and_recover_database
    res = quiesce_and_recover_database(
        target_db_path="/root/.finance_market_store.db",
-       backup_path="/root/backup_finance_market_store_pre_refresh_166.db"
+       backup_path="/root/backup_finance_market_store_pre_refresh_166.db",
+       maintenance_quiescence_verified=True,
    )
    assert res["status"] == "RECOVERED"
    ```
+   Qualified in `test_wal_safe_quiesced_recovery_rehearsal`.
 
 ---
 

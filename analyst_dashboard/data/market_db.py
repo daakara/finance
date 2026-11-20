@@ -270,63 +270,85 @@ class MarketDatabaseEngine:
     def save_daily_candles(self, symbol: str, data: Any, reject_if_authoritative: bool = False):
         """Save OHLCV candles (pandas DataFrame or list of dicts) to database.
 
-        If reject_if_authoritative=True and symbol already has authoritative Alpaca SIP provenance,
-        the unprovenanced write is skipped to prevent invalidating verified provenance (Issue #166).
+        If reject_if_authoritative=True, provenance verification and candle insertion execute as ONE
+        atomic immediate transaction under an exclusive write lock. If the symbol already has authoritative
+        Alpaca SIP provenance, the transaction is rolled back immediately, protecting verified records
+        against concurrent writers (Issue #166).
         Otherwise, writes candles and removes contradictory provenance for those dates (Issue #198 / PREFLIGHT-001).
         """
         if data is None:
             return
         upper = symbol.upper().strip()
-        if reject_if_authoritative and self.has_authoritative_provenance(upper):
-            logger.info(
-                f"RECURRENCE_GUARD: Bypassed unprovenanced write for '{upper}'. "
-                "Authoritative Alpaca SIP provenance is protected."
-            )
-            return
         conn = self._get_connection()
         try:
-            with conn:
-                cursor = conn.cursor()
-                if pd is not None and isinstance(data, pd.DataFrame):
-                    if data.empty:
-                        return
-                    for idx, row in data.iterrows():
-                        date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx).split("T")[0]
-                        cursor.execute("""
-                            INSERT OR REPLACE INTO asset_ohlcv_daily (symbol, trade_date, open, high, low, close, volume)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, (
-                            upper,
-                            date_str,
-                            round(float(row["Open"]), 2),
-                            round(float(row["High"]), 2),
-                            round(float(row["Low"]), 2),
-                            round(float(row["Close"]), 2),
-                            int(row.get("Volume", 0)),
-                        ))
-                        # Prevent contradictory candle provenance after legacy replacement (PREFLIGHT-001 Target 5)
-                        cursor.execute("""
-                            DELETE FROM asset_ohlcv_provenance WHERE symbol = ? AND trade_date = ?
-                        """, (upper, date_str))
-                elif isinstance(data, list):
-                    for item in data:
-                        date_str = str(item.get("time") or item.get("trade_date") or item.get("date")).split("T")[0]
-                        cursor.execute("""
-                            INSERT OR REPLACE INTO asset_ohlcv_daily (symbol, trade_date, open, high, low, close, volume)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, (
-                            upper,
-                            date_str,
-                            round(float(item.get("open", item.get("Open", 0.0))), 2),
-                            round(float(item.get("high", item.get("High", 0.0))), 2),
-                            round(float(item.get("low", item.get("Low", 0.0))), 2),
-                            round(float(item.get("close", item.get("Close", 0.0))), 2),
-                            int(item.get("volume", item.get("Volume", 0))),
-                        ))
-                        # Prevent contradictory candle provenance after legacy replacement (PREFLIGHT-001 Target 5)
-                        cursor.execute("""
-                            DELETE FROM asset_ohlcv_provenance WHERE symbol = ? AND trade_date = ?
-                        """, (upper, date_str))
+            conn.isolation_level = None
+            cursor = conn.cursor()
+            cursor.execute("BEGIN IMMEDIATE")
+            if reject_if_authoritative:
+                cursor.execute("""
+                    SELECT COUNT(*) FROM asset_ohlcv_provenance
+                    WHERE symbol = ? AND provider = 'ALPACA' AND adjustment_state = 'SPLIT_ADJUSTED_ONLY'
+                """, (upper,))
+                row = cursor.fetchone()
+                if row and row[0] > 0:
+                    logger.info(
+                        f"RECURRENCE_GUARD: Bypassed unprovenanced write for '{upper}'. "
+                        "Authoritative Alpaca SIP provenance is protected."
+                    )
+                    cursor.execute("ROLLBACK")
+                    return
+
+            if pd is not None and isinstance(data, pd.DataFrame):
+                if data.empty:
+                    cursor.execute("ROLLBACK")
+                    return
+                for idx, row in data.iterrows():
+                    date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx).split("T")[0]
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO asset_ohlcv_daily (symbol, trade_date, open, high, low, close, volume)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        upper,
+                        date_str,
+                        round(float(row["Open"]), 2),
+                        round(float(row["High"]), 2),
+                        round(float(row["Low"]), 2),
+                        round(float(row["Close"]), 2),
+                        int(row.get("Volume", 0)),
+                    ))
+                    # Prevent contradictory candle provenance after legacy replacement (PREFLIGHT-001 Target 5)
+                    cursor.execute("""
+                        DELETE FROM asset_ohlcv_provenance WHERE symbol = ? AND trade_date = ?
+                    """, (upper, date_str))
+            elif isinstance(data, list):
+                if not data:
+                    cursor.execute("ROLLBACK")
+                    return
+                for item in data:
+                    date_str = str(item.get("time") or item.get("trade_date") or item.get("date")).split("T")[0]
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO asset_ohlcv_daily (symbol, trade_date, open, high, low, close, volume)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        upper,
+                        date_str,
+                        round(float(item.get("open", item.get("Open", 0.0))), 2),
+                        round(float(item.get("high", item.get("High", 0.0))), 2),
+                        round(float(item.get("low", item.get("Low", 0.0))), 2),
+                        round(float(item.get("close", item.get("Close", 0.0))), 2),
+                        int(item.get("volume", item.get("Volume", 0))),
+                    ))
+                    # Prevent contradictory candle provenance after legacy replacement (PREFLIGHT-001 Target 5)
+                    cursor.execute("""
+                        DELETE FROM asset_ohlcv_provenance WHERE symbol = ? AND trade_date = ?
+                    """, (upper, date_str))
+            cursor.execute("COMMIT")
+        except Exception:
+            try:
+                cursor.execute("ROLLBACK")
+            except Exception:
+                pass
+            raise
         finally:
             conn.close()
 

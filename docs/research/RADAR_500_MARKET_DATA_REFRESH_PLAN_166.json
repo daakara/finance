@@ -1,7 +1,7 @@
 {
   "plan_id": "RADAR-500-MARKET-DATA-REFRESH-PLAN-166",
-  "version": "2.1.0-IMPLEMENTED",
-  "created_at_utc": "2026-11-20T22:30:00Z",
+  "version": "2.2.0-DEFECTS-RESOLVED",
+  "created_at_utc": "2026-11-20T23:15:00Z",
   "issue_reference": "Issue #166",
   "target_authority": {
     "platform": "Railway",
@@ -64,7 +64,8 @@
   },
   "recurrence_prevention": {
     "implemented_guards": {
-      "market_db": "MarketDatabaseEngine.has_authoritative_provenance + save_daily_candles(reject_if_authoritative=True)",
+      "market_db": "MarketDatabaseEngine.has_authoritative_provenance + save_daily_candles(BEGIN IMMEDIATE atomic transaction with reject_if_authoritative=True)",
+      "concurrency_protection": "Atomic write lock ensures competing connections cannot bypass provenance guard or interleave unprovenanced writes",
       "background_writers": "api.routes.analytics._background_refresh_symbol + _schedule_background_refresh guard against authoritative symbols",
       "direct_writers": "api.routes.analytics._compute_single_setup + get_tactical_setup_for_symbol + get_chart_history bypass unprovenanced fetches for authoritative symbols",
       "warmup_writer": "api.main._warmup_worker skips warmup pre-fetch for authoritative candidates"
@@ -99,6 +100,7 @@
   },
   "execution_budgets_and_deadlines": {
     "implementation_class": "scripts.ingest_alpaca_historical.SharedExecutionBudget",
+    "request_accounting_policy": "Charge every transmission immediately before sending; retries charge to both cumulative retry ceiling and aggregate cap; exhaustion inside retry sequence halts execution",
     "pagination_budget_max_pages_per_symbol": 25,
     "expected_pages_partition_a": 433,
     "expected_pages_partition_b": 67,
@@ -114,7 +116,15 @@
     "effective_requests_per_minute": 171.4,
     "checkpoint_interval_symbols": 50,
     "checkpoint_summary_path": "/root/refresh_checkpoint_summary.json",
-    "safe_resume_supported": true
+    "resume_contract": {
+      "supported": true,
+      "metadata_bindings": ["target_identity", "manifest_binding", "scope_binding", "execution_identity"],
+      "budget_preservation": true,
+      "fail_closed_on_incompatible": true,
+      "fail_closed_on_corrupt": true,
+      "store_work_verification_before_skip": true,
+      "crash_between_commit_and_checkpoint_handled": "Committed bars are durable; re-evaluation upon resume is idempotent and skips redundant writes"
+    }
   },
   "backup_and_recovery": {
     "backup_method": "SQLITE3_ONLINE_BACKUP_API",
@@ -122,8 +132,10 @@
     "target_path": "/root/backup_finance_market_store_pre_refresh_166.db",
     "quiesced_recovery_procedure": {
       "implementation_function": "scripts.ingest_alpaca_historical.quiesce_and_recover_database",
-      "step_1": "Verify pre-refresh backup existence and non-zero byte size",
-      "step_2": "Connect to target and execute PRAGMA wal_checkpoint(TRUNCATE)",
+      "maintenance_quiescence_verified_required": true,
+      "refuses_unquiesced_target_without_deleting": true,
+      "step_1": "Verify pre-refresh backup existence, non-zero size, and PRAGMA integrity_check (?mode=ro) BEFORE touching target",
+      "step_2": "Verify target quiescence via exclusive lock acquisition (BEGIN EXCLUSIVE) and PRAGMA wal_checkpoint(TRUNCATE); fail closed on lock/checkpoint contention",
       "step_3": "Unlink target and WAL sidecars (.db-wal, .db-shm)",
       "step_4": "Byte-for-byte restore from backup via shutil.copy2",
       "step_5": "Verify integrity with PRAGMA integrity_check (?mode=ro), clean ephemeral sidecars, and assert exact SHA-256 equality"

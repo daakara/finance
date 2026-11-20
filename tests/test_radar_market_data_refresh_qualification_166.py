@@ -881,6 +881,26 @@ def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: 
     assert budget_retry.retries_transmitted == 2
     assert s_retry.execution_outcome == "FAILURE"
 
+    # 3b. Test exhaustion inside a retry sequence (charging every transmission, including retries, to aggregate cap)
+    mock_retry_seq_fetcher = MockAlpacaSipFetcher(transient_failures_count=10)
+    # Cap is 2: attempt 0 uses 1, attempt 1 (retry 1) uses 1. Attempt 2 (retry 2) aborts before sending!
+    budget_retry_seq = SharedExecutionBudget(max_aggregate_requests=2, max_cumulative_retries=5)
+    adapter_retry_seq = AlpacaHistoricalSipIngestionAdapter(
+        fetcher=mock_retry_seq_fetcher, feed="sip", adjustment="split", max_completed_session=date(2026, 11, 20)
+    )
+    p_manifest_seq = tmp_path / "seq_manifest.json"
+    p_manifest_seq.write_text(json.dumps({"symbols": ["PAGE"]}), encoding="utf-8")
+    s_retry_seq = adapter_retry_seq.execute_bounded_ingestion(
+        manifest_path=p_manifest_seq,
+        start_date="2026-11-07",
+        end_date="2026-11-20",
+        apply_writes=False,
+        budget=budget_retry_seq,
+    )
+    assert budget_retry_seq.requests_transmitted == 2, "Both transmissions (initial + retry) must charge to aggregate cap"
+    assert budget_retry_seq.retries_transmitted == 1, "Only 1 retry transmitted before cap exhausted on next retry attempt"
+    assert "EXECUTION_BUDGET_EXHAUSTED" in s_retry_seq.candidate_dispositions["PAGE"]["rejection_reason"]
+
     # 4. Test deadline timeout
     budget_timeout = SharedExecutionBudget(overall_deadline_seconds=0.001)
     time.sleep(0.005)
@@ -916,7 +936,82 @@ def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: 
     )
     calls_before = len(mock_fetcher.calls)
 
-    # Now resume with budget allowing remaining 3 candidates
+    # 5a. Corrupted checkpoint rejection (fail-closed)
+    corrupt_cp = tmp_path / "corrupt_cp.json"
+    corrupt_cp.write_text("{NOT_VALID_JSON", encoding="utf-8")
+    with pytest.raises(ValueError, match="CORRUPTED_CHECKPOINT_REJECTED"):
+        adapter_res.execute_bounded_ingestion(
+            manifest_path=manifest_path,
+            symbols_override=symbols[:6],
+            start_date="2026-11-07",
+            end_date="2026-11-20",
+            apply_writes=False,
+            checkpoint_summary_path=corrupt_cp,
+            resume=True,
+        )
+
+    # 5b. Incompatible checkpoint rejection (manifest / scope mismatch)
+    incompat_cp = tmp_path / "incompat_cp.json"
+    incompat_cp.write_text(json.dumps({
+        "manifest_binding": {"manifest_sha256": "wrong_sha", "membership_hash": "wrong_hash"},
+        "scope_binding": {"cutoff": "2026-11-20", "requested_start": "2026-11-07", "requested_end": "2026-11-20", "feed": "sip", "adjustment": "split", "mode": "DRY_RUN"},
+    }), encoding="utf-8")
+    with pytest.raises(ValueError, match="INCOMPATIBLE_CHECKPOINT_REJECTED"):
+        adapter_res.execute_bounded_ingestion(
+            manifest_path=manifest_path,
+            symbols_override=symbols[:6],
+            start_date="2026-11-07",
+            end_date="2026-11-20",
+            apply_writes=False,
+            checkpoint_summary_path=incompat_cp,
+            resume=True,
+        )
+
+    # 5c. Preserve consumed budget across resume and enforce cap (cannot reset limits)
+    exhausted_cp = tmp_path / "exhausted_cp.json"
+    exhausted_cp.write_text(json.dumps({
+        "consumed_budget": {"requests_transmitted": 10, "retries_transmitted": 2, "fallbacks_transmitted": 0},
+    }), encoding="utf-8")
+    budget_exhausted_res = SharedExecutionBudget(max_aggregate_requests=10)
+    with pytest.raises(RuntimeError, match="EXECUTION_BUDGET_EXHAUSTED"):
+        adapter_res.execute_bounded_ingestion(
+            manifest_path=manifest_path,
+            symbols_override=symbols[:6],
+            start_date="2026-11-07",
+            end_date="2026-11-20",
+            apply_writes=False,
+            budget=budget_exhausted_res,
+            checkpoint_summary_path=exhausted_cp,
+            resume=True,
+        )
+
+    # 5d. Verify completed work before skipping (unverified store work is re-processed)
+    unverified_work_cp = tmp_path / "unverified_work_cp.json"
+    unverified_work_cp.write_text(json.dumps({
+        "summary": {
+            "candidate_dispositions": {
+                "PAGE": {
+                    "symbol": "PAGE",
+                    "status": "APPLIED",
+                    "action_type": "REFRESH",
+                    "bars_ingested": 10,
+                }
+            }
+        }
+    }), encoding="utf-8")
+    s_unverified = adapter_res.execute_bounded_ingestion(
+        manifest_path=p_manifest_seq,
+        start_date="2026-11-07",
+        end_date="2026-11-20",
+        apply_writes=True,
+        db_path=disposable_market_db,
+        checkpoint_summary_path=unverified_work_cp,
+        resume=True,
+    )
+    assert "PAGE" in s_unverified.completed_writes, "Unverified work must be re-processed and committed"
+
+    # 5e. Normal resume with budget allowing remaining 3 candidates
+    calls_before = len(mock_fetcher.calls)
     budget_res2 = SharedExecutionBudget(max_aggregate_requests=10)
     s_res = adapter_res.execute_bounded_ingestion(
         manifest_path=manifest_path,
@@ -930,7 +1025,7 @@ def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: 
         resume=True,
     )
     calls_after = len(mock_fetcher.calls)
-    assert calls_after - calls_before == 3, "Resumed execution must skip the 3 already completed candidates"
+    assert calls_after - calls_before == 3, "Resumed execution must skip verified completed candidates"
     assert len(s_res.completed_writes) == 6
 
 
@@ -971,12 +1066,39 @@ def test_wal_safe_quiesced_recovery_rehearsal(tmp_path: Path):
     shm_file.write_bytes(b"DIRTY_SHM_INDEX")
     assert wal_file.exists(), "Target database must have active WAL journal before recovery"
 
-    # Step 4: Execute quiesce and recovery procedure
-    recovery_result = quiesce_and_recover_database(target_db_path=target_db, backup_path=backup_db)
+    # Step 4a: Refuse unquiesced target without deleting anything
+    with pytest.raises(RuntimeError, match="UNQUIESCED_TARGET_REFUSED"):
+        quiesce_and_recover_database(target_db_path=target_db, backup_path=backup_db, maintenance_quiescence_verified=False)
+    assert target_db.exists(), "Target database must not be deleted on unquiesced refusal"
+    assert wal_file.exists(), "WAL file must not be deleted on unquiesced refusal"
+
+    # Step 4b: Fail closed on checkpoint contention / active users
+    active_user_conn = sqlite3.connect(str(target_db))
+    active_user_conn.execute("BEGIN EXCLUSIVE")
+    with pytest.raises(RuntimeError, match="(TARGET_LOCK_CONTENTION_DETECTED|CHECKPOINT_CONTENTION_DETECTED)"):
+        quiesce_and_recover_database(target_db_path=target_db, backup_path=backup_db, maintenance_quiescence_verified=True)
+    active_user_conn.rollback()
+    active_user_conn.close()
+    assert target_db.exists(), "Target database must not be deleted on contention refusal"
+
+    # Step 4c: Verify backup before touching target
+    corrupt_backup = tmp_path / "corrupt_backup.db"
+    corrupt_backup.write_bytes(b"NOT_A_VALID_SQLITE_DATABASE_HEADER")
+    with pytest.raises(RuntimeError, match="BACKUP_CORRUPTED"):
+        quiesce_and_recover_database(target_db_path=target_db, backup_path=corrupt_backup, maintenance_quiescence_verified=True)
+    assert target_db.exists(), "Target database must not be touched if backup is corrupt"
+
+    # Step 4d: Execute verified recovery with maintenance quiescence confirmed
+    recovery_result = quiesce_and_recover_database(
+        target_db_path=target_db,
+        backup_path=backup_db,
+        maintenance_quiescence_verified=True,
+    )
 
     assert recovery_result["status"] == "RECOVERED"
     assert recovery_result["recovered_sha256"] == backup_sha
     assert recovery_result["integrity_check"] == "ok"
+    assert recovery_result["maintenance_quiescence_verified"] is True
 
     # Assert WAL sidecars are cleanly removed
     assert not (tmp_path / "production_target.db-wal").exists()
@@ -989,6 +1111,59 @@ def test_wal_safe_quiesced_recovery_rehearsal(tmp_path: Path):
     rows = cur.fetchall()
     ver_conn.close()
     assert rows == [("AAPL", "2026-11-19", 220.0)], "Recovered database must match pre-refresh backup exactly"
+
+
+def test_writer_concurrency_provenance_atomic_protection(disposable_market_db: str):
+    """GATE 4: Concurrency test: ensure provenance check and guarded write are strictly atomic under competing connections."""
+    import threading
+    engine = MarketDatabaseEngine(db_path=disposable_market_db)
+    upper = "AAPL"
+    trade_date = "2026-11-20"
+
+    prov_alpaca = MarketProvenance(
+        provider=Provider.ALPACA,
+        ingestion_source=IngestionSource.DIRECT_PROVIDER,
+        observed_at="2026-11-20T21:00:00Z",
+        observed_date=trade_date,
+        observation_precision=ObservationPrecision.DATE,
+        observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+        ingested_at="2026-11-20T21:05:00Z",
+        adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+        structural_quality=StructuralQuality.COMPLETE,
+        fallback_status=False,
+    )
+    candle_alpaca = [{"time": trade_date, "open": 220.0, "high": 225.0, "low": 219.0, "close": 224.0, "volume": 1000000}]
+    engine.save_daily_candles_with_evidence(upper, candle_alpaca, prov_alpaca)
+
+    # 10 competing threads concurrently attempting to overwrite with unprovenanced data
+    errors = []
+    def competing_worker(worker_id: int):
+        try:
+            worker_engine = MarketDatabaseEngine(db_path=disposable_market_db)
+            fake_candle = [{"time": trade_date, "open": 100.0, "high": 101.0, "low": 99.0, "close": 999.0 + worker_id, "volume": 500}]
+            worker_engine.save_daily_candles(upper, fake_candle, reject_if_authoritative=True)
+        except Exception as e:
+            errors.append(e)
+
+    threads = [threading.Thread(target=competing_worker, args=(i,)) for i in range(10)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not errors, f"Competing workers encountered unhandled errors: {errors}"
+
+    # Verify protected bars and provenance remain 100% unchanged
+    stored = engine.get_daily_candles(upper, limit=10)
+    assert len(stored) == 1
+    assert stored[0]["close"] == 224.0, "Authoritative Alpaca bar was protected from concurrent unprovenanced writes"
+
+    conn = sqlite3.connect(disposable_market_db)
+    cur = conn.cursor()
+    cur.execute("SELECT provider, adjustment_state FROM asset_ohlcv_provenance WHERE symbol = ?", (upper,))
+    prov_row = cur.fetchone()
+    conn.close()
+    assert prov_row == ("ALPACA", "SPLIT_ADJUSTED_ONLY"), "Authoritative Alpaca SIP provenance remained 100% intact"
 
 
 def test_full_accounting_closure_with_explicit_exceptions(tmp_path: Path):
