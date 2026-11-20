@@ -233,6 +233,7 @@ class NvdaCanaryRunner:
         ticker: str = CANARY_TICKER,
         cik: Optional[str] = None,
         accession: Optional[str] = None,
+        release_sha: Optional[str] = None,
     ):
         import math
 
@@ -283,6 +284,7 @@ class NvdaCanaryRunner:
         self.dsn = dsn or os.environ.get("SMART_MONEY_DATABASE_URL") or os.environ.get("DATABASE_URL")
         self.ticker = ticker_clean
         self.cik = cik_clean
+        self.release_sha = release_sha.strip().lower() if release_sha else None
         self.max_requests = max_requests
         self.max_duration_sec = float(max_duration_sec)
         self.max_rps = float(max_rps)
@@ -1163,6 +1165,8 @@ class NvdaCanaryRunner:
                     cutoff_str = self.public_availability_cutoff.isoformat() if self.public_availability_cutoff else "2026-11-19T00:00:00Z"
 
                     cat_hash = hashlib.sha256(json.dumps(sub_data, sort_keys=True).encode("utf-8")).hexdigest()
+                    from analyst_dashboard.smart_money.continuous_authorization import resolve_release_identity
+                    exec_release = self.release_sha or resolve_release_identity()
                     coverage_receipt_id = repo.record_issuer_coverage_receipt(
                         ticker=self.ticker,
                         issuer_cik=self.cik,
@@ -1176,6 +1180,7 @@ class NvdaCanaryRunner:
                             "description": "Narrow one-shot cycle does not establish complete historical interval coverage."
                         }],
                         coverage_status="PARTIAL",
+                        release_sha=exec_release,
                         conn=conn,
                     )
 
@@ -1656,6 +1661,12 @@ def build_canary_parser(prog: Optional[str] = None) -> argparse.ArgumentParser:
         help="Acknowledge live SEC EDGAR network execution when operational holds permit.",
     )
     parser.add_argument(
+        "--release-sha",
+        type=str,
+        default=None,
+        help="Explicit 40-char hex release commit SHA binding for the execution.",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable debug logging output.",
@@ -1727,6 +1738,7 @@ def run_canary_cli(argv: Optional[List[str]] = None, prog: Optional[str] = None)
             ticker=ticker,
             cik=cik,
             accession=accession,
+            release_sha=args.release_sha,
         )
     except CanarySecurityError as cse:
         print(f"FATAL: Canary initialization security error: {cse}", file=sys.stderr)

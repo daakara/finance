@@ -54,7 +54,11 @@ from analyst_dashboard.smart_money.storage.backup.containment_gate import (
     ContainmentState,
     BackupAgeContainmentViolationException,
 )
-from analyst_dashboard.smart_money.continuous_pipeline import SmartMoneyContinuousPipeline, DEFAULT_GOVERNED_ISSUERS
+from analyst_dashboard.smart_money.continuous_pipeline import (
+    SmartMoneyContinuousPipeline,
+    DEFAULT_GOVERNED_ISSUERS,
+    TRIAL_2_GOVERNED_ISSUERS,
+)
 from analyst_dashboard.smart_money.continuous_authorization import require_continuous_authorization
 import threading
 
@@ -492,6 +496,13 @@ class SmartMoneyIngestionWorker:
         self._last_stale_recovery_at = 0.0
         self._is_executing_cycle = False
         self._shutdown_requested = False
+        scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
+        self.is_trial_2_issuer = (scope == "RECURRING_2_ISSUER_FORM4_TRIAL")
+        self.ingestion_only = (
+            self.is_trial_2_issuer
+            or os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower() in ("true", "1", "yes")
+        )
+        self.governed_issuers = TRIAL_2_GOVERNED_ISSUERS if self.is_trial_2_issuer else DEFAULT_GOVERNED_ISSUERS
 
     def validate_preflight(self) -> bool:
         """
@@ -514,7 +525,7 @@ class SmartMoneyIngestionWorker:
             )
 
         # Require an unexpired, release- and universe-bound grant before any OWNER lock.
-        require_continuous_authorization(issuers=DEFAULT_GOVERNED_ISSUERS)
+        require_continuous_authorization(issuers=getattr(self, "governed_issuers", DEFAULT_GOVERNED_ISSUERS))
         validate_storage_configuration()
         if not self.dsn:
             self.state = WorkerHealthState.FATAL
@@ -708,6 +719,8 @@ class SmartMoneyIngestionWorker:
                 allow_test_mode=False,
                 cancellation_token=lambda: getattr(self, "_shutdown_requested", False),
                 preacquired_lock_conn=self._owner_conn,
+                issuers=getattr(self, "governed_issuers", DEFAULT_GOVERNED_ISSUERS),
+                ingestion_only=getattr(self, "ingestion_only", False),
             )
             res = pipeline.execute_cycle(
                 run_request_id=req_id,
@@ -771,7 +784,7 @@ class SmartMoneyIngestionWorker:
 
         # Revalidate per cycle: an expired grant terminates the OWNER loop and
         # the finally block releases its session-level advisory lock.
-        require_continuous_authorization(issuers=DEFAULT_GOVERNED_ISSUERS)
+        require_continuous_authorization(issuers=getattr(self, "governed_issuers", DEFAULT_GOVERNED_ISSUERS))
         # 1. Evaluate Backup Freshness Containment Gate
         if not self.containment_gate.check_ingestion_eligibility():
             self.state = WorkerHealthState.BLOCKED_DATA_INTEGRITY
@@ -967,6 +980,7 @@ def main():
     parser.add_argument("--authorize-pilot", action="store_true", help="Explicit one-shot owner authorization for --ten-issuer-pilot")
     parser.add_argument("--pilot-expires-at", type=str, default=None, help="Authorization expiry ISO timestamp")
     parser.add_argument("--pilot-release-sha", type=str, default=None, help="Authorization production release SHA binding")
+    parser.add_argument("--two-issuer-trial", action="store_true", help="Execute bounded 2-issuer recurring SEC trial")
     parser.add_argument("--single-cycle", action="store_true", help="Execute a single worker cycle and terminate")
     parser.add_argument("--telemetry-probe", action="store_true", help="Emit safe nonfatal diagnostic telemetry probe and exit")
     parser.add_argument("--probe-uuid", type=str, default=None, help="Explicit UUID for telemetry probe")
@@ -998,6 +1012,10 @@ def main():
         res = run_ten_issuer_pilot()
         print(json.dumps(res, indent=2, default=str))
         sys.exit(0 if res.get("verdict") == "SUCCESS" else 1)
+
+    if args.two_issuer_trial:
+        os.environ["ARX_CONTINUOUS_AUTH_SCOPE"] = "RECURRING_2_ISSUER_FORM4_TRIAL"
+        os.environ["ARX_SMART_MONEY_INGESTION_ONLY"] = "true"
 
     worker = SmartMoneyIngestionWorker()
     try:

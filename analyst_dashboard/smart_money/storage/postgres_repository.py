@@ -14,7 +14,7 @@ import hashlib
 import logging
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional, Set, Union, Tuple
+from typing import Dict, Any, List, Optional, Set, Union, Tuple, Sequence
 
 try:
     import psycopg2
@@ -1083,6 +1083,14 @@ class PostgresSmartMoneyRepository:
                 "public_availability_cutoff": receipt.get("certified_watermark"),
             }
 
+        rel_sha = receipt.get("release_sha")
+        if not rel_sha:
+            from analyst_dashboard.smart_money.continuous_authorization import resolve_release_identity
+            rel_sha = resolve_release_identity()
+        rel_sha = str(rel_sha).strip()
+        if not re.fullmatch(r"^[0-9a-f]{40}$", rel_sha):
+            raise RuntimeError(f"RELEASE_PROVENANCE_INVALID: '{rel_sha}' is not a valid 40-character hex SHA")
+
         def _exec(cur):
             cur.execute("""
                 INSERT INTO sm_reconciliation_receipts (
@@ -1106,7 +1114,7 @@ class PostgresSmartMoneyRepository:
                 receipt["coverage_status"],
                 Json(reasons, dumps=lambda x: json.dumps(x, default=_json_serial)),
                 receipt["reconciliation_hash"],
-                receipt.get("release_sha", "b72ea23937cf6ed7b8c4b60096630767a7c4592b"),
+                rel_sha,
             ))
             return str(cur.fetchone()["receipt_id"])
 
@@ -1140,6 +1148,14 @@ class PostgresSmartMoneyRepository:
         Binds exact issuer ticker, CIK, observation interval, certified watermark, accession inventory,
         cryptographic source hashes, material gaps, and zero-activity proofs within sm_reconciliation_receipts (0-DDL compliant).
         """
+        resolved_rel = release_sha
+        if not resolved_rel:
+            from analyst_dashboard.smart_money.continuous_authorization import resolve_release_identity
+            resolved_rel = resolve_release_identity()
+        resolved_rel = str(resolved_rel).strip().lower()
+        if not re.fullmatch(r"^[0-9a-f]{40}$", resolved_rel):
+            raise RuntimeError(f"RELEASE_PROVENANCE_INVALID: '{resolved_rel}' is not a valid 40-character hex SHA")
+
         r_id = receipt_id or str(uuid.uuid4())
         acc_inv = sorted(list(set(accession_inventory or [])))
         s_hashes = dict(source_hashes or {})
@@ -1261,10 +1277,54 @@ class PostgresSmartMoneyRepository:
             "coverage_status": coverage_status,
             "failure_reasons": structured_metadata,
             "reconciliation_hash": recon_hash,
-            "release_sha": release_sha or os.environ.get("ARX_RELEASE_SHA", "b72ea23937cf6ed7b8c4b60096630767a7c4592b"),
+            "release_sha": resolved_rel,
         }
 
         return self.save_reconciliation_receipt(receipt_payload, conn=conn)
+
+    def get_latest_reconciliation_receipt(
+        self,
+        covered_tickers: Optional[Sequence[str]] = None,
+        conn: Optional[PgConnection] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Queries the most recent reconciliation receipt for scheduling and progress tracking."""
+        query = """
+            SELECT * FROM sm_reconciliation_receipts
+            ORDER BY created_at DESC, receipt_version DESC
+            LIMIT 25;
+        """
+        def _exec(cur):
+            cur.execute(query)
+            rows = cur.fetchall()
+            if not rows:
+                return None
+            if not covered_tickers:
+                return dict(rows[0])
+            expected_set = {t.upper().strip() for t in covered_tickers}
+            for row in rows:
+                r = dict(row)
+                reasons = r.get("failure_reasons")
+                tickers = []
+                if isinstance(reasons, dict):
+                    tickers = reasons.get("covered_tickers", [])
+                elif isinstance(reasons, list):
+                    for item in reasons:
+                        if isinstance(item, dict) and "covered_tickers" in item:
+                            tickers = item.get("covered_tickers", [])
+                            break
+                if not tickers and r.get("ticker"):
+                    tickers = [r["ticker"]]
+                row_tickers_set = {t.upper().strip() for t in tickers}
+                if row_tickers_set and (row_tickers_set == expected_set or row_tickers_set.issubset(expected_set) or expected_set.issubset(row_tickers_set)):
+                    return r
+            return dict(rows[0])
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        with get_connection(dsn=self.dsn) as c:
+            with c.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
 
     def get_authoritative_receipt_for_interval(
         self,
