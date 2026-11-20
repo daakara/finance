@@ -1595,6 +1595,7 @@ class TestRecurringTrialDispatch:
         w.worker_id = "scheduled-delivery-worker"
         w.lease_duration_sec = 60
         w._last_stale_recovery_at = time.time()
+        w.stale_recovery_interval_sec = 30
         w._is_executing_cycle = False
         w._shutdown_requested = False
         return w
@@ -1605,7 +1606,7 @@ class TestRecurringTrialDispatch:
         real_pipeline = SmartMoneyContinuousPipeline
         pipelines = []
         def build(**kwargs):
-            p = real_pipeline(**kwargs)
+            p = real_pipeline(backup_engine=make_mock_backup_engine(), **kwargs)
             p._step1_preflight = MagicMock()  # external config/backup setup isolated
             p._step4_pre_backup = MagicMock(return_value={"backup_id": "synthetic"})
             p._step5_freshness_gate_check = MagicMock()
