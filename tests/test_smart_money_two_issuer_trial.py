@@ -1498,3 +1498,166 @@ os._exit(91)
             should_run, reason = pipeline._step3_check_durable_date_eligibility_under_lock()
             assert should_run, reason
             assert pipeline.current_slot_id == "2026-11-20:SLOT_2:1300"
+
+
+class TestRecurringTrialDispatch:
+    @pytest.fixture(autouse=True)
+    def env(self, monkeypatch):
+        monkeypatch.setenv("ARX_SEC_EGRESS_ROLE", "OWNER")
+        monkeypatch.setenv("ARX_CONTINUOUS_AUTH_SCOPE", SCOPE_TRIAL_2)
+        monkeypatch.setenv("ARX_SMART_MONEY_INGESTION_ONLY", "true")
+        monkeypatch.setenv("ARX_TRIAL_START_DATE", "2026-11-20")
+        monkeypatch.setenv("ARX_TRIAL_END_DATE", "2026-11-24")
+        monkeypatch.setenv("ARX_RELEASE_SHA", MOCK_SHA)
+        monkeypatch.setenv("ARX_EMERGENCY_STOP_ACTIVE", "false")
+        monkeypatch.delenv("RAILWAY_GIT_COMMIT_SHA", raising=False)
+
+    def worker(self, repo=None):
+        from zoneinfo import ZoneInfo
+        w = SmartMoneyIngestionWorker.__new__(SmartMoneyIngestionWorker)
+        w.is_trial_2_issuer = True
+        w.trial_scheduler = TwoIssuerTrialScheduler()
+        w.trial_scheduler.get_ny_now = MagicMock(return_value=datetime(2026, 11, 20, 9, 20, tzinfo=ZoneInfo("America/New_York")))
+        w.governed_issuers = TRIAL_ISSUERS
+        w.repository = repo or MagicMock()
+        w.repository.get_trial_progress.return_value = {} if repo is None else None
+        w._has_verified_owner_lock = MagicMock(return_value=True)
+        w.ingestion_only = True
+        return w
+
+    def test_dispatch_enqueues_due_slot_without_executing_ingestion(self):
+        w = self.worker()
+        with patch("analyst_dashboard.smart_money.worker.require_continuous_authorization"):
+            assert w.dispatch_trial_slot() == w.repository.enqueue_trial_slot_request.return_value
+        w.repository.enqueue_trial_slot_request.assert_called_once_with(w._trial_slot_subject("2026-11-20:SLOT_1:0915"))
+
+    @pytest.mark.parametrize("reason", ["outside", "weekend", "expired", "quota", "duplicate"])
+    def test_ineligible_polls_create_no_delivery(self, reason):
+        from zoneinfo import ZoneInfo
+        w = self.worker()
+        if reason == "outside":
+            w.trial_scheduler.get_ny_now.return_value = datetime(2026, 11, 20, 8, 0, tzinfo=ZoneInfo("America/New_York"))
+        elif reason == "weekend":
+            w.trial_scheduler.get_ny_now.return_value = datetime(2026, 11, 21, 9, 20, tzinfo=ZoneInfo("America/New_York"))
+        elif reason == "expired":
+            w.trial_scheduler.get_ny_now.return_value = datetime(2026, 11, 25, 9, 20, tzinfo=ZoneInfo("America/New_York"))
+        elif reason == "quota":
+            w.repository.get_trial_progress.return_value = {"cycles_trial": 12}
+        else:
+            w.repository.get_trial_progress.return_value = {"executed_slots": {"2026-11-20:SLOT_1:0915"}}
+        with patch("analyst_dashboard.smart_money.worker.require_continuous_authorization"):
+            assert w.dispatch_trial_slot() is None
+        w.repository.enqueue_trial_slot_request.assert_not_called()
+
+    @pytest.mark.parametrize("reason", ["grant", "lock", "dates", "stop", "progress"])
+    def test_dispatch_fails_closed_before_delivery(self, reason, monkeypatch):
+        w = self.worker()
+        if reason == "lock": w._has_verified_owner_lock.return_value = False
+        if reason == "dates": monkeypatch.delenv("ARX_TRIAL_END_DATE")
+        if reason == "stop": monkeypatch.setenv("ARX_EMERGENCY_STOP_ACTIVE", "true")
+        if reason == "progress": w.repository.get_trial_progress.side_effect = RuntimeError("DB_UNAVAILABLE")
+        with patch("analyst_dashboard.smart_money.worker.require_continuous_authorization", side_effect=RuntimeError("GRANT_EXPIRED") if reason == "grant" else None):
+            with pytest.raises(RuntimeError):
+                w.dispatch_trial_slot()
+        w.repository.enqueue_trial_slot_request.assert_not_called()
+
+    def test_trial_identity_is_loaded_consistently(self, monkeypatch):
+        monkeypatch.setenv("ARX_TRIAL_ID", "pinned-trial-identity")
+        assert TwoIssuerTrialScheduler().trial_id == "pinned-trial-identity"
+        assert TwoIssuerTrialScheduler(trial_id="explicit").trial_id == "explicit"
+
+    def test_queue_deduplication_survives_terminal_failure(self, disposable_db):
+        repo = PostgresSmartMoneyRepository(dsn=disposable_db)
+        subject = "b" * 64
+        req = repo.enqueue_trial_slot_request(subject)
+        claimed = repo.claim_next_run_request("test-worker")
+        repo.complete_run_request(req, lease_token=claimed["lease_token"], status="FAILED", failure_code="INJECTED_FAILURE")
+        assert PostgresSmartMoneyRepository(dsn=disposable_db).enqueue_trial_slot_request(subject) == req
+        with repo.ingestion_transaction() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM sm_run_requests")
+                assert cur.fetchone()[0] == 1
+
+    def make_database_worker(self, dsn):
+        import psycopg2
+        from analyst_dashboard.smart_money.storage.postgres_coordination import acquire_sec_owner_lock
+        repo = PostgresSmartMoneyRepository(dsn=dsn)
+        w = self.worker()
+        w.repository = repo
+        w.dsn = dsn
+        w._owner_conn = psycopg2.connect(dsn)
+        assert acquire_sec_owner_lock(w._owner_conn)
+        w._owner_lock_acquired = True
+        w._has_verified_owner_lock = SmartMoneyIngestionWorker._has_verified_owner_lock.__get__(w)
+        w.state = WorkerHealthState.OWNER_LOCK_ACQUIRED
+        w.containment_gate = MagicMock()
+        w.containment_gate.check_ingestion_eligibility.return_value = True
+        w.worker_id = "scheduled-delivery-worker"
+        w.lease_duration_sec = 60
+        w._last_stale_recovery_at = time.time()
+        w.stale_recovery_interval_sec = 30
+        w._is_executing_cycle = False
+        w._shutdown_requested = False
+        return w
+
+    def test_worker_poll_dispatches_claims_and_reconciles_without_operator(self, disposable_db):
+        """Real queue, lease, owner proof, reservation and ingestion-only transaction."""
+        w = self.make_database_worker(disposable_db)
+        real_pipeline = SmartMoneyContinuousPipeline
+        pipelines = []
+        def build(**kwargs):
+            p = real_pipeline(backup_engine=make_mock_backup_engine(), **kwargs)
+            p._step1_preflight = MagicMock()  # external config/backup setup isolated
+            p._step4_pre_backup = MagicMock(return_value={"backup_id": "synthetic"})
+            p._step5_freshness_gate_check = MagicMock()
+            p._step6_ingest_form4_filings = MagicMock(return_value=[])  # no SEC egress
+            p._step9_post_backup = MagicMock(return_value={"backup_id": "synthetic-post"})
+            p._step10_prune_retention = MagicMock(return_value=[])
+            pipelines.append(p)
+            return p
+        try:
+            with patch("analyst_dashboard.smart_money.worker.require_continuous_authorization"), \
+                 patch("analyst_dashboard.smart_money.continuous_pipeline.require_continuous_authorization"), \
+                 patch("analyst_dashboard.smart_money.worker.SmartMoneyContinuousPipeline", side_effect=build):
+                w.run_cycle()
+                w.run_cycle()  # same slot, no duplicate queue or ingestion
+            assert len(pipelines) == 1
+            assert not pipelines[0].allow_test_mode  # actual production pre-commit lock SQL
+            progress = w.repository.get_trial_progress(w.trial_scheduler.trial_id, "2026-11-20")
+            assert progress["cycles_trial"] == 1 and progress["requests_trial"] == 8
+            with w.repository.ingestion_transaction() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT status, request_type FROM sm_run_requests")
+                    assert cur.fetchall() == [("COMPLETED", "TRIAL_SLOT_FORM4")]
+                    cur.execute("SELECT coverage_status FROM sm_reconciliation_receipts")
+                    assert cur.fetchall() == [("PARTIAL",)]
+                    cur.execute("SELECT count(*) FROM scanner_snapshots")
+                    assert cur.fetchone()[0] == 0
+        finally:
+            w._owner_conn.close()
+
+    def test_delayed_slot_delivery_never_executes_in_next_slot(self, disposable_db):
+        from zoneinfo import ZoneInfo
+        w = self.make_database_worker(disposable_db)
+        try:
+            w.repository.enqueue_trial_slot_request(w._trial_slot_subject("2026-11-20:SLOT_1:0915"))
+            w.trial_scheduler.get_ny_now.return_value = datetime(2026, 11, 20, 13, 5, tzinfo=ZoneInfo("America/New_York"))
+            with patch("analyst_dashboard.smart_money.worker.SmartMoneyContinuousPipeline") as pipeline:
+                assert w.process_run_requests() == 1
+                pipeline.assert_not_called()
+            progress = w.repository.get_trial_progress(w.trial_scheduler.trial_id, "2026-11-20")
+            assert progress["requests_trial"] == 0
+        finally:
+            w._owner_conn.close()
+
+    def test_slot_boundary_rechecked_under_pipeline_lock(self, disposable_db):
+        p = SmartMoneyContinuousPipeline(dsn=disposable_db, repository=PostgresSmartMoneyRepository(dsn=disposable_db),
+            backup_engine=make_mock_backup_engine(), allow_test_mode=True, issuers=TRIAL_ISSUERS, ingestion_only=True)
+        p.current_slot_id = "2026-11-20:SLOT_2:1300"
+        with patch.object(p, "_step1_preflight"), \
+             patch.object(p, "_step3_check_durable_date_eligibility_under_lock", return_value=(True, "eligible")), \
+             patch.object(p, "_step6_ingest_form4_filings") as fetch:
+            result = p.execute_cycle(expected_trial_slot_id="2026-11-20:SLOT_1:0915")
+            assert result["status"] == "SKIPPED_NOT_ELIGIBLE"
+            fetch.assert_not_called()
+        assert p.repository.get_trial_progress(p.trial_scheduler.trial_id, "2026-11-20")["requests_trial"] == 0

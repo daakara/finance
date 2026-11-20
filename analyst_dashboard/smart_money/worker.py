@@ -16,6 +16,7 @@ import json
 import time
 import signal
 import logging
+import hashlib
 from enum import Enum
 from typing import Optional, Dict, Any, List
 
@@ -60,6 +61,7 @@ from analyst_dashboard.smart_money.continuous_pipeline import (
     TRIAL_2_GOVERNED_ISSUERS,
 )
 from analyst_dashboard.smart_money.continuous_authorization import require_continuous_authorization
+from analyst_dashboard.smart_money.smart_money_scheduler import TwoIssuerTrialScheduler
 import threading
 
 logger = logging.getLogger("smart_money.worker")
@@ -508,6 +510,39 @@ class SmartMoneyIngestionWorker:
         else:
             self.ingestion_only = (env_ingestion_only in ("true", "1", "yes"))
         self.governed_issuers = TRIAL_2_GOVERNED_ISSUERS if self.is_trial_2_issuer else DEFAULT_GOVERNED_ISSUERS
+        self.trial_scheduler = TwoIssuerTrialScheduler() if self.is_trial_2_issuer else None
+
+    def dispatch_trial_slot(self) -> Optional[str]:
+        """Enqueue a due ingestion-only slot after live authorization and fencing.
+
+        Eligibility is rechecked by the pipeline when the request is consumed.
+        Dispatch itself makes no SEC requests and consumes no execution budget.
+        """
+        if not getattr(self, "is_trial_2_issuer", False):
+            return None
+        require_continuous_authorization(issuers=self.governed_issuers)
+        if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").upper() in ("TRUE", "1", "YES"):
+            raise RuntimeError("EMERGENCY_STOP_ACTIVE")
+        if not self._has_verified_owner_lock():
+            raise RuntimeError("TRIAL_DISPATCH_OWNER_LOCK_UNVERIFIED")
+        if not os.environ.get("ARX_TRIAL_START_DATE") or not os.environ.get("ARX_TRIAL_END_DATE"):
+            raise RuntimeError("TRIAL_DISPATCH_DATES_REQUIRED")
+        now = self.trial_scheduler.get_ny_now()
+        progress = self.repository.get_trial_progress(self.trial_scheduler.trial_id, now.date().isoformat())
+        due, slot_id, reason = self.trial_scheduler.evaluate_execution_eligibility(
+            now=now, progress=progress, issuers=self.governed_issuers,
+        )
+        if not due:
+            logger.debug("Trial dispatch skipped: %s", reason)
+            return None
+        subject = self._trial_slot_subject(slot_id)
+        request_id = self.repository.enqueue_trial_slot_request(subject)
+        logger.info("Trial slot delivery: trial=%s slot=%s request=%s", self.trial_scheduler.trial_id, slot_id, request_id)
+        return request_id
+
+    def _trial_slot_subject(self, slot_id: str) -> str:
+        payload = json.dumps([self.trial_scheduler.trial_id, slot_id], separators=(",", ":"))
+        return hashlib.sha256(payload.encode()).hexdigest()
 
     def validate_preflight(self) -> bool:
         """
@@ -714,6 +749,17 @@ class SmartMoneyIngestionWorker:
 
         req_id = claimed["request_id"]
         lease_token = claimed["lease_token"]
+        if claimed.get("request_type") == "TRIAL_SLOT_FORM4":
+            # A delayed job must not silently execute under a later slot's quota.
+            scheduler = getattr(self, "trial_scheduler", None)
+            slot_id = scheduler.get_slot_for_time(scheduler.get_ny_now())[1] if scheduler else None
+            if (not getattr(self, "is_trial_2_issuer", False) or not slot_id
+                    or claimed.get("requested_by_subject_hash") != self._trial_slot_subject(slot_id)):
+                self.repository.complete_run_request(
+                    req_id, lease_token=lease_token, status="SKIPPED_NOT_ELIGIBLE",
+                    failure_code="TRIAL_SLOT_DELIVERY_EXPIRED",
+                )
+                return 1
         logger.info(f"Claimed operator run request: {req_id} (token={lease_token})")
 
         # Heartbeat renewal during processing
@@ -735,11 +781,13 @@ class SmartMoneyIngestionWorker:
                 preacquired_lock_conn=self._owner_conn,
                 issuers=getattr(self, "governed_issuers", DEFAULT_GOVERNED_ISSUERS),
                 ingestion_only=getattr(self, "ingestion_only", False),
+                scheduler=getattr(self, "trial_scheduler", None),
             )
             res = pipeline.execute_cycle(
                 run_request_id=req_id,
                 lease_token=lease_token,
-                trigger_type="OPERATOR",
+                trigger_type="SCHEDULED" if claimed.get("request_type") == "TRIAL_SLOT_FORM4" else "OPERATOR",
+                **({"expected_trial_slot_id": slot_id} if claimed.get("request_type") == "TRIAL_SLOT_FORM4" else {}),
             )
             cycle_status = res.get("status")
             if cycle_status in ("SKIPPED_NOT_ELIGIBLE", "SKIPPED_ALREADY_EXECUTED_TODAY"):
@@ -812,6 +860,7 @@ class SmartMoneyIngestionWorker:
             self.state = WorkerHealthState.HEALTHY
 
         # Process any pending run requests
+        self.dispatch_trial_slot()
         try:
             self.process_run_requests()
         except Exception as e:
