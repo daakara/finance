@@ -161,7 +161,8 @@ def get_sec_filings(symbol: str, response: Response = None):
 
     cov_status = envelope.get("coverage_status") or ("SUPPORTED_SEC_ISSUER" if cik else "UNSUPPORTED_ISSUER")
     cert_watermark = envelope.get("certified_watermark")
-    as_of = envelope.get("as_of") or cert_watermark or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    as_of = envelope.get("as_of")
+    served_at = envelope.get("served_at") or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     is_held = envelope.get("is_pipeline_held", True)
 
     return {
@@ -173,6 +174,7 @@ def get_sec_filings(symbol: str, response: Response = None):
         "coverage_status": cov_status,
         "certified_watermark": cert_watermark,
         "as_of": as_of,
+        "served_at": served_at,
         "is_pipeline_held": is_held,
         "status_code": envelope.get("status_code"),
         "reason": envelope.get("reason"),

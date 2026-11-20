@@ -39,7 +39,7 @@ AAPL_SEC_PAYLOAD = {
             "reporting_owner_name": "Jennifer Newstead",
             "officer_title": "General Counsel",
             "transaction_date": "2026-11-17",
-            "transaction_type": "Sale (Open Market)",
+            "transaction_type": "Sale (Open Market / Private)",
             "transaction_code": "S",
             "shares": 2398.0,
             "price_per_share": 352.77,
@@ -53,13 +53,13 @@ AAPL_SEC_PAYLOAD = {
                     "officer_title": "General Counsel",
                     "transaction_date": "2026-11-17",
                     "transaction_code": "S",
-                    "transaction_type": "Sale (Open Market)",
+                    "transaction_type": "Sale (Open Market / Private)",
                     "shares": 2398.0,
                     "price_per_share": 352.77,
                     "total_value": 845942.46,
                     "acquired_disposed_code": "D",
                     "is_derivative": False,
-                    "security_title": "Common Stock",
+                    "security_title": "Unspecified Security",
                     "shares_owned_following": 32541.0
                 }
             ]
@@ -86,7 +86,8 @@ AAPL_SEC_PAYLOAD = {
     ],
     "coverage_status": "PARTIAL",
     "certified_watermark": "2026-11-19T23:30:21Z",
-    "as_of": "2026-11-20T08:13:23Z",
+    "as_of": "2026-11-19T23:30:21Z",
+    "served_at": "2026-11-21T00:30:00Z",
     "is_pipeline_held": True,
     "disclaimer": "Verified Form 4 regulatory filings retrieved under read-only disclosure authority."
 }
@@ -107,9 +108,10 @@ NVDA_SEC_PAYLOAD = {
             "transaction_date": "2026-11-16",
             "transaction_type": "Multi-Transaction Disclosure",
             "transaction_code": "M",
-            "shares": 10000.0,
-            "price_per_share": 0.0,
-            "total_value": 0.0,
+            "is_mixed": True,
+            "shares": None,
+            "price_per_share": None,
+            "total_value": None,
             "is_derivative": False,
             "sec_source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000188/0001045810-26-000188.txt",
             "transactions": [
@@ -119,13 +121,13 @@ NVDA_SEC_PAYLOAD = {
                     "officer_title": "EVP & Chief Financial Officer",
                     "transaction_date": "2026-11-16",
                     "transaction_code": "M",
-                    "transaction_type": "Option / Warrant Exercise",
+                    "transaction_type": "Option Exercise (Exempt)",
                     "shares": 10000.0,
                     "price_per_share": 0.0,
                     "total_value": 0.0,
                     "acquired_disposed_code": "A",
                     "is_derivative": False,
-                    "security_title": "Common Stock",
+                    "security_title": "Unspecified Security",
                     "shares_owned_following": 580000.0
                 },
                 {
@@ -134,13 +136,13 @@ NVDA_SEC_PAYLOAD = {
                     "officer_title": "EVP & Chief Financial Officer",
                     "transaction_date": "2026-11-16",
                     "transaction_code": "S",
-                    "transaction_type": "Sale (Open Market)",
+                    "transaction_type": "Sale (Open Market / Private)",
                     "shares": 10000.0,
                     "price_per_share": 146.50,
                     "total_value": 1465000.0,
                     "acquired_disposed_code": "D",
                     "is_derivative": False,
-                    "security_title": "Common Stock",
+                    "security_title": "Unspecified Security",
                     "shares_owned_following": 570000.0
                 },
                 {
@@ -155,7 +157,7 @@ NVDA_SEC_PAYLOAD = {
                     "total_value": 0.0,
                     "acquired_disposed_code": "D",
                     "is_derivative": False,
-                    "security_title": "Common Stock",
+                    "security_title": "Unspecified Security",
                     "shares_owned_following": 567500.0
                 }
             ]
@@ -163,7 +165,8 @@ NVDA_SEC_PAYLOAD = {
     ],
     "coverage_status": "PARTIAL",
     "certified_watermark": "2026-11-18T22:05:14Z",
-    "as_of": "2026-11-20T08:13:23Z",
+    "as_of": "2026-11-18T22:05:14Z",
+    "served_at": "2026-11-21T00:30:00Z",
     "is_pipeline_held": True,
     "disclaimer": "Verified Form 4 regulatory filings retrieved under read-only disclosure authority."
 }

@@ -80,8 +80,11 @@ export interface SecForm4Transaction {
   isExercise: boolean;
   isOpenMarketPurchaseEvidence: boolean;
   isPositiveBuyingConviction: boolean;
-  securityTitle?: string;
+  securityTitle?: string | null;
   publicAvailabilityAt?: string | null;
+  isEffective?: boolean;
+  effectiveStatus?: string;
+  amendmentNote?: string | null;
 }
 
 export interface SecForm4Trade {
@@ -90,9 +93,9 @@ export interface SecForm4Trade {
   insiderName: string | null;
   insiderRole: string | null;
   transactionType: string;
-  sharesTraded: number | null; // null when unparsed/unavailable, NOT 0
-  pricePerShare: number | null; // null when unparsed/unavailable, NOT 0
-  totalValueUsd: number | null; // null when unparsed/unavailable, NOT 0
+  sharesTraded: number | null; // null when unparsed/unavailable or mixed, NOT 0
+  pricePerShare: number | null; // null when unparsed/unavailable or mixed, NOT 0
+  totalValueUsd: number | null; // null when unparsed/unavailable or mixed, NOT 0
   filingDate: string;
   secEdgarUrl: string;
   isSignificantBuy: boolean; // Flagged if open-market purchase >= $100k
@@ -115,6 +118,13 @@ export interface SecForm4Trade {
   isGift?: boolean;
   isExercise?: boolean;
   isDerivative?: boolean;
+  isMixed?: boolean;
+  isEffective?: boolean;
+  effectiveStatus?: string;
+  hasAmbiguousAmendment?: boolean;
+  amendmentNote?: string | null;
+  isSuperseded?: boolean;
+  supersededBy?: string | null;
 }
 
 /**
@@ -358,7 +368,15 @@ export interface SecFilingsResult {
   coverageStatus?: string | null;
   certifiedWatermark?: string | null;
   asOf?: string | null;
+  servedAt?: string | null;
   isPipelineHeld?: boolean;
+}
+
+function cleanNumber(val: any): number | null {
+  if (val === null || val === undefined) return null;
+  const n = typeof val === "number" ? val : Number(val);
+  if (!Number.isFinite(n)) return null;
+  return n;
 }
 
 export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilingsResult> {
@@ -395,17 +413,16 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilings
             transactionDate: String(tx.transaction_date || tx.transactionDate || ""),
             transactionCode: String(tx.transaction_code || tx.transactionCode || "").toUpperCase(),
             transactionType: String(tx.transaction_type || tx.transactionType || ""),
-            shares: typeof tx.shares === "number" ? tx.shares : null,
-            pricePerShare: typeof tx.price_per_share === "number" ? tx.price_per_share : (typeof tx.pricePerShare === "number" ? tx.pricePerShare : null),
-            totalValueUsd: typeof tx.total_value_usd === "number"
-              ? tx.total_value_usd
-              : (typeof (tx as any).total_value === "number"
-                  ? (tx as any).total_value
-                  : (typeof tx.totalValueUsd === "number"
-                      ? tx.totalValueUsd
-                      : (typeof tx.shares === "number" && typeof tx.price_per_share === "number"
-                          ? tx.shares * tx.price_per_share
-                          : null))),
+            shares: cleanNumber(tx.shares),
+            pricePerShare: cleanNumber(tx.price_per_share ?? tx.pricePerShare),
+            totalValueUsd: cleanNumber(
+              tx.total_value_usd ??
+              (tx as any).total_value ??
+              tx.totalValueUsd ??
+              (typeof tx.shares === "number" && typeof tx.price_per_share === "number"
+                ? tx.shares * tx.price_per_share
+                : null)
+            ),
             reportingOwnerName: String(tx.reporting_owner_name || tx.reportingOwnerName || ""),
             reportingOwnerRole: String(tx.reporting_owner_role || tx.reportingOwnerRole || tx.officer_title || tx.officerTitle || "Corporate Insider"),
             officerTitle: tx.officer_title || tx.officerTitle || null,
@@ -421,24 +438,55 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilings
             isExercise: Boolean(tx.is_exercise ?? tx.isExercise ?? (["M", "X"].includes(String(tx.transaction_code || tx.transactionCode || "").toUpperCase()))),
             isOpenMarketPurchaseEvidence: Boolean(tx.is_open_market_purchase_evidence ?? tx.isOpenMarketPurchaseEvidence),
             isPositiveBuyingConviction: Boolean(tx.is_positive_buying_conviction ?? tx.isPositiveBuyingConviction),
-            securityTitle: tx.security_title || tx.securityTitle,
-            publicAvailabilityAt: tx.public_availability_at || tx.publicAvailabilityAt,
+            securityTitle: tx.security_title || tx.securityTitle || null,
+            publicAvailabilityAt: tx.public_availability_at || tx.publicAvailabilityAt || null,
+            isEffective: typeof tx.is_effective === "boolean" ? tx.is_effective : true,
+            effectiveStatus: tx.effective_status || "EFFECTIVE",
+            amendmentNote: tx.amendment_note || null,
           }));
 
-          const hasShares = typeof f.shares_traded === "number" || typeof f.sharesTraded === "number";
-          const hasPrice = typeof f.price_per_share === "number" || typeof f.pricePerShare === "number";
-          const hasTotal = typeof f.total_value_usd === "number" || typeof (f as any).total_value === "number" || typeof f.totalValueUsd === "number";
+          const isMixed = Boolean(f.is_mixed ?? f.isMixed);
+          const hasShares = cleanNumber(f.shares_traded ?? f.sharesTraded) !== null;
+          const hasPrice = cleanNumber(f.price_per_share ?? f.pricePerShare) !== null;
+          const hasTotal = cleanNumber(f.total_value_usd ?? (f as any).total_value ?? f.totalValueUsd) !== null;
           const hasParsed = mappedTxs.length > 0 || hasShares || hasPrice || hasTotal || Boolean(f.has_parsed_transaction);
 
-          const shares = hasShares ? Number(f.shares_traded ?? f.sharesTraded) : (mappedTxs.length > 0 ? (mappedTxs.length === 1 ? mappedTxs[0].shares : mappedTxs.reduce((sum, t) => sum + (t.shares ?? 0), 0)) : null);
-          const price = hasPrice ? Number(f.price_per_share ?? f.pricePerShare) : (mappedTxs.length === 1 ? mappedTxs[0].pricePerShare : null);
-          const total = hasTotal
-            ? Number(f.total_value_usd ?? (f as any).total_value ?? f.totalValueUsd)
-            : (mappedTxs.length > 0
-                ? (mappedTxs.length === 1
-                    ? mappedTxs[0].totalValueUsd
-                    : mappedTxs.reduce((sum, t) => sum + (t.totalValueUsd ?? 0), 0))
-                : (shares !== null && price !== null ? shares * price : null));
+          let shares: number | null = null;
+          let price: number | null = null;
+          let total: number | null = null;
+
+          if (isMixed) {
+            // Mixed filing: withhold aggregates completely!
+            shares = null;
+            price = null;
+            total = null;
+          } else if (hasShares) {
+            shares = cleanNumber(f.shares_traded ?? f.sharesTraded);
+            price = hasPrice ? cleanNumber(f.price_per_share ?? f.pricePerShare) : (mappedTxs.length === 1 ? mappedTxs[0].pricePerShare : null);
+            total = hasTotal
+              ? cleanNumber(f.total_value_usd ?? (f as any).total_value ?? f.totalValueUsd)
+              : (shares !== null && price !== null ? cleanNumber(shares * price) : null);
+          } else if (mappedTxs.length === 1) {
+            shares = mappedTxs[0].shares;
+            price = mappedTxs[0].pricePerShare;
+            total = mappedTxs[0].totalValueUsd;
+          } else if (mappedTxs.length > 1) {
+            const owners = new Set(mappedTxs.map(t => t.reportingOwnerName).filter(Boolean));
+            const secTitles = new Set(mappedTxs.map(t => t.securityTitle).filter(Boolean));
+            const codes = new Set(mappedTxs.map(t => t.transactionCode).filter(Boolean));
+            const allSharesValid = mappedTxs.every(t => typeof t.shares === "number" && Number.isFinite(t.shares));
+            const allTotalsValid = mappedTxs.every(t => typeof t.totalValueUsd === "number" && Number.isFinite(t.totalValueUsd));
+
+            if (owners.size <= 1 && secTitles.size <= 1 && codes.size <= 1 && allSharesValid) {
+              shares = mappedTxs.reduce((sum, t) => sum + (t.shares ?? 0), 0);
+              total = allTotalsValid ? mappedTxs.reduce((sum, t) => sum + (t.totalValueUsd ?? 0), 0) : null;
+              price = total !== null && shares > 0 ? total / shares : (mappedTxs[0].pricePerShare ?? null);
+            } else {
+              shares = null;
+              price = null;
+              total = null;
+            }
+          }
 
           const isBuy = typeof f.is_buy === "boolean" ? f.is_buy : (typeof f.isBuy === "boolean" ? f.isBuy : (mappedTxs.length > 0 ? (mappedTxs.every(t => t.isBuy) ? true : (mappedTxs.every(t => t.isSell) ? false : null)) : null));
           const isSell = typeof f.is_sell === "boolean" ? f.is_sell : (typeof f.isSell === "boolean" ? f.isSell : (mappedTxs.length > 0 ? (mappedTxs.every(t => t.isSell) ? true : (mappedTxs.every(t => t.isBuy) ? false : null)) : null));
@@ -455,7 +503,7 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilings
             mappedTxs.length === 1
               ? mappedTxs[0].transactionType
               : (mappedTxs.length > 1
-                  ? `Multiple Transactions (${mappedTxs.length})`
+                  ? (isMixed ? `Multi-Transaction Filing (${mappedTxs.length} Events — Mixed)` : `Multiple Transactions (${mappedTxs.length})`)
                   : (isAmendment ? `Form ${formType} Regulatory Filing (Amendment)` : `Form ${formType} Regulatory Filing`))
           );
 
@@ -489,6 +537,13 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilings
             isGift: typeof f.is_gift === "boolean" ? f.is_gift : (mappedTxs.length > 0 && mappedTxs.every(t => t.isGift)),
             isExercise: typeof f.is_exercise === "boolean" ? f.is_exercise : (mappedTxs.length > 0 && mappedTxs.every(t => t.isExercise)),
             isDerivative: typeof f.is_derivative === "boolean" ? f.is_derivative : (mappedTxs.length > 0 && mappedTxs.every(t => t.isDerivative)),
+            isMixed: isMixed || (f.shares_traded === null && mappedTxs.length > 1),
+            isEffective: typeof f.is_effective === "boolean" ? f.is_effective : (mappedTxs.length > 0 ? mappedTxs.every(t => t.isEffective) : true),
+            effectiveStatus: f.effective_status || f.effectiveStatus || "EFFECTIVE",
+            hasAmbiguousAmendment: Boolean(f.has_ambiguous_amendment ?? f.hasAmbiguousAmendment),
+            amendmentNote: f.amendment_note || f.amendmentNote || null,
+            isSuperseded: Boolean(f.is_superseded ?? f.isSuperseded),
+            supersededBy: f.superseded_by || f.supersededBy || null,
           };
         });
 
@@ -500,6 +555,7 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilings
           coverageStatus: data.coverage_status || null,
           certifiedWatermark: data.certified_watermark || null,
           asOf: data.as_of || null,
+          servedAt: data.served_at || null,
           isPipelineHeld: typeof data.is_pipeline_held === "boolean" ? data.is_pipeline_held : true,
         };
       }

@@ -52,6 +52,16 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
   const latestTrade = trades[0];
 
   const getEventTheme = (trade: SecForm4Trade) => {
+    if (trade.isMixed) {
+      return {
+        icon: "⚖️",
+        title: "Multi-Transaction Disclosure (Mixed / Aggregates Withheld)",
+        bgClass: "bg-slate-900/90 border-slate-700/90",
+        textClass: "text-slate-200",
+        verb: "Disclosed Multiple Mixed Transactions",
+        codeLabel: "Mixed Filing",
+      };
+    }
     if (trade.isBuy) {
       return {
         icon: "🟢",
@@ -400,7 +410,7 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
             <>
               {/* Top Operational / Coverage Metadata Strip */}
               <div className="flex flex-wrap items-center justify-between gap-2 bg-[#090d14] px-3 py-2 rounded-lg border border-[#1b2434] text-[11px]">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-wrap">
                   <span className="text-slate-400 font-medium">Filing Authority:</span>
                   <span className="text-slate-200 font-bold">SEC EDGAR Form 4</span>
                   {filingsResult?.coverageStatus === "COMPLETE" ? (
@@ -416,16 +426,24 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                       Coverage: {filingsResult?.coverageStatus || "Supported SEC Issuer"}
                     </span>
                   )}
+                  {filingsResult?.certifiedWatermark && (
+                    <span className="text-[10px] text-cyan-400 font-mono bg-cyan-950/40 border border-cyan-800/60 px-1.5 py-0.5 rounded">
+                      Certified Watermark: {filingsResult.certifiedWatermark.slice(0, 10)}
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-wrap text-[10px] font-mono">
                   {filingsResult?.isPipelineHeld && (
-                    <span className="bg-amber-950/40 border border-amber-800/60 text-amber-400 px-2 py-0.5 rounded text-[10px]">
+                    <span className="bg-amber-950/40 border border-amber-800/60 text-amber-400 px-2 py-0.5 rounded">
                       ⏸️ HOLD_SEC_001 Standby (Stored Facts Disclosed)
                     </span>
                   )}
-                  {filingsResult?.asOf && (
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      As-of: {filingsResult.asOf.slice(0, 10)}
+                  <span className="text-slate-400">
+                    Evidence As-of: <span className="text-slate-300">{filingsResult?.asOf ? filingsResult.asOf.slice(0, 10) : "Pending / Unverified"}</span>
+                  </span>
+                  {filingsResult?.servedAt && (
+                    <span className="text-slate-500">
+                      Served: {filingsResult.servedAt.slice(11, 19)} UTC
                     </span>
                   )}
                 </div>
@@ -438,7 +456,7 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                   return (
                     <div className={`${theme.bgClass} border rounded-xl p-3.5 text-xs space-y-2`}>
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 flex-wrap">
                           <span className="text-base">{theme.icon}</span>
                           <strong className={`${theme.textClass} font-bold text-sm`}>
                             {latestTrade.insiderName || "Corporate Insider"} ({latestTrade.insiderRole || "Officer / Director"})
@@ -446,6 +464,16 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                           {latestTrade.isAmendment && (
                             <span className="text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800 px-1.5 py-0.5 rounded">
                               Amendment
+                            </span>
+                          )}
+                          {latestTrade.hasAmbiguousAmendment && (
+                            <span className="text-[10px] font-bold bg-amber-900/60 text-amber-200 border border-amber-700 px-1.5 py-0.5 rounded" title="Target of ambiguous amendment (effective impact unresolved)">
+                              Ambiguous Amendment
+                            </span>
+                          )}
+                          {latestTrade.isSuperseded && (
+                            <span className="text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800 px-1.5 py-0.5 rounded">
+                              Superseded
                             </span>
                           )}
                         </div>
@@ -459,28 +487,45 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                           <span>↗</span>
                         </a>
                       </div>
-                      <p className="text-[11px] text-slate-200 font-sans leading-relaxed">
-                        {theme.verb}{" "}
-                        <strong>
-                          {typeof latestTrade.sharesTraded === "number"
-                            ? `${latestTrade.sharesTraded.toLocaleString()} shares`
-                            : "disclosed shares"}
-                        </strong>
-                        {latestTrade.isGift ? (
-                          <> via <strong>Bona Fide Gift</strong> (Reported consideration: <strong>$0.00</strong> — zero cash exchange, not zero economic value).</>
-                        ) : latestTrade.pricePerShare === 0 ? (
-                          <> at <strong>$0.00</strong> (Zero Consideration / Option Exercise / Grant).</>
-                        ) : typeof latestTrade.pricePerShare === "number" ? (
-                          <> on the open market at <strong>${latestTrade.pricePerShare.toFixed(2)}</strong> (Total: <strong>{latestTrade.totalValueUsd !== null ? `$${(latestTrade.totalValueUsd / 1000000).toFixed(2)}M USD` : "Unavailable"}</strong>).</>
-                        ) : (
-                          <> (Total transaction consideration: <strong>{latestTrade.totalValueUsd !== null ? `$${(latestTrade.totalValueUsd / 1000000).toFixed(2)}M USD` : "Unavailable"}</strong>).</>
-                        )}
-                        {latestTrade.transactionDate && (
-                          <span className="text-slate-400 block text-[10px] mt-0.5 font-mono">
-                            Transaction Date: {latestTrade.transactionDate} • Filed: {latestTrade.filingDate || "recent"}
+                      {latestTrade.isMixed ? (
+                        <div className="space-y-1">
+                          <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
+                            {theme.verb} across {latestTrade.transactionCount || "multiple"} distinct events. Because this filing contains transactions across different owners, securities, or transaction codes, aggregate totals are withheld to avoid misleading figures.
+                          </p>
+                          <span className="text-[10px] text-cyan-400/90 font-mono block">
+                            See individual transaction breakdown below.
                           </span>
-                        )}
-                      </p>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-200 font-sans leading-relaxed">
+                          {theme.verb}{" "}
+                          <strong>
+                            {typeof latestTrade.sharesTraded === "number"
+                              ? `${latestTrade.sharesTraded.toLocaleString()} shares`
+                              : "disclosed shares"}
+                          </strong>
+                          {latestTrade.isGift ? (
+                            latestTrade.pricePerShare === 0 ? (
+                              <> via <strong>Bona Fide Gift</strong> (Reported consideration: <strong>$0.00</strong> — zero cash exchange, not zero economic value).</>
+                            ) : typeof latestTrade.pricePerShare === "number" && latestTrade.pricePerShare > 0 ? (
+                              <> via <strong>Bona Fide Gift</strong> (Reported consideration: <strong>${latestTrade.pricePerShare.toFixed(2)}</strong> per share).</>
+                            ) : (
+                              <> via <strong>Bona Fide Gift</strong> (Reported consideration: <strong>Not Reported / None</strong> — no cash consideration reported on Form 4).</>
+                            )
+                          ) : latestTrade.pricePerShare === 0 ? (
+                            <> at <strong>$0.00</strong> (Zero Consideration / Option Exercise / Grant).</>
+                          ) : typeof latestTrade.pricePerShare === "number" ? (
+                            <> on the open market at <strong>${latestTrade.pricePerShare.toFixed(2)}</strong> (Total: <strong>{latestTrade.totalValueUsd !== null ? `$${(latestTrade.totalValueUsd / 1000000).toFixed(2)}M USD` : "Unavailable"}</strong>).</>
+                          ) : (
+                            <> (Total transaction consideration: <strong>{latestTrade.totalValueUsd !== null ? `$${(latestTrade.totalValueUsd / 1000000).toFixed(2)}M USD` : "Unavailable"}</strong>).</>
+                          )}
+                          {latestTrade.transactionDate && (
+                            <span className="text-slate-400 block text-[10px] mt-0.5 font-mono">
+                              Transaction Date: {latestTrade.transactionDate} • Filed: {latestTrade.filingDate || "recent"}
+                            </span>
+                          )}
+                        </p>
+                      )}
                     </div>
                   );
                 })()
@@ -602,7 +647,9 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                                       {typeof tx.shares === "number" ? tx.shares.toLocaleString() : "Unavailable"}
                                     </td>
                                     <td className="py-1 px-2 text-slate-200">
-                                      {tx.pricePerShare === 0
+                                      {tx.isGift ? (
+                                        tx.pricePerShare === 0 ? "$0.00" : (typeof tx.pricePerShare === "number" ? `$${tx.pricePerShare.toFixed(2)}` : "None Reported")
+                                      ) : tx.pricePerShare === 0
                                         ? "$0.00"
                                         : (typeof tx.pricePerShare === "number" ? `$${tx.pricePerShare.toFixed(2)}` : "Unavailable")}
                                     </td>
@@ -615,7 +662,7 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                                             </span>
                                           ) : "Unavailable")}
                                     </td>
-                                    <td className="py-1 px-2 text-slate-400 text-[9px]">{tx.securityTitle || (tx.isDerivative ? "Derivative" : "Common Stock")}</td>
+                                    <td className="py-1 px-2 text-slate-400 text-[9px]">{tx.securityTitle || (tx.isDerivative ? "Derivative Security" : "Unspecified Security")}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -658,6 +705,21 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                                   4/A
                                 </span>
                               )}
+                              {trade.hasAmbiguousAmendment && (
+                                <span className="text-[9px] font-bold bg-amber-900/60 text-amber-200 border border-amber-700 px-1 py-0.5 rounded" title="Target of ambiguous amendment">
+                                  Ambiguous 4/A
+                                </span>
+                              )}
+                              {trade.isSuperseded && (
+                                <span className="text-[9px] font-bold bg-rose-950 text-rose-300 border border-rose-800 px-1 py-0.5 rounded">
+                                  Superseded
+                                </span>
+                              )}
+                              {trade.isMixed && (
+                                <span className="text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700 px-1 py-0.5 rounded">
+                                  Mixed
+                                </span>
+                              )}
                               {trade.isGift && (
                                 <span className="text-[9px] font-bold bg-sky-950 text-sky-400 border border-sky-800 px-1 py-0.5 rounded">
                                   Gift
@@ -681,7 +743,15 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
                             )}
                           </td>
                           <td className="py-2 px-3 text-slate-300">
-                            {trade.pricePerShare === 0 ? (
+                            {trade.isGift ? (
+                              trade.pricePerShare === 0 ? (
+                                <span className="text-slate-400 font-mono">$0.00</span>
+                              ) : typeof trade.pricePerShare === "number" ? (
+                                `$${trade.pricePerShare.toFixed(2)}`
+                              ) : (
+                                <span className="text-slate-500 font-sans font-normal">None Reported</span>
+                              )
+                            ) : trade.pricePerShare === 0 ? (
                               <span className="text-slate-400 font-mono">$0.00</span>
                             ) : typeof trade.pricePerShare === "number" ? (
                               `$${trade.pricePerShare.toFixed(2)}`

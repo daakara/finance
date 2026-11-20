@@ -145,8 +145,8 @@ async function runTests() {
     }
   }
 
-  // ── Test 2: Multi-Transaction Preservation (Exercise + Sale) ──────────────
-  console.log("\nTest 2: Multi-transaction filing preserves all events without duplicates...");
+  // ── Test 2: Multi-Transaction Preservation & Mixed Filing Aggregate Withholding ──────────────
+  console.log("\nTest 2: Multi-transaction filing preserves all events and withholds mixed aggregates...");
   {
     const restore = mockFetch(async (url) => {
       if (url.includes("/smart-money/sec-filings/NVDA")) {
@@ -158,6 +158,8 @@ async function runTests() {
             available: true,
             cik: "0001045810",
             coverage_status: "COMPLETE",
+            served_at: "2026-11-21T00:30:00Z",
+            as_of: "2026-11-18T22:00:00Z",
             items: [
               {
                 form: "4",
@@ -166,19 +168,20 @@ async function runTests() {
                 sec_url: "https://sec.gov/nvda.txt",
                 has_parsed_transaction: true,
                 transaction_count: 2,
+                is_mixed: true,
                 insider_name: "Colette Kress",
                 insider_role: "EVP, CFO",
-                transaction_type: "Multiple Transactions (2)",
+                transaction_type: "Multi-Transaction Filing (2 Events — Mixed)",
                 transaction_code: "MIXED",
-                shares_traded: 15000,
-                total_value_usd: 1450000,
+                shares_traded: null,
+                total_value_usd: null,
                 transactions: [
                   {
                     transaction_id: "tx-m",
                     accession_number: "0001045810-26-000099",
                     transaction_date: "2026-11-14",
                     transaction_code: "M",
-                    transaction_type: "Option Exercise (Code M)",
+                    transaction_type: "Option Exercise",
                     shares: 10000,
                     price_per_share: 0.0,
                     total_value_usd: 0.0,
@@ -194,14 +197,14 @@ async function runTests() {
                     is_sell: false,
                     is_gift: false,
                     is_exercise: true,
-                    security_title: "Derivative Option",
+                    security_title: "Non-Qualified Stock Option",
                   },
                   {
                     transaction_id: "tx-s",
                     accession_number: "0001045810-26-000099",
                     transaction_date: "2026-11-14",
                     transaction_code: "S",
-                    transaction_type: "Open Market Sale (Code S)",
+                    transaction_type: "Sale (Open Market / Private)",
                     shares: 5000,
                     price_per_share: 290.00,
                     total_value_usd: 1450000.0,
@@ -217,7 +220,7 @@ async function runTests() {
                     is_sell: true,
                     is_gift: false,
                     is_exercise: false,
-                    security_title: "Common Stock",
+                    security_title: null,
                   },
                 ],
               },
@@ -231,8 +234,16 @@ async function runTests() {
     try {
       const res = await fetchSecForm4Insiders("NVDA");
       assert.ok(res.items);
+      assert.strictEqual(res.servedAt, "2026-11-21T00:30:00Z", "servedAt must be exposed separately");
+      assert.strictEqual(res.asOf, "2026-11-18T22:00:00Z", "asOf reflects genuine evidence freshness");
+
       const trade = res.items[0];
       assert.strictEqual(trade.transactionCount, 2);
+      assert.strictEqual(trade.isMixed, true, "isMixed must be true for mixed event filing");
+      assert.strictEqual(trade.sharesTraded, null, "Aggregate shares must be withheld for mixed filing");
+      assert.strictEqual(trade.totalValueUsd, null, "Aggregate value must be withheld for mixed filing");
+      assert.strictEqual(trade.pricePerShare, null, "Price must be withheld for mixed filing");
+
       assert.ok(trade.transactions);
       assert.strictEqual(trade.transactions.length, 2);
 
@@ -240,21 +251,23 @@ async function runTests() {
       assert.strictEqual(tx1.transactionCode, "M");
       assert.strictEqual(tx1.isExercise, true);
       assert.strictEqual(tx1.pricePerShare, 0.0, "Reported $0.00 consideration preserved");
+      assert.strictEqual(tx1.securityTitle, "Non-Qualified Stock Option");
 
       assert.strictEqual(tx2.transactionCode, "S");
       assert.strictEqual(tx2.isSell, true);
       assert.strictEqual(tx2.shares, 5000);
       assert.strictEqual(tx2.pricePerShare, 290.00);
+      assert.strictEqual(tx2.securityTitle, null, "Security title not inferred as Common Stock");
 
-      console.log("  ✓ Passed: Multi-transaction filing preserves all events without duplicates.");
+      console.log("  ✓ Passed: Multi-transaction filing preserves all events and withholds mixed aggregates.");
       passedCount++;
     } finally {
       restore();
     }
   }
 
-  // ── Test 3: Reported Zero Price vs Unparsed Missing Null ──────────────────
-  console.log("\nTest 3: Reported zero price ($0.00) distinguished from unparsed null...");
+  // ── Test 3: Gift Consideration (Reported 0.0 vs Null vs Positive) & Non-Finite Numbers ──
+  console.log("\nTest 3: Gift consideration (0.0 vs null vs positive) & non-finite numeric sanitation...");
   {
     const restore = mockFetch(async (url) => {
       return {
@@ -266,7 +279,7 @@ async function runTests() {
             {
               form: "4",
               filing_date: "2026-11-12",
-              accession_number: "acc-gift",
+              accession_number: "acc-gift-zero",
               has_parsed_transaction: true,
               shares_traded: 1000,
               price_per_share: 0.0,
@@ -274,9 +287,9 @@ async function runTests() {
               is_gift: true,
               transactions: [
                 {
-                  transaction_id: "tx-g",
+                  transaction_id: "tx-g0",
                   transaction_code: "G",
-                  transaction_type: "Bona Fide Gift (Code G)",
+                  transaction_type: "Bona Fide Gift",
                   shares: 1000,
                   price_per_share: 0.0,
                   total_value_usd: 0.0,
@@ -287,9 +300,62 @@ async function runTests() {
             {
               form: "4",
               filing_date: "2026-11-11",
-              accession_number: "acc-unparsed",
-              has_parsed_transaction: false,
-              // Unparsed fields omitted
+              accession_number: "acc-gift-null",
+              has_parsed_transaction: true,
+              shares_traded: 500,
+              price_per_share: null,
+              total_value_usd: null,
+              is_gift: true,
+              transactions: [
+                {
+                  transaction_id: "tx-gnull",
+                  transaction_code: "G",
+                  transaction_type: "Bona Fide Gift",
+                  shares: 500,
+                  price_per_share: null,
+                  total_value_usd: null,
+                  is_gift: true,
+                },
+              ],
+            },
+            {
+              form: "4",
+              filing_date: "2026-11-10",
+              accession_number: "acc-gift-positive",
+              has_parsed_transaction: true,
+              shares_traded: 200,
+              price_per_share: 15.50,
+              total_value_usd: 3100.0,
+              is_gift: true,
+              transactions: [
+                {
+                  transaction_id: "tx-gpos",
+                  transaction_code: "G",
+                  transaction_type: "Bona Fide Gift",
+                  shares: 200,
+                  price_per_share: 15.50,
+                  total_value_usd: 3100.0,
+                  is_gift: true,
+                },
+              ],
+            },
+            {
+              form: "4",
+              filing_date: "2026-11-09",
+              accession_number: "acc-non-finite",
+              has_parsed_transaction: true,
+              shares_traded: NaN,
+              price_per_share: Infinity,
+              total_value_usd: -Infinity,
+              transactions: [
+                {
+                  transaction_id: "tx-nan",
+                  transaction_code: "S",
+                  shares: "NaN",
+                  price_per_share: "Infinity",
+                  total_value_usd: null,
+                },
+              ],
             },
           ],
         }),
@@ -299,19 +365,24 @@ async function runTests() {
     try {
       const res = await fetchSecForm4Insiders("NVDA");
       assert.ok(res.items);
-      const giftTrade = res.items[0];
-      const unparsedTrade = res.items[1];
+      const [giftZero, giftNull, giftPos, nonFinite] = res.items;
 
-      assert.strictEqual(giftTrade.pricePerShare, 0.0, "Gift price must be numeric 0.0 (not null)");
-      assert.strictEqual(giftTrade.totalValueUsd, 0.0, "Gift total value must be numeric 0.0");
-      assert.strictEqual(giftTrade.hasParsedTransaction, true);
+      assert.strictEqual(giftZero.pricePerShare, 0.0, "Reported 0.0 consideration preserved");
+      assert.strictEqual(giftZero.totalValueUsd, 0.0);
 
-      assert.strictEqual(unparsedTrade.pricePerShare, null, "Unparsed price MUST be null");
-      assert.strictEqual(unparsedTrade.sharesTraded, null, "Unparsed shares MUST be null");
-      assert.strictEqual(unparsedTrade.totalValueUsd, null, "Unparsed total value MUST be null");
-      assert.strictEqual(unparsedTrade.hasParsedTransaction, false);
+      assert.strictEqual(giftNull.pricePerShare, null, "Null gift consideration preserved as null");
+      assert.strictEqual(giftNull.totalValueUsd, null);
 
-      console.log("  ✓ Passed: Reported zero price distinguished from unparsed null.");
+      assert.strictEqual(giftPos.pricePerShare, 15.50, "Positive gift consideration preserved");
+      assert.strictEqual(giftPos.totalValueUsd, 3100.0);
+
+      assert.strictEqual(nonFinite.sharesTraded, null, "NaN sanitized to null");
+      assert.strictEqual(nonFinite.pricePerShare, null, "Infinity sanitized to null");
+      assert.strictEqual(nonFinite.totalValueUsd, null, "-Infinity sanitized to null");
+      assert.strictEqual(nonFinite.transactions![0].shares, null, "NaN in transaction sanitized to null");
+      assert.strictEqual(nonFinite.transactions![0].pricePerShare, null, "Infinity in transaction sanitized to null");
+
+      console.log("  ✓ Passed: Gift consideration (0.0 vs null vs positive) & non-finite numeric sanitation.");
       passedCount++;
     } finally {
       restore();
