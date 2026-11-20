@@ -1,14 +1,14 @@
 {
   "plan_id": "RADAR-500-MARKET-DATA-REFRESH-PLAN-166",
-  "version": "2.0.0-CORRECTED",
-  "created_at_utc": "2026-11-20T21:40:00Z",
+  "version": "2.1.0-IMPLEMENTED",
+  "created_at_utc": "2026-11-20T22:30:00Z",
   "issue_reference": "Issue #166",
   "target_authority": {
     "platform": "Railway",
     "service_name": "web",
     "service_id": "56e38249-b78c-4a60-80d7-303ce7451bd8",
-    "serving_deployment_id": "9f28fb4e-c804-4b6a-9a25-1092c496026d",
-    "serving_git_revision": "868d7afcd528006c2323e6b79b5a17f2f20f677c",
+    "historical_serving_deployment_id": "9f28fb4e-c804-4b6a-9a25-1092c496026d",
+    "historical_serving_git_revision": "868d7afcd528006c2323e6b79b5a17f2f20f677c",
     "storage_mount_path": "/root",
     "runtime_path_resolution": {
       "resolver_logic": "os.path.join(os.getenv('FINANCE_DATA_DIR', os.getenv('DATA_DIR', os.path.expanduser('~'))), '.finance_market_store.db')",
@@ -17,15 +17,20 @@
       "resolved_scanner_store_path": "/root/.finance_scanner_store.db"
     },
     "execution_time_identity_check": {
+      "function": "scripts.ingest_alpaca_historical.verify_serving_runtime_identity",
       "required": true,
-      "checks": [
-        "CONTAINER_DEPLOYMENT_ID_EQUALS_9f28fb4e",
-        "CONTAINER_GIT_REVISION_EQUALS_868d7afc",
-        "STORE_FILE_EXISTS_AND_NON_ZERO",
-        "STORE_CONTAINS_UNIVERSE_BUILD_UB_ARX_EXPANSION_500_20261108",
-        "STORE_CONTAINS_PUBLISHED_HASH_5f60b47d",
-        "STORE_CONTAINS_MINIMUM_500_DISTINCT_SYMBOLS"
-      ],
+      "reject_missing_identity": true,
+      "full_sha_equality_enforced": true,
+      "prefix_matching_prohibited": true,
+      "pinned_deployment_support": true,
+      "authoritative_universe_store_validation": {
+        "required": true,
+        "store_path": "/root/.finance_universe_store.db",
+        "expected_universe_build_id": "UB-ARX-EXPANSION-500-20261108",
+        "expected_publication_decision": "PUBLISHED",
+        "expected_membership_hash": "5f60b47d5402c0fc29fa545b244b778ca99a017f47448f47ebdfc257db8881b0",
+        "expected_symbol_count": 500
+      },
       "mismatch_policy": "ABORT_IMMEDIATELY_FAIL_CLOSED"
     }
   },
@@ -36,7 +41,7 @@
     "provenanced_baseline_symbols_count": 433,
     "unprovenanced_symbols_count": 67
   },
-  "operational_status": "DEFERRED_PENDING_SEC_TRIAL_COMPLETION",
+  "operational_status": "QUALIFIED_OFFLINE_EXECUTION_STRICTLY_DEFERRED",
   "operational_holds": {
     "HOLD_SCAN_001": "ACTIVE",
     "HOLD_SEC_001": "ACTIVE",
@@ -58,12 +63,13 @@
     ]
   },
   "recurrence_prevention": {
-    "operational_isolation_strategy": [
-      "Set DISABLE_BACKGROUND_MARKET_REFRESH=true in serving environment to suppress unprovenanced Yahoo Finance background overwrites",
-      "Optional: Mount serving container market database with read-only connection parameters (?mode=ro) during serving phase"
-    ],
-    "provenance_aware_writer_guard": "Analytics endpoints check get_daily_candles_with_evidence; if candidate possesses authoritative Alpaca SIP provenance, unprovenanced Yahoo Finance overwrites are bypassed",
-    "contradictory_provenance_invariant": "save_daily_candles continues to delete provenance when unprovenanced data is written for ad-hoc tickers, ensuring replaced different-source bars never inherit false provenance"
+    "implemented_guards": {
+      "market_db": "MarketDatabaseEngine.has_authoritative_provenance + save_daily_candles(reject_if_authoritative=True)",
+      "background_writers": "api.routes.analytics._background_refresh_symbol + _schedule_background_refresh guard against authoritative symbols",
+      "direct_writers": "api.routes.analytics._compute_single_setup + get_tactical_setup_for_symbol + get_chart_history bypass unprovenanced fetches for authoritative symbols",
+      "warmup_writer": "api.main._warmup_worker skips warmup pre-fetch for authoritative candidates"
+    },
+    "contradictory_provenance_invariant": "save_daily_candles continues to delete existing provenance rows when non-authoritative data is legitimately written for out-of-universe tickers, ensuring replaced bars never inherit contradictory provenance"
   },
   "derived_replacement_windows": {
     "partition_a_incremental_refresh": {
@@ -92,6 +98,7 @@
     "adjustment_basis_consequences": "Replacing unprovenanced bars with Alpaca Consolidated Tape SIP split-adjusted bars guarantees 100% uniform SPLIT_ADJUSTED_ONLY basis (dividends unadjusted) across all 500 symbols, eliminating mixed-adjustment anomalies in moving averages."
   },
   "execution_budgets_and_deadlines": {
+    "implementation_class": "scripts.ingest_alpaca_historical.SharedExecutionBudget",
     "pagination_budget_max_pages_per_symbol": 25,
     "expected_pages_partition_a": 433,
     "expected_pages_partition_b": 67,
@@ -102,17 +109,25 @@
     "aggregate_request_hard_cap": 550,
     "per_request_timeout_seconds": 5.0,
     "per_symbol_deadline_seconds": 15.0,
-    "overall_wall_clock_deadline_seconds": 1200,
+    "overall_wall_clock_deadline_seconds": 1200.0,
     "pacing_delay_seconds": 0.35,
     "effective_requests_per_minute": 171.4,
     "checkpoint_interval_symbols": 50,
-    "checkpoint_summary_path": "/root/refresh_checkpoint_summary.json"
+    "checkpoint_summary_path": "/root/refresh_checkpoint_summary.json",
+    "safe_resume_supported": true
   },
   "backup_and_recovery": {
-    "method": "SQLITE3_ONLINE_BACKUP_API",
+    "backup_method": "SQLITE3_ONLINE_BACKUP_API",
     "source_path": "/root/.finance_market_store.db",
     "target_path": "/root/backup_finance_market_store_pre_refresh_166.db",
-    "rollback_command": "cp /root/backup_finance_market_store_pre_refresh_166.db /root/.finance_market_store.db && rm -f /root/.finance_market_store.db-wal /root/.finance_market_store.db-shm"
+    "quiesced_recovery_procedure": {
+      "implementation_function": "scripts.ingest_alpaca_historical.quiesce_and_recover_database",
+      "step_1": "Verify pre-refresh backup existence and non-zero byte size",
+      "step_2": "Connect to target and execute PRAGMA wal_checkpoint(TRUNCATE)",
+      "step_3": "Unlink target and WAL sidecars (.db-wal, .db-shm)",
+      "step_4": "Byte-for-byte restore from backup via shutil.copy2",
+      "step_5": "Verify integrity with PRAGMA integrity_check (?mode=ro), clean ephemeral sidecars, and assert exact SHA-256 equality"
+    }
   },
   "acceptance_criteria_accounting_closure": {
     "formula": "500 == READY + DOCUMENTED_UNRESOLVED_EXCEPTIONS",

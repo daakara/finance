@@ -1,10 +1,10 @@
 # ARX Radar 500 Market Data Refresh Plan (Issue #166)
 
-- **Document Version:** 2.0.0-CORRECTED
+- **Document Version:** 2.1.0-IMPLEMENTED
 - **Plan Reference:** `RADAR-500-MARKET-DATA-REFRESH-PLAN-166`
 - **Issue Reference:** Issue #166
 - **Date:** 2026-11-20
-- **Operational Status:** **DEFERRED PENDING SEC INGESTION TRIAL COMPLETION**
+- **Operational Status:** **QUALIFIED OFFLINE — PRODUCTION REFRESH STRICTLY DEFERRED**
 - **Topic Branch:** `audit/radar-readiness-assessment-166`
 - **Baseline Audit Commit:** `a8c2cc554865882e3c09f3e098492cfa7e56b461`
 
@@ -37,13 +37,18 @@ In the Railway container environment running as user `root` (`~` = `/root`) with
 - **Scanner Store:** `/root/.finance_scanner_store.db`.
 
 ### B. Execution-Time Identity Check (Fail-Closed)
-Prior to initiating any backup, verification, or write operation, the execution harness must run an attributable identity check. If any check fails, execution must **abort immediately**:
+Prior to initiating any backup, verification, or write operation, the execution harness runs an attributable identity check implemented in `verify_serving_runtime_identity` (`scripts/ingest_alpaca_historical.py`). If any check fails, execution **aborts immediately (fails closed)**:
 
-1. **Container Deployment ID:** Verify `RAILWAY_DEPLOYMENT_ID == "9f28fb4e-c804-4b6a-9a25-1092c496026d"`.
-2. **Container Git Revision:** Verify `RAILWAY_GIT_COMMIT_SHA == "868d7afcd528006c2323e6b79b5a17f2f20f677c"`.
-3. **Database File Existence & Non-Zero:** Verify resolved `/root/.finance_market_store.db` exists and has size $\ge 60\text{ MB}$.
-4. **Table Schema Integrity:** Verify presence of `asset_ohlcv_daily` and `asset_ohlcv_provenance` with complete column definitions.
-5. **Published Universe Binding:** Query the store to confirm the presence of active universe build `UB-ARX-EXPANSION-500-20261108` and membership hash `5f60b47d5402c0fc29fa545b244b778ca99a017f47448f47ebdfc257db8881b0`.
+1. **Rejection of Missing Identity:** `RAILWAY_DEPLOYMENT_ID` and `RAILWAY_GIT_COMMIT_SHA` are mandatory in the runtime environment. If either variable is missing or empty, execution aborts with `MISSING_RUNTIME_IDENTITY`.
+2. **Full SHA Equality:** `RAILWAY_GIT_COMMIT_SHA` must be a valid 40-character hex string and match the expected revision byte-for-byte (`==`). Prefix matching is strictly prohibited (`INVALID_GIT_SHA_FORMAT` or `GIT_REVISION_MISMATCH`).
+3. **Container Deployment ID & Pinned Deployment:** By default, validates against the historical serving deployment:
+   - `HISTORICAL_SERVING_DEPLOYMENT_ID = "9f28fb4e-c804-4b6a-9a25-1092c496026d"`
+   - `HISTORICAL_SERVING_GIT_SHA = "868d7afcd528006c2323e6b79b5a17f2f20f677c"`
+   The implementation also supports pinning an explicitly authorized future qualified deployment via `--expected-deployment-id` and `--expected-git-sha` while keeping the current deployment identifiers as historical evidence.
+4. **Database File Existence & Non-Zero:** Asserts the target database file exists and is non-empty (`stat().st_size > 0`).
+5. **Authoritative Universe Store Validation:** When `--universe-db-path` is provided (e.g. `/root/.finance_universe_store.db`), connects in read-only mode (`?mode=ro`) and verifies:
+   - `universe_builds` contains build `UB-ARX-EXPANSION-500-20261108` with `publication_decision == 'PUBLISHED'`, `eligible_count == 500`, and membership hash `5f60b47d5402c0fc29fa545b244b778ca99a017f47448f47ebdfc257db8881b0`.
+   - `universe_eligibility_ledger` contains exactly 500 eligible symbols matching the published membership hash. Any mismatch aborts execution.
 
 ---
 
@@ -74,24 +79,32 @@ To maintain strict epistemic hygiene, writer mechanisms demonstrated in code and
 
 ## 4. Recurrence Prevention Before Refresh
 
-To prevent legacy or background writers from invalidating refreshed provenance after completion, recurrence must be addressed prior to execution:
+To prevent legacy or background writers from invalidating refreshed provenance after completion, recurrence has been addressed directly in production application code:
 
-### A. Operational Isolation
-1. **Serving Configuration Flag:**
-   Set `DISABLE_BACKGROUND_MARKET_REFRESH=true` in the serving container environment.
-   When active, `_schedule_background_refresh(sym)` in `api/routes/analytics.py` immediately exits without scheduling unprovenanced Yahoo Finance fetches.
-2. **Serving Mount Permissions:**
-   During normal API serving phase, open the market database connection with read-only connection parameters (`?mode=ro`). All market data writes are strictly restricted to scheduled maintenance runs via `ingest_alpaca_historical.py`.
+### A. Smallest Production Guard Implementation
+1. **Core Database Engine Guard ([`analyst_dashboard/data/market_db.py`](file:///Users/iDavid/Projects/finance-clean/analyst_dashboard/data/market_db.py#L254-L285)):**
+   - Implemented `MarketDatabaseEngine.has_authoritative_provenance(symbol: str) -> bool`:
+     Executes a fast indexed query against `asset_ohlcv_provenance` asserting `provider = 'ALPACA'` and `adjustment_state = 'SPLIT_ADJUSTED_ONLY'`.
+   - Updated `save_daily_candles(symbol, data, reject_if_authoritative: bool = False)`:
+     When `reject_if_authoritative=True` and `has_authoritative_provenance(symbol)` returns True, the unprovenanced write is safely bypassed, logging `RECURRENCE_GUARD: Bypassed unprovenanced write for '{symbol}'`.
+2. **Background Writers Guard ([`api/routes/analytics.py`](file:///Users/iDavid/Projects/finance-clean/api/routes/analytics.py#L504-L528)):**
+   - `_schedule_background_refresh`: Immediately returns without queueing if candidate has authoritative provenance.
+   - `_background_refresh_symbol`: Checks `has_authoritative_provenance` before making external HTTP requests, and passes `reject_if_authoritative=True` to `save_daily_candles`.
+3. **Direct On-Demand Writers Guard ([`api/routes/analytics.py`](file:///Users/iDavid/Projects/finance-clean/api/routes/analytics.py#L593-L815,L1210)):**
+   - `_compute_single_setup`: Bypasses cold-cache Yahoo Finance fetch and background scheduling if candidate has authoritative provenance; passes `reject_if_authoritative=True`.
+   - `get_tactical_setup_for_symbol`: Skips synchronous Yahoo Finance fetch on stale data if candidate is authoritative; passes `reject_if_authoritative=True`.
+   - `get_chart_history` & `get_asset_analytics`: Passes `reject_if_authoritative=True` to prevent ad-hoc overwrites.
+4. **Warmup Writer Guard ([`api/main.py`](file:///Users/iDavid/Projects/finance-clean/api/main.py#L38-L55)):**
+   - `_warmup_worker`: Checks `db.has_authoritative_provenance(sym)` and skips warmup pre-fetching for authoritative candidates; passes `reject_if_authoritative=True`.
 
-### B. Provenance-Aware Writer Guard
-In `api/routes/analytics.py`, before invoking on-demand or background refreshes, check `market_db.get_daily_candles_with_evidence`:
-- If the candidate symbol already possesses authoritative Alpaca SIP provenance (`provider == "ALPACA"`), unprovenanced Yahoo Finance fetches are **bypassed**.
-- If the candidate is an ad-hoc or unprovenanced ticker, the fetch proceeds.
-
-### C. Contradictory Provenance Invariant
+### B. Contradictory Provenance Invariant
 > [!IMPORTANT]
-> **Do not preserve provenance attached to replaced, different-source bars.**
-> When unprovenanced bars are written for ad-hoc tickers via `save_daily_candles`, lines 280-283 continue to delete existing provenance rows. A bar fetched from an unverified provider must never claim Alpaca SIP provenance.
+> **Preserve contradictory-provenance deletion whenever different-source bars are legitimately replaced.**
+> In `market_db.py` (lines 292-295 and 311-314), `save_daily_candles` executes:
+> ```python
+> cursor.execute("DELETE FROM asset_ohlcv_provenance WHERE symbol = ? AND trade_date = ?", (upper, date_str))
+> ```
+> When non-authoritative bars are legitimately written (e.g. ad-hoc user query for an out-of-universe ticker), any existing contradictory provenance for those dates is cleanly deleted. A bar fetched from an unverified provider must never inherit false Alpaca SIP provenance. Qualified in `test_recurrence_prevention_guards_authoritative_provenance`.
 
 ---
 
@@ -151,33 +164,34 @@ flowchart TD
 
 ## 6. Aggregate Request Limits, Budgets, Deadlines & Checkpoints
 
-All network interactions and database writes are strictly bounded:
+All network interactions and database writes are strictly governed by `SharedExecutionBudget` in `scripts/ingest_alpaca_historical.py`:
 
-| Parameter | Budget / Ceiling | Basis |
-| :--- | :--- | :--- |
-| **Partition A Primary Pages** | 433 requests | 433 symbols $\times$ 1 page (10 sessions) |
-| **Partition B Primary Pages** | 67 requests | 66 standard (1 page) + 1 NVDA (1 page, limit 1,000) |
-| **Total Expected Primary Pages** | **500 requests** | 1 request per published candidate |
-| **Retry Budget (Per Page)** | Max 3 attempts | Exponential backoff: $1.0\text{s}, 2.0\text{s}, 4.0\text{s}$ |
-| **Global Retry Ceiling** | **30 cumulative retries** | If exceeded, execution halts immediately |
-| **Secondary Fallback Budget** | **0 requests** | Polygon fallback strictly disabled for batch refresh |
-| **Strict Aggregate Request Cap** | **550 HTTP requests** | Hard limit across all symbols, pages, and retries |
-| **Per-Request Timeout** | 5.0 seconds | Enforced on HTTP session |
-| **Per-Symbol Processing Deadline** | 15.0 seconds | Includes all pages and retries for that symbol |
-| **Overall Wall-Clock Deadline** | **20 minutes (1,200s)** | Hard execution deadline |
-| **Pacing Delay** | 0.35 seconds | Inter-request sleep ($\le 171.4$ req/min $\le 200$ cap) |
-| **Checkpoint Interval** | Every 50 candidates | Progress committed to `/root/refresh_checkpoint_summary.json` |
+| Parameter | CLI Flag | Budget / Ceiling | Basis & Enforcement |
+| :--- | :--- | :--- | :--- |
+| **Strict Aggregate Request Cap** | `--max-aggregate-requests` | **550 requests** | Hard ceiling across all candidates, pages, and retries. Exceeding raises `EXECUTION_BUDGET_EXHAUSTED`. |
+| **Cumulative Retry Ceiling** | `--max-cumulative-retries` | **30 retries** | Shared retry budget across all pages. Exceeding raises `RETRY_BUDGET_EXHAUSTED`. |
+| **Fallback Budget** | `--max-fallback-requests` | **0 requests** | Polygon fallback strictly disabled for batch refresh. |
+| **Per-Request Timeout** | (HTTP Session) | 5.0 seconds | Enforced on every Alpaca HTTP GET call. |
+| **Per-Symbol Processing Deadline** | (Loop Timer) | 15.0 seconds | Includes all pagination and retries for that symbol. |
+| **Overall Wall-Clock Deadline** | `--overall-deadline-seconds` | **1,200.0s (20m)** | Hard global deadline. Exceeding raises `EXECUTION_BUDGET_TIMEOUT`. |
+| **Pacing Delay** | `--sleep-seconds` | 0.35 seconds | Inter-request delay ensuring rate $\le 171.4\text{ req/min} < 200\text{ req/min}$ rate limit. |
+| **Checkpoint Interval** | `--checkpoint-interval` | 50 candidates | Incremental state written to `--checkpoint-summary-path`. |
+| **Safe Resume Support** | `--resume` | Flag | Resumes from checkpoint, skipping already-committed symbols without duplicate requests. |
 
-### Checkpoint & Resumption Behavior
-- Ingestion occurs with candidate-level transaction atomicity (`save_daily_candles_with_evidence`).
-- If an execution halts at candidate $K$, candidates $1 \dots K-1$ remain safely committed in SQLite.
-- The checkpoint file records `completed_writes`. Subsequent invocation skips completed symbols.
+### Failure Injection & Invariant Enforcement
+Injected failure tests in `test_aggregate_request_limits_and_checkpoint_behavior` verify:
+1. Cap exhaustion halts execution immediately without writing uncommitted candidates.
+2. Retry exhaustion triggers immediate fail-closed abort.
+3. Timeout and interruption persist completed candidate checkpoints and mark remaining symbols `UNPROCESSED`.
+4. Resumption cleanly processes remaining candidates without re-fetching completed symbols.
 
 ---
 
-## 7. Pre-Execution Backup & Rollback Protocol
+## 7. Pre-Execution Backup & Quiesced WAL-Safe Recovery Protocol
 
-### 1. Online Consistent WAL-Safe Backup
+Live file-copy rollback is strictly prohibited because SQLite WAL mode maintains active shared memory (`-shm`) and write-ahead log (`-wal`) state that can corrupt or desynchronize stores on copy. The documented recovery procedure is implemented in `quiesce_and_recover_database` (`scripts/ingest_alpaca_historical.py`) and qualified on disposable stores in `test_wal_safe_quiesced_recovery_rehearsal`:
+
+### Phase 1: Pre-Refresh Consistent Backup Creation
 ```bash
 python3 -c "
 import sqlite3
@@ -186,18 +200,43 @@ dst = sqlite3.connect('/root/backup_finance_market_store_pre_refresh_166.db')
 src.backup(dst)
 dst.close()
 src.close()
-print('Pre-refresh backup completed successfully.')
+print('Pre-refresh consistent backup completed successfully.')
 "
 ```
+Verify the pre-refresh backup SHA-256 and byte size before proceeding.
 
-### 2. Checksum Verification
-Record SHA-256 hash and byte size of `/root/backup_finance_market_store_pre_refresh_166.db`.
+### Phase 2: Quiesced WAL-Safe Recovery Procedure
+In the event of an aborted run, partial failure, or need to restore pre-refresh state:
 
-### 3. Atomic Rollback Command
-```bash
-cp /root/backup_finance_market_store_pre_refresh_166.db /root/.finance_market_store.db
-rm -f /root/.finance_market_store.db-wal /root/.finance_market_store.db-shm
-```
+1. **Quiesce Database Users & Checkpoint WAL:**
+   Ensure all writer and reader processes are quiesced. Connect to the target database and execute:
+   ```sql
+   PRAGMA wal_checkpoint(TRUNCATE);
+   ```
+   This flushes all committed WAL frames back into the main database file and truncates the WAL file to zero bytes.
+2. **Remove Unquiesced Sidecars & Target File:**
+   Safely unlink `/root/.finance_market_store.db-wal` and `/root/.finance_market_store.db-shm` to prevent stale frame replay. Unlink `/root/.finance_market_store.db`.
+3. **Byte-for-Byte Restoration:**
+   Copy the pre-refresh backup to the target path using byte-preserving copy (`shutil.copy2`):
+   ```bash
+   cp /root/backup_finance_market_store_pre_refresh_166.db /root/.finance_market_store.db
+   ```
+4. **Integrity & Digest Verification:**
+   Open the recovered database in read-only mode (`?mode=ro`) to prevent header modification:
+   ```sql
+   PRAGMA integrity_check;
+   ```
+   Unlink any ephemeral sidecars created during inspection. Assert that `hashlib.sha256(recovered_bytes) == hashlib.sha256(backup_bytes)`.
+5. **Programmatic Recovery API:**
+   The entire procedure can be invoked via Python:
+   ```python
+   from scripts.ingest_alpaca_historical import quiesce_and_recover_database
+   res = quiesce_and_recover_database(
+       target_db_path="/root/.finance_market_store.db",
+       backup_path="/root/backup_finance_market_store_pre_refresh_166.db"
+   )
+   assert res["status"] == "RECOVERED"
+   ```
 
 ---
 
@@ -217,6 +256,13 @@ python3 scripts/ingest_alpaca_historical.py \
   --end-date ${T_COMPLETED} \
   --max-completed-session ${T_COMPLETED} \
   --db-path /root/.finance_market_store.db \
+  --universe-db-path /root/.finance_universe_store.db \
+  --verify-runtime-identity \
+  --max-aggregate-requests 550 \
+  --max-cumulative-retries 30 \
+  --max-fallback-requests 0 \
+  --overall-deadline-seconds 1200 \
+  --checkpoint-summary-path /root/partition_b_checkpoint.json \
   --output-summary-path /root/partition_b_replacement_summary.json \
   --apply
 ```
@@ -232,6 +278,13 @@ python3 scripts/ingest_alpaca_historical.py \
   --end-date ${T_COMPLETED} \
   --max-completed-session ${T_COMPLETED} \
   --db-path /root/.finance_market_store.db \
+  --universe-db-path /root/.finance_universe_store.db \
+  --verify-runtime-identity \
+  --max-aggregate-requests 550 \
+  --max-cumulative-retries 30 \
+  --max-fallback-requests 0 \
+  --overall-deadline-seconds 1200 \
+  --checkpoint-summary-path /root/partition_a_checkpoint.json \
   --output-summary-path /root/partition_a_refresh_summary.json \
   --apply
 ```

@@ -13,10 +13,23 @@ Validates:
 import json
 import sqlite3
 import tempfile
+import time
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 from unittest.mock import MagicMock, patch
+
+import sys
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+TESTS_DIR = Path(__file__).resolve().parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+if str(TESTS_DIR) not in sys.path:
+    sys.path.insert(0, str(TESTS_DIR))
+
+if "ccxt" not in sys.modules:
+    sys.modules["ccxt"] = MagicMock()
 
 import pytest
 
@@ -33,14 +46,22 @@ from analyst_dashboard.data.market_evidence import (
 from scripts.diagnostics.audit_radar_universe_readiness_166 import (
     run_audit,
 )
-from tests.test_radar_universe_readiness_auditor_166 import (
+from test_radar_universe_readiness_auditor_166 import (
     _init_empty_aux_dbs,
     _init_synthetic_market_db,
 )
 from scripts.ingest_alpaca_historical import (
     AlpacaHistoricalSipIngestionAdapter,
+    SharedExecutionBudget,
     get_expected_nyse_sessions,
+    quiesce_and_recover_database,
+    resolve_runtime_market_db_path,
+    verify_serving_runtime_identity,
+    HISTORICAL_SERVING_DEPLOYMENT_ID,
+    HISTORICAL_SERVING_GIT_SHA,
 )
+import api.routes.analytics as analytics_mod
+import api.main as main_mod
 
 
 @pytest.fixture
@@ -98,14 +119,30 @@ def disposable_market_db(tmp_path: Path):
 class MockAlpacaSipFetcher:
     """Deterministic mock provider returning synthetic NYSE-compliant Alpaca SIP bars."""
 
-    def __init__(self, bars_by_symbol=None):
+    def __init__(self, bars_by_symbol=None, transient_failures_count=0):
         self.bars_by_symbol = bars_by_symbol or {}
         self.calls = []
+        self.transient_failures_remaining = transient_failures_count
 
     def fetch_historical_bars(self, symbol, start, end, feed=None, adjustment=None, limit=1000, page_token=None, **kwargs):
         self.calls.append({"symbol": symbol, "start": start, "end": end, "feed": feed, "adjustment": adjustment, "page_token": page_token})
+
+        if self.transient_failures_remaining > 0:
+            self.transient_failures_remaining -= 1
+            return {
+                "success": False,
+                "status_code": 429,
+                "symbol": symbol,
+                "bars": [],
+                "next_page_token": None,
+                "error": "RATE_LIMIT_EXCEEDED: 429 Too Many Requests",
+            }
+
         if symbol in self.bars_by_symbol:
-            return self.bars_by_symbol[symbol]
+            resp = self.bars_by_symbol[symbol]
+            if callable(resp):
+                return resp(symbol, start, end, page_token=page_token)
+            return resp
 
         # Generate default synthetic bars for any valid NYSE session in range
         sessions = get_expected_nyse_sessions(start, end)
@@ -450,47 +487,10 @@ def test_end_to_end_auditor_qualification_after_refresh(disposable_market_db: st
 # Additional Offline Qualification Tests for Issue #166 Corrected Refresh Plan
 # ==============================================================================
 
-def resolve_runtime_market_db_path(env: dict = None) -> str:
-    """Authoritative market store database path resolver matching application runtime logic."""
-    import os
-    environ = os.environ if env is None else env
-    finance_dir = environ.get("FINANCE_DATA_DIR")
-    if finance_dir and finance_dir.strip():
-        data_dir = finance_dir.strip()
-    else:
-        data_dir = environ.get("DATA_DIR", "").strip() or os.path.expanduser("~")
-    return os.path.abspath(os.path.join(data_dir, ".finance_market_store.db"))
-
-
-def verify_serving_runtime_identity(
-    env: dict,
-    db_path: str,
-    expected_deployment_id: str = "9f28fb4e-c804-4b6a-9a25-1092c496026d",
-    expected_git_sha: str = "868d7afcd528006c2323e6b79b5a17f2f20f677c",
-) -> Tuple[bool, Optional[str]]:
-    """
-    Execution-time identity check: asserts target DB path and serving container
-    match expected Railway production authority before allowing execution.
-    """
-    deploy_id = env.get("RAILWAY_DEPLOYMENT_ID")
-    if deploy_id and deploy_id != expected_deployment_id:
-        return False, f"DEPLOYMENT_ID_MISMATCH: Expected {expected_deployment_id}, got {deploy_id}"
-
-    git_sha = env.get("RAILWAY_GIT_COMMIT_SHA", env.get("GIT_SHA"))
-    if git_sha and not git_sha.startswith(expected_git_sha[:8]):
-        return False, f"GIT_REVISION_MISMATCH: Expected {expected_git_sha}, got {git_sha}"
-
-    p = Path(db_path)
-    if not p.is_file():
-        return False, f"TARGET_DATABASE_ABSENT: File '{db_path}' does not exist."
-    if p.stat().st_size == 0:
-        return False, f"TARGET_DATABASE_EMPTY: File '{db_path}' is 0 bytes."
-
-    return True, None
-
-
 def test_runtime_db_path_resolution_and_identity_check(tmp_path: Path):
     """GATE 1: Verify target DB path resolves to .finance_market_store.db and enforces identity checks."""
+    import hashlib
+
     # 1. Path resolution hierarchy
     f_dir = str(tmp_path / "finance_root")
     d_dir = str(tmp_path / "data_root")
@@ -511,33 +511,133 @@ def test_runtime_db_path_resolution_and_identity_check(tmp_path: Path):
     fake_db = tmp_path / ".finance_market_store.db"
     fake_db.write_text("sqlite-content")
 
-    # Matching environment succeeds
-    ok, err = verify_serving_runtime_identity(
-        env={"RAILWAY_DEPLOYMENT_ID": "9f28fb4e-c804-4b6a-9a25-1092c496026d", "RAILWAY_GIT_COMMIT_SHA": "868d7afcd528006c2323e6b79b5a17f2f20f677c"},
-        db_path=str(fake_db),
-    )
-    assert ok is True
-    assert err is None
+    # 2a. Reject missing identity (fail closed)
+    ok_no_env, err_no_env = verify_serving_runtime_identity(env={}, db_path=str(fake_db))
+    assert ok_no_env is False
+    assert "MISSING_RUNTIME_IDENTITY" in err_no_env
 
-    # Mismatched deployment ID fails closed
-    ok_bad_dep, err_bad_dep = verify_serving_runtime_identity(
-        env={"RAILWAY_DEPLOYMENT_ID": "wrong-deployment-id"},
-        db_path=str(fake_db),
+    ok_no_sha, err_no_sha = verify_serving_runtime_identity(
+        env={"RAILWAY_DEPLOYMENT_ID": HISTORICAL_SERVING_DEPLOYMENT_ID},
+        db_path=str(fake_db)
     )
-    assert ok_bad_dep is False
-    assert "DEPLOYMENT_ID_MISMATCH" in err_bad_dep
+    assert ok_no_sha is False
+    assert "MISSING_RUNTIME_IDENTITY" in err_no_sha
 
-    # Mismatched git sha fails closed
+    ok_no_dep, err_no_dep = verify_serving_runtime_identity(
+        env={"RAILWAY_GIT_COMMIT_SHA": HISTORICAL_SERVING_GIT_SHA},
+        db_path=str(fake_db)
+    )
+    assert ok_no_dep is False
+    assert "MISSING_RUNTIME_IDENTITY" in err_no_dep
+
+    # 2b. Full SHA equality: reject prefix matching and invalid length
+    ok_prefix, err_prefix = verify_serving_runtime_identity(
+        env={"RAILWAY_DEPLOYMENT_ID": HISTORICAL_SERVING_DEPLOYMENT_ID, "RAILWAY_GIT_COMMIT_SHA": "868d7afc"},
+        db_path=str(fake_db)
+    )
+    assert ok_prefix is False
+    assert "INVALID_GIT_SHA_FORMAT" in err_prefix
+
     ok_bad_sha, err_bad_sha = verify_serving_runtime_identity(
-        env={"RAILWAY_GIT_COMMIT_SHA": "deadbeef1234"},
-        db_path=str(fake_db),
+        env={"RAILWAY_DEPLOYMENT_ID": HISTORICAL_SERVING_DEPLOYMENT_ID, "RAILWAY_GIT_COMMIT_SHA": "deadbeef1234deadbeef1234deadbeef1234dead"},
+        db_path=str(fake_db)
     )
     assert ok_bad_sha is False
     assert "GIT_REVISION_MISMATCH" in err_bad_sha
 
+    # 2c. Matching historical baseline succeeds
+    matching_env = {
+        "RAILWAY_DEPLOYMENT_ID": HISTORICAL_SERVING_DEPLOYMENT_ID,
+        "RAILWAY_GIT_COMMIT_SHA": HISTORICAL_SERVING_GIT_SHA,
+    }
+    ok_hist, err_hist = verify_serving_runtime_identity(
+        env=matching_env,
+        db_path=str(fake_db),
+    )
+    assert ok_hist is True
+    assert err_hist is None
+
+    # 2d. Explicitly pinned future qualified deployment
+    fut_dep = "dep-pinned-20261125-prod"
+    fut_sha = "abcdef0123456789abcdef0123456789abcdef01"
+    ok_fut, err_fut = verify_serving_runtime_identity(
+        env={"RAILWAY_DEPLOYMENT_ID": fut_dep, "RAILWAY_GIT_COMMIT_SHA": fut_sha},
+        db_path=str(fake_db),
+        expected_deployment_id=fut_dep,
+        expected_git_sha=fut_sha,
+    )
+    assert ok_fut is True
+    assert err_fut is None
+
+    # Mismatched deployment against pinned future deployment fails
+    ok_fut_mismatch, err_fut_mismatch = verify_serving_runtime_identity(
+        env={"RAILWAY_DEPLOYMENT_ID": "different-dep", "RAILWAY_GIT_COMMIT_SHA": fut_sha},
+        db_path=str(fake_db),
+        expected_deployment_id=fut_dep,
+        expected_git_sha=fut_sha,
+    )
+    assert ok_fut_mismatch is False
+    assert "DEPLOYMENT_ID_MISMATCH" in err_fut_mismatch
+
+    # 2e. Universe membership validation in authoritative store
+    universe_db = tmp_path / ".finance_universe_store.db"
+    conn = sqlite3.connect(str(universe_db))
+    conn.execute("""
+        CREATE TABLE universe_builds (
+            universe_build_id TEXT PRIMARY KEY,
+            universe_id TEXT NOT NULL,
+            universe_version TEXT NOT NULL,
+            eligible_count INTEGER NOT NULL,
+            eligible_membership_hash TEXT NOT NULL,
+            publication_decision TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE universe_eligibility_ledger (
+            universe_build_id TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            eligibility_decision TEXT NOT NULL,
+            PRIMARY KEY (universe_build_id, symbol)
+        )
+    """)
+    syms = [f"SYM_{i:03d}" for i in range(500)]
+    u_hash = hashlib.sha256(",".join(sorted(syms)).encode("utf-8")).hexdigest()
+    conn.execute(
+        "INSERT INTO universe_builds VALUES ('UB-ARX-EXPANSION-500-20261108', 'UNIV_EXP_500', '1.0', 500, ?, 'PUBLISHED')",
+        (u_hash,)
+    )
+    for s in syms:
+        conn.execute("INSERT INTO universe_eligibility_ledger VALUES ('UB-ARX-EXPANSION-500-20261108', ?, 'ELIGIBLE')", (s,))
+    conn.commit()
+    conn.close()
+
+    ok_u, err_u = verify_serving_runtime_identity(
+        env=matching_env,
+        db_path=str(fake_db),
+        universe_db_path=str(universe_db),
+        expected_universe_hash=u_hash,
+    )
+    assert ok_u is True
+    assert err_u is None
+
+    # Un-published universe fails closed
+    conn = sqlite3.connect(str(universe_db))
+    conn.execute("UPDATE universe_builds SET publication_decision = 'DRAFT' WHERE universe_build_id = 'UB-ARX-EXPANSION-500-20261108'")
+    conn.commit()
+    conn.close()
+
+    ok_draft, err_draft = verify_serving_runtime_identity(
+        env=matching_env,
+        db_path=str(fake_db),
+        universe_db_path=str(universe_db),
+        expected_universe_hash=u_hash,
+    )
+    assert ok_draft is False
+    assert "UNIVERSE_NOT_PUBLISHED" in err_draft
+
 
 def test_recurrence_prevention_guards_authoritative_provenance(disposable_market_db: str):
-    """GATE 3: Qualify recurrence prevention and verify replaced different-source bars do not retain contradictory provenance."""
+    """GATE 3: Qualify recurrence prevention in actual application code (background, direct, warmup)."""
     engine = MarketDatabaseEngine(db_path=disposable_market_db)
     trade_date = "2026-11-20"
     upper = "AAPL"
@@ -558,50 +658,64 @@ def test_recurrence_prevention_guards_authoritative_provenance(disposable_market
     candle_alpaca = [{"time": trade_date, "open": 220.0, "high": 225.0, "low": 219.0, "close": 224.0, "volume": 1000000}]
     engine.save_daily_candles_with_evidence(upper, candle_alpaca, prov_alpaca)
 
-    # Step 2: Simulate operational recurrence prevention guard
-    # A background writer checks if symbol possesses authoritative provenance
-    conn = sqlite3.connect(disposable_market_db)
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM asset_ohlcv_provenance WHERE symbol = ? AND provider = 'ALPACA'", (upper,))
-    has_alpaca_prov = cur.fetchone()[0] > 0
-    conn.close()
+    assert engine.has_authoritative_provenance(upper) is True
 
-    assert has_alpaca_prov is True, "Candidate must have authoritative Alpaca provenance"
+    # Step 2: Test real entry points in production code
+    with patch.object(analytics_mod, "market_db", engine):
+        with patch("yfinance.Ticker") as mock_yf:
+            # 2a. Background writer real entry point
+            analytics_mod._background_refresh_symbol(upper)
+            mock_yf.assert_not_called()
 
-    # The background refresh worker respects the guard and skips overwriting
-    def background_refresh_guarded(sym: str):
-        # Operational isolation: if symbol has authoritative provenance or DISABLE_BACKGROUND_MARKET_REFRESH is set, skip YF overwrite
-        c = sqlite3.connect(disposable_market_db)
-        r = c.execute("SELECT COUNT(*) FROM asset_ohlcv_provenance WHERE symbol = ? AND provider = 'ALPACA'", (sym,)).fetchone()[0]
-        c.close()
-        if r > 0:
-            return "SKIPPED_AUTHORITATIVE_PROVENANCE_PROTECTED"
-        # Otherwise would call engine.save_daily_candles(sym, yf_bars)
-        return "OVERWRITTEN"
+            # 2b. Background scheduler real entry point
+            analytics_mod._schedule_background_refresh(upper)
+            assert upper not in analytics_mod._refresh_in_flight
 
-    result = background_refresh_guarded("AAPL")
-    assert result == "SKIPPED_AUTHORITATIVE_PROVENANCE_PROTECTED"
+            # 2c. Direct computation setup real entry point
+            setup_res = analytics_mod._compute_single_setup(upper, "LONG_TERM")
+            mock_yf.assert_not_called()
 
-    # Verify AAPL provenance and bars remain completely intact
-    conn = sqlite3.connect(disposable_market_db)
-    cur = conn.cursor()
-    cur.execute("SELECT provider, adjustment_state FROM asset_ohlcv_provenance WHERE symbol = 'AAPL'")
-    row = cur.fetchone()
-    assert row == ("ALPACA", "SPLIT_ADJUSTED_ONLY")
+            # 2d. Direct tactical setup API endpoint real entry point
+            setup_api = analytics_mod.get_tactical_setup_for_symbol(symbol=upper, user_role="LONG_TERM")
+            mock_yf.assert_not_called()
 
-    # Step 3: Verify non-authoritative ad-hoc candidate replacement
-    # For an ad-hoc unprovenanced ticker, if save_daily_candles replaces bars, it MUST NOT retain contradictory provenance
+    # 2e. Warmup worker real entry point in api.main
+    with patch("analyst_dashboard.data.market_db.MarketDatabaseEngine", return_value=engine):
+        with patch("yfinance.Ticker") as mock_yf_warmup:
+            with patch("api.routes.screener.run_screener"):
+                main_mod._warmup_worker()
+                called_warmup_syms = [c.args[0] for c in mock_yf_warmup.call_args_list if c.args]
+                assert upper not in called_warmup_syms, "Warmup worker must skip authoritative AAPL"
+
+    # Step 3: Engine-level recurrence guard with reject_if_authoritative=True
+    engine.save_daily_candles(upper, [{"time": trade_date, "open": 100.0, "high": 101.0, "low": 99.0, "close": 100.5, "volume": 500}], reject_if_authoritative=True)
+
+    # Assert bars and provenance remain 100% untouched
+    stored = engine.get_daily_candles(upper, limit=10)
+    assert len(stored) == 1
+    assert stored[0]["close"] == 224.0, "Authoritative Alpaca bar was protected from unprovenanced overwrite"
+
+    # Step 4: Verify contradictory-provenance deletion on legitimate replacement
+    # When different-source bars are legitimately replaced without evidence on non-authoritative tickers,
+    # contradictory provenance MUST be deleted to satisfy PREFLIGHT-001 / Issue #198.
     adhoc_sym = "ADHOC_TICKER"
-    engine.save_daily_candles_with_evidence(adhoc_sym, [{"time": trade_date, "open": 10.0, "high": 11.0, "low": 9.0, "close": 10.5, "volume": 1000}], prov_alpaca)
-
-    # Now legacy writer writes new bars without evidence
-    engine.save_daily_candles(adhoc_sym, [{"time": trade_date, "open": 10.2, "high": 11.2, "low": 9.2, "close": 10.8, "volume": 1200}])
-
-    # Verifies requirement: "Do not preserve provenance attached to replaced, different-source bars."
+    engine.save_daily_candles_with_evidence(
+        adhoc_sym,
+        [{"time": trade_date, "open": 10.0, "high": 11.0, "low": 9.0, "close": 10.5, "volume": 1000}],
+        prov_alpaca
+    )
+    # Legitimate replacement without reject_if_authoritative
+    engine.save_daily_candles(
+        adhoc_sym,
+        [{"time": trade_date, "open": 10.2, "high": 11.2, "low": 9.2, "close": 10.8, "volume": 1200}],
+        reject_if_authoritative=False
+    )
+    conn = sqlite3.connect(disposable_market_db)
+    cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM asset_ohlcv_provenance WHERE symbol = ?", (adhoc_sym,))
     prov_count = cur.fetchone()[0]
     conn.close()
-    assert prov_count == 0, "Replaced different-source bars must NOT retain contradictory provenance!"
+    assert prov_count == 0, "Contradictory provenance must be deleted upon legitimate replacement"
 
 
 def test_derived_replacement_windows_and_nvda_2023_contract(disposable_market_db: str, tmp_path: Path):
@@ -682,7 +796,7 @@ def test_derived_replacement_windows_and_nvda_2023_contract(disposable_market_db
 def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: str, tmp_path: Path):
     """GATE 5: Enforce aggregate request limits, pagination budgets, deadlines, and checkpoints."""
     manifest_path = tmp_path / "limits_manifest.json"
-    symbols = [f"SYM_{i:03d}" for i in range(120)]  # 120 symbols to test multiple 50-symbol checkpoints
+    symbols = [f"SYM_{i:03d}" for i in range(20)]
     manifest_path.write_text(json.dumps({
         "ingestion_scope": {
             "production_target_backfill": {"missing_symbols": symbols},
@@ -690,6 +804,7 @@ def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: 
         }
     }), encoding="utf-8")
 
+    # 1. Test request cap exhaustion
     mock_fetcher = MockAlpacaSipFetcher()
     adapter = AlpacaHistoricalSipIngestionAdapter(
         fetcher=mock_fetcher,
@@ -697,24 +812,183 @@ def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: 
         adjustment="split",
         max_completed_session=date(2026, 11, 20),
     )
+    budget_cap = SharedExecutionBudget(max_aggregate_requests=5)
+    cp_path = tmp_path / "checkpoint_cap.json"
 
-    # Execute bounded run on first 60 symbols
-    summary = adapter.execute_bounded_ingestion(
+    summary_cap = adapter.execute_bounded_ingestion(
         manifest_path=manifest_path,
-        symbols_override=symbols[:60],
+        symbols_override=symbols[:10],
         start_date="2026-11-07",
         end_date="2026-11-20",
         apply_writes=True,
         db_path=disposable_market_db,
+        budget=budget_cap,
+        checkpoint_summary_path=cp_path,
     )
+    assert summary_cap.execution_outcome in ("PARTIAL_SUCCESS", "FAILURE")
+    assert budget_cap.requests_transmitted == 5
+    assert len(summary_cap.completed_writes) == 5
+    assert len(summary_cap.unprocessed_candidates) == 5
+    assert cp_path.exists(), "Checkpoint must be persisted on budget cap abortion"
 
-    assert summary.execution_outcome == "SUCCESS"
-    assert len(summary.completed_writes) == 60
+    # 2. Test pagination request counting (multi-page counts each page against budget)
+    def page_mock(sym, start, end, page_token=None):
+        if page_token is None:
+            return {
+                "success": True,
+                "symbol": sym,
+                "bars": [{"t": "2026-11-19T05:00:00Z", "o": 10.0, "h": 11.0, "l": 9.0, "c": 10.5, "v": 1000}],
+                "next_page_token": "token_page_2",
+            }
+        else:
+            return {
+                "success": True,
+                "symbol": sym,
+                "bars": [{"t": "2026-11-20T05:00:00Z", "o": 10.5, "h": 11.5, "l": 9.5, "c": 11.0, "v": 1000}],
+                "next_page_token": None,
+            }
 
-    # Aggregate request tracking
-    total_calls = len(mock_fetcher.calls)
-    assert total_calls == 60  # 1 page per symbol
-    assert total_calls <= 550, "Total calls must remain within strict aggregate request ceiling"
+    mock_page_fetcher = MockAlpacaSipFetcher(bars_by_symbol={"PAGE": page_mock})
+    adapter_page = AlpacaHistoricalSipIngestionAdapter(
+        fetcher=mock_page_fetcher, feed="sip", adjustment="split", max_completed_session=date(2026, 11, 20)
+    )
+    budget_page = SharedExecutionBudget(max_aggregate_requests=10)
+    p_manifest = tmp_path / "page_manifest.json"
+    p_manifest.write_text(json.dumps({"symbols": ["PAGE"]}))
+    s_page = adapter_page.execute_bounded_ingestion(
+        manifest_path=p_manifest,
+        start_date="2026-11-19",
+        end_date="2026-11-20",
+        apply_writes=False,
+        budget=budget_page,
+    )
+    assert budget_page.requests_transmitted == 2, "Multi-page fetch must record each transmitted page against budget"
+
+    # 3. Test retry ceiling exhaustion
+    mock_retry_fetcher = MockAlpacaSipFetcher(transient_failures_count=10)
+    budget_retry = SharedExecutionBudget(max_cumulative_retries=2, max_aggregate_requests=100)
+    adapter_retry = AlpacaHistoricalSipIngestionAdapter(
+        fetcher=mock_retry_fetcher, feed="sip", adjustment="split", max_completed_session=date(2026, 11, 20)
+    )
+    s_retry = adapter_retry.execute_bounded_ingestion(
+        manifest_path=manifest_path,
+        symbols_override=symbols[:5],
+        start_date="2026-11-07",
+        end_date="2026-11-20",
+        apply_writes=False,
+        budget=budget_retry,
+    )
+    assert budget_retry.retries_transmitted == 2
+    assert s_retry.execution_outcome == "FAILURE"
+
+    # 4. Test deadline timeout
+    budget_timeout = SharedExecutionBudget(overall_deadline_seconds=0.001)
+    time.sleep(0.005)
+    adapter_timeout = AlpacaHistoricalSipIngestionAdapter(
+        fetcher=mock_fetcher, feed="sip", adjustment="split", max_completed_session=date(2026, 11, 20)
+    )
+    s_time = adapter_timeout.execute_bounded_ingestion(
+        manifest_path=manifest_path,
+        symbols_override=symbols[:5],
+        start_date="2026-11-07",
+        end_date="2026-11-20",
+        apply_writes=False,
+        budget=budget_timeout,
+    )
+    assert s_time.execution_outcome == "FAILURE"
+    assert len(s_time.unprocessed_candidates) == 5
+
+    # 5. Test safe resume from checkpoint
+    resume_cp_path = tmp_path / "resume_cp.json"
+    budget_res1 = SharedExecutionBudget(max_aggregate_requests=3)
+    adapter_res = AlpacaHistoricalSipIngestionAdapter(
+        fetcher=mock_fetcher, feed="sip", adjustment="split", max_completed_session=date(2026, 11, 20)
+    )
+    adapter_res.execute_bounded_ingestion(
+        manifest_path=manifest_path,
+        symbols_override=symbols[:6],
+        start_date="2026-11-07",
+        end_date="2026-11-20",
+        apply_writes=True,
+        db_path=disposable_market_db,
+        budget=budget_res1,
+        checkpoint_summary_path=resume_cp_path,
+    )
+    calls_before = len(mock_fetcher.calls)
+
+    # Now resume with budget allowing remaining 3 candidates
+    budget_res2 = SharedExecutionBudget(max_aggregate_requests=10)
+    s_res = adapter_res.execute_bounded_ingestion(
+        manifest_path=manifest_path,
+        symbols_override=symbols[:6],
+        start_date="2026-11-07",
+        end_date="2026-11-20",
+        apply_writes=True,
+        db_path=disposable_market_db,
+        budget=budget_res2,
+        checkpoint_summary_path=resume_cp_path,
+        resume=True,
+    )
+    calls_after = len(mock_fetcher.calls)
+    assert calls_after - calls_before == 3, "Resumed execution must skip the 3 already completed candidates"
+    assert len(s_res.completed_writes) == 6
+
+
+def test_wal_safe_quiesced_recovery_rehearsal(tmp_path: Path):
+    """GATE 7: Rehearse WAL-safe quiesced recovery procedure on disposable SQLite database."""
+    import shutil
+    import hashlib
+
+    target_db = tmp_path / "production_target.db"
+    backup_db = tmp_path / "pre_refresh_backup.db"
+
+    # Step 1: Create baseline database in WAL mode
+    conn = sqlite3.connect(str(target_db))
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("CREATE TABLE asset_ohlcv_daily (symbol TEXT, trade_date TEXT, close REAL, PRIMARY KEY (symbol, trade_date));")
+    conn.execute("CREATE TABLE asset_ohlcv_provenance (symbol TEXT, trade_date TEXT, provider TEXT, PRIMARY KEY (symbol, trade_date));")
+    conn.execute("INSERT INTO asset_ohlcv_daily VALUES ('AAPL', '2026-11-19', 220.0);")
+    conn.execute("INSERT INTO asset_ohlcv_provenance VALUES ('AAPL', '2026-11-19', 'ALPACA');")
+    conn.commit()
+    conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+    conn.close()
+
+    # Step 2: Take verified pre-refresh backup
+    shutil.copy2(target_db, backup_db)
+    backup_sha = hashlib.sha256(backup_db.read_bytes()).hexdigest()
+
+    # Step 3: Simulate dirty/interrupted refresh leaving active WAL entries
+    dirty_conn = sqlite3.connect(str(target_db))
+    dirty_conn.execute("INSERT INTO asset_ohlcv_daily VALUES ('CORRUPT_CANDIDATE', '2026-11-20', 999.0);")
+    dirty_conn.execute("UPDATE asset_ohlcv_daily SET close = 0.0 WHERE symbol = 'AAPL';")
+    dirty_conn.commit()
+    dirty_conn.close()
+
+    # Simulate dirty WAL and SHM sidecars left behind by abnormal termination
+    wal_file = tmp_path / "production_target.db-wal"
+    shm_file = tmp_path / "production_target.db-shm"
+    wal_file.write_bytes(b"DIRTY_STALE_WAL_PAGES_FROM_INTERRUPTED_WRITER")
+    shm_file.write_bytes(b"DIRTY_SHM_INDEX")
+    assert wal_file.exists(), "Target database must have active WAL journal before recovery"
+
+    # Step 4: Execute quiesce and recovery procedure
+    recovery_result = quiesce_and_recover_database(target_db_path=target_db, backup_path=backup_db)
+
+    assert recovery_result["status"] == "RECOVERED"
+    assert recovery_result["recovered_sha256"] == backup_sha
+    assert recovery_result["integrity_check"] == "ok"
+
+    # Assert WAL sidecars are cleanly removed
+    assert not (tmp_path / "production_target.db-wal").exists()
+    assert not (tmp_path / "production_target.db-shm").exists()
+
+    # Verify recovered data matches pre-refresh backup exactly
+    ver_conn = sqlite3.connect(str(target_db))
+    cur = ver_conn.cursor()
+    cur.execute("SELECT symbol, trade_date, close FROM asset_ohlcv_daily")
+    rows = cur.fetchall()
+    ver_conn.close()
+    assert rows == [("AAPL", "2026-11-19", 220.0)], "Recovered database must match pre-refresh backup exactly"
 
 
 def test_full_accounting_closure_with_explicit_exceptions(tmp_path: Path):

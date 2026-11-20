@@ -251,11 +251,38 @@ class MarketDatabaseEngine:
             conn.close()
 
     @retry_sqlite()
-    def save_daily_candles(self, symbol: str, data: Any):
-        """Save OHLCV candles (pandas DataFrame or list of dicts) to database."""
+    def has_authoritative_provenance(self, symbol: str) -> bool:
+        """Check if a symbol has authoritative split-adjusted Alpaca SIP provenance records."""
+        upper = symbol.upper().strip()
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT COUNT(*) FROM asset_ohlcv_provenance
+                WHERE symbol = ? AND provider = 'ALPACA' AND adjustment_state = 'SPLIT_ADJUSTED_ONLY'
+            """, (upper,))
+            row = cursor.fetchone()
+            return bool(row and row[0] > 0)
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def save_daily_candles(self, symbol: str, data: Any, reject_if_authoritative: bool = False):
+        """Save OHLCV candles (pandas DataFrame or list of dicts) to database.
+
+        If reject_if_authoritative=True and symbol already has authoritative Alpaca SIP provenance,
+        the unprovenanced write is skipped to prevent invalidating verified provenance (Issue #166).
+        Otherwise, writes candles and removes contradictory provenance for those dates (Issue #198 / PREFLIGHT-001).
+        """
         if data is None:
             return
         upper = symbol.upper().strip()
+        if reject_if_authoritative and self.has_authoritative_provenance(upper):
+            logger.info(
+                f"RECURRENCE_GUARD: Bypassed unprovenanced write for '{upper}'. "
+                "Authoritative Alpaca SIP provenance is protected."
+            )
+            return
         conn = self._get_connection()
         try:
             with conn:

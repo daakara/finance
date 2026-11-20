@@ -38,11 +38,15 @@ def _warmup_worker():
         core_symbols = ["LNTH", "CIEN", "NVDA", "AAPL", "MSFT", "PLTR", "SPY", "QQQ"]
         for sym in core_symbols:
             try:
+                # Recurrence Prevention (Issue #166): Skip warmup if symbol has authoritative Alpaca SIP provenance
+                if hasattr(db, "has_authoritative_provenance") and db.has_authoritative_provenance(sym):
+                    logger.info(f"Warmup skipped for {sym}: Authoritative Alpaca SIP provenance is protected.")
+                    continue
                 existing = db.get_daily_candles(sym, limit=5)
                 if not existing:
                     hist = yf.Ticker(sym).history(period="1y", interval="1d", timeout=5)
                     if not hist.empty:
-                        db.save_daily_candles(sym, hist)
+                        db.save_daily_candles(sym, hist, reject_if_authoritative=True)
                         logger.info(f"Successfully pre-warmed SQLite cache for {sym}")
             except Exception as e:
                 logger.debug(f"Warmup skipped for symbol {sym}: {e}")

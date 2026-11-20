@@ -47,8 +47,10 @@ import math
 import os
 from pathlib import Path
 import re
+import shutil
 import sqlite3
 import sys
+import time
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 # Add repository root to sys.path
@@ -213,6 +215,259 @@ def validate_target_database_for_write(db_path: str) -> None:
             )
     finally:
         conn.close()
+
+
+def resolve_runtime_market_db_path(env: Optional[Dict[str, str]] = None) -> str:
+    """
+    Resolves authoritative SQLite market database path following the runtime configuration hierarchy:
+    1. FINANCE_DATA_DIR / .finance_market_store.db
+    2. DATA_DIR / .finance_market_store.db
+    3. User home directory / .finance_market_store.db
+    """
+    environ = env if env is not None else os.environ
+    finance_dir = environ.get("FINANCE_DATA_DIR", "").strip()
+    if finance_dir:
+        data_dir = finance_dir
+    else:
+        data_dir = environ.get("DATA_DIR", "").strip() or os.path.expanduser("~")
+    return os.path.abspath(os.path.join(data_dir, ".finance_market_store.db"))
+
+
+HISTORICAL_SERVING_DEPLOYMENT_ID = "9f28fb4e-c804-4b6a-9a25-1092c496026d"
+HISTORICAL_SERVING_GIT_SHA = "868d7afcd528006c2323e6b79b5a17f2f20f677c"
+
+
+def verify_serving_runtime_identity(
+    env: Optional[Dict[str, str]] = None,
+    db_path: Optional[str] = None,
+    expected_deployment_id: Optional[str] = None,
+    expected_git_sha: Optional[str] = None,
+    universe_db_path: Optional[str] = None,
+    expected_universe_build_id: str = "UB-ARX-EXPANSION-500-20261108",
+    expected_universe_hash: str = "5f60b47d5402c0fc29fa545b244b778ca99a017f47448f47ebdfc257db8881b0",
+    expected_symbol_count: int = 500,
+) -> Tuple[bool, Optional[str]]:
+    """
+    Execution-time identity check: asserts target DB path and serving container
+    match expected Railway production authority before allowing execution.
+
+    Invariants:
+    1. Rejects missing identity: Fail-closed if RAILWAY_DEPLOYMENT_ID or RAILWAY_GIT_COMMIT_SHA is missing.
+    2. Full SHA equality: Strictly requires full 40-character hex equality. Prefix matching is prohibited.
+    3. Pinned deployment: Accepts explicitly pinned deployment/SHA while recording historical baseline.
+    4. Target DB presence: Asserts target database exists and is non-empty.
+    5. Universe Store Validation: If universe_db_path is provided, validates that the published build,
+       membership hash, and 500 eligible symbols match authoritative store records.
+    """
+    environ = env if env is not None else os.environ
+
+    deploy_id = environ.get("RAILWAY_DEPLOYMENT_ID")
+    git_sha = environ.get("RAILWAY_GIT_COMMIT_SHA")
+
+    if not deploy_id or not git_sha:
+        return False, "MISSING_RUNTIME_IDENTITY: Both RAILWAY_DEPLOYMENT_ID and RAILWAY_GIT_COMMIT_SHA must be present in runtime environment."
+
+    target_deploy_id = expected_deployment_id or HISTORICAL_SERVING_DEPLOYMENT_ID
+    if deploy_id != target_deploy_id:
+        return False, f"DEPLOYMENT_ID_MISMATCH: Runtime deployment '{deploy_id}' != expected '{target_deploy_id}'."
+
+    target_git_sha = (expected_git_sha or HISTORICAL_SERVING_GIT_SHA).lower().strip()
+    clean_git_sha = git_sha.lower().strip()
+
+    if len(clean_git_sha) != 40 or not re.match(r"^[0-9a-f]{40}$", clean_git_sha):
+        return False, f"INVALID_GIT_SHA_FORMAT: RAILWAY_GIT_COMMIT_SHA must be a 40-character hex string; got '{git_sha}'."
+
+    if len(target_git_sha) != 40 or not re.match(r"^[0-9a-f]{40}$", target_git_sha):
+        return False, f"INVALID_EXPECTED_GIT_SHA: Expected git SHA must be a 40-character hex string; got '{expected_git_sha}'."
+
+    if clean_git_sha != target_git_sha:
+        return False, f"GIT_REVISION_MISMATCH: Runtime git SHA '{clean_git_sha}' != expected '{target_git_sha}'. Prefix matching is strictly prohibited."
+
+    if db_path:
+        p = Path(db_path).resolve()
+        if not p.is_file():
+            return False, f"TARGET_DATABASE_ABSENT: File '{db_path}' does not exist."
+        if p.stat().st_size == 0:
+            return False, f"TARGET_DATABASE_EMPTY: File '{db_path}' is 0 bytes."
+
+    if universe_db_path:
+        u_p = Path(universe_db_path).resolve()
+        if not u_p.is_file():
+            return False, f"UNIVERSE_DATABASE_ABSENT: File '{universe_db_path}' does not exist."
+        try:
+            uri = f"{u_p.as_uri()}?mode=ro"
+            conn = sqlite3.connect(uri, uri=True, timeout=5.0)
+            try:
+                cur = conn.cursor()
+                cur.execute(
+                    "SELECT eligible_count, eligible_membership_hash, publication_decision "
+                    "FROM universe_builds WHERE universe_build_id = ?",
+                    (expected_universe_build_id,)
+                )
+                row = cur.fetchone()
+                if not row:
+                    return False, f"UNIVERSE_BUILD_NOT_FOUND: Build '{expected_universe_build_id}' not found in universe store."
+                el_count, el_hash, pub_dec = row[0], row[1], row[2]
+                if pub_dec != "PUBLISHED":
+                    return False, f"UNIVERSE_NOT_PUBLISHED: Universe build '{expected_universe_build_id}' has status '{pub_dec}', expected 'PUBLISHED'."
+                if el_count != expected_symbol_count:
+                    return False, f"UNIVERSE_COUNT_MISMATCH: Universe build '{expected_universe_build_id}' has {el_count} symbols, expected {expected_symbol_count}."
+                if el_hash != expected_universe_hash:
+                    return False, f"UNIVERSE_HASH_MISMATCH: Universe build '{expected_universe_build_id}' hash '{el_hash}' != expected '{expected_universe_hash}'."
+
+                # Verify individual eligible rows
+                cur.execute(
+                    "SELECT symbol FROM universe_eligibility_ledger "
+                    "WHERE universe_build_id = ? AND eligibility_decision = 'ELIGIBLE' ORDER BY symbol ASC",
+                    (expected_universe_build_id,)
+                )
+                ledger_syms = [r[0] for r in cur.fetchall()]
+                if len(ledger_syms) != expected_symbol_count:
+                    return False, f"ELIGIBILITY_LEDGER_COUNT_MISMATCH: Ledger has {len(ledger_syms)} eligible symbols, expected {expected_symbol_count}."
+                computed_hash = hashlib.sha256(",".join(ledger_syms).encode("utf-8")).hexdigest()
+                if computed_hash != expected_universe_hash:
+                    return False, f"ELIGIBILITY_LEDGER_HASH_MISMATCH: Computed hash '{computed_hash}' != expected '{expected_universe_hash}'."
+            finally:
+                conn.close()
+        except Exception as e:
+            return False, f"UNIVERSE_STORE_VERIFICATION_ERROR: {e}"
+
+    return True, None
+
+
+def quiesce_and_recover_database(
+    target_db_path: Union[str, Path],
+    backup_path: Union[str, Path],
+) -> Dict[str, Any]:
+    """
+    Executes a WAL-safe recovery procedure that first quiesces all database users,
+    flushes and truncates SQLite WAL journals, cleans up WAL sidecars, restores
+    from the verified pre-refresh backup, and validates database integrity.
+
+    Steps:
+    1. Assert existence of verified backup.
+    2. Connect to target database to ensure quiescence and run PRAGMA wal_checkpoint(TRUNCATE).
+    3. Safely remove target WAL sidecars (.db-wal, .db-shm) to prevent replaying stale transactions.
+    4. Restore target from backup file.
+    5. Run PRAGMA integrity_check and verify SHA-256 matches backup.
+    """
+    b_path = Path(backup_path).resolve()
+    t_path = Path(target_db_path).resolve()
+
+    if not b_path.is_file():
+        raise FileNotFoundError(f"BACKUP_NOT_FOUND: Pre-refresh backup '{backup_path}' does not exist.")
+    if b_path.stat().st_size == 0:
+        raise ValueError(f"BACKUP_EMPTY: Pre-refresh backup '{backup_path}' is 0 bytes.")
+
+    backup_sha = hashlib.sha256(b_path.read_bytes()).hexdigest()
+
+    # Step 1 & 2: Quiesce target and checkpoint WAL if target file exists
+    if t_path.exists():
+        try:
+            conn = sqlite3.connect(str(t_path), timeout=10.0)
+            try:
+                # Checkpoint and truncate WAL
+                conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+            finally:
+                conn.close()
+        except Exception as e:
+            logger.warning(f"WAL checkpoint before recovery encountered warning (proceeding with clean removal): {e}")
+
+    # Step 3: Remove WAL sidecars and unquiesced target file
+    wal_file = t_path.parent / f"{t_path.name}-wal"
+    shm_file = t_path.parent / f"{t_path.name}-shm"
+    if wal_file.exists():
+        wal_file.unlink()
+    if shm_file.exists():
+        shm_file.unlink()
+    if t_path.exists():
+        t_path.unlink()
+
+    # Step 4: Restore target from backup byte-for-byte
+    shutil.copy2(b_path, t_path)
+
+    # Step 5: Verify target integrity in read-only mode (?mode=ro) so file header is untouched
+    ver_conn = sqlite3.connect(f"{t_path.as_uri()}?mode=ro", uri=True)
+    try:
+        cur = ver_conn.cursor()
+        cur.execute("PRAGMA integrity_check;")
+        res = cur.fetchone()
+        integrity_ok = bool(res and res[0] == "ok")
+    finally:
+        ver_conn.close()
+
+    # Clean up any ephemeral WAL/SHM sidecars created during read-only verification
+    if wal_file.exists():
+        wal_file.unlink()
+    if shm_file.exists():
+        shm_file.unlink()
+
+    if not integrity_ok:
+        raise RuntimeError(f"RECOVERY_FAILED: Integrity check failed on recovered database: {res}")
+
+    recovered_sha = hashlib.sha256(t_path.read_bytes()).hexdigest()
+    if recovered_sha != backup_sha:
+        raise RuntimeError(f"RECOVERY_SHA_MISMATCH: Recovered file SHA '{recovered_sha}' != backup SHA '{backup_sha}'.")
+
+    return {
+        "status": "RECOVERED",
+        "target_db_path": str(t_path),
+        "backup_path": str(b_path),
+        "backup_sha256": backup_sha,
+        "recovered_sha256": recovered_sha,
+        "integrity_check": "ok",
+    }
+
+
+@dataclass
+class SharedExecutionBudget:
+    """
+    Tracks and enforces shared aggregate execution limits across candidates, pages, and retries.
+    """
+    max_aggregate_requests: int = 550
+    max_cumulative_retries: int = 30
+    max_fallback_requests: int = 0
+    overall_deadline_seconds: float = 1200.0
+    checkpoint_interval: int = 50
+    requests_transmitted: int = 0
+    retries_transmitted: int = 0
+    fallbacks_transmitted: int = 0
+    start_time_monotonic: float = field(default_factory=time.monotonic)
+
+    def check_deadline(self) -> None:
+        elapsed = time.monotonic() - self.start_time_monotonic
+        if elapsed > self.overall_deadline_seconds:
+            raise TimeoutError(
+                f"EXECUTION_BUDGET_TIMEOUT: Overall deadline exceeded "
+                f"({elapsed:.1f}s > {self.overall_deadline_seconds:.1f}s)."
+            )
+
+    def record_request(self) -> None:
+        self.check_deadline()
+        if self.requests_transmitted >= self.max_aggregate_requests:
+            raise RuntimeError(
+                f"EXECUTION_BUDGET_EXHAUSTED: Transmitted request cap reached "
+                f"({self.requests_transmitted}/{self.max_aggregate_requests})."
+            )
+        self.requests_transmitted += 1
+
+    def record_retry(self) -> None:
+        self.check_deadline()
+        if self.retries_transmitted >= self.max_cumulative_retries:
+            raise RuntimeError(
+                f"RETRY_BUDGET_EXHAUSTED: Cumulative retry ceiling reached "
+                f"({self.retries_transmitted}/{self.max_cumulative_retries})."
+            )
+        self.retries_transmitted += 1
+
+    def record_fallback(self) -> None:
+        self.check_deadline()
+        if self.fallbacks_transmitted >= self.max_fallback_requests:
+            raise RuntimeError(
+                f"FALLBACK_BUDGET_EXHAUSTED: Fallback requests forbidden or cap reached "
+                f"({self.fallbacks_transmitted}/{self.max_fallback_requests})."
+            )
+        self.fallbacks_transmitted += 1
 
 
 @dataclass
@@ -906,11 +1161,13 @@ class AlpacaHistoricalSipIngestionAdapter:
         symbol: str,
         start_date: str,
         end_date: str,
+        budget: Optional[SharedExecutionBudget] = None,
     ) -> Tuple[bool, List[Dict[str, Any]], int, Optional[str]]:
         """
         Fetches historical bars for a candidate across all pages until pagination
-        is complete. Enforces cycle detection, symbol identity verification, and
-        fails closed if max_pages is exhausted while next_page_token remains.
+        is complete. Enforces cycle detection, symbol identity verification,
+        shared execution limits (requests, retries, deadline), and fails closed if
+        max_pages is exhausted while next_page_token remains.
         """
         all_bars: List[Dict[str, Any]] = []
         next_page_token: Optional[str] = None
@@ -919,19 +1176,43 @@ class AlpacaHistoricalSipIngestionAdapter:
         max_pages = 25  # Bounded pagination safety threshold
 
         while pages_retrieved < max_pages:
-            res = self.fetcher.fetch_historical_bars(
-                symbol=symbol,
-                start=start_date,
-                end=end_date,
-                feed=self.feed,
-                adjustment=self.adjustment,
-                limit=1000,
-                page_token=next_page_token,
-            )
+            if budget is not None:
+                try:
+                    budget.record_request()
+                except Exception as b_err:
+                    return False, [], pages_retrieved, f"BUDGET_ERROR: {b_err}"
+
+            max_page_retries = 3
+            page_retries = 0
+            res: Optional[Dict[str, Any]] = None
+            while True:
+                res = self.fetcher.fetch_historical_bars(
+                    symbol=symbol,
+                    start=start_date,
+                    end=end_date,
+                    feed=self.feed,
+                    adjustment=self.adjustment,
+                    limit=1000,
+                    page_token=next_page_token,
+                )
+                if res and res.get("success"):
+                    break
+                err_code = res.get("status_code") if res else None
+                is_retryable = (err_code in (429, 500, 502, 503, 504) or err_code is None)
+                if is_retryable and page_retries < max_page_retries and budget is not None:
+                    try:
+                        budget.record_retry()
+                        page_retries += 1
+                        time.sleep(0.01)
+                        continue
+                    except Exception as r_err:
+                        return False, [], pages_retrieved, f"BUDGET_ERROR: {r_err}"
+                break
+
             pages_retrieved += 1
 
-            if not res.get("success"):
-                return False, [], pages_retrieved, f"PROVIDER_ERROR: {res.get('error', 'UNKNOWN_FETCH_ERROR')}"
+            if not res or not res.get("success"):
+                return False, [], pages_retrieved, f"PROVIDER_ERROR: {res.get('error', 'UNKNOWN_FETCH_ERROR') if res else 'EMPTY_RESPONSE'}"
 
             # Identity validation: ensure returned symbol matches requested candidate
             ret_sym = res.get("symbol")
@@ -974,12 +1255,20 @@ class AlpacaHistoricalSipIngestionAdapter:
         db_path: Optional[str] = None,
         max_candidates: Optional[int] = None,
         max_completed_session: Optional[date] = None,
+        budget: Optional[SharedExecutionBudget] = None,
+        checkpoint_summary_path: Optional[Union[str, Path]] = None,
+        resume: bool = False,
+        verify_runtime_identity_flag: bool = False,
+        expected_deployment_id: Optional[str] = None,
+        expected_git_sha: Optional[str] = None,
+        universe_db_path: Optional[str] = None,
     ) -> IngestionBatchSummary:
         """
         Executes bounded ingestion workflow across candidates.
         Enforces strict read-only dry-run, target database schema pre-validation on apply,
-        candidate symbol validation against manifest, adjustment compatibility inspection,
-        and honest batch outcome calculation.
+        runtime identity verification, execution budget & deadline enforcement,
+        incremental checkpoint persistence & safe resume, candidate symbol validation,
+        adjustment compatibility inspection, and honest batch outcome calculation.
         """
         effective_max = max_completed_session or self.max_completed_session or MAX_COMPLETED_SESSION
 
@@ -997,6 +1286,17 @@ class AlpacaHistoricalSipIngestionAdapter:
             )
         if d_start > d_end:
             raise ValueError(f"INVALID_DATE_ORDER: start_date '{start_date}' cannot be after end_date '{end_date}'.")
+
+        # Identity verification if requested
+        if verify_runtime_identity_flag:
+            ok_id, err_id = verify_serving_runtime_identity(
+                db_path=db_path if apply_writes else None,
+                expected_deployment_id=expected_deployment_id,
+                expected_git_sha=expected_git_sha,
+                universe_db_path=universe_db_path,
+            )
+            if not ok_id:
+                raise ValueError(f"RUNTIME_IDENTITY_REJECTED: {err_id}")
 
         # SIP-01 & SIP-05: Load and validate manifest & requested scope BEFORE touching write infrastructure
         manifest_info = self.load_manifest(manifest_path)
@@ -1030,6 +1330,14 @@ class AlpacaHistoricalSipIngestionAdapter:
             if self.db_engine is None or self.db_engine.db_path != str(Path(db_path).resolve()):
                 self.db_engine = MarketDatabaseEngine(db_path=str(Path(db_path).resolve()), auto_init=False)
 
+        budget = budget or SharedExecutionBudget()
+
+        def save_checkpoint(summary_obj: IngestionBatchSummary, cp_p: Path) -> None:
+            cp_p.parent.mkdir(parents=True, exist_ok=True)
+            tmp_p = cp_p.with_suffix(".tmp")
+            tmp_p.write_text(json.dumps(summary_obj.to_dict(), indent=2), encoding="utf-8")
+            tmp_p.replace(cp_p)
+
         summary = IngestionBatchSummary(
             manifest_path=str(manifest_path),
             manifest_sha256=manifest_info.manifest_sha256,
@@ -1053,6 +1361,28 @@ class AlpacaHistoricalSipIngestionAdapter:
             },
         )
 
+        completed_symbols: Set[str] = set()
+        if resume and checkpoint_summary_path and Path(checkpoint_summary_path).is_file():
+            try:
+                cp_data = json.loads(Path(checkpoint_summary_path).read_text(encoding="utf-8"))
+                for prev_sym, prev_disp in cp_data.get("candidate_dispositions", {}).items():
+                    if prev_disp.get("status") in ("APPLIED", "SKIPPED"):
+                        completed_symbols.add(prev_sym)
+                        summary.candidate_dispositions[prev_sym] = prev_disp
+                        if prev_disp.get("status") == "APPLIED":
+                            if prev_sym not in summary.completed_writes:
+                                summary.completed_writes.append(prev_sym)
+                            summary.total_bars_ingested += prev_disp.get("bars_ingested", 0)
+                            if prev_disp.get("action_type") in ("BACKFILL", "REPLACE"):
+                                summary.backfilled_count += 1
+                            else:
+                                summary.refreshed_count += 1
+                        elif prev_disp.get("status") == "SKIPPED":
+                            summary.skipped_current_count += 1
+                logger.info(f"Resumed from checkpoint: {len(completed_symbols)} candidates already completed.")
+            except Exception as cp_err:
+                logger.warning(f"Failed to load checkpoint file for resume: {cp_err}")
+
         try:
             expected_window_sessions = get_expected_nyse_sessions(start_date, end_date)
             calendar_available = bool(expected_window_sessions)
@@ -1062,173 +1392,89 @@ class AlpacaHistoricalSipIngestionAdapter:
             logger.warning(f"Authoritative calendar unavailable: {e}")
         expected_sessions_set = set(expected_window_sessions)
 
-        for sym in target_symbols:
-            # SIP-01 & SIP-04: Inspect existing state using strict read-only inspection
-            existing_candles: List[Dict[str, Any]] = []
-            existing_provenance: List[Dict[str, Any]] = []
-            if db_path and Path(db_path).is_file():
-                existing_candles, existing_provenance = inspect_existing_market_store_readonly(db_path, sym)
+        try:
+            for idx_sym, sym in enumerate(target_symbols):
+                if sym in completed_symbols:
+                    continue
 
-            existing_count = len(existing_candles)
-            latest_stored = existing_candles[-1]["time"] if existing_candles else None
-            earliest_stored = existing_candles[0]["time"] if existing_candles else None
-            stored_dates_set = {c["time"] for c in existing_candles}
-
-            # R3: Inspect 100% of stored candles and provenance records for 1-to-1 correspondence and purity
-            is_prov_compatible, prov_incompat_reason = self.is_prov_compatible(
-                existing_provenance, existing_candles
-            ) if existing_count > 0 else (True, None)
-            primary_stored_adj = existing_provenance[-1].get("adjustment_state") if existing_provenance else None
-
-            # R3: Calendar authority fail-closed check
-            if not calendar_available:
-                reason = "CALENDAR_AUTHORITY_UNAVAILABLE: Authoritative exchange calendar unavailable; cannot certify stored coverage or execute ingestion."
-                disp = CandidateIngestionDisposition(
-                    symbol=sym,
-                    action_type="BLOCKED",
-                    status="FAILED_VALIDATION",
-                    rejection_reason=reason,
-                    existing_sessions_in_store=existing_count,
-                    earliest_stored_date_before=earliest_stored,
-                    latest_stored_date_before=latest_stored,
-                    feed=self.feed,
-                    adjustment=self.adjustment,
-                    stored_provenance_adjustment_state=primary_stored_adj,
-                    provenance_compatible=is_prov_compatible,
-                )
-                summary.candidate_dispositions[sym] = asdict(disp)
-                summary.failed_validation_count += 1
-                continue
-
-            # R3 & L03: Determine whether truly already current
-            # Must satisfy: calendar authority available AND compatible provenance AND all expected sessions present without gaps
-            is_already_current = False
-            if (
-                is_prov_compatible
-                and existing_count > 0
-                and latest_stored is not None
-                and latest_stored >= end_date
-                and earliest_stored is not None
-                and earliest_stored <= start_date
-                and expected_sessions_set
-            ):
-                missing_sessions = expected_sessions_set - stored_dates_set
-                if not missing_sessions:
-                    is_already_current = True
-
-            if is_already_current:
-                anchor_bar = next((c for c in existing_candles if c["time"] == "2026-10-19"), None)
-                has_anchor = anchor_bar is not None
-                obs_close = float(anchor_bar["close"]) if has_anchor else None
-                disp = CandidateIngestionDisposition(
-                    symbol=sym,
-                    action_type="SKIP_ALREADY_CURRENT",
-                    status="SKIPPED",
-                    bars_retrieved=0,
-                    bars_ingested=0,
-                    first_session=earliest_stored,
-                    last_session=latest_stored,
-                    existing_sessions_in_store=existing_count,
-                    earliest_stored_date_before=earliest_stored,
-                    latest_stored_date_before=latest_stored,
-                    feed=self.feed,
-                    adjustment=self.adjustment,
-                    stored_provenance_adjustment_state=primary_stored_adj,
-                    provenance_compatible=is_prov_compatible,
-                    l03_equivalence_established=False,  # Conditional: candidate market data evidence only
-                    l03_anchor_session="2026-10-19" if has_anchor else None,
-                    l03_observation_price=obs_close,
-                    l03_derivation_note=(
-                        f"Candidate {sym} has verified split-adjusted bar on reference anchor session 2026-10-19 (close={obs_close}). "
-                        "Equivalence is conditional: factor 1.0 assumed without corporate action verification. "
-                        "Candidate market data evidence only; does not certify L03/L04 compliance."
-                        if has_anchor else
-                        f"Anchor session 2026-10-19 not present in store for {sym}; L03 price-floor equivalence cannot be established."
-                    ),
-                )
-                summary.skipped_current_count += 1
-                summary.candidate_dispositions[sym] = asdict(disp)
-                continue
-
-            # Determine action type and query start date
-            sym_start = start_date
-            action = "BACKFILL"
-
-            # Defect A: Check if candidate can be refreshed incrementally
-            # 1. Existing stored history must extend back to start_date
-            # 2. Existing stored history must have latest_stored < end_date
-            # 3. Provenance must be 100% compatible
-            # 4. Retained prefix [start_date, latest_stored] MUST be complete without interior gaps
-            prefix_expected_sessions = [s for s in expected_window_sessions if start_date <= s <= latest_stored] if latest_stored else []
-            prefix_missing = set(prefix_expected_sessions) - stored_dates_set
-
-            manifest_param = manifest_info.per_symbol_parameters.get(sym, {})
-            manifest_action = str(manifest_param.get("action") or manifest_param.get("mandated_action") or "").upper().strip()
-
-            can_refresh = (
-                manifest_action not in ("BACKFILL", "REPLACE")
-                and existing_count > 0
-                and latest_stored is not None
-                and latest_stored < end_date
-                and earliest_stored is not None
-                and earliest_stored <= start_date
-                and is_prov_compatible
-                and len(prefix_missing) == 0
-            )
-
-            if manifest_action == "REPLACE":
-                action = "REPLACE"
-                sym_start = start_date
-            elif can_refresh and latest_stored:
+                # Check budget deadline
                 try:
-                    last_d = date.fromisoformat(latest_stored)
-                    next_d = date.fromordinal(last_d.toordinal() + 1).isoformat()
-                    manifest_start = manifest_param.get("requested_start_session")
-                    if manifest_start and manifest_start > next_d:
-                        try:
-                            skipped = [s for s in get_expected_nyse_sessions(next_d, manifest_start) if s < manifest_start]
-                        except Exception:
-                            skipped = []
-                        if skipped:
-                            action = "BACKFILL"
-                            sym_start = start_date
-                        else:
-                            sym_start = manifest_start
-                            action = "REFRESH"
-                    else:
-                        sym_start = next_d
-                        action = "REFRESH"
-                except Exception:
-                    sym_start = start_date
-                    action = "BACKFILL"
-            else:
-                action = "BACKFILL"
-                sym_start = start_date
+                    budget.check_deadline()
+                except Exception as dead_err:
+                    logger.error(f"Execution budget aborted: {dead_err}")
+                    summary.failed_candidate = sym
+                    for rem_s in target_symbols[idx_sym:]:
+                        summary.unprocessed_candidates.append(rem_s)
+                        summary.candidate_dispositions[rem_s] = asdict(CandidateIngestionDisposition(
+                            symbol=rem_s,
+                            action_type="UNPROCESSED",
+                            status="UNPROCESSED",
+                            rejection_reason=f"ABORTED_BY_BUDGET_LIMIT: {dead_err}",
+                        ))
+                    if checkpoint_summary_path:
+                        save_checkpoint(summary, Path(checkpoint_summary_path))
+                    break
+                # SIP-01 & SIP-04: Inspect existing state using strict read-only inspection
+                existing_candles: List[Dict[str, Any]] = []
+                existing_provenance: List[Dict[str, Any]] = []
+                if db_path and Path(db_path).is_file():
+                    existing_candles, existing_provenance = inspect_existing_market_store_readonly(db_path, sym)
 
-            # R2 & Scope-edge: Check if existing history outside requested scope has incompatible provenance or missing sidecars
-            if existing_count > 0:
-                outside_candles = [c for c in existing_candles if c["time"] < sym_start or c["time"] > end_date]
-                outside_prov = [p for p in existing_provenance if p.get("trade_date") < sym_start or p.get("trade_date") > end_date]
-                outside_prov_dates = {p.get("trade_date") for p in outside_prov}
-                outside_unprovenanced = [c["time"] for c in outside_candles if c["time"] not in outside_prov_dates]
-                incompatible_outside = [
-                    p for p in outside_prov
-                    if p.get("adjustment_state") != AdjustmentState.SPLIT_ADJUSTED_ONLY
-                    or str(p.get("provider", "")).upper() not in ("ALPACA", str(Provider.ALPACA).upper())
-                ]
-                if incompatible_outside or outside_unprovenanced:
-                    reason = (
-                        f"INCOMPATIBLE_HISTORY_OUTSIDE_REVIEWED_SCOPE: Candidate '{sym}' has "
-                        f"{len(incompatible_outside)} incompatible and {len(outside_unprovenanced)} unprovenanced "
-                        f"records outside reviewed window [{sym_start}, {end_date}]. Bounded replacement cannot proceed "
-                        f"without explicit wider repair from '{earliest_stored}'."
-                    )
-                    logger.error(reason)
+                existing_count = len(existing_candles)
+                latest_stored = existing_candles[-1]["time"] if existing_candles else None
+                earliest_stored = existing_candles[0]["time"] if existing_candles else None
+                stored_dates_set = {c["time"] for c in existing_candles}
+
+                # R3: Inspect 100% of stored candles and provenance records for 1-to-1 correspondence and purity
+                is_prov_compatible, prov_incompat_reason = self.is_prov_compatible(
+                    existing_provenance, existing_candles
+                ) if existing_count > 0 else (True, None)
+                primary_stored_adj = existing_provenance[-1].get("adjustment_state") if existing_provenance else None
+
+                # R3: Calendar authority fail-closed check
+                if not calendar_available:
+                    reason = "CALENDAR_AUTHORITY_UNAVAILABLE: Authoritative exchange calendar unavailable; cannot certify stored coverage or execute ingestion."
                     disp = CandidateIngestionDisposition(
                         symbol=sym,
-                        action_type=action,
-                        status="BLOCKED_INCOMPATIBLE_OUTSIDE_SCOPE",
+                        action_type="BLOCKED",
+                        status="FAILED_VALIDATION",
                         rejection_reason=reason,
+                        existing_sessions_in_store=existing_count,
+                        earliest_stored_date_before=earliest_stored,
+                        latest_stored_date_before=latest_stored,
+                        feed=self.feed,
+                        adjustment=self.adjustment,
+                        stored_provenance_adjustment_state=primary_stored_adj,
+                        provenance_compatible=is_prov_compatible,
+                    )
+                    summary.candidate_dispositions[sym] = asdict(disp)
+                    summary.failed_validation_count += 1
+                    continue
+
+                # R3 & L03: Determine whether truly already current
+                # Must satisfy: calendar authority available AND compatible provenance AND all expected sessions present without gaps
+                is_already_current = False
+                if (
+                    is_prov_compatible
+                    and existing_count > 0
+                    and latest_stored is not None
+                    and latest_stored >= end_date
+                    and earliest_stored is not None
+                    and earliest_stored <= start_date
+                    and expected_sessions_set
+                ):
+                    missing_sessions = expected_sessions_set - stored_dates_set
+                    if not missing_sessions:
+                        is_already_current = True
+
+                if is_already_current:
+                    anchor_bar = next((c for c in existing_candles if c["time"] == "2026-10-19"), None)
+                    has_anchor = anchor_bar is not None
+                    obs_close = float(anchor_bar["close"]) if has_anchor else None
+                    disp = CandidateIngestionDisposition(
+                        symbol=sym,
+                        action_type="SKIP_ALREADY_CURRENT",
+                        status="SKIPPED",
                         bars_retrieved=0,
                         bars_ingested=0,
                         first_session=earliest_stored,
@@ -1239,143 +1485,208 @@ class AlpacaHistoricalSipIngestionAdapter:
                         feed=self.feed,
                         adjustment=self.adjustment,
                         stored_provenance_adjustment_state=primary_stored_adj,
-                        provenance_compatible=False,
+                        provenance_compatible=is_prov_compatible,
+                        l03_equivalence_established=False,  # Conditional: candidate market data evidence only
+                        l03_anchor_session="2026-10-19" if has_anchor else None,
+                        l03_observation_price=obs_close,
+                        l03_derivation_note=(
+                            f"Candidate {sym} has verified split-adjusted bar on reference anchor session 2026-10-19 (close={obs_close}). "
+                            "Equivalence is conditional: factor 1.0 assumed without corporate action verification. "
+                            "Candidate market data evidence only; does not certify L03/L04 compliance."
+                            if has_anchor else
+                            f"Anchor session 2026-10-19 not present in store for {sym}; L03 price-floor equivalence cannot be established."
+                        ),
                     )
+                    summary.skipped_current_count += 1
                     summary.candidate_dispositions[sym] = asdict(disp)
-                    summary.failed_validation_count += 1
                     continue
 
-            retrieval_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-            fetch_ok, raw_bars, pages_count, err_msg = self.fetch_all_candidate_bars(sym, sym_start, end_date)
+                # Determine action type and query start date
+                sym_start = start_date
+                action = "BACKFILL"
 
-            if not fetch_ok:
-                err_str = str(err_msg)
-                err_status = "FAILED_PAGINATION" if "PAGINATION" in err_str else "PROVIDER_ERROR"
-                disp = CandidateIngestionDisposition(
-                    symbol=sym,
-                    action_type=action,
-                    status=err_status,
-                    bars_retrieved=0,
-                    bars_ingested=0,
-                    existing_sessions_in_store=existing_count,
-                    earliest_stored_date_before=earliest_stored,
-                    latest_stored_date_before=latest_stored,
-                    feed=self.feed,
-                    adjustment=self.adjustment,
-                    stored_provenance_adjustment_state=primary_stored_adj,
-                    provenance_compatible=is_prov_compatible,
-                    rejection_reason=err_str,
-                    retrieval_timestamp_utc=retrieval_utc,
-                    pages_retrieved=pages_count,
-                )
-                summary.provider_error_count += 1
-                summary.candidate_dispositions[sym] = asdict(disp)
-                continue
+                # Defect A: Check if candidate can be refreshed incrementally
+                # 1. Existing stored history must extend back to start_date
+                # 2. Existing stored history must have latest_stored < end_date
+                # 3. Provenance must be 100% compatible
+                # 4. Retained prefix [start_date, latest_stored] MUST be complete without interior gaps
+                prefix_expected_sessions = [s for s in expected_window_sessions if start_date <= s <= latest_stored] if latest_stored else []
+                prefix_missing = set(prefix_expected_sessions) - stored_dates_set
 
-            # Validate bar series
-            val_res = self.validate_bar_series(
-                sym, raw_bars, sym_start, end_date, max_completed_session=effective_max
-            )
-            if not val_res.is_valid:
-                disp = CandidateIngestionDisposition(
-                    symbol=sym,
-                    action_type=action,
-                    status="FAILED_VALIDATION",
-                    bars_retrieved=len(raw_bars),
-                    bars_ingested=0,
-                    existing_sessions_in_store=existing_count,
-                    earliest_stored_date_before=earliest_stored,
-                    latest_stored_date_before=latest_stored,
-                    feed=self.feed,
-                    adjustment=self.adjustment,
-                    structural_quality=val_res.structural_quality,
-                    stored_provenance_adjustment_state=primary_stored_adj,
-                    provenance_compatible=is_prov_compatible,
-                    rejection_reason=val_res.rejection_reason,
-                    retrieval_timestamp_utc=retrieval_utc,
-                    pages_retrieved=pages_count,
-                )
-                summary.failed_validation_count += 1
-                summary.candidate_dispositions[sym] = asdict(disp)
-                continue
+                manifest_param = manifest_info.per_symbol_parameters.get(sym, {})
+                manifest_action = str(manifest_param.get("action") or manifest_param.get("mandated_action") or "").upper().strip()
 
-            # Defect A: Validate that the final union of retained and newly acquired observations
-            # covers 100% of the requested contract [start_date, end_date] before applying or certifying success
-            combined_dates_set = (
-                (stored_dates_set | {b["time"] for b in val_res.validated_bars})
-                if action == "REFRESH" else {b["time"] for b in val_res.validated_bars}
-            )
-            final_missing = expected_sessions_set - combined_dates_set
-            if final_missing:
-                reason = (
-                    f"INCOMPLETE_FINAL_STORE_WINDOW: Requested window [{start_date}, {end_date}] "
-                    f"for candidate '{sym}' remains incomplete ({len(final_missing)} missing sessions): "
-                    f"{sorted(list(final_missing))[:5]}. Cannot certify full-window readiness."
+                can_refresh = (
+                    manifest_action not in ("BACKFILL", "REPLACE")
+                    and existing_count > 0
+                    and latest_stored is not None
+                    and latest_stored < end_date
+                    and earliest_stored is not None
+                    and earliest_stored <= start_date
+                    and is_prov_compatible
+                    and len(prefix_missing) == 0
                 )
-                logger.error(reason)
-                disp = CandidateIngestionDisposition(
-                    symbol=sym,
-                    action_type=action,
-                    status="FAILED_VALIDATION",
-                    bars_retrieved=len(raw_bars),
-                    bars_ingested=0,
-                    first_session=val_res.first_session,
-                    last_session=val_res.last_session,
-                    existing_sessions_in_store=existing_count,
-                    earliest_stored_date_before=earliest_stored,
-                    latest_stored_date_before=latest_stored,
-                    feed=self.feed,
-                    adjustment=self.adjustment,
-                    structural_quality=val_res.structural_quality,
-                    stored_provenance_adjustment_state=primary_stored_adj,
-                    provenance_compatible=is_prov_compatible,
-                    rejection_reason=reason,
-                    retrieval_timestamp_utc=retrieval_utc,
-                    pages_retrieved=pages_count,
-                )
-                summary.failed_validation_count += 1
-                summary.candidate_dispositions[sym] = asdict(disp)
-                continue
 
-            # Persist if apply_writes is active
-            ingested_count = 0
-            ingest_utc = None
-            if apply_writes and self.db_engine:
-                ingest_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-                prov = MarketProvenance(
-                    provider=Provider.ALPACA,
-                    ingestion_source=IngestionSource.DIRECT_PROVIDER,
-                    observed_at=retrieval_utc,
-                    observed_date=val_res.last_session,
-                    observation_precision=ObservationPrecision.DATE,
-                    observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
-                    ingested_at=ingest_utc,
-                    adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
-                    structural_quality=val_res.structural_quality,
-                    fallback_status=False,
+                if manifest_action == "REPLACE":
+                    action = "REPLACE"
+                    sym_start = start_date
+                elif can_refresh and latest_stored:
+                    try:
+                        last_d = date.fromisoformat(latest_stored)
+                        next_d = date.fromordinal(last_d.toordinal() + 1).isoformat()
+                        manifest_start = manifest_param.get("requested_start_session")
+                        if manifest_start and manifest_start > next_d:
+                            try:
+                                skipped = [s for s in get_expected_nyse_sessions(next_d, manifest_start) if s < manifest_start]
+                            except Exception:
+                                skipped = []
+                            if skipped:
+                                action = "BACKFILL"
+                                sym_start = start_date
+                            else:
+                                sym_start = manifest_start
+                                action = "REFRESH"
+                        else:
+                            sym_start = next_d
+                            action = "REFRESH"
+                    except Exception:
+                        sym_start = start_date
+                        action = "BACKFILL"
+                else:
+                    action = "BACKFILL"
+                    sym_start = start_date
+
+                # R2 & Scope-edge: Check if existing history outside requested scope has incompatible provenance or missing sidecars
+                if existing_count > 0:
+                    outside_candles = [c for c in existing_candles if c["time"] < sym_start or c["time"] > end_date]
+                    outside_prov = [p for p in existing_provenance if p.get("trade_date") < sym_start or p.get("trade_date") > end_date]
+                    outside_prov_dates = {p.get("trade_date") for p in outside_prov}
+                    outside_unprovenanced = [c["time"] for c in outside_candles if c["time"] not in outside_prov_dates]
+                    incompatible_outside = [
+                        p for p in outside_prov
+                        if p.get("adjustment_state") != AdjustmentState.SPLIT_ADJUSTED_ONLY
+                        or str(p.get("provider", "")).upper() not in ("ALPACA", str(Provider.ALPACA).upper())
+                    ]
+                    if incompatible_outside or outside_unprovenanced:
+                        reason = (
+                            f"INCOMPATIBLE_HISTORY_OUTSIDE_REVIEWED_SCOPE: Candidate '{sym}' has "
+                            f"{len(incompatible_outside)} incompatible and {len(outside_unprovenanced)} unprovenanced "
+                            f"records outside reviewed window [{sym_start}, {end_date}]. Bounded replacement cannot proceed "
+                            f"without explicit wider repair from '{earliest_stored}'."
+                        )
+                        logger.error(reason)
+                        disp = CandidateIngestionDisposition(
+                            symbol=sym,
+                            action_type=action,
+                            status="BLOCKED_INCOMPATIBLE_OUTSIDE_SCOPE",
+                            rejection_reason=reason,
+                            bars_retrieved=0,
+                            bars_ingested=0,
+                            first_session=earliest_stored,
+                            last_session=latest_stored,
+                            existing_sessions_in_store=existing_count,
+                            earliest_stored_date_before=earliest_stored,
+                            latest_stored_date_before=latest_stored,
+                            feed=self.feed,
+                            adjustment=self.adjustment,
+                            stored_provenance_adjustment_state=primary_stored_adj,
+                            provenance_compatible=False,
+                        )
+                        summary.candidate_dispositions[sym] = asdict(disp)
+                        summary.failed_validation_count += 1
+                        continue
+
+                retrieval_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                fetch_ok, raw_bars, pages_count, err_msg = self.fetch_all_candidate_bars(
+                    sym, sym_start, end_date, budget=budget
                 )
-                try:
-                    # Atomic write of bars and sidecar provenance for this candidate
-                    # R2: on BACKFILL or REPLACE, atomically replace existing scope within reviewed bounds to preserve outside-scope data
-                    self.db_engine.save_daily_candles_with_evidence(
-                        sym,
-                        val_res.validated_bars,
-                        prov,
-                        replace_existing_scope=(action in ("BACKFILL", "REPLACE")),
-                        scope_start_date=sym_start,
-                        scope_end_date=end_date,
-                    )
-                    ingested_count = len(val_res.validated_bars)
-                    summary.total_bars_ingested += ingested_count
-                    summary.completed_writes.append(sym)
-                except Exception as write_err:
-                    # SIP-05: Handle persistence error gracefully and record truth
-                    logger.error(f"Persistence error for candidate '{sym}': {write_err}")
-                    summary.failed_candidate = sym
+
+                if not fetch_ok:
+                    err_str = str(err_msg)
+                    err_status = "FAILED_PAGINATION" if "PAGINATION" in err_str else "PROVIDER_ERROR"
                     disp = CandidateIngestionDisposition(
                         symbol=sym,
                         action_type=action,
-                        status="PERSISTENCE_ERROR",
+                        status=err_status,
+                        bars_retrieved=0,
+                        bars_ingested=0,
+                        existing_sessions_in_store=existing_count,
+                        earliest_stored_date_before=earliest_stored,
+                        latest_stored_date_before=latest_stored,
+                        feed=self.feed,
+                        adjustment=self.adjustment,
+                        stored_provenance_adjustment_state=primary_stored_adj,
+                        provenance_compatible=is_prov_compatible,
+                        rejection_reason=err_str,
+                        retrieval_timestamp_utc=retrieval_utc,
+                        pages_retrieved=pages_count,
+                    )
+                    summary.provider_error_count += 1
+                    summary.candidate_dispositions[sym] = asdict(disp)
+
+                    if "BUDGET_ERROR" in err_str or "BUDGET_EXHAUSTED" in err_str or "TIMEOUT" in err_str:
+                        summary.failed_candidate = sym
+                        curr_idx = target_symbols.index(sym)
+                        for remaining_sym in target_symbols[curr_idx:]:
+                            if remaining_sym not in summary.unprocessed_candidates:
+                                summary.unprocessed_candidates.append(remaining_sym)
+                            rem_disp = CandidateIngestionDisposition(
+                                symbol=remaining_sym,
+                                action_type="UNPROCESSED",
+                                status="UNPROCESSED",
+                                rejection_reason=f"ABORTED_BY_BUDGET_LIMIT: Processing aborted following budget cap exhaustion: {err_str}",
+                            )
+                            summary.candidate_dispositions[remaining_sym] = asdict(rem_disp)
+                        if checkpoint_summary_path:
+                            save_checkpoint(summary, Path(checkpoint_summary_path))
+                        break
+                    continue
+
+                # Validate bar series
+                val_res = self.validate_bar_series(
+                    sym, raw_bars, sym_start, end_date, max_completed_session=effective_max
+                )
+                if not val_res.is_valid:
+                    disp = CandidateIngestionDisposition(
+                        symbol=sym,
+                        action_type=action,
+                        status="FAILED_VALIDATION",
+                        bars_retrieved=len(raw_bars),
+                        bars_ingested=0,
+                        existing_sessions_in_store=existing_count,
+                        earliest_stored_date_before=earliest_stored,
+                        latest_stored_date_before=latest_stored,
+                        feed=self.feed,
+                        adjustment=self.adjustment,
+                        structural_quality=val_res.structural_quality,
+                        stored_provenance_adjustment_state=primary_stored_adj,
+                        provenance_compatible=is_prov_compatible,
+                        rejection_reason=val_res.rejection_reason,
+                        retrieval_timestamp_utc=retrieval_utc,
+                        pages_retrieved=pages_count,
+                    )
+                    summary.failed_validation_count += 1
+                    summary.candidate_dispositions[sym] = asdict(disp)
+                    continue
+
+                # Defect A: Validate that the final union of retained and newly acquired observations
+                # covers 100% of the requested contract [start_date, end_date] before applying or certifying success
+                combined_dates_set = (
+                    (stored_dates_set | {b["time"] for b in val_res.validated_bars})
+                    if action == "REFRESH" else {b["time"] for b in val_res.validated_bars}
+                )
+                final_missing = expected_sessions_set - combined_dates_set
+                if final_missing:
+                    reason = (
+                        f"INCOMPLETE_FINAL_STORE_WINDOW: Requested window [{start_date}, {end_date}] "
+                        f"for candidate '{sym}' remains incomplete ({len(final_missing)} missing sessions): "
+                        f"{sorted(list(final_missing))[:5]}. Cannot certify full-window readiness."
+                    )
+                    logger.error(reason)
+                    disp = CandidateIngestionDisposition(
+                        symbol=sym,
+                        action_type=action,
+                        status="FAILED_VALIDATION",
                         bars_retrieved=len(raw_bars),
                         bars_ingested=0,
                         first_session=val_res.first_session,
@@ -1388,66 +1699,146 @@ class AlpacaHistoricalSipIngestionAdapter:
                         structural_quality=val_res.structural_quality,
                         stored_provenance_adjustment_state=primary_stored_adj,
                         provenance_compatible=is_prov_compatible,
-                        rejection_reason=f"PERSISTENCE_ERROR: {str(write_err)}",
+                        rejection_reason=reason,
                         retrieval_timestamp_utc=retrieval_utc,
                         pages_retrieved=pages_count,
                     )
+                    summary.failed_validation_count += 1
                     summary.candidate_dispositions[sym] = asdict(disp)
+                    continue
 
-                    # Mark remaining symbols as UNPROCESSED
-                    curr_idx = target_symbols.index(sym)
-                    for remaining_sym in target_symbols[curr_idx + 1:]:
+                # Persist if apply_writes is active
+                ingested_count = 0
+                ingest_utc = None
+                if apply_writes and self.db_engine:
+                    ingest_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                    prov = MarketProvenance(
+                        provider=Provider.ALPACA,
+                        ingestion_source=IngestionSource.DIRECT_PROVIDER,
+                        observed_at=retrieval_utc,
+                        observed_date=val_res.last_session,
+                        observation_precision=ObservationPrecision.DATE,
+                        observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+                        ingested_at=ingest_utc,
+                        adjustment_state=AdjustmentState.SPLIT_ADJUSTED_ONLY,
+                        structural_quality=val_res.structural_quality,
+                        fallback_status=False,
+                    )
+                    try:
+                        # Atomic write of bars and sidecar provenance for this candidate
+                        # R2: on BACKFILL or REPLACE, atomically replace existing scope within reviewed bounds to preserve outside-scope data
+                        self.db_engine.save_daily_candles_with_evidence(
+                            sym,
+                            val_res.validated_bars,
+                            prov,
+                            replace_existing_scope=(action in ("BACKFILL", "REPLACE")),
+                            scope_start_date=sym_start,
+                            scope_end_date=end_date,
+                        )
+                        ingested_count = len(val_res.validated_bars)
+                        summary.total_bars_ingested += ingested_count
+                        summary.completed_writes.append(sym)
+                    except Exception as write_err:
+                        # SIP-05: Handle persistence error gracefully and record truth
+                        logger.error(f"Persistence error for candidate '{sym}': {write_err}")
+                        summary.failed_candidate = sym
+                        disp = CandidateIngestionDisposition(
+                            symbol=sym,
+                            action_type=action,
+                            status="PERSISTENCE_ERROR",
+                            bars_retrieved=len(raw_bars),
+                            bars_ingested=0,
+                            first_session=val_res.first_session,
+                            last_session=val_res.last_session,
+                            existing_sessions_in_store=existing_count,
+                            earliest_stored_date_before=earliest_stored,
+                            latest_stored_date_before=latest_stored,
+                            feed=self.feed,
+                            adjustment=self.adjustment,
+                            structural_quality=val_res.structural_quality,
+                            stored_provenance_adjustment_state=primary_stored_adj,
+                            provenance_compatible=is_prov_compatible,
+                            rejection_reason=f"PERSISTENCE_ERROR: {str(write_err)}",
+                            retrieval_timestamp_utc=retrieval_utc,
+                            pages_retrieved=pages_count,
+                        )
+                        summary.candidate_dispositions[sym] = asdict(disp)
+
+                        # Mark remaining symbols as UNPROCESSED
+                        curr_idx = target_symbols.index(sym)
+                        for remaining_sym in target_symbols[curr_idx + 1:]:
+                            summary.unprocessed_candidates.append(remaining_sym)
+                            rem_disp = CandidateIngestionDisposition(
+                                symbol=remaining_sym,
+                                action_type="UNPROCESSED",
+                                status="UNPROCESSED",
+                                rejection_reason=f"ABORTED_AFTER_PRIOR_PERSISTENCE_FAILURE: Processing aborted following write error on '{sym}'.",
+                            )
+                            summary.candidate_dispositions[remaining_sym] = asdict(rem_disp)
+                        break
+
+                status = "APPLIED" if apply_writes else "PREPARED_DRY_RUN"
+                if action in ("BACKFILL", "REPLACE"):
+                    summary.backfilled_count += 1
+                else:
+                    summary.refreshed_count += 1
+
+                anchor_bar = next((b for b in val_res.validated_bars if b["time"] == "2026-10-19"), None)
+                has_anchor = anchor_bar is not None
+                obs_close = float(anchor_bar["close"]) if has_anchor else None
+
+                disp = CandidateIngestionDisposition(
+                    symbol=sym,
+                    action_type=action,
+                    status=status,
+                    bars_retrieved=len(raw_bars),
+                    bars_ingested=ingested_count,
+                    first_session=val_res.first_session,
+                    last_session=val_res.last_session,
+                    existing_sessions_in_store=existing_count,
+                    earliest_stored_date_before=earliest_stored,
+                    latest_stored_date_before=latest_stored,
+                    feed=self.feed,
+                    adjustment=self.adjustment,
+                    structural_quality=val_res.structural_quality,
+                    stored_provenance_adjustment_state=primary_stored_adj,
+                    provenance_compatible=is_prov_compatible,
+                    retrieval_timestamp_utc=retrieval_utc,
+                    ingestion_timestamp_utc=ingest_utc,
+                    pages_retrieved=pages_count,
+                    l03_equivalence_established=False,  # Conditional: candidate market data evidence only
+                    l03_anchor_session="2026-10-19" if has_anchor else None,
+                    l03_observation_price=obs_close,
+                    l03_derivation_note=(
+                        f"Candidate {sym} has verified split-adjusted bar on reference anchor session 2026-10-19 (close={obs_close}). "
+                        "Equivalence is conditional: factor 1.0 assumed without corporate action verification. "
+                        "Candidate market data evidence only; does not certify L03/L04 compliance."
+                        if has_anchor else
+                        f"Anchor session 2026-10-19 not present in acquired series for {sym}; L03 price-floor equivalence cannot be established."
+                    ),
+                )
+                summary.candidate_dispositions[sym] = asdict(disp)
+
+                if checkpoint_summary_path and (idx_sym + 1) % budget.checkpoint_interval == 0:
+                    save_checkpoint(summary, Path(checkpoint_summary_path))
+        except KeyboardInterrupt:
+            logger.warning("Ingestion interrupted by user or signal.")
+            summary.failed_candidate = sym if 'sym' in locals() else "INTERRUPTED"
+            if 'sym' in locals():
+                curr_idx = target_symbols.index(sym)
+                for remaining_sym in target_symbols[curr_idx + 1:]:
+                    if remaining_sym not in summary.candidate_dispositions:
                         summary.unprocessed_candidates.append(remaining_sym)
                         rem_disp = CandidateIngestionDisposition(
                             symbol=remaining_sym,
                             action_type="UNPROCESSED",
                             status="UNPROCESSED",
-                            rejection_reason=f"ABORTED_AFTER_PRIOR_PERSISTENCE_FAILURE: Processing aborted following write error on '{sym}'.",
+                            rejection_reason="ABORTED_BY_INTERRUPTION: Processing interrupted by user or system signal.",
                         )
                         summary.candidate_dispositions[remaining_sym] = asdict(rem_disp)
-                    break
-
-            status = "APPLIED" if apply_writes else "PREPARED_DRY_RUN"
-            if action in ("BACKFILL", "REPLACE"):
-                summary.backfilled_count += 1
-            else:
-                summary.refreshed_count += 1
-
-            anchor_bar = next((b for b in val_res.validated_bars if b["time"] == "2026-10-19"), None)
-            has_anchor = anchor_bar is not None
-            obs_close = float(anchor_bar["close"]) if has_anchor else None
-
-            disp = CandidateIngestionDisposition(
-                symbol=sym,
-                action_type=action,
-                status=status,
-                bars_retrieved=len(raw_bars),
-                bars_ingested=ingested_count,
-                first_session=val_res.first_session,
-                last_session=val_res.last_session,
-                existing_sessions_in_store=existing_count,
-                earliest_stored_date_before=earliest_stored,
-                latest_stored_date_before=latest_stored,
-                feed=self.feed,
-                adjustment=self.adjustment,
-                structural_quality=val_res.structural_quality,
-                stored_provenance_adjustment_state=primary_stored_adj,
-                provenance_compatible=is_prov_compatible,
-                retrieval_timestamp_utc=retrieval_utc,
-                ingestion_timestamp_utc=ingest_utc,
-                pages_retrieved=pages_count,
-                l03_equivalence_established=False,  # Conditional: candidate market data evidence only
-                l03_anchor_session="2026-10-19" if has_anchor else None,
-                l03_observation_price=obs_close,
-                l03_derivation_note=(
-                    f"Candidate {sym} has verified split-adjusted bar on reference anchor session 2026-10-19 (close={obs_close}). "
-                    "Equivalence is conditional: factor 1.0 assumed without corporate action verification. "
-                    "Candidate market data evidence only; does not certify L03/L04 compliance."
-                    if has_anchor else
-                    f"Anchor session 2026-10-19 not present in acquired series for {sym}; L03 price-floor equivalence cannot be established."
-                ),
-            )
-            summary.candidate_dispositions[sym] = asdict(disp)
+            if checkpoint_summary_path:
+                save_checkpoint(summary, Path(checkpoint_summary_path))
+            raise
 
         # SIP-05: Compute honest batch outcome and execution outcome
         if summary.failed_candidate is not None:
@@ -1480,6 +1871,9 @@ class AlpacaHistoricalSipIngestionAdapter:
                 "turnover compliance, and confers zero universe admission or publication authority."
             ),
         }
+
+        if checkpoint_summary_path:
+            save_checkpoint(summary, Path(checkpoint_summary_path))
 
         return summary
 
@@ -1557,6 +1951,72 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         default=None,
         help="Optional upper bound for completed session (YYYY-MM-DD). Defaults to 2026-10-19.",
     )
+    parser.add_argument(
+        "--expected-deployment-id",
+        type=str,
+        default=None,
+        help="Explicit pinned deployment ID to verify against serving container.",
+    )
+    parser.add_argument(
+        "--expected-git-sha",
+        type=str,
+        default=None,
+        help="Explicit pinned git commit SHA (full 40-character hex) to verify.",
+    )
+    parser.add_argument(
+        "--universe-db-path",
+        type=str,
+        default=None,
+        help="Explicit path to authoritative SQLite universe database store.",
+    )
+    parser.add_argument(
+        "--verify-runtime-identity",
+        action="store_true",
+        default=False,
+        help="Assert execution container matches serving runtime identity before running.",
+    )
+    parser.add_argument(
+        "--max-aggregate-requests",
+        type=int,
+        default=550,
+        help="Maximum aggregate transmitted request budget across all candidates and pages (default: 550).",
+    )
+    parser.add_argument(
+        "--max-cumulative-retries",
+        type=int,
+        default=30,
+        help="Maximum cumulative retry attempts ceiling across all candidates (default: 30).",
+    )
+    parser.add_argument(
+        "--max-fallback-requests",
+        type=int,
+        default=0,
+        help="Maximum allowable fallback requests (strictly 0 for pure Alpaca SIP).",
+    )
+    parser.add_argument(
+        "--overall-deadline-seconds",
+        type=float,
+        default=1200.0,
+        help="Overall wall-clock execution deadline in seconds (default: 1200.0).",
+    )
+    parser.add_argument(
+        "--checkpoint-summary-path",
+        type=str,
+        default=None,
+        help="Path to persist incremental execution summary checkpoints.",
+    )
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=50,
+        help="Number of candidates between checkpoint writes (default: 50).",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        default=False,
+        help="Resume execution from existing checkpoint, skipping completed candidates.",
+    )
     return parser.parse_args(args)
 
 
@@ -1576,6 +2036,15 @@ def main(args: Optional[List[str]] = None) -> int:
         if parsed.max_completed_session
         else None
     )
+
+    budget = SharedExecutionBudget(
+        max_aggregate_requests=parsed.max_aggregate_requests,
+        max_cumulative_retries=parsed.max_cumulative_retries,
+        max_fallback_requests=parsed.max_fallback_requests,
+        overall_deadline_seconds=parsed.overall_deadline_seconds,
+        checkpoint_interval=parsed.checkpoint_interval,
+    )
+
     adapter = AlpacaHistoricalSipIngestionAdapter(
         feed=parsed.feed,
         adjustment=parsed.adjustment,
@@ -1592,6 +2061,13 @@ def main(args: Optional[List[str]] = None) -> int:
             db_path=parsed.db_path,
             max_candidates=parsed.max_candidates,
             max_completed_session=max_session,
+            budget=budget,
+            checkpoint_summary_path=parsed.checkpoint_summary_path,
+            resume=parsed.resume,
+            verify_runtime_identity_flag=parsed.verify_runtime_identity,
+            expected_deployment_id=parsed.expected_deployment_id,
+            expected_git_sha=parsed.expected_git_sha,
+            universe_db_path=parsed.universe_db_path,
         )
 
         out_json = json.dumps(summary.to_dict(), indent=2)
@@ -1610,6 +2086,10 @@ def main(args: Optional[List[str]] = None) -> int:
             return 2
         else:
             return 1
+    except Exception as e:
+        logger.error(f"Ingestion execution aborted: {e}")
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 1
     except Exception as e:
         logger.error(f"Ingestion execution aborted: {e}")
         print(f"ERROR: {e}", file=sys.stderr)

@@ -504,9 +504,14 @@ _refresh_lock = threading.Lock()
 
 def _background_refresh_symbol(sym: str) -> None:
     try:
+        # Recurrence Prevention (Issue #166): Never overwrite authoritative Alpaca SIP provenance
+        if hasattr(market_db, "has_authoritative_provenance") and market_db.has_authoritative_provenance(sym):
+            logger.info(f"Background candle refresh bypassed for {sym}: Authoritative Alpaca SIP provenance is protected.")
+            return
+
         hist_fetch = yf.Ticker(sym).history(period="6mo", interval="1d", timeout=5)
         if not hist_fetch.empty and len(hist_fetch) >= 15:
-            market_db.save_daily_candles(sym, hist_fetch)
+            market_db.save_daily_candles(sym, hist_fetch, reject_if_authoritative=True)
             logger.info(f"Background candle refresh completed for {sym}")
     except Exception as e:
         logger.debug(f"Background candle refresh failed for {sym}: {e}")
@@ -516,6 +521,9 @@ def _background_refresh_symbol(sym: str) -> None:
 
 
 def _schedule_background_refresh(sym: str) -> None:
+    # Recurrence Prevention (Issue #166): Do not queue background refreshes for authoritative candidates
+    if hasattr(market_db, "has_authoritative_provenance") and market_db.has_authoritative_provenance(sym):
+        return
     with _refresh_lock:
         if sym in _refresh_in_flight:
             return
@@ -593,18 +601,20 @@ def _compute_single_setup(
 
         db_candles = market_db.get_daily_candles(sym, limit=252)
         is_stale = _is_history_stale(db_candles)
+        has_auth = hasattr(market_db, "has_authoritative_provenance") and market_db.has_authoritative_provenance(sym)
 
         if not db_candles or len(db_candles) < 15:
-            # Cold cache miss with zero stored candles: bounded synchronous attempt
-            try:
-                hist_fetch = yf.Ticker(sym).history(period="6mo", interval="1d", timeout=3)
-                if not hist_fetch.empty and len(hist_fetch) >= 15:
-                    market_db.save_daily_candles(sym, hist_fetch)
-                    db_candles = market_db.get_daily_candles(sym, limit=252)
-                    is_stale = _is_history_stale(db_candles)
-            except Exception as fetch_err:
-                logger.debug(f"On-demand refresh failed for {sym}: {fetch_err}")
-        elif is_stale:
+            # Cold cache miss with zero stored candles: bounded synchronous attempt (if not authoritative)
+            if not has_auth:
+                try:
+                    hist_fetch = yf.Ticker(sym).history(period="6mo", interval="1d", timeout=3)
+                    if not hist_fetch.empty and len(hist_fetch) >= 15:
+                        market_db.save_daily_candles(sym, hist_fetch, reject_if_authoritative=True)
+                        db_candles = market_db.get_daily_candles(sym, limit=252)
+                        is_stale = _is_history_stale(db_candles)
+                except Exception as fetch_err:
+                    logger.debug(f"On-demand refresh failed for {sym}: {fetch_err}")
+        elif is_stale and not has_auth:
             # Historical candles exist but are dated: offload refresh to background without blocking request
             _schedule_background_refresh(sym)
 
@@ -758,9 +768,10 @@ def get_tactical_setup_for_symbol(
 
     db_candles = market_db.get_daily_candles(upper, limit=252)
     is_stale = _is_history_stale(db_candles)
+    has_auth = hasattr(market_db, "has_authoritative_provenance") and market_db.has_authoritative_provenance(upper)
 
-    # Perform a single on-demand fetch if missing, insufficient, or stale
-    if not db_candles or len(db_candles) < 15 or is_stale:
+    # Perform a single on-demand fetch if missing, insufficient, or stale (and not authoritative Alpaca SIP)
+    if (not db_candles or len(db_candles) < 15 or is_stale) and not has_auth:
         try:
             ticker_obj = yf.Ticker(upper)
             hist_fetch = ticker_obj.history(period="6mo", interval="1d", timeout=5)
@@ -800,7 +811,7 @@ def get_tactical_setup_for_symbol(
                 detail=f"Asset {upper} has only {len(hist_fetch)} sessions on record. Minimum 15 daily sessions required for setup calculation.",
             )
 
-        market_db.save_daily_candles(upper, hist_fetch)
+        market_db.save_daily_candles(upper, hist_fetch, reject_if_authoritative=True)
         db_candles = market_db.get_daily_candles(upper, limit=252)
         if not db_candles and not hist_fetch.empty:
             db_candles = [
@@ -1199,7 +1210,7 @@ def get_asset_analytics(
         # Automatically persist daily candles into SQLite store (only for verified completed history)
         if clean_interval == "1d" and hist is not None and not hist.empty:
             try:
-                market_db.save_daily_candles(upper_sym, hist)
+                market_db.save_daily_candles(upper_sym, hist, reject_if_authoritative=True)
             except Exception as e:
                 pass
 
