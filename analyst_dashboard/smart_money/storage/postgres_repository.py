@@ -1070,7 +1070,7 @@ class PostgresSmartMoneyRepository:
         elif not isinstance(reasons, (list, dict)):
             reasons = [str(reasons)]
 
-        if isinstance(reasons, list) and any(k in receipt for k in ("issuer_cik", "ticker", "covered_ciks", "covered_tickers", "accession_inventory", "source_hashes", "material_gaps")):
+        if isinstance(reasons, list) and any(k in receipt for k in ("issuer_cik", "ticker", "covered_ciks", "covered_tickers", "accession_inventory", "source_hashes", "material_gaps", "trial_id", "slot_id")):
             reasons = {
                 "reasons": reasons,
                 "ticker": receipt.get("ticker"),
@@ -1081,6 +1081,8 @@ class PostgresSmartMoneyRepository:
                 "source_hashes": receipt.get("source_hashes", {}),
                 "material_gaps": receipt.get("material_gaps", []),
                 "public_availability_cutoff": receipt.get("certified_watermark"),
+                "trial_id": receipt.get("trial_id"),
+                "slot_id": receipt.get("slot_id"),
             }
 
         rel_sha = receipt.get("release_sha")
@@ -1285,39 +1287,205 @@ class PostgresSmartMoneyRepository:
     def get_latest_reconciliation_receipt(
         self,
         covered_tickers: Optional[Sequence[str]] = None,
+        trial_id: Optional[str] = None,
+        exact_match: bool = True,
         conn: Optional[PgConnection] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Queries the most recent reconciliation receipt for scheduling and progress tracking."""
+        """Queries the most recent reconciliation receipt for scheduling and progress tracking.
+        Fails closed: Returns None if no matching receipt exists for the exact cohort/trial.
+        """
         query = """
             SELECT * FROM sm_reconciliation_receipts
             ORDER BY created_at DESC, receipt_version DESC
-            LIMIT 25;
+            LIMIT 50;
         """
         def _exec(cur):
             cur.execute(query)
             rows = cur.fetchall()
             if not rows:
                 return None
-            if not covered_tickers:
+            if not covered_tickers and not trial_id:
                 return dict(rows[0])
-            expected_set = {t.upper().strip() for t in covered_tickers}
+
+            expected_set = {t.upper().strip() for t in covered_tickers} if covered_tickers else None
             for row in rows:
                 r = dict(row)
                 reasons = r.get("failure_reasons")
                 tickers = []
+                r_trial_id = None
                 if isinstance(reasons, dict):
                     tickers = reasons.get("covered_tickers", [])
+                    r_trial_id = reasons.get("trial_id")
+                    if not r_trial_id and isinstance(reasons.get("reasons"), list):
+                        for item in reasons.get("reasons"):
+                            if isinstance(item, dict) and "trial_id" in item:
+                                r_trial_id = item.get("trial_id")
                 elif isinstance(reasons, list):
                     for item in reasons:
-                        if isinstance(item, dict) and "covered_tickers" in item:
-                            tickers = item.get("covered_tickers", [])
-                            break
+                        if isinstance(item, dict):
+                            if "covered_tickers" in item:
+                                tickers = item.get("covered_tickers", [])
+                            if "trial_id" in item:
+                                r_trial_id = item.get("trial_id")
                 if not tickers and r.get("ticker"):
                     tickers = [r["ticker"]]
+
                 row_tickers_set = {t.upper().strip() for t in tickers}
-                if row_tickers_set and (row_tickers_set == expected_set or row_tickers_set.issubset(expected_set) or expected_set.issubset(row_tickers_set)):
-                    return r
-            return dict(rows[0])
+                if trial_id and r_trial_id != trial_id:
+                    continue
+                if expected_set is not None:
+                    if exact_match and row_tickers_set != expected_set:
+                        continue
+                    elif not exact_match and not (row_tickers_set == expected_set or row_tickers_set.issubset(expected_set)):
+                        continue
+                return r
+            return None
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        with get_connection(dsn=self.dsn) as c:
+            with c.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+
+    def record_trial_cycle_audit(
+        self,
+        trial_id: str,
+        slot_id: str,
+        ny_date: str,
+        slot_index: int,
+        status: str,
+        requests_transmitted: int,
+        error: Optional[str] = None,
+        conn: Optional[PgConnection] = None,
+    ) -> str:
+        """Records an append-only trial cycle audit event into sm_audit_events."""
+        event_id = str(uuid.uuid4())
+        payload = {
+            "trial_id": trial_id,
+            "slot_id": slot_id,
+            "ny_date": ny_date,
+            "slot_index": slot_index,
+            "status": status,
+            "requests_transmitted": int(requests_transmitted),
+            "error": error,
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+        }
+        payload_json = json.dumps(payload, sort_keys=True)
+        event_hash = hashlib.sha256(payload_json.encode("utf-8")).hexdigest()
+
+        def _exec(cur):
+            cur.execute("""
+                INSERT INTO sm_audit_events (
+                    event_id, event_type, subject_id, payload, event_hash
+                ) VALUES (%s, %s, %s, %s, %s)
+                RETURNING event_id;
+            """, (
+                event_id,
+                "TRIAL_CYCLE_EVENT",
+                trial_id,
+                Json(payload),
+                event_hash,
+            ))
+            return str(cur.fetchone()["event_id"])
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        with get_connection(dsn=self.dsn) as c:
+            with c.cursor(cursor_factory=RealDictCursor) as cur:
+                res = _exec(cur)
+            c.commit()
+            return res
+
+    def get_trial_progress(
+        self,
+        trial_id: str,
+        ny_date: str,
+        conn: Optional[PgConnection] = None,
+    ) -> Dict[str, Any]:
+        """
+        Queries persistent trial progress across sm_audit_events and sm_reconciliation_receipts.
+        Returns:
+            executed_slots: Set[str] of slot_ids that completed or attempted execution
+            cycles_today: int (total cycle attempts today)
+            cycles_trial: int (total cycle attempts across trial)
+            requests_today: int (total transmitted HTTP requests today)
+            requests_trial: int (total transmitted HTTP requests across trial)
+        Fails closed on database query error.
+        """
+        query_audit = """
+            SELECT payload FROM sm_audit_events
+            WHERE event_type = 'TRIAL_CYCLE_EVENT' AND subject_id = %s
+            ORDER BY created_at ASC;
+        """
+        query_receipts = """
+            SELECT failure_reasons FROM sm_reconciliation_receipts
+            ORDER BY created_at ASC;
+        """
+
+        def _exec(cur):
+            cur.execute(query_audit, (trial_id,))
+            audit_rows = cur.fetchall()
+
+            executed_slots = set()
+            cycles_today = 0
+            cycles_trial = 0
+            requests_today = 0
+            requests_trial = 0
+
+            for r in audit_rows:
+                p = r.get("payload") or {}
+                s_id = p.get("slot_id")
+                if s_id:
+                    executed_slots.add(s_id)
+                cycles_trial += 1
+                reqs = int(p.get("requests_transmitted") or 0)
+                requests_trial += reqs
+
+                if p.get("ny_date") == ny_date:
+                    cycles_today += 1
+                    requests_today += reqs
+
+            cur.execute(query_receipts)
+            receipt_rows = cur.fetchall()
+            for r in receipt_rows:
+                reasons = r.get("failure_reasons")
+                if isinstance(reasons, str):
+                    try:
+                        reasons = json.loads(reasons)
+                    except Exception:
+                        reasons = None
+
+                r_trial_id = None
+                slot_id = None
+                if isinstance(reasons, dict):
+                    r_trial_id = reasons.get("trial_id")
+                    slot_id = reasons.get("slot_id")
+                    if (not r_trial_id or not slot_id) and isinstance(reasons.get("reasons"), list):
+                        for item in reasons.get("reasons"):
+                            if isinstance(item, dict):
+                                if not r_trial_id and "trial_id" in item:
+                                    r_trial_id = item.get("trial_id")
+                                if not slot_id and "slot_id" in item:
+                                    slot_id = item.get("slot_id")
+                elif isinstance(reasons, list):
+                    for item in reasons:
+                        if isinstance(item, dict):
+                            if "trial_id" in item:
+                                r_trial_id = item.get("trial_id")
+                            if "slot_id" in item:
+                                slot_id = item.get("slot_id")
+                if r_trial_id == trial_id and slot_id:
+                    executed_slots.add(slot_id)
+
+            return {
+                "executed_slots": executed_slots,
+                "cycles_today": cycles_today,
+                "cycles_trial": cycles_trial,
+                "requests_today": requests_today,
+                "requests_trial": requests_trial,
+            }
 
         if conn is not None:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:

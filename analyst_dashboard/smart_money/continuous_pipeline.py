@@ -23,6 +23,7 @@ import uuid
 import json
 import hashlib
 import logging
+import math
 from contextlib import nullcontext
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple, Set, Callable
@@ -49,7 +50,10 @@ from analyst_dashboard.smart_money.storage.postgres_repository import (
     PostgresSmartMoneyRepository,
     StaleLeaseOwnershipLostError,
 )
-from analyst_dashboard.smart_money.smart_money_scheduler import SmartMoneyTimezoneScheduler
+from analyst_dashboard.smart_money.smart_money_scheduler import (
+    SmartMoneyTimezoneScheduler,
+    TwoIssuerTrialScheduler,
+)
 from analyst_dashboard.smart_money.freshness_authority import NY_TZ
 from analyst_dashboard.data.sec_edgar_fetcher import (
     get_sec_egress_role,
@@ -224,6 +228,46 @@ def resolve_sec_primary_document_url(archive_root: str, doc: str) -> str:
     return resolved
 
 
+def validate_cycle_duration(val: Any) -> float:
+    """
+    Validates cycle duration setting:
+    - Rejects boolean types.
+    - Rejects non-numeric types.
+    - Rejects non-finite values (NaN, Inf).
+    - Rejects non-positive values (val <= 0).
+    - Rejects excessive values (> 60.0s): config may lower, never raise above 60.0s.
+    Returns validated float.
+    """
+    if isinstance(val, bool):
+        raise ValueError("CYCLE_DURATION_INVALID: Boolean value is not a valid duration")
+    try:
+        fval = float(val)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"CYCLE_DURATION_INVALID: Non-numeric duration value: {val}") from exc
+    if math.isnan(fval) or math.isinf(fval):
+        raise ValueError(f"CYCLE_DURATION_INVALID: Non-finite duration value: {fval}")
+    if fval <= 0.0:
+        raise ValueError(f"CYCLE_DURATION_INVALID: Non-positive duration value: {fval}")
+    if fval > 60.0:
+        raise ValueError(f"CYCLE_DURATION_INVALID: Duration {fval} exceeds maximum allowed ceiling of 60.0s")
+    return fval
+
+
+def parse_sec_datetime_utc(dt_str: str) -> datetime:
+    """Parses SEC acceptanceDateTime or filingDate string into timezone-aware UTC datetime."""
+    if not dt_str or not isinstance(dt_str, str):
+        raise ValueError("Invalid datetime string")
+    s = dt_str.strip().replace(" ", "T")
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    dt = datetime.fromisoformat(s)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt
+
+
 class ContinuousBudgetExceededError(RuntimeError):
     """Raised when total cycle (40) or per-issuer (4) HTTP transmission ceiling is reached."""
     pass
@@ -276,6 +320,12 @@ class ContinuousOutboundSession(requests.Session):
         self.allow_test_mode = allow_test_mode
         self.cancellation_token = cancellation_token
         self.cycle_deadline = cycle_deadline
+        self.deadline_monotonic: Optional[float] = None
+        self.daily_requests_baseline: int = 0
+        self.trial_requests_baseline: int = 0
+        self.max_daily_requests: int = 32
+        self.max_trial_requests: int = 96
+        self.is_trial: bool = is_trial
         self.total_transmissions: int = 0
         self.issuer_transmissions: Dict[str, int] = {}
         self.current_issuer: Optional[str] = None
@@ -287,7 +337,9 @@ class ContinuousOutboundSession(requests.Session):
             self.issuer_transmissions[self.current_issuer] = 0
 
     def send(self, request, **kwargs):
-        # 0. Cycle deadline check
+        # 0. Monotonic & cycle deadline check
+        if self.deadline_monotonic is not None and time.monotonic() >= self.deadline_monotonic:
+            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Outbound send blocked by monotonic cycle deadline.")
         if self.cycle_deadline and time.time() >= self.cycle_deadline:
             raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Outbound send blocked by cycle deadline.")
 
@@ -331,6 +383,21 @@ class ContinuousOutboundSession(requests.Session):
                 f"reached ceiling ({effective_max_total}). Outbound send blocked."
             )
 
+        # 4b. Daily and trial request budgets under two-issuer trial profile
+        if self.is_trial:
+            total_today = self.daily_requests_baseline + self.total_transmissions
+            if total_today >= self.max_daily_requests:
+                raise ContinuousBudgetExceededError(
+                    f"PILOT_BUDGET_EXCEEDED: DAILY_BUDGET_EXCEEDED: Daily HTTP transmissions ({total_today}) "
+                    f"reached ceiling ({self.max_daily_requests}). Outbound send blocked."
+                )
+            total_trial = self.trial_requests_baseline + self.total_transmissions
+            if total_trial >= self.max_trial_requests:
+                raise ContinuousBudgetExceededError(
+                    f"PILOT_BUDGET_EXCEEDED: TRIAL_BUDGET_EXCEEDED: Trial HTTP transmissions ({total_trial}) "
+                    f"reached ceiling ({self.max_trial_requests}). Outbound send blocked."
+                )
+
         # 5. Per-issuer request budget check (config may lower, never raise)
         configured_max_issuer = int(os.environ.get("ARX_SEC_MAX_REQUESTS_PER_ISSUER", str(self.max_per_issuer_requests)))
         effective_max_issuer = min(self.max_per_issuer_requests, configured_max_issuer)
@@ -344,6 +411,8 @@ class ContinuousOutboundSession(requests.Session):
 
         # 6. Rate limiting (<= 5.0 req/s)
         self.rate_limiter.acquire()
+        if self.deadline_monotonic is not None and time.monotonic() >= self.deadline_monotonic:
+            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Execution exceeded monotonic cycle duration ceiling after rate-limiting wait.")
         if self.cycle_deadline and time.time() >= self.cycle_deadline:
             raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Execution exceeded cycle duration ceiling after rate-limiting wait.")
 
@@ -360,9 +429,44 @@ class ContinuousOutboundSession(requests.Session):
         self.issuer_transmissions[issuer_key] = count_for_issuer + 1
         t0 = time.time()
 
-        # 8. Wire transmission; each redirect re-enters send(), while
-        # urllib3 internal retries are disabled above.
+        # 8. Wire transmission with chunked transfer and monotonic deadline enforcement
+        remaining_sec = None
+        if self.deadline_monotonic is not None:
+            remaining_sec = max(0.001, self.deadline_monotonic - time.monotonic())
+            orig_timeout = kwargs.get("timeout")
+            if orig_timeout is None:
+                kwargs["timeout"] = (min(5.0, remaining_sec), remaining_sec)
+            elif isinstance(orig_timeout, (int, float)):
+                kwargs["timeout"] = min(float(orig_timeout), remaining_sec)
+            elif isinstance(orig_timeout, tuple) and len(orig_timeout) == 2:
+                conn_t, read_t = orig_timeout
+                kwargs["timeout"] = (min(float(conn_t), remaining_sec), min(float(read_t), remaining_sec))
+
+        kwargs["stream"] = True
         resp = super().send(request, **kwargs)
+
+        # Ingest chunk-by-chunk with monotonic deadline checks across body transfer
+        if resp.raw is not None and not getattr(resp, "_content_consumed", False):
+            chunks = []
+            try:
+                for chunk in resp.iter_content(chunk_size=4096):
+                    if self.deadline_monotonic is not None and time.monotonic() >= self.deadline_monotonic:
+                        if hasattr(resp, "close"):
+                            try:
+                                resp.close()
+                            except Exception:
+                                pass
+                        raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Response transfer exceeded monotonic cycle deadline.")
+                    if chunk:
+                        chunks.append(chunk)
+                resp._content = b"".join(chunks)
+            except Exception:
+                if hasattr(resp, "close") and resp.raw is not None:
+                    try:
+                        resp.close()
+                    except Exception:
+                        pass
+                raise
 
         duration = round(time.time() - t0, 3)
         self.transmission_log.append({
@@ -445,16 +549,35 @@ class SmartMoneyContinuousPipeline:
             else None
         )
         self.issuers = issuers or DEFAULT_GOVERNED_ISSUERS
-        if ingestion_only is not None:
+        scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
+        self.is_trial_2_issuer = bool(
+            scope == "RECURRING_2_ISSUER_FORM4_TRIAL"
+            or (self.issuers is not None and len(self.issuers) == 2 and {i.get("ticker") for i in self.issuers} == {"NVDA", "AAPL"})
+        )
+        env_ingestion_only = os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower()
+
+        if self.is_trial_2_issuer:
+            if env_ingestion_only in ("false", "0", "no"):
+                raise RuntimeError(
+                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: ARX_SMART_MONEY_INGESTION_ONLY cannot be disabled under two-issuer trial profile."
+                )
+            if ingestion_only is False:
+                raise RuntimeError(
+                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: ingestion_only=False is prohibited under two-issuer trial profile."
+                )
+            self.ingestion_only = True
+            self.trial_scheduler = scheduler if isinstance(scheduler, TwoIssuerTrialScheduler) else TwoIssuerTrialScheduler()
+            self.trial_scheduler.validate_issuers(self.issuers)
+        elif ingestion_only is not None:
             self.ingestion_only = bool(ingestion_only)
         else:
-            scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
-            self.ingestion_only = bool(
-                scope == "RECURRING_2_ISSUER_FORM4_TRIAL"
-                or os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower() in ("true", "1", "yes")
-            )
-        self.max_duration_sec = float(os.environ.get("ARX_CYCLE_MAX_DURATION_SEC", str(max_duration_sec)))
+            self.ingestion_only = bool(env_ingestion_only in ("true", "1", "yes"))
+
+        env_dur = os.environ.get("ARX_CYCLE_MAX_DURATION_SEC")
+        raw_dur = env_dur if (env_dur is not None and env_dur != "") else max_duration_sec
+        self.max_duration_sec = validate_cycle_duration(raw_dur)
         self.cycle_deadline: Optional[float] = None
+        self.cycle_deadline_monotonic: Optional[float] = None
         # Strict token bucket <= 5.0 req/s (SEC ceiling is 10)
         limiter = rate_limiter or RateLimiter(max_per_second=5.0)
         if hasattr(limiter, "max_per_second") and limiter.max_per_second > 5.0:
@@ -469,6 +592,7 @@ class SmartMoneyContinuousPipeline:
             allow_test_mode=self.allow_test_mode,
             cancellation_token=self.cancellation_token,
         )
+        self.outbound_session.is_trial = self.is_trial_2_issuer
         self.sec_fetcher = sec_fetcher
         self.scanner = scanner or SmartMoneyForm4Scanner()
         self.scheduler = scheduler or SmartMoneyTimezoneScheduler()
@@ -505,7 +629,9 @@ class SmartMoneyContinuousPipeline:
         """
         start_time = datetime.now(timezone.utc)
         self.cycle_deadline = time.time() + self.max_duration_sec
+        self.cycle_deadline_monotonic = time.monotonic() + self.max_duration_sec
         self.outbound_session.cycle_deadline = self.cycle_deadline
+        self.outbound_session.deadline_monotonic = self.cycle_deadline_monotonic
         cycle_id = f"sm-cycle-{start_time.strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
         steps_completed: List[str] = []
         errors: List[str] = []
@@ -651,7 +777,7 @@ class SmartMoneyContinuousPipeline:
 
             # ── Step 6: Genuine SEC Form 4 ingestion ──────────────────────────
             self._check_in_flight_authorization(step_name="STEP_6_SEC_INGESTION_START")
-            raw_filings = self._step6_ingest_form4_filings()
+            raw_filings = self._step6_ingest_form4_filings(as_of=as_of)
             steps_completed.append("STEP_6_SEC_FORM4_INGESTED")
 
             # ── Step 7: Transaction normalization & reconciliation receipt ────
@@ -715,9 +841,36 @@ class SmartMoneyContinuousPipeline:
                 status = "FAILED"
             raise
         finally:
+            if getattr(self, "is_trial_2_issuer", False) and self.repository and hasattr(self, "trial_scheduler"):
+                try:
+                    ny_date_str = self.trial_scheduler.get_ny_now().date().isoformat()
+                    self.repository.record_trial_cycle_audit(
+                        trial_id=self.trial_scheduler.trial_id,
+                        slot_id=getattr(self, "current_slot_id", None) or f"{ny_date_str}:UNKNOWN_SLOT_{int(time.time())}",
+                        ny_date=ny_date_str,
+                        slot_index=getattr(self, "current_slot_index", 0),
+                        status=status,
+                        requests_transmitted=self.outbound_session.total_transmissions,
+                        error="; ".join(errors) if errors else None,
+                    )
+                except Exception as audit_err:
+                    logger.error(f"Failed to record trial cycle audit: {audit_err}")
+
             # Advisory lock release in finally block
+            t_cleanup_start = time.monotonic()
             self._cleanup_lock()
+            t_cleanup_end = time.monotonic()
+            cleanup_dur = round(t_cleanup_end - t_cleanup_start, 3)
             steps_completed.append("LOCK_RELEASED_CLEANLY")
+            cleanup_after_expiry = False
+            if self.cycle_deadline_monotonic is not None and t_cleanup_end > self.cycle_deadline_monotonic:
+                cleanup_after_expiry = True
+                overshoot = round(t_cleanup_end - self.cycle_deadline_monotonic, 3)
+                logger.warning(
+                    f"CLEANUP_AFTER_EXPIRY: Bounded cleanup finished after cycle execution expiry "
+                    f"(cleanup_duration={cleanup_dur}s, overshoot={overshoot}s)"
+                )
+                steps_completed.append(f"CLEANUP_AFTER_EXPIRY:{cleanup_dur}s")
 
         return {
             "cycle_id": cycle_id,
@@ -733,6 +886,8 @@ class SmartMoneyContinuousPipeline:
             "post_backup_id": post_backup_manifest.get("backup_id") if post_backup_manifest else None,
             "errors": errors,
             "duration_sec": (datetime.now(timezone.utc) - start_time).total_seconds(),
+            "cleanup_duration_sec": cleanup_dur,
+            "cleanup_after_expiry": cleanup_after_expiry,
         }
 
     # ── Pipeline Step Implementations ─────────────────────────────────────────
@@ -868,6 +1023,77 @@ class SmartMoneyContinuousPipeline:
                 )
 
         # 2. Query durable state under lock
+        if self.is_trial_2_issuer:
+            ny_now = self.trial_scheduler.get_ny_now()
+            today_ny_str = ny_now.date().isoformat()
+            as_of_date = None
+            if as_of:
+                try:
+                    as_of_date = datetime.strptime(as_of, "%Y-%m-%d").date()
+                except Exception as e:
+                    raise RuntimeError(
+                        f"INVALID_AS_OF_DATE: Malformed as_of format '{as_of}', expected YYYY-MM-DD: {e}"
+                    ) from e
+
+            # Check if reconciliation receipt already exists for this date
+            if self.repository:
+                try:
+                    receipt = self.repository.get_latest_reconciliation_receipt(
+                        covered_tickers=[i["ticker"] for i in self.issuers],
+                        conn=self._lock_conn,
+                    )
+                    if receipt:
+                        wm = receipt.get("certified_watermark") or receipt.get("interval_end")
+                        if wm:
+                            dt_utc = parse_sec_datetime_utc(str(wm))
+                            last_receipt_ny_date = dt_utc.astimezone(NY_TZ).date()
+                            target_eval_date = as_of_date if as_of_date else ny_now.date()
+                            if last_receipt_ny_date == target_eval_date and not force:
+                                return False, f"ALREADY_EXECUTED_TODAY: Smart Money continuous ingestion has already completed for date {target_eval_date.isoformat()}."
+                except Exception as e:
+                    raise RuntimeError(
+                        f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for latest reconciliation receipt failed under lock: {e}"
+                    ) from e
+
+            progress = None
+            if self.repository:
+                try:
+                    progress = self.repository.get_trial_progress(
+                        trial_id=self.trial_scheduler.trial_id,
+                        ny_date=today_ny_str,
+                        conn=self._lock_conn,
+                    )
+                except Exception as e:
+                    raise RuntimeError(
+                        f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for trial progress failed under lock: {e}"
+                    ) from e
+            elif not self.allow_test_mode:
+                raise RuntimeError("DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Missing repository outside authorized test mode.")
+
+            if progress:
+                self.outbound_session.daily_requests_baseline = progress.get("requests_today", 0)
+                self.outbound_session.trial_requests_baseline = progress.get("requests_trial", 0)
+
+            eval_dt = None
+            if as_of_date:
+                eval_dt = datetime(
+                    as_of_date.year,
+                    as_of_date.month,
+                    as_of_date.day,
+                    ny_now.hour,
+                    ny_now.minute,
+                    tzinfo=NY_TZ,
+                )
+
+            should_run, slot_id, reason = self.trial_scheduler.evaluate_execution_eligibility(
+                now=eval_dt,
+                progress=progress,
+                issuers=self.issuers,
+                force=force,
+            )
+            self.current_slot_id = slot_id
+            return should_run, reason
+
         last_executed_ny_date = None
         if self.repository:
             # Confirm lock connection is valid if present
@@ -885,9 +1111,23 @@ class SmartMoneyContinuousPipeline:
                     if receipt:
                         wm = receipt.get("certified_watermark") or receipt.get("interval_end")
                         if wm:
-                            last_executed_ny_date = datetime.strptime(str(wm)[:10], "%Y-%m-%d").date()
+                            if isinstance(wm, str):
+                                s = wm.strip().replace(" ", "T")
+                                if s.endswith("Z"):
+                                    s = s[:-1] + "+00:00"
+                                dt_utc = datetime.fromisoformat(s)
+                            elif isinstance(wm, datetime):
+                                dt_utc = wm
+                            else:
+                                dt_utc = None
+                            if dt_utc is not None:
+                                if dt_utc.tzinfo is None:
+                                    dt_utc = dt_utc.replace(tzinfo=timezone.utc)
+                                last_executed_ny_date = dt_utc.astimezone(NY_TZ).date()
                 except Exception as e:
-                    logger.warning(f"Could not query latest reconciliation receipt under lock: {e}")
+                    raise RuntimeError(
+                        f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for latest reconciliation receipt failed under lock: {e}"
+                    ) from e
             else:
                 try:
                     snap = self.repository.get_latest_active_snapshot(conn=self._lock_conn)
@@ -1062,9 +1302,9 @@ class SmartMoneyContinuousPipeline:
     _step2_and_3_pre_backup = _step4_pre_backup
     _step4_freshness_gate_check = _step5_freshness_gate_check
 
-    def _step6_ingest_form4_filings(self) -> List[Dict[str, Any]]:
+    def _step6_ingest_form4_filings(self, as_of: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Fetches SEC Form 4 filings for the 10 governed issuers at rate <= 8.0 req/s.
+        Fetches SEC Form 4 filings for the governed issuers.
         Persists raw filings into PostgreSQL form4_raw_filings idempotently.
         """
         raw_filings: List[Dict[str, Any]] = []
@@ -1100,7 +1340,12 @@ class SmartMoneyContinuousPipeline:
                 cycle_request_count += 1
             else:
                 # Query SEC EDGAR Atom feed or use database-cached filings via guarded session
-                filing_dicts = self._fetch_filings_from_sec(ticker=ticker, cik=cik, company_name=company_name)
+                filing_dicts = self._fetch_filings_from_sec(
+                    ticker=ticker,
+                    cik=cik,
+                    company_name=company_name,
+                    as_of=as_of,
+                )
                 cycle_request_count += 1
 
             for filing in filing_dicts:
@@ -1122,7 +1367,13 @@ class SmartMoneyContinuousPipeline:
         logger.info(f"Ingested {len(raw_filings)} Form 4 filing(s) across {len(self.issuers)} governed issuers.")
         return raw_filings
 
-    def _fetch_filings_from_sec(self, ticker: str, cik: str, company_name: str) -> List[Dict[str, Any]]:
+    def _fetch_filings_from_sec(
+        self,
+        ticker: str,
+        cik: str,
+        company_name: str,
+        as_of: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """Read all new Form 4/4-A filings within issuer budget via guarded HTTP.
 
         Default production path: worker -> pipeline -> ContinuousOutboundSession.
@@ -1139,7 +1390,7 @@ class SmartMoneyContinuousPipeline:
             "Accept": "application/json, application/xml, text/plain",
         })
 
-        def receive(url: str) -> requests.Response:
+        def receive(url: str, allow_404: bool = False) -> Optional[requests.Response]:
             # No hidden HTTP adapter retries. All sends/redirects pass through
             # the guarded session's authorization, budget, rate and host gates.
             response = self.outbound_session.get(
@@ -1147,11 +1398,31 @@ class SmartMoneyContinuousPipeline:
             )
             if response.status_code == 429:
                 raise RuntimeError("SEC_RATE_LIMITED_429")
+            if response.status_code == 404:
+                if allow_404:
+                    return None
+                raise RuntimeError("SEC_UPSTREAM_HTTP_ERROR: 404 Not Found")
             if response.status_code != 200:
-                raise RuntimeError("SEC_UPSTREAM_HTTP_ERROR")
+                raise RuntimeError(f"SEC_UPSTREAM_HTTP_ERROR: {response.status_code}")
             return response
 
+        # Determine prospective start boundary and public-availability cutoff
+        prospective_start_utc: Optional[datetime] = None
+        if self.is_trial_2_issuer and hasattr(self, "trial_scheduler"):
+            st = self.trial_scheduler.start_date
+            prospective_start_utc = datetime(st.year, st.month, st.day, 0, 0, tzinfo=NY_TZ).astimezone(timezone.utc)
+        elif os.environ.get("ARX_PROSPECTIVE_START_UTC"):
+            prospective_start_utc = parse_sec_datetime_utc(os.environ["ARX_PROSPECTIVE_START_UTC"])
+
+        public_cutoff_utc: Optional[datetime] = None
+        if as_of:
+            public_cutoff_utc = self._snapshot_cutoff(as_of)
+        else:
+            public_cutoff_utc = datetime.now(timezone.utc)
+
         catalog = receive(f"https://data.sec.gov/submissions/CIK{str(cik).zfill(10)}.json")
+        if catalog is None:
+            raise RuntimeError("SEC_UPSTREAM_HTTP_ERROR: Submissions catalog not found")
         try:
             recent = catalog.json()["filings"]["recent"]
             forms = recent["form"]
@@ -1196,6 +1467,22 @@ class SmartMoneyContinuousPipeline:
                 r"[0-9]{10}-[0-9]{2}-[0-9]{6}", accession
             ):
                 raise RuntimeError("SEC_ACCESSION_INVALID")
+
+            # Prospective boundary and public-cutoff check
+            try:
+                acc_dt = parse_sec_datetime_utc(accepted_dates[index])
+            except Exception:
+                try:
+                    acc_dt = parse_sec_datetime_utc(f"{filings_dates[index]}T00:00:00Z")
+                except Exception:
+                    acc_dt = None
+
+            if acc_dt is not None:
+                if public_cutoff_utc and acc_dt > public_cutoff_utc:
+                    continue
+                if prospective_start_utc and acc_dt < prospective_start_utc:
+                    continue
+
             if accession not in known_accessions and accession not in seen_accessions:
                 new_indices.append(index)
             seen_accessions.add(accession)
@@ -1217,24 +1504,32 @@ class SmartMoneyContinuousPipeline:
             )
             # Safely resolve primary document URL (validates doc path, rejects traversal & host substitution)
             resolved_doc_url = resolve_sec_primary_document_url(archive_root, doc)
-            response = receive(resolved_doc_url)
-            xml = response.text
+            response = receive(resolved_doc_url, allow_404=True)
+            xml = response.text if response is not None else ""
             source_url = resolved_doc_url
-            if "<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower():
+
+            # If the primary document was 404 or does not contain ownershipDocument/xml,
+            # attempt explicitly classified fallback representations:
+            # 1. Cleaned filename if nested path was provided
+            # 2. Complete submission text (.txt)
+            # Failures like 429, budget exhaustion, cancellation, auth expiry, deadline
+            # are raised immediately by receive() or OutboundSession.send() and NEVER swallowed.
+            if response is None or ("<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower()):
                 clean_doc = doc.split("/")[-1] if "/" in doc else None
                 if clean_doc and clean_doc != doc:
-                    try:
-                        clean_url = resolve_sec_primary_document_url(archive_root, clean_doc)
-                        clean_resp = receive(clean_url)
-                        if "<ownershipdocument" in clean_resp.text.lower() or "<xml" in clean_resp.text.lower():
-                            xml = clean_resp.text
+                    clean_url = resolve_sec_primary_document_url(archive_root, clean_doc)
+                    clean_resp = receive(clean_url, allow_404=True)
+                    if clean_resp is not None and clean_resp.status_code == 200:
+                        c_text = clean_resp.text
+                        if "<ownershipdocument" in c_text.lower() or "<xml" in c_text.lower():
+                            xml = c_text
                             source_url = clean_url
-                    except Exception:
-                        pass
-                if "<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower():
-                    response = receive(archive_root + accession + ".txt")
-                    xml = Form4XmlParser.extract_xml_from_submission_text(response.text)
-                    source_url = archive_root + accession + ".txt"
+                if not xml or ("<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower()):
+                    txt_url = resolve_sec_primary_document_url(archive_root, f"{accession}.txt")
+                    txt_resp = receive(txt_url)
+                    if txt_resp is not None:
+                        xml = Form4XmlParser.extract_xml_from_submission_text(txt_resp.text)
+                        source_url = txt_url
             if not xml or "<ownershipdocument" not in xml.lower():
                 raise RuntimeError("SEC_FORM4_XML_INVALID")
 
@@ -1404,6 +1699,13 @@ class SmartMoneyContinuousPipeline:
             coverage_status = "PARTIAL" if unresolved_amendments else "COMPLETE"
             failure_reasons = [f"UNRESOLVED_AMENDMENT:{a}" for a in unresolved_amendments]
 
+        if self.is_trial_2_issuer and hasattr(self, "trial_scheduler"):
+            cur_slot = getattr(self, "current_slot_id", None)
+            failure_reasons.append({
+                "trial_id": self.trial_scheduler.trial_id,
+                "slot_id": cur_slot,
+            })
+
         receipt_meta = {
             "receipt_id": str(uuid.uuid4()),
             "interval_start": PROSPECTIVE_TRIAL_START_BOUNDARY if self.ingestion_only else (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -1422,7 +1724,26 @@ class SmartMoneyContinuousPipeline:
             "source_hashes": source_hashes,
             "reconciliation_hash": reconciliation_hash,
             "release_sha": resolve_release_identity(),
+            "trial_id": getattr(self.trial_scheduler, "trial_id", None) if hasattr(self, "trial_scheduler") else None,
+            "slot_id": getattr(self, "current_slot_id", None),
         }
+
+        # Pre-commit invariants verification:
+        # 1. Monotonic cycle deadline check
+        if self.cycle_deadline_monotonic is not None and time.monotonic() >= self.cycle_deadline_monotonic:
+            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Absolute cycle deadline expired prior to database commit.")
+        # 2. Continuous authorization check
+        if not self.allow_test_mode:
+            require_continuous_authorization(issuers=self.issuers)
+            if self._lock_conn is not None:
+                if getattr(self._lock_conn, "closed", 0) > 0:
+                    raise RuntimeError("LOCK_LOST_BEFORE_COMMIT: Advisory lock connection closed prior to database commit.")
+                with self._lock_conn.cursor() as cur:
+                    cur.execute("SELECT pg_advisory_lock_held(%s);", (LOCK_SEC_EGRESS_OWNER,))
+                    row = cur.fetchone()
+                    held = row[0] if isinstance(row, tuple) else (row.get("pg_advisory_lock_held") if isinstance(row, dict) else False)
+                    if not held:
+                        raise RuntimeError(f"LOCK_LOST_BEFORE_COMMIT: Session advisory lock ({LOCK_SEC_EGRESS_OWNER}) is no longer held prior to commit.")
 
         if self.repository:
             self.repository.save_reconciliation_receipt(receipt_meta, conn=conn)

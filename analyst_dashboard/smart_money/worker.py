@@ -498,10 +498,15 @@ class SmartMoneyIngestionWorker:
         self._shutdown_requested = False
         scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
         self.is_trial_2_issuer = (scope == "RECURRING_2_ISSUER_FORM4_TRIAL")
-        self.ingestion_only = (
-            self.is_trial_2_issuer
-            or os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower() in ("true", "1", "yes")
-        )
+        env_ingestion_only = os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower()
+        if self.is_trial_2_issuer:
+            if env_ingestion_only in ("false", "0", "no"):
+                raise RuntimeError(
+                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: Ingestion-only mode cannot be disabled under two-issuer trial scope."
+                )
+            self.ingestion_only = True
+        else:
+            self.ingestion_only = (env_ingestion_only in ("true", "1", "yes"))
         self.governed_issuers = TRIAL_2_GOVERNED_ISSUERS if self.is_trial_2_issuer else DEFAULT_GOVERNED_ISSUERS
 
     def validate_preflight(self) -> bool:
@@ -526,6 +531,15 @@ class SmartMoneyIngestionWorker:
 
         # Require an unexpired, release- and universe-bound grant before any OWNER lock.
         require_continuous_authorization(issuers=getattr(self, "governed_issuers", DEFAULT_GOVERNED_ISSUERS))
+
+        if getattr(self, "is_trial_2_issuer", False):
+            env_ing = os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower()
+            if env_ing in ("false", "0", "no"):
+                self.state = WorkerHealthState.FATAL
+                raise RuntimeError(
+                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: Ingestion-only mode cannot be disabled under two-issuer trial scope."
+                )
+
         validate_storage_configuration()
         if not self.dsn:
             self.state = WorkerHealthState.FATAL

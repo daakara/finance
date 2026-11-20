@@ -22,7 +22,9 @@ import time
 import uuid
 import hashlib
 import re
-from datetime import datetime, timezone, timedelta
+import socket
+import threading
+from datetime import datetime, timezone, timedelta, date
 from typing import Dict, Any, Optional, List
 from unittest.mock import MagicMock, patch
 
@@ -43,6 +45,16 @@ from analyst_dashboard.smart_money.continuous_pipeline import (
     DEFAULT_GOVERNED_ISSUERS,
     resolve_sec_primary_document_url,
     PROSPECTIVE_TRIAL_START_BOUNDARY,
+    validate_cycle_duration,
+    parse_sec_datetime_utc,
+)
+from analyst_dashboard.smart_money.smart_money_scheduler import (
+    TwoIssuerTrialScheduler,
+    TRIAL_DAILY_SLOTS,
+    MAX_CYCLES_PER_DAY,
+    MAX_CYCLES_PER_TRIAL,
+    MAX_REQUESTS_PER_DAY,
+    MAX_REQUESTS_PER_TRIAL,
 )
 from analyst_dashboard.smart_money.storage.postgres_repository import (
     PostgresSmartMoneyRepository,
@@ -415,6 +427,7 @@ class TestBoundedFetchCeilings:
             allow_test_mode=True,
             issuers=TRIAL_ISSUERS,
         )
+        pipeline.trial_scheduler.start_date = date(2026, 11, 19)
         catalog_mock = MagicMock()
         catalog_mock.status_code = 200
         # 4 new Form 4 accessions
@@ -617,6 +630,7 @@ class TestTwoIssuerTrialPostgresIntegration:
         from analyst_dashboard.smart_money.freshness_authority import NY_TZ
         now_ny = datetime.now(NY_TZ)
         today_iso = now_ny.strftime("%Y-%m-%dT22:30:00Z")
+        target_slot = f"{now_ny.strftime('%Y-%m-%d')}:SLOT_1:0915"
         receipt_meta = {
             "receipt_id": str(uuid.uuid4()),
             "interval_start": "2026-11-17T00:00:00Z",
@@ -628,7 +642,7 @@ class TestTwoIssuerTrialPostgresIntegration:
             "missing_count": 0,
             "material_gap_count": 0,
             "coverage_status": "PARTIAL",
-            "failure_reasons": ["TRIAL_INTERVAL_PARTIAL_COVERAGE"],
+            "failure_reasons": ["TRIAL_INTERVAL_PARTIAL_COVERAGE", {"trial_id": "ARX-TRIAL-2026-NVDA-AAPL-001", "slot_id": target_slot}],
             "covered_ciks": ["0001045810", "0000320193"],
             "covered_tickers": ["NVDA", "AAPL"],
             "accession_inventory": ["0001045810-26-000001"],
@@ -646,13 +660,15 @@ class TestTwoIssuerTrialPostgresIntegration:
             issuers=TRIAL_ISSUERS,
             ingestion_only=True,
         )
+        pipeline.trial_scheduler.start_date = now_ny.date()
+        pipeline.trial_scheduler.end_date = now_ny.date() + timedelta(days=5)
 
         # Check date eligibility under lock without force for today
         should_run, reason = pipeline._step3_check_durable_date_eligibility_under_lock(
             force=False, as_of=now_ny.strftime("%Y-%m-%d")
         )
         assert should_run is False
-        assert "ALREADY_EXECUTED_TODAY" in reason
+        assert "ALREADY_EXECUTED" in reason or "SLOT_ALREADY_EXECUTED" in reason
 
     def test_stale_lease_ownership_loss_fences_completion(self, disposable_db):
         """If worker loses lease ownership, run request completion is safely fenced."""
@@ -730,4 +746,588 @@ class TestTwoIssuerTrialPostgresIntegration:
             row = cur.fetchone()
             assert row[0] == 0
             assert row[1] == "PARTIAL"
+        conn.close()
+
+
+# ==============================================================================
+# SECTION 5: DURATION & INGESTION-ONLY NON-OVERRIDABILITY GOVERNANCE
+# ==============================================================================
+
+class TestCycleDurationAndIngestionOnlyGovernance:
+    """Verifies duration validation and non-overridable ingestion-only mode under trial profile."""
+
+    def test_validate_cycle_duration_rejects_invalid_types_and_ranges(self):
+        # Reject booleans
+        with pytest.raises(ValueError, match="Boolean value is not a valid duration"):
+            validate_cycle_duration(True)
+        with pytest.raises(ValueError, match="Boolean value is not a valid duration"):
+            validate_cycle_duration(False)
+
+        # Reject non-numeric strings
+        with pytest.raises(ValueError, match="Non-numeric duration value"):
+            validate_cycle_duration("invalid_sec")
+
+        # Reject non-finite values
+        with pytest.raises(ValueError, match="Non-finite duration value"):
+            validate_cycle_duration(float("nan"))
+        with pytest.raises(ValueError, match="Non-finite duration value"):
+            validate_cycle_duration(float("inf"))
+        with pytest.raises(ValueError, match="Non-finite duration value"):
+            validate_cycle_duration(-float("inf"))
+
+        # Reject non-positive values
+        with pytest.raises(ValueError, match="Non-positive duration value"):
+            validate_cycle_duration(0.0)
+        with pytest.raises(ValueError, match="Non-positive duration value"):
+            validate_cycle_duration(-5.0)
+
+        # Reject excessive values (> 60.0s)
+        with pytest.raises(ValueError, match="exceeds maximum allowed ceiling of 60.0s"):
+            validate_cycle_duration(60.1)
+        with pytest.raises(ValueError, match="exceeds maximum allowed ceiling of 60.0s"):
+            validate_cycle_duration(120.0)
+
+        # Accept valid values
+        assert validate_cycle_duration(30.0) == 30.0
+        assert validate_cycle_duration(60.0) == 60.0
+        assert validate_cycle_duration("45.5") == 45.5
+
+    def test_pipeline_rejects_ingestion_only_override_under_trial_scope(self, monkeypatch):
+        monkeypatch.setenv("ARX_CONTINUOUS_AUTH_SCOPE", SCOPE_TRIAL_2)
+        monkeypatch.setenv("ARX_SMART_MONEY_INGESTION_ONLY", "false")
+
+        # Disabling ingestion-only via env var must raise fail-closed
+        with pytest.raises(RuntimeError, match="TRIAL_INGESTION_ONLY_NON_OVERRIDABLE"):
+            SmartMoneyContinuousPipeline(
+                allow_test_mode=True,
+                issuers=TRIAL_ISSUERS,
+            )
+
+        # Passing ingestion_only=False explicitly must raise fail-closed
+        monkeypatch.setenv("ARX_SMART_MONEY_INGESTION_ONLY", "true")
+        with pytest.raises(RuntimeError, match="TRIAL_INGESTION_ONLY_NON_OVERRIDABLE"):
+            SmartMoneyContinuousPipeline(
+                allow_test_mode=True,
+                issuers=TRIAL_ISSUERS,
+                ingestion_only=False,
+            )
+
+    def test_worker_rejects_ingestion_only_override_under_trial_scope(self, monkeypatch):
+        monkeypatch.setenv("ARX_CONTINUOUS_AUTH_SCOPE", SCOPE_TRIAL_2)
+        monkeypatch.setenv("ARX_SMART_MONEY_INGESTION_ONLY", "false")
+
+        with pytest.raises(RuntimeError, match="TRIAL_INGESTION_ONLY_NON_OVERRIDABLE"):
+            SmartMoneyIngestionWorker.__new__(SmartMoneyIngestionWorker).__init__()
+
+
+# ==============================================================================
+# SECTION 6: TWO-ISSUER TRIAL SCHEDULER & DISSEMINATION CALENDAR
+# ==============================================================================
+
+class TestTwoIssuerTrialScheduler:
+    """Verifies timezone-aware 4-slot scheduling, quotas, calendar, and issuer validation."""
+
+    def test_scheduler_slots_and_slot_id_generation(self):
+        scheduler = TwoIssuerTrialScheduler(
+            start_date=date(2026, 11, 23),
+            end_date=date(2026, 11, 25),
+        )
+
+        from analyst_dashboard.smart_money.freshness_authority import NY_TZ
+
+        # Slot 1: 09:15 NY
+        t1 = datetime(2026, 11, 23, 9, 20, tzinfo=NY_TZ)
+        idx1, slot1, _ = scheduler.get_slot_for_time(t1)
+        assert idx1 == 1
+        assert slot1 == "2026-11-23:SLOT_1:0915"
+
+        # Slot 2: 13:00 NY
+        t2 = datetime(2026, 11, 23, 13, 10, tzinfo=NY_TZ)
+        idx2, slot2, _ = scheduler.get_slot_for_time(t2)
+        assert idx2 == 2
+        assert slot2 == "2026-11-23:SLOT_2:1300"
+
+        # Slot 3: 16:30 NY
+        t3 = datetime(2026, 11, 23, 16, 45, tzinfo=NY_TZ)
+        idx3, slot3, _ = scheduler.get_slot_for_time(t3)
+        assert idx3 == 3
+        assert slot3 == "2026-11-23:SLOT_3:1630"
+
+        # Slot 4: 20:30 NY
+        t4 = datetime(2026, 11, 23, 20, 35, tzinfo=NY_TZ)
+        idx4, slot4, _ = scheduler.get_slot_for_time(t4)
+        assert idx4 == 4
+        assert slot4 == "2026-11-23:SLOT_4:2030"
+
+        # Outside window: 11:00 NY
+        t_out = datetime(2026, 11, 23, 11, 0, tzinfo=NY_TZ)
+        idx_out, slot_out, _ = scheduler.get_slot_for_time(t_out)
+        assert idx_out is None
+        assert slot_out is None
+
+    def test_scheduler_timezone_aware_date_and_utc_handling(self):
+        """20:30 NY on Nov 23 is 01:30 UTC on Nov 24; scheduler correctly attributes to Nov 23."""
+        scheduler = TwoIssuerTrialScheduler(
+            start_date=date(2026, 11, 23),
+            end_date=date(2026, 11, 25),
+        )
+
+        utc_time = datetime(2026, 11, 24, 1, 35, tzinfo=timezone.utc)
+        should_run, slot_id, reason = scheduler.evaluate_execution_eligibility(
+            now=utc_time,
+            issuers=TRIAL_ISSUERS,
+        )
+        assert should_run is True
+        assert slot_id == "2026-11-23:SLOT_4:2030"
+
+    def test_scheduler_skips_weekends_and_federal_holidays(self):
+        scheduler = TwoIssuerTrialScheduler(
+            start_date=date(2026, 11, 23),
+            end_date=date(2026, 11, 29),
+        )
+        from analyst_dashboard.smart_money.freshness_authority import NY_TZ
+
+        # Saturday
+        sat = datetime(2026, 11, 28, 9, 20, tzinfo=NY_TZ)
+        should_run, _, reason = scheduler.evaluate_execution_eligibility(sat, issuers=TRIAL_ISSUERS)
+        assert should_run is False
+        assert "WEEKEND_EXCLUDED" in reason
+
+        # Sunday
+        sun = datetime(2026, 11, 29, 9, 20, tzinfo=NY_TZ)
+        should_run, _, reason = scheduler.evaluate_execution_eligibility(sun, issuers=TRIAL_ISSUERS)
+        assert should_run is False
+        assert "WEEKEND_EXCLUDED" in reason
+
+        # Thanksgiving Thursday (Nov 26, 2026)
+        thx = datetime(2026, 11, 26, 9, 20, tzinfo=NY_TZ)
+        should_run, _, reason = scheduler.evaluate_execution_eligibility(thx, issuers=TRIAL_ISSUERS)
+        assert should_run is False
+        assert "DISSEMINATION_HOLIDAY_EXCLUDED" in reason
+
+    def test_scheduler_hard_quotas_and_duplicate_slot_rejection(self):
+        scheduler = TwoIssuerTrialScheduler(
+            start_date=date(2026, 11, 23),
+            end_date=date(2026, 11, 25),
+        )
+        from analyst_dashboard.smart_money.freshness_authority import NY_TZ
+        t1 = datetime(2026, 11, 23, 9, 20, tzinfo=NY_TZ)
+
+        # Duplicate slot rejection
+        p_dup = {"executed_slots": {"2026-11-23:SLOT_1:0915"}}
+        should_run, _, reason = scheduler.evaluate_execution_eligibility(t1, progress=p_dup, issuers=TRIAL_ISSUERS)
+        assert should_run is False
+        assert "SLOT_ALREADY_EXECUTED" in reason
+
+        # Daily cycle quota: 4 cycles
+        p_day_cycles = {"cycles_today": 4}
+        should_run, _, reason = scheduler.evaluate_execution_eligibility(t1, progress=p_day_cycles, issuers=TRIAL_ISSUERS)
+        assert should_run is False
+        assert "DAILY_CYCLE_QUOTA_REACHED" in reason
+
+        # Trial cycle quota: 12 cycles
+        p_trial_cycles = {"cycles_trial": 12}
+        should_run, _, reason = scheduler.evaluate_execution_eligibility(t1, progress=p_trial_cycles, issuers=TRIAL_ISSUERS)
+        assert should_run is False
+        assert "TRIAL_CYCLE_QUOTA_REACHED" in reason
+
+        # Daily request quota: 32 requests
+        p_day_reqs = {"requests_today": 32}
+        should_run, _, reason = scheduler.evaluate_execution_eligibility(t1, progress=p_day_reqs, issuers=TRIAL_ISSUERS)
+        assert should_run is False
+        assert "DAILY_REQUEST_QUOTA_REACHED" in reason
+
+        # Trial request quota: 96 requests
+        p_trial_reqs = {"requests_trial": 96}
+        should_run, _, reason = scheduler.evaluate_execution_eligibility(t1, progress=p_trial_reqs, issuers=TRIAL_ISSUERS)
+        assert should_run is False
+        assert "TRIAL_REQUEST_QUOTA_REACHED" in reason
+
+    def test_scheduler_issuer_validation(self):
+        scheduler = TwoIssuerTrialScheduler()
+
+        # Valid NVDA and AAPL pass
+        scheduler.validate_issuers(TRIAL_ISSUERS)
+
+        # Missing CIK fails closed
+        with pytest.raises(RuntimeError, match="Missing mandatory CIK"):
+            scheduler.validate_issuers([{"ticker": "NVDA", "cik": ""}, {"ticker": "AAPL", "cik": "0000320193"}])
+
+        # Wrong CIK fails closed
+        with pytest.raises(RuntimeError, match="CIK mismatch"):
+            scheduler.validate_issuers([{"ticker": "NVDA", "cik": "0000000001"}, {"ticker": "AAPL", "cik": "0000320193"}])
+
+        # Unauthorized ticker fails closed
+        with pytest.raises(RuntimeError, match="Unauthorized ticker"):
+            scheduler.validate_issuers([{"ticker": "MSFT", "cik": "0000789019"}, {"ticker": "AAPL", "cik": "0000320193"}])
+
+        # Incorrect count fails closed
+        with pytest.raises(RuntimeError, match="strictly requires exactly 2 issuers"):
+            scheduler.validate_issuers([{"ticker": "NVDA", "cik": "0001045810"}])
+
+
+# ==============================================================================
+# SECTION 7: QUOTAS, RECOVERY & PERSISTENT PROGRESS REGRESSIONS
+# ==============================================================================
+
+class TestTwoIssuerQuotasAndRecoveryRegressions:
+    """Verifies quota persistence across restarts/token renewals, restart recovery, and fallback error handling."""
+
+    @pytest.fixture(autouse=True)
+    def setup_env(self, monkeypatch):
+        monkeypatch.setenv("ARX_SEC_EGRESS_ROLE", "OWNER")
+        monkeypatch.setenv("SEC_USER_AGENT", "ARX Terminal Research (ops@arxterminal.com)")
+        monkeypatch.setenv("ARX_CONTINUOUS_AUTH_SCOPE", SCOPE_TRIAL_2)
+        monkeypatch.setenv("ARX_SMART_MONEY_INGESTION_ONLY", "true")
+        monkeypatch.setenv("ARX_EMERGENCY_STOP_ACTIVE", "false")
+
+    def test_quotas_persisted_across_restarts_and_auth_renewal(self, disposable_db, monkeypatch):
+        """Plant 4 audit events today; verify get_trial_progress and scheduler block execution even after new auth grant."""
+        repo = PostgresSmartMoneyRepository(dsn=disposable_db)
+
+        # Record 4 completed cycle events today
+        from analyst_dashboard.smart_money.freshness_authority import NY_TZ
+        ny_today = datetime.now(NY_TZ).date().isoformat()
+        for idx in range(1, 5):
+            repo.record_trial_cycle_audit(
+                trial_id="ARX-TRIAL-2026-NVDA-AAPL-001",
+                slot_id=f"{ny_today}:SLOT_{idx}:0915",
+                ny_date=ny_today,
+                slot_index=idx,
+                status="SUCCESS",
+                requests_transmitted=8,
+            )
+
+        # Set initial grant
+        monkeypatch.setenv("ARX_CONTINUOUS_AUTH_ID", "initial-grant-1111")
+        progress = repo.get_trial_progress("ARX-TRIAL-2026-NVDA-AAPL-001", ny_today)
+        assert progress["cycles_today"] == 4
+        assert progress["requests_today"] == 32
+
+        # Simulate renewal with a NEW short-lived authorization grant
+        monkeypatch.setenv("ARX_CONTINUOUS_AUTH_ID", "renewed-grant-2222")
+        monkeypatch.setenv("ARX_CONTINUOUS_AUTH_ISSUED_AT", "2026-11-20T12:00:00Z")
+
+        # Create new pipeline instance (restart simulation)
+        pipeline = SmartMoneyContinuousPipeline(
+            dsn=disposable_db,
+            repository=repo,
+            backup_engine=make_mock_backup_engine(),
+            allow_test_mode=True,
+            issuers=TRIAL_ISSUERS,
+            ingestion_only=True,
+        )
+
+        # Under advisory lock, Step 3 must evaluate eligibility as False due to daily cycle quota
+        pipeline._step2_claim_advisory_lock()
+        try:
+            should_run, reason = pipeline._step3_check_durable_date_eligibility_under_lock()
+            assert should_run is False
+            assert "DAILY_CYCLE_QUOTA_REACHED" in reason or "DAILY_REQUEST_QUOTA_REACHED" in reason
+        finally:
+            pipeline._cleanup_lock()
+
+    def test_commit_before_job_completion_prevents_duplicate_slot(self, disposable_db):
+        """Plant a committed receipt for slot 1; verify restart in same window skips re-execution."""
+        repo = PostgresSmartMoneyRepository(dsn=disposable_db)
+        from analyst_dashboard.smart_money.freshness_authority import NY_TZ
+        ny_today = datetime.now(NY_TZ).date().isoformat()
+        target_slot = f"{ny_today}:SLOT_1:0915"
+
+        receipt_meta = {
+            "receipt_id": str(uuid.uuid4()),
+            "interval_start": "2026-11-23T14:15:00Z",
+            "interval_end": "2026-11-23T15:00:00Z",
+            "certified_watermark": "2026-11-23T15:00:00Z",
+            "receipt_version": 1,
+            "expected_count": 1,
+            "accounted_count": 1,
+            "missing_count": 0,
+            "material_gap_count": 0,
+            "coverage_status": "PARTIAL",
+            "failure_reasons": [{"trial_id": "ARX-TRIAL-2026-NVDA-AAPL-001", "slot_id": target_slot}],
+            "covered_ciks": ["0001045810", "0000320193"],
+            "covered_tickers": ["NVDA", "AAPL"],
+            "accession_inventory": ["0001045810-26-000001"],
+            "source_hashes": {},
+            "reconciliation_hash": "hash123",
+            "release_sha": MOCK_SHA,
+        }
+        repo.save_reconciliation_receipt(receipt_meta)
+
+        progress = repo.get_trial_progress("ARX-TRIAL-2026-NVDA-AAPL-001", ny_today)
+        assert target_slot in progress["executed_slots"]
+
+        scheduler = TwoIssuerTrialScheduler(start_date=datetime.now(NY_TZ).date(), end_date=datetime.now(NY_TZ).date())
+        slot_time = datetime.now(NY_TZ).replace(hour=9, minute=20)
+        should_run, slot_id, reason = scheduler.evaluate_execution_eligibility(
+            now=slot_time,
+            progress=progress,
+            issuers=TRIAL_ISSUERS,
+        )
+        assert should_run is False
+        assert "SLOT_ALREADY_EXECUTED" in reason
+
+    def test_receipt_query_failure_fails_closed(self, disposable_db):
+        """Database error during progress or receipt lookup must fail closed with DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED."""
+        repo = PostgresSmartMoneyRepository(dsn=disposable_db)
+        pipeline = SmartMoneyContinuousPipeline(
+            dsn=disposable_db,
+            repository=repo,
+            backup_engine=make_mock_backup_engine(),
+            allow_test_mode=True,
+            issuers=TRIAL_ISSUERS,
+            ingestion_only=True,
+        )
+
+        pipeline._step2_claim_advisory_lock()
+        try:
+            with patch.object(repo, "get_trial_progress", side_effect=RuntimeError("DB_CONNECTION_TIMEOUT")):
+                with pytest.raises(RuntimeError, match="DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED"):
+                    pipeline._step3_check_durable_date_eligibility_under_lock()
+        finally:
+            pipeline._cleanup_lock()
+
+    def test_get_latest_reconciliation_receipt_no_fallback_to_unrelated(self, disposable_db):
+        """When 10-issuer receipt exists, querying for 2-issuer cohort returns None, never rows[0]."""
+        repo = PostgresSmartMoneyRepository(dsn=disposable_db)
+
+        ten_issuer_receipt = {
+            "receipt_id": str(uuid.uuid4()),
+            "interval_start": "2026-11-20T00:00:00Z",
+            "interval_end": "2026-11-20T22:30:00Z",
+            "certified_watermark": "2026-11-20T22:30:00Z",
+            "receipt_version": 1,
+            "expected_count": 10,
+            "accounted_count": 10,
+            "missing_count": 0,
+            "material_gap_count": 0,
+            "coverage_status": "COMPLETE",
+            "failure_reasons": [],
+            "covered_ciks": ["0001045810", "0000320193", "0000789019"],
+            "covered_tickers": ["NVDA", "AAPL", "MSFT"],
+            "accession_inventory": [],
+            "source_hashes": {},
+            "reconciliation_hash": "hash_ten",
+            "release_sha": MOCK_SHA,
+        }
+        repo.save_reconciliation_receipt(ten_issuer_receipt)
+
+        # Query for exactly NVDA and AAPL (2 issuers)
+        receipt = repo.get_latest_reconciliation_receipt(covered_tickers=["NVDA", "AAPL"])
+        assert receipt is None
+
+    def test_prospective_filtering_before_budget_limit(self, monkeypatch):
+        """Catalog containing historical filings outside prospective window filters them out before budget counting."""
+        pipeline = SmartMoneyContinuousPipeline(
+            allow_test_mode=True,
+            issuers=TRIAL_ISSUERS,
+            ingestion_only=True,
+        )
+
+        mock_catalog = {
+            "filings": {
+                "recent": {
+                    "form": ["4", "4", "4", "4", "4", "4", "4"],
+                    "accessionNumber": [
+                        "0001045810-26-000001",
+                        "0001045810-26-000002",
+                        "0001045810-26-000003",
+                        "0001045810-26-000004",
+                        "0001045810-26-000005",
+                        "0001045810-26-000006",
+                        "0001045810-26-000007",
+                    ],
+                    "filingDate": ["2026-11-10"] * 5 + ["2026-11-23", "2026-11-23"],
+                    "acceptanceDateTime": [
+                        "2026-11-10T15:00:00.000Z",
+                        "2026-11-10T16:00:00.000Z",
+                        "2026-11-10T17:00:00.000Z",
+                        "2026-11-10T18:00:00.000Z",
+                        "2026-11-10T19:00:00.000Z",
+                        "2026-11-23T14:15:00.000Z",
+                        "2026-11-23T14:20:00.000Z",
+                    ],
+                    "primaryDocument": ["form4.xml"] * 7,
+                }
+            }
+        }
+
+        form4_xml = generate_form4_xml(ticker="NVDA", cik="0001045810", date="2026-11-23")
+
+        def mock_get(url, **kwargs):
+            resp = MagicMock()
+            resp.status_code = 200
+            if "submissions" in url:
+                resp.json.return_value = mock_catalog
+            else:
+                resp.text = form4_xml
+            return resp
+
+        monkeypatch.setattr(pipeline.outbound_session, "get", mock_get)
+
+        pipeline.trial_scheduler.start_date = date(2026, 11, 23)
+        filings = pipeline._fetch_filings_from_sec("NVDA", "0001045810", "NVIDIA CORP", as_of="2026-11-23")
+        assert len(filings) == 2
+        assert filings[0]["accession_number"] == "0001045810-26-000006"
+        assert filings[1]["accession_number"] == "0001045810-26-000007"
+
+    def test_prospective_unseen_filings_exceeding_budget_fails_closed(self, monkeypatch):
+        """When more than 3 unseen filings appear strictly within the prospective window, fail closed."""
+        pipeline = SmartMoneyContinuousPipeline(
+            allow_test_mode=True,
+            issuers=TRIAL_ISSUERS,
+            ingestion_only=True,
+        )
+
+        mock_catalog = {
+            "filings": {
+                "recent": {
+                    "form": ["4", "4", "4", "4"],
+                    "accessionNumber": [
+                        "0001045810-26-000001",
+                        "0001045810-26-000002",
+                        "0001045810-26-000003",
+                        "0001045810-26-000004",
+                    ],
+                    "filingDate": ["2026-11-23"] * 4,
+                    "acceptanceDateTime": [
+                        "2026-11-23T14:15:00.000Z",
+                        "2026-11-23T14:20:00.000Z",
+                        "2026-11-23T14:25:00.000Z",
+                        "2026-11-23T14:30:00.000Z",
+                    ],
+                    "primaryDocument": ["form4.xml"] * 4,
+                }
+            }
+        }
+
+        def mock_get(url, **kwargs):
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.json.return_value = mock_catalog
+            return resp
+
+        monkeypatch.setattr(pipeline.outbound_session, "get", mock_get)
+        pipeline.trial_scheduler.start_date = date(2026, 11, 23)
+
+        with pytest.raises(RuntimeError, match="SEC_NEW_FILINGS_EXCEED_ISSUER_BUDGET"):
+            pipeline._fetch_filings_from_sec("NVDA", "0001045810", "NVIDIA CORP", as_of="2026-11-23")
+
+    def test_fallback_429_immediately_aborts_without_swallowing(self, monkeypatch):
+        """A 429 during fallback representation must abort cycle immediately without trying further fallbacks."""
+        pipeline = SmartMoneyContinuousPipeline(
+            allow_test_mode=True,
+            issuers=TRIAL_ISSUERS,
+            ingestion_only=True,
+        )
+
+        mock_catalog = {
+            "filings": {
+                "recent": {
+                    "form": ["4"],
+                    "accessionNumber": ["0001045810-26-000001"],
+                    "filingDate": ["2026-11-23"],
+                    "acceptanceDateTime": ["2026-11-23T14:15:00.000Z"],
+                    "primaryDocument": ["sub/form4.xml"],
+                }
+            }
+        }
+
+        request_urls = []
+
+        def mock_get(url, **kwargs):
+            request_urls.append(url)
+            resp = MagicMock()
+            if "submissions" in url:
+                resp.status_code = 200
+                resp.json.return_value = mock_catalog
+                return resp
+            if "sub/form4.xml" in url:
+                resp.status_code = 200
+                resp.text = "<html><body>Not an XML document</body></html>"
+                return resp
+            if "form4.xml" in url:
+                resp.status_code = 429
+                return resp
+            return resp
+
+        monkeypatch.setattr(pipeline.outbound_session, "get", mock_get)
+        pipeline.trial_scheduler.start_date = date(2026, 11, 23)
+
+        with pytest.raises(RuntimeError, match="SEC_RATE_LIMITED_429"):
+            pipeline._fetch_filings_from_sec("NVDA", "0001045810", "NVIDIA CORP", as_of="2026-11-23")
+
+        # Confirm that after the 429 on fallback 1, NO .txt request was sent!
+        assert not any(u.endswith(".txt") for u in request_urls)
+
+    def test_local_tcp_trickling_server_deadline_timeout(self):
+        """Real local TCP stalled server triggers CYCLE_TIMEOUT_EXCEEDED during chunked transfer."""
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+
+        def _serve():
+            try:
+                conn, _ = server.accept()
+                conn.recv(1024)
+                conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nTransfer-Encoding: chunked\r\n\r\n")
+                for _ in range(20):
+                    time.sleep(0.1)
+                    conn.sendall(b"4\r\ntest\r\n")
+                conn.sendall(b"0\r\n\r\n")
+                conn.close()
+            except Exception:
+                pass
+            finally:
+                server.close()
+
+        thread = threading.Thread(target=_serve, daemon=True)
+        thread.start()
+
+        class TrickleAdapter(requests.adapters.HTTPAdapter):
+            def send(self, request, **kwargs):
+                request.url = f"http://127.0.0.1:{port}/"
+                return super().send(request, **kwargs)
+
+        session = ContinuousOutboundSession(allow_test_mode=True)
+        session.mount("https://data.sec.gov", TrickleAdapter(max_retries=0))
+        session.deadline_monotonic = time.monotonic() + 0.25
+
+        with pytest.raises(RuntimeError, match="CYCLE_TIMEOUT_EXCEEDED"):
+            session.get("https://data.sec.gov/test")
+
+    def test_zero_snapshot_publications_or_table_mutations(self, disposable_db):
+        """A complete two-issuer cycle makes 0 snapshot method calls and leaves snapshot tables untouched."""
+        repo = PostgresSmartMoneyRepository(dsn=disposable_db)
+        scanner = MagicMock()
+
+        pipeline = SmartMoneyContinuousPipeline(
+            dsn=disposable_db,
+            repository=repo,
+            backup_engine=make_mock_backup_engine(),
+            scanner=scanner,
+            allow_test_mode=True,
+            issuers=TRIAL_ISSUERS,
+            ingestion_only=True,
+        )
+
+        with patch.object(pipeline, "_step6_ingest_form4_filings", return_value=[]):
+            res = pipeline.execute_cycle(force=True)
+
+        assert res["status"] == "SUCCESS"
+        assert res["snapshot_id"] is None
+        # Assert publish_snapshot was never called
+        scanner.publish_snapshot.assert_not_called()
+
+        psycopg2 = pytest.importorskip("psycopg2")
+        conn = psycopg2.connect(disposable_db)
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM scanner_snapshots;")
+            snap_count = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM scanner_active_snapshots;")
+            active_count = cur.fetchone()[0]
+            assert snap_count == 0
+            assert active_count == 0
         conn.close()

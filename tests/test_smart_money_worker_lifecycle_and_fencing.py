@@ -427,7 +427,7 @@ print(json.dumps(report))
         child_script = """
 import os, sys, psutil
 proc = psutil.Process(os.getpid())
-bloat = [bytearray(50 * 1024 * 1024) for _ in range(11)]  # Allocate ~550MB
+bloat = [bytearray(b'x' * (50 * 1024 * 1024)) for _ in range(11)]  # Allocate and commit ~550MB
 rss = proc.memory_info().rss / (1024 * 1024)
 limit_mb = 512.0
 assert rss < limit_mb, f"WORKER_MEMORY_LIMIT_EXCEEDED: {rss:.2f}MB >= {limit_mb}MB"
