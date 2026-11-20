@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "28f0a29df391a128b4674c834a915d64aa64ee37",
+  "release_candidate_commit": "163cebebf3646dcf0ad6555d0bac2b314cbd23a4",
   "base_anchor_commit": "b937706e1ff2391cbcb61b359ffd981d98827c0a",
   "total_files": 6,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -40,10 +40,10 @@
     "tests/test_smart_money_two_issuer_trial.py": {
       "operation": "M",
       "originating_pr_number": 312,
-      "originating_commit": "f88ecf343183dfbdfb44561d20f17963ad0b5ad5",
+      "originating_commit": "163cebebf3646dcf0ad6555d0bac2b314cbd23a4",
       "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "b3fc77748baf32e8144f6ff1d828e75f4bf175ad819a90b0f81f4488903cb5ce",
-      "size_bytes": 76695
+      "sha256": "43f530b009d2fd35c68443ce1ca8c4ceb22a7ebe8b449a4fb4febe1304431d19",
+      "size_bytes": 76779
     },
     "docs/reports/SEC_TRIAL_SLOT_DISPATCH_QUALIFICATION_2026_11_20.md": {
       "operation": "A",
