@@ -238,7 +238,7 @@ def test_worker_sentry_telemetry_initialization(monkeypatch):
     monkeypatch.setenv("ARX_ENVIRONMENT", "production")
 
     mock_scope = MagicMock()
-    with patch("sentry_sdk.init") as mock_init, patch("sentry_sdk.get_global_scope", return_value=mock_scope):
+    with patch("sentry_sdk.init") as mock_init, patch("sentry_sdk.get_global_scope", create=True, return_value=mock_scope):
         res = init_worker_sentry()
         assert res is True
         mock_init.assert_called_once()

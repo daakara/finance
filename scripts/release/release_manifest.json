@@ -1,41 +1,97 @@
 {
-  "release_candidate_commit": "8529e938880c6e2fd71b5365b81d06b0b4aa338e",
-  "base_anchor_commit": "540075c85d34ec421c3da80e9cf7fdcf3e8d048f",
-  "total_files": 4,
+  "release_candidate_commit": "979292356fecc90ab9a514e1406966a81a9ce8e3",
+  "base_anchor_commit": "16549be1acb9fdafef3c6b97f9115b674f9f4842",
+  "total_files": 11,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001",
+  "directive": "ARX-SEC-TWO-ISSUER-TRIAL-001",
   "files": {
-    "analyst_dashboard/smart_money/storage/postgres_preservation.py": {
-      "operation": "A",
-      "originating_pr_number": 309,
-      "originating_commit": "807e6d5746efc67e5504da1e5eced56a1c92052f",
-      "governing_requirement": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001: deterministic cryptographic content preservation fingerprinting",
-      "sha256": "e95a4df9aba0a4907b25a419a6db2a8a8de8a0adffe800d290595e3b0629fb28",
-      "size_bytes": 6299
-    },
-    "scripts/execute_sequential_canary_pair.py": {
-      "operation": "A",
-      "originating_pr_number": 309,
-      "originating_commit": "8529e938880c6e2fd71b5365b81d06b0b4aa338e",
-      "governing_requirement": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001: qualified sequential two-issuer canary wrapper",
-      "sha256": "512ec688ba55b171b0a75467ada722c993a316b56df754ee2fea35ccfeafd413",
-      "size_bytes": 13041
-    },
-    "tests/test_smart_money_nvda_canary_runner.py": {
+    "analyst_dashboard/smart_money/canary_runner.py": {
       "operation": "M",
-      "originating_pr_number": 309,
-      "originating_commit": "8529e938880c6e2fd71b5365b81d06b0b4aa338e",
-      "governing_requirement": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001: offline sequential wrapper regression and preservation qualification",
-      "sha256": "d0a00c1d6c510f49af799de2444fa4dd0912f0a82ac531dfa582d38f042d910a",
-      "size_bytes": 174309
+      "originating_pr_number": 311,
+      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: canary runner provenance release_sha binding",
+      "sha256": "fb61c11de51216f4c67b621dea85176bb4569ee3549bcf5b48aa6fb000daf946",
+      "size_bytes": 86104
     },
-    "docs/reports/SEC_SEQUENTIAL_PAIR_WRAPPER_QUALIFICATION_2026_11_19.md": {
+    "analyst_dashboard/smart_money/continuous_authorization.py": {
+      "operation": "M",
+      "originating_pr_number": 311,
+      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: continuous authorization 2-issuer scope and fail-closed release identity",
+      "sha256": "e7052d95def91545f9c84e66beb8fd337a237e211a6df653547a24acf3c30b23",
+      "size_bytes": 6516
+    },
+    "analyst_dashboard/smart_money/continuous_pipeline.py": {
+      "operation": "M",
+      "originating_pr_number": 311,
+      "originating_commit": "b536191ed981b797ab4a7ed5bb46fbf077eda20b",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: continuous pipeline 2-issuer trial, prospective filtering, streaming deadlines, and pre-commit checks",
+      "sha256": "f02b0dc6022937475ad96ff4f230e66db182bb6df6511470c3696ff11b435c7d",
+      "size_bytes": 103848
+    },
+    "analyst_dashboard/smart_money/smart_money_scheduler.py": {
+      "operation": "M",
+      "originating_pr_number": 311,
+      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: two-issuer trial scheduler with 4 NY slots, durable slot IDs, and quotas",
+      "sha256": "975153d59eb8c16441fd89f3cfbba880f0c08bb5371dba09496a28a3b3ba7307",
+      "size_bytes": 17869
+    },
+    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
+      "operation": "M",
+      "originating_pr_number": 311,
+      "originating_commit": "b536191ed981b797ab4a7ed5bb46fbf077eda20b",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: repository durable progress tracking and fail-closed release SHA resolution",
+      "sha256": "c97cb736d01113ae9ee56f057ef9f6f89964400fdf1045ae4e39576e18b87e6a",
+      "size_bytes": 130410
+    },
+    "analyst_dashboard/smart_money/worker.py": {
+      "operation": "M",
+      "originating_pr_number": 311,
+      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: worker two-issuer trial mode, forced ingestion-only, and snapshot decoupling",
+      "sha256": "d09ead611c1dafacc72b1440f7b4f616d970b66e2e148429247547781061a91c",
+      "size_bytes": 47186
+    },
+    "tests/test_sm_act_020_continuous_authorization.py": {
+      "operation": "M",
+      "originating_pr_number": 311,
+      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: continuous authorization telemetry initialization test patch robustness",
+      "sha256": "4d4d85eb4420f629aaa30648bb21eea7a3cbe115ba3aed974ac392d5d9504dd9",
+      "size_bytes": 13042
+    },
+    "tests/test_sm_act_020_sentry_telemetry.py": {
+      "operation": "M",
+      "originating_pr_number": 311,
+      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: sentry telemetry initialization mock robustness",
+      "sha256": "8c93cd1b2a544bc13fdf2f8183ba9c7b9fc369754a302a6c5807766a88476589",
+      "size_bytes": 11690
+    },
+    "tests/test_smart_money_provenance.py": {
       "operation": "A",
-      "originating_pr_number": 309,
-      "originating_commit": "8529e938880c6e2fd71b5365b81d06b0b4aa338e",
-      "governing_requirement": "ARX-SEC-TWO-ISSUER-QUALIFICATION-001: sequential canary pair wrapper qualification specification and evidence report",
-      "sha256": "b4cfbb80ba6897e9bad166f24ae61fa168d82da3d1e446c37aac18ce5f752580",
-      "size_bytes": 4602
+      "originating_pr_number": 311,
+      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: release provenance and conflict detection tests",
+      "sha256": "3b9896cb38c09283235ed372bf185cea9180968d39e7b816d496db19f6b2bc04",
+      "size_bytes": 7018
+    },
+    "tests/test_smart_money_two_issuer_trial.py": {
+      "operation": "A",
+      "originating_pr_number": 311,
+      "originating_commit": "979292356fecc90ab9a514e1406966a81a9ce8e3",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: two-issuer trial authorization, ceilings, monotonic deadlines, and postgres integration tests",
+      "sha256": "9bb1a30bb105792e3f9e5d6fbb08be221502dcde37a1190879e9af8f435d8978",
+      "size_bytes": 67078
+    },
+    "tests/test_smart_money_worker_lifecycle_and_fencing.py": {
+      "operation": "M",
+      "originating_pr_number": 311,
+      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: worker lifecycle memory profiling physical allocation dirtying",
+      "sha256": "d1515ea74413c3548b0faab616cc9ddea82ae39d519b17fbd756ce4bbc23e810",
+      "size_bytes": 18905
     }
   },
   "qualification_framework_files": {
@@ -45,13 +101,13 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "68c54d54155be9af1257b9c8765d7314fd5ad59bea1a313d7de71e2f97fe03bd",
-      "size_bytes": 58201,
+      "sha256": "2760320aca2456c0a9ce6fa2547b8118ee920a020b623efed0d0c766b95ac444",
+      "size_bytes": 58206,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "1695ba330f0a817e819e86c9d1e31f1ef2220e17e0f0d9e17b88cc05140ac474",
-      "size_bytes": 3622,
+      "sha256": "187c46a42a6814f0bdb410a1da7d0ff57f8f86d0a0bbe76e9ff464365a60666b",
+      "size_bytes": 3852,
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {

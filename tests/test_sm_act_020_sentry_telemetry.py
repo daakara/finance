@@ -53,7 +53,7 @@ class TestWorkerSentryInitialization:
 
         mock_scope = MagicMock()
         with patch("sentry_sdk.init") as mock_init, \
-             patch("sentry_sdk.get_global_scope", return_value=mock_scope):
+             patch("sentry_sdk.get_global_scope", create=True, return_value=mock_scope):
             assert init_worker_sentry() is True
             mock_init.assert_called_once()
             _, kwargs = mock_init.call_args

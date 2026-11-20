@@ -31,7 +31,11 @@ def main():
         "tests/test_confluence_cross_component_parity.py",
         "tests/test_financial_correctness_authority_035.py",
         "tests/test_smart_money_backup_retention_safety.py",
-        "tests/test_rq10_manifest_authority_negative_cases.py"
+        "tests/test_rq10_manifest_authority_negative_cases.py",
+        "tests/test_smart_money_provenance.py",
+        "tests/test_smart_money_two_issuer_trial.py",
+        "tests/test_sm_act_020_continuous_authorization.py",
+        "tests/test_smart_money_worker_lifecycle_and_fencing.py",
     ]
 
     cmd = [sys.executable, "-m", "pytest"] + test_files + ["-v"]

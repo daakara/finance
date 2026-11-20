@@ -23,6 +23,7 @@ import uuid
 import json
 import hashlib
 import logging
+import math
 from contextlib import nullcontext
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple, Set, Callable
@@ -34,7 +35,12 @@ from analyst_dashboard.smart_money.storage.config import (
     validate_storage_configuration,
 )
 from analyst_dashboard.smart_money.storage.postgres_connection import get_connection
-from analyst_dashboard.smart_money.continuous_authorization import require_continuous_authorization
+from analyst_dashboard.smart_money.continuous_authorization import (
+    require_continuous_authorization,
+    resolve_release_identity,
+    SCOPE_DAILY_10,
+    SCOPE_TRIAL_2,
+)
 from analyst_dashboard.smart_money.storage.postgres_coordination import (
     acquire_sec_owner_lock,
     release_sec_owner_lock,
@@ -44,7 +50,10 @@ from analyst_dashboard.smart_money.storage.postgres_repository import (
     PostgresSmartMoneyRepository,
     StaleLeaseOwnershipLostError,
 )
-from analyst_dashboard.smart_money.smart_money_scheduler import SmartMoneyTimezoneScheduler
+from analyst_dashboard.smart_money.smart_money_scheduler import (
+    SmartMoneyTimezoneScheduler,
+    TwoIssuerTrialScheduler,
+)
 from analyst_dashboard.smart_money.freshness_authority import NY_TZ
 from analyst_dashboard.data.sec_edgar_fetcher import (
     get_sec_egress_role,
@@ -104,6 +113,13 @@ DEFAULT_GOVERNED_ISSUERS = [
     {"ticker": "JPM", "cik": "0000019617", "company_name": "JPMORGAN CHASE & CO"},
     {"ticker": "V", "cik": "0001403161", "company_name": "VISA INC"},
 ]
+
+TRIAL_2_GOVERNED_ISSUERS = [
+    {"ticker": "NVDA", "cik": "0001045810", "company_name": "NVIDIA CORP"},
+    {"ticker": "AAPL", "cik": "0000320193", "company_name": "APPLE INC"},
+]
+
+PROSPECTIVE_TRIAL_START_BOUNDARY = "2026-11-17T00:00:00Z"
 
 
 def _normalize_to_transaction_obj(tx: Any) -> SmartMoneyTransaction:
@@ -170,6 +186,88 @@ from urllib.parse import urlsplit
 from requests.adapters import HTTPAdapter
 
 
+def resolve_sec_primary_document_url(archive_root: str, doc: str) -> str:
+    """Safely resolves legitimate SEC primary-document path within accession directory.
+
+    Accepts relative paths like 'form4.xml', 'xslF345X06/form4.xml', 'primary_doc.xml'.
+    Rejects directory traversal ('..'), absolute paths, host substitutions, and untrusted URLs.
+    """
+    if not isinstance(doc, str) or not doc.strip():
+        raise RuntimeError("SEC_PRIMARY_DOCUMENT_INVALID")
+    doc_clean = doc.strip()
+
+    # Reject URLs, schemes, host substitutions, backslashes, credentials
+    if (
+        "://" in doc_clean
+        or doc_clean.startswith("//")
+        or doc_clean.startswith("/")
+        or "\\" in doc_clean
+        or ":" in doc_clean
+        or "@" in doc_clean
+        or "?" in doc_clean
+        or "#" in doc_clean
+    ):
+        raise RuntimeError("SEC_PRIMARY_DOCUMENT_INVALID")
+
+    # Reject invalid characters (only alphanumeric, _, ., -, / allowed)
+    if not re.fullmatch(r"^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*$", doc_clean):
+        raise RuntimeError("SEC_PRIMARY_DOCUMENT_INVALID")
+
+    # Reject traversal segments
+    segments = doc_clean.split("/")
+    if any(s in ("", ".", "..") for s in segments):
+        raise RuntimeError("SEC_PRIMARY_DOCUMENT_INVALID")
+
+    # Ensure archive_root is valid SEC archive root
+    if not archive_root.startswith("https://www.sec.gov/Archives/edgar/data/"):
+        raise RuntimeError("SEC_EGRESS_DESTINATION_REJECTED")
+
+    resolved = f"{archive_root}{doc_clean}"
+    if not resolved.startswith(archive_root):
+        raise RuntimeError("SEC_PRIMARY_DOCUMENT_INVALID")
+    return resolved
+
+
+def validate_cycle_duration(val: Any) -> float:
+    """
+    Validates cycle duration setting:
+    - Rejects boolean types.
+    - Rejects non-numeric types.
+    - Rejects non-finite values (NaN, Inf).
+    - Rejects non-positive values (val <= 0).
+    - Rejects excessive values (> 60.0s): config may lower, never raise above 60.0s.
+    Returns validated float.
+    """
+    if isinstance(val, bool):
+        raise ValueError("CYCLE_DURATION_INVALID: Boolean value is not a valid duration")
+    try:
+        fval = float(val)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"CYCLE_DURATION_INVALID: Non-numeric duration value: {val}") from exc
+    if math.isnan(fval) or math.isinf(fval):
+        raise ValueError(f"CYCLE_DURATION_INVALID: Non-finite duration value: {fval}")
+    if fval <= 0.0:
+        raise ValueError(f"CYCLE_DURATION_INVALID: Non-positive duration value: {fval}")
+    if fval > 60.0:
+        raise ValueError(f"CYCLE_DURATION_INVALID: Duration {fval} exceeds maximum allowed ceiling of 60.0s")
+    return fval
+
+
+def parse_sec_datetime_utc(dt_str: str) -> datetime:
+    """Parses SEC acceptanceDateTime or filingDate string into timezone-aware UTC datetime."""
+    if not dt_str or not isinstance(dt_str, str):
+        raise ValueError("Invalid datetime string")
+    s = dt_str.strip().replace(" ", "T")
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    dt = datetime.fromisoformat(s)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt
+
+
 class ContinuousBudgetExceededError(RuntimeError):
     """Raised when total cycle (40) or per-issuer (4) HTTP transmission ceiling is reached."""
     pass
@@ -183,7 +281,7 @@ class ContinuousOutboundSession(requests.Session):
     2. Cooperative cancellation: fail closed if cancellation requested.
     3. 24h continuous authorization: fail closed if expired, future, or invalid via require_continuous_authorization.
     4. Rate limiting: strictly throttles to <= 5.0 requests/sec.
-    5. Per-cycle request budget: maximum 40 HTTP transmissions total per cycle.
+    5. Per-cycle request budget: maximum 40 HTTP transmissions total per cycle (8 for 2-issuer trial).
     6. Per-issuer request budget: maximum 4 HTTP transmissions per issuer.
     """
 
@@ -196,6 +294,7 @@ class ContinuousOutboundSession(requests.Session):
         allow_test_mode: bool = False,
         cancellation_token: Optional[Callable[[], bool]] = None,
         preacquired_lock_conn: Optional[Any] = None,
+        cycle_deadline: Optional[float] = None,
     ):
         super().__init__()
         # Explicitly prohibit urllib3 adapter-managed retries, which would bypass
@@ -208,11 +307,25 @@ class ContinuousOutboundSession(requests.Session):
             self.rate_limiter = rate_limiter
         else:
             self.rate_limiter = RateLimiter(max_per_second=5.0)
-        self.max_total_requests = max_total_requests
-        self.max_per_issuer_requests = max_per_issuer_requests
+
         self.issuers = issuers or DEFAULT_GOVERNED_ISSUERS
+        is_trial = (
+            os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE") == "RECURRING_2_ISSUER_FORM4_TRIAL"
+            or (self.issuers is not None and len(self.issuers) <= 2)
+        )
+        self.hard_max_total_ceiling = 8 if is_trial else 40
+        self.hard_max_issuer_ceiling = 4
+        self.max_total_requests = min(max_total_requests, self.hard_max_total_ceiling)
+        self.max_per_issuer_requests = min(max_per_issuer_requests, self.hard_max_issuer_ceiling)
         self.allow_test_mode = allow_test_mode
         self.cancellation_token = cancellation_token
+        self.cycle_deadline = cycle_deadline
+        self.deadline_monotonic: Optional[float] = None
+        self.daily_requests_baseline: int = 0
+        self.trial_requests_baseline: int = 0
+        self.max_daily_requests: int = 32
+        self.max_trial_requests: int = 96
+        self.is_trial: bool = is_trial
         self.total_transmissions: int = 0
         self.issuer_transmissions: Dict[str, int] = {}
         self.current_issuer: Optional[str] = None
@@ -224,6 +337,12 @@ class ContinuousOutboundSession(requests.Session):
             self.issuer_transmissions[self.current_issuer] = 0
 
     def send(self, request, **kwargs):
+        # 0. Monotonic & cycle deadline check
+        if self.deadline_monotonic is not None and time.monotonic() >= self.deadline_monotonic:
+            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Outbound send blocked by monotonic cycle deadline.")
+        if self.cycle_deadline and time.time() >= self.cycle_deadline:
+            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Outbound send blocked by cycle deadline.")
+
         # Every redirect must remain on the two explicitly trusted SEC domains.
         # Reject non-HTTPS schemes, host confusion and alternate ports.
         target = urlsplit(getattr(request, "url", "") or "")
@@ -255,26 +374,47 @@ class ContinuousOutboundSession(requests.Session):
         if not self.allow_test_mode:
             require_continuous_authorization(issuers=self.issuers)
 
-        # 4. Total cycle request budget check (<= 40)
-        effective_max_total = int(os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE", str(self.max_total_requests)))
+        # 4. Total cycle request budget check (config may lower, never raise)
+        configured_max_total = int(os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE", str(self.max_total_requests)))
+        effective_max_total = min(self.max_total_requests, configured_max_total)
         if self.total_transmissions >= effective_max_total:
             raise ContinuousBudgetExceededError(
                 f"PILOT_BUDGET_EXCEEDED: CYCLE_BUDGET_EXCEEDED: Total cycle HTTP transmissions ({self.total_transmissions}) "
-                f"reached ceiling ({self.max_total_requests}). Outbound send blocked."
+                f"reached ceiling ({effective_max_total}). Outbound send blocked."
             )
 
-        # 5. Per-issuer request budget check (<= 4)
-        effective_max_issuer = int(os.environ.get("ARX_SEC_MAX_REQUESTS_PER_ISSUER", str(self.max_per_issuer_requests)))
+        # 4b. Daily and trial request budgets under two-issuer trial profile
+        if self.is_trial:
+            total_today = self.daily_requests_baseline + self.total_transmissions
+            if total_today >= self.max_daily_requests:
+                raise ContinuousBudgetExceededError(
+                    f"PILOT_BUDGET_EXCEEDED: DAILY_BUDGET_EXCEEDED: Daily HTTP transmissions ({total_today}) "
+                    f"reached ceiling ({self.max_daily_requests}). Outbound send blocked."
+                )
+            total_trial = self.trial_requests_baseline + self.total_transmissions
+            if total_trial >= self.max_trial_requests:
+                raise ContinuousBudgetExceededError(
+                    f"PILOT_BUDGET_EXCEEDED: TRIAL_BUDGET_EXCEEDED: Trial HTTP transmissions ({total_trial}) "
+                    f"reached ceiling ({self.max_trial_requests}). Outbound send blocked."
+                )
+
+        # 5. Per-issuer request budget check (config may lower, never raise)
+        configured_max_issuer = int(os.environ.get("ARX_SEC_MAX_REQUESTS_PER_ISSUER", str(self.max_per_issuer_requests)))
+        effective_max_issuer = min(self.max_per_issuer_requests, configured_max_issuer)
         issuer_key = self.current_issuer or "UNKNOWN"
         count_for_issuer = self.issuer_transmissions.get(issuer_key, 0)
         if count_for_issuer >= effective_max_issuer:
             raise ContinuousBudgetExceededError(
                 f"PILOT_BUDGET_EXCEEDED: ISSUER_BUDGET_EXCEEDED: Issuer {issuer_key} HTTP transmissions ({count_for_issuer}) "
-                f"reached ceiling ({self.max_per_issuer_requests}). Outbound send blocked."
+                f"reached ceiling ({effective_max_issuer}). Outbound send blocked."
             )
 
         # 6. Rate limiting (<= 5.0 req/s)
         self.rate_limiter.acquire()
+        if self.deadline_monotonic is not None and time.monotonic() >= self.deadline_monotonic:
+            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Execution exceeded monotonic cycle duration ceiling after rate-limiting wait.")
+        if self.cycle_deadline and time.time() >= self.cycle_deadline:
+            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Execution exceeded cycle duration ceiling after rate-limiting wait.")
 
         # A grant or kill switch may expire while rate limiting blocks.
         if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() in ("TRUE", "1", "YES"):
@@ -289,9 +429,44 @@ class ContinuousOutboundSession(requests.Session):
         self.issuer_transmissions[issuer_key] = count_for_issuer + 1
         t0 = time.time()
 
-        # 8. Wire transmission; each redirect re-enters send(), while
-        # urllib3 internal retries are disabled above.
+        # 8. Wire transmission with chunked transfer and monotonic deadline enforcement
+        remaining_sec = None
+        if self.deadline_monotonic is not None:
+            remaining_sec = max(0.001, self.deadline_monotonic - time.monotonic())
+            orig_timeout = kwargs.get("timeout")
+            if orig_timeout is None:
+                kwargs["timeout"] = (min(5.0, remaining_sec), remaining_sec)
+            elif isinstance(orig_timeout, (int, float)):
+                kwargs["timeout"] = min(float(orig_timeout), remaining_sec)
+            elif isinstance(orig_timeout, tuple) and len(orig_timeout) == 2:
+                conn_t, read_t = orig_timeout
+                kwargs["timeout"] = (min(float(conn_t), remaining_sec), min(float(read_t), remaining_sec))
+
+        kwargs["stream"] = True
         resp = super().send(request, **kwargs)
+
+        # Ingest chunk-by-chunk with monotonic deadline checks across body transfer
+        if resp.raw is not None and not getattr(resp, "_content_consumed", False):
+            chunks = []
+            try:
+                for chunk in resp.iter_content(chunk_size=4096):
+                    if self.deadline_monotonic is not None and time.monotonic() >= self.deadline_monotonic:
+                        if hasattr(resp, "close"):
+                            try:
+                                resp.close()
+                            except Exception:
+                                pass
+                        raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Response transfer exceeded monotonic cycle deadline.")
+                    if chunk:
+                        chunks.append(chunk)
+                resp._content = b"".join(chunks)
+            except Exception:
+                if hasattr(resp, "close") and resp.raw is not None:
+                    try:
+                        resp.close()
+                    except Exception:
+                        pass
+                raise
 
         duration = round(time.time() - t0, 3)
         self.transmission_log.append({
@@ -326,6 +501,8 @@ class SmartMoneyContinuousPipeline:
         allow_test_mode: bool = False,
         cancellation_token: Optional[Callable[[], bool]] = None,
         preacquired_lock_conn: Optional[Any] = None,
+        ingestion_only: Optional[bool] = None,
+        max_duration_sec: float = 60.0,
     ):
         arx_env = os.environ.get("ARX_ENVIRONMENT", "").strip().lower()
         if arx_env == "production" and allow_test_mode:
@@ -372,19 +549,50 @@ class SmartMoneyContinuousPipeline:
             else None
         )
         self.issuers = issuers or DEFAULT_GOVERNED_ISSUERS
-        # Strict token bucket <= 8.0 req/s (SEC ceiling is 10)
+        scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
+        self.is_trial_2_issuer = bool(
+            scope == "RECURRING_2_ISSUER_FORM4_TRIAL"
+            or (self.issuers is not None and len(self.issuers) == 2 and {i.get("ticker") for i in self.issuers} == {"NVDA", "AAPL"})
+        )
+        env_ingestion_only = os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower()
+
+        if self.is_trial_2_issuer:
+            if env_ingestion_only in ("false", "0", "no"):
+                raise RuntimeError(
+                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: ARX_SMART_MONEY_INGESTION_ONLY cannot be disabled under two-issuer trial profile."
+                )
+            if ingestion_only is False:
+                raise RuntimeError(
+                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: ingestion_only=False is prohibited under two-issuer trial profile."
+                )
+            self.ingestion_only = True
+            self.trial_scheduler = scheduler if isinstance(scheduler, TwoIssuerTrialScheduler) else TwoIssuerTrialScheduler()
+            self.trial_scheduler.validate_issuers(self.issuers)
+        elif ingestion_only is not None:
+            self.ingestion_only = bool(ingestion_only)
+        else:
+            self.ingestion_only = bool(env_ingestion_only in ("true", "1", "yes"))
+
+        env_dur = os.environ.get("ARX_CYCLE_MAX_DURATION_SEC")
+        raw_dur = env_dur if (env_dur is not None and env_dur != "") else max_duration_sec
+        self.max_duration_sec = validate_cycle_duration(raw_dur)
+        self.cycle_deadline: Optional[float] = None
+        self.cycle_deadline_monotonic: Optional[float] = None
+        # Strict token bucket <= 5.0 req/s (SEC ceiling is 10)
         limiter = rate_limiter or RateLimiter(max_per_second=5.0)
         if hasattr(limiter, "max_per_second") and limiter.max_per_second > 5.0:
             limiter = RateLimiter(max_per_second=5.0)
         self.rate_limiter = limiter
+        max_total_reqs = 8 if (self.ingestion_only or len(self.issuers) <= 2) else 40
         self.outbound_session = ContinuousOutboundSession(
             rate_limiter=self.rate_limiter,
-            max_total_requests=40,
+            max_total_requests=max_total_reqs,
             max_per_issuer_requests=4,
             issuers=self.issuers,
             allow_test_mode=self.allow_test_mode,
             cancellation_token=self.cancellation_token,
         )
+        self.outbound_session.is_trial = self.is_trial_2_issuer
         self.sec_fetcher = sec_fetcher
         self.scanner = scanner or SmartMoneyForm4Scanner()
         self.scheduler = scheduler or SmartMoneyTimezoneScheduler()
@@ -420,6 +628,10 @@ class SmartMoneyContinuousPipeline:
           * force overrides NEVER bypass advisory locking, pre/post backup integrity, or snapshot atomicity.
         """
         start_time = datetime.now(timezone.utc)
+        self.cycle_deadline = time.time() + self.max_duration_sec
+        self.cycle_deadline_monotonic = time.monotonic() + self.max_duration_sec
+        self.outbound_session.cycle_deadline = self.cycle_deadline
+        self.outbound_session.deadline_monotonic = self.cycle_deadline_monotonic
         cycle_id = f"sm-cycle-{start_time.strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
         steps_completed: List[str] = []
         errors: List[str] = []
@@ -430,6 +642,9 @@ class SmartMoneyContinuousPipeline:
         reconciliation_hash: Optional[str] = None
         matched_count = 0
         status = "IN_PROGRESS"
+        trial_budget_reserved = False
+        reserved_slot_id = None
+        reserved_ny_date = None
 
         logger.info(
             f"Starting Smart Money 10-step continuous cycle {cycle_id} "
@@ -554,6 +769,22 @@ class SmartMoneyContinuousPipeline:
                 }
             steps_completed.append("STEP_3_DURABLE_DATE_ELIGIBILITY_VERIFIED")
 
+            if self.is_trial_2_issuer:
+                if self.repository is None or not self.current_slot_id:
+                    raise RuntimeError("TRIAL_BUDGET_RESERVATION_UNAVAILABLE")
+                reserved_slot_id = self.current_slot_id
+                reserved_ny_date = reserved_slot_id.split(":", 1)[0]
+                # A committed reservation survives SIGKILL and database rollback.
+                # Keep the full eight-request charge even after clean completion;
+                # actual transmissions remain separate telemetry, never a refund.
+                self.repository.reserve_trial_cycle_budget(
+                    trial_id=self.trial_scheduler.trial_id,
+                    slot_id=reserved_slot_id,
+                    ny_date=reserved_ny_date,
+                )
+                trial_budget_reserved = True
+                steps_completed.append("STEP_3_TRIAL_BUDGET_RESERVED")
+
             # ── Step 4: Pre-ingestion backup & R2 upload ──────────────────────
             pre_backup_manifest = self._step4_pre_backup(cycle_id)
             steps_completed.append("STEP_4_PRE_BACKUP_COMPLETED")
@@ -565,7 +796,7 @@ class SmartMoneyContinuousPipeline:
 
             # ── Step 6: Genuine SEC Form 4 ingestion ──────────────────────────
             self._check_in_flight_authorization(step_name="STEP_6_SEC_INGESTION_START")
-            raw_filings = self._step6_ingest_form4_filings()
+            raw_filings = self._step6_ingest_form4_filings(as_of=as_of)
             steps_completed.append("STEP_6_SEC_FORM4_INGESTED")
 
             # ── Step 7: Transaction normalization & reconciliation receipt ────
@@ -576,19 +807,32 @@ class SmartMoneyContinuousPipeline:
             reconciliation_hash = receipt_meta.get("reconciliation_hash")
             steps_completed.append("STEP_7_TRANSACTIONS_NORMALIZED_AND_RECONCILED")
 
-            # ── Step 8: Atomic snapshot publication ───────────────────────────
-            self._check_in_flight_authorization(step_name="STEP_8_ATOMIC_SNAPSHOT_PUBLICATION")
-            snapshot_meta = self._step8_publish_snapshot(
-                parsed_txs,
-                receipt_meta,
-                cycle_id,
-                run_request_id=run_request_id,
-                lease_token=lease_token,
-                as_of=as_of,
-            )
-            snapshot_id = snapshot_meta.get("snapshot_id")
-            matched_count = snapshot_meta.get("matched_count", 0)
-            steps_completed.append("STEP_8_ATOMIC_SNAPSHOT_PUBLISHED")
+            # ── Step 8: Atomic snapshot publication or Ingestion-Only completion ──
+            if self.ingestion_only:
+                self._check_in_flight_authorization(step_name="STEP_8_INGESTION_ONLY_COMPLETION")
+                if self.repository and run_request_id and lease_token:
+                    self.repository.complete_run_request(
+                        run_request_id,
+                        result_generation_id=receipt_id,
+                        lease_token=lease_token,
+                        status="COMPLETED",
+                    )
+                steps_completed.append("STEP_8_INGESTION_ONLY_COMPLETED")
+                snapshot_id = None
+                matched_count = 0
+            else:
+                self._check_in_flight_authorization(step_name="STEP_8_ATOMIC_SNAPSHOT_PUBLICATION")
+                snapshot_meta = self._step8_publish_snapshot(
+                    parsed_txs,
+                    receipt_meta,
+                    cycle_id,
+                    run_request_id=run_request_id,
+                    lease_token=lease_token,
+                    as_of=as_of,
+                )
+                snapshot_id = snapshot_meta.get("snapshot_id")
+                matched_count = snapshot_meta.get("matched_count", 0)
+                steps_completed.append("STEP_8_ATOMIC_SNAPSHOT_PUBLISHED")
 
             # ── Step 9: Post-ingestion backup ─────────────────────────────────
             try:
@@ -616,9 +860,35 @@ class SmartMoneyContinuousPipeline:
                 status = "FAILED"
             raise
         finally:
+            if trial_budget_reserved:
+                try:
+                    self.repository.record_trial_cycle_audit(
+                        trial_id=self.trial_scheduler.trial_id,
+                        slot_id=reserved_slot_id,
+                        ny_date=reserved_ny_date,
+                        slot_index=getattr(self, "current_slot_index", 0),
+                        status=status,
+                        requests_transmitted=self.outbound_session.total_transmissions,
+                        error="; ".join(errors) if errors else None,
+                    )
+                except Exception as audit_err:
+                    logger.error(f"Failed to record trial cycle audit: {audit_err}")
+
             # Advisory lock release in finally block
+            t_cleanup_start = time.monotonic()
             self._cleanup_lock()
+            t_cleanup_end = time.monotonic()
+            cleanup_dur = round(t_cleanup_end - t_cleanup_start, 3)
             steps_completed.append("LOCK_RELEASED_CLEANLY")
+            cleanup_after_expiry = False
+            if self.cycle_deadline_monotonic is not None and t_cleanup_end > self.cycle_deadline_monotonic:
+                cleanup_after_expiry = True
+                overshoot = round(t_cleanup_end - self.cycle_deadline_monotonic, 3)
+                logger.warning(
+                    f"CLEANUP_AFTER_EXPIRY: Bounded cleanup finished after cycle execution expiry "
+                    f"(cleanup_duration={cleanup_dur}s, overshoot={overshoot}s)"
+                )
+                steps_completed.append(f"CLEANUP_AFTER_EXPIRY:{cleanup_dur}s")
 
         return {
             "cycle_id": cycle_id,
@@ -634,6 +904,8 @@ class SmartMoneyContinuousPipeline:
             "post_backup_id": post_backup_manifest.get("backup_id") if post_backup_manifest else None,
             "errors": errors,
             "duration_sec": (datetime.now(timezone.utc) - start_time).total_seconds(),
+            "cleanup_duration_sec": cleanup_dur,
+            "cleanup_after_expiry": cleanup_after_expiry,
         }
 
     # ── Pipeline Step Implementations ─────────────────────────────────────────
@@ -672,33 +944,11 @@ class SmartMoneyContinuousPipeline:
     def _check_in_flight_authorization(self, step_name: str = "EXECUTION") -> None:
         """
         Static stage-boundary authorization and cooperative cancellation check within the worker process.
-
-        Guarantees that within the process lifecycle (or in local supervisor testing),
-        if ARX_SEC_EGRESS_ROLE is set to DISABLED/REVOKED or fails to be OWNER in live mode,
-        or if cooperative cancellation has been requested, subsequent steps (specifically
-        Step 6 SEC egress and Step 8 snapshot publication) are aborted fail-closed without
-        mutating public state or publishing unverified snapshots.
-
-        OPERATIONAL BOUNDARY NOTE (Railway / Containerized Runtime):
-        1. Preventing new cycles through configuration:
-           Setting ARX_SEC_EGRESS_ROLE != OWNER at process startup prevents any worker from
-           running cycles, aborting at Step 1 (_step1_preflight) before advisory locks or DB writes.
-        2. Cooperative cancellation within an active process:
-           In-process cancellation tokens (cancellation_token) or self.cancel() are evaluated
-           at discrete stage boundaries. In containerized runtimes (e.g. Railway), updating
-           platform environment variables does NOT dynamically rewrite the private memory space
-           (/proc/self/environ) of an already-running container process without container reload/restart.
-        3. Active worker termination via platform controls:
-           Immediate cessation of an active worker hung on blocking I/O requires container lifecycle
-           controls (SIGTERM/SIGKILL, 'railway down', or scaling replicas to 0).
-        4. Database advisory lock cleanup:
-           PostgreSQL automatically releases session-level advisory locks (LOCK_SEC_EGRESS_OWNER)
-           upon TCP client disconnection/process termination, guaranteeing zero orphaned locks.
-        5. Active snapshot preservation:
-           The active snapshot pointer in scanner_active_snapshots is only advanced at Step 8.
-           Across all stop or abort scenarios prior to Step 8, the pointer remains intact,
-           ensuring 100% continuous read-only Radar uptime.
         """
+        # 0a. Check cycle deadline
+        if self.cycle_deadline and time.time() >= self.cycle_deadline:
+            raise RuntimeError(f"CYCLE_TIMEOUT_EXCEEDED: Execution halted at {step_name} by cycle duration ceiling.")
+
         # 0. Emergency stop check
         if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").strip().upper() in ("TRUE", "1", "YES"):
             raise RuntimeError(f"EMERGENCY_STOP_ACTIVE: Execution halted at {step_name} by emergency stop killswitch.")
@@ -729,6 +979,27 @@ class SmartMoneyContinuousPipeline:
                 f"IN_FLIGHT_REVOCATION_ABORT: Execution aborted at {step_name}. "
                 f"Live worker requires ARX_SEC_EGRESS_ROLE=OWNER. Active: '{role or 'UNSET'}'."
             )
+
+    def _require_verified_owner_lock(self) -> None:
+        """Require the exclusive bigint lock on this exact PostgreSQL session."""
+        conn = self._lock_conn
+        if conn is None or getattr(conn, "closed", 0):
+            raise RuntimeError("LOCK_LOST_BEFORE_COMMIT: Owner connection unavailable")
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT EXISTS (
+                    SELECT 1 FROM pg_locks
+                    WHERE locktype = 'advisory' AND pid = pg_backend_pid()
+                      AND granted AND mode = 'ExclusiveLock' AND objsubid = 1
+                      AND classid::bigint = %s AND objid::bigint = %s
+                ) AS owner_lock_held""",
+                ((LOCK_SEC_EGRESS_OWNER >> 32) & 0xFFFFFFFF,
+                 LOCK_SEC_EGRESS_OWNER & 0xFFFFFFFF),
+            )
+            row = cur.fetchone()
+            held = row.get("owner_lock_held") if isinstance(row, dict) else row[0] if row else False
+            if not held:
+                raise RuntimeError("LOCK_LOST_BEFORE_COMMIT: Session lacks exclusive SEC owner lock")
 
     def _step2_claim_advisory_lock(self) -> None:
         """Acquires exclusive session advisory lock (LOCK_SEC_EGRESS_OWNER)."""
@@ -791,6 +1062,59 @@ class SmartMoneyContinuousPipeline:
                 )
 
         # 2. Query durable state under lock
+        if self.is_trial_2_issuer:
+            ny_now = self.trial_scheduler.get_ny_now()
+            today_ny_str = ny_now.date().isoformat()
+            as_of_date = None
+            if as_of:
+                try:
+                    as_of_date = datetime.strptime(as_of, "%Y-%m-%d").date()
+                except Exception as e:
+                    raise RuntimeError(
+                        f"INVALID_AS_OF_DATE: Malformed as_of format '{as_of}', expected YYYY-MM-DD: {e}"
+                    ) from e
+
+            # Trial scheduling is slot-based. A receipt from an earlier slot
+            # must not suppress all remaining slots in the same NY day.
+            progress = None
+            if self.repository:
+                try:
+                    progress = self.repository.get_trial_progress(
+                        trial_id=self.trial_scheduler.trial_id,
+                        ny_date=today_ny_str,
+                        conn=self._lock_conn,
+                    )
+                except Exception as e:
+                    raise RuntimeError(
+                        f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for trial progress failed under lock: {e}"
+                    ) from e
+            elif not self.allow_test_mode:
+                raise RuntimeError("DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Missing repository outside authorized test mode.")
+
+            if progress:
+                self.outbound_session.daily_requests_baseline = progress.get("requests_today", 0)
+                self.outbound_session.trial_requests_baseline = progress.get("requests_trial", 0)
+
+            eval_dt = None
+            if as_of_date:
+                eval_dt = datetime(
+                    as_of_date.year,
+                    as_of_date.month,
+                    as_of_date.day,
+                    ny_now.hour,
+                    ny_now.minute,
+                    tzinfo=NY_TZ,
+                )
+
+            should_run, slot_id, reason = self.trial_scheduler.evaluate_execution_eligibility(
+                now=eval_dt,
+                progress=progress,
+                issuers=self.issuers,
+                force=force,
+            )
+            self.current_slot_id = slot_id
+            return should_run, reason
+
         last_executed_ny_date = None
         if self.repository:
             # Confirm lock connection is valid if present
@@ -799,30 +1123,57 @@ class SmartMoneyContinuousPipeline:
                     "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Advisory lock connection closed prior to eligibility check."
                 )
 
-            try:
-                snap = self.repository.get_latest_active_snapshot(conn=self._lock_conn)
-            except Exception as e:
-                raise RuntimeError(
-                    f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for latest active snapshot failed: {e}"
-                ) from e
-
-            if snap is not None:
-                as_of_val = snap.get("data_as_of")
-                if not as_of_val:
-                    raise RuntimeError(
-                        "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Active snapshot record missing mandatory 'data_as_of' field."
-                    )
+            if self.ingestion_only:
                 try:
-                    if isinstance(as_of_val, str):
-                        last_executed_ny_date = datetime.strptime(as_of_val[:10], "%Y-%m-%d").date()
-                    elif hasattr(as_of_val, "date"):
-                        last_executed_ny_date = as_of_val.date()
-                    else:
-                        raise ValueError(f"Unsupported data_as_of type: {type(as_of_val)}")
+                    receipt = self.repository.get_latest_reconciliation_receipt(
+                        covered_tickers=[i["ticker"] for i in self.issuers],
+                        conn=self._lock_conn,
+                    )
+                    if receipt:
+                        wm = receipt.get("certified_watermark") or receipt.get("interval_end")
+                        if wm:
+                            if isinstance(wm, str):
+                                s = wm.strip().replace(" ", "T")
+                                if s.endswith("Z"):
+                                    s = s[:-1] + "+00:00"
+                                dt_utc = datetime.fromisoformat(s)
+                            elif isinstance(wm, datetime):
+                                dt_utc = wm
+                            else:
+                                dt_utc = None
+                            if dt_utc is not None:
+                                if dt_utc.tzinfo is None:
+                                    dt_utc = dt_utc.replace(tzinfo=timezone.utc)
+                                last_executed_ny_date = dt_utc.astimezone(NY_TZ).date()
                 except Exception as e:
                     raise RuntimeError(
-                        f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Active snapshot has unparseable or malformed data_as_of '{as_of_val}': {e}"
+                        f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for latest reconciliation receipt failed under lock: {e}"
                     ) from e
+            else:
+                try:
+                    snap = self.repository.get_latest_active_snapshot(conn=self._lock_conn)
+                except Exception as e:
+                    raise RuntimeError(
+                        f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for latest active snapshot failed: {e}"
+                    ) from e
+
+                if snap is not None:
+                    as_of_val = snap.get("data_as_of")
+                    if not as_of_val:
+                        raise RuntimeError(
+                            "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Active snapshot record missing mandatory 'data_as_of' field."
+                        )
+                    try:
+                        if isinstance(as_of_val, str):
+                            last_executed_ny_date = datetime.strptime(as_of_val[:10], "%Y-%m-%d").date()
+                        elif hasattr(as_of_val, "date"):
+                            last_executed_ny_date = as_of_val.date()
+                        else:
+                            raise ValueError(f"Unsupported data_as_of type: {type(as_of_val)}")
+                    except Exception as e:
+                        raise RuntimeError(
+                            f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Active snapshot has unparseable or malformed data_as_of '{as_of_val}': {e}"
+                        ) from e
         elif not self.allow_test_mode:
             raise RuntimeError(
                 "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Missing repository outside authorized test mode."
@@ -972,9 +1323,9 @@ class SmartMoneyContinuousPipeline:
     _step2_and_3_pre_backup = _step4_pre_backup
     _step4_freshness_gate_check = _step5_freshness_gate_check
 
-    def _step6_ingest_form4_filings(self) -> List[Dict[str, Any]]:
+    def _step6_ingest_form4_filings(self, as_of: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Fetches SEC Form 4 filings for the 10 governed issuers at rate <= 8.0 req/s.
+        Fetches SEC Form 4 filings for the governed issuers.
         Persists raw filings into PostgreSQL form4_raw_filings idempotently.
         """
         raw_filings: List[Dict[str, Any]] = []
@@ -982,7 +1333,7 @@ class SmartMoneyContinuousPipeline:
         # In-flight authorization check before starting ingestion loop
         self._check_in_flight_authorization(step_name="STEP_6_SEC_INGESTION_START")
 
-        max_total_ceiling = int(os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE", "40"))
+        max_total_ceiling = 8 if (self.ingestion_only or len(self.issuers) <= 2) else int(os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE", "40"))
         cycle_request_count = 0
 
         for issuer in self.issuers:
@@ -1010,7 +1361,12 @@ class SmartMoneyContinuousPipeline:
                 cycle_request_count += 1
             else:
                 # Query SEC EDGAR Atom feed or use database-cached filings via guarded session
-                filing_dicts = self._fetch_filings_from_sec(ticker=ticker, cik=cik, company_name=company_name)
+                filing_dicts = self._fetch_filings_from_sec(
+                    ticker=ticker,
+                    cik=cik,
+                    company_name=company_name,
+                    as_of=as_of,
+                )
                 cycle_request_count += 1
 
             for filing in filing_dicts:
@@ -1027,12 +1383,18 @@ class SmartMoneyContinuousPipeline:
         # Never publish a new empty snapshot after a successful but data-free scan.
         # Individual issuers may legitimately have no recent filings, but a total
         # absence of new filings must preserve the existing active snapshot.
-        if not raw_filings and not self.allow_test_mode:
+        if not raw_filings and not self.allow_test_mode and not self.ingestion_only:
             raise RuntimeError("NO_NEW_FORM4_FILINGS: Active Smart Money snapshot preserved.")
         logger.info(f"Ingested {len(raw_filings)} Form 4 filing(s) across {len(self.issuers)} governed issuers.")
         return raw_filings
 
-    def _fetch_filings_from_sec(self, ticker: str, cik: str, company_name: str) -> List[Dict[str, Any]]:
+    def _fetch_filings_from_sec(
+        self,
+        ticker: str,
+        cik: str,
+        company_name: str,
+        as_of: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """Read all new Form 4/4-A filings within issuer budget via guarded HTTP.
 
         Default production path: worker -> pipeline -> ContinuousOutboundSession.
@@ -1049,7 +1411,7 @@ class SmartMoneyContinuousPipeline:
             "Accept": "application/json, application/xml, text/plain",
         })
 
-        def receive(url: str) -> requests.Response:
+        def receive(url: str, allow_404: bool = False) -> Optional[requests.Response]:
             # No hidden HTTP adapter retries. All sends/redirects pass through
             # the guarded session's authorization, budget, rate and host gates.
             response = self.outbound_session.get(
@@ -1057,11 +1419,31 @@ class SmartMoneyContinuousPipeline:
             )
             if response.status_code == 429:
                 raise RuntimeError("SEC_RATE_LIMITED_429")
+            if response.status_code == 404:
+                if allow_404:
+                    return None
+                raise RuntimeError("SEC_UPSTREAM_HTTP_ERROR: 404 Not Found")
             if response.status_code != 200:
-                raise RuntimeError("SEC_UPSTREAM_HTTP_ERROR")
+                raise RuntimeError(f"SEC_UPSTREAM_HTTP_ERROR: {response.status_code}")
             return response
 
+        # Determine prospective start boundary and public-availability cutoff
+        prospective_start_utc: Optional[datetime] = None
+        if self.is_trial_2_issuer and hasattr(self, "trial_scheduler"):
+            st = self.trial_scheduler.start_date
+            prospective_start_utc = datetime(st.year, st.month, st.day, 0, 0, tzinfo=NY_TZ).astimezone(timezone.utc)
+        elif os.environ.get("ARX_PROSPECTIVE_START_UTC"):
+            prospective_start_utc = parse_sec_datetime_utc(os.environ["ARX_PROSPECTIVE_START_UTC"])
+
+        public_cutoff_utc: Optional[datetime] = None
+        if as_of:
+            public_cutoff_utc = self._snapshot_cutoff(as_of)
+        else:
+            public_cutoff_utc = datetime.now(timezone.utc)
+
         catalog = receive(f"https://data.sec.gov/submissions/CIK{str(cik).zfill(10)}.json")
+        if catalog is None:
+            raise RuntimeError("SEC_UPSTREAM_HTTP_ERROR: Submissions catalog not found")
         try:
             recent = catalog.json()["filings"]["recent"]
             forms = recent["form"]
@@ -1106,6 +1488,22 @@ class SmartMoneyContinuousPipeline:
                 r"[0-9]{10}-[0-9]{2}-[0-9]{6}", accession
             ):
                 raise RuntimeError("SEC_ACCESSION_INVALID")
+
+            # Prospective boundary and public-cutoff check
+            try:
+                acc_dt = parse_sec_datetime_utc(accepted_dates[index])
+            except Exception:
+                try:
+                    acc_dt = parse_sec_datetime_utc(f"{filings_dates[index]}T00:00:00Z")
+                except Exception:
+                    acc_dt = None
+
+            if acc_dt is not None:
+                if public_cutoff_utc and acc_dt > public_cutoff_utc:
+                    continue
+                if prospective_start_utc and acc_dt < prospective_start_utc:
+                    continue
+
             if accession not in known_accessions and accession not in seen_accessions:
                 new_indices.append(index)
             seen_accessions.add(accession)
@@ -1119,21 +1517,40 @@ class SmartMoneyContinuousPipeline:
             doc = primary_documents[index]
             if not isinstance(accession, str) or not re.fullmatch(r"[0-9]{10}-[0-9]{2}-[0-9]{6}", accession):
                 raise RuntimeError("SEC_ACCESSION_INVALID")
-            if not isinstance(doc, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,180}", doc):
-                raise RuntimeError("SEC_PRIMARY_DOCUMENT_INVALID")
 
             accession_compact = accession.replace("-", "")
             archive_root = (
                 f"https://www.sec.gov/Archives/edgar/data/"
                 f"{int(cik)}/{accession_compact}/"
             )
-            response = receive(archive_root + doc)
-            xml = response.text
-            source_url = archive_root + doc
-            if "<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower():
-                response = receive(archive_root + accession + ".txt")
-                xml = Form4XmlParser.extract_xml_from_submission_text(response.text)
-                source_url = archive_root + accession + ".txt"
+            # Safely resolve primary document URL (validates doc path, rejects traversal & host substitution)
+            resolved_doc_url = resolve_sec_primary_document_url(archive_root, doc)
+            response = receive(resolved_doc_url, allow_404=True)
+            xml = response.text if response is not None else ""
+            source_url = resolved_doc_url
+
+            # If the primary document was 404 or does not contain ownershipDocument/xml,
+            # attempt explicitly classified fallback representations:
+            # 1. Cleaned filename if nested path was provided
+            # 2. Complete submission text (.txt)
+            # Failures like 429, budget exhaustion, cancellation, auth expiry, deadline
+            # are raised immediately by receive() or OutboundSession.send() and NEVER swallowed.
+            if response is None or ("<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower()):
+                clean_doc = doc.split("/")[-1] if "/" in doc else None
+                if clean_doc and clean_doc != doc:
+                    clean_url = resolve_sec_primary_document_url(archive_root, clean_doc)
+                    clean_resp = receive(clean_url, allow_404=True)
+                    if clean_resp is not None and clean_resp.status_code == 200:
+                        c_text = clean_resp.text
+                        if "<ownershipdocument" in c_text.lower() or "<xml" in c_text.lower():
+                            xml = c_text
+                            source_url = clean_url
+                if not xml or ("<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower()):
+                    txt_url = resolve_sec_primary_document_url(archive_root, f"{accession}.txt")
+                    txt_resp = receive(txt_url)
+                    if txt_resp is not None:
+                        xml = Form4XmlParser.extract_xml_from_submission_text(txt_resp.text)
+                        source_url = txt_url
             if not xml or "<ownershipdocument" not in xml.lower():
                 raise RuntimeError("SEC_FORM4_XML_INVALID")
 
@@ -1294,9 +1711,25 @@ class SmartMoneyContinuousPipeline:
         acc_inventory = [f.get("accession_number") for f in raw_filings if f.get("accession_number")]
         source_hashes = {f.get("accession_number"): f.get("content_hash") for f in raw_filings if f.get("accession_number")}
 
+        # Historical coverage for trial profile is always PARTIAL (never marks historical gaps as COMPLETE)
+        if self.ingestion_only or os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE") == "RECURRING_2_ISSUER_FORM4_TRIAL":
+            coverage_status = "PARTIAL"
+            failure_reasons = [f"UNRESOLVED_AMENDMENT:{a}" for a in unresolved_amendments]
+            failure_reasons.append("TRIAL_INTERVAL_PARTIAL_COVERAGE")
+        else:
+            coverage_status = "PARTIAL" if unresolved_amendments else "COMPLETE"
+            failure_reasons = [f"UNRESOLVED_AMENDMENT:{a}" for a in unresolved_amendments]
+
+        if self.is_trial_2_issuer and hasattr(self, "trial_scheduler"):
+            cur_slot = getattr(self, "current_slot_id", None)
+            failure_reasons.append({
+                "trial_id": self.trial_scheduler.trial_id,
+                "slot_id": cur_slot,
+            })
+
         receipt_meta = {
             "receipt_id": str(uuid.uuid4()),
-            "interval_start": (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "interval_start": PROSPECTIVE_TRIAL_START_BOUNDARY if self.ingestion_only else (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "interval_end": watermark,
             "certified_watermark": watermark,
             "receipt_version": 1,
@@ -1304,15 +1737,26 @@ class SmartMoneyContinuousPipeline:
             "accounted_count": len(raw_filings) - len(unresolved_amendments),
             "missing_count": 0,
             "material_gap_count": len(unresolved_amendments),
-            "coverage_status": "PARTIAL" if unresolved_amendments else "COMPLETE",
-            "failure_reasons": [f"UNRESOLVED_AMENDMENT:{a}" for a in unresolved_amendments],
+            "coverage_status": coverage_status,
+            "failure_reasons": failure_reasons,
             "covered_ciks": cycle_ciks,
             "covered_tickers": cycle_tickers,
             "accession_inventory": acc_inventory,
             "source_hashes": source_hashes,
             "reconciliation_hash": reconciliation_hash,
-            "release_sha": os.environ.get("ARX_RELEASE_SHA", "b9588f95188ab7e204474773f67dacbc9f6afb1f"),
+            "release_sha": resolve_release_identity(),
+            "trial_id": getattr(self.trial_scheduler, "trial_id", None) if hasattr(self, "trial_scheduler") else None,
+            "slot_id": getattr(self, "current_slot_id", None),
         }
+
+        # Pre-commit invariants verification:
+        # 1. Monotonic cycle deadline check
+        if self.cycle_deadline_monotonic is not None and time.monotonic() >= self.cycle_deadline_monotonic:
+            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Absolute cycle deadline expired prior to database commit.")
+        # 2. Continuous authorization check
+        if not self.allow_test_mode:
+            require_continuous_authorization(issuers=self.issuers)
+            self._require_verified_owner_lock()
 
         if self.repository:
             self.repository.save_reconciliation_receipt(receipt_meta, conn=conn)
@@ -1394,7 +1838,7 @@ class SmartMoneyContinuousPipeline:
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         cutoff = self._snapshot_cutoff(as_of)
         as_of_watermark = cutoff.isoformat().replace("+00:00", "Z")
-        release_sha = os.environ.get("ARX_RELEASE_SHA", "b9588f95188ab7e204474773f67dacbc9f6afb1f")
+        release_sha = resolve_release_identity()
 
         # 1. Reconciliation gate check
         recon_hash = receipt_meta.get("reconciliation_hash") if receipt_meta else None
