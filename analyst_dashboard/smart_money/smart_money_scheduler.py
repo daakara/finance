@@ -253,7 +253,7 @@ class TwoIssuerTrialScheduler:
     """
     def __init__(
         self,
-        trial_id: str = TRIAL_ID_DEFAULT,
+        trial_id: Optional[str] = None,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         slots: Tuple[Tuple[int, int], ...] = TRIAL_DAILY_SLOTS,
@@ -263,7 +263,7 @@ class TwoIssuerTrialScheduler:
         max_requests_per_day: int = MAX_REQUESTS_PER_DAY,
         max_requests_per_trial: int = MAX_REQUESTS_PER_TRIAL,
     ):
-        self.trial_id = trial_id or TRIAL_ID_DEFAULT
+        self.trial_id = trial_id or os.environ.get("ARX_TRIAL_ID") or TRIAL_ID_DEFAULT
         env_sd = os.environ.get("ARX_TRIAL_START_DATE")
         self.start_date = start_date or (date.fromisoformat(env_sd) if env_sd else TRIAL_START_DATE_DEFAULT)
         env_ed = os.environ.get("ARX_TRIAL_END_DATE")

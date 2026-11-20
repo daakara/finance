@@ -615,6 +615,7 @@ class SmartMoneyContinuousPipeline:
         recovery_token: Optional[str] = None,
         recovery_reason: Optional[str] = None,
         recovery_scope: Optional[str] = None,
+        expected_trial_slot_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Executes the authoritative 10-step ingestion cycle.
@@ -733,6 +734,11 @@ class SmartMoneyContinuousPipeline:
                 recovery_reason=recovery_reason or os.environ.get("ARX_RECOVERY_REASON"),
                 recovery_scope=recovery_scope or os.environ.get("ARX_RECOVERY_SCOPE", "SINGLE_CYCLE_RECOVERY"),
             )
+            if expected_trial_slot_id is not None and (
+                not self.is_trial_2_issuer
+                or getattr(self, "current_slot_id", None) != expected_trial_slot_id
+            ):
+                should_run, sched_reason = False, "TRIAL_SLOT_DELIVERY_EXPIRED"
             if not should_run:
                 logger.info(
                     f"DURABLE_ELIGIBILITY_DECLINED_UNDER_LOCK for cycle {cycle_id}: {sched_reason}"
