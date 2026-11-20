@@ -179,7 +179,7 @@ All network interactions and database writes are strictly governed by `SharedExe
 | **Overall Wall-Clock Deadline** | `--overall-deadline-seconds` | **1,200.0s (20m)** | Hard global deadline. Exceeding raises `EXECUTION_BUDGET_TIMEOUT`. |
 | **Pacing Delay** | `--sleep-seconds` | 0.35 seconds | Inter-request delay ensuring rate $\le 171.4\text{ req/min} < 200\text{ req/min}$ rate limit. |
 | **Checkpoint Interval** | `--checkpoint-interval` | 50 candidates | Incremental state written to `--checkpoint-summary-path`. |
-| **Safe Resume Support** | `--resume` | Flag | Resumes from checkpoint, skipping already-committed symbols without duplicate requests. |
+| **Safe Resume Support** | `--resume` | Flag | Dry-run mode only (`--apply` strictly disabled). Resumes from verified checkpoint, skipping completed candidates. |
 
 ### A. Request Accounting & Retry Sequence Exhaustion
 1. **Immediate Charging Before Transmission:**
@@ -189,24 +189,20 @@ All network interactions and database writes are strictly governed by `SharedExe
 3. **Exhaustion Inside Retry Sequence:**
    If the aggregate cap is exhausted during a retry sequence for an incomplete symbol, execution aborts immediately before the retry request can be transmitted over the wire. Qualified in `test_aggregate_request_limits_and_checkpoint_behavior`.
 
-### B. Resume Contract & Binding Invariants
-1. **Cryptographic & Scope Binding:**
-   Checkpoints are bound to:
-   - `target_identity`: Target database canonical path.
-   - `manifest_binding`: `manifest_sha256`, candidate `membership_hash`, and candidate count.
-   - `scope_binding`: `cutoff` ($T_{\text{completed}}$), `requested_start`, `requested_end`, `feed`, `adjustment`, and execution `mode`.
-   - `execution_identity`: `execution_id`, `timestamp_utc`, runtime deployment ID, and git revision.
-2. **Fail-Closed Rejection of Incompatible Checkpoints:**
-   Any mismatch in target path, manifest SHA, membership hash, cutoff, requested dates, feed, or adjustment aborts immediately with `INCOMPATIBLE_CHECKPOINT_REJECTED`. Unparseable or malformed files fail closed with `CORRUPTED_CHECKPOINT_REJECTED`.
-3. **Preservation of Consumed Budgets Across Resume:**
-   Resuming an execution restores `requests_transmitted`, `retries_transmitted`, and `fallbacks_transmitted` from the checkpoint. Resumed attempts cannot reset or exceed aggregate limits; if consumed requests already equal or exceed the cap, the resumed process halts immediately with `EXECUTION_BUDGET_EXHAUSTED`.
-4. **Verification of Completed Work Before Skipping:**
-   Before skipping any candidate recorded as `APPLIED` in a checkpoint, the engine connects to the target store in read-only mode (`?mode=ro`) and asserts that valid bars and split-adjusted Alpaca SIP provenance actually exist in SQLite. Any candidate lacking verified store records is re-processed.
-5. **Handling of Crash Between Commit and Checkpoint:**
-   Database writes for each candidate execute in a single atomic SQLite transaction (`save_daily_candles_with_evidence`). If an abnormal process termination occurs after a candidate transaction commits but before the checkpoint file is updated on disk:
-   - Committed bars and provenance remain safely and durably persisted in SQLite.
-   - On subsequent resumed execution, the uncheckpointed symbol is re-evaluated.
-   - The engine's pre-flight inspection detects that the symbol already has complete, valid Alpaca SIP history through the requested end session and classifies the candidate as `SKIPPED` without issuing redundant network requests or performing redundant writes. Idempotency is fully preserved.
+### B. Interruption, Checkpoint Handling & Resume Contract
+1. **Automatic Resume Strictly Disabled for Production Apply:**
+   Automatic `--resume` is strictly disabled for production apply mode (`apply_writes=True`). Passing `--resume` with `--apply` fails closed immediately with `AUTOMATIC_RESUME_DISABLED_IN_APPLY_MODE` prior to opening database connections, evaluating candidates, or transmitting any network requests. Hard process termination (SIGKILL, exit, OOM) cannot trigger automatic continuation.
+2. **Fail-Closed on Missing or Corrupt Checkpoint:**
+   In dry-run mode, `--resume` requires an explicit `--checkpoint-summary-path`. If the checkpoint file is missing or unreadable, the engine fails closed immediately (`CHECKPOINT_NOT_FOUND` / `CORRUPTED_CHECKPOINT_REJECTED`). It never silently falls back or starts a fresh replacement execution.
+3. **Honest Recording of Interrupted Executions:**
+   When an execution is interrupted (via budget cap exhaustion, loop timeout, fatal write error, or process signal):
+   - Already committed per-symbol work and split-adjusted Alpaca SIP provenance records remain durably preserved in SQLite under their atomic transactions.
+   - The execution summary records incomplete execution honestly: batch outcome is set to `PARTIAL_SUCCESS` (if partial writes completed) or `FAILURE`, unvisited symbols are marked `UNPROCESSED`, and `incomplete_execution_note` records required next steps.
+   - An incremental checkpoint is persisted to disk if `--checkpoint-summary-path` was specified.
+4. **Mandatory Fresh Read-Only Assessment Before Re-Planning:**
+   Budgets are not automatically reset to continue the interrupted execution. Operators must run a fresh read-only assessment (`audit_radar_universe_readiness_166`) against the authoritative store to evaluate what was actually committed, and only then plan a new bounded run with clean budgets for remaining stale symbols.
+5. **Fail-Closed Rejection of Incompatible Dry-Run Checkpoints:**
+   In dry-run mode, checkpoints are bound to `manifest_sha256`, candidate `membership_hash`, target path, cutoff ($T_{\text{completed}}$), requested dates, feed, and adjustment. Any mismatch aborts immediately with `INCOMPATIBLE_CHECKPOINT_REJECTED`. Consumed budgets are restored from the checkpoint, preventing budget reset during dry-run validation.
 
 ---
 
@@ -216,8 +212,8 @@ Live file-copy rollback is strictly prohibited because SQLite WAL mode maintains
 
 ### Pre-Condition: Independently Established Maintenance Quiescence
 > [!IMPORTANT]
-> **A checkpoint is NOT proof that users are stopped.**
-> Recovery requires independently established maintenance quiescence before any destructive restore operations. Callers must independently halt serving containers, background workers, and scheduler jobs, passing `maintenance_quiescence_verified=True`. If unverified, the recovery procedure refuses the target immediately without modifying or deleting anything on disk (`UNQUIESCED_TARGET_REFUSED`).
+> **A SQLite lock/checkpoint is NOT proof that all users or processes are stopped.**
+> Acquiring `BEGIN EXCLUSIVE` or executing `PRAGMA wal_checkpoint(TRUNCATE)` is solely an internal operational contention check against open SQLite file handles. It does not prove that external services, web workers, scheduler jobs, or container orchestrators have ceased activity. True maintenance quiescence must be established and maintained externally (e.g., scaling down container replicas or stopping the web service) before initiating any destructive restore. Callers must independently verify external quiescence and pass `maintenance_quiescence_verified=True`. If unverified, the recovery procedure refuses the target immediately without modifying or unlinking anything on disk (`UNQUIESCED_TARGET_REFUSED`).
 
 ### Phase 1: Pre-Refresh Consistent Backup Creation
 ```bash

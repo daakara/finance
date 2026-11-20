@@ -117,19 +117,21 @@
     "checkpoint_interval_symbols": 50,
     "checkpoint_summary_path": "/root/refresh_checkpoint_summary.json",
     "resume_contract": {
-      "supported": true,
+      "automatic_resume_in_apply_mode": false,
+      "apply_mode_resume_behavior": "FAIL_CLOSED_WITH_AUTOMATIC_RESUME_DISABLED_IN_APPLY_MODE",
+      "dry_run_resume_supported": true,
       "metadata_bindings": ["target_identity", "manifest_binding", "scope_binding", "execution_identity"],
-      "budget_preservation": true,
+      "fail_closed_on_missing_checkpoint": true,
       "fail_closed_on_incompatible": true,
       "fail_closed_on_corrupt": true,
-      "store_work_verification_before_skip": true,
-      "crash_between_commit_and_checkpoint_handled": "Committed bars are durable; re-evaluation upon resume is idempotent and skips redundant writes"
+      "on_interruption": "Committed per-symbol work and receipts are preserved in SQLite; fresh read-only assessment required before planning another bounded run"
     }
   },
   "backup_and_recovery": {
     "backup_method": "SQLITE3_ONLINE_BACKUP_API",
     "source_path": "/root/.finance_market_store.db",
     "target_path": "/root/backup_finance_market_store_pre_refresh_166.db",
+    "quiescence_invariant": "SQLite lock/checkpoint is an operational contention check, NOT proof that external users/processes are stopped. Externally maintained quiescence is strictly required.",
     "quiesced_recovery_procedure": {
       "implementation_function": "scripts.ingest_alpaca_historical.quiesce_and_recover_database",
       "maintenance_quiescence_verified_required": true,

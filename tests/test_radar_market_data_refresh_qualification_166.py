@@ -826,10 +826,21 @@ def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: 
         checkpoint_summary_path=cp_path,
     )
     assert summary_cap.execution_outcome in ("PARTIAL_SUCCESS", "FAILURE")
+    assert summary_cap.incomplete_execution_note is not None
+    assert "Incomplete execution detected" in summary_cap.incomplete_execution_note
     assert budget_cap.requests_transmitted == 5
     assert len(summary_cap.completed_writes) == 5
     assert len(summary_cap.unprocessed_candidates) == 5
     assert cp_path.exists(), "Checkpoint must be persisted on budget cap abortion"
+
+    # Verify already committed work is preserved in DB
+    conn = sqlite3.connect(disposable_market_db)
+    cur = conn.cursor()
+    cur.execute("SELECT DISTINCT symbol FROM asset_ohlcv_daily")
+    db_symbols = {r[0] for r in cur.fetchall()}
+    conn.close()
+    for s in symbols[:5]:
+        assert s in db_symbols, f"Committed symbol {s} must be preserved in SQLite upon interruption"
 
     # 2. Test pagination request counting (multi-page counts each page against budget)
     def page_mock(sym, start, end, page_token=None):
@@ -936,7 +947,47 @@ def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: 
     )
     calls_before = len(mock_fetcher.calls)
 
-    # 5a. Corrupted checkpoint rejection (fail-closed)
+    # 5a. Production apply strictly rejects automatic resume before network calls or writes
+    calls_before = len(mock_fetcher.calls)
+    with pytest.raises(ValueError, match="AUTOMATIC_RESUME_DISABLED_IN_APPLY_MODE"):
+        adapter_res.execute_bounded_ingestion(
+            manifest_path=manifest_path,
+            symbols_override=symbols[:6],
+            start_date="2026-11-07",
+            end_date="2026-11-20",
+            apply_writes=True,
+            db_path=disposable_market_db,
+            checkpoint_summary_path=resume_cp_path,
+            resume=True,
+        )
+    assert len(mock_fetcher.calls) == calls_before, "Production apply must reject automatic resume before network calls"
+
+    # 5b. Missing checkpoint fails closed (never silently starts fresh)
+    missing_cp = tmp_path / "nonexistent_checkpoint.json"
+    with pytest.raises(FileNotFoundError, match="CHECKPOINT_NOT_FOUND"):
+        adapter_res.execute_bounded_ingestion(
+            manifest_path=manifest_path,
+            symbols_override=symbols[:6],
+            start_date="2026-11-07",
+            end_date="2026-11-20",
+            apply_writes=False,
+            checkpoint_summary_path=missing_cp,
+            resume=True,
+        )
+
+    # 5c. Missing checkpoint path fails closed when resume requested
+    with pytest.raises(ValueError, match="MISSING_CHECKPOINT_PATH"):
+        adapter_res.execute_bounded_ingestion(
+            manifest_path=manifest_path,
+            symbols_override=symbols[:6],
+            start_date="2026-11-07",
+            end_date="2026-11-20",
+            apply_writes=False,
+            checkpoint_summary_path=None,
+            resume=True,
+        )
+
+    # 5d. Corrupted checkpoint rejection (fail-closed)
     corrupt_cp = tmp_path / "corrupt_cp.json"
     corrupt_cp.write_text("{NOT_VALID_JSON", encoding="utf-8")
     with pytest.raises(ValueError, match="CORRUPTED_CHECKPOINT_REJECTED"):
@@ -950,7 +1001,7 @@ def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: 
             resume=True,
         )
 
-    # 5b. Incompatible checkpoint rejection (manifest / scope mismatch)
+    # 5e. Incompatible checkpoint rejection (manifest / scope mismatch)
     incompat_cp = tmp_path / "incompat_cp.json"
     incompat_cp.write_text(json.dumps({
         "manifest_binding": {"manifest_sha256": "wrong_sha", "membership_hash": "wrong_hash"},
@@ -967,7 +1018,7 @@ def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: 
             resume=True,
         )
 
-    # 5c. Preserve consumed budget across resume and enforce cap (cannot reset limits)
+    # 5f. Preserve consumed budget across resume and enforce cap (cannot reset limits)
     exhausted_cp = tmp_path / "exhausted_cp.json"
     exhausted_cp.write_text(json.dumps({
         "consumed_budget": {"requests_transmitted": 10, "retries_transmitted": 2, "fallbacks_transmitted": 0},
@@ -985,48 +1036,33 @@ def test_aggregate_request_limits_and_checkpoint_behavior(disposable_market_db: 
             resume=True,
         )
 
-    # 5d. Verify completed work before skipping (unverified store work is re-processed)
-    unverified_work_cp = tmp_path / "unverified_work_cp.json"
-    unverified_work_cp.write_text(json.dumps({
-        "summary": {
-            "candidate_dispositions": {
-                "PAGE": {
-                    "symbol": "PAGE",
-                    "status": "APPLIED",
-                    "action_type": "REFRESH",
-                    "bars_ingested": 10,
-                }
-            }
-        }
-    }), encoding="utf-8")
-    s_unverified = adapter_res.execute_bounded_ingestion(
-        manifest_path=p_manifest_seq,
-        start_date="2026-11-07",
-        end_date="2026-11-20",
-        apply_writes=True,
-        db_path=disposable_market_db,
-        checkpoint_summary_path=unverified_work_cp,
-        resume=True,
-    )
-    assert "PAGE" in s_unverified.completed_writes, "Unverified work must be re-processed and committed"
-
-    # 5e. Normal resume with budget allowing remaining 3 candidates
-    calls_before = len(mock_fetcher.calls)
-    budget_res2 = SharedExecutionBudget(max_aggregate_requests=10)
-    s_res = adapter_res.execute_bounded_ingestion(
+    # 5g. Dry-run resume skips completed candidates and preserves budget
+    dry_run_cp = tmp_path / "dry_run_cp.json"
+    budget_dry1 = SharedExecutionBudget(max_aggregate_requests=3)
+    adapter_res.execute_bounded_ingestion(
         manifest_path=manifest_path,
         symbols_override=symbols[:6],
         start_date="2026-11-07",
         end_date="2026-11-20",
-        apply_writes=True,
-        db_path=disposable_market_db,
-        budget=budget_res2,
-        checkpoint_summary_path=resume_cp_path,
+        apply_writes=False,
+        budget=budget_dry1,
+        checkpoint_summary_path=dry_run_cp,
+    )
+    calls_before_resume = len(mock_fetcher.calls)
+    budget_dry2 = SharedExecutionBudget(max_aggregate_requests=10)
+    s_dry_res = adapter_res.execute_bounded_ingestion(
+        manifest_path=manifest_path,
+        symbols_override=symbols[:6],
+        start_date="2026-11-07",
+        end_date="2026-11-20",
+        apply_writes=False,
+        budget=budget_dry2,
+        checkpoint_summary_path=dry_run_cp,
         resume=True,
     )
-    calls_after = len(mock_fetcher.calls)
-    assert calls_after - calls_before == 3, "Resumed execution must skip verified completed candidates"
-    assert len(s_res.completed_writes) == 6
+    calls_after_resume = len(mock_fetcher.calls)
+    assert calls_after_resume - calls_before_resume == 3, "Dry-run resume must skip already completed candidates"
+    assert s_dry_res.total_candidates_evaluated == 6
 
 
 def test_wal_safe_quiesced_recovery_rehearsal(tmp_path: Path):

@@ -603,6 +603,7 @@ class IngestionBatchSummary:
     completed_writes: List[str] = field(default_factory=list)
     failed_candidate: Optional[str] = None
     unprocessed_candidates: List[str] = field(default_factory=list)
+    incomplete_execution_note: Optional[str] = None
     l03_bridge_status: Dict[str, Any] = field(default_factory=dict)
     l03_price_floor_basis_bridge: str = (
         "REFERENCE_DATE_EQUIVALENCE: On completed anchor session 2026-10-19 with adjustment_state='SPLIT_ADJUSTED_ONLY', "
@@ -1336,6 +1337,25 @@ class AlpacaHistoricalSipIngestionAdapter:
         if d_start > d_end:
             raise ValueError(f"INVALID_DATE_ORDER: start_date '{start_date}' cannot be after end_date '{end_date}'.")
 
+        # Fail-closed resume validation: automatic resume is disabled for production apply mode
+        if resume:
+            if apply_writes:
+                raise ValueError(
+                    "AUTOMATIC_RESUME_DISABLED_IN_APPLY_MODE: Automatic resume is strictly disabled for production apply mode. "
+                    "Interrupted executions preserve committed per-symbol work and receipts, but require a fresh read-only "
+                    "assessment before planning another bounded run."
+                )
+            if not checkpoint_summary_path:
+                raise ValueError(
+                    "MISSING_CHECKPOINT_PATH: --checkpoint-summary-path is required when --resume is requested."
+                )
+            cp_path = Path(checkpoint_summary_path)
+            if not cp_path.is_file():
+                raise FileNotFoundError(
+                    f"CHECKPOINT_NOT_FOUND: Checkpoint file '{checkpoint_summary_path}' does not exist. "
+                    "Failing closed; missing checkpoints cannot silently start a replacement execution."
+                )
+
         # Identity verification if requested
         if verify_runtime_identity_flag:
             ok_id, err_id = verify_serving_runtime_identity(
@@ -1446,147 +1466,145 @@ class AlpacaHistoricalSipIngestionAdapter:
         )
 
         completed_symbols: Set[str] = set()
-        if resume and checkpoint_summary_path:
+        if resume:
             cp_path = Path(checkpoint_summary_path)
-            if not cp_path.is_file():
-                logger.info(f"Resume requested but checkpoint file '{checkpoint_summary_path}' does not exist. Starting fresh.")
-            else:
-                try:
-                    cp_content = cp_path.read_text(encoding="utf-8")
-                    cp_data = json.loads(cp_content)
-                except Exception as parse_err:
+            try:
+                cp_content = cp_path.read_text(encoding="utf-8")
+                cp_data = json.loads(cp_content)
+            except Exception as parse_err:
+                raise ValueError(
+                    f"CORRUPTED_CHECKPOINT_REJECTED: Checkpoint at '{checkpoint_summary_path}' "
+                    f"is corrupted or unparseable JSON: {parse_err}"
+                ) from parse_err
+
+            # Bindings validation (reject incompatible checkpoints fail-closed)
+            # 1. Target identity
+            if apply_writes and db_path:
+                cp_target = cp_data.get("target_identity", {}).get("target_db_path")
+                curr_target = str(Path(db_path).resolve())
+                if cp_target and cp_target != curr_target:
                     raise ValueError(
-                        f"CORRUPTED_CHECKPOINT_REJECTED: Checkpoint at '{checkpoint_summary_path}' "
-                        f"is corrupted or unparseable JSON: {parse_err}"
-                    ) from parse_err
-
-                # Bindings validation (reject incompatible checkpoints fail-closed)
-                # 1. Target identity
-                if apply_writes and db_path:
-                    cp_target = cp_data.get("target_identity", {}).get("target_db_path")
-                    curr_target = str(Path(db_path).resolve())
-                    if cp_target and cp_target != curr_target:
-                        raise ValueError(
-                            f"INCOMPATIBLE_CHECKPOINT_REJECTED: Target DB path mismatch: "
-                            f"checkpoint '{cp_target}' != current '{curr_target}'."
-                        )
-
-                # 2. Manifest & membership binding
-                cp_manifest = cp_data.get("manifest_binding", {})
-                if cp_manifest:
-                    if cp_manifest.get("manifest_sha256") and cp_manifest.get("manifest_sha256") != manifest_info.manifest_sha256:
-                        raise ValueError(
-                            f"INCOMPATIBLE_CHECKPOINT_REJECTED: Manifest SHA-256 mismatch: "
-                            f"checkpoint '{cp_manifest.get('manifest_sha256')}' != current '{manifest_info.manifest_sha256}'."
-                        )
-                    if cp_manifest.get("membership_hash") and cp_manifest.get("membership_hash") != current_membership_hash:
-                        raise ValueError(
-                            f"INCOMPATIBLE_CHECKPOINT_REJECTED: Membership hash mismatch: "
-                            f"checkpoint '{cp_manifest.get('membership_hash')}' != current '{current_membership_hash}'."
-                        )
-
-                # 3. Scope binding
-                cp_scope = cp_data.get("scope_binding", {})
-                if cp_scope:
-                    if cp_scope.get("cutoff") and cp_scope.get("cutoff") != str(effective_max):
-                        raise ValueError(
-                            f"INCOMPATIBLE_CHECKPOINT_REJECTED: Cutoff mismatch: "
-                            f"checkpoint '{cp_scope.get('cutoff')}' != current '{str(effective_max)}'."
-                        )
-                    if cp_scope.get("requested_start") and cp_scope.get("requested_start") != start_date:
-                        raise ValueError(
-                            f"INCOMPATIBLE_CHECKPOINT_REJECTED: Start date mismatch: "
-                            f"checkpoint '{cp_scope.get('requested_start')}' != current '{start_date}'."
-                        )
-                    if cp_scope.get("requested_end") and cp_scope.get("requested_end") != end_date:
-                        raise ValueError(
-                            f"INCOMPATIBLE_CHECKPOINT_REJECTED: End date mismatch: "
-                            f"checkpoint '{cp_scope.get('requested_end')}' != current '{end_date}'."
-                        )
-                    if cp_scope.get("feed") and cp_scope.get("feed") != self.feed:
-                        raise ValueError(
-                            f"INCOMPATIBLE_CHECKPOINT_REJECTED: Feed mismatch: "
-                            f"checkpoint '{cp_scope.get('feed')}' != current '{self.feed}'."
-                        )
-                    if cp_scope.get("adjustment") and cp_scope.get("adjustment") != self.adjustment:
-                        raise ValueError(
-                            f"INCOMPATIBLE_CHECKPOINT_REJECTED: Adjustment mismatch: "
-                            f"checkpoint '{cp_scope.get('adjustment')}' != current '{self.adjustment}'."
-                        )
-                    curr_mode = "APPLIED" if apply_writes else "DRY_RUN"
-                    if cp_scope.get("mode") and cp_scope.get("mode") != curr_mode:
-                        raise ValueError(
-                            f"INCOMPATIBLE_CHECKPOINT_REJECTED: Mode mismatch: "
-                            f"checkpoint '{cp_scope.get('mode')}' != current '{curr_mode}'."
-                        )
-
-                # 4. Consumed budget preservation
-                cp_consumed = cp_data.get("consumed_budget", {})
-                budget.requests_transmitted = cp_consumed.get("requests_transmitted", budget.requests_transmitted)
-                budget.retries_transmitted = cp_consumed.get("retries_transmitted", budget.retries_transmitted)
-                budget.fallbacks_transmitted = cp_consumed.get("fallbacks_transmitted", budget.fallbacks_transmitted)
-
-                budget.check_deadline()
-                if budget.requests_transmitted >= budget.max_aggregate_requests:
-                    raise RuntimeError(
-                        f"EXECUTION_BUDGET_EXHAUSTED: Resumed checkpoint has already consumed "
-                        f"{budget.requests_transmitted}/{budget.max_aggregate_requests} aggregate requests."
-                    )
-                if budget.retries_transmitted >= budget.max_cumulative_retries:
-                    raise RuntimeError(
-                        f"RETRY_BUDGET_EXHAUSTED: Resumed checkpoint has already consumed "
-                        f"{budget.retries_transmitted}/{budget.max_cumulative_retries} retries."
+                        f"INCOMPATIBLE_CHECKPOINT_REJECTED: Target DB path mismatch: "
+                        f"checkpoint '{cp_target}' != current '{curr_target}'."
                     )
 
-                # 5. Verify completed work before skipping
-                summary_data = cp_data.get("summary", cp_data)
-                dispositions = summary_data.get("candidate_dispositions", {})
-                
-                check_conn = None
-                if apply_writes and db_path and Path(db_path).is_file():
-                    check_conn = sqlite3.connect(f"{Path(db_path).resolve().as_uri()}?mode=ro", uri=True)
+            # 2. Manifest & membership binding
+            cp_manifest = cp_data.get("manifest_binding", {})
+            if cp_manifest:
+                if cp_manifest.get("manifest_sha256") and cp_manifest.get("manifest_sha256") != manifest_info.manifest_sha256:
+                    raise ValueError(
+                        f"INCOMPATIBLE_CHECKPOINT_REJECTED: Manifest SHA-256 mismatch: "
+                        f"checkpoint '{cp_manifest.get('manifest_sha256')}' != current '{manifest_info.manifest_sha256}'."
+                    )
+                if cp_manifest.get("membership_hash") and cp_manifest.get("membership_hash") != current_membership_hash:
+                    raise ValueError(
+                        f"INCOMPATIBLE_CHECKPOINT_REJECTED: Membership hash mismatch: "
+                        f"checkpoint '{cp_manifest.get('membership_hash')}' != current '{current_membership_hash}'."
+                    )
 
-                try:
-                    for prev_sym, prev_disp in dispositions.items():
-                        status = prev_disp.get("status")
-                        if status == "APPLIED":
-                            work_verified = True
-                            if check_conn:
-                                cur = check_conn.cursor()
-                                cur.execute("SELECT COUNT(*) FROM asset_ohlcv_daily WHERE symbol = ?", (prev_sym,))
-                                c_bars = cur.fetchone()[0]
-                                cur.execute(
-                                    "SELECT COUNT(*) FROM asset_ohlcv_provenance "
-                                    "WHERE symbol = ? AND provider = 'ALPACA' AND adjustment_state = 'SPLIT_ADJUSTED_ONLY'",
-                                    (prev_sym,)
+            # 3. Scope binding
+            cp_scope = cp_data.get("scope_binding", {})
+            if cp_scope:
+                if cp_scope.get("cutoff") and cp_scope.get("cutoff") != str(effective_max):
+                    raise ValueError(
+                        f"INCOMPATIBLE_CHECKPOINT_REJECTED: Cutoff mismatch: "
+                        f"checkpoint '{cp_scope.get('cutoff')}' != current '{str(effective_max)}'."
+                    )
+                if cp_scope.get("requested_start") and cp_scope.get("requested_start") != start_date:
+                    raise ValueError(
+                        f"INCOMPATIBLE_CHECKPOINT_REJECTED: Start date mismatch: "
+                        f"checkpoint '{cp_scope.get('requested_start')}' != current '{start_date}'."
+                    )
+                if cp_scope.get("requested_end") and cp_scope.get("requested_end") != end_date:
+                    raise ValueError(
+                        f"INCOMPATIBLE_CHECKPOINT_REJECTED: End date mismatch: "
+                        f"checkpoint '{cp_scope.get('requested_end')}' != current '{end_date}'."
+                    )
+                if cp_scope.get("feed") and cp_scope.get("feed") != self.feed:
+                    raise ValueError(
+                        f"INCOMPATIBLE_CHECKPOINT_REJECTED: Feed mismatch: "
+                        f"checkpoint '{cp_scope.get('feed')}' != current '{self.feed}'."
+                    )
+                if cp_scope.get("adjustment") and cp_scope.get("adjustment") != self.adjustment:
+                    raise ValueError(
+                        f"INCOMPATIBLE_CHECKPOINT_REJECTED: Adjustment mismatch: "
+                        f"checkpoint '{cp_scope.get('adjustment')}' != current '{self.adjustment}'."
+                    )
+                curr_mode = "APPLIED" if apply_writes else "DRY_RUN"
+                if cp_scope.get("mode") and cp_scope.get("mode") != curr_mode:
+                    raise ValueError(
+                        f"INCOMPATIBLE_CHECKPOINT_REJECTED: Mode mismatch: "
+                        f"checkpoint '{cp_scope.get('mode')}' != current '{curr_mode}'."
+                    )
+
+            # 4. Consumed budget preservation
+            cp_consumed = cp_data.get("consumed_budget", {})
+            budget.requests_transmitted = cp_consumed.get("requests_transmitted", budget.requests_transmitted)
+            budget.retries_transmitted = cp_consumed.get("retries_transmitted", budget.retries_transmitted)
+            budget.fallbacks_transmitted = cp_consumed.get("fallbacks_transmitted", budget.fallbacks_transmitted)
+
+            budget.check_deadline()
+            if budget.requests_transmitted >= budget.max_aggregate_requests:
+                raise RuntimeError(
+                    f"EXECUTION_BUDGET_EXHAUSTED: Resumed checkpoint has already consumed "
+                    f"{budget.requests_transmitted}/{budget.max_aggregate_requests} aggregate requests."
+                )
+            if budget.retries_transmitted >= budget.max_cumulative_retries:
+                raise RuntimeError(
+                    f"RETRY_BUDGET_EXHAUSTED: Resumed checkpoint has already consumed "
+                    f"{budget.retries_transmitted}/{budget.max_cumulative_retries} retries."
+                )
+
+            # 5. Verify completed work before skipping
+            summary_data = cp_data.get("summary", cp_data)
+            dispositions = summary_data.get("candidate_dispositions", {})
+
+            check_conn = None
+            if apply_writes and db_path and Path(db_path).is_file():
+                check_conn = sqlite3.connect(f"{Path(db_path).resolve().as_uri()}?mode=ro", uri=True)
+
+            try:
+                for prev_sym, prev_disp in dispositions.items():
+                    status = prev_disp.get("status")
+                    if status == "APPLIED":
+                        work_verified = True
+                        if check_conn:
+                            cur = check_conn.cursor()
+                            cur.execute("SELECT COUNT(*) FROM asset_ohlcv_daily WHERE symbol = ?", (prev_sym,))
+                            c_bars = cur.fetchone()[0]
+                            cur.execute(
+                                "SELECT COUNT(*) FROM asset_ohlcv_provenance "
+                                "WHERE symbol = ? AND provider = 'ALPACA' AND adjustment_state = 'SPLIT_ADJUSTED_ONLY'",
+                                (prev_sym,)
+                            )
+                            c_prov = cur.fetchone()[0]
+                            if c_bars == 0 or c_prov == 0:
+                                work_verified = False
+                                logger.warning(
+                                    f"CHECKPOINT_WORK_UNVERIFIED: Candidate '{prev_sym}' marked APPLIED in checkpoint "
+                                    f"lacks verified store records (bars={c_bars}, prov={c_prov}). Will re-process."
                                 )
-                                c_prov = cur.fetchone()[0]
-                                if c_bars == 0 or c_prov == 0:
-                                    work_verified = False
-                                    logger.warning(
-                                        f"CHECKPOINT_WORK_UNVERIFIED: Candidate '{prev_sym}' marked APPLIED in checkpoint "
-                                        f"lacks verified store records (bars={c_bars}, prov={c_prov}). Will re-process."
-                                    )
 
-                            if work_verified:
-                                completed_symbols.add(prev_sym)
-                                summary.candidate_dispositions[prev_sym] = prev_disp
-                                if prev_sym not in summary.completed_writes:
-                                    summary.completed_writes.append(prev_sym)
-                                summary.total_bars_ingested += prev_disp.get("bars_ingested", 0)
-                                if prev_disp.get("action_type") in ("BACKFILL", "REPLACE"):
-                                    summary.backfilled_count += 1
-                                else:
-                                    summary.refreshed_count += 1
-                        elif status == "SKIPPED":
+                        if work_verified:
                             completed_symbols.add(prev_sym)
                             summary.candidate_dispositions[prev_sym] = prev_disp
+                            if prev_sym not in summary.completed_writes:
+                                summary.completed_writes.append(prev_sym)
+                            summary.total_bars_ingested += prev_disp.get("bars_ingested", 0)
+                            if prev_disp.get("action_type") in ("BACKFILL", "REPLACE"):
+                                summary.backfilled_count += 1
+                            else:
+                                summary.refreshed_count += 1
+                    elif status in ("SKIPPED", "PREPARED_DRY_RUN"):
+                        completed_symbols.add(prev_sym)
+                        summary.candidate_dispositions[prev_sym] = prev_disp
+                        if status == "SKIPPED":
                             summary.skipped_current_count += 1
-                finally:
-                    if check_conn:
-                        check_conn.close()
+            finally:
+                if check_conn:
+                    check_conn.close()
 
-                logger.info(f"Resumed from verified checkpoint: {len(completed_symbols)} candidates verified and completed.")
+            logger.info(f"Resumed from verified checkpoint: {len(completed_symbols)} candidates verified and completed.")
 
         try:
             expected_window_sessions = get_expected_nyse_sessions(start_date, end_date)
@@ -2029,7 +2047,7 @@ class AlpacaHistoricalSipIngestionAdapter:
         except KeyboardInterrupt:
             logger.warning("Ingestion interrupted by user or signal.")
             summary.failed_candidate = sym if 'sym' in locals() else "INTERRUPTED"
-            if 'sym' in locals():
+            if 'sym' in locals() and sym in target_symbols:
                 curr_idx = target_symbols.index(sym)
                 for remaining_sym in target_symbols[curr_idx + 1:]:
                     if remaining_sym not in summary.candidate_dispositions:
@@ -2041,6 +2059,13 @@ class AlpacaHistoricalSipIngestionAdapter:
                             rejection_reason="ABORTED_BY_INTERRUPTION: Processing interrupted by user or system signal.",
                         )
                         summary.candidate_dispositions[remaining_sym] = asdict(rem_disp)
+            summary.execution_outcome = "PARTIAL_SUCCESS" if summary.completed_writes else "FAILURE"
+            summary.batch_outcome = summary.execution_outcome
+            summary.incomplete_execution_note = (
+                "Incomplete execution detected. Already committed per-symbol work and receipts are preserved in the "
+                "target store. Automatic continuation is disabled in apply mode; operators must run a fresh read-only "
+                "assessment (audit_radar_universe_readiness_166) before planning another bounded run."
+            )
             if checkpoint_summary_path:
                 save_checkpoint(summary, Path(checkpoint_summary_path))
             raise
@@ -2049,6 +2074,11 @@ class AlpacaHistoricalSipIngestionAdapter:
         if summary.failed_candidate is not None:
             summary.execution_outcome = "PARTIAL_SUCCESS" if summary.completed_writes else "FAILURE"
             summary.batch_outcome = summary.execution_outcome
+            summary.incomplete_execution_note = (
+                "Incomplete execution detected. Already committed per-symbol work and receipts are preserved in the "
+                "target store. Automatic continuation is disabled in apply mode; operators must run a fresh read-only "
+                "assessment (audit_radar_universe_readiness_166) before planning another bounded run."
+            )
         else:
             total_eval = summary.total_candidates_evaluated
             total_failed = summary.failed_validation_count + summary.provider_error_count
@@ -2059,6 +2089,12 @@ class AlpacaHistoricalSipIngestionAdapter:
             else:
                 summary.execution_outcome = "SUCCESS"
             summary.batch_outcome = summary.execution_outcome
+            if summary.unprocessed_candidates:
+                summary.incomplete_execution_note = (
+                    "Incomplete execution detected. Already committed per-symbol work and receipts are preserved in the "
+                    "target store. Automatic continuation is disabled in apply mode; operators must run a fresh read-only "
+                    "assessment (audit_radar_universe_readiness_166) before planning another bounded run."
+                )
 
         # SIP-04: Populate attributable L03 bridge status
         candidates_with_anchor = [
@@ -2220,7 +2256,7 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         "--resume",
         action="store_true",
         default=False,
-        help="Resume execution from existing checkpoint, skipping completed candidates.",
+        help="Resume execution from existing checkpoint (dry-run mode only; strictly disabled with --apply).",
     )
     return parser.parse_args(args)
 
@@ -2291,10 +2327,6 @@ def main(args: Optional[List[str]] = None) -> int:
             return 2
         else:
             return 1
-    except Exception as e:
-        logger.error(f"Ingestion execution aborted: {e}")
-        print(f"ERROR: {e}", file=sys.stderr)
-        return 1
     except Exception as e:
         logger.error(f"Ingestion execution aborted: {e}")
         print(f"ERROR: {e}", file=sys.stderr)
