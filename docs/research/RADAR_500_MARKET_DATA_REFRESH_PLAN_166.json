@@ -1,0 +1,99 @@
+{
+  "plan_id": "RADAR-500-MARKET-DATA-REFRESH-PLAN-166",
+  "version": "1.0.0-QUALIFIED",
+  "created_at_utc": "2026-11-20T21:15:00Z",
+  "issue_reference": "Issue #166",
+  "target_authority": {
+    "platform": "Railway",
+    "service_name": "web",
+    "service_id": "56e38249-b78c-4a60-80d7-303ce7451bd8",
+    "serving_deployment_id": "9f28fb4e-c804-4b6a-9a25-1092c496026d",
+    "serving_git_revision": "868d7afcd528006c2323e6b79b5a17f2f20f677c",
+    "storage_mount_path": "/root",
+    "market_store_path": "/root/market_store.db",
+    "universe_store_path": "/root/universe_store.db",
+    "scanner_store_path": "/root/scanner_store.db"
+  },
+  "universe_specification": {
+    "universe_build_id": "UB-ARX-EXPANSION-500-20261108",
+    "membership_hash": "5f60b47d5402c0fc29fa545b244b778ca99a017f47448f47ebdfc257db8881b0",
+    "total_symbols": 500,
+    "provenanced_baseline_symbols_count": 433,
+    "unprovenanced_symbols_count": 67
+  },
+  "operational_status": "DEFERRED_PENDING_SEC_TRIAL_COMPLETION",
+  "operational_holds": {
+    "HOLD_SCAN_001": "ACTIVE",
+    "HOLD_SEC_001": "ACTIVE",
+    "HOLD_EXEC_001": "ACTIVE",
+    "PHASE_3_HOLD": "ACTIVE",
+    "ARX_CONFLUENCE_INTEGRITY_HOLD": "ACTIVE",
+    "PHASE_A3_UX_HOLD": "ACTIVE"
+  },
+  "provider_contract": {
+    "provider": "ALPACA_MARKET_DATA_V2",
+    "feed": "sip",
+    "tape_coverage": "Consolidated Tape (CTA Plan A/B, UTP Plan C, FINRA TRF)",
+    "adjustment": "split",
+    "adjustment_state": "SPLIT_ADJUSTED_ONLY",
+    "rate_limit_per_minute": 200,
+    "pacing_delay_seconds": 0.35,
+    "effective_requests_per_minute": 171.4,
+    "batch_size": 50,
+    "max_retries_per_page": 3
+  },
+  "partition_strategy": {
+    "partition_a_incremental_refresh": {
+      "symbol_count": 433,
+      "action": "REFRESH",
+      "start_session": "2026-11-07",
+      "end_session_determination": "DERIVED_COMPLETED_SESSION",
+      "rationale": "Retain verified 2025-01-02 through 2026-11-06 Alpaca SIP history; append missing recent tail sessions atomically."
+    },
+    "partition_b_scoped_repair_replacement": {
+      "symbol_count": 67,
+      "action": "REPLACE",
+      "start_session": "2025-01-02",
+      "end_session_determination": "DERIVED_COMPLETED_SESSION",
+      "symbols": [
+        "AAPL", "ABT", "ACLS", "ADBE", "AMD", "AMZN", "ANET", "APP", "AVGO", "BAC",
+        "CDNS", "CELH", "CIEN", "COIN", "CRWD", "CSCO", "DDOG", "DECK", "DIS", "DUOL",
+        "DXCM", "ELF", "EME", "ETN", "FIX", "GEV", "GOOGL", "HOOD", "IONQ", "ISRG",
+        "JNJ", "JPM", "KLAC", "LLY", "LNTH", "LRCX", "LULU", "MARA", "MDB", "MEDP",
+        "META", "MNST", "MPWR", "MRK", "MSFT", "MSTR", "NET", "NOW", "NVDA", "ON",
+        "ONON", "PANW", "PFE", "PG", "PLTR", "PODD", "POWI", "PWR", "RKLB", "SMCI",
+        "SNPS", "TMDX", "TSLA", "TXN", "ULTA", "VRTX", "WMT"
+      ],
+      "rationale": "Purge unprovenanced legacy/tactical Yahoo Finance bars and establish pure Alpaca SIP split-adjusted provenance across full reviewed window [2025-01-02, T_completed]."
+    }
+  },
+  "execution_duration_estimates": {
+    "partition_a_requests": 433,
+    "partition_a_duration_seconds": 151.55,
+    "partition_b_requests": 134,
+    "partition_b_duration_seconds": 46.90,
+    "total_network_duration_seconds": 198.45,
+    "total_bounded_window_minutes": 20
+  },
+  "pre_execution_backup": {
+    "backup_method": "SQLITE3_ONLINE_BACKUP_API",
+    "source_path": "/root/market_store.db",
+    "backup_target_path": "/root/backup_market_store_pre_refresh_166.db",
+    "pre_flight_checksum_required": true
+  },
+  "stop_conditions": [
+    "HTTP_401_OR_403_CREDENTIAL_ERROR",
+    "HTTP_429_RATE_LIMIT_EXHAUSTION_AFTER_3_RETRIES",
+    "SQLITE_BUSY_OR_LOCK_TIMEOUT_EXCEEDING_10_SECONDS",
+    "CONCURRENT_SMART_MONEY_WORKER_OR_SCANNER_PROCESS_DETECTED",
+    "VALIDATION_REJECTION_RATE_EXCEEDING_ONE_PERCENT",
+    "ANY_ACCESS_OR_CONTENTION_ON_POSTGRES_LOCK_401007311509093371"
+  ],
+  "post_refresh_verification": {
+    "auditor_script": "scripts/diagnostics/audit_radar_universe_readiness_166.py",
+    "required_readiness_verdict": "READY",
+    "target_ready_count": 500,
+    "target_stale_count": 0,
+    "target_missing_provenance_count": 0
+  }
+}
