@@ -1,6 +1,6 @@
 Improves the SEC disclosure panel from filing metadata to stored transaction details: neutral latest-event selection, individual transaction evidence, explicit missing/zero values, and ticker-response guards. Tracks #165.
 
-Implementation head: `48e5c4af4ffc6e938923a1ba2e457ca6fec520ff`.
+Implementation head: `ff01d1d0339d220790e633d7fc3f0bc80a6b7d15`.
 Reported development baseline: `868d7afcd528006c2323e6b79b5a17f2f20f677c`.
 
 ## Release boundary
