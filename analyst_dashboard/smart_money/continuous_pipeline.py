@@ -642,6 +642,9 @@ class SmartMoneyContinuousPipeline:
         reconciliation_hash: Optional[str] = None
         matched_count = 0
         status = "IN_PROGRESS"
+        trial_budget_reserved = False
+        reserved_slot_id = None
+        reserved_ny_date = None
 
         logger.info(
             f"Starting Smart Money 10-step continuous cycle {cycle_id} "
@@ -766,6 +769,22 @@ class SmartMoneyContinuousPipeline:
                 }
             steps_completed.append("STEP_3_DURABLE_DATE_ELIGIBILITY_VERIFIED")
 
+            if self.is_trial_2_issuer:
+                if self.repository is None or not self.current_slot_id:
+                    raise RuntimeError("TRIAL_BUDGET_RESERVATION_UNAVAILABLE")
+                reserved_slot_id = self.current_slot_id
+                reserved_ny_date = reserved_slot_id.split(":", 1)[0]
+                # A committed reservation survives SIGKILL and database rollback.
+                # Keep the full eight-request charge even after clean completion;
+                # actual transmissions remain separate telemetry, never a refund.
+                self.repository.reserve_trial_cycle_budget(
+                    trial_id=self.trial_scheduler.trial_id,
+                    slot_id=reserved_slot_id,
+                    ny_date=reserved_ny_date,
+                )
+                trial_budget_reserved = True
+                steps_completed.append("STEP_3_TRIAL_BUDGET_RESERVED")
+
             # ── Step 4: Pre-ingestion backup & R2 upload ──────────────────────
             pre_backup_manifest = self._step4_pre_backup(cycle_id)
             steps_completed.append("STEP_4_PRE_BACKUP_COMPLETED")
@@ -841,13 +860,12 @@ class SmartMoneyContinuousPipeline:
                 status = "FAILED"
             raise
         finally:
-            if getattr(self, "is_trial_2_issuer", False) and self.repository and hasattr(self, "trial_scheduler"):
+            if trial_budget_reserved:
                 try:
-                    ny_date_str = self.trial_scheduler.get_ny_now().date().isoformat()
                     self.repository.record_trial_cycle_audit(
                         trial_id=self.trial_scheduler.trial_id,
-                        slot_id=getattr(self, "current_slot_id", None) or f"{ny_date_str}:UNKNOWN_SLOT_{int(time.time())}",
-                        ny_date=ny_date_str,
+                        slot_id=reserved_slot_id,
+                        ny_date=reserved_ny_date,
                         slot_index=getattr(self, "current_slot_index", 0),
                         status=status,
                         requests_transmitted=self.outbound_session.total_transmissions,
@@ -962,6 +980,27 @@ class SmartMoneyContinuousPipeline:
                 f"Live worker requires ARX_SEC_EGRESS_ROLE=OWNER. Active: '{role or 'UNSET'}'."
             )
 
+    def _require_verified_owner_lock(self) -> None:
+        """Require the exclusive bigint lock on this exact PostgreSQL session."""
+        conn = self._lock_conn
+        if conn is None or getattr(conn, "closed", 0):
+            raise RuntimeError("LOCK_LOST_BEFORE_COMMIT: Owner connection unavailable")
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT EXISTS (
+                    SELECT 1 FROM pg_locks
+                    WHERE locktype = 'advisory' AND pid = pg_backend_pid()
+                      AND granted AND mode = 'ExclusiveLock' AND objsubid = 1
+                      AND classid::bigint = %s AND objid::bigint = %s
+                ) AS owner_lock_held""",
+                ((LOCK_SEC_EGRESS_OWNER >> 32) & 0xFFFFFFFF,
+                 LOCK_SEC_EGRESS_OWNER & 0xFFFFFFFF),
+            )
+            row = cur.fetchone()
+            held = row.get("owner_lock_held") if isinstance(row, dict) else row[0] if row else False
+            if not held:
+                raise RuntimeError("LOCK_LOST_BEFORE_COMMIT: Session lacks exclusive SEC owner lock")
+
     def _step2_claim_advisory_lock(self) -> None:
         """Acquires exclusive session advisory lock (LOCK_SEC_EGRESS_OWNER)."""
         if not self.dsn:
@@ -1035,26 +1074,8 @@ class SmartMoneyContinuousPipeline:
                         f"INVALID_AS_OF_DATE: Malformed as_of format '{as_of}', expected YYYY-MM-DD: {e}"
                     ) from e
 
-            # Check if reconciliation receipt already exists for this date
-            if self.repository:
-                try:
-                    receipt = self.repository.get_latest_reconciliation_receipt(
-                        covered_tickers=[i["ticker"] for i in self.issuers],
-                        conn=self._lock_conn,
-                    )
-                    if receipt:
-                        wm = receipt.get("certified_watermark") or receipt.get("interval_end")
-                        if wm:
-                            dt_utc = parse_sec_datetime_utc(str(wm))
-                            last_receipt_ny_date = dt_utc.astimezone(NY_TZ).date()
-                            target_eval_date = as_of_date if as_of_date else ny_now.date()
-                            if last_receipt_ny_date == target_eval_date and not force:
-                                return False, f"ALREADY_EXECUTED_TODAY: Smart Money continuous ingestion has already completed for date {target_eval_date.isoformat()}."
-                except Exception as e:
-                    raise RuntimeError(
-                        f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for latest reconciliation receipt failed under lock: {e}"
-                    ) from e
-
+            # Trial scheduling is slot-based. A receipt from an earlier slot
+            # must not suppress all remaining slots in the same NY day.
             progress = None
             if self.repository:
                 try:
@@ -1735,15 +1756,7 @@ class SmartMoneyContinuousPipeline:
         # 2. Continuous authorization check
         if not self.allow_test_mode:
             require_continuous_authorization(issuers=self.issuers)
-            if self._lock_conn is not None:
-                if getattr(self._lock_conn, "closed", 0) > 0:
-                    raise RuntimeError("LOCK_LOST_BEFORE_COMMIT: Advisory lock connection closed prior to database commit.")
-                with self._lock_conn.cursor() as cur:
-                    cur.execute("SELECT pg_advisory_lock_held(%s);", (LOCK_SEC_EGRESS_OWNER,))
-                    row = cur.fetchone()
-                    held = row[0] if isinstance(row, tuple) else (row.get("pg_advisory_lock_held") if isinstance(row, dict) else False)
-                    if not held:
-                        raise RuntimeError(f"LOCK_LOST_BEFORE_COMMIT: Session advisory lock ({LOCK_SEC_EGRESS_OWNER}) is no longer held prior to commit.")
+            self._require_verified_owner_lock()
 
         if self.repository:
             self.repository.save_reconciliation_receipt(receipt_meta, conn=conn)

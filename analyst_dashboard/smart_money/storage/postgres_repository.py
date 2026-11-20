@@ -1348,6 +1348,34 @@ class PostgresSmartMoneyRepository:
             with c.cursor(cursor_factory=RealDictCursor) as cur:
                 return _exec(cur)
 
+    def reserve_trial_cycle_budget(self, trial_id: str, slot_id: str, ny_date: str) -> str:
+        """Commit one slot and eight requests before egress, without schema changes.
+
+        Reservations are never refunded: a killed process cannot prove how many
+        requests reached SEC. An independent transaction survives ingestion rollback.
+        """
+        if not slot_id or not slot_id.startswith(ny_date + ":"):
+            raise RuntimeError("TRIAL_BUDGET_RESERVATION_INVALID")
+        # Serialize reservations for this trial, including callers outside a worker.
+        key = int.from_bytes(hashlib.sha256(("TRIAL_BUDGET:" + trial_id).encode()).digest()[:8], "big") & 0x7FFFFFFFFFFFFFFF
+        with get_connection(dsn=self.dsn) as c:
+            with c.cursor() as cur:
+                cur.execute("SELECT pg_advisory_xact_lock(%s)", (key,))
+            progress = self.get_trial_progress(trial_id, ny_date, conn=c)
+            if slot_id in progress["executed_slots"]:
+                raise RuntimeError("TRIAL_SLOT_ALREADY_RESERVED")
+            if (progress["cycles_today"] >= 4 or progress["cycles_trial"] >= 12
+                    or progress["requests_today"] + 8 > 32
+                    or progress["requests_trial"] + 8 > 96):
+                raise RuntimeError("TRIAL_BUDGET_RESERVATION_EXCEEDED")
+            event_id = self.record_trial_cycle_audit(
+                trial_id=trial_id, slot_id=slot_id, ny_date=ny_date,
+                slot_index=0, status="BUDGET_RESERVED", requests_transmitted=0,
+                requests_reserved=8, conn=c,
+            )
+            c.commit()
+            return event_id
+
     def record_trial_cycle_audit(
         self,
         trial_id: str,
@@ -1358,6 +1386,7 @@ class PostgresSmartMoneyRepository:
         requests_transmitted: int,
         error: Optional[str] = None,
         conn: Optional[PgConnection] = None,
+        requests_reserved: int = 0,
     ) -> str:
         """Records an append-only trial cycle audit event into sm_audit_events."""
         event_id = str(uuid.uuid4())
@@ -1368,6 +1397,7 @@ class PostgresSmartMoneyRepository:
             "slot_index": slot_index,
             "status": status,
             "requests_transmitted": int(requests_transmitted),
+            "requests_reserved": int(requests_reserved),
             "error": error,
             "recorded_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -1410,8 +1440,8 @@ class PostgresSmartMoneyRepository:
             executed_slots: Set[str] of slot_ids that completed or attempted execution
             cycles_today: int (total cycle attempts today)
             cycles_trial: int (total cycle attempts across trial)
-            requests_today: int (total transmitted HTTP requests today)
-            requests_trial: int (total transmitted HTTP requests across trial)
+            requests_today: int (conservatively charged request budget today)
+            requests_trial: int (conservatively charged request budget across trial)
         Fails closed on database query error.
         """
         query_audit = """
@@ -1428,24 +1458,18 @@ class PostgresSmartMoneyRepository:
             cur.execute(query_audit, (trial_id,))
             audit_rows = cur.fetchall()
 
-            executed_slots = set()
-            cycles_today = 0
-            cycles_trial = 0
-            requests_today = 0
-            requests_trial = 0
-
+            # One attempt per slot. Skipped polls and duplicate diagnostics are
+            # not attempts; reservation + completion is one charged cycle.
+            slots = {}
             for r in audit_rows:
                 p = r.get("payload") or {}
                 s_id = p.get("slot_id")
-                if s_id:
-                    executed_slots.add(s_id)
-                cycles_trial += 1
-                reqs = int(p.get("requests_transmitted") or 0)
-                requests_trial += reqs
-
-                if p.get("ny_date") == ny_date:
-                    cycles_today += 1
-                    requests_today += reqs
+                status = str(p.get("status") or "")
+                if not s_id or status.startswith("SKIPPED") or ":UNKNOWN_SLOT_" in s_id:
+                    continue
+                item = slots.setdefault(s_id, {"ny_date": p.get("ny_date"), "charge": 0})
+                item["charge"] = max(item["charge"], int(p.get("requests_reserved") or 0),
+                                     int(p.get("requests_transmitted") or 0))
 
             cur.execute(query_receipts)
             receipt_rows = cur.fetchall()
@@ -1477,8 +1501,15 @@ class PostgresSmartMoneyRepository:
                             if "slot_id" in item:
                                 slot_id = item.get("slot_id")
                 if r_trial_id == trial_id and slot_id:
-                    executed_slots.add(slot_id)
+                    # Legacy receipt-only attempts have unknown transmission
+                    # totals. Charge the complete allowance conservatively.
+                    slots.setdefault(slot_id, {"ny_date": slot_id.split(":", 1)[0], "charge": 8})
 
+            executed_slots = set(slots)
+            cycles_today = sum(p["ny_date"] == ny_date for p in slots.values())
+            cycles_trial = len(slots)
+            requests_today = sum(p["charge"] for p in slots.values() if p["ny_date"] == ny_date)
+            requests_trial = sum(p["charge"] for p in slots.values())
             return {
                 "executed_slots": executed_slots,
                 "cycles_today": cycles_today,

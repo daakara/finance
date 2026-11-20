@@ -1057,6 +1057,8 @@ class TestTwoIssuerQuotasAndRecoveryRegressions:
 
         progress = repo.get_trial_progress("ARX-TRIAL-2026-NVDA-AAPL-001", ny_today)
         assert target_slot in progress["executed_slots"]
+        assert progress["cycles_today"] == 1
+        assert progress["requests_today"] == 8
 
         scheduler = TwoIssuerTrialScheduler(start_date=datetime.now(NY_TZ).date(), end_date=datetime.now(NY_TZ).date())
         slot_time = datetime.now(NY_TZ).replace(hour=9, minute=20)
@@ -1331,3 +1333,166 @@ class TestTwoIssuerQuotasAndRecoveryRegressions:
             assert snap_count == 0
             assert active_count == 0
         conn.close()
+
+
+class TestCrashSafeTrialAdmission:
+    """Production SQL and durable admission regressions, with no SEC egress."""
+
+    @pytest.fixture(autouse=True)
+    def env(self, monkeypatch):
+        monkeypatch.setenv("ARX_SEC_EGRESS_ROLE", "OWNER")
+        monkeypatch.setenv("ARX_CONTINUOUS_AUTH_SCOPE", SCOPE_TRIAL_2)
+        monkeypatch.setenv("ARX_SMART_MONEY_INGESTION_ONLY", "true")
+        monkeypatch.setenv("ARX_RELEASE_SHA", MOCK_SHA)
+        monkeypatch.delenv("RAILWAY_GIT_COMMIT_SHA", raising=False)
+
+    def pipeline(self, dsn):
+        return SmartMoneyContinuousPipeline(
+            dsn=dsn, repository=PostgresSmartMoneyRepository(dsn=dsn),
+            backup_engine=make_mock_backup_engine(), allow_test_mode=True,
+            issuers=TRIAL_ISSUERS, ingestion_only=True,
+        )
+
+    def test_production_precommit_on_stock_postgres_and_lock_loss(self, disposable_db):
+        """Execute the actual non-test Step 7 guard on stock PostgreSQL."""
+        pipeline = self.pipeline(disposable_db)
+        pipeline._step2_claim_advisory_lock()
+        pipeline.allow_test_mode = False
+        try:
+            # Auth is isolated here; the production SQL and transaction are real.
+            with patch("analyst_dashboard.smart_money.continuous_pipeline.require_continuous_authorization"):
+                _, receipt = pipeline._step7_parse_and_reconcile([], "production-guard-valid")
+                assert receipt["coverage_status"] == "PARTIAL"
+                with pipeline._lock_conn.cursor() as cur:
+                    cur.execute("SELECT pg_advisory_unlock_all()")
+                with pytest.raises(RuntimeError, match="LOCK_LOST_BEFORE_COMMIT"):
+                    pipeline._step7_parse_and_reconcile([], "production-guard-lost")
+            with pipeline.repository.ingestion_transaction() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT count(*) FROM sm_reconciliation_receipts")
+                    assert cur.fetchone()[0] == 1  # lost-lock transaction rolled back
+        finally:
+            pipeline._cleanup_lock()
+
+    def test_other_session_lock_is_not_ownership(self, disposable_db):
+        import psycopg2
+        pipeline = self.pipeline(disposable_db)
+        other = psycopg2.connect(disposable_db)
+        pipeline._lock_conn = psycopg2.connect(disposable_db)
+        try:
+            with other.cursor() as cur:
+                cur.execute("SELECT pg_advisory_lock(401007311509093371)")
+            with pytest.raises(RuntimeError, match="LOCK_LOST_BEFORE_COMMIT"):
+                pipeline._require_verified_owner_lock()
+            pipeline._lock_conn.close()
+            with pytest.raises(RuntimeError, match="LOCK_LOST_BEFORE_COMMIT"):
+                pipeline._require_verified_owner_lock()
+            pipeline._lock_conn = None
+            with pytest.raises(RuntimeError, match="LOCK_LOST_BEFORE_COMMIT"):
+                pipeline._require_verified_owner_lock()
+        finally:
+            other.close()
+            pipeline._cleanup_lock()
+
+    def test_reservation_survives_process_death_after_synthetic_send(self, disposable_db, tmp_path):
+        """Exit without finally after a local wire send; restart retains full charge."""
+        import subprocess
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        class Handler(BaseHTTPRequestHandler):
+            calls = 0
+            def do_GET(self):
+                Handler.calls += 1
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"synthetic SEC catalog")
+            def log_message(self, *args):
+                pass
+        server = HTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        code = '''
+import os, sys, requests
+from analyst_dashboard.smart_money.storage.postgres_repository import PostgresSmartMoneyRepository
+repo = PostgresSmartMoneyRepository(dsn=sys.argv[1])
+repo.reserve_trial_cycle_budget("crash-trial", "2026-11-20:SLOT_1:0915", "2026-11-20")
+s = requests.Session()
+s.trust_env = False
+s.get(sys.argv[2], timeout=3)
+os._exit(91)
+'''
+        try:
+            result = subprocess.run([sys.executable, "-c", code, disposable_db,
+                                     f"http://127.0.0.1:{server.server_port}/"],
+                                    timeout=15, capture_output=True)
+            assert result.returncode == 91, result.stderr.decode()
+            assert Handler.calls == 1
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
+        repo = PostgresSmartMoneyRepository(dsn=disposable_db)
+        progress = repo.get_trial_progress("crash-trial", "2026-11-20")
+        assert progress["cycles_today"] == 1
+        assert progress["requests_today"] == 8
+        with pytest.raises(RuntimeError, match="ALREADY_RESERVED"):
+            repo.reserve_trial_cycle_budget("crash-trial", "2026-11-20:SLOT_1:0915", "2026-11-20")
+
+    def test_diagnostics_and_completion_do_not_duplicate_reserved_budget(self, disposable_db):
+        repo = PostgresSmartMoneyRepository(dsn=disposable_db)
+        slot = "2026-11-20:SLOT_1:0915"
+        repo.reserve_trial_cycle_budget("trial", slot, "2026-11-20")
+        for _ in range(3):
+            repo.record_trial_cycle_audit("trial", slot, "2026-11-20", 1, "SUCCESS", 2)
+            repo.record_trial_cycle_audit("trial", "2026-11-20:UNKNOWN_SLOT_1", "2026-11-20", 0, "SKIPPED_NOT_ELIGIBLE", 0)
+        progress = repo.get_trial_progress("trial", "2026-11-20")
+        assert progress["cycles_trial"] == 1
+        assert progress["requests_trial"] == 8
+
+    def test_twelve_reservations_survive_restart_and_enforce_trial_ceiling(self, disposable_db):
+        repo = PostgresSmartMoneyRepository(dsn=disposable_db)
+        for day in (17, 18, 19):
+            ny_date = f"2026-11-{day}"
+            for slot in range(1, 5):
+                repo.reserve_trial_cycle_budget("trial", f"{ny_date}:SLOT_{slot}:0915", ny_date)
+            with pytest.raises(RuntimeError, match="RESERVATION_EXCEEDED"):
+                repo.reserve_trial_cycle_budget("trial", f"{ny_date}:EXTRA", ny_date)
+        restarted = PostgresSmartMoneyRepository(dsn=disposable_db)
+        assert restarted.get_trial_progress("trial", "2026-11-20")["requests_trial"] == 96
+        with pytest.raises(RuntimeError, match="RESERVATION_EXCEEDED"):
+            restarted.reserve_trial_cycle_budget("trial", "2026-11-20:SLOT_1:0915", "2026-11-20")
+
+    def test_reservation_failure_prevents_egress_and_releases_owner_lock(self, disposable_db):
+        pipeline = self.pipeline(disposable_db)
+        pipeline.current_slot_id = "2026-11-20:SLOT_1:0915"
+        with patch.object(pipeline, "_step1_preflight"), \
+             patch.object(pipeline, "_step3_check_durable_date_eligibility_under_lock", return_value=(True, "eligible")), \
+             patch.object(pipeline.repository, "reserve_trial_cycle_budget", side_effect=RuntimeError("LEDGER_UNAVAILABLE")), \
+             patch.object(pipeline, "_step6_ingest_form4_filings") as ingest:
+            with pytest.raises(RuntimeError, match="LEDGER_UNAVAILABLE"):
+                pipeline.execute_cycle()
+            ingest.assert_not_called()
+            assert pipeline._lock_conn is None
+        assert pipeline.repository.get_trial_progress(pipeline.trial_scheduler.trial_id, "2026-11-20")["cycles_trial"] == 0
+
+    def test_repeated_scheduler_skips_and_dry_run_do_not_write_audits(self, disposable_db):
+        pipeline = self.pipeline(disposable_db)
+        with patch.object(pipeline, "_step1_preflight"), \
+             patch.object(pipeline, "_step3_check_durable_date_eligibility_under_lock", return_value=(False, "BETWEEN_SLOTS")):
+            for _ in range(6):
+                assert pipeline.execute_cycle()["status"] == "SKIPPED_NOT_ELIGIBLE"
+            assert pipeline.execute_cycle(dry_run=True)["status"] == "DRY_RUN_SUCCESS"
+        progress = pipeline.repository.get_trial_progress(pipeline.trial_scheduler.trial_id, "2026-11-20")
+        assert progress["cycles_trial"] == progress["requests_trial"] == 0
+        with pipeline.repository.ingestion_transaction() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM sm_audit_events")
+                assert cur.fetchone()[0] == 0
+
+    def test_earlier_receipt_does_not_suppress_later_trial_slot(self, disposable_db):
+        pipeline = self.pipeline(disposable_db)
+        # Daily receipt lookup belongs to the daily profile, not four-slot trials.
+        with patch.object(pipeline.repository, "get_latest_reconciliation_receipt", side_effect=AssertionError("daily lookup prohibited")), \
+             patch.object(pipeline.trial_scheduler, "get_ny_now", return_value=datetime(2026, 11, 20, 13, 5, tzinfo=__import__("zoneinfo").ZoneInfo("America/New_York"))):
+            should_run, reason = pipeline._step3_check_durable_date_eligibility_under_lock()
+            assert should_run, reason
+            assert pipeline.current_slot_id == "2026-11-20:SLOT_2:1300"
