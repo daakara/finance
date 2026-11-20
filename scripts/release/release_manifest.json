@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+  "release_candidate_commit": "b536191ed981b797ab4a7ed5bb46fbf077eda20b",
   "base_anchor_commit": "16549be1acb9fdafef3c6b97f9115b674f9f4842",
   "total_files": 11,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -24,10 +24,10 @@
     "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
       "originating_pr_number": 311,
-      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "originating_commit": "b536191ed981b797ab4a7ed5bb46fbf077eda20b",
       "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: continuous pipeline 2-issuer trial, prospective filtering, streaming deadlines, and pre-commit checks",
-      "sha256": "5cc8b5fdea4e133d7390905f938f2a30167c3cfeedc86b443b7e6104d079b51a",
-      "size_bytes": 103779
+      "sha256": "f02b0dc6022937475ad96ff4f230e66db182bb6df6511470c3696ff11b435c7d",
+      "size_bytes": 103848
     },
     "analyst_dashboard/smart_money/smart_money_scheduler.py": {
       "operation": "M",
@@ -40,10 +40,10 @@
     "analyst_dashboard/smart_money/storage/postgres_repository.py": {
       "operation": "M",
       "originating_pr_number": 311,
-      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "originating_commit": "b536191ed981b797ab4a7ed5bb46fbf077eda20b",
       "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: repository durable progress tracking and fail-closed release SHA resolution",
-      "sha256": "38d8a3046fc4bb91ff10196fb89e462228a160cecdb3a4e6e4160e72ffe2611e",
-      "size_bytes": 128028
+      "sha256": "c97cb736d01113ae9ee56f057ef9f6f89964400fdf1045ae4e39576e18b87e6a",
+      "size_bytes": 130410
     },
     "analyst_dashboard/smart_money/worker.py": {
       "operation": "M",
@@ -80,10 +80,10 @@
     "tests/test_smart_money_two_issuer_trial.py": {
       "operation": "A",
       "originating_pr_number": 311,
-      "originating_commit": "259477d8517d5ac6800671fe8e67780a63989ffb",
+      "originating_commit": "b536191ed981b797ab4a7ed5bb46fbf077eda20b",
       "governing_requirement": "ARX-SEC-TWO-ISSUER-TRIAL-001: two-issuer trial authorization, ceilings, monotonic deadlines, and postgres integration tests",
-      "sha256": "814e603c2bed553423d8a117aeaf05d288d2c2afc8e58f511e7eccc156aee0b0",
-      "size_bytes": 57736
+      "sha256": "c708217187d502f2b099c97331c001602699aa035f93b7f8ef1631ba0115e5db",
+      "size_bytes": 66967
     },
     "tests/test_smart_money_worker_lifecycle_and_fencing.py": {
       "operation": "M",
@@ -192,3 +192,4 @@
     }
   }
 }
+
