@@ -2,7 +2,7 @@
   "total": 13,
   "passed": 13,
   "failed": 0,
-  "duration_sec": 54.82,
+  "duration_sec": 65.14,
   "results": {
     "RQ-01": {
       "name": "Candidate Identity",
@@ -12,42 +12,42 @@
     "RQ-02": {
       "name": "Release Diff Integrity",
       "status": "PASS",
-      "elapsed_sec": 17.27
+      "elapsed_sec": 16.1
     },
     "RQ-03": {
       "name": "Backend Regression",
       "status": "PASS",
-      "elapsed_sec": 20.94
+      "elapsed_sec": 34.19
     },
     "RQ-04": {
       "name": "Frontend Regression",
       "status": "PASS",
-      "elapsed_sec": 11.5
+      "elapsed_sec": 10.15
     },
     "RQ-05": {
       "name": "Cross-Engine Invariants",
       "status": "PASS",
-      "elapsed_sec": 0.11
+      "elapsed_sec": 0.09
     },
     "RQ-06": {
       "name": "Governance Invariants",
       "status": "PASS",
-      "elapsed_sec": 0.68
+      "elapsed_sec": 0.7
     },
     "RQ-07": {
       "name": "Deployment Safety",
       "status": "PASS",
-      "elapsed_sec": 0.15
+      "elapsed_sec": 0.14
     },
     "RQ-08": {
       "name": "Artifact Provenance",
       "status": "PASS",
-      "elapsed_sec": 0.12
+      "elapsed_sec": 0.11
     },
     "RQ-09": {
       "name": "Compatibility Suite",
       "status": "PASS",
-      "elapsed_sec": 0.91
+      "elapsed_sec": 0.75
     },
     "RQ-10": {
       "name": "Configuration Integrity",
@@ -62,12 +62,12 @@
     "RQ-13": {
       "name": "Financial Integrity",
       "status": "PASS",
-      "elapsed_sec": 2.48
+      "elapsed_sec": 2.26
     },
     "RQ-12": {
       "name": "Qualification Summary",
       "status": "PASS",
-      "elapsed_sec": 0.12
+      "elapsed_sec": 0.11
     }
   }
 }

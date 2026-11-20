@@ -2,19 +2,19 @@
   "control_id": "RQ-04",
   "name": "Frontend Regression & Typecheck",
   "status": "PASS",
-  "start_time": "2026-11-20T01:24:39.090215+00:00",
-  "end_time": "2026-11-20T01:24:50.527591+00:00",
-  "duration_sec": 11.413,
-  "candidate_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+  "start_time": "2026-11-20T10:19:13.956650+00:00",
+  "end_time": "2026-11-20T10:19:24.044731+00:00",
+  "duration_sec": 10.065,
+  "candidate_sha": "72f5937845f9ffa52df9c5474738a6fde2fde2dc",
+  "source_sha": "72f5937845f9ffa52df9c5474738a6fde2fde2dc",
+  "execution_sha": "72f5937845f9ffa52df9c5474738a6fde2fde2dc",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+    "source_sha": "72f5937845f9ffa52df9c5474738a6fde2fde2dc",
+    "execution_sha": "72f5937845f9ffa52df9c5474738a6fde2fde2dc",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -74,5 +74,5 @@
     "sizing_tests_passed": 17,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "4b5ed0f5b953925a22825b41aef5d513020bf7efd43c2a681505b8d101bf243c"
+  "receipt_digest": "62e5e529c41bc1c4c012e08b7ddd168c7d795ec577f56d0d34ff0c163c6bb4b3"
 }

@@ -2,19 +2,19 @@
   "control_id": "RQ-03",
   "name": "Backend Regression Suite",
   "status": "PASS",
-  "start_time": "2026-11-20T01:24:18.165706+00:00",
-  "end_time": "2026-11-20T01:24:39.025637+00:00",
-  "duration_sec": 20.836,
-  "candidate_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+  "start_time": "2026-11-20T10:18:39.767897+00:00",
+  "end_time": "2026-11-20T10:19:13.866861+00:00",
+  "duration_sec": 34.073,
+  "candidate_sha": "72f5937845f9ffa52df9c5474738a6fde2fde2dc",
+  "source_sha": "72f5937845f9ffa52df9c5474738a6fde2fde2dc",
+  "execution_sha": "72f5937845f9ffa52df9c5474738a6fde2fde2dc",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+    "source_sha": "72f5937845f9ffa52df9c5474738a6fde2fde2dc",
+    "execution_sha": "72f5937845f9ffa52df9c5474738a6fde2fde2dc",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -25,7 +25,7 @@
     {
       "assertion": "All backend regression tests pass",
       "observed": {
-        "passed": 199,
+        "passed": 223,
         "failed": 0,
         "exit_code": 0
       },
@@ -56,16 +56,16 @@
     "tests/test_smart_money_backup_retention_safety.py": "6d6345f459b43c1d61975d913d785f754abfcdd00d0ebe7e8c4e0e2be6fa0a56",
     "tests/test_rq10_manifest_authority_negative_cases.py": "a2e36908703d125f44067812e594f487de00aeda56a50024b0d2f589067423e9",
     "tests/test_smart_money_provenance.py": "3b9896cb38c09283235ed372bf185cea9180968d39e7b816d496db19f6b2bc04",
-    "tests/test_smart_money_two_issuer_trial.py": "814e603c2bed553423d8a117aeaf05d288d2c2afc8e58f511e7eccc156aee0b0",
+    "tests/test_smart_money_two_issuer_trial.py": "43f530b009d2fd35c68443ce1ca8c4ceb22a7ebe8b449a4fb4febe1304431d19",
     "tests/test_sm_act_020_continuous_authorization.py": "4d4d85eb4420f629aaa30648bb21eea7a3cbe115ba3aed974ac392d5d9504dd9",
     "tests/test_smart_money_worker_lifecycle_and_fencing.py": "d1515ea74413c3548b0faab616cc9ddea82ae39d519b17fbd756ce4bbc23e810"
   },
   "errors": [],
   "metadata": {
-    "pytest_passed": 199,
+    "pytest_passed": 223,
     "pytest_failed": 0,
-    "pytest_duration": 20.836230039596558,
+    "pytest_duration": 34.073343992233276,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "ecfe00bf6323ec444b67731e98782acfc16615fee5b0c205e1517224e5787cf8"
+  "receipt_digest": "1ccd2b608f759eebbed750643e1ae622677b14ced7e1f55d0dd6c5e4f28c7bd4"
 }

@@ -1,57 +1,65 @@
 {
-  "release_candidate_commit": "5d6e3610e215dfbc29a51faf474a26f72bd28017",
-  "base_anchor_commit": "b937706e1ff2391cbcb61b359ffd981d98827c0a",
-  "total_files": 6,
+  "release_candidate_commit": "7106a990189b5795b62e82653e487c414c9e2ea5",
+  "base_anchor_commit": "868d7afcd528006c2323e6b79b5a17f2f20f677c",
+  "total_files": 7,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SEC-TWO-ISSUER-TRIAL-001",
+  "directive": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-028",
   "files": {
-    "analyst_dashboard/smart_money/continuous_pipeline.py": {
+    "README.md": {
       "operation": "M",
-      "originating_pr_number": 312,
-      "originating_commit": "f88ecf343183dfbdfb44561d20f17963ad0b5ad5",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "da01c7289a5a0e46c52b0dad640cadccde6ac72ea08d1bd50f2c1d01551fe3a9",
-      "size_bytes": 104180
+      "originating_pr_number": 310,
+      "originating_commit": "7106a990189b5795b62e82653e487c414c9e2ea5",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-028: reconcile production status, operational holds, and sprint planning.",
+      "sha256": "e5fa4b0834fed0a8845d22a4889e6b2981ab108c9370c3fcbd35d55171b1c0dc",
+      "size_bytes": 20088
     },
-    "analyst_dashboard/smart_money/smart_money_scheduler.py": {
+    "PROJECT.md": {
       "operation": "M",
-      "originating_pr_number": 312,
-      "originating_commit": "f88ecf343183dfbdfb44561d20f17963ad0b5ad5",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "317fa506688b02f64f6245f4fff9bbba2770a4093f83f38875999c1ac039de1a",
-      "size_bytes": 17901
+      "originating_pr_number": 310,
+      "originating_commit": "7106a990189b5795b62e82653e487c414c9e2ea5",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-028: reconcile production status, operational holds, and sprint planning.",
+      "sha256": "296c03aef0b20b516bd4758777134f60287cc0c2034d85fdddc9518f478998fc",
+      "size_bytes": 11022
     },
-    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
-      "operation": "M",
-      "originating_pr_number": 312,
-      "originating_commit": "f88ecf343183dfbdfb44561d20f17963ad0b5ad5",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "9894afe621b287cc77906d8865a196b696aa3bb2dc50ac885443e1395a8af9cd",
-      "size_bytes": 131782
-    },
-    "analyst_dashboard/smart_money/worker.py": {
-      "operation": "M",
-      "originating_pr_number": 312,
-      "originating_commit": "5d6e3610e215dfbc29a51faf474a26f72bd28017",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "c32f01da6d774cb4dad55fd5ecfd2e3108cf6764a127fc2f2d509819075b18dc",
-      "size_bytes": 50210
-    },
-    "tests/test_smart_money_two_issuer_trial.py": {
-      "operation": "M",
-      "originating_pr_number": 312,
-      "originating_commit": "163cebebf3646dcf0ad6555d0bac2b314cbd23a4",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "43f530b009d2fd35c68443ce1ca8c4ceb22a7ebe8b449a4fb4febe1304431d19",
-      "size_bytes": 76779
-    },
-    "docs/reports/SEC_TRIAL_SLOT_DISPATCH_QUALIFICATION_2026_11_20.md": {
+    "docs/ARX_STATUS_ADDENDUM_2026_11_20.md": {
       "operation": "A",
-      "originating_pr_number": 312,
-      "originating_commit": "f88ecf343183dfbdfb44561d20f17963ad0b5ad5",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "b57c7205f79e0b259924b4c8f92c9d7e73e8ffd042b26edf474b33421df62f04",
-      "size_bytes": 4524
+      "originating_pr_number": 310,
+      "originating_commit": "7106a990189b5795b62e82653e487c414c9e2ea5",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-028: reconcile production status, operational holds, and sprint planning.",
+      "sha256": "4468f43d74e75352df591961626d2d45bbd8ac8b148ddaf54ddb68f4b05ef069",
+      "size_bytes": 22424
+    },
+    "docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md": {
+      "operation": "M",
+      "originating_pr_number": 310,
+      "originating_commit": "7106a990189b5795b62e82653e487c414c9e2ea5",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-028: reconcile production status, operational holds, and sprint planning.",
+      "sha256": "b5898c24d4a1cf7eb141f8914fbb8ce58ac5ef222878e688f18392fb9bda43a3",
+      "size_bytes": 9520
+    },
+    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_20.md": {
+      "operation": "A",
+      "originating_pr_number": 310,
+      "originating_commit": "7106a990189b5795b62e82653e487c414c9e2ea5",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-028: reconcile production status, operational holds, and sprint planning.",
+      "sha256": "7ba63d132d164795d35563ec883f9dcc6a3c2532359e476ff93c534e8226f1d7",
+      "size_bytes": 19582
+    },
+    "docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_20.md": {
+      "operation": "A",
+      "originating_pr_number": 310,
+      "originating_commit": "7106a990189b5795b62e82653e487c414c9e2ea5",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-028: reconcile production status, operational holds, and sprint planning.",
+      "sha256": "1dd21948345589855a0914e10b29e84d93731cea888c96dbe8be7ba68c8a4664",
+      "size_bytes": 14433
+    },
+    "docs/planning/ENGINEERING_BACKLOG.md": {
+      "operation": "M",
+      "originating_pr_number": 310,
+      "originating_commit": "7106a990189b5795b62e82653e487c414c9e2ea5",
+      "governing_requirement": "ARX-DOCS-COMPREHENSIVE-RECONCILIATION-028: reconcile production status, operational holds, and sprint planning.",
+      "sha256": "6858acafa0ee692f6722de4fa924a25d2fb7745d1e1d86b2aa22f76af9db0867",
+      "size_bytes": 34301
     }
   },
   "qualification_framework_files": {
@@ -61,8 +69,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "ee4eb44e9fca9cb6d963bda632597fa9f5cc30cc049706ea648757c2a0b22ccc",
-      "size_bytes": 58211,
+      "sha256": "f151c391a881314633b46f9bcc3a5de4a58d68e2a6517eab13f29c9bdd321a87",
+      "size_bytes": 58216,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
