@@ -1,16 +1,18 @@
 # Project: daakara/finance (ARX Terminal)
 
+> **Current Production Baseline (2026-11-20):** `release/production` @ SHA [`868d7afcd528006c2323e6b79b5a17f2f20f677c`](https://github.com/daakara/finance/commit/868d7afcd528006c2323e6b79b5a17f2f20f677c). Release qualification and surgical post-launch releases through PR #312 (Confluence drawer presentation truth, Pre-Flight quote provenance & sizing authorization, canonical second profit target, earnings call time disentanglement, SEC atomic PIT snapshots, amendment classification, bounded one-shot NVDA executor, allowlisted AAPL canary, offline sequential pair qualification, fail-closed sequential canary wrapper with deterministic content preservation, crash-safe two-issuer ingestion-only trial qualification under PR #311, and durable trial slot dispatch under PR #312) are merged and deployed to production. Supervised one-shot canaries and candidate ingestions are complete (16 NVDA, 6 AAPL filings). Two-issuer recurring ingestion trial Day 1 armed (`ARMED`) awaiting natural scheduled execution, holding advisory lock `401007311509093371`. Documentation PR #310 merge is deferred to protect worker continuity and grant binding.
+
 ## Architecture
-- **Backend**: FastAPI 0.110+ on Python 3.11 with Starlette, Uvicorn, SQLite (`MarketDatabaseEngine`, `HistoryDatabaseEngine`), and external providers (Yahoo Finance, FRED API, SEC EDGAR, FINRA Transparency).
+- **Backend**: FastAPI 0.110+ on Python 3.12 with Starlette, Uvicorn, PostgreSQL 16.x (`postgres_connection`, `postgres_coordination`, `postgres_preservation`), SQLite (`MarketDatabaseEngine`, `HistoryDatabaseEngine`), and external providers (Yahoo Finance, FRED API, SEC EDGAR, FINRA Transparency).
 - **Middleware**: Redis Sliding Window Rate Limiter (with in-memory fallback), API Key Authentication (HMAC constant-time), Security Headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options), CORS Middleware with strict origin whitelist.
 - **Quant Engines**:
-  - `OptimalExecutionEngine`: Mark Minervini VCP Stage 2 execution ladders (Stop, Entry Min/Max, TP1, TP2, R:R >= 1.85:1).
+  - `OptimalExecutionEngine`: Mark Minervini VCP Stage 2 execution ladders (Stop, Entry Min/Max, TP1, canonical ATR-anchored TP2, R:R >= 1.85:1).
   - `TraderArchetypes`: 5-Persona Investor Models (Warren Buffett, Nancy Pelosi, Stanley Druckenmiller, Jim Simons, David Gardner).
   - `AdvancedRiskAnalyzer`: Cornish-Fisher 95/99% Modified VaR, Sortino downside deviation, GMM market regimes.
-  - `SmartMoneyEngine`: Congressional STOCK Act disclosures (45-day statutory violation penalty), SEC Form 4 insider transactions, options flow sweeps.
-  - `ConfluenceEngine`: 4-Pillar composite conviction scoring & Fractional Half-Kelly position sizing.
+  - `SmartMoneyEngine`: Congressional STOCK Act disclosures (45-day statutory violation penalty), SEC Form 4 insider transactions, options flow sweeps, atomic Step 7 ingestion commits, repeatable-read historical point-in-time snapshot extraction, statutory XML remarks/footnotes amendment classification (`FULL_REPLACEMENT`, `PARTIAL_CORRECTION`, `ADDITIONAL_TRANSACTION`), bounded two-issuer sequential canary execution (AAPL/NVDA), crash-safe two-issuer trial pipeline with lease fencing and pre-reserved request budgets (PR #311), and durable America/New_York trial slot dispatch (PR #312).
+  - `ConfluenceEngine`: 4-Pillar composite conviction scoring ($35\%$ Technicals, $30\%$ Fundamentals, $20\%$ Setups/VCP, $15\%$ Macro), coverage caps ($50/72/84/96$), and Fractional Half-Kelly position sizing.
   - `GemScreener`: Peter Lynch GARP & Greenblatt Magic Formula screeners.
-- **Frontend**: Next.js 14.2 App Router (SSG `output: "export"`, `trailingSlash: true`, 98 static routes), React 18, TailwindCSS, TradingView Lightweight Charts v4 with Cyber Dark & Paper Light themes, SSR fallback shells (`TerminalSsrShell`, `SmartMoneySsrShell`, `CompareSsrShell`).
+- **Frontend**: Next.js 14.2 App Router (SSG `output: "export"`, `trailingSlash: true`, 98 static routes), React 18, TailwindCSS, TradingView Lightweight Charts v4 with Cyber Dark & Paper Light themes, SSR fallback shells (`TerminalSsrShell`, `SmartMoneySsrShell`, `CompareSsrShell`). Deployed on Cloudflare Pages.
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
@@ -42,10 +44,11 @@
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
 | M1 | Full-Stack Production Readiness & Security Audit | Features 1-8: FastAPI routes, middleware, SQLite data engines, error masking, rate limiter, FINRA fix, Confluence fix | none | DONE |
-| M2 | Quantitative Models & Financial Domain Invariants | Features 9-14: Minervini ladders R:R >= 1.85, 5-persona models, Sortino standardization, Cornish-Fisher VaR, STOCK Act forensics, masterCatalog crypto fix | M1 | IN_PROGRESS |
-| M3 | Frontend UI/UX & Coherent Insights Review | Features 15-20: Next.js 98 static routes, SSR shells, spot price hydration, screener R:R math, brand parity, ESLint config, theme & viewport checks | M2 | PLANNED |
-| M4 | E2E Testing Track Infrastructure & Test Suite | Feature 21: Comprehensive test infra, 4-tier test cases, TEST_READY.md publication | parallel to M1-M3 | PLANNED |
-| M5 | Final Milestone: 100% Test Pass & Adversarial Hardening | Feature 22: Phase 1 (100% test pass) + Phase 2 (Tier 5 adversarial hardening) + Forensic Audit Gate | M1, M2, M3, M4 | PLANNED |
+| M2 | Quantitative Models & Financial Domain Invariants | Features 9-14: Minervini ladders R:R >= 1.85, 5-persona models, Sortino standardization, Cornish-Fisher VaR, STOCK Act forensics, masterCatalog crypto fix | M1 | DONE |
+| M3 | Frontend UI/UX & Coherent Insights Review | Features 15-20: Next.js 98 static routes, SSR shells, spot price hydration, screener R:R math, brand parity, ESLint config, theme & viewport checks | M2 | DONE |
+| M4 | E2E Testing Track Infrastructure & Test Suite | Feature 21: Comprehensive test infra, 4-tier test cases, TEST_READY.md publication | parallel to M1-M3 | DONE |
+| M5 | Final Milestone: 100% Test Pass & Adversarial Hardening | Feature 22: Phase 1 (100% test pass) + Phase 2 (Tier 5 adversarial hardening) + Forensic Audit Gate | M1, M2, M3, M4 | DONE |
+| M6 | Post-Launch Hardening, Canary Qualification & Two-Issuer Trial Readiness | PRs #281–#312: Confluence drawer presentation truth, Pre-Flight quote provenance & sizing authorization, canonical TP2, earnings time disentanglement, SEC Form 4 atomic PIT ingestion, amendment classification, bounded one-shot executors, sequential AAPL/NVDA canary pair wrapper with deterministic content preservation, crash-safe two-issuer trial pipeline (PR #311), and durable trial slot dispatch (PR #312) | M5 | DONE |
 
 ## Interface Contracts
 ### API ↔ Frontend
