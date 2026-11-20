@@ -1,7 +1,7 @@
 {
   "plan_id": "RADAR-500-MARKET-DATA-REFRESH-PLAN-166",
-  "version": "1.0.0-QUALIFIED",
-  "created_at_utc": "2026-11-20T21:15:00Z",
+  "version": "2.0.0-CORRECTED",
+  "created_at_utc": "2026-11-20T21:40:00Z",
   "issue_reference": "Issue #166",
   "target_authority": {
     "platform": "Railway",
@@ -10,9 +10,24 @@
     "serving_deployment_id": "9f28fb4e-c804-4b6a-9a25-1092c496026d",
     "serving_git_revision": "868d7afcd528006c2323e6b79b5a17f2f20f677c",
     "storage_mount_path": "/root",
-    "market_store_path": "/root/market_store.db",
-    "universe_store_path": "/root/universe_store.db",
-    "scanner_store_path": "/root/scanner_store.db"
+    "runtime_path_resolution": {
+      "resolver_logic": "os.path.join(os.getenv('FINANCE_DATA_DIR', os.getenv('DATA_DIR', os.path.expanduser('~'))), '.finance_market_store.db')",
+      "resolved_market_store_path": "/root/.finance_market_store.db",
+      "resolved_universe_store_path": "/root/.finance_universe_store.db",
+      "resolved_scanner_store_path": "/root/.finance_scanner_store.db"
+    },
+    "execution_time_identity_check": {
+      "required": true,
+      "checks": [
+        "CONTAINER_DEPLOYMENT_ID_EQUALS_9f28fb4e",
+        "CONTAINER_GIT_REVISION_EQUALS_868d7afc",
+        "STORE_FILE_EXISTS_AND_NON_ZERO",
+        "STORE_CONTAINS_UNIVERSE_BUILD_UB_ARX_EXPANSION_500_20261108",
+        "STORE_CONTAINS_PUBLISHED_HASH_5f60b47d",
+        "STORE_CONTAINS_MINIMUM_500_DISTINCT_SYMBOLS"
+      ],
+      "mismatch_policy": "ABORT_IMMEDIATELY_FAIL_CLOSED"
+    }
   },
   "universe_specification": {
     "universe_build_id": "UB-ARX-EXPANSION-500-20261108",
@@ -30,70 +45,79 @@
     "ARX_CONFLUENCE_INTEGRITY_HOLD": "ACTIVE",
     "PHASE_A3_UX_HOLD": "ACTIVE"
   },
-  "provider_contract": {
-    "provider": "ALPACA_MARKET_DATA_V2",
-    "feed": "sip",
-    "tape_coverage": "Consolidated Tape (CTA Plan A/B, UTP Plan C, FINRA TRF)",
-    "adjustment": "split",
-    "adjustment_state": "SPLIT_ADJUSTED_ONLY",
-    "rate_limit_per_minute": 200,
-    "pacing_delay_seconds": 0.35,
-    "effective_requests_per_minute": 171.4,
-    "batch_size": 50,
-    "max_retries_per_page": 3
+  "writer_attribution_epistemic_status": {
+    "demonstrated_in_code_and_reproduction": [
+      "MarketDatabaseEngine.save_daily_candles executes DELETE FROM asset_ohlcv_provenance for inserted dates",
+      "api/routes/analytics.py tactical setup background worker calls save_daily_candles",
+      "api/main.py startup warmup calls save_daily_candles on cold cache",
+      "save_daily_candles purges provenance to prevent contradictory source attribution"
+    ],
+    "unverified_inferred_attributions": [
+      "Historical timestamped request logs attributing specific symbol refreshes to individual endpoints are UNVERIFIED without container access logs",
+      "Attribution of the 14 early unprovenanced symbols to specific historical bootstrapping commits is UNVERIFIED"
+    ]
   },
-  "partition_strategy": {
+  "recurrence_prevention": {
+    "operational_isolation_strategy": [
+      "Set DISABLE_BACKGROUND_MARKET_REFRESH=true in serving environment to suppress unprovenanced Yahoo Finance background overwrites",
+      "Optional: Mount serving container market database with read-only connection parameters (?mode=ro) during serving phase"
+    ],
+    "provenance_aware_writer_guard": "Analytics endpoints check get_daily_candles_with_evidence; if candidate possesses authoritative Alpaca SIP provenance, unprovenanced Yahoo Finance overwrites are bypassed",
+    "contradictory_provenance_invariant": "save_daily_candles continues to delete provenance when unprovenanced data is written for ad-hoc tickers, ensuring replaced different-source bars never inherit false provenance"
+  },
+  "derived_replacement_windows": {
     "partition_a_incremental_refresh": {
       "symbol_count": 433,
       "action": "REFRESH",
       "start_session": "2026-11-07",
-      "end_session_determination": "DERIVED_COMPLETED_SESSION",
-      "rationale": "Retain verified 2025-01-02 through 2026-11-06 Alpaca SIP history; append missing recent tail sessions atomically."
+      "end_session": "DERIVED_COMPLETED_SESSION",
+      "preserved_history_window": "2025-01-02 to 2026-11-06",
+      "rationale": "Retain 100% of verified split-adjusted Alpaca SIP historical prefix; append missing recent tail sessions."
     },
-    "partition_b_scoped_repair_replacement": {
-      "symbol_count": 67,
+    "partition_b_standard_unprovenanced": {
+      "symbol_count": 66,
       "action": "REPLACE",
       "start_session": "2025-01-02",
-      "end_session_determination": "DERIVED_COMPLETED_SESSION",
-      "symbols": [
-        "AAPL", "ABT", "ACLS", "ADBE", "AMD", "AMZN", "ANET", "APP", "AVGO", "BAC",
-        "CDNS", "CELH", "CIEN", "COIN", "CRWD", "CSCO", "DDOG", "DECK", "DIS", "DUOL",
-        "DXCM", "ELF", "EME", "ETN", "FIX", "GEV", "GOOGL", "HOOD", "IONQ", "ISRG",
-        "JNJ", "JPM", "KLAC", "LLY", "LNTH", "LRCX", "LULU", "MARA", "MDB", "MEDP",
-        "META", "MNST", "MPWR", "MRK", "MSFT", "MSTR", "NET", "NOW", "NVDA", "ON",
-        "ONON", "PANW", "PFE", "PG", "PLTR", "PODD", "POWI", "PWR", "RKLB", "SMCI",
-        "SNPS", "TMDX", "TSLA", "TXN", "ULTA", "VRTX", "WMT"
-      ],
-      "rationale": "Purge unprovenanced legacy/tactical Yahoo Finance bars and establish pure Alpaca SIP split-adjusted provenance across full reviewed window [2025-01-02, T_completed]."
-    }
+      "end_session": "DERIVED_COMPLETED_SESSION",
+      "rationale": "Earliest stored dates range from 2025-08-27 to 2025-11-03. Window [2025-01-02, T_completed] completely envelopes existing unprovenanced bars, satisfying the adapter scope invariant without triggering outside-window errors."
+    },
+    "partition_b_extended_unprovenanced_nvda": {
+      "symbol_count": 1,
+      "symbol": "NVDA",
+      "action": "REPLACE",
+      "start_session": "2023-10-27",
+      "end_session": "DERIVED_COMPLETED_SESSION",
+      "rationale": "NVDA has unprovenanced history extending back to 2023-10-27 (769 bars). Derived replacement window must start at 2023-10-27 to prevent fail-closed INCOMPATIBLE_HISTORY_OUTSIDE_REVIEWED_SCOPE error."
+    },
+    "adjustment_basis_consequences": "Replacing unprovenanced bars with Alpaca Consolidated Tape SIP split-adjusted bars guarantees 100% uniform SPLIT_ADJUSTED_ONLY basis (dividends unadjusted) across all 500 symbols, eliminating mixed-adjustment anomalies in moving averages."
   },
-  "execution_duration_estimates": {
-    "partition_a_requests": 433,
-    "partition_a_duration_seconds": 151.55,
-    "partition_b_requests": 134,
-    "partition_b_duration_seconds": 46.90,
-    "total_network_duration_seconds": 198.45,
-    "total_bounded_window_minutes": 20
+  "execution_budgets_and_deadlines": {
+    "pagination_budget_max_pages_per_symbol": 25,
+    "expected_pages_partition_a": 433,
+    "expected_pages_partition_b": 67,
+    "total_expected_primary_pages": 500,
+    "retry_budget_max_per_page": 3,
+    "retry_budget_global_ceiling": 30,
+    "fallback_budget_polygon": 0,
+    "aggregate_request_hard_cap": 550,
+    "per_request_timeout_seconds": 5.0,
+    "per_symbol_deadline_seconds": 15.0,
+    "overall_wall_clock_deadline_seconds": 1200,
+    "pacing_delay_seconds": 0.35,
+    "effective_requests_per_minute": 171.4,
+    "checkpoint_interval_symbols": 50,
+    "checkpoint_summary_path": "/root/refresh_checkpoint_summary.json"
   },
-  "pre_execution_backup": {
-    "backup_method": "SQLITE3_ONLINE_BACKUP_API",
-    "source_path": "/root/market_store.db",
-    "backup_target_path": "/root/backup_market_store_pre_refresh_166.db",
-    "pre_flight_checksum_required": true
+  "backup_and_recovery": {
+    "method": "SQLITE3_ONLINE_BACKUP_API",
+    "source_path": "/root/.finance_market_store.db",
+    "target_path": "/root/backup_finance_market_store_pre_refresh_166.db",
+    "rollback_command": "cp /root/backup_finance_market_store_pre_refresh_166.db /root/.finance_market_store.db && rm -f /root/.finance_market_store.db-wal /root/.finance_market_store.db-shm"
   },
-  "stop_conditions": [
-    "HTTP_401_OR_403_CREDENTIAL_ERROR",
-    "HTTP_429_RATE_LIMIT_EXHAUSTION_AFTER_3_RETRIES",
-    "SQLITE_BUSY_OR_LOCK_TIMEOUT_EXCEEDING_10_SECONDS",
-    "CONCURRENT_SMART_MONEY_WORKER_OR_SCANNER_PROCESS_DETECTED",
-    "VALIDATION_REJECTION_RATE_EXCEEDING_ONE_PERCENT",
-    "ANY_ACCESS_OR_CONTENTION_ON_POSTGRES_LOCK_401007311509093371"
-  ],
-  "post_refresh_verification": {
-    "auditor_script": "scripts/diagnostics/audit_radar_universe_readiness_166.py",
-    "required_readiness_verdict": "READY",
-    "target_ready_count": 500,
-    "target_stale_count": 0,
-    "target_missing_provenance_count": 0
+  "acceptance_criteria_accounting_closure": {
+    "formula": "500 == READY + DOCUMENTED_UNRESOLVED_EXCEPTIONS",
+    "ready_definition": "Completed session bars, >=252 depth, 100% Alpaca SIP split-adjusted provenance, VCP eligible",
+    "exception_definition": "Documented corporate action delisting or upstream exchange trading halt with timestamped receipt",
+    "zero_unaccounted_symbols_rule": true
   }
 }
