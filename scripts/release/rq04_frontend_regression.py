@@ -124,7 +124,25 @@ def main():
         "passed": cdns_passed,
     })
 
-    # 5. Radar Evidence, Ranking & Analysis-Handoff Qualification Suite (Issue #166)
+    # 5. SEC Form 4 Disclosure Evidence View Verification Suite
+    print("Running SEC Form 4 Disclosure Evidence View regression tests...")
+    sec_disc_cmd = [npx_bin, "tsx", "tests/secDisclosureEvidenceView.test.ts"]
+    res_sec_disc = subprocess.run(
+        sec_disc_cmd, cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, encoding="utf-8", errors="ignore",
+    )
+    print(res_sec_disc.stdout)
+    sec_disc_passed = (res_sec_disc.returncode == 0)
+    if not sec_disc_passed:
+        errors.append(f"SEC Form 4 Disclosure tests failed with exit code {res_sec_disc.returncode}")
+    assertions.append({
+        "assertion": "SEC Form 4 Disclosure Evidence View verification suite passes",
+        "observed": {"exit_code": res_sec_disc.returncode},
+        "passed": sec_disc_passed,
+    })
+
+    # 6. Radar Evidence, Ranking & Analysis-Handoff Qualification Suite (Issue #166)
     print("Running Radar Evidence, Ranking & Analysis-Handoff qualification tests...")
     radar_cmd = [npx_bin, "tsx", "tests/radarEvidenceRankingHandoffQualification.test.ts"]
     res_radar = subprocess.run(
@@ -154,6 +172,7 @@ def main():
         "frontend/components/WeeklyConfluenceSpotlight.tsx",
         "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts",
         "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts",
+        "frontend/tests/secDisclosureEvidenceView.test.ts",
         "frontend/tests/radarEvidenceRankingHandoffQualification.test.ts",
         "frontend/lib/radarPresentation.ts",
         "frontend/lib/radarRanking.ts",
