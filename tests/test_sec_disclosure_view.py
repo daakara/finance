@@ -117,6 +117,9 @@ def temp_sec_db():
             receipt_version INTEGER,
             missing_count INTEGER,
             material_gap_count INTEGER,
+            failure_reasons TEXT,
+            reconciliation_hash TEXT,
+            release_sha TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
         """
@@ -298,12 +301,49 @@ def test_end_to_end_sale_vs_older_purchase_selection(temp_sec_db):
         """
     )
 
-    # Coverage receipt: PARTIAL
+    # Coverage receipt: PARTIAL with governed canonical hash and failure_reasons JSONB
+    from analyst_dashboard.smart_money.storage.postgres_repository import compute_canonical_receipt_hash
+    import json
+    rc_reasons = {
+        "ticker": "AAPL",
+        "issuer_cik": "0000320193",
+        "covered_tickers": ["AAPL"],
+        "covered_ciks": ["0000320193"],
+        "accession_inventory": ["0001140361-26-044773", "0001140361-26-044952"],
+        "source_hashes": {
+            "0001140361-26-044773": "hash_older_purchase",
+            "0001140361-26-044952": "93aa1a0a864d72ccc38dcd00a5ed6258b64634dbde4ab271ea78db8efd3841d0",
+        },
+        "material_gaps": [],
+        "schema_version": 1,
+    }
+    rc_hash = compute_canonical_receipt_hash(
+        schema_version=1,
+        ticker="AAPL",
+        issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z",
+        interval_end="2026-11-19T23:30:21Z",
+        certified_watermark="2026-11-19T23:30:21Z",
+        receipt_version=2,
+        supersedes_receipt_id=None,
+        accession_inventory=rc_reasons["accession_inventory"],
+        source_hashes=rc_reasons["source_hashes"],
+        material_gaps=[],
+        zero_activity_proof=None,
+    )
     cur.execute(
         """
-        INSERT INTO sm_reconciliation_receipts (receipt_id, ticker, issuer_cik, interval_start, interval_end, certified_watermark, coverage_status, receipt_version, missing_count, material_gap_count)
-        VALUES ('rc-1', 'AAPL', '0000320193', '2026-11-01', '2026-11-19', '2026-11-19T23:30:21Z', 'PARTIAL', 2, 0, 1);
-        """
+        INSERT INTO sm_reconciliation_receipts (
+            receipt_id, ticker, issuer_cik, interval_start, interval_end, certified_watermark,
+            coverage_status, receipt_version, missing_count, material_gap_count,
+            failure_reasons, reconciliation_hash, release_sha
+        ) VALUES (
+            'rc-1', 'AAPL', '0000320193', '2026-11-01T00:00:00Z', '2026-11-19T23:30:21Z', '2026-11-19T23:30:21Z',
+            'PARTIAL', 2, 0, 1,
+            ?, ?, '868d7afc'
+        );
+        """,
+        (json.dumps(rc_reasons), rc_hash),
     )
     conn.commit()
     conn.close()

@@ -46,7 +46,8 @@ def test_macro_contract_available_and_live():
     }
 
     with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher.get_macro_indicators", return_value=mock_indicators):
-        payload = _build_macro_contract_payload()
+        import datetime
+        payload = _build_macro_contract_payload(ref_date=datetime.date(2026, 11, 15))
 
         assert payload["availability"] == "AVAILABLE"
         assert payload["is_live"] is True
@@ -203,7 +204,8 @@ def test_fred_fetcher_captures_dfii10_real_interest_rate():
         return None
 
     with patch.object(fetcher, "fetch_latest_observation_record", side_effect=mock_fetch):
-        indicators = fetcher.get_macro_indicators()
+        import datetime
+        indicators = fetcher.get_macro_indicators(ref_date=datetime.date(2026, 11, 15))
 
         assert indicators["availability"] == "AVAILABLE"
         assert indicators["yield_curve_10y2y"] == 0.35

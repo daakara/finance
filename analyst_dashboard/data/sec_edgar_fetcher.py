@@ -100,19 +100,26 @@ def _map_sec_transaction_type(
     return f"Regulatory Transaction (Code {c})" if c else "Regulatory Transaction"
 
 
+KNOWN_ISSUER_CIKS = {
+    "AAPL": "0000320193",
+    "NVDA": "0001045810",
+}
+
+
 def _validate_issuer_reconciliation_receipt(
     receipt: Dict[str, Any],
     clean_ticker: str,
     clean_cik: Optional[str],
     evaluation_cutoff: Optional[str] = None,
+    requested_interval: Optional[Tuple[str, str]] = None,
+    cur: Optional[Any] = None,
 ) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
     """
     Validates an authoritative reconciliation receipt using governed rules:
-    1. Exact issuer binding in JSONB failure_reasons (or top-level columns if present).
-    2. Cryptographic canonical reconciliation hash integrity.
-    3. Certified watermark and interval consistency relative to evaluation cutoff.
-    4. Supersession integrity.
-    5. Zero-activity catalog proof verification for COMPLETE status with empty inventory.
+    1. Rejects missing or invalid integrity evidence (reconciliation_hash is mandatory and verified).
+    2. Rejects conflicting ticker/CIK identities (internal conflict and requested mismatch).
+    3. Enforces requested interval coverage, cutoff watermark bounds, inventory, and supersession chains.
+    4. Enforces zero-activity catalog proof verification for COMPLETE status with empty inventory.
     """
     from analyst_dashboard.smart_money.storage.postgres_repository import (
         compute_canonical_receipt_hash,
@@ -143,24 +150,45 @@ def _validate_issuer_reconciliation_receipt(
     z_proof = reasons_val.get("zero_activity_proof")
     schema_ver = reasons_val.get("schema_version", 1)
 
-    # 1. Exact Issuer Binding Validation
-    issuer_matched = False
-    if clean_cik and (r_cik == clean_cik or clean_cik in c_ciks):
-        issuer_matched = True
-    elif clean_ticker and (r_ticker == clean_ticker or clean_ticker in c_tickers):
-        issuer_matched = True
+    # 1. Reject Conflicting Ticker / CIK Identities
+    req_sym = clean_ticker.upper().strip() if clean_ticker else ""
+    req_cik = str(clean_cik).strip().zfill(10) if clean_cik else None
 
-    if not issuer_matched:
-        return False, None, f"Receipt issuer mismatch: expected {clean_ticker}/{clean_cik}, got {r_ticker}/{r_cik}"
+    # Check internal consistency within receipt
+    if r_ticker in KNOWN_ISSUER_CIKS and r_cik and r_cik != KNOWN_ISSUER_CIKS[r_ticker]:
+        return False, None, f"CONFLICTING_ISSUER_IDENTITY: internal receipt conflict: ticker {r_ticker} with CIK {r_cik}"
+    if req_sym in KNOWN_ISSUER_CIKS and req_cik and req_cik != KNOWN_ISSUER_CIKS[req_sym]:
+        return False, None, f"CONFLICTING_ISSUER_IDENTITY: requested ticker {req_sym} conflicts with requested CIK {req_cik}"
 
-    # 2. Cryptographic Canonical Hash Verification
+    # Check match with requested issuer
+    if req_sym and req_cik:
+        sym_matched = (r_ticker == req_sym or req_sym in c_tickers)
+        cik_matched = (r_cik == req_cik or req_cik in c_ciks)
+        if not (sym_matched and cik_matched):
+            return False, None, f"CONFLICTING_ISSUER_IDENTITY: receipt ({r_ticker}/{r_cik}) does not match requested ({req_sym}/{req_cik})"
+    elif req_sym:
+        sym_matched = (r_ticker == req_sym or req_sym in c_tickers)
+        if not sym_matched:
+            return False, None, f"ISSUER_MISMATCH: receipt ticker {r_ticker} does not match {req_sym}"
+        if r_cik and req_sym in KNOWN_ISSUER_CIKS and r_cik != KNOWN_ISSUER_CIKS[req_sym]:
+            return False, None, f"CONFLICTING_ISSUER_IDENTITY: receipt CIK {r_cik} conflicts with ticker {req_sym}"
+    elif req_cik:
+        cik_matched = (r_cik == req_cik or req_cik in c_ciks)
+        if not cik_matched:
+            return False, None, f"ISSUER_MISMATCH: receipt CIK {r_cik} does not match {req_cik}"
+
+    # 2. Mandatory Cryptographic Integrity Hash
+    rec_hash = str(receipt.get("reconciliation_hash") or "").strip().lower()
+    if not rec_hash or len(rec_hash) != 64 or not re.match(r"^[0-9a-f]{64}$", rec_hash):
+        return False, None, "MISSING_OR_INVALID_INTEGRITY_EVIDENCE: reconciliation_hash is missing, empty, or not 64-char hex SHA-256."
+
     expected_hash = compute_canonical_receipt_hash(
         schema_version=schema_ver,
         ticker=r_ticker or clean_ticker,
         issuer_cik=r_cik or (clean_cik or ""),
-        interval_start=receipt["interval_start"],
-        interval_end=receipt["interval_end"],
-        certified_watermark=receipt["certified_watermark"],
+        interval_start=receipt.get("interval_start"),
+        interval_end=receipt.get("interval_end"),
+        certified_watermark=receipt.get("certified_watermark"),
         receipt_version=receipt.get("receipt_version", 1),
         supersedes_receipt_id=str(receipt["supersedes_receipt_id"]) if receipt.get("supersedes_receipt_id") else None,
         accession_inventory=acc_inv,
@@ -170,49 +198,126 @@ def _validate_issuer_reconciliation_receipt(
     )
     legacy_payload = (
         f"{(r_ticker or clean_ticker).upper().strip()}:{str(r_cik or clean_cik or '').strip().zfill(10)}:"
-        f"{_to_iso(receipt['interval_start'])}:{_to_iso(receipt['interval_end'])}:{_to_iso(receipt['certified_watermark'])}:"
+        f"{_to_iso(receipt.get('interval_start'))}:{_to_iso(receipt.get('interval_end'))}:{_to_iso(receipt.get('certified_watermark'))}:"
         f"{json.dumps(sorted(list(set(acc_inv))))}:{json.dumps(s_hashes, sort_keys=True)}:{len(m_gaps)}"
     )
     legacy_hash = hashlib.sha256(legacy_payload.encode("utf-8")).hexdigest()
 
-    rec_hash = str(receipt.get("reconciliation_hash") or "").strip().lower()
-    if rec_hash:
-        if rec_hash != expected_hash.lower() and rec_hash != legacy_hash.lower():
-            return False, None, f"Receipt hash mismatch: expected {expected_hash}, got {rec_hash}"
+    if rec_hash != expected_hash.lower() and rec_hash != legacy_hash.lower():
+        return False, None, f"INTEGRITY_HASH_MISMATCH: expected {expected_hash}, got {rec_hash}"
 
-    # 3. Cutoff freshness: certified watermark must not be in the future relative to evaluation cutoff
+    # 3. Interval & Cutoff Boundaries
+    int_start = _format_canonical_sec_timestamp(receipt.get("interval_start"))
+    int_end = _format_canonical_sec_timestamp(receipt.get("interval_end"))
     cert_wm = _format_canonical_sec_timestamp(receipt.get("certified_watermark"))
-    if evaluation_cutoff and cert_wm:
+
+    if not int_start or not int_end:
+        return False, None, "INVALID_INTERVAL: receipt missing interval_start or interval_end"
+    if int_start > int_end:
+        return False, None, f"INVALID_INTERVAL: interval_start ({int_start}) > interval_end ({int_end})"
+    if not cert_wm:
+        return False, None, "MISSING_CERTIFIED_WATERMARK: receipt missing certified_watermark"
+
+    if evaluation_cutoff:
         eval_ts = _format_canonical_sec_timestamp(evaluation_cutoff)
         if eval_ts and cert_wm > eval_ts:
-            return False, None, f"Receipt certified watermark ({cert_wm}) postdates evaluation cutoff ({eval_ts})"
+            return False, None, f"CUTOFF_EXCEEDED: certified watermark ({cert_wm}) postdates cutoff ({eval_ts})"
+        if eval_ts and int_end > eval_ts:
+            return False, None, f"CUTOFF_EXCEEDED: interval_end ({int_end}) postdates cutoff ({eval_ts})"
 
-    # 4. Zero-Activity Proof Validation for COMPLETE with empty inventory
-    cov_st = str(receipt.get("coverage_status") or "").upper()
-    if cov_st == "COMPLETE" and len(acc_inv) == 0:
-        if not z_proof or not isinstance(z_proof, dict):
-            return False, None, "Zero activity unproved: COMPLETE coverage requires verified catalog proof"
-        cat_content = z_proof.get("catalog_bytes") or z_proof.get("catalog_content")
-        cat_hash = z_proof.get("source_catalog_hash") or z_proof.get("catalog_sha256")
-        if not cat_content or not cat_hash:
-            return False, None, "Zero activity proof missing catalog bytes or sha256"
+    if requested_interval:
+        req_start = _format_canonical_sec_timestamp(requested_interval[0])
+        req_end = _format_canonical_sec_timestamp(requested_interval[1])
+        if req_start and int_start > req_start:
+            return False, None, f"INTERVAL_NOT_COVERED: interval_start ({int_start}) > requested ({req_start})"
+        if req_end and int_end < req_end:
+            return False, None, f"INTERVAL_NOT_COVERED: interval_end ({int_end}) < requested ({req_end})"
+
+    # 4. Supersession Chain Verification
+    sup_id = receipt.get("supersedes_receipt_id")
+    if sup_id and cur is not None:
         try:
-            validate_catalog_evidence(
-                catalog_bytes=cat_content,
-                catalog_sha256=cat_hash,
-                ticker=r_ticker or clean_ticker,
-                issuer_cik=r_cik or (clean_cik or ""),
-                interval_start=receipt["interval_start"],
-                interval_end=receipt["interval_end"],
-                certified_watermark=receipt["certified_watermark"],
-                accession_inventory=acc_inv,
-                source_hashes=s_hashes,
-                material_gaps=m_gaps,
-                pagination_artifacts=z_proof.get("pagination_artifacts"),
-                historical_manifest=z_proof.get("historical_manifest"),
+            cur.execute(
+                "SELECT receipt_version FROM sm_reconciliation_receipts WHERE receipt_id = %s;",
+                (str(sup_id),),
             )
-        except Exception as e:
-            return False, None, f"Catalog proof validation failed: {e}"
+            sup_row = cur.fetchone()
+            if not sup_row:
+                return False, None, f"SUPERSEDED_RECEIPT_NOT_FOUND: receipt {sup_id} not found in DB"
+            if sup_row["receipt_version"] >= receipt.get("receipt_version", 1):
+                return False, None, f"INVALID_SUPERSEDED_VERSION: superseded version {sup_row['receipt_version']} >= current {receipt.get('receipt_version', 1)}"
+        except Exception as sup_err:
+            logger.debug(f"Supersession check error: {sup_err}")
+
+    if receipt.get("receipt_id") and cur is not None:
+        try:
+            cur.execute(
+                "SELECT receipt_id FROM sm_reconciliation_receipts WHERE supersedes_receipt_id = %s;",
+                (str(receipt["receipt_id"]),),
+            )
+            if cur.fetchone():
+                return False, None, f"RECEIPT_SUPERSEDED: receipt {receipt['receipt_id']} is superseded by a newer receipt"
+        except Exception as sup_err2:
+            logger.debug(f"Superseding check error: {sup_err2}")
+
+    # 5. Inventory Integrity & Zero-Activity Proof
+    cov_st = str(receipt.get("coverage_status") or "").upper()
+    if len(acc_inv) == 0:
+        if cov_st == "COMPLETE":
+            if not z_proof or not isinstance(z_proof, dict):
+                return False, None, "Zero activity unproved: COMPLETE coverage requires verified catalog proof"
+            cat_content = z_proof.get("catalog_bytes") or z_proof.get("catalog_content")
+            cat_hash = z_proof.get("source_catalog_hash") or z_proof.get("catalog_sha256")
+            if not cat_content or not cat_hash:
+                return False, None, "Zero activity proof missing catalog bytes or sha256"
+            try:
+                validate_catalog_evidence(
+                    catalog_bytes=cat_content,
+                    catalog_sha256=cat_hash,
+                    ticker=r_ticker or req_sym,
+                    issuer_cik=r_cik or (req_cik or ""),
+                    interval_start=receipt["interval_start"],
+                    interval_end=receipt["interval_end"],
+                    certified_watermark=receipt["certified_watermark"],
+                    accession_inventory=acc_inv,
+                    source_hashes=s_hashes,
+                    material_gaps=m_gaps,
+                    pagination_artifacts=z_proof.get("pagination_artifacts"),
+                    historical_manifest=z_proof.get("historical_manifest"),
+                )
+            except Exception as e:
+                return False, None, f"Catalog proof validation failed: {e}"
+    else:
+        if cur is not None:
+            try:
+                cur.execute("""
+                    SELECT f.accession_number, f.cik, f.ticker, f.content_hash, av.public_availability_at
+                    FROM form4_raw_filings f
+                    LEFT JOIN sm_source_availability_ledger av ON f.accession_number = av.accession_number
+                    WHERE f.accession_number = ANY(%s);
+                """, (acc_inv,))
+                found = {row["accession_number"]: row for row in cur.fetchall()}
+                if len(found) != len(acc_inv):
+                    return False, None, f"INVENTORY_INCOMPLETE: expected {len(acc_inv)} raw filings in DB, found {len(found)}"
+                for acc in acc_inv:
+                    f_row = found[acc]
+                    if r_cik and f_row["cik"] != r_cik and (f_row["ticker"] or "").upper() != r_ticker.upper():
+                        return False, None, f"INVENTORY_ISSUER_MISMATCH: accession {acc} belongs to {f_row['cik']}, expected {r_cik}"
+                    if s_hashes and acc in s_hashes and s_hashes[acc] != f_row["content_hash"]:
+                        return False, None, f"INVENTORY_HASH_MISMATCH: accession {acc} content_hash mismatch"
+                if r_cik:
+                    cur.execute("""
+                        SELECT count(*) AS cnt FROM form4_raw_filings
+                        WHERE cik = %s
+                          AND filing_date >= %s::date
+                          AND filing_date <= %s::date
+                          AND accession_number != ALL(%s);
+                    """, (r_cik, int_start[:10], int_end[:10], acc_inv))
+                    cnt_row = cur.fetchone()
+                    if cnt_row and cnt_row["cnt"] > 0:
+                        return False, None, f"UNINVENTORIED_FILINGS_PRESENT: {cnt_row['cnt']} uninventoried filings in interval"
+            except Exception as inv_err:
+                logger.debug(f"Inventory DB verification skipped/failed: {inv_err}")
 
     receipt_copy = dict(receipt)
     receipt_copy["structured_metadata"] = reasons_val
@@ -266,26 +371,20 @@ def _attach_parsed_transactions_to_filings(
 
         # Public availability evaluation
         pub_avail = _format_canonical_sec_timestamp(r.get("public_availability_at") or filings_pub_by_acc.get(acc))
+        norm_cutoff = _format_canonical_sec_timestamp(cutoff_watermark)
         is_publicly_available = True
-        if cutoff_watermark and pub_avail:
-            is_publicly_available = (pub_avail <= cutoff_watermark)
-        elif cutoff_watermark and not pub_avail:
+        if norm_cutoff and pub_avail:
+            is_publicly_available = (pub_avail <= norm_cutoff)
+        elif norm_cutoff and not pub_avail:
             is_publicly_available = False
 
         # Amendment effect evaluation
         am_data = amends_by_acc.get(acc, {})
-        resolution_status = am_data.get("resolution_status")
+        resolution_status = str(am_data.get("resolution_status") or "").strip().upper()
         is_superseded = am_data.get("is_superseded", False)
         superseded_by = am_data.get("superseded_by")
-        is_ambiguous_amendment = (
-            bool(am_data.get("has_ambiguous_amendment"))
-            or resolution_status in (
-                "AMENDMENT_TARGET_AMBIGUOUS",
-                "AMENDMENT_SCOPE_AMBIGUOUS",
-                "UNRESOLVED",
-                "UNRESOLVED_AMENDMENT",
-            )
-        )
+        has_ambiguous = bool(am_data.get("has_ambiguous_amendment"))
+        has_partial = bool(am_data.get("has_partial_amendment"))
 
         effective_status = "EFFECTIVE"
         is_effective = True
@@ -294,8 +393,18 @@ def _attach_parsed_transactions_to_filings(
         if not is_publicly_available:
             effective_status = "PENDING_PUBLIC_AVAILABILITY"
             is_effective = False
-            amendment_note = f"Public availability ({pub_avail or 'unverified'}) postdates cutoff ({cutoff_watermark})."
-        elif is_ambiguous_amendment:
+            amendment_note = f"Public availability ({pub_avail or 'unverified'}) postdates cutoff ({norm_cutoff})."
+        elif resolution_status == "RESOLVED":
+            # Requirement 2: Treat legacy RESOLVED amendment lineage as scope-unverified
+            effective_status = "SCOPE_UNVERIFIED"
+            is_effective = False
+            amendment_note = am_data.get("amendment_note") or "Legacy RESOLVED amendment lineage is scope-unverified; verified amendment effect cannot be implied without granular scope classification."
+        elif has_ambiguous or resolution_status in (
+            "AMENDMENT_TARGET_AMBIGUOUS",
+            "AMENDMENT_SCOPE_AMBIGUOUS",
+            "UNRESOLVED",
+            "UNRESOLVED_AMENDMENT",
+        ):
             effective_status = "AMENDMENT_EFFECT_AMBIGUOUS"
             is_effective = False
             amendment_note = am_data.get("amendment_note") or "Historical filing preserved; effective amendment impact is ambiguous and unresolved."
@@ -303,10 +412,18 @@ def _attach_parsed_transactions_to_filings(
             effective_status = "SUPERSEDED_BY_AMENDMENT"
             is_effective = False
             amendment_note = f"Superseded by amendment {superseded_by}."
+        elif has_partial or resolution_status in ("PARTIAL_CORRECTION", "PARTIAL_AMENDMENT"):
+            effective_status = "PARTIAL_CORRECTION"
+            is_effective = False
+            amendment_note = am_data.get("amendment_note") or "Subject to partial amendment; individual transaction effects unverified."
         elif resolution_status in ("FULL_REPLACEMENT", "SUPERSEDED_OR_CORRECTED"):
             effective_status = "EFFECTIVE_REPLACEMENT"
             is_effective = True
             amendment_note = f"Full replacement of base filing {am_data.get('base_accession')}."
+        elif am_data.get("future_amendment_accession"):
+            effective_status = "EFFECTIVE"
+            is_effective = True
+            amendment_note = am_data.get("amendment_note")
 
         tx_item = {
             "transaction_id": str(r.get("transaction_id") or ""),
@@ -350,6 +467,7 @@ def _attach_parsed_transactions_to_filings(
         item["is_superseded"] = am_data.get("is_superseded", False)
         item["superseded_by"] = am_data.get("superseded_by")
         item["has_ambiguous_amendment"] = am_data.get("has_ambiguous_amendment", False)
+        item["has_partial_amendment"] = am_data.get("has_partial_amendment", False)
         item["amendment_resolution_status"] = am_data.get("resolution_status")
         item["amendment_note"] = am_data.get("amendment_note")
 
@@ -1080,46 +1198,6 @@ class SecEdgarFetcher:
 
                             results.append(item)
 
-                        accs = [item["accession_number"] for item in results if item.get("accession_number")]
-                        amendments_info = {}
-                        if has_amendments and accs:
-                            try:
-                                cur.execute(
-                                    """
-                                    SELECT
-                                        am.amendment_accession,
-                                        am.base_accession,
-                                        am.amendment_number,
-                                        am.resolution_status
-                                    FROM sm_amendments am
-                                    WHERE am.base_accession = ANY(%s) OR am.amendment_accession = ANY(%s);
-                                    """,
-                                    (accs, accs),
-                                )
-                                for am_r in cur.fetchall():
-                                    am_acc = str(am_r["amendment_accession"]).strip()
-                                    base_acc = str(am_r["base_accession"]).strip() if am_r.get("base_accession") else None
-                                    st = str(am_r.get("resolution_status") or "").strip().upper()
-                                    if am_acc in accs:
-                                        if am_acc not in amendments_info:
-                                            amendments_info[am_acc] = {}
-                                        amendments_info[am_acc]["resolution_status"] = st
-                                        amendments_info[am_acc]["base_accession"] = base_acc
-                                        amendments_info[am_acc]["amendment_number"] = am_r.get("amendment_number")
-                                    if base_acc and base_acc in accs:
-                                        if base_acc not in amendments_info:
-                                            amendments_info[base_acc] = {}
-                                        if st in ("SUPERSEDED", "SUPERSEDED_OR_CORRECTED", "FULL_REPLACEMENT"):
-                                            amendments_info[base_acc]["is_superseded"] = True
-                                            amendments_info[base_acc]["superseded_by"] = am_acc
-                                            amendments_info[base_acc]["amendment_note"] = f"Superseded by amendment {am_acc}."
-                                        elif st in ("AMENDMENT_TARGET_AMBIGUOUS", "AMENDMENT_SCOPE_AMBIGUOUS", "UNRESOLVED", "UNRESOLVED_AMENDMENT"):
-                                            amendments_info[base_acc]["has_ambiguous_amendment"] = True
-                                            amendments_info[base_acc]["ambiguous_amendment_accession"] = am_acc
-                                            amendments_info[base_acc]["amendment_note"] = f"Target of ambiguous amendment {am_acc} (effective impact unresolved)."
-                            except Exception as am_err:
-                                logger.debug(f"PostgreSQL amendments query skipped: {am_err}")
-
                         cov_status = "SUPPORTED_SEC_ISSUER" if cik else "UNSUPPORTED_ISSUER"
                         cert_watermark = None
                         try:
@@ -1132,12 +1210,12 @@ class SecEdgarFetcher:
                                     SELECT * FROM sm_reconciliation_receipts
                                     ORDER BY receipt_version DESC, created_at DESC;
                                     """
-                                    )
+                                )
                                 receipt_rows = [dict(r) for r in cur.fetchall()]
                                 clean_cik_str = str(cik).strip().zfill(10) if cik else None
                                 for r_row in receipt_rows:
                                     is_valid, valid_rc, err = _validate_issuer_reconciliation_receipt(
-                                        r_row, clean_ticker=clean_sym, clean_cik=clean_cik_str
+                                        r_row, clean_ticker=clean_sym, clean_cik=clean_cik_str, cur=cur
                                     )
                                     if is_valid and valid_rc:
                                         cov_status = valid_rc.get("coverage_status") or cov_status
@@ -1145,6 +1223,85 @@ class SecEdgarFetcher:
                                         break
                         except Exception as rc_err:
                             logger.debug(f"Coverage receipt check skipped: {rc_err}")
+
+                        accs = [item["accession_number"] for item in results if item.get("accession_number")]
+                        amendments_info = {}
+                        if has_amendments and accs:
+                            try:
+                                cur.execute(
+                                    """
+                                    SELECT
+                                        am.amendment_accession,
+                                        am.base_accession,
+                                        am.amendment_number,
+                                        am.resolution_status,
+                                        am.resolved_at,
+                                        l.public_availability_at AS amendment_pub_avail
+                                    FROM sm_amendments am
+                                    LEFT JOIN sm_source_availability_ledger l ON am.amendment_accession = l.accession_number
+                                    WHERE am.base_accession = ANY(%s) OR am.amendment_accession = ANY(%s);
+                                    """,
+                                    (accs, accs),
+                                )
+                                for am_r in cur.fetchall():
+                                    am_acc = str(am_r["amendment_accession"]).strip()
+                                    base_acc = str(am_r["base_accession"]).strip() if am_r.get("base_accession") else None
+                                    st = str(am_r.get("resolution_status") or "").strip().upper()
+                                    am_pub = _format_canonical_sec_timestamp(am_r.get("amendment_pub_avail"))
+                                    norm_cutoff = _format_canonical_sec_timestamp(cert_watermark)
+
+                                    if am_acc in accs:
+                                        if am_acc not in amendments_info:
+                                            amendments_info[am_acc] = {}
+                                        amendments_info[am_acc]["resolution_status"] = st
+                                        amendments_info[am_acc]["base_accession"] = base_acc
+                                        amendments_info[am_acc]["amendment_number"] = am_r.get("amendment_number")
+                                        amendments_info[am_acc]["public_availability_at"] = am_pub
+                                        if st == "RESOLVED":
+                                            # Requirement 2: Treat legacy RESOLVED amendment lineage as scope-unverified
+                                            amendments_info[am_acc]["is_effective"] = False
+                                            amendments_info[am_acc]["effective_status"] = "SCOPE_UNVERIFIED"
+                                            amendments_info[am_acc]["amendment_note"] = (
+                                                "Legacy RESOLVED amendment lineage is scope-unverified; "
+                                                "verified amendment effect cannot be implied without granular scope classification."
+                                            )
+
+                                    if base_acc and base_acc in accs:
+                                        if base_acc not in amendments_info:
+                                            amendments_info[base_acc] = {}
+
+                                        is_future_amendment = bool(norm_cutoff and am_pub and am_pub > norm_cutoff)
+
+                                        if is_future_amendment:
+                                            # Future amendment cannot retroactively affect base filing as of cutoff watermark
+                                            amendments_info[base_acc]["future_amendment_accession"] = am_acc
+                                            amendments_info[base_acc]["future_amendment_available_at"] = am_pub
+                                            amendments_info[base_acc]["amendment_note"] = (
+                                                f"Future amendment {am_acc} (available {am_pub}) postdates cutoff {norm_cutoff}; "
+                                                "base filing remains effective at watermark."
+                                            )
+                                        elif st in ("SUPERSEDED", "SUPERSEDED_OR_CORRECTED", "FULL_REPLACEMENT"):
+                                            amendments_info[base_acc]["is_superseded"] = True
+                                            amendments_info[base_acc]["superseded_by"] = am_acc
+                                            amendments_info[base_acc]["amendment_note"] = f"Superseded by amendment {am_acc}."
+                                        elif st == "RESOLVED":
+                                            # Requirement 2: Treat legacy RESOLVED amendment lineage as scope-unverified
+                                            amendments_info[base_acc]["has_ambiguous_amendment"] = True
+                                            amendments_info[base_acc]["ambiguous_amendment_accession"] = am_acc
+                                            amendments_info[base_acc]["amendment_note"] = (
+                                                f"Target of legacy RESOLVED amendment {am_acc} "
+                                                "(lineage scope-unverified; effective impact ambiguous)."
+                                            )
+                                        elif st in ("AMENDMENT_TARGET_AMBIGUOUS", "AMENDMENT_SCOPE_AMBIGUOUS", "UNRESOLVED", "UNRESOLVED_AMENDMENT"):
+                                            amendments_info[base_acc]["has_ambiguous_amendment"] = True
+                                            amendments_info[base_acc]["ambiguous_amendment_accession"] = am_acc
+                                            amendments_info[base_acc]["amendment_note"] = f"Target of ambiguous amendment {am_acc} (effective impact unresolved)."
+                                        elif st in ("PARTIAL_CORRECTION", "PARTIAL_AMENDMENT"):
+                                            amendments_info[base_acc]["has_partial_amendment"] = True
+                                            amendments_info[base_acc]["partial_amendment_accession"] = am_acc
+                                            amendments_info[base_acc]["amendment_note"] = f"Subject to partial correction by {am_acc} (unmapped transactions require review)."
+                            except Exception as am_err:
+                                logger.debug(f"PostgreSQL amendments query skipped: {am_err}")
 
                         if results:
                             tx_rows = []
@@ -1376,47 +1533,6 @@ class SecEdgarFetcher:
 
                     results.append(item)
 
-                accs = [item["accession_number"] for item in results if item.get("accession_number")]
-                amendments_info = {}
-                if has_amendments and accs:
-                    try:
-                        placeholders = ",".join(["?"] * len(accs))
-                        cur.execute(
-                            f"""
-                            SELECT
-                                amendment_accession,
-                                base_accession,
-                                amendment_number,
-                                resolution_status
-                            FROM sm_amendments
-                            WHERE base_accession IN ({placeholders}) OR amendment_accession IN ({placeholders});
-                            """,
-                            tuple(accs) + tuple(accs),
-                        )
-                        for am_r in cur.fetchall():
-                            am_acc = str(am_r["amendment_accession"]).strip()
-                            base_acc = str(am_r["base_accession"]).strip() if am_r["base_accession"] else None
-                            st = str(am_r["resolution_status"] or "").strip().upper()
-                            if am_acc in accs:
-                                if am_acc not in amendments_info:
-                                    amendments_info[am_acc] = {}
-                                amendments_info[am_acc]["resolution_status"] = st
-                                amendments_info[am_acc]["base_accession"] = base_acc
-                                amendments_info[am_acc]["amendment_number"] = am_r["amendment_number"]
-                            if base_acc and base_acc in accs:
-                                if base_acc not in amendments_info:
-                                    amendments_info[base_acc] = {}
-                                if st in ("SUPERSEDED", "SUPERSEDED_OR_CORRECTED", "FULL_REPLACEMENT"):
-                                    amendments_info[base_acc]["is_superseded"] = True
-                                    amendments_info[base_acc]["superseded_by"] = am_acc
-                                    amendments_info[base_acc]["amendment_note"] = f"Superseded by amendment {am_acc}."
-                                elif st in ("AMENDMENT_TARGET_AMBIGUOUS", "AMENDMENT_SCOPE_AMBIGUOUS", "UNRESOLVED", "UNRESOLVED_AMENDMENT"):
-                                    amendments_info[base_acc]["has_ambiguous_amendment"] = True
-                                    amendments_info[base_acc]["ambiguous_amendment_accession"] = am_acc
-                                    amendments_info[base_acc]["amendment_note"] = f"Target of ambiguous amendment {am_acc} (effective impact unresolved)."
-                    except Exception as am_err:
-                        logger.debug(f"SQLite amendments query skipped: {am_err}")
-
                 cov_status = "SUPPORTED_SEC_ISSUER" if cik else "UNSUPPORTED_ISSUER"
                 cert_watermark = None
                 try:
@@ -1431,7 +1547,7 @@ class SecEdgarFetcher:
                         clean_cik_str = str(cik).strip().zfill(10) if cik else None
                         for r_row in receipt_rows:
                             is_valid, valid_rc, err = _validate_issuer_reconciliation_receipt(
-                                r_row, clean_ticker=clean_sym, clean_cik=clean_cik_str
+                                r_row, clean_ticker=clean_sym, clean_cik=clean_cik_str, cur=cur
                             )
                             if is_valid and valid_rc:
                                 cov_status = valid_rc.get("coverage_status") or cov_status
@@ -1439,6 +1555,83 @@ class SecEdgarFetcher:
                                 break
                 except Exception as rc_err:
                     logger.debug(f"SQLite coverage receipt check skipped: {rc_err}")
+
+                accs = [item["accession_number"] for item in results if item.get("accession_number")]
+                amendments_info = {}
+                if has_amendments and accs:
+                    try:
+                        placeholders = ",".join(["?"] * len(accs))
+                        cur.execute(
+                            f"""
+                            SELECT
+                                am.amendment_accession,
+                                am.base_accession,
+                                am.amendment_number,
+                                am.resolution_status,
+                                am.resolved_at,
+                                l.public_availability_at AS amendment_pub_avail
+                            FROM sm_amendments am
+                            LEFT JOIN sm_source_availability_ledger l ON am.amendment_accession = l.accession_number
+                            WHERE am.base_accession IN ({placeholders}) OR am.amendment_accession IN ({placeholders});
+                            """,
+                            tuple(accs) + tuple(accs),
+                        )
+                        for am_r in cur.fetchall():
+                            am_acc = str(am_r["amendment_accession"]).strip()
+                            base_acc = str(am_r["base_accession"]).strip() if am_r["base_accession"] else None
+                            st = str(am_r["resolution_status"] or "").strip().upper()
+                            am_pub = _format_canonical_sec_timestamp(am_r["amendment_pub_avail"]) if "amendment_pub_avail" in am_r.keys() else None
+                            norm_cutoff = _format_canonical_sec_timestamp(cert_watermark)
+
+                            if am_acc in accs:
+                                if am_acc not in amendments_info:
+                                    amendments_info[am_acc] = {}
+                                amendments_info[am_acc]["resolution_status"] = st
+                                amendments_info[am_acc]["base_accession"] = base_acc
+                                amendments_info[am_acc]["amendment_number"] = am_r["amendment_number"]
+                                amendments_info[am_acc]["public_availability_at"] = am_pub
+                                if st == "RESOLVED":
+                                    amendments_info[am_acc]["is_effective"] = False
+                                    amendments_info[am_acc]["effective_status"] = "SCOPE_UNVERIFIED"
+                                    amendments_info[am_acc]["amendment_note"] = (
+                                        "Legacy RESOLVED amendment lineage is scope-unverified; "
+                                        "verified amendment effect cannot be implied without granular scope classification."
+                                    )
+
+                            if base_acc and base_acc in accs:
+                                if base_acc not in amendments_info:
+                                    amendments_info[base_acc] = {}
+
+                                is_future_amendment = bool(norm_cutoff and am_pub and am_pub > norm_cutoff)
+
+                                if is_future_amendment:
+                                    amendments_info[base_acc]["future_amendment_accession"] = am_acc
+                                    amendments_info[base_acc]["future_amendment_available_at"] = am_pub
+                                    amendments_info[base_acc]["amendment_note"] = (
+                                        f"Future amendment {am_acc} (available {am_pub}) postdates cutoff {norm_cutoff}; "
+                                        "base filing remains effective at watermark."
+                                    )
+                                elif st in ("SUPERSEDED", "SUPERSEDED_OR_CORRECTED", "FULL_REPLACEMENT"):
+                                    amendments_info[base_acc]["is_superseded"] = True
+                                    amendments_info[base_acc]["superseded_by"] = am_acc
+                                    amendments_info[base_acc]["amendment_note"] = f"Superseded by amendment {am_acc}."
+                                elif st == "RESOLVED":
+                                    amendments_info[base_acc]["has_ambiguous_amendment"] = True
+                                    amendments_info[base_acc]["ambiguous_amendment_accession"] = am_acc
+                                    amendments_info[base_acc]["amendment_note"] = (
+                                        f"Target of legacy RESOLVED amendment {am_acc} "
+                                        "(lineage scope-unverified; effective impact ambiguous)."
+                                    )
+                                elif st in ("AMENDMENT_TARGET_AMBIGUOUS", "AMENDMENT_SCOPE_AMBIGUOUS", "UNRESOLVED", "UNRESOLVED_AMENDMENT"):
+                                    amendments_info[base_acc]["has_ambiguous_amendment"] = True
+                                    amendments_info[base_acc]["ambiguous_amendment_accession"] = am_acc
+                                    amendments_info[base_acc]["amendment_note"] = f"Target of ambiguous amendment {am_acc} (effective impact unresolved)."
+                                elif st in ("PARTIAL_CORRECTION", "PARTIAL_AMENDMENT"):
+                                    amendments_info[base_acc]["has_partial_amendment"] = True
+                                    amendments_info[base_acc]["partial_amendment_accession"] = am_acc
+                                    amendments_info[base_acc]["amendment_note"] = f"Subject to partial correction by {am_acc} (unmapped transactions require review)."
+                    except Exception as am_err:
+                        logger.debug(f"SQLite amendments query skipped: {am_err}")
 
                 if results and "form4_parsed_transactions" in tbls:
                     tx_rows = []

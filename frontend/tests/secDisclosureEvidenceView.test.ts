@@ -422,8 +422,128 @@ async function runTests() {
     }
   }
 
+  // ── Test 5: Scope-Unverified RESOLVED Amendment & Availability Boundaries ──
+  console.log("\nTest 5: Scope-unverified RESOLVED amendment lineage and public availability boundaries...");
+  {
+    const restore = mockFetch(async (url) => {
+      return {
+        ok: true,
+        json: async () => ({
+          symbol: "AAPL",
+          status: "AVAILABLE_WITH_RESULTS",
+          items: [
+            {
+              form: "4",
+              accession_number: "acc-base-resolved",
+              filing_date: "2026-11-10",
+              has_parsed_transaction: true,
+              is_effective: false,
+              effective_status: "AMENDMENT_EFFECT_AMBIGUOUS",
+              has_ambiguous_amendment: true,
+              amendment_note: "Target of legacy RESOLVED amendment (lineage scope-unverified; effective impact ambiguous).",
+              transactions: [
+                {
+                  transaction_id: "tx-res-b",
+                  accession_number: "acc-base-resolved",
+                  is_effective: false,
+                  effective_status: "AMENDMENT_EFFECT_AMBIGUOUS",
+                },
+              ],
+            },
+            {
+              form: "4/A",
+              accession_number: "acc-amend-resolved",
+              filing_date: "2026-11-12",
+              is_amendment: true,
+              base_accession: "acc-base-resolved",
+              has_parsed_transaction: true,
+              is_effective: false,
+              effective_status: "SCOPE_UNVERIFIED",
+              amendment_note: "Legacy RESOLVED amendment lineage is scope-unverified.",
+              transactions: [
+                {
+                  transaction_id: "tx-res-a",
+                  accession_number: "acc-amend-resolved",
+                  is_effective: false,
+                  effective_status: "SCOPE_UNVERIFIED",
+                },
+              ],
+            },
+            {
+              form: "4",
+              accession_number: "acc-base-fut",
+              filing_date: "2026-11-15",
+              has_parsed_transaction: true,
+              is_effective: true,
+              effective_status: "EFFECTIVE",
+              is_superseded: false,
+              amendment_note: "Future amendment postdates cutoff; base filing remains effective at watermark.",
+            },
+            {
+              form: "4/A",
+              accession_number: "acc-amend-fut",
+              filing_date: "2026-11-20",
+              is_amendment: true,
+              base_accession: "acc-base-fut",
+              has_parsed_transaction: true,
+              is_effective: false,
+              effective_status: "PENDING_PUBLIC_AVAILABILITY",
+            },
+            {
+              form: "4",
+              accession_number: "acc-base-part",
+              filing_date: "2026-11-16",
+              has_parsed_transaction: true,
+              is_effective: false,
+              effective_status: "PARTIAL_CORRECTION",
+              has_partial_amendment: true,
+              is_superseded: false,
+            },
+          ],
+        }),
+      };
+    });
+
+    try {
+      const res = await fetchSecForm4Insiders("AAPL");
+      assert.ok(res.items);
+      assert.strictEqual(res.items.length, 5);
+
+      const [baseRes, amendRes, baseFut, amendFut, basePart] = res.items;
+
+      // 1. Base filing with RESOLVED amendment: cannot imply verified amendment effect
+      assert.strictEqual(baseRes.isEffective, false);
+      assert.strictEqual(baseRes.effectiveStatus, "AMENDMENT_EFFECT_AMBIGUOUS");
+      assert.strictEqual(baseRes.hasAmbiguousAmendment, true);
+
+      // 2. Amendment filing with RESOLVED status: scope-unverified
+      assert.strictEqual(amendRes.isEffective, false);
+      assert.strictEqual(amendRes.effectiveStatus, "SCOPE_UNVERIFIED");
+
+      // 3. Future amendment: base remains effective at watermark
+      assert.strictEqual(baseFut.isEffective, true);
+      assert.strictEqual(baseFut.effectiveStatus, "EFFECTIVE");
+      assert.strictEqual(baseFut.isSuperseded, false);
+
+      // 4. Future amendment itself: pending availability
+      assert.strictEqual(amendFut.isEffective, false);
+      assert.strictEqual(amendFut.effectiveStatus, "PENDING_PUBLIC_AVAILABILITY");
+
+      // 5. Partial correction: hasPartialAmendment without full supersession
+      assert.strictEqual(basePart.isEffective, false);
+      assert.strictEqual(basePart.effectiveStatus, "PARTIAL_CORRECTION");
+      assert.strictEqual(basePart.hasPartialAmendment, true);
+      assert.strictEqual(basePart.isSuperseded, false);
+
+      console.log("  ✓ Passed: Scope-unverified RESOLVED amendment lineage and public availability boundaries.");
+      passedCount++;
+    } finally {
+      restore();
+    }
+  }
+
   console.log(`\n======================================================`);
-  console.log(`ALL ${passedCount}/4 SEC FORM 4 DISCLOSURE TESTS PASSED`);
+  console.log(`ALL ${passedCount}/5 SEC FORM 4 DISCLOSURE TESTS PASSED`);
   console.log(`======================================================\n`);
 }
 

@@ -36,6 +36,9 @@ def main():
         "tests/test_smart_money_two_issuer_trial.py",
         "tests/test_sm_act_020_continuous_authorization.py",
         "tests/test_smart_money_worker_lifecycle_and_fencing.py",
+        "tests/test_sec_disclosure_postgres_integration.py",
+        "tests/test_sec_disclosure_view.py",
+        "tests/test_fred_sec_presentation_integrity.py",
     ]
 
     cmd = [sys.executable, "-m", "pytest"] + test_files + ["-v"]

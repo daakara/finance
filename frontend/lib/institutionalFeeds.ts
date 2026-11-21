@@ -122,6 +122,7 @@ export interface SecForm4Trade {
   isEffective?: boolean;
   effectiveStatus?: string;
   hasAmbiguousAmendment?: boolean;
+  hasPartialAmendment?: boolean;
   amendmentNote?: string | null;
   isSuperseded?: boolean;
   supersededBy?: string | null;
@@ -541,6 +542,7 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilings
             isEffective: typeof f.is_effective === "boolean" ? f.is_effective : (mappedTxs.length > 0 ? mappedTxs.every(t => t.isEffective) : true),
             effectiveStatus: f.effective_status || f.effectiveStatus || "EFFECTIVE",
             hasAmbiguousAmendment: Boolean(f.has_ambiguous_amendment ?? f.hasAmbiguousAmendment),
+            hasPartialAmendment: Boolean(f.has_partial_amendment ?? f.hasPartialAmendment),
             amendmentNote: f.amendment_note || f.amendmentNote || null,
             isSuperseded: Boolean(f.is_superseded ?? f.isSuperseded),
             supersededBy: f.superseded_by || f.supersededBy || null,

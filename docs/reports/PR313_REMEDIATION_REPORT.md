@@ -1,6 +1,6 @@
 Improves the SEC disclosure panel from filing metadata to stored transaction details: neutral latest-event selection, individual transaction evidence, explicit missing/zero values, and ticker-response guards. Tracks #165.
 
-Implementation head: `ff01d1d0339d220790e633d7fc3f0bc80a6b7d15`.
+Implementation branch: `feat/sec-disclosure-evidence-view` under PR #313.
 Reported development baseline: `868d7afcd528006c2323e6b79b5a17f2f20f677c`.
 
 ## Release boundary
@@ -37,20 +37,23 @@ DRAFT — review and remediation only. No auto-merge, production deployment, gra
 
 ## Verification Evidence Matrix
 
-### 1. Backend Integration & Unit Tests (28/28 PASSED)
-- `tests/test_sec_disclosure_postgres_integration.py`: **7/7 PASSED** in 2.35s
+### 1. Backend Integration & Unit Tests (30/30 PASSED)
+- `tests/test_sec_disclosure_postgres_integration.py`: **9/9 PASSED**
   - Uses disposable real PostgreSQL 16 server via `pgserver` with full production DDL from `initialize_postgres_schema()`.
   - Rejects mismatched issuer receipts and invalid canonical hashes.
+  - Enforces adversarial receipt integrity and conflicting issuer identity rejection (`CONFLICTING_ISSUER_IDENTITY`).
   - Enforces public-availability cutoff boundaries.
-  - Verifies ambiguous amendment and supersession handling.
+  - Enforces amendment lineage semantics: legacy `RESOLVED` lineage treated as scope-unverified (`has_ambiguous_amendment = True`, `effective_status = "AMENDMENT_EFFECT_AMBIGUOUS"` for base filing; `effective_status = "SCOPE_UNVERIFIED"` for amendment).
+  - Handles future amendments (amendments postdating watermark cutoff cannot retroactively supersede base filing at that watermark).
+  - Handles partial corrections (`PARTIAL_CORRECTION`) without full supersession.
   - Verifies aggregate withholding on mixed filings.
   - Verifies gift consideration formatting and numeric sanitation.
   - Confirms zero read-path side effects: 0 live SEC requests, 0 DB writes, SEC advisory lock (`401007311509093371`) remains unheld.
-- `tests/test_sec_disclosure_view.py`: **7/7 PASSED** in 0.58s
-- `tests/test_fred_sec_presentation_integrity.py`: **14/14 PASSED** in 4.72s
+- `tests/test_sec_disclosure_view.py`: **7/7 PASSED**
+- `tests/test_fred_sec_presentation_integrity.py`: **14/14 PASSED**
 
-### 2. Frontend Regression & Integrity Tests (12/12 PASSED)
-- `frontend/tests/secDisclosureEvidenceView.test.ts`: **4/4 PASSED**
+### 2. Frontend Regression & Integrity Tests (13/13 PASSED)
+- `frontend/tests/secDisclosureEvidenceView.test.ts`: **5/5 PASSED** (includes scope-unverified RESOLVED amendment and availability boundaries)
 - `frontend/tests/fredSecPresentationIntegrity.test.ts`: **8/8 PASSED**
 - `tsc --noEmit`: Clean (0 errors).
 

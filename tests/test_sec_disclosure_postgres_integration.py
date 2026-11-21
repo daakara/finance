@@ -278,7 +278,7 @@ def test_postgres_public_availability_boundaries(clean_postgres_db):
         "ticker": "AAPL",
         "issuer_cik": "0000320193",
         "accession_inventory": ["acc-past", "acc-future"],
-        "source_hashes": {},
+        "source_hashes": {"acc-past": "hash1", "acc-future": "hash2"},
         "material_gaps": [],
         "schema_version": 1,
     }
@@ -292,7 +292,7 @@ def test_postgres_public_availability_boundaries(clean_postgres_db):
         receipt_version=1,
         supersedes_receipt_id=None,
         accession_inventory=aapl_reasons["accession_inventory"],
-        source_hashes={},
+        source_hashes=aapl_reasons["source_hashes"],
         material_gaps=[],
         zero_activity_proof=None,
     )
@@ -687,4 +687,354 @@ def test_postgres_freshness_separation_and_zero_read_path_side_effects(clean_pos
     assert lock_after is True, "Advisory lock should remain unheld after read"
     cur.execute("SELECT pg_advisory_unlock(401007311509093371);")
     conn.commit()
+    conn.close()
+
+
+def test_adversarial_receipt_integrity_and_conflicting_identity_rejection(clean_postgres_db):
+    """
+    Test 7 (Adversarial): Verify rejection of missing/tampered hashes, conflicting issuer identities,
+    inverted intervals, future cutoffs, and missing supersession targets.
+    Asserts fallback to explicit uncertified/partial disclosure.
+    """
+    conn = psycopg2.connect(clean_postgres_db)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    from analyst_dashboard.data.sec_edgar_fetcher import _validate_issuer_reconciliation_receipt
+
+    # 1. Missing hash
+    r_missing_hash = {
+        "receipt_id": str(uuid.uuid4()),
+        "interval_start": "2026-11-01T00:00:00Z",
+        "interval_end": "2026-11-19T23:30:21Z",
+        "certified_watermark": "2026-11-19T23:30:21Z",
+        "receipt_version": 1,
+        "coverage_status": "COMPLETE",
+        "failure_reasons": {
+            "ticker": "AAPL",
+            "issuer_cik": "0000320193",
+            "zero_activity_proof": {"catalog_bytes": "{}", "source_catalog_hash": "a" * 64},
+        },
+        "reconciliation_hash": None,
+    }
+    ok, _, err = _validate_issuer_reconciliation_receipt(r_missing_hash, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "MISSING_OR_INVALID_INTEGRITY_EVIDENCE" in err
+
+    # 2. Tampered / wrong hash
+    r_tampered_hash = dict(r_missing_hash)
+    r_tampered_hash["reconciliation_hash"] = "f" * 64
+    ok, _, err = _validate_issuer_reconciliation_receipt(r_tampered_hash, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "INTEGRITY_HASH_MISMATCH" in err
+
+    # 3. Conflicting issuer identity: internal receipt conflict (AAPL ticker with NVDA CIK)
+    r_conflicting = dict(r_missing_hash)
+    r_conflicting["failure_reasons"] = {"ticker": "AAPL", "issuer_cik": "0001045810"}
+    r_conflicting["reconciliation_hash"] = "0" * 64
+    ok, _, err = _validate_issuer_reconciliation_receipt(r_conflicting, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "CONFLICTING_ISSUER_IDENTITY" in err
+
+    # 4. Conflicting requested identity: requested AAPL ticker with NVDA CIK
+    ok, _, err = _validate_issuer_reconciliation_receipt(r_tampered_hash, "AAPL", "0001045810", cur=cur)
+    assert ok is False
+    assert "CONFLICTING_ISSUER_IDENTITY" in err
+
+    # 5. Inverted interval (start > end)
+    r_inverted = dict(r_missing_hash)
+    r_inverted["interval_start"] = "2026-11-20T00:00:00Z"
+    r_inverted["interval_end"] = "2026-11-10T00:00:00Z"
+    r_inverted["reconciliation_hash"] = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start=r_inverted["interval_start"], interval_end=r_inverted["interval_end"],
+        certified_watermark=r_inverted["certified_watermark"], receipt_version=1,
+        supersedes_receipt_id=None, accession_inventory=[], source_hashes={}, material_gaps=[],
+        zero_activity_proof={"catalog_bytes": "{}", "source_catalog_hash": "a" * 64},
+    )
+    ok, _, err = _validate_issuer_reconciliation_receipt(r_inverted, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "INVALID_INTERVAL" in err
+
+    # 6. Watermark postdates evaluation cutoff
+    r_future_wm = dict(r_missing_hash)
+    r_future_wm["certified_watermark"] = "2026-11-25T00:00:00Z"
+    r_future_wm["reconciliation_hash"] = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start=r_future_wm["interval_start"], interval_end=r_future_wm["interval_end"],
+        certified_watermark=r_future_wm["certified_watermark"], receipt_version=1,
+        supersedes_receipt_id=None, accession_inventory=[], source_hashes={}, material_gaps=[],
+        zero_activity_proof={"catalog_bytes": "{}", "source_catalog_hash": "a" * 64},
+    )
+    ok, _, err = _validate_issuer_reconciliation_receipt(
+        r_future_wm, "AAPL", "0000320193", evaluation_cutoff="2026-11-19T23:30:21Z", cur=cur
+    )
+    assert ok is False
+    assert "CUTOFF_EXCEEDED" in err
+
+    # 7. Non-existent superseded receipt
+    r_missing_sup = dict(r_missing_hash)
+    r_missing_sup["supersedes_receipt_id"] = str(uuid.uuid4())
+    r_missing_sup["receipt_version"] = 2
+    r_missing_sup["reconciliation_hash"] = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start=r_missing_sup["interval_start"], interval_end=r_missing_sup["interval_end"],
+        certified_watermark=r_missing_sup["certified_watermark"], receipt_version=2,
+        supersedes_receipt_id=r_missing_sup["supersedes_receipt_id"], accession_inventory=[], source_hashes={}, material_gaps=[],
+        zero_activity_proof={"catalog_bytes": "{}", "source_catalog_hash": "a" * 64},
+    )
+    ok, _, err = _validate_issuer_reconciliation_receipt(r_missing_sup, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "SUPERSEDED_RECEIPT_NOT_FOUND" in err
+
+    conn.close()
+
+
+def test_postgres_amendment_resolved_lineage_and_future_amendments(clean_postgres_db):
+    """
+    Test 8: Verify amendment lineage semantics:
+    - Legacy RESOLVED amendment lineage is scope-unverified; RESOLVED cannot imply verified amendment effect.
+    - Base filing target of RESOLVED is flagged has_ambiguous_amendment=True, effective_status=AMENDMENT_EFFECT_AMBIGUOUS, is_effective=False.
+    - Amendment filing itself with RESOLVED is effective_status=SCOPE_UNVERIFIED, is_effective=False.
+    - Future amendment (public_availability > cutoff) cannot retroactively supersede base filing at cutoff watermark.
+    - Partial correction marks base filing as has_partial_amendment=True without full supersession.
+    - Offset timestamps are normalized (e.g. -05:00 converted to UTC Z) before cutoff comparison.
+    - Missing availability fails closed to PENDING_PUBLIC_AVAILABILITY.
+    """
+    conn = psycopg2.connect(clean_postgres_db)
+    cur = conn.cursor()
+
+    cutoff_wm = "2026-11-19T23:30:21Z"
+
+    # 1. Base filing 1 & Legacy RESOLVED amendment
+    cur.execute(
+        """
+        INSERT INTO form4_raw_filings (accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url)
+        VALUES
+            ('acc-base-resolved', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-10', '2026-11-10T18:00:00Z', '<xml></xml>', 'h-res-b', 'https://sec.gov/res-b'),
+            ('acc-amend-resolved', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-12', '2026-11-12T18:00:00Z', '<xml></xml>', 'h-res-a', 'https://sec.gov/res-a');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source, source_reference)
+        VALUES
+            ('acc-base-resolved', '2026-11-10T18:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/res-b'),
+            ('acc-amend-resolved', '2026-11-12T18:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/res-a');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO form4_parsed_transactions (transaction_id, accession_number, transaction_date, transaction_code, shares, price_per_share, total_value_usd, reporting_owner_name, reporting_owner_role, ownership_type)
+        VALUES
+            ('tx-res-b', 'acc-base-resolved', '2026-11-09', 'S', 1000, 340.0, 340000.0, 'Tim Cook', 'CEO', 'D'),
+            ('tx-res-a', 'acc-amend-resolved', '2026-11-09', 'S', 1200, 340.0, 408000.0, 'Tim Cook', 'CEO', 'D');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_amendments (amendment_accession, base_accession, amendment_number, resolution_status)
+        VALUES ('acc-amend-resolved', 'acc-base-resolved', 1, 'RESOLVED');
+        """
+    )
+
+    # 2. Base filing 2 & Future Amendment (FULL_REPLACEMENT available AFTER cutoff)
+    cur.execute(
+        """
+        INSERT INTO form4_raw_filings (accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url)
+        VALUES
+            ('acc-base-fut', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-15', '2026-11-15T18:00:00Z', '<xml></xml>', 'h-fut-b', 'https://sec.gov/fut-b'),
+            ('acc-amend-fut', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-20', '2026-11-20T10:00:00Z', '<xml></xml>', 'h-fut-a', 'https://sec.gov/fut-a');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source, source_reference)
+        VALUES
+            ('acc-base-fut', '2026-11-15T18:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/fut-b'),
+            ('acc-amend-fut', '2026-11-20T10:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/fut-a');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO form4_parsed_transactions (transaction_id, accession_number, transaction_date, transaction_code, shares, price_per_share, total_value_usd, reporting_owner_name, reporting_owner_role, ownership_type)
+        VALUES
+            ('tx-fut-b', 'acc-base-fut', '2026-11-14', 'S', 2000, 345.0, 690000.0, 'Tim Cook', 'CEO', 'D'),
+            ('tx-fut-a', 'acc-amend-fut', '2026-11-14', 'S', 2500, 345.0, 862500.0, 'Tim Cook', 'CEO', 'D');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_amendments (amendment_accession, base_accession, amendment_number, resolution_status)
+        VALUES ('acc-amend-fut', 'acc-base-fut', 1, 'FULL_REPLACEMENT');
+        """
+    )
+
+    # 3. Base filing 3 & Partial Correction
+    cur.execute(
+        """
+        INSERT INTO form4_raw_filings (accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url)
+        VALUES
+            ('acc-base-part', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-16', '2026-11-16T18:00:00Z', '<xml></xml>', 'h-prt-b', 'https://sec.gov/prt-b'),
+            ('acc-amend-part', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-18', '2026-11-18T18:00:00Z', '<xml></xml>', 'h-prt-a', 'https://sec.gov/prt-a');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source, source_reference)
+        VALUES
+            ('acc-base-part', '2026-11-16T18:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/prt-b'),
+            ('acc-amend-part', '2026-11-18T18:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/prt-a');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO form4_parsed_transactions (transaction_id, accession_number, transaction_date, transaction_code, shares, price_per_share, total_value_usd, reporting_owner_name, reporting_owner_role, ownership_type)
+        VALUES
+            ('tx-prt-b', 'acc-base-part', '2026-11-15', 'S', 3000, 342.0, 1026000.0, 'Tim Cook', 'CEO', 'D'),
+            ('tx-prt-a', 'acc-amend-part', '2026-11-15', 'S', 3000, 344.0, 1032000.0, 'Tim Cook', 'CEO', 'D');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_amendments (amendment_accession, base_accession, amendment_number, resolution_status)
+        VALUES ('acc-amend-part', 'acc-base-part', 1, 'PARTIAL_CORRECTION');
+        """
+    )
+
+    # 4. Filing 4 with offset timestamp: 2026-11-19T18:30:21-05:00 converts to 2026-11-19T23:30:21Z (<= cutoff)
+    cur.execute(
+        """
+        INSERT INTO form4_raw_filings (accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url)
+        VALUES ('acc-offset-ok', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-19', '2026-11-19T18:30:21-05:00', '<xml></xml>', 'h-off-ok', 'https://sec.gov/off-ok');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source, source_reference)
+        VALUES ('acc-offset-ok', '2026-11-19T18:30:21-05:00', 'SEC_EDGAR_API', 'https://sec.gov/off-ok');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO form4_parsed_transactions (transaction_id, accession_number, transaction_date, transaction_code, shares, price_per_share, total_value_usd, reporting_owner_name, reporting_owner_role, ownership_type)
+        VALUES ('tx-off-ok', 'acc-offset-ok', '2026-11-19', 'S', 500, 350.0, 175000.0, 'Tim Cook', 'CEO', 'D');
+        """
+    )
+
+    # 5. Filing 5 with missing availability ledger entry (accepted_datetime postdates cutoff)
+    cur.execute(
+        """
+        INSERT INTO form4_raw_filings (accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url)
+        VALUES ('acc-no-avail', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-19', '2026-11-20T10:00:00Z', '<xml></xml>', 'h-acc-no-avail', 'https://sec.gov/no-av');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO form4_parsed_transactions (transaction_id, accession_number, transaction_date, transaction_code, shares, price_per_share, total_value_usd, reporting_owner_name, reporting_owner_role, ownership_type)
+        VALUES ('tx-no-av', 'acc-no-avail', '2026-11-19', 'S', 500, 350.0, 175000.0, 'Tim Cook', 'CEO', 'D');
+        """
+    )
+
+    # Add certified reconciliation receipt certifying cutoff
+    all_accs = [
+        "acc-base-resolved", "acc-amend-resolved",
+        "acc-base-fut", "acc-amend-fut",
+        "acc-base-part", "acc-amend-part",
+        "acc-offset-ok", "acc-no-avail"
+    ]
+    expected_hashes = {
+        "acc-base-resolved": "h-res-b",
+        "acc-amend-resolved": "h-res-a",
+        "acc-base-fut": "h-fut-b",
+        "acc-amend-fut": "h-fut-a",
+        "acc-base-part": "h-prt-b",
+        "acc-amend-part": "h-prt-a",
+        "acc-offset-ok": "h-off-ok",
+        "acc-no-avail": "h-acc-no-avail",
+    }
+    reasons = {
+        "ticker": "AAPL",
+        "issuer_cik": "0000320193",
+        "covered_tickers": ["AAPL"],
+        "covered_ciks": ["0000320193"],
+        "accession_inventory": all_accs,
+        "source_hashes": expected_hashes,
+        "material_gaps": [],
+        "schema_version": 1,
+    }
+    rec_hash = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z", interval_end=cutoff_wm,
+        certified_watermark=cutoff_wm, receipt_version=1,
+        supersedes_receipt_id=None, accession_inventory=all_accs,
+        source_hashes=reasons["source_hashes"], material_gaps=[],
+        zero_activity_proof=None,
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_reconciliation_receipts (
+            receipt_id, interval_start, interval_end, certified_watermark, receipt_version,
+            expected_count, accounted_count, missing_count, material_gap_count, coverage_status,
+            failure_reasons, reconciliation_hash, release_sha
+        ) VALUES (
+            %s, '2026-11-01T00:00:00Z', %s, %s, 1,
+            %s, %s, 0, 0, 'COMPLETE',
+            %s, %s, '868d7afc'
+        );
+        """,
+        (str(uuid.uuid4()), cutoff_wm, cutoff_wm, len(all_accs), len(all_accs), json.dumps(reasons), rec_hash),
+    )
+    conn.commit()
+
+    fetcher = SecEdgarFetcher()
+    from unittest.mock import patch
+
+    with patch("analyst_dashboard.smart_money.storage.postgres_connection.get_connection", side_effect=lambda: psycopg2.connect(clean_postgres_db)), \
+         patch("analyst_dashboard.smart_money.storage.config.get_storage_backend", return_value="postgres"), \
+         patch("analyst_dashboard.data.sec_edgar_fetcher.is_sec_egress_authorized", return_value=False):
+
+        env = fetcher.get_recent_filings_envelope("AAPL")
+        items = {item["accession_number"]: item for item in env["items"]}
+
+        # 1. Base filing target of legacy RESOLVED cannot imply verified amendment effect
+        res_base = items["acc-base-resolved"]
+        assert res_base["has_ambiguous_amendment"] is True
+        assert res_base["is_effective"] is False
+        assert res_base["effective_status"] == "AMENDMENT_EFFECT_AMBIGUOUS"
+        assert "legacy resolved" in res_base["amendment_note"].lower()
+
+        # Amendment itself with RESOLVED is scope-unverified
+        res_am = items["acc-amend-resolved"]
+        assert res_am["is_effective"] is False
+        assert res_am["effective_status"] == "SCOPE_UNVERIFIED"
+
+        # 2. Future amendment: base filing remains effective at watermark cutoff
+        fut_base = items["acc-base-fut"]
+        assert fut_base["is_superseded"] is False
+        assert fut_base["is_effective"] is True
+        assert fut_base["effective_status"] == "EFFECTIVE"
+        assert "postdates cutoff" in fut_base["amendment_note"].lower()
+
+        # The future amendment itself is pending availability
+        fut_am = items["acc-amend-fut"]
+        assert fut_am["is_effective"] is False
+        assert fut_am["effective_status"] == "PENDING_PUBLIC_AVAILABILITY"
+
+        # 3. Partial correction: base filing has has_partial_amendment=True without full supersession
+        part_base = items["acc-base-part"]
+        assert part_base["is_superseded"] is False
+        assert part_base["has_partial_amendment"] is True
+        assert part_base["is_effective"] is False
+        assert part_base["effective_status"] == "PARTIAL_CORRECTION"
+
+        # 4. Offset timestamp normalized properly: -05:00 converted to UTC Z <= cutoff
+        offset_item = items["acc-offset-ok"]
+        assert offset_item["is_effective"] is True
+        assert offset_item["effective_status"] == "EFFECTIVE"
+
+        # 5. Missing availability fails closed to PENDING_PUBLIC_AVAILABILITY
+        no_avail = items["acc-no-avail"]
+        assert no_avail["is_effective"] is False
+        assert no_avail["effective_status"] == "PENDING_PUBLIC_AVAILABILITY"
+
     conn.close()
