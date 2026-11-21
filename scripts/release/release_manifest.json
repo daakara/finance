@@ -1,57 +1,89 @@
 {
-  "release_candidate_commit": "5d6e3610e215dfbc29a51faf474a26f72bd28017",
-  "base_anchor_commit": "b937706e1ff2391cbcb61b359ffd981d98827c0a",
-  "total_files": 6,
+  "release_candidate_commit": "9b8206e933487834252be29be8344bab50065bcf",
+  "base_anchor_commit": "868d7afcd528006c2323e6b79b5a17f2f20f677c",
+  "total_files": 10,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SEC-TWO-ISSUER-TRIAL-001",
+  "directive": "ARX-SEC-FORM4-DISCLOSURE-VIEW-001",
   "files": {
-    "analyst_dashboard/smart_money/continuous_pipeline.py": {
+    "analyst_dashboard/data/sec_edgar_fetcher.py": {
       "operation": "M",
-      "originating_pr_number": 312,
-      "originating_commit": "f88ecf343183dfbdfb44561d20f17963ad0b5ad5",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "da01c7289a5a0e46c52b0dad640cadccde6ac72ea08d1bd50f2c1d01551fe3a9",
-      "size_bytes": 104180
+      "originating_pr_number": 313,
+      "originating_commit": "9b8206e933487834252be29be8344bab50065bcf",
+      "governing_requirement": "Issue #165: neutral latest-event mapping, individual transaction preservation, and governed receipt validation",
+      "sha256": "96c0f6041a0ea338df29bad972c0313da249f03d4340bf8076223cf8dc6c9011",
+      "size_bytes": 101062
     },
-    "analyst_dashboard/smart_money/smart_money_scheduler.py": {
+    "api/routes/smart_money.py": {
       "operation": "M",
-      "originating_pr_number": 312,
-      "originating_commit": "f88ecf343183dfbdfb44561d20f17963ad0b5ad5",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "317fa506688b02f64f6245f4fff9bbba2770a4093f83f38875999c1ac039de1a",
-      "size_bytes": 17901
+      "originating_pr_number": 313,
+      "originating_commit": "9b8206e933487834252be29be8344bab50065bcf",
+      "governing_requirement": "Issue #165: expose neutral SEC Form 4 insider disclosure and raw filing metadata",
+      "sha256": "88b1e514da1604b7b78e3453284caf3386a1cb422b7f6d13fe9702a118159463",
+      "size_bytes": 12255
     },
-    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
-      "operation": "M",
-      "originating_pr_number": 312,
-      "originating_commit": "f88ecf343183dfbdfb44561d20f17963ad0b5ad5",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "9894afe621b287cc77906d8865a196b696aa3bb2dc50ac885443e1395a8af9cd",
-      "size_bytes": 131782
-    },
-    "analyst_dashboard/smart_money/worker.py": {
-      "operation": "M",
-      "originating_pr_number": 312,
-      "originating_commit": "5d6e3610e215dfbc29a51faf474a26f72bd28017",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "c32f01da6d774cb4dad55fd5ecfd2e3108cf6764a127fc2f2d509819075b18dc",
-      "size_bytes": 50210
-    },
-    "tests/test_smart_money_two_issuer_trial.py": {
-      "operation": "M",
-      "originating_pr_number": 312,
-      "originating_commit": "163cebebf3646dcf0ad6555d0bac2b314cbd23a4",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "43f530b009d2fd35c68443ce1ca8c4ceb22a7ebe8b449a4fb4febe1304431d19",
-      "size_bytes": 76779
-    },
-    "docs/reports/SEC_TRIAL_SLOT_DISPATCH_QUALIFICATION_2026_11_20.md": {
+    "docs/reports/PR313_REMEDIATION_REPORT.md": {
       "operation": "A",
-      "originating_pr_number": 312,
-      "originating_commit": "f88ecf343183dfbdfb44561d20f17963ad0b5ad5",
-      "governing_requirement": "Issue #165: bounded ingestion-only trial slot dispatch, deduplication, and qualification",
-      "sha256": "b57c7205f79e0b259924b4c8f92c9d7e73e8ffd042b26edf474b33421df62f04",
-      "size_bytes": 4524
+      "originating_pr_number": 313,
+      "originating_commit": "9b8206e933487834252be29be8344bab50065bcf",
+      "governing_requirement": "Issue #165: record source review findings remediation and verification evidence",
+      "sha256": "28d47e8b4733b24fab241faad830fe25221f27f4221a1576bdbf1303638ba34c",
+      "size_bytes": 6386
+    },
+    "frontend/components/InstitutionalFeeds.tsx": {
+      "operation": "M",
+      "originating_pr_number": 313,
+      "originating_commit": "9b8206e933487834252be29be8344bab50065bcf",
+      "governing_requirement": "Issue #165: neutral disclosure presentation, expandable technical drawer, and mixed aggregate withholding",
+      "sha256": "830a471ad4ed18fe43d531c40fc923bfdfd291770d6b3a6786cfb12852179896",
+      "size_bytes": 45133
+    },
+    "frontend/lib/institutionalFeeds.ts": {
+      "operation": "M",
+      "originating_pr_number": 313,
+      "originating_commit": "9b8206e933487834252be29be8344bab50065bcf",
+      "governing_requirement": "Issue #165: contract types for multi-transaction disclosures, gift pricing, and served_at timestamp",
+      "sha256": "c3418dead7f5e2018389b62ab77578dc4b68c95cb87f41be79fc24932b95152e",
+      "size_bytes": 25250
+    },
+    "frontend/tests/secDisclosureEvidenceView.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 313,
+      "originating_commit": "9b8206e933487834252be29be8344bab50065bcf",
+      "governing_requirement": "Issue #165: frontend verification suite for multi-transaction preservation and cross-ticker protection",
+      "sha256": "b118ab9cf7046cf5194971872b16a6dfab604d44cebc174b328433681c352846",
+      "size_bytes": 21629
+    },
+    "scripts/capture_sec_disclosure_evidence.py": {
+      "operation": "A",
+      "originating_pr_number": 313,
+      "originating_commit": "9b8206e933487834252be29be8344bab50065bcf",
+      "governing_requirement": "Issue #165: visual verification harness for desktop and mobile disclosure views",
+      "sha256": "4037a9e8f8fcce6429701023a678cf1901e59d508cdb4438b8b4ec7c1875512c",
+      "size_bytes": 17349
+    },
+    "tests/test_fred_sec_presentation_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 313,
+      "originating_commit": "9b8206e933487834252be29be8344bab50065bcf",
+      "governing_requirement": "Issue #165: FRED macro contract presentation integrity and observation preservation",
+      "sha256": "f52f5d96294b8f61572ac305f05f852f4cbd38219fdf1995926c06b9572319c6",
+      "size_bytes": 21506
+    },
+    "tests/test_sec_disclosure_postgres_integration.py": {
+      "operation": "A",
+      "originating_pr_number": 313,
+      "originating_commit": "9b8206e933487834252be29be8344bab50065bcf",
+      "governing_requirement": "Issue #165: PostgreSQL integration tests for governed receipts, availability cutoffs, and amendment semantics",
+      "sha256": "95ff680bbc7e8363ab389c144a361213b003e5520002313ffc853916297681aa",
+      "size_bytes": 48710
+    },
+    "tests/test_sec_disclosure_view.py": {
+      "operation": "A",
+      "originating_pr_number": 313,
+      "originating_commit": "9b8206e933487834252be29be8344bab50065bcf",
+      "governing_requirement": "Issue #165: SQLite and unit test suite for SEC Form 4 neutral mapping and aggregate withholding",
+      "sha256": "a3d7e5b2fe1d385981e21e527fa0e8cb7d119d6b16f510f15bf06f35b91c0f51",
+      "size_bytes": 21723
     }
   },
   "qualification_framework_files": {
@@ -61,18 +93,18 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "ee4eb44e9fca9cb6d963bda632597fa9f5cc30cc049706ea648757c2a0b22ccc",
-      "size_bytes": 58211,
+      "sha256": "aa5011b4e364959fd68283ec5da309993c684f17429f1c439ed1283759756fd5",
+      "size_bytes": 58216,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "187c46a42a6814f0bdb410a1da7d0ff57f8f86d0a0bbe76e9ff464365a60666b",
-      "size_bytes": 3852,
+      "sha256": "61909a760a45d6ffb811b65f0b2e9a9cd637f3086bcabc00d3f69392816cdb93",
+      "size_bytes": 4015,
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "sha256": "c64b193223aeca69817d0bbac29c54c2dfb2e2e260ab3f69d73fb77cf53b98ef",
-      "size_bytes": 6667,
+      "sha256": "c1816ee1c1a4fcc7a2c178f1574fa36cd58ab71056a935e1d39d8eaab90c5ddd",
+      "size_bytes": 7568,
       "description": "Release qualification module: rq04_frontend_regression.py"
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
