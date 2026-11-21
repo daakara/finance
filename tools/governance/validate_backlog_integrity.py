@@ -389,6 +389,51 @@ class BacklogValidator:
                 except (ValueError, TypeError):
                     pass
 
+        # Current follow-ups do not reopen or relabel completed historical tasks.
+        task_ids = {t.get("task_id") for t in tasks}
+        followups = self.data.get("pull_request_followups", [])
+        if not isinstance(followups, list):
+            self.findings.append(Finding("BI-007", None, "ERROR", "PR follow-ups must be a list"))
+            followups = []
+        seen_followups = set()
+        for followup in followups:
+            if not isinstance(followup, dict):
+                self.findings.append(Finding("BI-007", None, "ERROR", "PR follow-up must be an object"))
+                continue
+            pr = followup.get("github_pr")
+            valid = type(pr) is int and pr > 0
+            parent = followup.get("canonical_task_id")
+            valid = valid and isinstance(parent, str) and parent in task_ids
+            valid = valid and followup.get("register_id") == f"REG-PR-{pr}"
+            valid = valid and followup.get("authorization_boundary") == "TRACKING_ONLY_NO_MERGE_DEPLOYMENT_OR_HOLD_CHANGE"
+            issues = followup.get("github_issues")
+            valid = valid and isinstance(issues, list) and bool(issues) and all(type(issue) is int and issue > 0 for issue in issues)
+            valid = valid and followup.get("disposition") in {"NEXT", "HELD", "DEFERRED"}
+            valid = valid and followup.get("planning_lane") in {"P0", "P1", "P2", "P3", "P4", "HOLD"}
+            for key in ("register_id", "owner", "authorization_boundary"):
+                value = followup.get(key)
+                valid = valid and isinstance(value, str) and bool(value.strip())
+            valid = valid and followup.get("owner") != "OWNER_UNASSIGNED"
+            for key in ("acceptance_criteria", "evidence_refs"):
+                values = followup.get(key)
+                valid = valid and isinstance(values, list) and bool(values) and all(
+                    isinstance(value, str) and bool(value.strip()) for value in values
+                )
+            holds = followup.get("holds")
+            valid = valid and isinstance(holds, list) and all(
+                isinstance(value, str) and bool(value.strip()) for value in holds
+            )
+            if followup.get("disposition") == "HELD":
+                valid = valid and bool(holds)
+            if not valid:
+                self.findings.append(Finding("BI-007", None, "ERROR", f"Invalid PR follow-up mapping for {pr!r}: requires a known parent, owner, lane, disposition, evidence and acceptance criteria; HELD requires holds"))
+                continue
+            if pr in seen_followups:
+                self.findings.append(Finding("BI-007", None, "ERROR", f"Duplicate PR follow-up mapping for #{pr}"))
+                continue
+            seen_followups.add(pr)
+            tracked_prs.add(pr)
+
         open_prs_list = []
         if isinstance(self.prs_inventory, dict):
             prs_data = (
@@ -1023,11 +1068,8 @@ def main():
             exit_code = 0 if verdict in ("PASS", "PASS_WITH_WARNINGS") else 1
         else:
             exit_code = 0
-    else:  # strict
-        if args.strict:
-            exit_code = 0 if verdict == "PASS" else 1
-        else:
-            exit_code = 0 if verdict in ("PASS", "PASS_WITH_WARNINGS") else 1
+    else:  # strict, whether selected by --stage or --strict
+        exit_code = 0 if verdict == "PASS" else 1
 
     # 8. Diagnostics Emission
     if args.json:
@@ -1104,7 +1146,8 @@ def main():
 
             print("-----------------------------------------------------------")
             print("MULTI-GATE ENFORCEMENT SUMMARY:")
-            print(f"  Gate 1 (Governance Integration Gate): {verdict} (Exit Code: {exit_code}) [PR MERGE ELIGIBLE]")
+            gate_result = "VALIDATION PASSED; MERGE AUTHORITY NOT ASSESSED" if verdict == "PASS" and exit_code == 0 else "NOT CLEARED"
+            print(f"  Gate 1 (Governance Integration Gate): {verdict} (Exit Code: {exit_code}) [{gate_result}]")
             if ready_errors:
                 print(f"  Gate 2A (Technical Closure Readiness): BLOCKED ({len(ready_errors)} active blockers)")
                 for re in ready_errors:

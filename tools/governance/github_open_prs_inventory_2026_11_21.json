@@ -1,8 +1,17 @@
 {
-  "generated_at": "2026-11-21T13:35:00Z",
+  "generated_at": "2026-11-21T16:32:27.919Z",
   "repository": "daakara/finance",
-  "open_prs_count": 6,
+  "source": "Authenticated GitHub search; state=open; topn=100; returned count below page limit",
+  "open_prs_count": 7,
   "pull_requests": [
+    {
+      "number": 317,
+      "title": "test(sec): prepare archived replay and bounded ingestion expansion (#165)",
+      "url": "https://github.com/daakara/finance/pull/317",
+      "state": "open",
+      "isDraft": true,
+      "headRefName": "codex/sec-expansion-preparation"
+    },
     {
       "author": {
         "id": "MDQ6VXNlcjUzMTI4ODI0",
@@ -15,7 +24,8 @@
       "isDraft": false,
       "number": 310,
       "title": "docs(governance): reconcile ARX production status, operational holds, active registers, and sprint roadmap (#310)",
-      "url": "https://github.com/daakara/finance/pull/310"
+      "url": "https://github.com/daakara/finance/pull/310",
+      "state": "open"
     },
     {
       "author": {
@@ -29,7 +39,8 @@
       "isDraft": true,
       "number": 274,
       "title": "feat(ux): ARX-UX-R3-001 progressive jargon management and accessible JargonTip",
-      "url": "https://github.com/daakara/finance/pull/274"
+      "url": "https://github.com/daakara/finance/pull/274",
+      "state": "open"
     },
     {
       "author": {
@@ -41,7 +52,8 @@
       "isDraft": true,
       "number": 146,
       "title": "fix(observability): OBS-01 Production Observability Hardening [DRAFT]",
-      "url": "https://github.com/daakara/finance/pull/146"
+      "url": "https://github.com/daakara/finance/pull/146",
+      "state": "open"
     },
     {
       "author": {
@@ -53,7 +65,8 @@
       "isDraft": true,
       "number": 83,
       "title": "feat(hva01): Wave 4C-1 dual-TSA timestamp verification [DRAFT]",
-      "url": "https://github.com/daakara/finance/pull/83"
+      "url": "https://github.com/daakara/finance/pull/83",
+      "state": "open"
     },
     {
       "author": {
@@ -65,7 +78,8 @@
       "isDraft": true,
       "number": 78,
       "title": "fix(hva01): Wave 4B-S restricted canonicalization and schema remediation [DRAFT]",
-      "url": "https://github.com/daakara/finance/pull/78"
+      "url": "https://github.com/daakara/finance/pull/78",
+      "state": "open"
     },
     {
       "author": {
@@ -77,7 +91,8 @@
       "isDraft": true,
       "number": 75,
       "title": "research(arx): INSTR-001 evidence custody and synthetic observer validation",
-      "url": "https://github.com/daakara/finance/pull/75"
+      "url": "https://github.com/daakara/finance/pull/75",
+      "state": "open"
     }
   ]
 }

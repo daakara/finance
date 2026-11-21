@@ -5332,5 +5332,99 @@
     "governing_directive": "ARX_SPRINT5_AUTHORIZATION_AND_CERTIFICATION_RECOVERY_059",
     "reason": "OWNER_AUTHORIZATION_EVIDENCE_MISSING",
     "notes": "Sprint 5 active engineering kickoff remains strictly blocked. Prior agent-generated assertion lacked attributable Product Owner decision record."
-  }
+  },
+  "pull_request_followups": [
+    {
+      "owner": "daakara",
+      "authorization_boundary": "TRACKING_ONLY_NO_MERGE_DEPLOYMENT_OR_HOLD_CHANGE",
+      "register_id": "REG-PR-310",
+      "github_pr": 310,
+      "canonical_task_id": "ARX-S4-GOV-001",
+      "planning_lane": "P0",
+      "disposition": "NEXT",
+      "github_issues": [
+        228
+      ],
+      "holds": [],
+      "acceptance_criteria": [
+        "Strict validation links all open PRs without altering historical task states.",
+        "Qualify the cumulative PR diff; production merge remains deferred."
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/310",
+        "docs/planning/ARX_CURRENT_RECONCILIATION_REGISTER_2026_11_21.md#2-unified-current-register"
+      ]
+    },
+    {
+      "owner": "daakara",
+      "authorization_boundary": "TRACKING_ONLY_NO_MERGE_DEPLOYMENT_OR_HOLD_CHANGE",
+      "register_id": "REG-PR-274",
+      "github_pr": 274,
+      "canonical_task_id": "ARX-S3-009",
+      "planning_lane": "HOLD",
+      "disposition": "HELD",
+      "github_issues": [
+        66,
+        233
+      ],
+      "holds": [
+        "PHASE_A3_UX_HOLD"
+      ],
+      "acceptance_criteria": [
+        "Retain draft until authentic N=5 formative human study clearance; automated tests do not satisfy this gate."
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/274",
+        "docs/planning/ARX_CURRENT_RECONCILIATION_REGISTER_2026_11_21.md#2-unified-current-register"
+      ]
+    },
+    {
+      "owner": "daakara",
+      "authorization_boundary": "TRACKING_ONLY_NO_MERGE_DEPLOYMENT_OR_HOLD_CHANGE",
+      "register_id": "REG-PR-146",
+      "github_pr": 146,
+      "canonical_task_id": "ARX-S3-017",
+      "planning_lane": "P4",
+      "disposition": "NEXT",
+      "github_issues": [
+        204,
+        232
+      ],
+      "holds": [],
+      "acceptance_criteria": [
+        "Review unique error taxonomy, query redaction and regression tests against current production.",
+        "Prepare only non-overlapping changes for isolated review; no production activation."
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/146",
+        "docs/planning/ARX_CURRENT_RECONCILIATION_REGISTER_2026_11_21.md#2-unified-current-register"
+      ]
+    },
+    {
+      "register_id": "REG-PR-317",
+      "github_pr": 317,
+      "canonical_task_id": "ARX-S3-017",
+      "owner": "daakara",
+      "planning_lane": "P3",
+      "disposition": "NEXT",
+      "github_issues": [
+        165,
+        231
+      ],
+      "holds": [
+        "HOLD_SEC_001",
+        "HOLD_SCAN_001",
+        "HOLD_EXEC_001"
+      ],
+      "acceptance_criteria": [
+        "Review archived replay evidence and qualify the reproduced expanded ingestion-only code gaps before any live expansion.",
+        "Keep PR draft; no grant, SEC request, publication, deployment or trial quota reset."
+      ],
+      "evidence_refs": [
+        "https://github.com/daakara/finance/pull/317",
+        "docs/planning/ARX_CURRENT_RECONCILIATION_REGISTER_2026_11_21.md"
+      ],
+      "authorization_boundary": "TRACKING_ONLY_NO_MERGE_DEPLOYMENT_OR_HOLD_CHANGE"
+    }
+  ]
 }

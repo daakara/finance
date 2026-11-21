@@ -111,6 +111,13 @@
           ]
         }
       }
+    },
+    "pull_request_followups": {
+      "type": "array",
+      "description": "Current PR follow-ups linked to historical tasks without changing historical completion or authorization.",
+      "items": {
+        "$ref": "#/definitions/PullRequestFollowup"
+      }
     }
   },
   "definitions": {
@@ -695,6 +702,112 @@
           "type": "string"
         }
       }
+    },
+    "PullRequestFollowup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "register_id",
+        "github_pr",
+        "canonical_task_id",
+        "owner",
+        "planning_lane",
+        "disposition",
+        "github_issues",
+        "holds",
+        "acceptance_criteria",
+        "evidence_refs",
+        "authorization_boundary"
+      ],
+      "properties": {
+        "register_id": {
+          "type": "string",
+          "pattern": "^REG-PR-[1-9][0-9]*$"
+        },
+        "github_pr": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "canonical_task_id": {
+          "type": "string",
+          "pattern": "^ARX-S[1-5]-[A-Z0-9\\-]+$"
+        },
+        "owner": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "planning_lane": {
+          "enum": [
+            "P0",
+            "P1",
+            "P2",
+            "P3",
+            "P4",
+            "HOLD"
+          ]
+        },
+        "disposition": {
+          "enum": [
+            "NEXT",
+            "HELD",
+            "DEFERRED"
+          ]
+        },
+        "github_issues": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "holds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "uniqueItems": true
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "minItems": 1
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "minItems": 1
+        },
+        "authorization_boundary": {
+          "const": "TRACKING_ONLY_NO_MERGE_DEPLOYMENT_OR_HOLD_CHANGE"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "disposition": {
+                "const": "HELD"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "holds": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

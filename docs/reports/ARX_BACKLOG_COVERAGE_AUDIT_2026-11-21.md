@@ -180,23 +180,17 @@ python3 tools/governance/validate_backlog_integrity.py \
   --strict
 ```
 
-### 5.2 Strict Validator Results & Findings Readout
-- **Schema Validation (BI-000):** `VERIFIED` (conforms to `arx_canonical_backlog.schema.json`).
-- **Historical Continuity (BI-012):** `VERIFIED` (all 43 tasks intact against `git show origin/main:docs/planning/arx_canonical_backlog.json`).
-- **External Inventory Reconciliation:** `PERFORMED` (evaluated against 6 active pull requests and 14 active issues).
-- **Strict Enforcement Verdict:** `PASS_WITH_WARNINGS | Exit Code: 1`
-- **Active Traceability Warnings (BI-007):** Exactly 3 warnings emitted:
-  - `[WARNING] BI-007: Active open GitHub PR #310 is not linked to any canonical task`
-  - `[WARNING] BI-007: Active open GitHub PR #274 is not linked to any canonical task`
-  - `[WARNING] BI-007: Active open GitHub PR #146 is not linked to any canonical task`
-- **Strict Mode Analysis & Incompleteness Disclosure:**
-  - Under `--strict`, any warning elevates to a non-zero exit code (Exit Code: 1).
-  - The historical Sprints 1–4 canonical backlog (`arx_canonical_backlog.json`) does not track post-Sprint 4 pull requests (#146, #274, #310). Without altering historical backlog custody, these 3 warnings cannot be silenced automatically.
-  - **Honest Governance Finding:** Automated PR traceability reconciliation is **INCOMPLETE** under strict validator enforcement. A report-only exit code of 0 does **not** signify production merge eligibility. PR #310 remains strictly unmerged.
-- **Multi-Gate Summary:**
-  - **Gate 1 (Governance Integration Gate):** `PASS_WITH_WARNINGS (Exit Code: 1)` — Strict validation requires manual exception sign-off; PR merge remains deferred.
-  - **Gate 2A (Technical Closure Readiness):** `PASS` — Technical criteria satisfied.
-  - **Gate 2B (Sprint 5 Execution Permission):** `BLOCKED` (P5-010: Product Owner affirmative kickoff authorization missing; correctly fail-closed).
+### 5.2 Strict Validator Results & Findings Readout — updated 2026-11-21
+
+- **Previous result:** `PASS_WITH_WARNINGS / exit 1`, with PRs #310, #274 and #146 untracked. This remains the historical finding, resolved by the change below.
+- **Current result:** `PASS / exit 0`, schema and historical continuity verified, zero BI-007 warnings. Authenticated GitHub inventories contain 7 open PRs and 14 open issues at their embedded retrieval timestamp.
+- **Machine-readable resolution:** Four `pull_request_followups` records link current register IDs to existing task IDs, issue/sprint containers, accountable owner, lane, disposition, holds, evidence and acceptance criteria. All 43 historical task objects and 71 obligations remain identical to the preceding branch head; no completed task is reopened or relabeled.
+- **New preparation traceability:** Draft PR #317 (Issue #165 / Sprint P3 #231) is mapped as a current follow-up to `ARX-S3-017`; its 161 passing offline checks do not authorize ingestion expansion.
+- **Strict semantics:** Both `--strict` and `--stage strict` reject warnings. Report-only mode can return zero without clearing Gate 1. Invalid/unknown-parent mappings, missing ownership/evidence, duplicate mappings and held records without holds fail closed.
+- **Gate 1:** `VALIDATION PASSED; MERGE AUTHORITY NOT ASSESSED`. The unconditional `PR MERGE ELIGIBLE` label was removed.
+- **Gate 2B:** Sprint 5 execution remains `BLOCKED` on P5-010. These mappings do not authorize execution, deployment or held activity.
+- **Regression evidence:** 107 tests passed across `tests/test_backlog_integrity_validator.py` and `tests/test_backlog_pr_followups.py`.
+- **Release limitation:** PR #310 remains unmerged. This validator result does not qualify the cumulative release-framework changes or resolve branch conflicts against production.
 
 ---
 
@@ -215,12 +209,14 @@ To maintain precise configuration management, changes in the latest commits are 
    - Restored original scope of TD-08 (fabricated 2026-04-01 options date fallback) and TD-09 (benchmark clone/CI costs before deciding storage move).
    - Removed stale PR #315 draft references, acknowledging its merge and deployment in `2eccc64a`.
    - Updated post-closure inventory fixtures and reported strict validator exit code 1 honestly.
-2. **Cumulative PR #310 Diff (34 Files Modified):**
+2. **Prior cumulative PR #310 Diff (34 files before the traceability correction below):**
    - *Documentation & Governance Files ($N = 10$):* `PROJECT.md`, `README.md`, `docs/ARX_STATUS_ADDENDUM_2026_11_20.md`, `docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md`, `docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_20.md`, `docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_20.md`, `docs/planning/ARX_CURRENT_RECONCILIATION_REGISTER_2026_11_21.md`, `docs/planning/ENGINEERING_BACKLOG.md`, `docs/reports/ARX_BACKLOG_COVERAGE_AUDIT_2026-11-21.md`, `docs/ux/OPTION_A_UX_ROADMAP.md`.
    - *Release Framework & Receipt Files ($N = 22$, Preserved Historical Artifacts):*
      `scripts/release/master_ci_run_results.json`, `scripts/release/receipts/d12c_workflow_attacks_results.json`, `scripts/release/receipts/rq01_receipt.json` through `rq13_receipt.json` (13 receipts), `scripts/release/receipts/rq02_adversarial_results.json`, `scripts/release/release_manifest.json`, `scripts/release/release_qualification_summary.json`, `scripts/release/rq02_diff_integrity.py`, `scripts/release/rq_compatibility_results.json`, `scripts/release/rq_provenance_receipt.json`, `scripts/release/rq_rollback_targets.json`.
      *Flagged Boundary Notice:* These 22 files belong to prior candidate `7106a990` qualification runs (commits `d126ccc3`, `72f59378`, `5e01b729`). They are preserved untouched on the branch, but are flagged as outside the scope of bounded documentation reconciliation.
    - *Tool Inventory Fixtures ($N = 2$):* `tools/governance/github_open_issues_inventory_2026_11_21.json`, `tools/governance/github_open_prs_inventory_2026_11_21.json`.
+
+The follow-up correction adds schema-supported mappings and validator regression tests. The 34-file count above is historical; use the current Git diff for cumulative review. Existing 22 release-framework artifacts were not changed by this correction.
 
 ### 6.3 Disposition Totals (Calculated from 35 Unique Register IDs)
 

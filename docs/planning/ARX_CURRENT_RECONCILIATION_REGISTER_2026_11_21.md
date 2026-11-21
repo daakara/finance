@@ -17,6 +17,7 @@ This register serves as the authoritative operational inventory of all engineeri
 
 ### Governing Relationships:
 1. **Preservation of Canonical Backlog:** This document forms an additive operational overlay upon `docs/planning/arx_canonical_backlog.json` (43 historical tasks, 71 obligations). The historical custody, schema contracts, and verification gates (BI-000 through BI-012) of the canonical backlog are strictly preserved.
+   - Machine-readable current PR follow-ups are recorded in `arx_canonical_backlog.json:pull_request_followups`, with schema-validated parent task, owner, lane, disposition, holds, evidence and acceptance criteria. PR #310 links to `ARX-S4-GOV-001`; #274 to `ARX-S3-009`; #146 to `ARX-S3-017`. These links do not reopen completed historical tasks or authorize held work.
 2. **Accountable Human Ownership:** In compliance with governance standards, all active executable scope and holding queues are bound to an accountable maintainer: David Akara (`@daakara`).
 3. **Planning Lane Alignment:** Tasks are organized across the formal planning lanes:
    - **Sprint P0 (#228):** Backlog reconciliation, historical PR closure, and governance synchronization.
@@ -29,7 +30,11 @@ This register serves as the authoritative operational inventory of all engineeri
 
 ---
 
-## 2. Master Current Reconciliation Register (35 Unique Entities)
+## Current validation update — 2026-11-21
+
+The original three mapping gaps are resolved. New draft PR #317 is also mapped to `ARX-S3-017` under Issue #165 / Sprint P3 #231 so the preparation work is not orphaned. Strict validation with authenticated refreshed inventories passes with exit code 0 and zero BI-007 warnings. Both `--strict` and `--stage strict` reject warnings. Gate 1 reports validation only; merge authority and cumulative release qualification are not certified. Sprint 5 execution remains blocked (P5-010). Production SQL, live lock/queue state, grants and holds were not rechecked or modified in this change.
+
+## 2. Master Current Reconciliation Register (36 Unique Entities)
 
 | Stable ID | Source Ref (Issue / PR) | Accountable Owner | Primary Lane / Queue | Disposition | Evidence Supporting Disposition | Remaining Acceptance Criteria | Dependency / Hold & Review Trigger | Concrete Next Action |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -50,6 +55,7 @@ This register serves as the authoritative operational inventory of all engineeri
 | **REG-ISSUE-063** | Issue [#63](https://github.com/daakara/finance/issues/63) | David Akara (`@daakara`) | Sprint P4 | `DEFERRED` | Research Workstation: Decision-first layout rollout (Quality Watch Collection). | Mobile/desktop responsive parity for advanced research workstation layout. | Post-R1 roadmap prioritization. | Defer implementation until post-R1 workstation milestones. |
 | **REG-ISSUE-060** | Issue [#60](https://github.com/daakara/finance/issues/60) | David Akara (`@daakara`) | Sprint HOLD | `HELD` | Corporate Events RC5: Quarterly earnings risk integration & telemetry. | Real-time earnings risk integration within live trade execution engine. | `HOLD_EXEC_001`. Review trigger: Order execution engine unholding. | Maintain in holding queue under `HOLD_EXEC_001`. |
 | **REG-PR-313** | PR [#313](https://github.com/daakara/finance/pull/313) | David Akara (`@daakara`) | Sprint P3 | `SUPERSEDED` | Tree diff against merged PR #316 (`978123f7`) proves 100% overlap; 0 unmerged lines remain. | None. 100% of scope incorporated into `release/production` via PR #316. | None. | PR #313 closed on GitHub as superseded by merged PR #316. |
+| **REG-PR-317** | PR [#317](https://github.com/daakara/finance/pull/317) | David Akara (`@daakara`) | Sprint P3 (#231), Issue #165 | `NEXT` | Archived replay preparation: 161 offline tests pass on disposable PostgreSQL 16.2; expanded ingestion-only budget incompatibility reproduced. | Qualify expanded ingestion-only profile, budgets, bounded cleanup and durable admission before separate live GO. | `HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`; DRAFT, unmerged. | Review preparation proposal and regression evidence; no production activation. |
 | **REG-PR-310** | PR [#310](https://github.com/daakara/finance/pull/310) | David Akara (`@daakara`) | Sprint P0 | `NEXT` | Active branch `docs/reconcile-arx-status-2026-11-20`. Updated baseline to `2eccc64a`. | Documentation review completion; production merge deferred. | None. Production merge deferred. | Push updated documentation commit and maintain PR in reviewable state. |
 | **REG-PR-274** | PR [#274](https://github.com/daakara/finance/pull/274) | David Akara (`@daakara`) | Sprint HOLD | `HELD` | Implements progressive jargon disclosure (`JargonTip.tsx`, `useVernacularMode.ts`). | Phase A3 formative human usability study clearance ($N=5$). | `PHASE_A3_UX_HOLD`. Review trigger: A3 study completion. | Retain PR #274 in DRAFT; no merge or production deployment. |
 | **REG-PR-146** | PR [#146](https://github.com/daakara/finance/pull/146) | David Akara (`@daakara`) | Sprint P4 | `NEXT` | Basic Sentry capture merged. Unique remainder: error taxonomy, query redaction, 60 tests. | Extract unique non-overlapping components into clean PR for Sprint P4 review. | None. | Rebase unique remainder onto current main for isolated review under #204 / #232. |
@@ -71,15 +77,15 @@ This register serves as the authoritative operational inventory of all engineeri
 
 ---
 
-## 3. Dispositions Summary (Calculated from 35 Unique Register IDs)
+## 3. Dispositions Summary (Calculated from 36 Unique Register IDs)
 
-- **Total Unique Audited Entities:** Exactly 35 unique register IDs (`REG-ISSUE-*` x 10, `REG-PR-*` x 7, `REG-TD-*` x 9, `REG-RADAR-166`, `REG-FUT-HG01`, `REG-PRES-SEC01`).
+- **Total Unique Audited Entities:** Exactly 36 unique register IDs (`REG-ISSUE-*` x 16, `REG-PR-*` x 8, `REG-TD-*` x 9, `REG-RADAR-166`, `REG-FUT-HG01`, `REG-PRES-SEC01`).
 - **DONE ($N = 5$):** `REG-ISSUE-229`, `REG-ISSUE-067`, `REG-TD-01`, `REG-TD-02`, `REG-TD-03`.
 - **SUPERSEDED ($N = 1$):** `REG-PR-313` (superseded by merged PR #316, commit `978123f7`).
-- **NEXT ($N = 15$):** `REG-ISSUE-228`, `REG-ISSUE-230`, `REG-ISSUE-231`, `REG-ISSUE-232`, `REG-ISSUE-165`, `REG-ISSUE-203`, `REG-ISSUE-204`, `REG-PR-310`, `REG-PR-146`, `REG-TD-04`, `REG-TD-05`, `REG-TD-06`, `REG-TD-07`, `REG-TD-08`, `REG-TD-09`.
+- **NEXT ($N = 16$):** `REG-ISSUE-228`, `REG-ISSUE-230`, `REG-ISSUE-231`, `REG-ISSUE-232`, `REG-ISSUE-165`, `REG-ISSUE-203`, `REG-ISSUE-204`, `REG-PR-310`, `REG-PR-317`, `REG-PR-146`, `REG-TD-04`, `REG-TD-05`, `REG-TD-06`, `REG-TD-07`, `REG-TD-08`, `REG-TD-09`.
 - **HELD UNDER OPERATIONAL HOLDS ($N = 9$):** `REG-ISSUE-233`, `REG-ISSUE-066`, `REG-ISSUE-065`, `REG-ISSUE-064`, `REG-ISSUE-060`, `REG-PR-274`, `REG-PR-083`, `REG-PR-078`, `REG-PR-075`.
 - **DEFERRED FUTURE WORK ($N = 5$):** `REG-ISSUE-166`, `REG-ISSUE-063`, `REG-RADAR-166`, `REG-FUT-HG01`, `REG-PRES-SEC01`.
-- **Sum Verification:** $5 + 1 + 15 + 9 + 5 = 35$ unique register IDs.
+- **Sum Verification:** $5 + 1 + 16 + 9 + 5 = 36$ unique register IDs.
 
 ---
 
