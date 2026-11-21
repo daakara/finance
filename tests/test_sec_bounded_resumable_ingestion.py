@@ -359,6 +359,7 @@ def test_scope_recurring_10_ingestion_authorization_enforcement():
         "ARX_CONTINUOUS_INGESTION_AUTHORIZED": "true",
         "ARX_SEC_EGRESS_ROLE": "OWNER",
         "ARX_CONTINUOUS_AUTH_SCOPE": SCOPE_RECURRING_10_INGESTION,
+        "ARX_INGESTION_PHASE_ID": "OFFLINE_QUALIFICATION_PHASE",
         "ARX_CONTINUOUS_AUTH_UNIVERSE_ID": "UB-US-EQUITIES-20261025-001",
         "ARX_CONTINUOUS_AUTH_ID": "a" * 32,
         "ARX_RELEASE_SHA": dummy_sha,

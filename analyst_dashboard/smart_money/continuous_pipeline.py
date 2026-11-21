@@ -425,6 +425,11 @@ class ContinuousOutboundSession(requests.Session):
         if not self.allow_test_mode:
             require_continuous_authorization(issuers=self.issuers)
 
+        # A committed send intent survives process death before/during transmission.
+        before_send = getattr(self, "before_transmission", None)
+        if before_send is not None:
+            before_send(issuer_key)
+
         # 7. Record transmission count before wire transmission
         self.total_transmissions += 1
         self.issuer_transmissions[issuer_key] = count_for_issuer + 1
@@ -613,6 +618,11 @@ class SmartMoneyContinuousPipeline:
         )
         self.outbound_session.is_trial = self.is_trial_2_issuer
         self.bounded_progress_enabled: bool = True
+        self.expanded_phase_id = os.environ.get("ARX_INGESTION_PHASE_ID", "")
+        self.execution_id = None
+        self.execution_watermark = None
+        self._active_run_request_id = None
+        self._active_lease_token = None
         self.sec_fetcher = sec_fetcher
         self.scanner = scanner or SmartMoneyForm4Scanner()
         self.scheduler = scheduler or SmartMoneyTimezoneScheduler()
@@ -654,6 +664,10 @@ class SmartMoneyContinuousPipeline:
         self.outbound_session.cycle_deadline = self.cycle_deadline
         self.outbound_session.deadline_monotonic = self.cycle_deadline_monotonic
         cycle_id = f"sm-cycle-{start_time.strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
+        self._active_run_request_id = run_request_id
+        self._active_lease_token = lease_token
+        self.execution_id = str(run_request_id or cycle_id)
+        self.execution_watermark = None
         steps_completed: List[str] = []
         errors: List[str] = []
         pre_backup_manifest: Optional[Dict[str, Any]] = None
@@ -663,6 +677,7 @@ class SmartMoneyContinuousPipeline:
         reconciliation_hash: Optional[str] = None
         matched_count = 0
         status = "IN_PROGRESS"
+        skip_terminal_recorded = False
         trial_budget_reserved = False
         reserved_slot_id = None
         reserved_ny_date = None
@@ -769,6 +784,7 @@ class SmartMoneyContinuousPipeline:
                     else "SKIPPED_NOT_ELIGIBLE"
                 )
                 steps_completed.append(f"STEP_3_{skip_status}")
+                status = skip_status
                 if self.repository and run_request_id and lease_token:
                     try:
                         self.repository.complete_run_request(
@@ -777,6 +793,7 @@ class SmartMoneyContinuousPipeline:
                             status=skip_status,
                             failure_code=None,
                         )
+                        skip_terminal_recorded = True
                         logger.info(
                             f"Marked run request {run_request_id} as terminal {skip_status} under lock."
                         )
@@ -811,6 +828,19 @@ class SmartMoneyContinuousPipeline:
                 trial_budget_reserved = True
                 steps_completed.append("STEP_3_TRIAL_BUDGET_RESERVED")
 
+            if self.is_expanded_10_ingestion:
+                if not self.repository or not self.expanded_phase_id or not run_request_id:
+                    raise RuntimeError('EXPANDED_DURABLE_ADMISSION_REQUIRED')
+                reservation = self.repository.reserve_expanded_ingestion_budget(
+                    self.expanded_phase_id, self.execution_id, self._ingestion_binding_hash(),
+                    datetime.now(NY_TZ).date().isoformat(), start_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                )
+                self.execution_watermark = reservation['watermark']
+                self.outbound_session.total_transmissions = reservation['total_intents']
+                self.outbound_session.issuer_transmissions = dict(reservation['issuer_intents'])
+                self.outbound_session.before_transmission = self._reserve_expanded_send
+                steps_completed.append('STEP_3_EXPANDED_BUDGET_RESERVED')
+
             # ── Step 4: Pre-ingestion backup & R2 upload ──────────────────────
             pre_backup_manifest = self._step4_pre_backup(cycle_id)
             steps_completed.append("STEP_4_PRE_BACKUP_COMPLETED")
@@ -823,7 +853,7 @@ class SmartMoneyContinuousPipeline:
             # ── Step 6 & 7: Genuine SEC Form 4 ingestion & reconciliation ────
             is_step6_mocked = hasattr(self._step6_ingest_form4_filings, "mock_calls") or hasattr(self._step6_ingest_form4_filings, "assert_called_once")
             is_step7_mocked = hasattr(self._step7_parse_and_reconcile, "mock_calls") or hasattr(self._step7_parse_and_reconcile, "assert_called_once")
-            bounded_enabled = getattr(self, "bounded_progress_enabled", True) and not (is_step6_mocked or is_step7_mocked)
+            bounded_enabled = self.ingestion_only and getattr(self, "bounded_progress_enabled", True) and not (is_step6_mocked or is_step7_mocked)
 
             unit_results = {}
             if bounded_enabled:
@@ -885,7 +915,7 @@ class SmartMoneyContinuousPipeline:
             pruned = self._step10_prune_retention()
             steps_completed.append(f"STEP_10_RETENTION_PRUNED_{len(pruned)}")
 
-            if status != "DEGRADED_POST_BACKUP_FAILED":
+            if status == "IN_PROGRESS":
                 status = "SUCCESS"
 
         except Exception as e:
@@ -928,19 +958,25 @@ class SmartMoneyContinuousPipeline:
                 steps_completed.append(f"CLEANUP_AFTER_EXPIRY:{cleanup_dur}s")
 
             # Complete ingestion-only run request only after full cleanup and deadline check
-            if self.ingestion_only and self.repository and run_request_id and lease_token:
+            if self.ingestion_only and self.repository and run_request_id and lease_token and not dry_run and not skip_terminal_recorded:
                 try:
-                    final_queue_status = "COMPLETED" if (status in ("SUCCESS", "PARTIAL") and deadline_met) else ("DEGRADED_DEADLINE_EXCEEDED" if (status in ("SUCCESS", "PARTIAL") and not deadline_met) else "FAILED")
+                    final_queue_status = status if status.startswith("SKIPPED") else ("COMPLETED" if (status == "SUCCESS" and deadline_met) else "FAILED")
                     self.repository.complete_run_request(
                         run_request_id,
                         result_generation_id=receipt_id,
                         lease_token=lease_token,
                         status=final_queue_status,
-                        failure_code="CYCLE_DEADLINE_EXCEEDED" if not deadline_met else None,
+                        failure_code="CYCLE_DEADLINE_EXCEEDED" if not deadline_met else ("PARTIAL_INGESTION" if status == "PARTIAL" else None),
                     )
+                    if self.cycle_deadline_monotonic is not None and time.monotonic() > self.cycle_deadline_monotonic:
+                        deadline_met = False
+                        cleanup_after_expiry = True
+                        self.repository.mark_terminal_deadline_exceeded(run_request_id, lease_token)
                 except Exception as comp_err:
-                    logger.warning(f"Could not complete run request {run_request_id} in cleanup: {comp_err}")
+                    raise RuntimeError("QUEUE_TERMINAL_TRANSITION_FAILED") from comp_err
 
+        if not deadline_met and status in ("SUCCESS", "PARTIAL"):
+            status = "DEGRADED_DEADLINE_EXCEEDED"
         return {
             "cycle_id": cycle_id,
             "status": status,
@@ -975,7 +1011,10 @@ class SmartMoneyContinuousPipeline:
         """
         start_time = datetime.now(timezone.utc)
         now_iso = start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-        watermark = as_of or now_iso
+        watermark = self.execution_watermark or as_of or now_iso
+        release_sha = resolve_release_identity()
+        execution_id = self.execution_id or cycle_id
+        binding_hash = self._ingestion_binding_hash()
         interval_start = (
             PROSPECTIVE_TRIAL_START_BOUNDARY
             if (self.ingestion_only or self.is_trial_2_issuer)
@@ -1010,10 +1049,11 @@ class SmartMoneyContinuousPipeline:
                         trial_id=trial_id,
                         slot_id=cur_slot,
                         cycle_id=cycle_id,
-                        watermark=watermark,
+                        watermark=watermark, execution_id=execution_id, binding_hash=binding_hash,
+                        issuer_cik=cik, release_sha=release_sha,
                     )
                 except Exception as r_err:
-                    logger.warning(f"Could not check prior completion for {ticker}: {r_err}")
+                    raise RuntimeError("UNIT_RESUME_LOOKUP_FAILED") from r_err
 
             if prev_receipt:
                 reasons_data = prev_receipt.get("failure_reasons") or {}
@@ -1030,6 +1070,7 @@ class SmartMoneyContinuousPipeline:
                 completed_ciks.append(cik)
                 all_accessions.extend(prev_accs)
                 all_source_hashes.update(prev_hashes)
+                all_unresolved_amendments.extend(reasons_data.get("unresolved_amendments", []))
                 unit_results[ticker] = {
                     "status": prev_status,
                     "resumed": True,
@@ -1091,217 +1132,27 @@ class SmartMoneyContinuousPipeline:
                 if not f.get("content_hash"):
                     f["content_hash"] = hashlib.sha256(f.get("xml_content", "").encode("utf-8")).hexdigest()
 
-            # 5. Handle successful no-work catalog check
-            if len(filing_dicts) == 0:
-                unit_receipt_id = str(uuid.uuid4())
-                unit_receipt_meta = {
-                    "receipt_id": unit_receipt_id,
-                    "interval_start": interval_start,
-                    "interval_end": watermark,
-                    "certified_watermark": watermark,
-                    "receipt_version": 1,
-                    "expected_count": 0,
-                    "accounted_count": 0,
-                    "missing_count": 0,
-                    "material_gap_count": 0,
-                    "coverage_status": "PARTIAL" if (self.ingestion_only or self.is_trial_2_issuer) else "COMPLETE",
-                    "failure_reasons": {
-                        "reasons": ["SUCCESSFUL_NO_WORK_CATALOG_CHECK"],
-                        "unit_status": "SUCCESSFUL_NO_WORK_CATALOG_CHECK",
-                        "unit_ticker": ticker,
-                        "unit_cik": cik,
-                        "covered_tickers": [ticker],
-                        "covered_ciks": [cik],
-                        "accession_inventory": [],
-                        "source_hashes": {},
-                        "trial_id": trial_id,
-                        "slot_id": cur_slot,
-                        "cycle_id": cycle_id,
-                    },
-                    "reconciliation_hash": hashlib.sha256(f"{cycle_id}:{ticker}:0:0".encode()).hexdigest(),
-                    "release_sha": resolve_release_identity(),
-                }
-                if self.repository:
-                    self.repository.save_reconciliation_receipt(unit_receipt_meta)
-                completed_tickers.append(ticker)
-                completed_ciks.append(cik)
-                unit_results[ticker] = {
-                    "status": "SUCCESSFUL_NO_WORK_CATALOG_CHECK",
-                    "accessions_discovered": 0,
-                    "accessions_ingested": 0,
-                    "receipt_id": unit_receipt_id,
-                }
-                continue
-
-            # 6. Parse, normalize, and atomically persist unit
-            unit_context = self.repository.ingestion_transaction() if self.repository else nullcontext(None)
+            # Reuse the original parser, amendment handling and guarded commit.
+            unit_identity = dict(unit_ticker=ticker, unit_cik=cik, trial_id=trial_id,
+                                 slot_id=cur_slot, cycle_id=cycle_id, execution_id=execution_id,
+                                 binding_hash=binding_hash)
             try:
-                with unit_context as conn:
-                    # Save raw filings and availability
-                    unit_acc_inv = []
-                    unit_source_hashes = {}
-                    for f in filing_dicts:
-                        acc = f.get("accession_number")
-                        unit_acc_inv.append(acc)
-                        unit_source_hashes[acc] = f.get("content_hash")
-                        if self.repository:
-                            if not f.get("accepted_datetime"):
-                                raise RuntimeError("SEC_PUBLIC_AVAILABILITY_MISSING")
-                            self.repository.save_raw_filing(f, conn=conn)
-                            self.repository.save_availability(
-                                acc, f["accepted_datetime"], source="SEC_INDEX",
-                                source_reference=f.get("source_url"), conn=conn,
-                            )
-
-                    # Parse XML filings
-                    parsed_filings_info = []
-                    unit_parsed_txs = []
-                    unit_raw_tx_dicts = []
-                    for f in filing_dicts:
-                        xml = f.get("xml_content")
-                        if not xml:
-                            raise RuntimeError("SEC_FORM4_XML_MISSING")
-                        accession = f.get("accession_number", "UNKNOWN")
-                        parsed_filing = Form4XmlParser.parse_filing(
-                            xml, accession_number=accession,
-                            acceptance_datetime=f.get("accepted_datetime"),
-                            source_url=f.get("source_url", ""),
-                        )
-                        if not parsed_filing or parsed_filing.disposition not in (
-                            "FETCHED_AND_PARSED", "FETCHED_NO_RELEVANT_TRANSACTIONS"
-                        ):
-                            raise RuntimeError("SEC_FORM4_PARSE_FAILED")
-                        if parsed_filing.issuer_cik != str(f.get("cik", "")).zfill(10):
-                            raise RuntimeError("SEC_FORM4_ISSUER_MISMATCH")
-                        parsed_filings_info.append((f, xml, accession, parsed_filing))
-                        if parsed_filing.transactions:
-                            for tx in parsed_filing.transactions:
-                                if not tx.issuer_symbol:
-                                    tx.issuer_symbol = f.get("ticker") or f.get("symbol")
-                                if not tx.issuer_cik:
-                                    tx.issuer_cik = f.get("cik") or parsed_filing.issuer_cik
-                                if not tx.issuer_name:
-                                    tx.issuer_name = f.get("company_name")
-                                unit_parsed_txs.append(tx)
-                                unit_raw_tx_dicts.append({
-                                    "transaction_id": tx.record_key,
-                                    "accession_number": tx.accession_number,
-                                    "transaction_date": tx.transaction_date,
-                                    "transaction_code": tx.transaction_code,
-                                    "shares": tx.shares,
-                                    "price_per_share": tx.price_per_share,
-                                    "total_value_usd": tx.total_value_usd,
-                                    "reporting_owner_name": tx.reporting_owner_name,
-                                    "reporting_owner_role": tx.officer_title or ("Director" if tx.is_director else "Insider"),
-                                    "is_director": tx.is_director,
-                                    "is_officer": tx.is_officer,
-                                    "is_ten_percent": tx.is_ten_percent_owner,
-                                    "officer_title": tx.officer_title,
-                                    "ownership_type": tx.ownership_nature.value if hasattr(tx.ownership_nature, "value") else str(tx.ownership_nature),
-                                    "is_derivative": bool(tx.is_derivative),
-                                    "signal_type": tx.signal_type.value if hasattr(tx.signal_type, "value") else (str(tx.signal_type) if tx.signal_type else None),
-                                    "acquired_disposed": tx.acquired_disposed,
-                                    "is_positive_buying_conviction": bool(tx.is_positive_buying_conviction),
-                                    "is_open_market_purchase_evidence": bool(tx.is_open_market_purchase_evidence),
-                                })
-
-                    if self.repository and unit_raw_tx_dicts:
-                        self.repository.save_parsed_transactions(unit_raw_tx_dicts, conn=conn)
-
-                    # Amendment processing
-                    unit_unresolved = []
-                    for f, xml, accession, parsed_filing in parsed_filings_info:
-                        is_amend = getattr(parsed_filing, "is_amendment", False) or f.get("document_type") in ("4/A", "4A")
-                        if is_amend and self.repository:
-                            base_acc = self.repository.resolve_amendment_base(
-                                f, parsed_filing.original_submission_date,
-                                parsed_filing.reporting_owner_ciks, conn,
-                            )
-                            if not base_acc:
-                                unit_unresolved.append(accession)
-                                rel_status = "UNRESOLVED"
-                            else:
-                                base_raw = self.repository.get_raw_filing(base_acc, conn=conn)
-                                base_txs = self.repository.get_parsed_transactions_for_accession(base_acc, conn=conn)
-                                clf_res = classify_amendment_effect(
-                                    amendment_filing=parsed_filing,
-                                    base_filing=base_raw,
-                                    base_transactions=base_txs,
-                                    raw_xml=xml,
-                                )
-                                scope, _ = clf_res
-                                mappings = getattr(clf_res, "mappings", [])
-                                if scope == SCOPE_PARTIAL_CORRECTION:
-                                    if mappings:
-                                        rel_status = SCOPE_PARTIAL_CORRECTION
-                                        self.repository.record_amendment_transaction_mappings(
-                                            base_accession=base_acc,
-                                            amendment_accession=accession,
-                                            mappings=mappings,
-                                            base_content_hash=base_raw.get("content_hash"),
-                                            amendment_content_hash=f.get("content_hash"),
-                                            conn=conn,
-                                        )
-                                    else:
-                                        rel_status = SCOPE_AMBIGUOUS
-                                elif scope in (SCOPE_FULL_REPLACEMENT, SCOPE_ADDITIONAL_TRANSACTION):
-                                    rel_status = scope
-                                else:
-                                    rel_status = SCOPE_AMBIGUOUS
-
-                            self.repository.save_amendment(
-                                amendment_accession=accession, base_accession=base_acc,
-                                amendment_number=1,
-                                resolution_status=rel_status,
-                                resolved_at=now_iso if base_acc else None, conn=conn,
-                            )
-
-                    # Save unit reconciliation receipt
-                    unit_receipt_id = str(uuid.uuid4())
-                    unit_receipt_meta = {
-                        "receipt_id": unit_receipt_id,
-                        "interval_start": interval_start,
-                        "interval_end": watermark,
-                        "certified_watermark": watermark,
-                        "receipt_version": 1,
-                        "expected_count": len(filing_dicts),
-                        "accounted_count": len(filing_dicts) - len(unit_unresolved),
-                        "missing_count": 0,
-                        "material_gap_count": len(unit_unresolved),
-                        "coverage_status": "PARTIAL" if (self.ingestion_only or self.is_trial_2_issuer or unit_unresolved) else "COMPLETE",
-                        "failure_reasons": {
-                            "reasons": [f"UNRESOLVED_AMENDMENT:{a}" for a in unit_unresolved],
-                            "unit_status": "SUCCESSFULLY_INGESTED_FILINGS",
-                            "unit_ticker": ticker,
-                            "unit_cik": cik,
-                            "covered_tickers": [ticker],
-                            "covered_ciks": [cik],
-                            "accession_inventory": unit_acc_inv,
-                            "source_hashes": unit_source_hashes,
-                            "trial_id": trial_id,
-                            "slot_id": cur_slot,
-                            "cycle_id": cycle_id,
-                        },
-                        "reconciliation_hash": hashlib.sha256(f"{cycle_id}:{ticker}:{len(filing_dicts)}:{len(unit_parsed_txs)}".encode()).hexdigest(),
-                        "release_sha": resolve_release_identity(),
-                    }
-                    if self.repository:
-                        self.repository.save_reconciliation_receipt(unit_receipt_meta, conn=conn)
-
-                # Unit committed successfully!
+                context = self.repository.ingestion_transaction(pre_commit=self._validate_precommit) if self.repository else nullcontext(None)
+                with context as conn:
+                    unit_parsed_txs, unit_receipt = self._parse_and_reconcile_transaction(
+                        filing_dicts, cycle_id, watermark, conn, unit_identity=unit_identity,
+                    )
+                unit_evidence = unit_receipt['failure_reasons']
                 all_raw_filings.extend(filing_dicts)
                 all_parsed_txs.extend(unit_parsed_txs)
                 completed_tickers.append(ticker)
                 completed_ciks.append(cik)
-                all_accessions.extend(unit_acc_inv)
-                all_source_hashes.update(unit_source_hashes)
-                all_unresolved_amendments.extend(unit_unresolved)
-                unit_results[ticker] = {
-                    "status": "SUCCESSFULLY_INGESTED_FILINGS",
-                    "accessions_discovered": len(filing_dicts),
-                    "accessions_ingested": len(filing_dicts),
-                    "receipt_id": unit_receipt_id,
-                }
+                all_accessions.extend(unit_evidence['accession_inventory'])
+                all_source_hashes.update(unit_evidence['source_hashes'])
+                all_unresolved_amendments.extend(unit_evidence['unresolved_amendments'])
+                unit_results[ticker] = dict(status=unit_evidence['unit_status'],
+                    accessions_discovered=len(filing_dicts), accessions_ingested=len(filing_dicts),
+                    receipt_id=unit_receipt['receipt_id'])
             except Exception as p_err:
                 logger.error(f"Atomic persistence failed for {ticker}: {p_err}")
                 unit_results[ticker] = {"status": "FAILED_DELIVERY", "error": str(p_err)}
@@ -1331,8 +1182,8 @@ class SmartMoneyContinuousPipeline:
             "interval_end": watermark,
             "certified_watermark": watermark,
             "receipt_version": 1,
-            "expected_count": len(all_raw_filings),
-            "accounted_count": len(all_raw_filings) - len(all_unresolved_amendments),
+            "expected_count": len(all_accessions),
+            "accounted_count": len(all_accessions) - len(all_unresolved_amendments),
             "missing_count": failed_count,
             "material_gap_count": len(all_unresolved_amendments) + failed_count + deferred_count,
             "coverage_status": cohort_coverage,
@@ -1354,7 +1205,8 @@ class SmartMoneyContinuousPipeline:
             "slot_id": cur_slot,
         }
         if self.repository:
-            self.repository.save_reconciliation_receipt(cohort_receipt_meta)
+            with self.repository.ingestion_transaction(pre_commit=self._validate_precommit) as conn:
+                self.repository.save_reconciliation_receipt(cohort_receipt_meta, conn=conn)
 
         return {
             "raw_filings": all_raw_filings,
@@ -1579,7 +1431,7 @@ class SmartMoneyContinuousPipeline:
                     "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Advisory lock connection closed prior to eligibility check."
                 )
 
-            if self.ingestion_only:
+            if self.ingestion_only and not self.is_expanded_10_ingestion:
                 try:
                     receipt = self.repository.get_latest_reconciliation_receipt(
                         covered_tickers=[i["ticker"] for i in self.issuers],
@@ -1605,7 +1457,7 @@ class SmartMoneyContinuousPipeline:
                     raise RuntimeError(
                         f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for latest reconciliation receipt failed under lock: {e}"
                     ) from e
-            else:
+            elif not self.ingestion_only:
                 try:
                     snap = self.repository.get_latest_active_snapshot(conn=self._lock_conn)
                 except Exception as e:
@@ -2038,11 +1890,11 @@ class SmartMoneyContinuousPipeline:
         Parses Form 4 XML into normalized transactions and persists them.
         Generates and saves immutable cryptographic reconciliation receipt.
         """
-        context = self.repository.ingestion_transaction() if self.repository else nullcontext(None)
+        context = self.repository.ingestion_transaction(pre_commit=self._validate_precommit) if self.repository else nullcontext(None)
         with context as conn:
             return self._parse_and_reconcile_transaction(raw_filings, cycle_id, as_of, conn)
 
-    def _parse_and_reconcile_transaction(self, raw_filings, cycle_id, as_of, conn):
+    def _parse_and_reconcile_transaction(self, raw_filings, cycle_id, as_of, conn, unit_identity=None):
         parsed_tx_objs: List[SmartMoneyTransaction] = []
         raw_tx_dicts: List[Dict[str, Any]] = []
         unresolved_amendments = []
@@ -2208,19 +2060,51 @@ class SmartMoneyContinuousPipeline:
             "slot_id": getattr(self, "current_slot_id", None),
         }
 
-        # Pre-commit invariants verification:
-        # 1. Monotonic cycle deadline check
-        if self.cycle_deadline_monotonic is not None and time.monotonic() >= self.cycle_deadline_monotonic:
-            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Absolute cycle deadline expired prior to database commit.")
-        # 2. Continuous authorization check
-        if not self.allow_test_mode:
-            require_continuous_authorization(issuers=self.issuers)
-            self._require_verified_owner_lock()
-
+        if unit_identity is not None:
+            reasons = dict(unit_identity, reasons=failure_reasons,
+                covered_tickers=[unit_identity['unit_ticker']], covered_ciks=[unit_identity['unit_cik']],
+                accession_inventory=acc_inventory, source_hashes=source_hashes,
+                unresolved_amendments=unresolved_amendments, parsed_transaction_count=len(parsed_tx_objs),
+                unit_status='SUCCESSFULLY_INGESTED_FILINGS' if raw_filings else 'SUCCESSFUL_NO_WORK_CATALOG_CHECK')
+            digest = hashlib.sha256(json.dumps(reasons, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+            reasons['unit_evidence_hash'] = digest
+            receipt_meta['failure_reasons'] = reasons
+            receipt_meta['reconciliation_hash'] = digest
+        self._validate_precommit()
         if self.repository:
             self.repository.save_reconciliation_receipt(receipt_meta, conn=conn)
 
         return parsed_tx_objs, receipt_meta
+
+    def _ingestion_binding_hash(self):
+        identity = dict(profile=os.environ.get('ARX_CONTINUOUS_AUTH_SCOPE', 'OFFLINE'),
+                        phase_id=self.expanded_phase_id, release=resolve_release_identity(),
+                        issuers=sorted((i['ticker'], str(i['cik']).zfill(10)) for i in self.issuers),
+                        ingestion_only=self.ingestion_only, interval_start=PROSPECTIVE_TRIAL_START_BOUNDARY)
+        return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+
+    def _reserve_expanded_send(self, issuer):
+        self._validate_precommit()
+        try:
+            self.repository.reserve_expanded_transmission(
+                self.expanded_phase_id, self.execution_id, self._ingestion_binding_hash(), issuer)
+        except Exception as exc:
+            raise ContinuousBudgetExceededError('EXPANDED_DURABLE_SEND_REFUSED') from exc
+
+    def _validate_precommit(self):
+        if self.cycle_deadline_monotonic is not None and time.monotonic() >= self.cycle_deadline_monotonic:
+            raise RuntimeError('CYCLE_TIMEOUT_EXCEEDED: Absolute cycle deadline expired prior to database commit.')
+        self._check_in_flight_authorization(step_name='PRE_COMMIT')
+        if not self.allow_test_mode:
+            require_continuous_authorization(issuers=self.issuers)
+            self._require_verified_owner_lock()
+            if self._active_run_request_id:
+                row = self.repository.get_run_request(self._active_run_request_id)
+                if (not row or row.get('status') != 'RUNNING'
+                        or row.get('lease_token') != self._active_lease_token
+                        or not row.get('lease_expires_at')
+                        or parse_sec_datetime_utc(str(row['lease_expires_at'])) <= datetime.now(timezone.utc)):
+                    raise StaleLeaseOwnershipLostError('STALE_LEASE_OWNERSHIP_LOST_BEFORE_COMMIT')
 
     @staticmethod
     def _snapshot_cutoff(as_of):

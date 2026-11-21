@@ -14,6 +14,7 @@ import hashlib
 import logging
 from contextlib import contextmanager
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from typing import Dict, Any, List, Optional, Set, Union, Tuple, Sequence
 
 try:
@@ -471,11 +472,13 @@ class PostgresSmartMoneyRepository:
         self.containment_gate = containment_gate
 
     @contextmanager
-    def ingestion_transaction(self):
+    def ingestion_transaction(self, pre_commit=None):
         """Commit complete filing evidence together; never retain partial ingestion."""
         with get_connection(dsn=self.dsn) as conn:
             try:
                 yield conn
+                if pre_commit is not None:
+                    pre_commit()
                 conn.commit()
             except Exception:
                 conn.rollback()
@@ -1349,42 +1352,128 @@ class PostgresSmartMoneyRepository:
                 return _exec(cur)
 
     def get_completed_unit_receipt(
-        self,
-        ticker: str,
-        trial_id: Optional[str] = None,
-        slot_id: Optional[str] = None,
-        cycle_id: Optional[str] = None,
-        watermark: Optional[str] = None,
-        conn: Optional[PgConnection] = None,
-    ) -> Optional[Dict[str, Any]]:
-        """Queries for an existing completed unit receipt for a specific ticker within a slot/cycle."""
+        self, ticker, trial_id=None, slot_id=None, cycle_id=None, watermark=None,
+        conn=None, *, execution_id=None, binding_hash=None, issuer_cik=None, release_sha=None,
+    ):
+        """Reuse only a sealed, source-verified unit in this exact execution."""
+        if not all((execution_id, binding_hash, issuer_cik, release_sha, watermark)):
+            raise RuntimeError("UNIT_RESUME_IDENTITY_REQUIRED")
         query = """
             SELECT * FROM sm_reconciliation_receipts
-            WHERE (
-                failure_reasons->>'unit_ticker' = %s
-                OR failure_reasons->'unit_results'->%s->>'status' IN ('SUCCESSFULLY_INGESTED_FILINGS', 'SUCCESSFUL_NO_WORK_CATALOG_CHECK')
-            )
-            AND (
-                (%s IS NOT NULL AND failure_reasons->>'slot_id' = %s)
-                OR (%s IS NOT NULL AND failure_reasons->>'cycle_id' = %s)
-                OR (%s IS NOT NULL AND certified_watermark = %s::timestamptz)
-            )
-            ORDER BY created_at DESC
-            LIMIT 1;
+            WHERE failure_reasons->>'unit_ticker' = %s
+              AND failure_reasons->>'unit_cik' = %s
+              AND failure_reasons->>'execution_id' = %s
+              AND failure_reasons->>'binding_hash' = %s
+              AND failure_reasons->>'trial_id' IS NOT DISTINCT FROM %s
+              AND failure_reasons->>'slot_id' IS NOT DISTINCT FROM %s
+              AND certified_watermark = %s::timestamptz
+              AND release_sha = %s
+            ORDER BY created_at DESC LIMIT 1
         """
-        params = (ticker, ticker, slot_id, slot_id, cycle_id, cycle_id, watermark, watermark)
-
-        def _exec(cur):
-            cur.execute(query, params)
-            row = cur.fetchone()
-            return dict(row) if row else None
-
+        def read(c):
+            with c.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, (ticker, issuer_cik, execution_id, binding_hash,
+                                    trial_id, slot_id, watermark, release_sha))
+                row = cur.fetchone()
+                if not row:
+                    return None
+                row = dict(row)
+                evidence = dict(row['failure_reasons'])
+                digest = evidence.pop('unit_evidence_hash', None)
+                expected = hashlib.sha256(json.dumps(evidence, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+                if digest != expected or row['reconciliation_hash'] != expected:
+                    raise RuntimeError("UNVERIFIED_UNIT_RECEIPT_HASH")
+                if evidence.get('unit_status') not in ('SUCCESSFULLY_INGESTED_FILINGS', 'SUCCESSFUL_NO_WORK_CATALOG_CHECK'):
+                    raise RuntimeError("UNVERIFIED_UNIT_RECEIPT_STATUS")
+                inventory = evidence.get('accession_inventory', [])
+                if len(inventory) != len(set(inventory)):
+                    raise RuntimeError("UNVERIFIED_UNIT_RECEIPT_INVENTORY")
+                cur.execute("""SELECT f.accession_number, f.cik, f.ticker, f.content_hash,
+                               f.xml_content, av.public_availability_at
+                               FROM form4_raw_filings f
+                               JOIN sm_source_availability_ledger av USING (accession_number)
+                               WHERE f.accession_number = ANY(%s)""", (inventory,))
+                found = cur.fetchall()
+                if len(found) != len(inventory):
+                    raise RuntimeError("UNVERIFIED_UNIT_RECEIPT_SOURCES")
+                for source in found:
+                    raw = source['xml_content']
+                    if isinstance(raw, memoryview): raw = raw.tobytes()
+                    if isinstance(raw, str): raw = raw.encode()
+                    actual = hashlib.sha256(raw).hexdigest()
+                    if (source['cik'] != issuer_cik or source['ticker'] != ticker
+                            or actual != source['content_hash']
+                            or actual != evidence['source_hashes'].get(source['accession_number'])):
+                        raise RuntimeError("UNVERIFIED_UNIT_RECEIPT_SOURCE_BINDING")
+                cur.execute('SELECT count(*) AS n FROM form4_parsed_transactions WHERE accession_number = ANY(%s)', (inventory,))
+                if cur.fetchone()['n'] != evidence.get('parsed_transaction_count'):
+                    raise RuntimeError("UNVERIFIED_UNIT_RECEIPT_TRANSACTIONS")
+                return row
         if conn is not None:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                return _exec(cur)
+            return read(conn)
+        with get_connection(dsn=self.dsn) as c:
+            return read(c)
+
+    def reserve_expanded_ingestion_budget(self, phase_id, execution_id, binding_hash, ny_date, watermark):
+        """Reserve 40/day and 80/phase before egress; renewal cannot refund a slot.
+
+        The execution ID is the durable queue request ID, never the grant ID.
+        A distinct audit namespace leaves the two-issuer trial untouched.
+        """
+        if not phase_id or not execution_id:
+            raise RuntimeError('EXPANDED_BUDGET_IDENTITY_REQUIRED')
+        return self._expanded_budget_event(phase_id, execution_id, binding_hash,
+                                           ny_date=ny_date, watermark=watermark)
+
+    def reserve_expanded_transmission(self, phase_id, execution_id, binding_hash, issuer):
+        """Persist a conservative send intent before wire, including failed attempts."""
+        return self._expanded_budget_event(phase_id, execution_id, binding_hash, issuer=issuer)
+
+    def _expanded_budget_event(self, phase_id, execution_id, binding_hash, *, ny_date=None, watermark=None, issuer=None):
+        key = int.from_bytes(hashlib.sha256(('EXPANDED_INGESTION:' + phase_id).encode()).digest()[:8], 'big') & 0x7FFFFFFFFFFFFFFF
         with get_connection(dsn=self.dsn) as c:
             with c.cursor(cursor_factory=RealDictCursor) as cur:
-                return _exec(cur)
+                cur.execute('SELECT pg_advisory_xact_lock(%s)', (key,))
+                cur.execute("SELECT payload FROM sm_audit_events WHERE event_type = 'EXPANDED_INGESTION_BUDGET' AND subject_id = %s ORDER BY created_at", (phase_id,))
+                events = [r['payload'] for r in cur.fetchall()]
+                reservations = [e for e in events if e['kind'] == 'RESERVATION']
+                if any(e['binding_hash'] != binding_hash for e in events):
+                    raise RuntimeError('EXPANDED_BUDGET_BINDING_MISMATCH')
+                existing = next((e for e in reservations if e['execution_id'] == execution_id), None)
+                if issuer is None:
+                    if existing is not None and existing['ny_date'] != ny_date:
+                        raise RuntimeError('EXPANDED_RESUME_DAY_MISMATCH')
+                    if existing is None:
+                        if len(reservations) >= 2 or any(e['ny_date'] == ny_date for e in reservations):
+                            raise RuntimeError('EXPANDED_DURABLE_QUOTA_EXCEEDED')
+                        existing = dict(kind='RESERVATION', execution_id=execution_id, binding_hash=binding_hash,
+                                        ny_date=ny_date, watermark=watermark, requests_reserved=40)
+                        self._insert_expanded_budget(cur, phase_id, existing)
+                else:
+                    if existing is None:
+                        raise RuntimeError('EXPANDED_RESERVATION_REQUIRED')
+                    if existing['ny_date'] != datetime.now(ZoneInfo('America/New_York')).date().isoformat():
+                        raise RuntimeError('EXPANDED_RESUME_DAY_MISMATCH')
+                    sends = [e for e in events if e['kind'] == 'SEND_INTENT' and e['execution_id'] == execution_id]
+                    if len(sends) >= 40 or sum(e['issuer'] == issuer for e in sends) >= 4:
+                        raise RuntimeError('EXPANDED_DURABLE_TRANSMISSION_LIMIT')
+                    event = dict(kind='SEND_INTENT', execution_id=execution_id, binding_hash=binding_hash,
+                                 issuer=issuer, recorded_at=datetime.now(timezone.utc).isoformat())
+                    self._insert_expanded_budget(cur, phase_id, event)
+                    events.append(event)
+                sends = [e for e in events if e['kind'] == 'SEND_INTENT' and e['execution_id'] == execution_id]
+                counts = {}
+                for e in sends: counts[e['issuer']] = counts.get(e['issuer'], 0) + 1
+                result = dict(existing, total_intents=len(sends), issuer_intents=counts)
+            c.commit()
+            return result
+
+    @staticmethod
+    def _insert_expanded_budget(cur, phase_id, payload):
+        event_hash = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+        cur.execute("""INSERT INTO sm_audit_events(event_id, event_type, subject_id, payload, event_hash)
+                       VALUES (%s, 'EXPANDED_INGESTION_BUDGET', %s, %s, %s)""",
+                    (str(uuid.uuid4()), phase_id, Json(payload), event_hash))
 
     def reserve_trial_cycle_budget(self, trial_id: str, slot_id: str, ny_date: str) -> str:
         """Commit one slot and eight requests before egress, without schema changes.
@@ -2747,6 +2836,16 @@ class PostgresSmartMoneyRepository:
         else:
             with transaction(dsn=self.dsn) as cur:
                 _exec(cur)
+
+    def mark_terminal_deadline_exceeded(self, request_id, lease_token):
+        """Correct an owned terminal row if terminal DB I/O crosses the deadline."""
+        with transaction(dsn=self.dsn) as cur:
+            cur.execute("""UPDATE sm_run_requests SET status='FAILED',
+                           last_failure_code='CYCLE_DEADLINE_EXCEEDED', last_failure_at=NOW()
+                           WHERE request_id=%s AND lease_token=%s AND status IN ('COMPLETED','FAILED')
+                           RETURNING request_id""", (request_id, lease_token))
+            if cur.fetchone() is None:
+                raise StaleLeaseOwnershipLostError('STALE_LEASE_OWNERSHIP_LOST_AT_DEADLINE_RECONCILIATION')
 
     def get_run_request(self, request_id: str, conn: Optional[PgConnection] = None) -> Optional[Dict[str, Any]]:
         """Retrieves a run request by its ID."""

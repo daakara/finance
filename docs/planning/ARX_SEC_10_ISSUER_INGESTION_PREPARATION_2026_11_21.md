@@ -1,90 +1,78 @@
-# SEC ingestion expansion — preparation and bounded proposal
+# SEC ingestion expansion — candidate and acceptance boundaries
 
-Owner: David Akara (`@daakara`). Existing trackers: Issue #165 / Sprint P3 #231.
-Candidate branch: `codex/sec-expansion-preparation` (Draft PR #317).
-Reference source: production release `2eccc64a2cb3c649ad4d584a942285a6406d1ce0`.
-Disposition: **OFFLINE IMPLEMENTATION AND QUALIFICATION COMPLETE; LIVE ACTIVATION BLOCKED ON OPERATOR GO**.
-This candidate branch executes offline qualification only; it creates no production grant, schedule, queue request, configuration change, SEC contact, or production write.
+Owner: David Akara (`@daakara`). Trackers: Issue #165 / Sprint P3 #231.
+Candidate: existing draft PR #317, `codex/sec-expansion-preparation`.
+Reference production source: `2eccc64a2cb3c649ad4d584a942285a6406d1ce0`.
+Disposition: **OFFLINE REMEDIATION; LIVE ACTIVATION AND RELEASE QUALIFICATION PENDING**.
 
-## Evidence obtained offline
+No production grant, schedule, queue request, SEC contact, SQL write, configuration, deployment, storage deletion or hold was changed by this work. Candidate implementation is not permission to operate.
 
-170 tests passed on PostgreSQL 16.2:
-- 5 archived-replay preparation checks (`tests/test_sec_archived_replay_preparation.py`)
-- 9 bounded resumable ingestion qualification checks (`tests/test_sec_bounded_resumable_ingestion.py`)
-- 84 two-issuer trial suite tests (`tests/test_smart_money_two_issuer_trial.py`)
-- 72 SEC evidence-integrity checks (`tests/test_sec_ingestion_evidence_integrity.py`)
+## Independent findings and correction
 
-All Python socket connections and DNS requests were restricted to loopback by `sec_offline_test_support`; no SEC endpoints were contacted. PostgreSQL used disposable local databases over TCP, with application schema, transactions, triggers, and repository code.
+The earlier 170 passing offline tests did not establish that the new default unit path preserved the original commit fences, exact resume identity, partial queue semantics or durable expanded quotas. Independent probes against `c4b53a0c` demonstrated a commit after deadline expiry, reuse of a receipt from a different trial, and a full-cycle SUCCESS result despite failed issuer delivery.
 
-The authentic archived AAPL fixture `tests/fixtures/sec_edgar/AAPL_0001140361-26-044773.xml` has SHA-256 `eadd8fccc8161b484c2727d79e75a1d37b5303a625b9a22b13c36dd8f34e1ce9`. It parsed into S, S, and G transactions, persisted three transactions plus raw bytes and availability evidence, replayed without duplicate rows, retained PARTIAL coverage, and rolled back all filing writes when availability persistence failed. No scanner snapshot was created.
+The candidate now:
 
-Final offline qualification result: **170 passed, zero skipped, zero failures**.
+- Reuses `_parse_and_reconcile_transaction` for issuer units instead of duplicating parser/persistence/amendment code. A shared pre-commit callback checks the monotonic deadline, cancellation/revocation, live grant, exact owner-lock session and active queue lease immediately before commit. No-work and cohort receipts use the same fence. Remote commit latency is not claimed to be interruptible.
+- Binds resumed units conjunctively to the durable execution ID, trial/slot, issuer/CIK, cohort/profile/phase/release binding hash, release SHA and fixed watermark. Resumption errors fail closed. Sealed unit metadata is checked against raw XML hashes, availability records and parsed transaction counts. Unresolved amendment gaps and accession counts survive resume. Old unbound receipts are not promoted into verified resume evidence.
+- Preserves PARTIAL worker results. Partial delivery leaves queue status FAILED with `PARTIAL_INGESTION`; deadline overruns produce `DEGRADED_DEADLINE_EXCEEDED` in the worker result and FAILED queue status with the deadline failure code. Terminal transition failures propagate. An owned terminal row is reconciled to FAILED if terminal database I/O itself crosses the deadline.
+- Preserves the original publication path for non-ingestion-only operation. Ingestion-only publication and remote retention remain prohibited.
 
-## Resolved Implementation Blockers (Implemented on `codex/sec-expansion-preparation`)
+## Expanded durable admission contract
 
-| Source | Pre-Fix Defect / Blocker | Resolution Implemented | Qualification Status |
-| --- | --- | --- | --- |
-| `continuous_authorization.py` | `require_continuous_authorization` only accepted `DAILY_10_ISSUER_FORM4` or `RECURRING_2_ISSUER_FORM4_TRIAL`. | Added `SCOPE_RECURRING_10_INGESTION = "RECURRING_10_ISSUER_FORM4_INGESTION_ONLY"`. Enforces mandatory `ARX_SMART_MONEY_INGESTION_ONLY=true` and exact 10 tickers/CIKs in `_TEN_ISSUERS_CIKS`. | Verified by `test_scope_recurring_10_ingestion_authorization_enforcement`. |
-| `continuous_pipeline.py` | `ingestion_only=True` capped total cycle transmissions to 8 regardless of cohort size (`max_total_ceiling = 8 if (self.ingestion_only or len(self.issuers) <= 2)`). | Decoupled cohort ceiling: 8 requests strictly reserved for `is_trial_2_issuer`; expanded cohort uses `min(len(self.issuers) * 4, 40)`. | Verified by `test_current_ten_issuer_ingestion_only_budget_covers_catalogs` (asserts 40 requests). |
-| `continuous_pipeline.py` | In-memory batch accumulation across all issuers: failure on issuer 2 lost issuer 1's fetched/parsed data and repeated egress on retry. | Implemented `_execute_bounded_cohort_ingestion`: single-issuer atomic persistence unit (raw filing, availability, parsed transactions, amendments, unit receipt). Earlier progress survives later failures. | Verified by `test_late_issuer_failure_preserves_earlier_progress` & `test_crash_between_commit_and_queue_completion_survives`. |
-| `postgres_repository.py` | Resumption after restart or retry lacked unit-level receipt checking, causing duplicate requests. | Implemented `get_completed_unit_receipt` querying `sm_reconciliation_receipts`. Resumes completed units with zero repeated wire egress. | Verified by `test_restart_and_resumption_skips_duplicate_requests`. |
-| Zero Schema Migrations | Adding new tables or altering schema carries production DDL risk. | Confirmed zero schema migrations required: `sm_reconciliation_receipts.failure_reasons` is JSONB, natively housing unit status, per-ticker outcomes, and accession inventory. | Schema unchanged (`sm_schema_migrations` intact). |
-| `continuous_pipeline.py` | Snapshot publication was possible under misconfigured 10-issuer runs. | Hardened `_step8_publish_snapshot` to fail closed with `SNAPSHOT_PUBLICATION_PROHIBITED_UNDER_INGESTION_ONLY` if called under ingestion-only profiles. | Verified by `test_ingestion_only_forbids_snapshot_publication_and_retention`. |
-| `continuous_pipeline.py` | Retention pruning was only deferred for `is_trial_2_issuer`. | Updated `_step10_prune_retention` to defer retention when `self.ingestion_only` is true, preventing destructive R2 calls on ingestion paths. | Verified by `test_ingestion_only_forbids_snapshot_publication_and_retention`. |
-| `continuous_pipeline.py` | Queue completion reported `COMPLETED` before cleanup duration was evaluated against the cycle deadline. | Moved queue status evaluation to after cleanup: sets `DEGRADED_DEADLINE_EXCEEDED` if entire worker execution overshoots deadline. | Verified in `execute_cycle` implementation. |
+The expanded scope is `RECURRING_10_ISSUER_FORM4_INGESTION_ONLY`. It requires mandatory ingestion-only behavior and exact ticker/CIK bindings. The separately approved phase must supply `ARX_INGESTION_PHASE_ID` (8–128 alphanumeric/underscore/hyphen characters, beginning with an alphanumeric). This phase ID persists across grant renewal; it is not the grant ID and must not be changed to evade limits.
 
-## Authoritative Live Acceptance Packet (For Future Operator GO)
+Exact cohort:
 
-This envelope governs any authorized future live trial of the expanded 10-issuer cohort:
+| Ticker | CIK |
+| --- | --- |
+| NVDA | 0001045810 |
+| AAPL | 0000320193 |
+| MSFT | 0000789019 |
+| AMZN | 0001018724 |
+| GOOGL | 0001652044 |
+| META | 0001326801 |
+| TSLA | 0001318605 |
+| BRK-B | 0001067983 |
+| JPM | 0000019617 |
+| V | 0001403161 |
 
-1. **Exact Governed Cohort Allowlist**:
-   - NVDA (`0001045810`), AAPL (`0000320193`), MSFT (`0000789019`), AMZN (`0001018724`), GOOGL (`0001652044`), META (`0001326801`), TSLA (`0001318605`), BRK-B (`0001067983`), JPM (`0000019617`), V (`0001403161`).
-   - Any ticker or CIK deviation fails closed immediately with `CONTINUOUS_AUTH_ISSUER_MISMATCH`.
-2. **Ceilings & Budgets**:
-   - `max_total_requests`: 40 per cycle.
-   - `max_per_issuer_requests`: 4 per cycle.
-   - Strict rate limiter: <= 5.0 requests/second.
-   - Max cycle duration: <= 60 seconds for the **entire** worker execution through cleanup.
-   - Observation schedule: One natural business-day cycle per day; review after two completed cycles. Zero automatic weekend runs, catch-ups, or replays.
-3. **Fail-Closed Stop Conditions**:
-   - Immediate abort and transition to `DISABLED/STANDBY` upon:
-     - Any signature, grant ID, universe ID, or release SHA mismatch.
-     - Loss or contention of PostgreSQL owner lock `401007311509093371`.
-     - Cycle execution duration exceeding monotonic deadline (> 60s).
-     - Missing qualifying database backup within the <= 12-hour age ceiling.
-     - Any attempt to execute snapshot publication or R2 retention pruning.
-4. **Rollback Procedure**:
-   - Immediately revert `ARX_SEC_EGRESS_ROLE=DISABLED`.
-   - Ensure `ARX_CONTINUOUS_INGESTION_AUTHORIZED=false`.
-   - Verify unheld owner advisory lock via authenticated direct SQL.
-   - Verify zero active or retry-eligible queue rows in `sm_run_requests`.
-5. **Preservation of Baseline & Historical Grants**:
-   - Frozen NVDA baseline and active snapshot `SNAP_SM_1792939989_48f30db6` remain untouchable.
-   - `ARX-TRIAL-2026-NVDA-AAPL-001` quotas (Day 1: 32 charged, 64 remaining of 96) and expiry `2026-11-25T02:35:00Z` remain protected.
-   - All historical reconciliation receipts and audit rows preserved without mutation or deletion.
+The expanded profile reserves 40 requests for each durable queue execution before egress, at most one new execution per New York business day and two executions / 80 charged requests per phase. Configuration can lower the per-cycle transport cap. Each issuer remains capped at four requests; guarded transport remains <=5 requests/second; whole-cycle deadline remains <=60 seconds.
 
-## Explicit Status of Live Verification Gates
+Reservations and conservative send intents use the existing append-only audit table in the separate `EXPANDED_INGESTION_BUDGET` namespace. No DDL is introduced. Transaction-scoped locks serialize phase admission. A send intent is committed immediately before a guarded wire attempt, including attempts that fail; it is **not proof of a successful or actually transmitted HTTP request**. A crash between intent and transmission conservatively consumes that budget. Restart restores total/per-issuer intent counts and the original watermark rather than refunding them. Changing the grant ID does not reset the phase.
 
-The following operational gates cannot be verified by offline test harnesses and are recorded as:
+Resume is limited to the same durable queue request and New York business day. A resumed request cannot silently become another day's budget. Completed units are not fetched again in that execution. A later day's separately charged execution still checks catalogs, while existing accessions prevent duplicate document persistence/download. A partial terminal failure requires an explicitly governed recovery decision; this candidate does not automatically replay terminal jobs.
 
-- **Production Advisory Lock (401007311509093371)**: `NOT_CHECKED` (offline qualification uses local disposable database; production SQL is prohibited).
-- **Production Queue States (`sm_run_requests`)**: `NOT_CHECKED` (production SQL is prohibited).
-- **Production Backup Age & Isolated Restore Verification**: `NOT_CHECKED` (live backup storage is not accessed).
-- **Production Release SHA Alignment in Railway**: `NOT_CHECKED` (candidate PR #317 is unmerged and undeployed).
-- **Production Natural-Cycle Ingestion Latency**: `NOT_CHECKED` (local test execution does not represent live SEC network latency).
+The existing daily eligibility window remains in effect. This correction consumes durable queue requests; it does not add an automatic ten-issuer dispatcher. Delivery orchestration must be specified and qualified separately before claiming recurring readiness. No new live schedule is introduced or approved. These expanded controls do not enlarge, rename, refund or reset `ARX-TRIAL-2026-NVDA-AAPL-001`. Its AAPL/NVDA scope, 8/32/96 limits and <=12-cycle ceiling remain separate. Day 1's reported 32 charged / 64 remaining is historical and requires fresh SQL reconciliation before dispatch.
 
-The [corrected Day 2 readiness assessment](../reports/ARX_ISSUE165_DAY2_READINESS_ASSESSMENT_CORRECTED_2026_11_21.md) separates dated Saturday evidence, Monday prerequisite checks and the first post-fix natural-cycle acceptance. It also records conservative charged quotas and the existing read-only monitor boundaries. It creates no execution authority.
+## Offline evidence and limitations
 
-## Reproduction
+Final combined run: **222 passed, zero failures, zero skips (78.53s)** on disposable PostgreSQL 16.2. Suites: archived replay 5, bounded ingestion 9, new resume safety 22, original two-issuer trial 84, evidence integrity 72, and continuous ingestion 30. Existing warnings concern test tooling and deprecated UTC datetime calls, not failed gates. A preceding rerun hit local tmpfs capacity during initdb (192 passed / 30 setup errors); the final run placed disposable PostgreSQL data on a workspace volume with sufficient space, without relaxing tests or application guards. This is offline regression evidence, not hosted release qualification or live acceptance.
 
-Install repository test dependencies plus `pytest`, `pgserver`, and `psycopg2-binary`. From repository root:
+The existing authentic archived AAPL fixture is accession `0001140361-26-044773`, SHA-256 `eadd8fccc8161b484c2727d79e75a1d37b5303a625b9a22b13c36dd8f34e1ce9`. It supplies three transactions (S, S, G). Other adversarial filing inputs are explicitly synthetic. Tests use real disposable PostgreSQL 16.2 transactions, triggers, receipts, leases and queue recovery; Python external connections/DNS are denied by the offline plugin. Network delivery and remote backups are simulated; local test elapsed time is not production latency evidence.
+
+The new safety suite covers deadline/owner/grant/revocation failure, expiry during receipt persistence, exact resume binding, lookup errors, unresolved gaps, partial terminal outcome, durable phase/issuer quotas, failed wire attempts and terminal DB overrun. Its process test actually terminates a worker process after AAPL commits and before queue completion. A second fresh worker claims the lease-recovered request, with a different grant ID, skips AAPL fetch, preserves the reservation/send counts and completes the queue. This supersedes the earlier test that merely raised and caught an exception after helper return.
+
+Remaining limitations: issuer-level atomicity deliberately retains unresolved amendment dependencies. It does not claim filing-level durable downloads within a failed issuer fetch, market-wide capacity, adaptive scheduling, complete historical coverage, production role/config restore parity or live source freshness. Historical coverage remains PARTIAL. Broader engineering should address a demonstrated need rather than silently weaken these limits.
+
+Reproduce with repository dependencies plus pytest, pgserver and psycopg2-binary:
 
 ```bash
 env -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u http_proxy -u https_proxy -u all_proxy \
-  PYTHONPATH=tools/qualification:. ARX_REQUIRE_LOCAL_POSTGRES_TESTS=true \
+  PYTHONPATH=tests:tools/qualification:. ARX_REQUIRE_LOCAL_POSTGRES_TESTS=true \
   python -m pytest -p sec_offline_test_support \
   tests/test_sec_archived_replay_preparation.py \
   tests/test_sec_bounded_resumable_ingestion.py \
+  tests/test_sec_resume_safety_regressions.py \
   tests/test_smart_money_two_issuer_trial.py \
-  tests/test_sec_ingestion_evidence_integrity.py -q --tb=short
+  tests/test_sec_ingestion_evidence_integrity.py \
+  tests/test_smart_money_continuous_ingestion.py -q --tb=short
 ```
+
+## Live gates — NOT_CHECKED by offline qualification
+
+Production advisory lock `401007311509093371`, active/retryable queue, current authorization, deployed release parity, qualifying backup/isolated restore freshness, observed transmission rate and post-fix natural-cycle latency are **NOT_CHECKED** here. Authenticated SQL is required for SQL-only gates. The [corrected Day 2 assessment](../reports/ARX_ISSUE165_DAY2_READINESS_ASSESSMENT_CORRECTED_2026_11_21.md) remains the dated preflight guidance; Saturday evidence is not Monday clearance.
+
+Before deployment or live expansion, independently qualify the cumulative PR (including hosted execution of the new offline suites), migrations (none currently), configuration delta, exact scope/phase/schedule, stop conditions and source-bound operator GO. Preserve active snapshot `SNAP_SM_1792939989_48f30db6`, the frozen NVDA baseline, all historical receipts and every operational hold. Ingestion does not activate scoring, Radar, snapshot publication or trading.
+
+Existing-trial grants retain their trial ID and quotas, use actual issuance and the verified release, remain <=24 hours, and expire no later than `2026-11-25T02:35:00Z`. Do not rely on unenforced `ARX_TRIAL_SHUTDOWN_AT`. On a mandatory gate violation, stop further work and use the approved operator teardown: DISABLED/STANDBY, authorization false, no active/retryable queue and owner lock unheld, independently verified. This candidate's failed result is not proof that production configuration was automatically disabled. No automatic rollout or hold change is authorized by these tests.

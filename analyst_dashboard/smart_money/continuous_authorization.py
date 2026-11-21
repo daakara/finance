@@ -157,6 +157,9 @@ def require_continuous_authorization(
         if set(iss_dict.keys()) != set(_TRIAL_2_ISSUERS):
             raise RuntimeError("CONTINUOUS_AUTH_ISSUER_MISMATCH")
     elif scope == SCOPE_RECURRING_10_INGESTION:
+        # A renewed grant must retain the durable phase, independently of grant ID.
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{7,127}", values.get("ARX_INGESTION_PHASE_ID", "")):
+            raise RuntimeError("CONTINUOUS_AUTH_PHASE_ID_REQUIRED")
         if values.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower() not in ("true", "1", "yes"):
             raise RuntimeError("CONTINUOUS_AUTH_INGESTION_ONLY_REQUIRED")
         if not issuers or len(issuers) != 10:
@@ -167,7 +170,7 @@ def require_continuous_authorization(
             if not t or t not in _TEN_ISSUERS_CIKS:
                 raise RuntimeError("CONTINUOUS_AUTH_ISSUER_MISMATCH")
             c = item.get("cik")
-            if c is not None and str(c).zfill(10) != _TEN_ISSUERS_CIKS[t]:
+            if c is None or str(c).zfill(10) != _TEN_ISSUERS_CIKS[t]:
                 raise RuntimeError("CONTINUOUS_AUTH_ISSUER_MISMATCH")
             iss_dict_10[t] = str(c).zfill(10) if c is not None else None
         if set(iss_dict_10.keys()) != set(_TEN_ISSUERS_CIKS.keys()):
