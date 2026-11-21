@@ -49,9 +49,12 @@ interface RadarAsset {
   volumeDryUpPct?: number | null;
   confluenceScore: number | null;
   confluenceBadgeColor?: string | null;
+  gemScore?: number | null;
+  verifiedPillarCount?: number | null;
+  smartMoneyEvidenceState?: string | null;
   catalyst: string;
   categories: CanonicalRadarCategory[];
-  sector: string;
+  sector: string | null;
   executionStatus: ExecutionStatus;
   screeningStatus?: string;
   screeningGeometry?: string;
@@ -315,8 +318,18 @@ function RadarContent() {
             ? gem.confluenceScore
             : (typeof gem.composite_score === 'number' ? gem.composite_score : null);
           const resolvedConfluence = rawConfluence !== null && Number.isFinite(rawConfluence)
-            ? Math.round(rawConfluence)
+            ? rawConfluence
             : null;
+
+          const rawGem = typeof gem.gemScore === 'number'
+            ? gem.gemScore
+            : (typeof gem.gem_score === 'number' ? gem.gem_score : null);
+
+          const rawPillars = typeof gem.verifiedPillarCount === 'number'
+            ? gem.verifiedPillarCount
+            : (typeof gem.verified_pillar_count === 'number' ? gem.verified_pillar_count : null);
+
+          const rawSmEvidence = gem.smartMoneyEvidenceState || gem.smart_money_evidence_state || null;
 
           return {
             ticker: cleanTicker,
@@ -330,9 +343,12 @@ function RadarContent() {
             volumeDryUpPct: dryUp,
             confluenceScore: resolvedConfluence,
             confluenceBadgeColor: gem.confluenceBadgeColor || gem.confluence_badge_color || gem.badgeColor || null,
+            gemScore: rawGem,
+            verifiedPillarCount: rawPillars,
+            smartMoneyEvidenceState: rawSmEvidence,
             catalyst: gem.primary_catalyst || gem.investment_thesis || (executionStatus === 'DELISTED_SECURITY' ? 'Trading suspended for delisted security.' : 'Catalyst disclosures unavailable.'),
             categories: cat,
-            sector: catalogEntry?.sector || "Broad Market",
+            sector: gem.sector || catalogEntry?.sector || null,
             executionStatus,
             screeningStatus: gem.screeningStatus || (executionStatus === 'DELISTED_SECURITY' ? 'DELISTED' : (executionStatus === 'UNVERIFIED_ASSET' ? 'UNVERIFIED' : 'UNKNOWN')),
             screeningGeometry: gem.screeningGeometry || (executionStatus === 'DELISTED_SECURITY' ? 'INACTIVE' : 'UNKNOWN'),
@@ -519,16 +535,22 @@ function RadarContent() {
         return matchesCategory && matchesQuery && matchesOwnership;
       })
       .sort((a, b) => {
-        // Scenario 10 in Gate H: Sorting never promotes delisted assets into eligible opportunity rankings
-        const aDelisted = a.executionStatus === 'DELISTED_SECURITY' ? 1 : 0;
-        const bDelisted = b.executionStatus === 'DELISTED_SECURITY' ? 1 : 0;
-        if (aDelisted !== bDelisted) {
-          return aDelisted - bDelisted; // Delisted securities sink to bottom
+        // Canonical deterministic sorting per ARX Governance Contract & Directive 044R.8
+        // 1. Delisted and unverified securities sink to bottom
+        const aNonTradable = (a.executionStatus === 'DELISTED_SECURITY' || a.executionStatus === 'UNVERIFIED_ASSET') ? 1 : 0;
+        const bNonTradable = (b.executionStatus === 'DELISTED_SECURITY' || b.executionStatus === 'UNVERIFIED_ASSET') ? 1 : 0;
+        if (aNonTradable !== bNonTradable) {
+          return aNonTradable - bNonTradable; // Non-tradable securities sink to bottom
         }
         if (sortBy === 'SCORE') {
+          // 2. Unrounded confluence score descending (Discovery Score ranking)
           const diff = (b.confluenceScore ?? -1) - (a.confluenceScore ?? -1);
           if (diff !== 0) return diff;
-          return a.ticker.localeCompare(b.ticker); // Deterministic tie-breaker
+          // 3. gemScore descending (secondary factor tie-breaker)
+          const gemDiff = (b.gemScore ?? -1) - (a.gemScore ?? -1);
+          if (gemDiff !== 0) return gemDiff;
+          // 4. symbol ascending (lexicographical deterministic tie-breaker)
+          return a.ticker.localeCompare(b.ticker);
         }
         if (sortBy === 'RVOL') {
           const aRvol = a.rvol ? parseFloat(a.rvol.replace('x', '')) : 0;
@@ -670,9 +692,12 @@ function RadarContent() {
         vcpStage: stageStr,
         volumeDryUpPct: null,
         confluenceScore: (data.confluence?.confluenceScore != null && Number.isFinite(data.confluence.confluenceScore))
-          ? Math.round(data.confluence.confluenceScore)
+          ? data.confluence.confluenceScore
           : null,
         confluenceBadgeColor: data.confluence?.badgeColor || null,
+        gemScore: null,
+        verifiedPillarCount: data.confluence?.pillars ? data.confluence.pillars.filter((p) => p.status === "positive").length : null,
+        smartMoneyEvidenceState: null,
         catalyst: opt?.entry_thesis || "Catalyst disclosures unavailable.",
         categories: cat,
         sector: "On-Demand Discovery",
@@ -1002,6 +1027,8 @@ function RadarContent() {
                     opportunityExplanation: heroAsset.opportunityExplanation,
                     catalyst: heroAsset.catalyst,
                     riskRewardRatio: heroAsset.riskRewardRatio,
+                    verifiedPillarCount: heroAsset.verifiedPillarCount,
+                    smartMoneyEvidenceState: heroAsset.smartMoneyEvidenceState,
                   });
                   return (
                     <div className="space-y-2">
@@ -1011,6 +1038,9 @@ function RadarContent() {
                         <span className="text-[var(--text-2)]">{heroRationale.technicalContext}</span>
                       </p>
                       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded font-mono border bg-[var(--surface-2)] text-[var(--text-muted)] border-[var(--border-subtle)]" title="Pillar verification coverage">
+                          {heroRationale.coverageText}
+                        </span>
                         <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold mr-0.5">
                           Learn Hub:
                         </span>
@@ -1073,7 +1103,7 @@ function RadarContent() {
                       <div className="flex items-center gap-1.5" title="Authoritative multi-factor confluence conviction score (0-100) from published universe pipeline · Relative discovery ranking — not an actionable buy recommendation">
                         <span className="text-[var(--text-2)]">Screen Confluence:</span>
                         <span className={`font-bold ${heroScorePres.colorClass}`}>
-                          {heroAsset.confluenceScore !== null ? `${heroAsset.confluenceScore}/100` : "Unavailable"}
+                          {heroAsset.confluenceScore !== null ? `${heroScorePres.label}/100` : "Unavailable"}
                         </span>
                       </div>
                     );
@@ -2029,6 +2059,8 @@ function RadarContent() {
                               opportunityExplanation: asset.opportunityExplanation,
                               catalyst: asset.catalyst,
                               riskRewardRatio: asset.riskRewardRatio,
+                              verifiedPillarCount: asset.verifiedPillarCount,
+                              smartMoneyEvidenceState: asset.smartMoneyEvidenceState,
                             });
                             return (
                               <div className="space-y-1">
@@ -2036,6 +2068,9 @@ function RadarContent() {
                                   {rowRationale.summary}
                                 </div>
                                 <div className="flex flex-wrap items-center gap-1">
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border bg-[var(--surface-2)] text-[var(--text-muted)] border-[var(--border-subtle)]" title="Pillar verification coverage">
+                                    {rowRationale.coverageText}
+                                  </span>
                                   {rowRationale.learnLinks.slice(0, 2).map((link, idx) => (
                                     <a
                                       key={idx}
@@ -2267,6 +2302,8 @@ function RadarContent() {
                           opportunityExplanation: asset.opportunityExplanation,
                           catalyst: asset.catalyst,
                           riskRewardRatio: asset.riskRewardRatio,
+                          verifiedPillarCount: asset.verifiedPillarCount,
+                          smartMoneyEvidenceState: asset.smartMoneyEvidenceState,
                         });
                         return (
                           <div className="space-y-1.5 pt-1">
@@ -2274,6 +2311,9 @@ function RadarContent() {
                               {cardRationale.summary}
                             </p>
                             <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border bg-[var(--surface-2)] text-[var(--text-muted)] border-[var(--border-subtle)]" title="Pillar verification coverage">
+                                {cardRationale.coverageText}
+                              </span>
                               {cardRationale.learnLinks.slice(0, 2).map((link, idx) => (
                                 <a
                                   key={idx}

@@ -41,7 +41,7 @@ import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import TerminalSsrShell from "../components/TerminalSsrShell";
 import SynthesisMobileDock from "../components/synthesis/SynthesisMobileDock";
 import { resolveFreshCachedVix, resolveFreshMacroEvidence } from "../lib/preflightEvaluator";
-import { validateDecisionContext, getAnalysisHubCacheKey } from "../lib/decisionContext";
+import { validateDecisionContext, resolveDiscoveryHandoff, getAnalysisHubCacheKey } from "../lib/decisionContext";
 import {
   isAnalysisCacheEntryFresh,
   formatAnalysisObservationTime,
@@ -59,15 +59,15 @@ function TerminalContent() {
   const urlTab = searchParams.get("tab")?.toUpperCase();
   const rawContextId = searchParams.get("contextId") || searchParams.get("decisionContextId");
 
-  // Gate 4: Centralized production context validation (prevents malformed/short/mismatched leakage)
-  const validatedContextId = useMemo(() => {
-    const res = validateDecisionContext(rawContextId, urlSymbol);
-    return res.isValid ? res.contextId : null;
-  }, [rawContextId, urlSymbol]);
-
   const [hasExplicitSymbol, setHasExplicitSymbol] = useState<boolean>(Boolean(urlSymbol));
   const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "");
-  const [discoveryContextId, setDiscoveryContextId] = useState<string | null>(validatedContextId);
+
+  // Gate 4: Centralized discovery handoff & context validation (Issue #166)
+  const discoveryHandoff = useMemo(() => {
+    return resolveDiscoveryHandoff(rawContextId, urlSymbol || selectedSymbol);
+  }, [rawContextId, urlSymbol, selectedSymbol]);
+
+  const [discoveryContextId, setDiscoveryContextId] = useState<string | null>(discoveryHandoff.validation.contextId);
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const analysisRequestIdRef = useRef(0);
   const [loading, setLoading] = useState<boolean>(Boolean(urlSymbol));
@@ -141,14 +141,14 @@ function TerminalContent() {
       if (urlSymbol.toUpperCase() !== selectedSymbol) {
         setSelectedSymbol(urlSymbol.toUpperCase());
       }
-      setDiscoveryContextId(validatedContextId);
+      setDiscoveryContextId(discoveryHandoff.validation.contextId);
     } else {
       setHasExplicitSymbol(false);
       setSelectedSymbol("");
       setData(null);
       setLoading(false);
     }
-  }, [urlSymbol, validatedContextId]);
+  }, [urlSymbol, discoveryHandoff.validation.contextId]);
 
   useEffect(() => {
     if (urlTab) {
@@ -462,6 +462,38 @@ function TerminalContent() {
             </div>
           ) : (
             <>
+              {/* Discovery Handoff Disclosure (Issue #166 Gate 4) */}
+              {discoveryHandoff.handoffNotice && (
+                <div
+                  data-testid="discovery-handoff-banner"
+                  role="status"
+                  aria-live="polite"
+                  className={`p-3 sm:p-4 rounded-xl border text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                    discoveryHandoff.noticeType === "WARNING"
+                      ? "bg-amber-950/40 border-amber-800/60 text-amber-200"
+                      : "bg-cyan-950/40 border-cyan-800/60 text-cyan-200"
+                  }`}
+                >
+                  <div className="flex items-start sm:items-center gap-2.5">
+                    <span className="text-base select-none">
+                      {discoveryHandoff.noticeType === "WARNING" ? "⚠️" : "ℹ️"}
+                    </span>
+                    <div>
+                      <span className="font-bold">Discovery Handoff: </span>
+                      <span>{discoveryHandoff.handoffNotice}</span>
+                      <span className="text-slate-400 block text-[11px] mt-0.5">
+                        Analysis executes an independent single-asset evaluation; discovery snapshot parameters are not reproduced.
+                      </span>
+                    </div>
+                  </div>
+                  {discoveryHandoff.validation.contextId && (
+                    <span className="font-mono text-[10px] text-slate-400 bg-black/40 px-2 py-0.5 rounded border border-slate-700/50 shrink-0">
+                      Ref: {discoveryHandoff.validation.contextId}
+                    </span>
+                  )}
+                </div>
+              )}
+
               {/* Ingestion Failure / Explicit Retry State OR Adaptive Multi-Tier Terminal Engine */}
               {error && !data ? (
                 <div className="p-5 bg-rose-950/40 border border-rose-800/60 rounded-2xl text-rose-200 font-sans space-y-3 animate-fade-in shadow-xl">

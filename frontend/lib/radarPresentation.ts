@@ -61,6 +61,8 @@ export function resolveRadarScorePresentation(
     };
   }
 
+  const displayScore = Math.round(score);
+
   // Exact canonical boundary alignment with ConfluenceEngine:
   // 80–100: High conviction (Emerald)
   // 65–79:  Constructive (Cyan)
@@ -72,8 +74,8 @@ export function resolveRadarScorePresentation(
       tier: 'HIGH_CONVICTION',
       colorClass: 'text-emerald-400',
       badgeClass: 'text-emerald-400 bg-emerald-950/60 border border-emerald-800/60',
-      label: String(score),
-      tooltip: `High Confluence Ranking (${score}/100) · Relative discovery ranking — not an actionable buy recommendation`,
+      label: String(displayScore),
+      tooltip: `High Confluence Ranking (${displayScore}/100) · Relative discovery ranking — not an actionable buy recommendation`,
     };
   }
   if (backendBadgeColor === 'cyan' || (score >= 65 && score < 80)) {
@@ -81,8 +83,8 @@ export function resolveRadarScorePresentation(
       tier: 'CONSTRUCTIVE',
       colorClass: 'text-cyan-400',
       badgeClass: 'text-cyan-400 bg-cyan-950/60 border border-cyan-800/60',
-      label: String(score),
-      tooltip: `Constructive Confluence Ranking (${score}/100) · Relative discovery ranking — not an actionable buy recommendation`,
+      label: String(displayScore),
+      tooltip: `Constructive Confluence Ranking (${displayScore}/100) · Relative discovery ranking — not an actionable buy recommendation`,
     };
   }
   if (backendBadgeColor === 'amber' || (score >= 49 && score < 65)) {
@@ -90,16 +92,16 @@ export function resolveRadarScorePresentation(
       tier: 'SELECTIVE',
       colorClass: 'text-amber-400',
       badgeClass: 'text-amber-400 bg-amber-950/60 border border-amber-800/60',
-      label: String(score),
-      tooltip: `Selective Confluence Ranking (${score}/100) · Relative discovery ranking — not an actionable buy recommendation`,
+      label: String(displayScore),
+      tooltip: `Selective Confluence Ranking (${displayScore}/100) · Relative discovery ranking — not an actionable buy recommendation`,
     };
   }
   return {
     tier: 'DEFENSIVE',
     colorClass: 'text-rose-400',
     badgeClass: 'text-rose-400 bg-rose-950/60 border border-rose-800/60',
-    label: String(score),
-    tooltip: `Defensive / Sub-Threshold Ranking (${score}/100) · Relative discovery ranking — not an actionable buy recommendation`,
+    label: String(displayScore),
+    tooltip: `Defensive / Sub-Threshold Ranking (${displayScore}/100) · Relative discovery ranking — not an actionable buy recommendation`,
   };
 }
 
@@ -116,6 +118,8 @@ export interface RadarCandidateInput {
   opportunityExplanation?: string | null;
   catalyst?: string | null;
   riskRewardRatio?: number | null;
+  verifiedPillarCount?: number | null;
+  smartMoneyEvidenceState?: string | null;
 }
 
 export interface RadarLearnLink {
@@ -131,14 +135,22 @@ export interface RadarCandidateRationale {
   technicalContext: string;
   fullNarrative: string;
   learnLinks: RadarLearnLink[];
+  coverageText: string;
 }
 
 export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): RadarCandidateRationale {
   const ticker = candidate.ticker || 'UNKNOWN';
   const execStatus = String(candidate.executionStatus || 'UNKNOWN');
-  const sector = candidate.sector || 'Broad Market';
+  const sector = candidate.sector?.trim() || null;
+  const sectorText = sector ? ` within the ${sector} sector` : '';
   const categories = Array.isArray(candidate.categories) ? candidate.categories : [];
-  const vcpStage = candidate.vcpStage || 'Stage 2 Base';
+  const vcpStage = candidate.vcpStage?.trim() || null;
+  const stageDisplay = vcpStage || 'Pattern Unassigned';
+
+  const coverageText =
+    typeof candidate.verifiedPillarCount === 'number'
+      ? `${candidate.verifiedPillarCount}/4 Pillars Verified`
+      : 'Coverage: Not Checked';
 
   // 1. Delisted / Ceased Trading
   if (execStatus === 'DELISTED_SECURITY') {
@@ -157,6 +169,7 @@ export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): 
           category: 'RISK_GOVERNANCE',
         },
       ],
+      coverageText,
     };
   }
 
@@ -177,6 +190,49 @@ export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): 
           category: 'RISK_GOVERNANCE',
         },
       ],
+      coverageText,
+    };
+  }
+
+  // 3. Insufficient History Depth
+  if (execStatus === 'INSUFFICIENT_HISTORY') {
+    const summary = `Historical bar depth insufficient for full econometric modeling on ${ticker}.`;
+    const technicalContext = 'Confluence ranking and volatility contraction patterns require at least 250 daily trading sessions. Discovery signals suppressed.';
+    return {
+      headline: 'Insufficient History Depth',
+      summary,
+      technicalContext,
+      fullNarrative: `${summary} ${technicalContext}`,
+      learnLinks: [
+        {
+          label: 'Data Governance',
+          href: '/guide#module-foundations',
+          tooltip: 'Learn about minimum historical session requirements for quantitative models',
+          category: 'RISK_GOVERNANCE',
+        },
+      ],
+      coverageText,
+    };
+  }
+
+  // 4. Stale Market Data / Session Drift
+  if (execStatus === 'STALE_MARKET_DATA') {
+    const summary = `Market data timestamps for ${ticker} precede the authoritative completed session cutoff.`;
+    const technicalContext = 'Signals suppressed pending exchange refresh to prevent stale-session decision bias.';
+    return {
+      headline: 'Stale Market Data',
+      summary,
+      technicalContext,
+      fullNarrative: `${summary} ${technicalContext}`,
+      learnLinks: [
+        {
+          label: 'Market Freshness',
+          href: '/guide#module-foundations',
+          tooltip: 'Learn about market data recency and session cutoff verification',
+          category: 'RISK_GOVERNANCE',
+        },
+      ],
+      coverageText,
     };
   }
 
@@ -197,29 +253,40 @@ export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): 
   let summary: string;
   let technicalContext: string;
 
-  if (hasVcp && hasGarp) {
+  const explicitExplanation =
+    candidate.opportunityExplanation &&
+    candidate.opportunityExplanation.trim().length > 0 &&
+    candidate.opportunityExplanation !== 'Catalyst disclosures unavailable.'
+      ? candidate.opportunityExplanation.trim()
+      : null;
+
+  if (explicitExplanation) {
+    headline = `${ticker} · Discovery Candidate`;
+    summary = explicitExplanation;
+    technicalContext = 'Sourced directly from quantitative screening evaluation. Single-asset trigger clearance required.';
+  } else if (hasVcp && hasGarp) {
     headline = `${ticker} · Dual Technical & Fundamental Confluence`;
-    summary = `${ticker} combines an advancing Stage 2 trend structure (${vcpStage}${dryUpText}) with disciplined capital efficiency in the ${sector} sector.`;
+    summary = `${ticker} combines an advancing Stage 2 trend structure (${stageDisplay}${dryUpText}) with disciplined capital efficiency${sectorText}.`;
     technicalContext = 'Structural consolidation indicates institutional supply absorption. Execution requires single-asset DecisionTrace clearance; discovery ranking is not an automatic buy signal.';
   } else if (hasVcp && hasSm) {
-    headline = `${ticker} · Technical Contraction with Institutional Footprint`;
-    summary = `${ticker} demonstrates progressive volatility contraction (${vcpStage}${dryUpText}) supported by institutional accumulation flows${rvolText}.`;
-    technicalContext = 'Narrowing contraction waves reflect supply drying up into institutional hands. Single-asset trigger clearance required.';
+    headline = `${ticker} · Technical Contraction with Smart Money Classification`;
+    summary = `${ticker} demonstrates progressive volatility contraction (${stageDisplay}${dryUpText}); classified under Smart Money screener snapshot (Form 4 filing transactions unverified)${rvolText}${sectorText}.`;
+    technicalContext = 'Narrowing contraction waves reflect volatility compression. Smart Money classification does not confirm institutional accumulation without independent transaction filing verification.';
   } else if (hasVcp) {
     headline = `${ticker} · Minervini Stage 2 Accumulation Structure`;
-    summary = `${ticker} consolidates in an advancing Stage 2 trend structure (${vcpStage}${dryUpText}) within the ${sector} sector.`;
+    summary = `${ticker} consolidates in an advancing Stage 2 trend structure (${stageDisplay}${dryUpText})${sectorText}.`;
     technicalContext = 'Successive contraction waves absorb overhead supply prior to resistance clearance. Execution trigger requires single-asset DecisionTrace.';
   } else if (hasGarp) {
     headline = `${ticker} · Fundamental Valuation & Cash Flow Discipline`;
-    summary = `${ticker} qualifies under the Value GARP screener, demonstrating operating margin stability and return on invested capital within ${sector}.`;
+    summary = `${ticker} qualifies under the Value GARP screener, demonstrating operating margin stability and return on invested capital${sectorText ? ` within ${sector}` : ''}.`;
     technicalContext = 'Resilient balance sheet metrics provide structural valuation support amidst market regime shifts.';
   } else if (hasSm) {
-    headline = `${ticker} · Institutional Order Flow Footprint`;
-    summary = `${ticker} captures institutional accumulation signals${rvolText} within the ${sector} sector.`;
-    technicalContext = 'Prospective cohort tracking under observation; filing disclosure timeliness subject to statutory reporting windows.';
+    headline = `${ticker} · Smart Money Observation`;
+    summary = `${ticker} classified under Smart Money screener snapshot; Form 4 filing transactions unverified${rvolText}${sectorText}.`;
+    technicalContext = 'Prospective cohort classification based on screener criteria. Categorization alone does not confirm institutional accumulation; filing disclosure timeliness subject to statutory reporting windows.';
   } else {
     headline = `${ticker} · Multi-Factor Discovery Candidate`;
-    summary = `${ticker} identified through multi-pillar screening in the ${sector} sector (${vcpStage}).`;
+    summary = `${ticker} identified through multi-pillar screening${sectorText ? ` in ${sector}` : ''} (${stageDisplay}).`;
     technicalContext = 'Consolidating in structural discovery universe; single-asset validation required for execution parameters.';
   }
 
@@ -234,7 +301,8 @@ export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): 
     category: 'RISK_GOVERNANCE',
   });
 
-  if (hasVcp || vcpStage.toLowerCase().includes('vcp') || vcpStage.toLowerCase().includes('stage 2') || vcpStage.toLowerCase().includes('breakout')) {
+  const stageLower = vcpStage ? vcpStage.toLowerCase() : '';
+  if (hasVcp || stageLower.includes('vcp') || stageLower.includes('stage 2') || stageLower.includes('breakout')) {
     learnLinks.push({
       label: 'VCP Mechanics',
       href: '/guide#module-technical',
@@ -294,6 +362,7 @@ export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): 
     technicalContext,
     fullNarrative: `${summary} ${technicalContext}`,
     learnLinks,
+    coverageText,
   };
 }
 
