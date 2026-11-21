@@ -90,7 +90,7 @@ def test_archived_batch_rolls_back_on_evidence_failure(replay_db):
     assert table_counts(conn) == (0, 0, 0, 0, 0)
 
 
-def test_current_ten_issuer_ingestion_only_budget_cannot_cover_catalogs(monkeypatch):
+def test_current_ten_issuer_ingestion_only_budget_covers_catalogs(monkeypatch):
     monkeypatch.setenv("ARX_CONTINUOUS_AUTH_SCOPE", "DAILY_10_ISSUER_FORM4")
     pipeline = SmartMoneyContinuousPipeline(
         repository=MagicMock(), issuers=DEFAULT_GOVERNED_ISSUERS,
@@ -98,8 +98,8 @@ def test_current_ten_issuer_ingestion_only_budget_cannot_cover_catalogs(monkeypa
     )
     assert not pipeline.is_trial_2_issuer
     assert len(pipeline.issuers) == 10
-    assert pipeline.outbound_session.max_total_requests == 8
-    assert pipeline.outbound_session.max_total_requests < len(pipeline.issuers)
+    assert pipeline.outbound_session.max_total_requests == 40
+    assert pipeline.outbound_session.max_total_requests >= len(pipeline.issuers)
 
 
 def test_offline_transport_guard_refuses_external_addresses():

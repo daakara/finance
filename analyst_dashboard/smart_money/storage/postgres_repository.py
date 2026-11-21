@@ -1348,6 +1348,44 @@ class PostgresSmartMoneyRepository:
             with c.cursor(cursor_factory=RealDictCursor) as cur:
                 return _exec(cur)
 
+    def get_completed_unit_receipt(
+        self,
+        ticker: str,
+        trial_id: Optional[str] = None,
+        slot_id: Optional[str] = None,
+        cycle_id: Optional[str] = None,
+        watermark: Optional[str] = None,
+        conn: Optional[PgConnection] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Queries for an existing completed unit receipt for a specific ticker within a slot/cycle."""
+        query = """
+            SELECT * FROM sm_reconciliation_receipts
+            WHERE (
+                failure_reasons->>'unit_ticker' = %s
+                OR failure_reasons->'unit_results'->%s->>'status' IN ('SUCCESSFULLY_INGESTED_FILINGS', 'SUCCESSFUL_NO_WORK_CATALOG_CHECK')
+            )
+            AND (
+                (%s IS NOT NULL AND failure_reasons->>'slot_id' = %s)
+                OR (%s IS NOT NULL AND failure_reasons->>'cycle_id' = %s)
+                OR (%s IS NOT NULL AND certified_watermark = %s::timestamptz)
+            )
+            ORDER BY created_at DESC
+            LIMIT 1;
+        """
+        params = (ticker, ticker, slot_id, slot_id, cycle_id, cycle_id, watermark, watermark)
+
+        def _exec(cur):
+            cur.execute(query, params)
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+        if conn is not None:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+        with get_connection(dsn=self.dsn) as c:
+            with c.cursor(cursor_factory=RealDictCursor) as cur:
+                return _exec(cur)
+
     def reserve_trial_cycle_budget(self, trial_id: str, slot_id: str, ny_date: str) -> str:
         """Commit one slot and eight requests before egress, without schema changes.
 
