@@ -1,97 +1,49 @@
 {
-  "release_candidate_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-  "base_anchor_commit": "041ab6e7930037531853362b7b06139e9a54cb1c",
-  "total_files": 11,
+  "release_candidate_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
+  "base_anchor_commit": "978123f7217e871ed6097da08a2feb9db7bec8b2",
+  "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-INTEGRATION-313-314",
+  "directive": "ARX-SM-ACT-020-RETENTION-BOUNDED",
   "files": {
-    "analyst_dashboard/data/sec_edgar_fetcher.py": {
+    "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
-      "originating_pr_number": 313,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165: neutral latest-event mapping, individual transaction preservation, and governed receipt validation",
-      "sha256": "76b1974d9bdf3b11b02910833cfc7d664161e1fd469b23517f41d11c764659eb",
-      "size_bytes": 108820
+      "originating_pr_number": 315,
+      "originating_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
+      "governing_requirement": "Issue #165: propagate monotonic cycle deadline into backup retention pruning",
+      "sha256": "efd74b8a9945787421a040aeae066a04fd5dd58b446795a841df7ed24c09c0f6",
+      "size_bytes": 105179
     },
-    "api/routes/smart_money.py": {
+    "analyst_dashboard/smart_money/storage/backup/retention.py": {
       "operation": "M",
-      "originating_pr_number": 313,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165: expose neutral SEC Form 4 insider disclosure and raw filing metadata",
-      "sha256": "88b1e514da1604b7b78e3453284caf3386a1cb422b7f6d13fe9702a118159463",
-      "size_bytes": 12255
+      "originating_pr_number": 315,
+      "originating_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
+      "governing_requirement": "Issue #165: bound retention verification & pruning by monotonic deadline, eliminate unbounded fallback, enforce legacy manifest contract",
+      "sha256": "adeca9fec2d06d7af301fd82c7a995195af4b938508e27d9e58626d4b28fb7b8",
+      "size_bytes": 19567
     },
-    "docs/reports/PR313_314_INTEGRATION_REPORT.md": {
+    "analyst_dashboard/smart_money/storage/backup/storage_adapter.py": {
+      "operation": "M",
+      "originating_pr_number": 315,
+      "originating_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
+      "governing_requirement": "Issue #165: enforce deadline-bounded socket and streaming timeouts across S3/R2 and local storage adapters",
+      "sha256": "a702ab43cae06c6d7db682ec842c4605f4c9e4961ae0b525a64b1e3ac87aeb9f",
+      "size_bytes": 23006
+    },
+    "tests/test_smart_money_backup_retention_bounded_adversarial.py": {
       "operation": "A",
       "originating_pr_number": 315,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165 & #166: Consolidated release qualification report for SEC disclosure and Radar ranking integration",
-      "sha256": "cf0e82ab2325bb6acf7fcde9321f50137712c3c3b491e7cce5d2ce63a4023193",
-      "size_bytes": 7494
+      "originating_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
+      "governing_requirement": "Issue #165: adversarial offline suite for 55+ backup catalog, slow storage, deadline exhaustion, and zero abandoned work",
+      "sha256": "12c3414114d52636453e60f0a41ec360e5a54c39bf1a340e863327c332a825ac",
+      "size_bytes": 26985
     },
-    "docs/reports/PR313_REMEDIATION_REPORT.md": {
-      "operation": "A",
-      "originating_pr_number": 313,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165: record source review findings remediation and verification evidence",
-      "sha256": "d86057231f99f18e1daee41926d2a060c798df0fa5727969bcec020001f14fb2",
-      "size_bytes": 8438
-    },
-    "frontend/components/InstitutionalFeeds.tsx": {
+    "tests/test_smart_money_backup_retention_safety.py": {
       "operation": "M",
-      "originating_pr_number": 313,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165: neutral disclosure presentation, expandable technical drawer, and mixed aggregate withholding",
-      "sha256": "830a471ad4ed18fe43d531c40fc923bfdfd291770d6b3a6786cfb12852179896",
-      "size_bytes": 45133
-    },
-    "frontend/lib/institutionalFeeds.ts": {
-      "operation": "M",
-      "originating_pr_number": 313,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165: contract types for multi-transaction disclosures, gift pricing, and served_at timestamp",
-      "sha256": "c3418dead7f5e2018389b62ab77578dc4b68c95cb87f41be79fc24932b95152e",
-      "size_bytes": 25250
-    },
-    "frontend/tests/secDisclosureEvidenceView.test.ts": {
-      "operation": "A",
-      "originating_pr_number": 313,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165: frontend integration tests for multi-transaction presentation, neutral wording, and fast switching",
-      "sha256": "b118ab9cf7046cf5194971872b16a6dfab604d44cebc174b328433681c352846",
-      "size_bytes": 21629
-    },
-    "scripts/capture_sec_disclosure_evidence.py": {
-      "operation": "A",
-      "originating_pr_number": 313,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165: visual browser evidence capture script for desktop and mobile viewports",
-      "sha256": "4037a9e8f8fcce6429701023a678cf1901e59d508cdb4438b8b4ec7c1875512c",
-      "size_bytes": 17349
-    },
-    "tests/test_fred_sec_presentation_integrity.py": {
-      "operation": "M",
-      "originating_pr_number": 313,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165: preserve FRED macro presentation and assert neutral insider event contracts",
-      "sha256": "f52f5d96294b8f61572ac305f05f852f4cbd38219fdf1995926c06b9572319c6",
-      "size_bytes": 21506
-    },
-    "tests/test_sec_disclosure_postgres_integration.py": {
-      "operation": "A",
-      "originating_pr_number": 313,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165: real PostgreSQL 16 pgserver integration test suite for SEC Form 4 disclosure view",
-      "sha256": "f74cc353f27fe791f1fa8a91adccaadd0111b84f863fc94a4130edec49b29f74",
-      "size_bytes": 76799
-    },
-    "tests/test_sec_disclosure_view.py": {
-      "operation": "A",
-      "originating_pr_number": 313,
-      "originating_commit": "e9db1980ca9a0902bfd510a591792906a4899ecc",
-      "governing_requirement": "Issue #165: SQLite and offline unit tests for SEC Form 4 disclosure view",
-      "sha256": "d83bb8a22199984c0999220a49da39c178cb432f2d2574c22bca11dee79f6c8f",
-      "size_bytes": 22042
+      "originating_pr_number": 315,
+      "originating_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
+      "governing_requirement": "Issue #165: safe pruning invariants and legacy manifest contract test coverage",
+      "sha256": "63681bbf13be0c9c0a38a0f3e3fd9506b7f80d4bb8645a07ee33bf0af5a72638",
+      "size_bytes": 6480
     }
   },
   "qualification_framework_files": {
