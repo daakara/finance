@@ -987,9 +987,10 @@ class TestTwoIssuerQuotasAndRecoveryRegressions:
         """Plant 4 audit events today; verify get_trial_progress and scheduler block execution even after new auth grant."""
         repo = PostgresSmartMoneyRepository(dsn=disposable_db)
 
-        # Record 4 completed cycle events today
+        # Record 4 completed cycle events on an active SEC dissemination day
         from analyst_dashboard.smart_money.freshness_authority import NY_TZ
-        ny_today = datetime.now(NY_TZ).date().isoformat()
+        now_ny = datetime(2026, 11, 20, 9, 20, tzinfo=NY_TZ)
+        ny_today = now_ny.date().isoformat()
         for idx in range(1, 5):
             repo.record_trial_cycle_audit(
                 trial_id="ARX-TRIAL-2026-NVDA-AAPL-001",
@@ -1019,11 +1020,14 @@ class TestTwoIssuerQuotasAndRecoveryRegressions:
             issuers=TRIAL_ISSUERS,
             ingestion_only=True,
         )
+        pipeline.trial_scheduler.start_date = now_ny.date()
+        pipeline.trial_scheduler.end_date = now_ny.date() + timedelta(days=5)
+        monkeypatch.setattr(pipeline.trial_scheduler, "get_ny_now", lambda now=None: now_ny)
 
         # Under advisory lock, Step 3 must evaluate eligibility as False due to daily cycle quota
         pipeline._step2_claim_advisory_lock()
         try:
-            should_run, reason = pipeline._step3_check_durable_date_eligibility_under_lock()
+            should_run, reason = pipeline._step3_check_durable_date_eligibility_under_lock(as_of=ny_today)
             assert should_run is False
             assert "DAILY_CYCLE_QUOTA_REACHED" in reason or "DAILY_REQUEST_QUOTA_REACHED" in reason
         finally:
@@ -1033,14 +1037,15 @@ class TestTwoIssuerQuotasAndRecoveryRegressions:
         """Plant a committed receipt for slot 1; verify restart in same window skips re-execution."""
         repo = PostgresSmartMoneyRepository(dsn=disposable_db)
         from analyst_dashboard.smart_money.freshness_authority import NY_TZ
-        ny_today = datetime.now(NY_TZ).date().isoformat()
+        slot_time = datetime(2026, 11, 20, 9, 20, tzinfo=NY_TZ)
+        ny_today = slot_time.date().isoformat()
         target_slot = f"{ny_today}:SLOT_1:0915"
 
         receipt_meta = {
             "receipt_id": str(uuid.uuid4()),
-            "interval_start": "2026-11-23T14:15:00Z",
-            "interval_end": "2026-11-23T15:00:00Z",
-            "certified_watermark": "2026-11-23T15:00:00Z",
+            "interval_start": "2026-11-20T14:15:00Z",
+            "interval_end": "2026-11-20T15:00:00Z",
+            "certified_watermark": "2026-11-20T15:00:00Z",
             "receipt_version": 1,
             "expected_count": 1,
             "accounted_count": 1,
@@ -1062,8 +1067,7 @@ class TestTwoIssuerQuotasAndRecoveryRegressions:
         assert progress["cycles_today"] == 1
         assert progress["requests_today"] == 8
 
-        scheduler = TwoIssuerTrialScheduler(start_date=datetime.now(NY_TZ).date(), end_date=datetime.now(NY_TZ).date())
-        slot_time = datetime.now(NY_TZ).replace(hour=9, minute=20)
+        scheduler = TwoIssuerTrialScheduler(start_date=slot_time.date(), end_date=slot_time.date() + timedelta(days=5))
         should_run, slot_id, reason = scheduler.evaluate_execution_eligibility(
             now=slot_time,
             progress=progress,

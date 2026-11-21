@@ -1,7 +1,7 @@
 {
   "release_candidate_commit": "2e4c1145bec35b39e8887500f1e78895427f4de5",
   "base_anchor_commit": "868d7afcd528006c2323e6b79b5a17f2f20f677c",
-  "total_files": 8,
+  "total_files": 9,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-RADAR-EVIDENCE-RANKING-HANDOFF-166",
   "files": {
@@ -68,6 +68,14 @@
       "governing_requirement": "Issue #166: Radar evidence, ranking, and handoff defect reproduction suite",
       "sha256": "7c0b2fd7734c024389aabd128edaca8ceedbf5d11f72565dffc6ec1cb21a6078",
       "size_bytes": 7231
+    },
+    "tests/test_smart_money_two_issuer_trial.py": {
+      "operation": "M",
+      "originating_pr_number": 314,
+      "originating_commit": "2e4c1145bec35b39e8887500f1e78895427f4de5",
+      "governing_requirement": "Issue #166: Pin weekday reference in two-issuer trial quota and duplicate-slot regression tests",
+      "sha256": "187a3e60deb99660f260db04a8b1a8cc074c4fe37d4c5a94e2cef5efeaa2bfe5",
+      "size_bytes": 77088
     }
   },
   "qualification_framework_files": {
