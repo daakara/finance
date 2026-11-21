@@ -233,32 +233,55 @@ def _validate_issuer_reconciliation_receipt(
         if req_end and int_end < req_end:
             return False, None, f"INTERVAL_NOT_COVERED: interval_end ({int_end}) < requested ({req_end})"
 
+    is_sqlite = cur is not None and (
+        "sqlite" in str(type(cur)).lower()
+        or "sqlite" in str(type(getattr(cur, "connection", None))).lower()
+    )
+
     # 4. Supersession Chain Verification
     sup_id = receipt.get("supersedes_receipt_id")
-    if sup_id and cur is not None:
+    if sup_id:
+        if cur is None:
+            return False, None, f"VERIFICATION_UNAVAILABLE: database cursor required to verify supersedes_receipt_id {sup_id}"
         try:
-            cur.execute(
-                "SELECT receipt_version FROM sm_reconciliation_receipts WHERE receipt_id = %s;",
-                (str(sup_id),),
-            )
+            if is_sqlite:
+                cur.execute(
+                    "SELECT receipt_version FROM sm_reconciliation_receipts WHERE receipt_id = ?;",
+                    (str(sup_id),),
+                )
+            else:
+                cur.execute(
+                    "SELECT receipt_version FROM sm_reconciliation_receipts WHERE receipt_id = %s;",
+                    (str(sup_id),),
+                )
             sup_row = cur.fetchone()
             if not sup_row:
                 return False, None, f"SUPERSEDED_RECEIPT_NOT_FOUND: receipt {sup_id} not found in DB"
             if sup_row["receipt_version"] >= receipt.get("receipt_version", 1):
                 return False, None, f"INVALID_SUPERSEDED_VERSION: superseded version {sup_row['receipt_version']} >= current {receipt.get('receipt_version', 1)}"
         except Exception as sup_err:
-            logger.debug(f"Supersession check error: {sup_err}")
+            logger.error(f"Supersession check query failed: {sup_err}")
+            return False, None, f"VERIFICATION_UNAVAILABLE: supersession check query failed: {sup_err}"
 
-    if receipt.get("receipt_id") and cur is not None:
+    if receipt.get("receipt_id"):
+        if cur is None:
+            return False, None, f"VERIFICATION_UNAVAILABLE: database cursor required to verify supersession status for receipt {receipt.get('receipt_id')}"
         try:
-            cur.execute(
-                "SELECT receipt_id FROM sm_reconciliation_receipts WHERE supersedes_receipt_id = %s;",
-                (str(receipt["receipt_id"]),),
-            )
+            if is_sqlite:
+                cur.execute(
+                    "SELECT receipt_id FROM sm_reconciliation_receipts WHERE supersedes_receipt_id = ?;",
+                    (str(receipt["receipt_id"]),),
+                )
+            else:
+                cur.execute(
+                    "SELECT receipt_id FROM sm_reconciliation_receipts WHERE supersedes_receipt_id = %s;",
+                    (str(receipt["receipt_id"]),),
+                )
             if cur.fetchone():
                 return False, None, f"RECEIPT_SUPERSEDED: receipt {receipt['receipt_id']} is superseded by a newer receipt"
         except Exception as sup_err2:
-            logger.debug(f"Superseding check error: {sup_err2}")
+            logger.error(f"Superseding check query failed: {sup_err2}")
+            return False, None, f"VERIFICATION_UNAVAILABLE: superseding check query failed: {sup_err2}"
 
     # 5. Inventory Integrity & Zero-Activity Proof
     cov_st = str(receipt.get("coverage_status") or "").upper()
@@ -287,40 +310,137 @@ def _validate_issuer_reconciliation_receipt(
                 )
             except Exception as e:
                 return False, None, f"Catalog proof validation failed: {e}"
+        elif cov_st == "PARTIAL":
+            pass
     else:
-        if cur is not None:
-            try:
-                cur.execute("""
+        if cur is None:
+            return False, None, "VERIFICATION_UNAVAILABLE: database cursor required to verify accession inventory"
+        try:
+            if is_sqlite:
+                placeholders = ",".join(["?"] * len(acc_inv))
+                cur.execute(
+                    f"""
+                    SELECT f.*, av.public_availability_at
+                    FROM form4_raw_filings f
+                    LEFT JOIN sm_source_availability_ledger av ON f.accession_number = av.accession_number
+                    WHERE f.accession_number IN ({placeholders});
+                    """,
+                    tuple(acc_inv),
+                )
+            else:
+                cur.execute(
+                    """
                     SELECT f.accession_number, f.cik, f.ticker, f.content_hash, av.public_availability_at
                     FROM form4_raw_filings f
                     LEFT JOIN sm_source_availability_ledger av ON f.accession_number = av.accession_number
                     WHERE f.accession_number = ANY(%s);
-                """, (acc_inv,))
-                found = {row["accession_number"]: row for row in cur.fetchall()}
-                if len(found) != len(acc_inv):
-                    return False, None, f"INVENTORY_INCOMPLETE: expected {len(acc_inv)} raw filings in DB, found {len(found)}"
-                for acc in acc_inv:
-                    f_row = found[acc]
-                    if r_cik and f_row["cik"] != r_cik and (f_row["ticker"] or "").upper() != r_ticker.upper():
-                        return False, None, f"INVENTORY_ISSUER_MISMATCH: accession {acc} belongs to {f_row['cik']}, expected {r_cik}"
-                    if s_hashes and acc in s_hashes and s_hashes[acc] != f_row["content_hash"]:
-                        return False, None, f"INVENTORY_HASH_MISMATCH: accession {acc} content_hash mismatch"
-                if r_cik:
-                    cur.execute("""
-                        SELECT count(*) AS cnt FROM form4_raw_filings
-                        WHERE cik = %s
-                          AND filing_date >= %s::date
-                          AND filing_date <= %s::date
-                          AND accession_number != ALL(%s);
-                    """, (r_cik, int_start[:10], int_end[:10], acc_inv))
+                    """,
+                    (acc_inv,),
+                )
+            found = {row["accession_number"]: dict(row) for row in cur.fetchall()}
+            if len(found) != len(acc_inv):
+                missing_accs = [acc for acc in acc_inv if acc not in found]
+                return False, None, f"INVENTORY_INCOMPLETE: expected {len(acc_inv)} raw filings in DB, found {len(found)} (missing: {missing_accs})"
+
+            # Contract issuer identity under issuer contract
+            contract_ticker = r_ticker or req_sym
+            contract_cik = r_cik or (req_cik or None)
+            if contract_ticker in KNOWN_ISSUER_CIKS:
+                expected_contract_cik = KNOWN_ISSUER_CIKS[contract_ticker]
+                if contract_cik and contract_cik != expected_contract_cik:
+                    return False, None, f"CONFLICTING_ISSUER_IDENTITY: contract ticker {contract_ticker} conflicts with CIK {contract_cik}"
+                contract_cik = expected_contract_cik
+
+            for acc in acc_inv:
+                f_row = found[acc]
+                f_cik = str(f_row.get("cik") or f_row.get("issuer_cik") or "").strip().zfill(10) if (f_row.get("cik") or f_row.get("issuer_cik")) else None
+                f_ticker = str(f_row.get("ticker") or f_row.get("issuer_symbol") or "").upper().strip() if (f_row.get("ticker") or f_row.get("issuer_symbol")) else None
+
+                # 1. Require consistent ticker and CIK identity under the issuer contract.
+                # Reject conflicting identity even when the other identifier matches.
+                if contract_cik:
+                    if not f_cik:
+                        return False, None, f"INVENTORY_ISSUER_MISMATCH: accession {acc} missing CIK, expected {contract_cik}"
+                    if f_cik != contract_cik:
+                        return False, None, f"INVENTORY_ISSUER_MISMATCH: accession {acc} CIK {f_cik} does not match expected {contract_cik}"
+                if contract_ticker:
+                    if f_ticker and f_ticker != contract_ticker:
+                        return False, None, f"INVENTORY_ISSUER_MISMATCH: accession {acc} ticker {f_ticker} does not match expected {contract_ticker}"
+                    if f_ticker and f_ticker in KNOWN_ISSUER_CIKS and f_cik and KNOWN_ISSUER_CIKS[f_ticker] != f_cik:
+                        return False, None, f"CONFLICTING_ISSUER_IDENTITY: accession {acc} ticker {f_ticker} conflicts with CIK {f_cik}"
+                    if contract_ticker in KNOWN_ISSUER_CIKS and f_cik and KNOWN_ISSUER_CIKS[contract_ticker] != f_cik:
+                        return False, None, f"CONFLICTING_ISSUER_IDENTITY: accession {acc} CIK {f_cik} conflicts with contract ticker {contract_ticker}"
+
+                # 2. Require the applicable accession source-hash binding and exact stored-content match.
+                if not s_hashes or acc not in s_hashes or not str(s_hashes.get(acc) or "").strip():
+                    return False, None, f"MISSING_ACCESSION_SOURCE_HASH: accession {acc} missing source_hashes binding in receipt"
+                expected_content_hash = str(s_hashes[acc]).strip().lower()
+                stored_content_hash = str(f_row.get("content_hash") or f_row.get("source_content_hash") or "").strip().lower()
+                if not stored_content_hash:
+                    return False, None, f"MISSING_STORED_CONTENT_HASH: accession {acc} has no stored content_hash in DB"
+                if expected_content_hash != stored_content_hash:
+                    return False, None, f"INVENTORY_HASH_MISMATCH: accession {acc} stored content_hash ({stored_content_hash}) does not match receipt binding ({expected_content_hash})"
+
+                # 3. Require verified public availability within the applicable cutoff.
+                raw_pub_avail = f_row.get("public_availability_at")
+                if not raw_pub_avail:
+                    return False, None, f"MISSING_PUBLIC_AVAILABILITY: accession {acc} has no verified public availability record in ledger"
+                pub_avail = _format_canonical_sec_timestamp(raw_pub_avail)
+                if not pub_avail:
+                    return False, None, f"MISSING_PUBLIC_AVAILABILITY: accession {acc} has unparseable public availability timestamp: {raw_pub_avail}"
+
+                if cert_wm and pub_avail > cert_wm:
+                    return False, None, f"AVAILABILITY_AFTER_CUTOFF: accession {acc} public_availability_at ({pub_avail}) postdates certified watermark ({cert_wm})"
+                if evaluation_cutoff:
+                    eval_ts = _format_canonical_sec_timestamp(evaluation_cutoff)
+                    if eval_ts and pub_avail > eval_ts:
+                        return False, None, f"AVAILABILITY_AFTER_CUTOFF: accession {acc} public_availability_at ({pub_avail}) postdates evaluation cutoff ({eval_ts})"
+
+            # 4. Check COMPLETE coverage requirements vs PARTIAL coverage
+            if cov_st == "COMPLETE":
+                if m_gaps and len(m_gaps) > 0:
+                    return False, None, f"MATERIAL_GAPS_PRESENT: receipt claims COMPLETE coverage but contains {len(m_gaps)} material gap(s)"
+                if contract_cik:
+                    if is_sqlite:
+                        cur.execute("PRAGMA table_info(form4_raw_filings);")
+                        cols = {r[1] for r in cur.fetchall()}
+                        cik_col = "cik" if "cik" in cols else "issuer_cik"
+                        date_col = "accepted_datetime" if "accepted_datetime" in cols else "acceptance_datetime"
+                        cur.execute(
+                            f"""
+                            SELECT count(*) AS cnt FROM form4_raw_filings
+                            WHERE {cik_col} = ?
+                              AND {date_col} >= ?
+                              AND {date_col} <= ?
+                              AND accession_number NOT IN ({placeholders});
+                            """,
+                            (contract_cik, int_start, int_end, *acc_inv),
+                        )
+                    else:
+                        cur.execute(
+                            """
+                            SELECT count(*) AS cnt FROM form4_raw_filings
+                            WHERE cik = %s
+                              AND accepted_datetime >= %s::timestamptz
+                              AND accepted_datetime <= %s::timestamptz
+                              AND accession_number != ALL(%s);
+                            """,
+                            (contract_cik, int_start, int_end, acc_inv),
+                        )
                     cnt_row = cur.fetchone()
                     if cnt_row and cnt_row["cnt"] > 0:
-                        return False, None, f"UNINVENTORIED_FILINGS_PRESENT: {cnt_row['cnt']} uninventoried filings in interval"
-            except Exception as inv_err:
-                logger.debug(f"Inventory DB verification skipped/failed: {inv_err}")
+                        return False, None, f"UNINVENTORIED_FILINGS_PRESENT: {cnt_row['cnt']} uninventoried filings in interval for COMPLETE coverage"
+            elif cov_st == "PARTIAL":
+                # Legitimate PARTIAL inventory semantics preserved:
+                # Partial coverage does not require zero uninventoried filings or zero material gaps.
+                pass
+        except Exception as inv_err:
+            logger.error(f"Inventory query failure: {inv_err}")
+            return False, None, f"VERIFICATION_UNAVAILABLE: inventory query failed: {inv_err}"
 
     receipt_copy = dict(receipt)
     receipt_copy["structured_metadata"] = reasons_val
+    receipt_copy["coverage_status"] = cov_st or receipt.get("coverage_status") or "PARTIAL"
     return True, receipt_copy, None
 
 

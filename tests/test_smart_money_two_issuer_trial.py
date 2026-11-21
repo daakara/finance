@@ -987,9 +987,10 @@ class TestTwoIssuerQuotasAndRecoveryRegressions:
         """Plant 4 audit events today; verify get_trial_progress and scheduler block execution even after new auth grant."""
         repo = PostgresSmartMoneyRepository(dsn=disposable_db)
 
-        # Record 4 completed cycle events today
+        # Record 4 completed cycle events today (pinned to Friday 2026-11-20 for calendar determinism)
         from analyst_dashboard.smart_money.freshness_authority import NY_TZ
-        ny_today = datetime.now(NY_TZ).date().isoformat()
+        pinned_now = datetime(2026, 11, 20, 10, 0, tzinfo=NY_TZ)
+        ny_today = pinned_now.date().isoformat()
         for idx in range(1, 5):
             repo.record_trial_cycle_audit(
                 trial_id="ARX-TRIAL-2026-NVDA-AAPL-001",
@@ -1019,6 +1020,7 @@ class TestTwoIssuerQuotasAndRecoveryRegressions:
             issuers=TRIAL_ISSUERS,
             ingestion_only=True,
         )
+        monkeypatch.setattr(pipeline.trial_scheduler, "get_ny_now", lambda now=None: pinned_now)
 
         # Under advisory lock, Step 3 must evaluate eligibility as False due to daily cycle quota
         pipeline._step2_claim_advisory_lock()
@@ -1033,7 +1035,8 @@ class TestTwoIssuerQuotasAndRecoveryRegressions:
         """Plant a committed receipt for slot 1; verify restart in same window skips re-execution."""
         repo = PostgresSmartMoneyRepository(dsn=disposable_db)
         from analyst_dashboard.smart_money.freshness_authority import NY_TZ
-        ny_today = datetime.now(NY_TZ).date().isoformat()
+        pinned_now = datetime(2026, 11, 20, 9, 20, tzinfo=NY_TZ)
+        ny_today = pinned_now.date().isoformat()
         target_slot = f"{ny_today}:SLOT_1:0915"
 
         receipt_meta = {
@@ -1062,8 +1065,8 @@ class TestTwoIssuerQuotasAndRecoveryRegressions:
         assert progress["cycles_today"] == 1
         assert progress["requests_today"] == 8
 
-        scheduler = TwoIssuerTrialScheduler(start_date=datetime.now(NY_TZ).date(), end_date=datetime.now(NY_TZ).date())
-        slot_time = datetime.now(NY_TZ).replace(hour=9, minute=20)
+        scheduler = TwoIssuerTrialScheduler(start_date=pinned_now.date(), end_date=pinned_now.date())
+        slot_time = pinned_now
         should_run, slot_id, reason = scheduler.evaluate_execution_eligibility(
             now=slot_time,
             progress=progress,

@@ -117,6 +117,15 @@ def test_postgres_receipt_issuer_binding_and_canonical_hash(clean_postgres_db):
         );
         """
     )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (
+            accession_number, public_availability_at, source, source_reference
+        ) VALUES (
+            '0001140361-26-044952', '2026-11-19T23:30:21Z', 'SEC_EDGAR_API', 'https://sec.gov/aapl.txt'
+        );
+        """
+    )
 
     # 1. Receipt with wrong issuer in JSONB failure_reasons (NVDA instead of AAPL)
     rc_wrong_issuer_id = str(uuid.uuid4())
@@ -277,8 +286,8 @@ def test_postgres_public_availability_boundaries(clean_postgres_db):
     aapl_reasons = {
         "ticker": "AAPL",
         "issuer_cik": "0000320193",
-        "accession_inventory": ["acc-past", "acc-future"],
-        "source_hashes": {"acc-past": "hash1", "acc-future": "hash2"},
+        "accession_inventory": ["acc-past"],
+        "source_hashes": {"acc-past": "hash1"},
         "material_gaps": [],
         "schema_version": 1,
     }
@@ -304,7 +313,7 @@ def test_postgres_public_availability_boundaries(clean_postgres_db):
             failure_reasons, reconciliation_hash, release_sha
         ) VALUES (
             %s, '2026-11-01T00:00:00Z', %s, %s, 1,
-            2, 2, 0, 0, 'COMPLETE',
+            1, 1, 0, 0, 'COMPLETE',
             %s, %s, '868d7afc'
         );
         """,
@@ -938,19 +947,17 @@ def test_postgres_amendment_resolved_lineage_and_future_amendments(clean_postgre
     # Add certified reconciliation receipt certifying cutoff
     all_accs = [
         "acc-base-resolved", "acc-amend-resolved",
-        "acc-base-fut", "acc-amend-fut",
+        "acc-base-fut",
         "acc-base-part", "acc-amend-part",
-        "acc-offset-ok", "acc-no-avail"
+        "acc-offset-ok",
     ]
     expected_hashes = {
         "acc-base-resolved": "h-res-b",
         "acc-amend-resolved": "h-res-a",
         "acc-base-fut": "h-fut-b",
-        "acc-amend-fut": "h-fut-a",
         "acc-base-part": "h-prt-b",
         "acc-amend-part": "h-prt-a",
         "acc-offset-ok": "h-off-ok",
-        "acc-no-avail": "h-acc-no-avail",
     }
     reasons = {
         "ticker": "AAPL",
@@ -1038,3 +1045,598 @@ def test_postgres_amendment_resolved_lineage_and_future_amendments(clean_postgre
         assert no_avail["effective_status"] == "PENDING_PUBLIC_AVAILABILITY"
 
     conn.close()
+
+
+def test_adversarial_query_failures_fail_closed(clean_postgres_db):
+    """
+    Test 10 (Adversarial): Verify that database query failures during inventory,
+    supersession, or superseding checks fail closed:
+    - Never log an exception and subsequently return valid=True.
+    - _validate_issuer_reconciliation_receipt returns (False, None, VERIFICATION_UNAVAILABLE: ...).
+    - get_recent_filings_envelope leaves coverage_status = "SUPPORTED_SEC_ISSUER" and certified_watermark = None.
+    - Historical raw filings and parsed transactions remain accessible to the caller.
+    """
+    conn = psycopg2.connect(clean_postgres_db)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    from analyst_dashboard.data.sec_edgar_fetcher import (
+        _validate_issuer_reconciliation_receipt,
+        SecEdgarFetcher,
+    )
+    from analyst_dashboard.smart_money.storage.postgres_repository import compute_canonical_receipt_hash
+    from unittest.mock import MagicMock, patch
+
+    # Insert baseline filing & availability ledger
+    cur.execute(
+        """
+        INSERT INTO form4_raw_filings (accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url)
+        VALUES ('acc-fail-closed', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-19', '2026-11-19T20:00:00Z', '<xml></xml>', 'h-fc', 'https://sec.gov/fc');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source, source_reference)
+        VALUES ('acc-fail-closed', '2026-11-19T20:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/fc');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO form4_parsed_transactions (transaction_id, accession_number, transaction_date, transaction_code, shares, price_per_share, total_value_usd, reporting_owner_name, reporting_owner_role, ownership_type)
+        VALUES ('tx-fc', 'acc-fail-closed', '2026-11-18', 'S', 100, 350.0, 35000.0, 'Tim Cook', 'CEO', 'D');
+        """
+    )
+    conn.commit()
+
+    # Valid receipt metadata
+    r_id = str(uuid.uuid4())
+    sup_id = str(uuid.uuid4())
+    reasons = {
+        "ticker": "AAPL",
+        "issuer_cik": "0000320193",
+        "covered_tickers": ["AAPL"],
+        "covered_ciks": ["0000320193"],
+        "accession_inventory": ["acc-fail-closed"],
+        "source_hashes": {"acc-fail-closed": "h-fc"},
+        "material_gaps": [],
+        "schema_version": 1,
+    }
+    rec_hash = compute_canonical_receipt_hash(
+        schema_version=1,
+        ticker="AAPL",
+        issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z",
+        interval_end="2026-11-19T23:30:21Z",
+        certified_watermark="2026-11-19T23:30:21Z",
+        receipt_version=2,
+        supersedes_receipt_id=sup_id,
+        accession_inventory=reasons["accession_inventory"],
+        source_hashes=reasons["source_hashes"],
+        material_gaps=[],
+        zero_activity_proof=None,
+    )
+    receipt = {
+        "receipt_id": r_id,
+        "interval_start": "2026-11-01T00:00:00Z",
+        "interval_end": "2026-11-19T23:30:21Z",
+        "certified_watermark": "2026-11-19T23:30:21Z",
+        "receipt_version": 2,
+        "supersedes_receipt_id": sup_id,
+        "coverage_status": "COMPLETE",
+        "failure_reasons": reasons,
+        "reconciliation_hash": rec_hash,
+    }
+
+    # 1. Inventory query failure (supersedes_receipt_id is None, inventory query fails)
+    receipt_inv_fail = dict(receipt)
+    receipt_inv_fail["supersedes_receipt_id"] = None
+    receipt_inv_fail["receipt_version"] = 1
+    receipt_inv_fail["reconciliation_hash"] = compute_canonical_receipt_hash(
+        schema_version=1,
+        ticker="AAPL",
+        issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z",
+        interval_end="2026-11-19T23:30:21Z",
+        certified_watermark="2026-11-19T23:30:21Z",
+        receipt_version=1,
+        supersedes_receipt_id=None,
+        accession_inventory=reasons["accession_inventory"],
+        source_hashes=reasons["source_hashes"],
+        material_gaps=[],
+        zero_activity_proof=None,
+    )
+    def cur_execute_inv_fail(sql, params=None):
+        if "FROM form4_raw_filings" in str(sql):
+            raise psycopg2.OperationalError("database connection lost during inventory query")
+        return None
+    mock_cur_inv = MagicMock()
+    mock_cur_inv.execute.side_effect = cur_execute_inv_fail
+    mock_cur_inv.fetchone.return_value = None  # for superseding check
+    ok, valid_rc, err = _validate_issuer_reconciliation_receipt(receipt_inv_fail, "AAPL", "0000320193", cur=mock_cur_inv)
+    assert ok is False
+    assert valid_rc is None
+    assert "VERIFICATION_UNAVAILABLE: inventory query failed" in err
+
+    # 2. Supersession query failure
+    mock_cur_sup = MagicMock()
+    def cur_execute_side_effect(sql, params=None):
+        if "supersedes_receipt_id" in str(sql) or "receipt_version FROM sm_reconciliation_receipts" in str(sql):
+            raise psycopg2.OperationalError("deadlock detected during supersession query")
+        return None
+    mock_cur_sup.execute.side_effect = cur_execute_side_effect
+    mock_cur_sup.fetchall.return_value = [{"accession_number": "acc-fail-closed", "cik": "0000320193", "ticker": "AAPL", "content_hash": "h-fc", "public_availability_at": "2026-11-19T20:05:00Z"}]
+    mock_cur_sup.fetchone.return_value = {"cnt": 0}
+    ok, valid_rc, err = _validate_issuer_reconciliation_receipt(receipt, "AAPL", "0000320193", cur=mock_cur_sup)
+    assert ok is False
+    assert valid_rc is None
+    assert "VERIFICATION_UNAVAILABLE: supersession check query failed" in err
+
+    # 3. Superseding check query failure
+    receipt_no_sup = dict(receipt)
+    receipt_no_sup["supersedes_receipt_id"] = None
+    receipt_no_sup["receipt_version"] = 1
+    receipt_no_sup["reconciliation_hash"] = compute_canonical_receipt_hash(
+        schema_version=1,
+        ticker="AAPL",
+        issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z",
+        interval_end="2026-11-19T23:30:21Z",
+        certified_watermark="2026-11-19T23:30:21Z",
+        receipt_version=1,
+        supersedes_receipt_id=None,
+        accession_inventory=reasons["accession_inventory"],
+        source_hashes=reasons["source_hashes"],
+        material_gaps=[],
+        zero_activity_proof=None,
+    )
+    def cur_execute_sup2(sql, params=None):
+        if "WHERE supersedes_receipt_id =" in str(sql):
+            raise psycopg2.OperationalError("timeout on superseding check query")
+        return None
+    mock_cur_sup2 = MagicMock()
+    mock_cur_sup2.execute.side_effect = cur_execute_sup2
+    mock_cur_sup2.fetchall.return_value = [{"accession_number": "acc-fail-closed", "cik": "0000320193", "ticker": "AAPL", "content_hash": "h-fc", "public_availability_at": "2026-11-19T20:05:00Z"}]
+    mock_cur_sup2.fetchone.return_value = {"cnt": 0}
+    ok, valid_rc, err = _validate_issuer_reconciliation_receipt(receipt_no_sup, "AAPL", "0000320193", cur=mock_cur_sup2)
+    assert ok is False
+    assert valid_rc is None
+    assert "VERIFICATION_UNAVAILABLE: superseding check query failed" in err
+
+    # 4. End-to-end disclosure call verification
+    cur.execute(
+        """
+        INSERT INTO sm_reconciliation_receipts (
+            receipt_id, interval_start, interval_end, certified_watermark, receipt_version,
+            expected_count, accounted_count, missing_count, material_gap_count, coverage_status,
+            failure_reasons, reconciliation_hash, release_sha
+        ) VALUES (
+            %s, '2026-11-01T00:00:00Z', '2026-11-19T23:30:21Z', '2026-11-19T23:30:21Z', 1,
+            1, 1, 0, 0, 'COMPLETE',
+            %s, %s, '868d7afc'
+        );
+        """,
+        (r_id, json.dumps(receipt_no_sup["failure_reasons"]), receipt_no_sup["reconciliation_hash"]),
+    )
+    conn.commit()
+
+    fetcher = SecEdgarFetcher()
+    with patch("analyst_dashboard.smart_money.storage.postgres_connection.get_connection", side_effect=lambda: psycopg2.connect(clean_postgres_db)), \
+         patch("analyst_dashboard.smart_money.storage.config.get_storage_backend", return_value="postgres"), \
+         patch("analyst_dashboard.data.sec_edgar_fetcher.is_sec_egress_authorized", return_value=False), \
+         patch("analyst_dashboard.data.sec_edgar_fetcher._validate_issuer_reconciliation_receipt", return_value=(False, None, "VERIFICATION_UNAVAILABLE: inventory query failed: db error")):
+
+        env = fetcher.get_recent_filings_envelope("AAPL")
+        assert env["status"] == "AVAILABLE_WITH_RESULTS"
+        assert env["coverage_status"] == "SUPPORTED_SEC_ISSUER"
+        assert env["certified_watermark"] is None
+        # Raw filings remain available
+        assert len(env["items"]) >= 1
+        assert any(item["accession_number"] == "acc-fail-closed" for item in env["items"])
+
+    conn.close()
+
+
+def test_adversarial_issuer_identity_cross_mismatches(clean_postgres_db):
+    """
+    Test 11 (Adversarial): Verify rejection of conflicting ticker/CIK identities
+    even when one identifier matches under the issuer contract:
+    - Matching ticker (AAPL) but accession has wrong CIK (NVDA CIK 0001045810).
+    - Matching CIK (0000320193) but accession has wrong ticker (NVDA).
+    - Conflicting ticker/CIK contract within receipt.
+    """
+    conn = psycopg2.connect(clean_postgres_db)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    from analyst_dashboard.data.sec_edgar_fetcher import _validate_issuer_reconciliation_receipt
+    from analyst_dashboard.smart_money.storage.postgres_repository import compute_canonical_receipt_hash
+
+    # Filing with AAPL ticker but NVDA CIK
+    cur.execute(
+        """
+        INSERT INTO form4_raw_filings (accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url)
+        VALUES ('acc-aapl-wrong-cik', '0001045810', 'AAPL', 'Apple Inc.', '2026-11-19', '2026-11-19T20:00:00Z', '<xml></xml>', 'h-awc', 'https://sec.gov/awc');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source, source_reference)
+        VALUES ('acc-aapl-wrong-cik', '2026-11-19T20:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/awc');
+        """
+    )
+
+    # Filing with AAPL CIK but NVDA ticker
+    cur.execute(
+        """
+        INSERT INTO form4_raw_filings (accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url)
+        VALUES ('acc-aapl-wrong-sym', '0000320193', 'NVDA', 'Apple Inc.', '2026-11-19', '2026-11-19T20:00:00Z', '<xml></xml>', 'h-aws', 'https://sec.gov/aws');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source, source_reference)
+        VALUES ('acc-aapl-wrong-sym', '2026-11-19T20:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/aws');
+        """
+    )
+    conn.commit()
+
+    # 1. Receipt inventorying accession with matching ticker but wrong CIK
+    reasons_wrong_cik = {
+        "ticker": "AAPL",
+        "issuer_cik": "0000320193",
+        "covered_tickers": ["AAPL"],
+        "covered_ciks": ["0000320193"],
+        "accession_inventory": ["acc-aapl-wrong-cik"],
+        "source_hashes": {"acc-aapl-wrong-cik": "h-awc"},
+        "material_gaps": [],
+        "schema_version": 1,
+    }
+    rec_hash1 = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z", interval_end="2026-11-19T23:30:21Z",
+        certified_watermark="2026-11-19T23:30:21Z", receipt_version=1,
+        supersedes_receipt_id=None, accession_inventory=reasons_wrong_cik["accession_inventory"],
+        source_hashes=reasons_wrong_cik["source_hashes"], material_gaps=[], zero_activity_proof=None,
+    )
+    receipt1 = {
+        "receipt_id": str(uuid.uuid4()),
+        "interval_start": "2026-11-01T00:00:00Z",
+        "interval_end": "2026-11-19T23:30:21Z",
+        "certified_watermark": "2026-11-19T23:30:21Z",
+        "receipt_version": 1,
+        "coverage_status": "COMPLETE",
+        "failure_reasons": reasons_wrong_cik,
+        "reconciliation_hash": rec_hash1,
+    }
+    ok, _, err = _validate_issuer_reconciliation_receipt(receipt1, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "INVENTORY_ISSUER_MISMATCH" in err or "CONFLICTING_ISSUER_IDENTITY" in err
+    assert "0001045810" in err
+
+    # 2. Receipt inventorying accession with matching CIK but wrong ticker
+    reasons_wrong_sym = {
+        "ticker": "AAPL",
+        "issuer_cik": "0000320193",
+        "covered_tickers": ["AAPL"],
+        "covered_ciks": ["0000320193"],
+        "accession_inventory": ["acc-aapl-wrong-sym"],
+        "source_hashes": {"acc-aapl-wrong-sym": "h-aws"},
+        "material_gaps": [],
+        "schema_version": 1,
+    }
+    rec_hash2 = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z", interval_end="2026-11-19T23:30:21Z",
+        certified_watermark="2026-11-19T23:30:21Z", receipt_version=1,
+        supersedes_receipt_id=None, accession_inventory=reasons_wrong_sym["accession_inventory"],
+        source_hashes=reasons_wrong_sym["source_hashes"], material_gaps=[], zero_activity_proof=None,
+    )
+    receipt2 = {
+        "receipt_id": str(uuid.uuid4()),
+        "interval_start": "2026-11-01T00:00:00Z",
+        "interval_end": "2026-11-19T23:30:21Z",
+        "certified_watermark": "2026-11-19T23:30:21Z",
+        "receipt_version": 1,
+        "coverage_status": "COMPLETE",
+        "failure_reasons": reasons_wrong_sym,
+        "reconciliation_hash": rec_hash2,
+    }
+    ok, _, err = _validate_issuer_reconciliation_receipt(receipt2, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "INVENTORY_ISSUER_MISMATCH" in err or "CONFLICTING_ISSUER_IDENTITY" in err
+    assert "NVDA" in err
+
+    conn.close()
+
+
+def test_adversarial_accession_evidence_and_availability(clean_postgres_db):
+    """
+    Test 12 (Adversarial): Verify that accession-level evidence is strictly enforced:
+    - Missing accession source-hash binding in receipt -> rejected.
+    - Mismatched content hash between receipt binding and database -> rejected.
+    - Missing public availability ledger entry -> rejected.
+    - Availability postdating certified watermark or cutoff -> rejected.
+    """
+    conn = psycopg2.connect(clean_postgres_db)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    from analyst_dashboard.data.sec_edgar_fetcher import _validate_issuer_reconciliation_receipt
+    from analyst_dashboard.smart_money.storage.postgres_repository import compute_canonical_receipt_hash
+
+    # Base filings
+    cur.execute(
+        """
+        INSERT INTO form4_raw_filings (accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url)
+        VALUES
+            ('acc-evidence-ok', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-19', '2026-11-19T20:00:00Z', '<xml></xml>', 'hash-exact-match', 'https://sec.gov/e1'),
+            ('acc-no-avail-entry', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-19', '2026-11-19T20:00:00Z', '<xml></xml>', 'hash-no-avail', 'https://sec.gov/e2'),
+            ('acc-avail-late', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-19', '2026-11-19T20:00:00Z', '<xml></xml>', 'hash-late', 'https://sec.gov/e3');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source, source_reference)
+        VALUES
+            ('acc-evidence-ok', '2026-11-19T20:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/e1'),
+            ('acc-avail-late', '2026-11-20T01:00:00Z', 'SEC_EDGAR_API', 'https://sec.gov/e3');
+        """
+    )
+    conn.commit()
+
+    watermark = "2026-11-19T23:30:21Z"
+
+    # A. Missing accession hash binding in source_hashes
+    reasons_missing_hash = {
+        "ticker": "AAPL",
+        "issuer_cik": "0000320193",
+        "covered_tickers": ["AAPL"],
+        "covered_ciks": ["0000320193"],
+        "accession_inventory": ["acc-evidence-ok"],
+        "source_hashes": {},
+        "material_gaps": [],
+        "schema_version": 1,
+    }
+    rec_hash_a = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z", interval_end=watermark,
+        certified_watermark=watermark, receipt_version=1,
+        supersedes_receipt_id=None, accession_inventory=reasons_missing_hash["accession_inventory"],
+        source_hashes=reasons_missing_hash["source_hashes"], material_gaps=[], zero_activity_proof=None,
+    )
+    receipt_a = {
+        "receipt_id": str(uuid.uuid4()), "interval_start": "2026-11-01T00:00:00Z",
+        "interval_end": watermark, "certified_watermark": watermark,
+        "receipt_version": 1, "coverage_status": "COMPLETE",
+        "failure_reasons": reasons_missing_hash, "reconciliation_hash": rec_hash_a,
+    }
+    ok, _, err = _validate_issuer_reconciliation_receipt(receipt_a, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "MISSING_ACCESSION_SOURCE_HASH" in err
+
+    # B. Mismatched content hash
+    reasons_mismatched_hash = {
+        "ticker": "AAPL",
+        "issuer_cik": "0000320193",
+        "covered_tickers": ["AAPL"],
+        "covered_ciks": ["0000320193"],
+        "accession_inventory": ["acc-evidence-ok"],
+        "source_hashes": {"acc-evidence-ok": "tampered-hash-does-not-match-db"},
+        "material_gaps": [],
+        "schema_version": 1,
+    }
+    rec_hash_b = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z", interval_end=watermark,
+        certified_watermark=watermark, receipt_version=1,
+        supersedes_receipt_id=None, accession_inventory=reasons_mismatched_hash["accession_inventory"],
+        source_hashes=reasons_mismatched_hash["source_hashes"], material_gaps=[], zero_activity_proof=None,
+    )
+    receipt_b = {
+        "receipt_id": str(uuid.uuid4()), "interval_start": "2026-11-01T00:00:00Z",
+        "interval_end": watermark, "certified_watermark": watermark,
+        "receipt_version": 1, "coverage_status": "COMPLETE",
+        "failure_reasons": reasons_mismatched_hash, "reconciliation_hash": rec_hash_b,
+    }
+    ok, _, err = _validate_issuer_reconciliation_receipt(receipt_b, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "INVENTORY_HASH_MISMATCH" in err
+
+    # C. Missing public availability record
+    reasons_missing_avail = {
+        "ticker": "AAPL",
+        "issuer_cik": "0000320193",
+        "covered_tickers": ["AAPL"],
+        "covered_ciks": ["0000320193"],
+        "accession_inventory": ["acc-no-avail-entry"],
+        "source_hashes": {"acc-no-avail-entry": "hash-no-avail"},
+        "material_gaps": [],
+        "schema_version": 1,
+    }
+    rec_hash_c = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z", interval_end=watermark,
+        certified_watermark=watermark, receipt_version=1,
+        supersedes_receipt_id=None, accession_inventory=reasons_missing_avail["accession_inventory"],
+        source_hashes=reasons_missing_avail["source_hashes"], material_gaps=[], zero_activity_proof=None,
+    )
+    receipt_c = {
+        "receipt_id": str(uuid.uuid4()), "interval_start": "2026-11-01T00:00:00Z",
+        "interval_end": watermark, "certified_watermark": watermark,
+        "receipt_version": 1, "coverage_status": "COMPLETE",
+        "failure_reasons": reasons_missing_avail, "reconciliation_hash": rec_hash_c,
+    }
+    ok, _, err = _validate_issuer_reconciliation_receipt(receipt_c, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "MISSING_PUBLIC_AVAILABILITY" in err
+
+    # D. Availability after cutoff watermark
+    reasons_late_avail = {
+        "ticker": "AAPL",
+        "issuer_cik": "0000320193",
+        "covered_tickers": ["AAPL"],
+        "covered_ciks": ["0000320193"],
+        "accession_inventory": ["acc-avail-late"],
+        "source_hashes": {"acc-avail-late": "hash-late"},
+        "material_gaps": [],
+        "schema_version": 1,
+    }
+    rec_hash_d = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z", interval_end=watermark,
+        certified_watermark=watermark, receipt_version=1,
+        supersedes_receipt_id=None, accession_inventory=reasons_late_avail["accession_inventory"],
+        source_hashes=reasons_late_avail["source_hashes"], material_gaps=[], zero_activity_proof=None,
+    )
+    receipt_d = {
+        "receipt_id": str(uuid.uuid4()), "interval_start": "2026-11-01T00:00:00Z",
+        "interval_end": watermark, "certified_watermark": watermark,
+        "receipt_version": 1, "coverage_status": "COMPLETE",
+        "failure_reasons": reasons_late_avail, "reconciliation_hash": rec_hash_d,
+    }
+    ok, _, err = _validate_issuer_reconciliation_receipt(receipt_d, "AAPL", "0000320193", cur=cur)
+    assert ok is False
+    assert "AVAILABILITY_AFTER_CUTOFF" in err
+
+    conn.close()
+
+
+def test_valid_receipt_contracts_and_partial_semantics(clean_postgres_db):
+    """
+    Test 13: Verify valid receipt acceptance across documented contracts and
+    strict preservation of legitimate PARTIAL inventory semantics:
+    - Current schema v1/v2 receipt accepted with verified inventory and availability.
+    - Legacy receipt accepted under documented colon-delimited contract.
+    - PARTIAL coverage receipt is preserved as PARTIAL (never silently converted to COMPLETE),
+      even when uninventoried filings are present in the interval.
+    """
+    conn = psycopg2.connect(clean_postgres_db)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    import hashlib
+    from analyst_dashboard.data.sec_edgar_fetcher import (
+        _validate_issuer_reconciliation_receipt,
+        SecEdgarFetcher,
+    )
+    from analyst_dashboard.smart_money.storage.postgres_repository import compute_canonical_receipt_hash, _to_iso
+
+    watermark = "2026-11-19T23:30:21Z"
+
+    # Insert two filings: one inventoried, one uninventoried
+    cur.execute(
+        """
+        INSERT INTO form4_raw_filings (accession_number, cik, ticker, company_name, filing_date, accepted_datetime, xml_content, content_hash, source_url)
+        VALUES
+            ('acc-valid-1', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-18', '2026-11-18T15:00:00Z', '<xml></xml>', 'h-v1', 'https://sec.gov/v1'),
+            ('acc-uninv-2', '0000320193', 'AAPL', 'Apple Inc.', '2026-11-19', '2026-11-19T15:00:00Z', '<xml></xml>', 'h-u2', 'https://sec.gov/u2');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at, source, source_reference)
+        VALUES
+            ('acc-valid-1', '2026-11-18T15:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/v1'),
+            ('acc-uninv-2', '2026-11-19T15:05:00Z', 'SEC_EDGAR_API', 'https://sec.gov/u2');
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO form4_parsed_transactions (transaction_id, accession_number, transaction_date, transaction_code, shares, price_per_share, total_value_usd, reporting_owner_name, reporting_owner_role, ownership_type)
+        VALUES
+            ('tx-v1', 'acc-valid-1', '2026-11-17', 'S', 500, 350.0, 175000.0, 'Tim Cook', 'CEO', 'D'),
+            ('tx-u2', 'acc-uninv-2', '2026-11-18', 'S', 300, 352.0, 105600.0, 'Tim Cook', 'CEO', 'D');
+        """
+    )
+    conn.commit()
+
+    # 1. Valid current schema v1 receipt (PARTIAL coverage with uninventoried filing in interval)
+    reasons_partial = {
+        "ticker": "AAPL",
+        "issuer_cik": "0000320193",
+        "covered_tickers": ["AAPL"],
+        "covered_ciks": ["0000320193"],
+        "accession_inventory": ["acc-valid-1"],
+        "source_hashes": {"acc-valid-1": "h-v1"},
+        "material_gaps": [],
+        "schema_version": 1,
+    }
+    rec_hash_curr = compute_canonical_receipt_hash(
+        schema_version=1, ticker="AAPL", issuer_cik="0000320193",
+        interval_start="2026-11-01T00:00:00Z", interval_end=watermark,
+        certified_watermark=watermark, receipt_version=1,
+        supersedes_receipt_id=None, accession_inventory=reasons_partial["accession_inventory"],
+        source_hashes=reasons_partial["source_hashes"], material_gaps=[], zero_activity_proof=None,
+    )
+    receipt_partial = {
+        "receipt_id": str(uuid.uuid4()),
+        "interval_start": "2026-11-01T00:00:00Z",
+        "interval_end": watermark,
+        "certified_watermark": watermark,
+        "receipt_version": 1,
+        "coverage_status": "PARTIAL",
+        "failure_reasons": reasons_partial,
+        "reconciliation_hash": rec_hash_curr,
+    }
+    ok, valid_rc, err = _validate_issuer_reconciliation_receipt(receipt_partial, "AAPL", "0000320193", cur=cur)
+    assert ok is True, f"Valid PARTIAL receipt should pass: {err}"
+    assert valid_rc["coverage_status"] == "PARTIAL", "PARTIAL status must be preserved"
+    assert valid_rc["certified_watermark"] == watermark
+
+    # Insert partial receipt into DB to test end-to-end disclosure envelope
+    cur.execute(
+        """
+        INSERT INTO sm_reconciliation_receipts (
+            receipt_id, interval_start, interval_end, certified_watermark, receipt_version,
+            expected_count, accounted_count, missing_count, material_gap_count, coverage_status,
+            failure_reasons, reconciliation_hash, release_sha
+        ) VALUES (
+            %s, '2026-11-01T00:00:00Z', %s, %s, 1,
+            1, 1, 0, 0, 'PARTIAL',
+            %s, %s, '868d7afc'
+        );
+        """,
+        (receipt_partial["receipt_id"], watermark, watermark, json.dumps(reasons_partial), rec_hash_curr),
+    )
+    conn.commit()
+
+    fetcher = SecEdgarFetcher()
+    from unittest.mock import patch
+
+    with patch("analyst_dashboard.smart_money.storage.postgres_connection.get_connection", side_effect=lambda: psycopg2.connect(clean_postgres_db)), \
+         patch("analyst_dashboard.smart_money.storage.config.get_storage_backend", return_value="postgres"), \
+         patch("analyst_dashboard.data.sec_edgar_fetcher.is_sec_egress_authorized", return_value=False):
+
+        env = fetcher.get_recent_filings_envelope("AAPL")
+        assert env["status"] == "AVAILABLE_WITH_RESULTS"
+        # Must preserve legitimate PARTIAL coverage semantics:
+        assert env["coverage_status"] == "PARTIAL"
+        assert env["certified_watermark"] == watermark
+
+    # 2. Valid legacy receipt contract
+    acc_inv_legacy = ["acc-valid-1"]
+    s_hashes_legacy = {"acc-valid-1": "h-v1"}
+    legacy_payload = (
+        f"AAPL:0000320193:"
+        f"{_to_iso('2026-11-01T00:00:00Z')}:{_to_iso(watermark)}:{_to_iso(watermark)}:"
+        f"{json.dumps(sorted(list(set(acc_inv_legacy))))}:{json.dumps(s_hashes_legacy, sort_keys=True)}:0"
+    )
+    legacy_hash = hashlib.sha256(legacy_payload.encode("utf-8")).hexdigest()
+    receipt_legacy = {
+        "receipt_id": str(uuid.uuid4()),
+        "interval_start": "2026-11-01T00:00:00Z",
+        "interval_end": watermark,
+        "certified_watermark": watermark,
+        "receipt_version": 1,
+        "coverage_status": "PARTIAL",
+        "failure_reasons": {
+            "ticker": "AAPL",
+            "issuer_cik": "0000320193",
+            "accession_inventory": acc_inv_legacy,
+            "source_hashes": s_hashes_legacy,
+            "material_gaps": [],
+        },
+        "reconciliation_hash": legacy_hash,
+    }
+    ok_leg, valid_leg, err_leg = _validate_issuer_reconciliation_receipt(receipt_legacy, "AAPL", "0000320193", cur=cur)
+    assert ok_leg is True, f"Valid legacy receipt should pass: {err_leg}"
+    assert valid_leg["certified_watermark"] == watermark
+
+    conn.close()
+

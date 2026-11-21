@@ -108,6 +108,7 @@ def temp_sec_db():
         """
         CREATE TABLE sm_reconciliation_receipts (
             receipt_id TEXT PRIMARY KEY,
+            supersedes_receipt_id TEXT,
             ticker TEXT,
             issuer_cik TEXT,
             interval_start TEXT,
@@ -298,6 +299,14 @@ def test_end_to_end_sale_vs_older_purchase_selection(temp_sec_db):
             'General Counsel', '2026-11-19', '2026-11-17', 'S', 2398.0, 352.77,
             845942.46, 'D', 'D', 0, 0, 0, '2026-11-19T23:30:21Z', '2026-11-19T23:30:21Z'
         );
+        """
+    )
+    cur.execute(
+        """
+        INSERT INTO sm_source_availability_ledger (accession_number, public_availability_at)
+        VALUES
+            ('0001140361-26-044773', '2026-11-10T22:30:00Z'),
+            ('0001140361-26-044952', '2026-11-19T23:30:21Z');
         """
     )
 
