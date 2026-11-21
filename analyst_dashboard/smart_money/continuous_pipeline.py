@@ -54,6 +54,7 @@ from analyst_dashboard.smart_money.storage.postgres_repository import (
 from analyst_dashboard.smart_money.smart_money_scheduler import (
     SmartMoneyTimezoneScheduler,
     TwoIssuerTrialScheduler,
+    ExpandedIngestionSchedule,
 )
 from analyst_dashboard.smart_money.freshness_authority import NY_TZ
 from analyst_dashboard.data.sec_edgar_fetcher import (
@@ -833,7 +834,7 @@ class SmartMoneyContinuousPipeline:
                     raise RuntimeError('EXPANDED_DURABLE_ADMISSION_REQUIRED')
                 reservation = self.repository.reserve_expanded_ingestion_budget(
                     self.expanded_phase_id, self.execution_id, self._ingestion_binding_hash(),
-                    datetime.now(NY_TZ).date().isoformat(), start_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                    ExpandedIngestionSchedule.from_environment().get_ny_now().date().isoformat(), start_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
                 )
                 self.execution_watermark = reservation['watermark']
                 self.outbound_session.total_transmissions = reservation['total_intents']
@@ -1368,6 +1369,13 @@ class SmartMoneyContinuousPipeline:
                 raise RuntimeError(
                     "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Advisory lock connection closed prior to eligibility check."
                 )
+
+        # Scheduled intake and resumed execution share the same explicit date/window.
+        if self.is_expanded_10_ingestion:
+            due, reason = ExpandedIngestionSchedule.from_environment().evaluate()
+            if not due:
+                return False, reason
+            return True, reason
 
         # 2. Query durable state under lock
         if self.is_trial_2_issuer:
@@ -2079,6 +2087,7 @@ class SmartMoneyContinuousPipeline:
     def _ingestion_binding_hash(self):
         identity = dict(profile=os.environ.get('ARX_CONTINUOUS_AUTH_SCOPE', 'OFFLINE'),
                         phase_id=self.expanded_phase_id, release=resolve_release_identity(),
+                        approved_dates=os.environ.get('ARX_INGESTION_DATES', ''),
                         issuers=sorted((i['ticker'], str(i['cik']).zfill(10)) for i in self.issuers),
                         ingestion_only=self.ingestion_only, interval_start=PROSPECTIVE_TRIAL_START_BOUNDARY)
         return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()

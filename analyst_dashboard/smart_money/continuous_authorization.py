@@ -184,6 +184,11 @@ def require_continuous_authorization(
     window = (expires - issued).total_seconds()
     if window <= 0 or window > _MAX_SECONDS:
         raise RuntimeError("CONTINUOUS_AUTH_WINDOW_INVALID")
+    if scope == SCOPE_RECURRING_10_INGESTION:
+        from analyst_dashboard.smart_money.smart_money_scheduler import ExpandedIngestionSchedule
+        phase_end = ExpandedIngestionSchedule.from_environment(values).hard_stop
+        if expires > phase_end or current >= phase_end:
+            raise RuntimeError('CONTINUOUS_AUTH_PHASE_END_EXCEEDED')
     if current < issued:
         raise RuntimeError("CONTINUOUS_AUTH_NOT_YET_VALID")
     if current >= expires:

@@ -2475,7 +2475,13 @@ class PostgresSmartMoneyRepository:
                 with connection.cursor(cursor_factory=RealDictCursor) as cur:
                     return _exec(cur)
 
-    def enqueue_trial_slot_request(self, subject_hash: str) -> str:
+    def enqueue_trial_slot_request(self, subject_hash):
+        return self._enqueue_durable_delivery(subject_hash, 'TRIAL_SLOT_FORM4', 1)
+
+    def enqueue_expanded_daily_request(self, subject_hash):
+        return self._enqueue_durable_delivery(subject_hash, 'EXPANDED_DAILY_FORM4', 3)
+
+    def _enqueue_durable_delivery(self, subject_hash, request_type, max_attempts):
         """Persist exactly one delivery per trial/slot, including terminal jobs.
 
         A transaction lock serializes competing dispatchers without adding DDL.
@@ -2488,19 +2494,19 @@ class PostgresSmartMoneyRepository:
             cur.execute("SELECT pg_advisory_xact_lock(%s)", (key,))
             cur.execute("""
                 SELECT request_id FROM sm_run_requests
-                WHERE request_type = 'TRIAL_SLOT_FORM4'
+                WHERE request_type = %s
                   AND requested_by_subject_hash = %s
                 ORDER BY requested_at LIMIT 1
-            """, (subject_hash,))
+            """, (request_type, subject_hash))
             row = cur.fetchone()
             if row:
                 return str(row["request_id"])
             cur.execute("""
                 INSERT INTO sm_run_requests
                     (request_id, request_type, requested_by_subject_hash, status, max_attempts, next_attempt_at)
-                VALUES (%s, 'TRIAL_SLOT_FORM4', %s, 'PENDING', 1, NOW())
+                VALUES (%s, %s, %s, 'PENDING', %s, NOW())
                 RETURNING request_id
-            """, (str(uuid.uuid4()), subject_hash))
+            """, (str(uuid.uuid4()), request_type, subject_hash, max_attempts))
             return str(cur.fetchone()["request_id"])
 
     def create_run_request(
