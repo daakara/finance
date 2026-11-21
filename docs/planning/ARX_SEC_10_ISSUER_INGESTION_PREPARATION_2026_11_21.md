@@ -52,6 +52,8 @@ Use the existing code's ten-issuer roster as a compatibility starting point, not
 
 ## Acceptance gates and operator sequence
 
+The [corrected Day 2 readiness assessment](../reports/ARX_ISSUE165_DAY2_READINESS_ASSESSMENT_CORRECTED_2026_11_21.md) separates dated Saturday evidence, Monday prerequisite checks and the first post-fix natural-cycle acceptance. It also records conservative charged quotas and the existing read-only monitor boundaries. It creates no execution authority.
+
 1. Complete the existing Monday Nov 23 preflight at 08:30 Europe/Berlin. First natural slot is 15:15 Berlin / 14:15 UTC. Fresh deployment/release, authorization, authenticated SQL lock/queue/quota, baseline and snapshot evidence are required. Verify a qualifying backup and matching successful isolated restore; calculate its <=12-hour age at dispatch from backup creation time, not restore time. SQL-only gates are NOT_CHECKED if authenticated SQL is unavailable.
 2. If authorized under the existing trial, observe the corrected natural slot. Correlate reservation, attempt, every transmitted request including failures, immutable receipt, queue terminal state and worker return. Queue COMPLETED alone does not establish <=60-second full-cycle acceptance. Preserve Day 1's three historical latency failures.
 3. Implement and qualify only the code gaps above in the existing Issue #165 workstream. Prove immutable exact scope, mandatory ingestion-only behavior, denied publication, bounded cleanup, failure accounting and durable expanded quotas. This preparation PR changes tests/support/documentation only.
