@@ -565,3 +565,50 @@ def test_adapter_typeerror_does_not_fall_back_to_unbounded_call(tmp_path):
     assert manager.last_outcome == RetentionOutcome.DEFERRED_DEADLINE_EXCEEDED
 
 
+def test_trial_cycle_defers_retention_without_storage_work():
+    from unittest.mock import Mock
+    from analyst_dashboard.smart_money.continuous_pipeline import SmartMoneyContinuousPipeline
+
+    pipeline = object.__new__(SmartMoneyContinuousPipeline)
+    pipeline.is_trial_2_issuer = True
+    pipeline.cycle_deadline_monotonic = time.monotonic() + 60
+    pipeline.retention_manager = Mock()
+    assert pipeline._step10_prune_retention() == []
+    pipeline.retention_manager.prune_backups.assert_not_called()
+
+
+def test_real_s3_adapter_does_not_start_metadata_after_deadline(tmp_path, monkeypatch):
+    from unittest.mock import Mock
+    from analyst_dashboard.smart_money.storage.backup import storage_adapter as storage
+
+    clock = [1.0]
+    monkeypatch.setattr(storage.time, 'monotonic', lambda: clock[0])
+    body = Mock()
+    def read(_):
+        clock[0] = 3.0
+        return b''
+    body.read.side_effect = read
+    client = Mock()
+    client.get_object.return_value = {'Body': body}
+    adapter = storage.S3CompatibleStorageAdapter(bucket='offline-test')
+    monkeypatch.setattr(adapter, '_get_client', lambda **kwargs: client)
+    with pytest.raises(TimeoutError):
+        adapter.download_file('fixture.dump', str(tmp_path / 'fixture.dump'), deadline_monotonic=2.0)
+    client.head_object.assert_not_called()
+    body.close.assert_called()
+
+
+def test_real_s3_client_has_one_total_attempt_and_no_timeout_floor(monkeypatch):
+    from unittest.mock import Mock
+    import boto3
+    from analyst_dashboard.smart_money.storage.backup import storage_adapter as storage
+
+    monkeypatch.setattr(storage.time, 'monotonic', lambda: 1.0)
+    factory = Mock()
+    monkeypatch.setattr(boto3, 'client', factory)
+    adapter = storage.S3CompatibleStorageAdapter(bucket='offline-test')
+    adapter._get_client(deadline_monotonic=1.05)
+    config = factory.call_args.kwargs['config']
+    assert config.retries['total_max_attempts'] == 1
+    assert 0 < config.connect_timeout < 0.051
+    assert 0 < config.read_timeout < 0.051

@@ -2079,6 +2079,12 @@ class SmartMoneyContinuousPipeline:
         independent verification and bounded network deletions, retention is deferred
         prior to initiating network egress.
         """
+        # R2 socket timeouts are inactivity timeouts, not an absolute wall-clock
+        # bound. Do not put remote retention or destructive work on the bounded
+        # two-issuer trial's completion path. Maintenance retains its own policy.
+        if getattr(self, "is_trial_2_issuer", False):
+            logger.info("STEP_10_RETENTION_DEFERRED: two-issuer trial defers retention to maintenance; no storage calls made.")
+            return []
         try:
             deadline = getattr(self, "cycle_deadline_monotonic", None)
             if deadline is not None:

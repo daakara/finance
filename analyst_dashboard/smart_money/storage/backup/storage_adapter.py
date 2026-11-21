@@ -236,7 +236,7 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
             if remaining <= 0:
                 raise TimeoutError("STORAGE_DEADLINE_EXCEEDED: client init")
             # Bound socket connect and read timeouts by remaining cycle budget
-            timeout = max(0.2, min(remaining, 10.0))
+            timeout = min(remaining, 10.0)
 
         # If a cached client exists and no specific deadline was requested, reuse it
         if deadline_monotonic is None and self._s3_client is not None:
@@ -248,7 +248,7 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
             config = Config(
                 connect_timeout=timeout,
                 read_timeout=timeout,
-                retries={"max_attempts": max_attempts, "mode": "standard"},
+                retries={"total_max_attempts": max_attempts, "mode": "standard"},
             )
             client = boto3.client(
                 "s3",
@@ -341,6 +341,7 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
         key = self._key(remote_filename)
         os.makedirs(os.path.dirname(os.path.abspath(local_dest_path)), exist_ok=True)
 
+        body = None
         try:
             obj = s3.get_object(Bucket=self.bucket, Key=key)
             body = obj.get("Body")
@@ -366,9 +367,16 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
             if isinstance(e, TimeoutError):
                 raise
             raise IOError(f"DOWNLOAD_FAILED: Could not download {remote_filename} ({e})") from e
+        finally:
+            if body is not None:
+                body.close()
 
         # Post-download verification
         try:
+            if deadline_monotonic is not None:
+                if time.monotonic() >= deadline_monotonic:
+                    raise TimeoutError("STORAGE_DEADLINE_EXCEEDED: metadata verification")
+                s3 = self._get_client(deadline_monotonic=deadline_monotonic, max_attempts=1)
             head = s3.head_object(Bucket=self.bucket, Key=key)
             expected_sha = head.get("Metadata", {}).get("sha256")
             if expected_sha:
