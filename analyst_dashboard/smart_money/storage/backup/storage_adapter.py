@@ -8,6 +8,7 @@ Defines provider-neutral storage abstraction supporting:
 """
 
 import os
+import time
 import shutil
 import hashlib
 import logging
@@ -36,18 +37,18 @@ class BackupStorageAdapter(ABC):
         pass
 
     @abstractmethod
-    def download_file(self, remote_filename: str, local_dest_path: str) -> str:
-        """Downloads a file from storage destination to local path."""
+    def download_file(self, remote_filename: str, local_dest_path: str, deadline_monotonic: Optional[float] = None) -> str:
+        """Downloads a file from storage destination to local path, bounded by deadline_monotonic."""
         pass
 
     @abstractmethod
-    def list_backups(self) -> List[Dict[str, Any]]:
-        """Lists all stored backup artifacts."""
+    def list_backups(self, deadline_monotonic: Optional[float] = None) -> List[Dict[str, Any]]:
+        """Lists all stored backup artifacts, bounded by deadline_monotonic."""
         pass
 
     @abstractmethod
-    def delete_backup(self, remote_filename: str) -> bool:
-        """Deletes a backup artifact from storage."""
+    def delete_backup(self, remote_filename: str, deadline_monotonic: Optional[float] = None) -> bool:
+        """Deletes a backup artifact from storage, bounded by deadline_monotonic."""
         pass
 
     @abstractmethod
@@ -117,27 +118,44 @@ class LocalOffVolumeStorageAdapter(BackupStorageAdapter):
         logger.info(f"Stored backup file locally: {remote_filename} ({dest_size} bytes)")
         return receipt
 
-    def download_file(self, remote_filename: str, local_dest_path: str) -> str:
+    def download_file(self, remote_filename: str, local_dest_path: str, deadline_monotonic: Optional[float] = None) -> str:
+        if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+            raise TimeoutError(f"STORAGE_DEADLINE_EXCEEDED: download_file {remote_filename}")
+
         src_path = os.path.join(self.base_directory, remote_filename)
         if not os.path.exists(src_path):
             raise FileNotFoundError(f"Backup file not found in storage: {remote_filename}")
 
         os.makedirs(os.path.dirname(os.path.abspath(local_dest_path)), exist_ok=True)
-        shutil.copy2(src_path, local_dest_path)
+
+        with open(src_path, "rb") as f_in, open(local_dest_path, "wb") as f_out:
+            while chunk := f_in.read(65536):
+                if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+                    if os.path.exists(local_dest_path):
+                        os.remove(local_dest_path)
+                    raise TimeoutError(f"STORAGE_DEADLINE_EXCEEDED_DURING_STREAM: download_file {remote_filename}")
+                f_out.write(chunk)
 
         src_sha = compute_sha256(src_path)
         dst_sha = compute_sha256(local_dest_path)
         if src_sha != dst_sha:
+            if os.path.exists(local_dest_path):
+                os.remove(local_dest_path)
             raise IOError(f"DOWNLOAD_CORRUPTION: SHA-256 mismatch downloading {remote_filename}")
 
         return local_dest_path
 
-    def list_backups(self) -> List[Dict[str, Any]]:
+    def list_backups(self, deadline_monotonic: Optional[float] = None) -> List[Dict[str, Any]]:
+        if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+            raise TimeoutError("STORAGE_DEADLINE_EXCEEDED: list_backups")
+
         results = []
         if not os.path.exists(self.base_directory):
             return results
 
         for root, _, files in os.walk(self.base_directory):
+            if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+                raise TimeoutError("STORAGE_DEADLINE_EXCEEDED: list_backups")
             for f in files:
                 full_path = os.path.join(root, f)
                 rel_path = os.path.relpath(full_path, self.base_directory)
@@ -149,7 +167,10 @@ class LocalOffVolumeStorageAdapter(BackupStorageAdapter):
         results.sort(key=lambda x: x["modified_at"], reverse=True)
         return results
 
-    def delete_backup(self, remote_filename: str) -> bool:
+    def delete_backup(self, remote_filename: str, deadline_monotonic: Optional[float] = None) -> bool:
+        if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+            raise TimeoutError(f"STORAGE_DEADLINE_EXCEEDED: delete_backup {remote_filename}")
+
         target = os.path.join(self.base_directory, remote_filename)
         if os.path.exists(target):
             os.remove(target)
@@ -208,19 +229,38 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
         self.region_name = region_name
         self._s3_client = None
 
-    def _get_client(self):
-        if self._s3_client is not None:
+    def _get_client(self, deadline_monotonic: Optional[float] = None, max_attempts: int = 1):
+        timeout = 30.0
+        if deadline_monotonic is not None:
+            remaining = deadline_monotonic - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("STORAGE_DEADLINE_EXCEEDED: client init")
+            # Bound socket connect and read timeouts by remaining cycle budget
+            timeout = min(remaining, 10.0)
+
+        # If a cached client exists and no specific deadline was requested, reuse it
+        if deadline_monotonic is None and self._s3_client is not None:
             return self._s3_client
+
         try:
             import boto3
-            self._s3_client = boto3.client(
+            from botocore.config import Config
+            config = Config(
+                connect_timeout=timeout,
+                read_timeout=timeout,
+                retries={"total_max_attempts": max_attempts, "mode": "standard"},
+            )
+            client = boto3.client(
                 "s3",
                 endpoint_url=self.endpoint_url,
                 aws_access_key_id=self.access_key_id,
                 aws_secret_access_key=self.secret_access_key,
                 region_name=self.region_name,
+                config=config,
             )
-            return self._s3_client
+            if deadline_monotonic is None:
+                self._s3_client = client
+            return client
         except ImportError:
             raise RuntimeError("boto3 is required for S3CompatibleStorageAdapter.")
 
@@ -293,20 +333,55 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
         logger.info(f"Uploaded and verified backup on S3/R2: s3://{self.bucket}/{key} (sha256: {source_sha[:8]}...)")
         return receipt
 
-    def download_file(self, remote_filename: str, local_dest_path: str) -> str:
-        s3 = self._get_client()
+    def download_file(self, remote_filename: str, local_dest_path: str, deadline_monotonic: Optional[float] = None) -> str:
+        if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+            raise TimeoutError(f"STORAGE_DEADLINE_EXCEEDED: download_file {remote_filename}")
+
+        s3 = self._get_client(deadline_monotonic=deadline_monotonic, max_attempts=1)
         key = self._key(remote_filename)
         os.makedirs(os.path.dirname(os.path.abspath(local_dest_path)), exist_ok=True)
 
-        s3.download_file(self.bucket, key, local_dest_path)
+        body = None
+        try:
+            obj = s3.get_object(Bucket=self.bucket, Key=key)
+            body = obj.get("Body")
+            if not body:
+                raise IOError(f"EMPTY_RESPONSE_BODY: {remote_filename}")
+
+            with open(local_dest_path, "wb") as f:
+                while True:
+                    if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+                        body.close()
+                        if os.path.exists(local_dest_path):
+                            os.remove(local_dest_path)
+                        raise TimeoutError(
+                            f"STORAGE_DEADLINE_EXCEEDED_DURING_STREAM: download_file {remote_filename}"
+                        )
+                    chunk = body.read(65536)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+        except Exception as e:
+            if os.path.exists(local_dest_path):
+                os.remove(local_dest_path)
+            if isinstance(e, TimeoutError):
+                raise
+            raise IOError(f"DOWNLOAD_FAILED: Could not download {remote_filename} ({e})") from e
+        finally:
+            if body is not None:
+                body.close()
 
         # Post-download verification
         try:
+            if deadline_monotonic is not None:
+                if time.monotonic() >= deadline_monotonic:
+                    raise TimeoutError("STORAGE_DEADLINE_EXCEEDED: metadata verification")
+                s3 = self._get_client(deadline_monotonic=deadline_monotonic, max_attempts=1)
             head = s3.head_object(Bucket=self.bucket, Key=key)
             expected_sha = head.get("Metadata", {}).get("sha256")
             if expected_sha:
                 actual_sha = compute_sha256(local_dest_path)
-                if actual_sha != expected_sha:
+                if actual_sha.lower() != expected_sha.lower():
                     if os.path.exists(local_dest_path):
                         os.remove(local_dest_path)
                     raise IOError(
@@ -320,11 +395,16 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
 
         return local_dest_path
 
-    def list_backups(self) -> List[Dict[str, Any]]:
-        s3 = self._get_client()
+    def list_backups(self, deadline_monotonic: Optional[float] = None) -> List[Dict[str, Any]]:
+        if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+            raise TimeoutError("STORAGE_DEADLINE_EXCEEDED: list_backups")
+
+        s3 = self._get_client(deadline_monotonic=deadline_monotonic, max_attempts=1)
         paginator = s3.get_paginator("list_objects_v2")
         results = []
         for page in paginator.paginate(Bucket=self.bucket, Prefix=self.prefix):
+            if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+                raise TimeoutError("STORAGE_DEADLINE_EXCEEDED_PAGINATING: list_backups")
             for item in page.get("Contents", []):
                 rel_name = item["Key"][len(self.prefix) + 1 :] if self.prefix else item["Key"]
                 results.append({
@@ -334,11 +414,18 @@ class S3CompatibleStorageAdapter(BackupStorageAdapter):
                 })
         return results
 
-    def delete_backup(self, remote_filename: str) -> bool:
-        s3 = self._get_client()
+    def delete_backup(self, remote_filename: str, deadline_monotonic: Optional[float] = None) -> bool:
+        if deadline_monotonic is not None and time.monotonic() >= deadline_monotonic:
+            raise TimeoutError(f"STORAGE_DEADLINE_EXCEEDED: delete_backup {remote_filename}")
+
+        s3 = self._get_client(deadline_monotonic=deadline_monotonic, max_attempts=1)
         key = self._key(remote_filename)
-        s3.delete_object(Bucket=self.bucket, Key=key)
-        return True
+        try:
+            s3.delete_object(Bucket=self.bucket, Key=key)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete remote backup {remote_filename}: {e}")
+            return False
 
     def get_storage_destination(self) -> str:
         return f"s3://{self.bucket}/{self.prefix}"

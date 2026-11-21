@@ -13,21 +13,30 @@ class FakeAdapter:
         self.deleted = []
         self.entries = {}
 
-    def add(self, backup_id, when, *, valid=True, dump_present=True):
+    def add(self, backup_id, when, *, valid=True, dump_present=True, legacy=False):
         dump = b"valid-recovery-dump-" + backup_id.encode()
         digest = hashlib.sha256(dump).hexdigest()
-        manifest = {
-            "backup_id": backup_id,
-            "upload_verified": valid,
-            "database_artifact": f"smart_money_{backup_id}.dump",
-            "artifact_sha256": digest,
-            "include_globals": False,
-        }
+        if legacy:
+            manifest = {
+                "backup_id": backup_id,
+                "dump_filename": f"smart_money_{backup_id}.dump",
+                "dump_sha256": digest,
+                "include_globals": False,
+            }
+        else:
+            manifest = {
+                "backup_id": backup_id,
+                "upload_verified": valid,
+                "database_artifact": f"smart_money_{backup_id}.dump",
+                "artifact_sha256": digest,
+                "include_globals": False,
+            }
         name = f"manifest_{backup_id}.json"
         (self.root / name).write_text(json.dumps(manifest), encoding="utf-8")
         self.entries[name] = when.isoformat()
+        dump_target = manifest.get("database_artifact") or manifest.get("dump_filename")
         if dump_present:
-            (self.root / manifest["database_artifact"]).write_bytes(dump)
+            (self.root / dump_target).write_bytes(dump)
 
     def list_backups(self):
         return [
@@ -104,3 +113,43 @@ def test_invalid_later_timestamp_blocks_all_deletions(tmp_path):
     adapter.entries[f"manifest_{oldest}.json"] = "0000-invalid-timestamp"
     assert BackupRetentionManager(adapter, retention_count=1, retention_days=7).prune_backups() == []
     assert adapter.deleted == []
+
+
+def test_legacy_manifest_without_upload_verified_prunes_safely(tmp_path):
+    adapter = FakeAdapter(tmp_path)
+    now = datetime.now(timezone.utc)
+    old_legacy = "sm-backup-20261025T152219Z-post-ingestion"
+    new_verified = "sm-backup-20261120T141500Z-post-ingestion"
+    adapter.add(old_legacy, now - timedelta(days=26), legacy=True)
+    adapter.add(new_verified, now - timedelta(hours=1), valid=True)
+    pruned = BackupRetentionManager(adapter, retention_count=1, retention_days=7).prune_backups()
+    assert pruned == [old_legacy]
+    assert adapter.deleted == [f"manifest_{old_legacy}.json", f"smart_money_{old_legacy}.dump"]
+    assert (tmp_path / f"manifest_{new_verified}.json").exists()
+
+
+def test_legacy_manifest_with_corrupt_dump_blocks_deletion(tmp_path):
+    adapter = FakeAdapter(tmp_path)
+    now = datetime.now(timezone.utc)
+    old_legacy = "sm-backup-20261025T152219Z-post-ingestion"
+    new_verified = "sm-backup-20261120T141500Z-post-ingestion"
+    adapter.add(old_legacy, now - timedelta(days=26), legacy=True)
+    adapter.add(new_verified, now - timedelta(hours=1), valid=True)
+    # Corrupt legacy dump
+    (tmp_path / f"smart_money_{old_legacy}.dump").write_bytes(b"corrupt-dump")
+    pruned = BackupRetentionManager(adapter, retention_count=1, retention_days=7).prune_backups()
+    assert pruned == []
+    assert adapter.deleted == []
+
+
+def test_explicitly_unverified_manifest_blocks_deletion(tmp_path):
+    adapter = FakeAdapter(tmp_path)
+    now = datetime.now(timezone.utc)
+    old_valid = "sm-backup-20261025T152219Z-valid"
+    new_unverified = "sm-backup-20261120T141500Z-unverified"
+    adapter.add(old_valid, now - timedelta(days=26), valid=True)
+    adapter.add(new_unverified, now - timedelta(hours=1), valid=False)
+    pruned = BackupRetentionManager(adapter, retention_count=1, retention_days=7).prune_backups()
+    assert pruned == []
+    assert adapter.deleted == []
+
