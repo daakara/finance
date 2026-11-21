@@ -1,22 +1,8 @@
 {
-  "generated_at": "2026-11-21T13:16:00Z",
+  "generated_at": "2026-11-21T13:35:00Z",
   "repository": "daakara/finance",
-  "open_prs_count": 7,
+  "open_prs_count": 6,
   "pull_requests": [
-    {
-      "author": {
-        "id": "MDQ6VXNlcjUzMTI4ODI0",
-        "is_bot": false,
-        "login": "daakara",
-        "name": ""
-      },
-      "createdAt": "2026-11-20T22:57:19Z",
-      "headRefName": "feat/sec-disclosure-evidence-view",
-      "isDraft": true,
-      "number": 313,
-      "title": "feat(sec): show stored Form 4 transaction evidence \u2014 release deferred",
-      "url": "https://github.com/daakara/finance/pull/313"
-    },
     {
       "author": {
         "id": "MDQ6VXNlcjUzMTI4ODI0",

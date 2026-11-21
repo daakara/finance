@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-11-21T13:16:00Z",
+  "generated_at": "2026-11-21T13:35:00Z",
   "repository": "daakara/finance",
-  "open_issues_count": 16,
+  "open_issues_count": 14,
   "issues": [
     {
       "author": {
@@ -58,20 +58,6 @@
       "state": "OPEN",
       "title": "[Sprint P2 \u00b7 Planned] Radar discovery truth and coverage quality",
       "url": "https://github.com/daakara/finance/issues/230"
-    },
-    {
-      "author": {
-        "id": "MDQ6VXNlcjUzMTI4ODI0",
-        "is_bot": false,
-        "login": "daakara",
-        "name": ""
-      },
-      "createdAt": "2026-11-07T18:09:25Z",
-      "labels": [],
-      "number": 229,
-      "state": "OPEN",
-      "title": "[Sprint P1 \u00b7 Planned] Pre-Flight decision integrity and evidence freshness",
-      "url": "https://github.com/daakara/finance/issues/229"
     },
     {
       "author": {
@@ -142,18 +128,6 @@
       "state": "OPEN",
       "title": "[Smart Money] Full Production Activation \u2014 Master Tracker (SEC ingestion \u2192 advisory scoring \u2192 evidence validation)",
       "url": "https://github.com/daakara/finance/issues/165"
-    },
-    {
-      "author": {
-        "is_bot": true,
-        "login": "app/arx-terminal-agent"
-      },
-      "createdAt": "2026-10-23T16:10:04Z",
-      "labels": [],
-      "number": 67,
-      "state": "OPEN",
-      "title": "[Sprint 3] [P0] Evidence Quality Audit: Pre-Flight Disclosures & Smart Money Truthfulness",
-      "url": "https://github.com/daakara/finance/issues/67"
     },
     {
       "author": {
