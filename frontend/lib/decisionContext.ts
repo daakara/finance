@@ -187,22 +187,24 @@ export function resolveDiscoveryHandoff(
   }
 
   const validation = validateDecisionContext(rawContextId, expectedSymbol);
+  const displayedSymbol = expectedSymbol && expectedSymbol.trim().length > 0
+    ? expectedSymbol.trim().toUpperCase()
+    : (validation.symbol || "UNKNOWN");
 
   if (validation.isValid) {
     return {
       hasContextParam: true,
       validation,
-      handoffNotice: "Original discovery context unavailable; showing a separate assessment.",
+      handoffNotice: `Original discovery context for ${displayedSymbol} unavailable; showing a separate assessment.`,
       noticeType: "INFO",
     };
   }
 
   if (validation.status === "CONTEXT_SYMBOL_MISMATCH") {
-    const expected = expectedSymbol ? expectedSymbol.trim().toUpperCase() : "UNKNOWN";
     return {
       hasContextParam: true,
       validation,
-      handoffNotice: `Context reference symbol mismatch ('${validation.symbol}' != '${expected}'); showing a separate assessment.`,
+      handoffNotice: `Context reference symbol mismatch ('${validation.symbol}' != '${displayedSymbol}'); showing a separate assessment for ${displayedSymbol}.`,
       noticeType: "WARNING",
     };
   }
@@ -211,7 +213,7 @@ export function resolveDiscoveryHandoff(
   return {
     hasContextParam: true,
     validation,
-    handoffNotice: "Context reference malformed or invalid; showing a separate assessment.",
+    handoffNotice: `Context reference malformed or invalid; showing a separate assessment for ${displayedSymbol}.`,
     noticeType: "WARNING",
   };
 }

@@ -138,6 +138,13 @@ export interface RadarCandidateRationale {
   coverageText: string;
 }
 
+export function resolveRadarCandidateCoverage(pillarCount: unknown): string {
+  if (typeof pillarCount === 'number' && Number.isInteger(pillarCount) && pillarCount >= 0 && pillarCount <= 4) {
+    return `${pillarCount}/4 Pillars Verified`;
+  }
+  return 'Coverage: Not Checked';
+}
+
 export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): RadarCandidateRationale {
   const ticker = candidate.ticker || 'UNKNOWN';
   const execStatus = String(candidate.executionStatus || 'UNKNOWN');
@@ -147,10 +154,7 @@ export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): 
   const vcpStage = candidate.vcpStage?.trim() || null;
   const stageDisplay = vcpStage || 'Pattern Unassigned';
 
-  const coverageText =
-    typeof candidate.verifiedPillarCount === 'number'
-      ? `${candidate.verifiedPillarCount}/4 Pillars Verified`
-      : 'Coverage: Not Checked';
+  const coverageText = resolveRadarCandidateCoverage(candidate.verifiedPillarCount);
 
   // 1. Delisted / Ceased Trading
   if (execStatus === 'DELISTED_SECURITY') {
@@ -194,10 +198,10 @@ export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): 
     };
   }
 
-  // 3. Insufficient History Depth
+  // 3. Insufficient History Depth (matches applicable backend contract without universal 250-session claim)
   if (execStatus === 'INSUFFICIENT_HISTORY') {
-    const summary = `Historical bar depth insufficient for full econometric modeling on ${ticker}.`;
-    const technicalContext = 'Confluence ranking and volatility contraction patterns require at least 250 daily trading sessions. Discovery signals suppressed.';
+    const summary = `Historical bar depth insufficient for quantitative modeling on ${ticker}.`;
+    const technicalContext = 'Candidate bar count does not meet minimum lookback requirements. Execution parameters and discovery signals suppressed pending sufficient history.';
     return {
       headline: 'Insufficient History Depth',
       summary,
@@ -265,29 +269,29 @@ export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): 
     summary = explicitExplanation;
     technicalContext = 'Sourced directly from quantitative screening evaluation. Single-asset trigger clearance required.';
   } else if (hasVcp && hasGarp) {
-    headline = `${ticker} · Dual Technical & Fundamental Confluence`;
-    summary = `${ticker} combines an advancing Stage 2 trend structure (${stageDisplay}${dryUpText}) with disciplined capital efficiency${sectorText}.`;
-    technicalContext = 'Structural consolidation indicates institutional supply absorption. Execution requires single-asset DecisionTrace clearance; discovery ranking is not an automatic buy signal.';
+    headline = `${ticker} · VCP & Value GARP Screener Qualification`;
+    summary = `${ticker} screened under Volatility Contraction (${stageDisplay}${dryUpText}) and Value GARP criteria${sectorText}.`;
+    technicalContext = 'Screener qualification reflects rule-based filter screening; single-asset DecisionTrace clearance required for execution parameters; discovery ranking is not an automatic buy signal.';
   } else if (hasVcp && hasSm) {
-    headline = `${ticker} · Technical Contraction with Smart Money Classification`;
-    summary = `${ticker} demonstrates progressive volatility contraction (${stageDisplay}${dryUpText}); classified under Smart Money screener snapshot (Form 4 filing transactions unverified)${rvolText}${sectorText}.`;
-    technicalContext = 'Narrowing contraction waves reflect volatility compression. Smart Money classification does not confirm institutional accumulation without independent transaction filing verification.';
+    headline = `${ticker} · VCP & Smart Money Screener Qualification`;
+    summary = `${ticker} qualifies under VCP screening criteria (${stageDisplay}${dryUpText}) and Smart Money screener snapshot; Form 4 filing transactions unverified${rvolText}${sectorText}.`;
+    technicalContext = 'Screener qualification does not establish institutional accumulation or verified order flow. Independent single-asset trigger clearance required.';
   } else if (hasVcp) {
-    headline = `${ticker} · Minervini Stage 2 Accumulation Structure`;
-    summary = `${ticker} consolidates in an advancing Stage 2 trend structure (${stageDisplay}${dryUpText})${sectorText}.`;
-    technicalContext = 'Successive contraction waves absorb overhead supply prior to resistance clearance. Execution trigger requires single-asset DecisionTrace.';
+    headline = `${ticker} · Volatility Contraction Pattern Observation`;
+    summary = `${ticker} qualifies under VCP screening criteria (${stageDisplay}${dryUpText})${sectorText}.`;
+    technicalContext = 'Pattern qualification reflects technical screening filters; does not establish institutional accumulation or supply absorption. Execution requires single-asset DecisionTrace clearance.';
   } else if (hasGarp) {
-    headline = `${ticker} · Fundamental Valuation & Cash Flow Discipline`;
-    summary = `${ticker} qualifies under the Value GARP screener, demonstrating operating margin stability and return on invested capital${sectorText ? ` within ${sector}` : ''}.`;
-    technicalContext = 'Resilient balance sheet metrics provide structural valuation support amidst market regime shifts.';
+    headline = `${ticker} · Value GARP Screener Qualification`;
+    summary = `${ticker} qualifies under Value GARP screening criteria${sectorText ? ` within ${sector}` : ''}.`;
+    technicalContext = 'Category membership reflects fundamental metric filtering; single-asset verification required to evaluate balance sheet resilience.';
   } else if (hasSm) {
     headline = `${ticker} · Smart Money Observation`;
     summary = `${ticker} classified under Smart Money screener snapshot; Form 4 filing transactions unverified${rvolText}${sectorText}.`;
-    technicalContext = 'Prospective cohort classification based on screener criteria. Categorization alone does not confirm institutional accumulation; filing disclosure timeliness subject to statutory reporting windows.';
+    technicalContext = 'Prospective cohort classification based on screener criteria. Categorization alone does not establish institutional accumulation or insider ownership.';
   } else {
     headline = `${ticker} · Multi-Factor Discovery Candidate`;
     summary = `${ticker} identified through multi-pillar screening${sectorText ? ` in ${sector}` : ''} (${stageDisplay}).`;
-    technicalContext = 'Consolidating in structural discovery universe; single-asset validation required for execution parameters.';
+    technicalContext = 'Identified in discovery universe screening; single-asset validation required for execution parameters.';
   }
 
   // Compile Contextual Learn Hub & Glossary Deep-Links

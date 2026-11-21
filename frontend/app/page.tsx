@@ -63,11 +63,15 @@ function TerminalContent() {
   const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "");
 
   // Gate 4: Centralized discovery handoff & context validation (Issue #166)
+  const activeViewSymbol = selectedSymbol || urlSymbol || "";
   const discoveryHandoff = useMemo(() => {
-    return resolveDiscoveryHandoff(rawContextId, urlSymbol || selectedSymbol);
-  }, [rawContextId, urlSymbol, selectedSymbol]);
+    return resolveDiscoveryHandoff(rawContextId, activeViewSymbol);
+  }, [rawContextId, activeViewSymbol]);
 
   const [discoveryContextId, setDiscoveryContextId] = useState<string | null>(discoveryHandoff.validation.contextId);
+  useEffect(() => {
+    setDiscoveryContextId(discoveryHandoff.validation.contextId);
+  }, [discoveryHandoff.validation.contextId]);
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const analysisRequestIdRef = useRef(0);
   const [loading, setLoading] = useState<boolean>(Boolean(urlSymbol));

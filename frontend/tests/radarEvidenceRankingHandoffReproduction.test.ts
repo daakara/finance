@@ -149,7 +149,7 @@ assert.strictEqual(handoff.hasContextParam, true);
 assert.strictEqual(handoff.noticeType, "INFO");
 assert.strictEqual(
   handoff.handoffNotice,
-  "Original discovery context unavailable; showing a separate assessment."
+  "Original discovery context for NVDA unavailable; showing a separate assessment."
 );
 console.log("   [POST-FIX VERIFIED]: Honest disclosure banner informs user that a separate assessment is shown.\n");
 
