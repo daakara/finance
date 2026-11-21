@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
+  "release_candidate_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
   "base_anchor_commit": "978123f7217e871ed6097da08a2feb9db7bec8b2",
   "total_files": 5,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -8,15 +8,15 @@
     "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
       "originating_pr_number": 315,
-      "originating_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
-      "governing_requirement": "Issue #165: propagate monotonic cycle deadline into backup retention pruning",
-      "sha256": "efd74b8a9945787421a040aeae066a04fd5dd58b446795a841df7ed24c09c0f6",
-      "size_bytes": 105179
+      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
+      "governing_requirement": "Issue #165: defer remote retention entirely during two-issuer trial cycles; propagate deadlines for other retention calls",
+      "sha256": "0bb10186e1a9e04004f1be9bd3dbd65cb5c60b9906d648a11983c2c167baf0d2",
+      "size_bytes": 105626
     },
     "analyst_dashboard/smart_money/storage/backup/retention.py": {
       "operation": "M",
       "originating_pr_number": 315,
-      "originating_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
+      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
       "governing_requirement": "Issue #165: bound retention verification & pruning by monotonic deadline, eliminate unbounded fallback, enforce legacy manifest contract",
       "sha256": "adeca9fec2d06d7af301fd82c7a995195af4b938508e27d9e58626d4b28fb7b8",
       "size_bytes": 19567
@@ -24,23 +24,23 @@
     "analyst_dashboard/smart_money/storage/backup/storage_adapter.py": {
       "operation": "M",
       "originating_pr_number": 315,
-      "originating_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
-      "governing_requirement": "Issue #165: enforce deadline-bounded socket and streaming timeouts across S3/R2 and local storage adapters",
-      "sha256": "a702ab43cae06c6d7db682ec842c4605f4c9e4961ae0b525a64b1e3ac87aeb9f",
-      "size_bytes": 23006
+      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
+      "governing_requirement": "Issue #165: enforce single total SDK attempt, remaining-budget socket timeouts and metadata deadline checks; close streamed responses",
+      "sha256": "9aa52186639c7305c6eac2321e0721af5c66baec056278847c16f19a549ff1c7",
+      "size_bytes": 23391
     },
     "tests/test_smart_money_backup_retention_bounded_adversarial.py": {
       "operation": "A",
       "originating_pr_number": 315,
-      "originating_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
+      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
       "governing_requirement": "Issue #165: adversarial offline suite for 55+ backup catalog, slow storage, deadline exhaustion, and zero abandoned work",
-      "sha256": "12c3414114d52636453e60f0a41ec360e5a54c39bf1a340e863327c332a825ac",
-      "size_bytes": 26985
+      "sha256": "bcfa2c1534d2b1aacb6146ff3d96ad80d85effedfd71cbe98f01fbae3cd3439f",
+      "size_bytes": 29007
     },
     "tests/test_smart_money_backup_retention_safety.py": {
       "operation": "M",
       "originating_pr_number": 315,
-      "originating_commit": "1cd1a0cf7a31209d95d06838d813a034e32c6613",
+      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
       "governing_requirement": "Issue #165: safe pruning invariants and legacy manifest contract test coverage",
       "sha256": "63681bbf13be0c9c0a38a0f3e3fd9506b7f80d4bb8645a07ee33bf0af5a72638",
       "size_bytes": 6480
@@ -58,8 +58,8 @@
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "61909a760a45d6ffb811b65f0b2e9a9cd637f3086bcabc00d3f69392816cdb93",
-      "size_bytes": 4015,
+      "sha256": "5f2404e0110196f4420b5912a8c54a7796f3a76bc4803de57cd918f73b6c23d7",
+      "size_bytes": 4089,
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
