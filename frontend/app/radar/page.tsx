@@ -36,57 +36,14 @@ import {
   RadarScoreTier,
   RadarScorePresentation,
 } from '../../lib/radarPresentation';
-
-interface RadarAsset {
-  ticker: string;
-  name: string;
-  price: number | null;
-  priceBasis?: "DAILY_CLOSE" | null;
-  priceDate?: string | null;
-  rvol?: string | null;
-  riskRewardRatio?: number | null;
-  vcpStage: string;
-  volumeDryUpPct?: number | null;
-  confluenceScore: number | null;
-  confluenceBadgeColor?: string | null;
-  catalyst: string;
-  categories: CanonicalRadarCategory[];
-  sector: string;
-  executionStatus: ExecutionStatus;
-  screeningStatus?: string;
-  screeningGeometry?: string;
-  decisionState?: string;
-  decisionStateLabel?: string;
-  isActionable?: boolean;
-  canSizeTrade?: boolean;
-  disqualificationReason?: string | null;
-  decisionContextId?: string;
-  allowedActions: string[];
-  screeningEligible?: boolean;
-  opportunityExplanation?: string;
-  stageClassification?: string;
-}
+import {
+  RadarAsset,
+  compareRadarAssets,
+  mapRadarCandidate,
+  parseCanonicalExecutionStatus,
+} from '../../lib/radarRanking';
 
 type CategoryFilter = 'ALL' | CanonicalRadarCategory;
-
-
-function parseCanonicalExecutionStatus(raw: string): ExecutionStatus {
-  const s = raw.trim().toUpperCase();
-  if (s === 'IN_BUY_ZONE' || s === 'READY_TO_BUY') return s;
-  if (s === 'IN_BUY_ZONE_AWAITING_TRIGGER') return s;
-  if (s === 'WAITING_PULLBACK') return s;
-  if (s === 'APPROACHING_TARGET') return s;
-  if (s === 'STOPPED_OUT') return s;
-  if (s === 'INSUFFICIENT_HISTORY') return s;
-  if (s === 'DELISTED_SECURITY' || s.includes('DELISTED')) return 'DELISTED_SECURITY';
-  if (s === 'UNVERIFIED_ASSET') return s;
-  if (s === 'STALE_MARKET_DATA') return s;
-  if (s.includes('BUY_ZONE') && !s.includes('AWAITING')) return 'IN_BUY_ZONE';
-  if (s.includes('AWAITING') || s.includes('TRIGGER')) return 'IN_BUY_ZONE_AWAITING_TRIGGER';
-  if (s.includes('APPROACHING') || s.includes('TARGET')) return 'APPROACHING_TARGET';
-  if (s.includes('PULLBACK') || s.includes('WAITING')) return 'WAITING_PULLBACK';
-  return 'UNKNOWN';
-}
 
 function RadarContent() {
   const searchParams = useSearchParams();
@@ -287,67 +244,7 @@ function RadarContent() {
         setCapabilities(normCaps);
         setPopulation(res.population || null);
 
-        const mapped: RadarAsset[] = (res.results || []).map((gem: any) => {
-          // Canonical typed categories: strictly consume explicit backend categories.
-          // Zero substring-based inference from arbitrary strings (e.g. "Smart Growth" or "Flow Traders").
-          const cat: CanonicalRadarCategory[] = Array.isArray(gem.categories)
-            ? (gem.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
-            : [];
-
-          const rawStatus = (gem.executionStatus || gem.execution_status || gem.factor_verdict || "").toUpperCase();
-          const executionStatus = parseCanonicalExecutionStatus(rawStatus);
-
-          const dryUp = typeof gem.volume_dry_up === 'number' ? gem.volume_dry_up : (typeof gem.volumeDryUpPct === 'number' ? gem.volumeDryUpPct : null);
-          const rvolVal = typeof gem.rvol === 'string' && gem.rvol !== 'N/A' ? gem.rvol : null;
-          const rrVal = typeof gem.riskRewardRatio === 'number' ? gem.riskRewardRatio : null;
-          const stageStr = gem.setup_pattern || (gem.stage_phase ? `Stage ${gem.stage_phase} Base` : (executionStatus === 'IN_BUY_ZONE' ? 'Pivot Breakout' : 'Base Under Evaluation'));
-
-          const cleanTicker = (gem.ticker || '').toUpperCase();
-          const catalogEntry = MASTER_ASSET_CATALOG[cleanTicker];
-          const resolvedName = gem.companyName || catalogEntry?.name || '';
-
-          const rawPrice = gem.currentPrice ?? gem.current_price;
-          const resolvedPrice = typeof rawPrice === 'number' && Number.isFinite(rawPrice) && rawPrice > 0
-            ? Number(rawPrice.toFixed(2))
-            : null;
-
-          const rawConfluence = typeof gem.confluenceScore === 'number'
-            ? gem.confluenceScore
-            : (typeof gem.composite_score === 'number' ? gem.composite_score : null);
-          const resolvedConfluence = rawConfluence !== null && Number.isFinite(rawConfluence)
-            ? Math.round(rawConfluence)
-            : null;
-
-          return {
-            ticker: cleanTicker,
-            name: resolvedName,
-            price: resolvedPrice,
-            priceBasis: gem.priceBasis ?? (gem.price_basis as any) ?? null,
-            priceDate: gem.priceDate ?? gem.price_date ?? null,
-            rvol: rvolVal,
-            riskRewardRatio: rrVal,
-            vcpStage: stageStr,
-            volumeDryUpPct: dryUp,
-            confluenceScore: resolvedConfluence,
-            confluenceBadgeColor: gem.confluenceBadgeColor || gem.confluence_badge_color || gem.badgeColor || null,
-            catalyst: gem.primary_catalyst || gem.investment_thesis || (executionStatus === 'DELISTED_SECURITY' ? 'Trading suspended for delisted security.' : 'Catalyst disclosures unavailable.'),
-            categories: cat,
-            sector: catalogEntry?.sector || "Broad Market",
-            executionStatus,
-            screeningStatus: gem.screeningStatus || (executionStatus === 'DELISTED_SECURITY' ? 'DELISTED' : (executionStatus === 'UNVERIFIED_ASSET' ? 'UNVERIFIED' : 'UNKNOWN')),
-            screeningGeometry: gem.screeningGeometry || (executionStatus === 'DELISTED_SECURITY' ? 'INACTIVE' : 'UNKNOWN'),
-            decisionState: gem.decisionState || 'UNVERIFIED_SETUP',
-            decisionStateLabel: gem.decisionStateLabel || (gem.decisionState === 'ACTIONABLE_SETUP' ? 'Discovery Candidate — Analyze for Trigger' : 'Discovery Candidate'),
-            isActionable: false, // Invariant: Radar is a discovery scanner; canonical actionability reserved for DecisionTrace
-            canSizeTrade: false,
-            disqualificationReason: gem.disqualificationReason || null,
-            decisionContextId: gem.decisionContextId,
-            allowedActions: Array.isArray(gem.allowedActions) ? gem.allowedActions : [],
-            screeningEligible: executionStatus === 'IN_BUY_ZONE' && gem.screeningEligible === true,
-            opportunityExplanation: gem.opportunityExplanation || gem.primary_catalyst || gem.investment_thesis || "",
-            stageClassification: gem.stageClassification,
-          };
-        });
+        const mapped: RadarAsset[] = (res.results || []).map((gem: any) => mapRadarCandidate(gem));
 
         setAllAssets(mapped);
         setSelectedAssetTicker((prev) => {
@@ -518,32 +415,7 @@ function RadarContent() {
 
         return matchesCategory && matchesQuery && matchesOwnership;
       })
-      .sort((a, b) => {
-        // Scenario 10 in Gate H: Sorting never promotes delisted assets into eligible opportunity rankings
-        const aDelisted = a.executionStatus === 'DELISTED_SECURITY' ? 1 : 0;
-        const bDelisted = b.executionStatus === 'DELISTED_SECURITY' ? 1 : 0;
-        if (aDelisted !== bDelisted) {
-          return aDelisted - bDelisted; // Delisted securities sink to bottom
-        }
-        if (sortBy === 'SCORE') {
-          const diff = (b.confluenceScore ?? -1) - (a.confluenceScore ?? -1);
-          if (diff !== 0) return diff;
-          return a.ticker.localeCompare(b.ticker); // Deterministic tie-breaker
-        }
-        if (sortBy === 'RVOL') {
-          const aRvol = a.rvol ? parseFloat(a.rvol.replace('x', '')) : 0;
-          const bRvol = b.rvol ? parseFloat(b.rvol.replace('x', '')) : 0;
-          const diff = bRvol - aRvol;
-          if (diff !== 0) return diff;
-          return a.ticker.localeCompare(b.ticker); // Deterministic tie-breaker
-        }
-        if (sortBy === 'PRICE') {
-          const diff = (b.price ?? -1) - (a.price ?? -1);
-          if (diff !== 0) return diff;
-          return a.ticker.localeCompare(b.ticker); // Deterministic tie-breaker
-        }
-        return a.ticker.localeCompare(b.ticker);
-      });
+      .sort((a, b) => compareRadarAssets(a, b, sortBy));
   }, [allAssets, activeFilter, searchQuery, sortBy, ownershipFilter, getOwnershipState]);
 
   const cleanQ = searchQuery.trim().toUpperCase();
@@ -659,6 +531,19 @@ function RadarContent() {
 
       const dec = data.decisionTrace;
 
+      const rawPillars = typeof data.confluence?.verifiedPillarCount === 'number'
+        ? data.confluence.verifiedPillarCount
+        : null;
+      const validPillars = (rawPillars !== null && Number.isInteger(rawPillars) && rawPillars >= 0 && rawPillars <= 4)
+        ? rawPillars
+        : null;
+
+      const validOppExplanation = (typeof (data as any)?.opportunityExplanation === 'string' && (data as any).opportunityExplanation.trim().length > 0)
+        ? (data as any).opportunityExplanation.trim()
+        : null;
+
+      const resolvedSector = (data as any)?.sector || MASTER_ASSET_CATALOG[clean]?.sector || null;
+
       const newAsset: RadarAsset = {
         ticker: clean,
         name: clean,
@@ -670,12 +555,15 @@ function RadarContent() {
         vcpStage: stageStr,
         volumeDryUpPct: null,
         confluenceScore: (data.confluence?.confluenceScore != null && Number.isFinite(data.confluence.confluenceScore))
-          ? Math.round(data.confluence.confluenceScore)
+          ? data.confluence.confluenceScore
           : null,
         confluenceBadgeColor: data.confluence?.badgeColor || null,
+        gemScore: null,
+        verifiedPillarCount: validPillars,
+        smartMoneyEvidenceState: null,
         catalyst: opt?.entry_thesis || "Catalyst disclosures unavailable.",
         categories: cat,
-        sector: "On-Demand Discovery",
+        sector: resolvedSector,
         executionStatus,
         screeningStatus: executionStatus === 'DELISTED_SECURITY' ? 'DELISTED' : (executionStatus === 'UNVERIFIED_ASSET' ? 'UNVERIFIED' : (executionStatus || 'UNKNOWN')),
         screeningGeometry: executionStatus === 'DELISTED_SECURITY' ? 'INACTIVE' : 'UNKNOWN',
@@ -689,6 +577,8 @@ function RadarContent() {
         screeningEligible: false, // On-demand lookup does not confer universe screening eligibility
         priceBasis: data.marketPriceState?.analysisReferenceSource?.includes("DAILY") ? "DAILY_CLOSE" : null,
         priceDate: data.marketPriceState?.analysisReferenceDate || (data as any)?.tradeDate || null,
+        opportunityExplanation: validOppExplanation,
+        stageClassification: opt?.stage_phase ? `Stage ${opt.stage_phase}` : undefined,
       };
 
       setAllAssets((prev) => [newAsset, ...prev.filter((a) => a.ticker !== clean)]);
@@ -1002,6 +892,8 @@ function RadarContent() {
                     opportunityExplanation: heroAsset.opportunityExplanation,
                     catalyst: heroAsset.catalyst,
                     riskRewardRatio: heroAsset.riskRewardRatio,
+                    verifiedPillarCount: heroAsset.verifiedPillarCount,
+                    smartMoneyEvidenceState: heroAsset.smartMoneyEvidenceState,
                   });
                   return (
                     <div className="space-y-2">
@@ -1011,6 +903,9 @@ function RadarContent() {
                         <span className="text-[var(--text-2)]">{heroRationale.technicalContext}</span>
                       </p>
                       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded font-mono border bg-[var(--surface-2)] text-[var(--text-muted)] border-[var(--border-subtle)]" title="Pillar verification coverage">
+                          {heroRationale.coverageText}
+                        </span>
                         <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold mr-0.5">
                           Learn Hub:
                         </span>
@@ -1073,7 +968,7 @@ function RadarContent() {
                       <div className="flex items-center gap-1.5" title="Authoritative multi-factor confluence conviction score (0-100) from published universe pipeline · Relative discovery ranking — not an actionable buy recommendation">
                         <span className="text-[var(--text-2)]">Screen Confluence:</span>
                         <span className={`font-bold ${heroScorePres.colorClass}`}>
-                          {heroAsset.confluenceScore !== null ? `${heroAsset.confluenceScore}/100` : "Unavailable"}
+                          {heroAsset.confluenceScore !== null ? `${heroScorePres.label}/100` : "Unavailable"}
                         </span>
                       </div>
                     );
@@ -2029,6 +1924,8 @@ function RadarContent() {
                               opportunityExplanation: asset.opportunityExplanation,
                               catalyst: asset.catalyst,
                               riskRewardRatio: asset.riskRewardRatio,
+                              verifiedPillarCount: asset.verifiedPillarCount,
+                              smartMoneyEvidenceState: asset.smartMoneyEvidenceState,
                             });
                             return (
                               <div className="space-y-1">
@@ -2036,6 +1933,9 @@ function RadarContent() {
                                   {rowRationale.summary}
                                 </div>
                                 <div className="flex flex-wrap items-center gap-1">
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border bg-[var(--surface-2)] text-[var(--text-muted)] border-[var(--border-subtle)]" title="Pillar verification coverage">
+                                    {rowRationale.coverageText}
+                                  </span>
                                   {rowRationale.learnLinks.slice(0, 2).map((link, idx) => (
                                     <a
                                       key={idx}
@@ -2267,6 +2167,8 @@ function RadarContent() {
                           opportunityExplanation: asset.opportunityExplanation,
                           catalyst: asset.catalyst,
                           riskRewardRatio: asset.riskRewardRatio,
+                          verifiedPillarCount: asset.verifiedPillarCount,
+                          smartMoneyEvidenceState: asset.smartMoneyEvidenceState,
                         });
                         return (
                           <div className="space-y-1.5 pt-1">
@@ -2274,6 +2176,9 @@ function RadarContent() {
                               {cardRationale.summary}
                             </p>
                             <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded font-mono border bg-[var(--surface-2)] text-[var(--text-muted)] border-[var(--border-subtle)]" title="Pillar verification coverage">
+                                {cardRationale.coverageText}
+                              </span>
                               {cardRationale.learnLinks.slice(0, 2).map((link, idx) => (
                                 <a
                                   key={idx}

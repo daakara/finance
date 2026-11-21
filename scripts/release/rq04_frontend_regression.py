@@ -124,6 +124,24 @@ def main():
         "passed": cdns_passed,
     })
 
+    # 5. Radar Evidence, Ranking & Analysis-Handoff Qualification Suite (Issue #166)
+    print("Running Radar Evidence, Ranking & Analysis-Handoff qualification tests...")
+    radar_cmd = [npx_bin, "tsx", "tests/radarEvidenceRankingHandoffQualification.test.ts"]
+    res_radar = subprocess.run(
+        radar_cmd, cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, encoding="utf-8", errors="ignore",
+    )
+    print(res_radar.stdout)
+    radar_passed = (res_radar.returncode == 0)
+    if not radar_passed:
+        errors.append(f"Radar qualification tests failed with exit code {res_radar.returncode}")
+    assertions.append({
+        "assertion": "Radar evidence, ranking & analysis-handoff qualification suite passes",
+        "observed": {"exit_code": res_radar.returncode},
+        "passed": radar_passed,
+    })
+
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"
     ok, identity, err = resolve_identity_contract()
@@ -135,7 +153,12 @@ def main():
         "frontend/components/PositionSizerModal.tsx",
         "frontend/components/WeeklyConfluenceSpotlight.tsx",
         "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts",
-        "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts"
+        "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts",
+        "frontend/tests/radarEvidenceRankingHandoffQualification.test.ts",
+        "frontend/lib/radarPresentation.ts",
+        "frontend/lib/radarRanking.ts",
+        "frontend/lib/decisionContext.ts",
+        "frontend/app/radar/page.tsx",
     ]
 
     receipt = create_stage_receipt(

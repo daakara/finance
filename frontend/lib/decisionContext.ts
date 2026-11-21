@@ -148,3 +148,72 @@ export function getAnalysisHubCacheKey(symbol: string, interval: string, userRol
   const cleanSym = symbol ? symbol.trim().toUpperCase() : "UNKNOWN";
   return `${cleanSym}_${interval}_${userRole}`;
 }
+
+export interface DiscoveryHandoff {
+  hasContextParam: boolean;
+  validation: ContextValidationResult;
+  handoffNotice: string | null;
+  noticeType: "INFO" | "WARNING" | null;
+}
+
+/**
+ * Evaluates the discovery handoff state from Radar to Analysis Hub.
+ *
+ * Epistemic Invariants (Gate 4):
+ * 1. If no contextId parameter is present, hasContextParam is false and no notice is generated.
+ * 2. If a valid contextId is present, since the backend does not persist or reproduce historical
+ *    discovery snapshots, the system explicitly informs the user that a separate evaluation is shown:
+ *    "Original discovery context unavailable; showing a separate assessment."
+ * 3. If the contextId is invalid or has a symbol mismatch, an explicit warning notice is produced.
+ * 4. Context reference never changes execution authority or trade sizing.
+ */
+export function resolveDiscoveryHandoff(
+  rawContextId: string | null | undefined,
+  expectedSymbol?: string | null | undefined
+): DiscoveryHandoff {
+  if (!rawContextId || typeof rawContextId !== "string" || rawContextId.trim().length === 0) {
+    return {
+      hasContextParam: false,
+      validation: {
+        isValid: false,
+        status: "CONTEXT_ABSENT",
+        contextId: null,
+        symbol: null,
+        timestampMs: null,
+      },
+      handoffNotice: null,
+      noticeType: null,
+    };
+  }
+
+  const validation = validateDecisionContext(rawContextId, expectedSymbol);
+  const displayedSymbol = expectedSymbol && expectedSymbol.trim().length > 0
+    ? expectedSymbol.trim().toUpperCase()
+    : (validation.symbol || "UNKNOWN");
+
+  if (validation.isValid) {
+    return {
+      hasContextParam: true,
+      validation,
+      handoffNotice: `Original discovery context for ${displayedSymbol} unavailable; showing a separate assessment.`,
+      noticeType: "INFO",
+    };
+  }
+
+  if (validation.status === "CONTEXT_SYMBOL_MISMATCH") {
+    return {
+      hasContextParam: true,
+      validation,
+      handoffNotice: `Context reference symbol mismatch ('${validation.symbol}' != '${displayedSymbol}'); showing a separate assessment for ${displayedSymbol}.`,
+      noticeType: "WARNING",
+    };
+  }
+
+  // CONTEXT_MALFORMED or other failure
+  return {
+    hasContextParam: true,
+    validation,
+    handoffNotice: `Context reference malformed or invalid; showing a separate assessment for ${displayedSymbol}.`,
+    noticeType: "WARNING",
+  };
+}
