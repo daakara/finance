@@ -1,49 +1,121 @@
 {
-  "release_candidate_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-  "base_anchor_commit": "978123f7217e871ed6097da08a2feb9db7bec8b2",
-  "total_files": 5,
+  "release_candidate_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+  "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
+  "total_files": 14,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-RETENTION-BOUNDED",
+  "directive": "ARX-SEC-BOUNDED-INGESTION-317",
   "files": {
+    "analyst_dashboard/smart_money/continuous_authorization.py": {
+      "operation": "M",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "98f1aacdff2a6bbb5c29bc25fb85637a078fff0e64e891b9c1c2789909171bf1",
+      "size_bytes": 8464
+    },
     "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: defer remote retention entirely during two-issuer trial cycles; propagate deadlines for other retention calls",
-      "sha256": "0bb10186e1a9e04004f1be9bd3dbd65cb5c60b9906d648a11983c2c167baf0d2",
-      "size_bytes": 105626
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "ed98e733aac8bf250adb6c59a37f9ae9d6aa1ae85b0f9f652c66f3a0026a6360",
+      "size_bytes": 126008
     },
-    "analyst_dashboard/smart_money/storage/backup/retention.py": {
+    "analyst_dashboard/smart_money/smart_money_scheduler.py": {
       "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: bound retention verification & pruning by monotonic deadline, eliminate unbounded fallback, enforce legacy manifest contract",
-      "sha256": "adeca9fec2d06d7af301fd82c7a995195af4b938508e27d9e58626d4b28fb7b8",
-      "size_bytes": 19567
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "684b8a1a4cc793953a14f01b71c9d23d6ada24e59534475939199165b6481b86",
+      "size_bytes": 20032
     },
-    "analyst_dashboard/smart_money/storage/backup/storage_adapter.py": {
+    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
       "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: enforce single total SDK attempt, remaining-budget socket timeouts and metadata deadline checks; close streamed responses",
-      "sha256": "9aa52186639c7305c6eac2321e0721af5c66baec056278847c16f19a549ff1c7",
-      "size_bytes": 23391
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "a8adea9e8a220cc8c759416cb69711855f9c256e89841df286cd019a9efe0c2f",
+      "size_bytes": 141104
     },
-    "tests/test_smart_money_backup_retention_bounded_adversarial.py": {
+    "analyst_dashboard/smart_money/worker.py": {
+      "operation": "M",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "c1e2da9d93fd663b6a0109b581c0c04a00750451c2db3f30e00d7911b562c9b9",
+      "size_bytes": 52026
+    },
+    "docs/planning/ARX_SEC_10_ISSUER_INGESTION_PREPARATION_2026_11_21.md": {
       "operation": "A",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: adversarial offline suite for 55+ backup catalog, slow storage, deadline exhaustion, and zero abandoned work",
-      "sha256": "bcfa2c1534d2b1aacb6146ff3d96ad80d85effedfd71cbe98f01fbae3cd3439f",
-      "size_bytes": 29007
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "2f803260f5605eabdc86122f9fae35a7abd4d9da6e6d855663deb1579923a215",
+      "size_bytes": 10302
     },
-    "tests/test_smart_money_backup_retention_safety.py": {
-      "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: safe pruning invariants and legacy manifest contract test coverage",
-      "sha256": "63681bbf13be0c9c0a38a0f3e3fd9506b7f80d4bb8645a07ee33bf0af5a72638",
-      "size_bytes": 6480
+    "docs/releases/ARX_SEC_INGESTION_10_ROLLOUT_PACKET_317.md": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "158001ff1de3d37c3855658198513b8502d1ed3f3134bab349e3ea3f08e1c314",
+      "size_bytes": 10005
+    },
+    "docs/reports/ARX_ISSUE165_DAY2_READINESS_ASSESSMENT_CORRECTED_2026_11_21.md": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "e684667e5fe2896b0654ad866dad00e1dcbdb89adba9d2084379ec6f0838345a",
+      "size_bytes": 10366
+    },
+    "tests/test_release_sec_gate.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "9de3c8bbf94aed8fb5c50a03cd4cd6d993e4513bcb4b903511b1fab556745b02",
+      "size_bytes": 635
+    },
+    "tests/test_sec_archived_replay_preparation.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "e74bbbcdd9ab21943eaa046b35b8e5ae2d0ec2c8226dfe0f09b9df3d24c5d382",
+      "size_bytes": 4647
+    },
+    "tests/test_sec_bounded_resumable_ingestion.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "bd8a24a0c4c7436de8c985c705658b91908893bd06923c3dbf74f42f6d634a4d",
+      "size_bytes": 18897
+    },
+    "tests/test_sec_expanded_delivery.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "4e10ce635829faaa7a33bfc258a5b5d1374ae0be0612635e1a4699f2a28c5540",
+      "size_bytes": 6452
+    },
+    "tests/test_sec_resume_safety_regressions.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "f38c32ee163fb9717d3d8fceed95ead70400489ce9bde1575060dcc8a233adcf",
+      "size_bytes": 17939
+    },
+    "tools/qualification/sec_offline_test_support.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "fd215a0c26171526bd26e03e3c130f058e1fb535af09443063cc9fb4a1ebdc57",
+      "size_bytes": 3420
     }
   },
   "qualification_framework_files": {
@@ -53,13 +125,13 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "d668ef5eae9d41ec51fe1b43206df7b60792bfe31103fb827a3c3cc9b3eae8eb",
-      "size_bytes": 58226,
+      "sha256": "4d6b11074f7d1f140d8cf06e4383459f8e8333d4a047fbab1a8583f85bbe1fb1",
+      "size_bytes": 58231,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "5f2404e0110196f4420b5912a8c54a7796f3a76bc4803de57cd918f73b6c23d7",
-      "size_bytes": 4089,
+      "sha256": "29c0c5e4ec8db4cbf3921a40534672d14bb005e55bdc164d02049b123506953d",
+      "size_bytes": 6369,
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
