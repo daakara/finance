@@ -2070,10 +2070,27 @@ class SmartMoneyContinuousPipeline:
         self._validate_backup_manifest(manifest, expected_backup_id=backup_id)
         return manifest
 
+    MIN_RETENTION_PREFLIGHT_BUDGET_SEC = 10.0
+
     def _step10_prune_retention(self) -> List[str]:
-        """Safely prunes older backups beyond retention policy."""
+        """
+        Safely prunes older backups beyond retention policy within remaining cycle deadline.
+        Enforces safe preflight check: if remaining cycle budget is insufficient for safe
+        independent verification and bounded network deletions, retention is deferred
+        prior to initiating network egress.
+        """
         try:
-            return self.retention_manager.prune_backups()
+            deadline = getattr(self, "cycle_deadline_monotonic", None)
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining < self.MIN_RETENTION_PREFLIGHT_BUDGET_SEC:
+                    logger.warning(
+                        f"STEP_10_RETENTION_DEFERRED: Remaining cycle budget ({remaining:.2f}s) "
+                        f"below safe preflight floor ({self.MIN_RETENTION_PREFLIGHT_BUDGET_SEC}s). "
+                        "Deferring backup retention pruning before initiating network egress to preserve scheduled cycle deadline."
+                    )
+                    return []
+            return self.retention_manager.prune_backups(deadline_monotonic=deadline)
         except Exception as e:
             logger.warning(f"Error during retention pruning: {e}")
             return []
