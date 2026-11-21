@@ -1,10 +1,12 @@
 # ARX Terminal — Canonical Sprint Roadmap, Backlog Prioritization & Execution Architecture
 
 **Document ID:** `PLN-ROADMAP-2026-11-20`  
-**Effective Date:** 2026-11-20  
-**Authoritative Production Baseline:** `release/production` @ SHA [`868d7afcd528006c2323e6b79b5a17f2f20f677c`](https://github.com/daakara/finance/commit/868d7afcd528006c2323e6b79b5a17f2f20f677c)  
+**Effective Date:** 2026-11-20 (Reconciled: 2026-11-21)  
+**Authoritative Production Baseline:** `release/production` @ SHA [`2eccc64a2cb3c649ad4d584a942285a6406d1ce0`](https://github.com/daakara/finance/commit/2eccc64a2cb3c649ad4d584a942285a6406d1ce0)  
 **Classification:** Canonical Project Brain Sprint Roadmap & Execution Architecture  
-**Supersedes:** `docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md`
+**Supersedes:** `docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md`  
+**Current Reconciliation Register:** [`docs/planning/ARX_CURRENT_RECONCILIATION_REGISTER_2026_11_21.md`](ARX_CURRENT_RECONCILIATION_REGISTER_2026_11_21.md)  
+**Audit Reference:** [`docs/reports/ARX_BACKLOG_COVERAGE_AUDIT_2026-11-21.md`](../reports/ARX_BACKLOG_COVERAGE_AUDIT_2026-11-21.md)
 
 ---
 
@@ -54,8 +56,8 @@ To ensure architectural coherence and eliminate cognitive blind spots, Project B
 - **Recommendation:** Implement an explicit institutional empty-state message in `CatalystForecastCard.tsx` (DEF-CAT-002).
 
 ### Perspective 4: Reliability & Security
-- **Evaluation:** Supervised one-shot NVDA (PR #306) and AAPL (PR #307) canaries, as well as candidate accession `0001140361-26-044952`, executed cleanly under strict authorization and are complete. Two-issuer recurring trial was qualified for crash safety (PR #311) and durable slot dispatch (PR #312), and provenance correction v2 (`6c7bf075...`) was recorded. Day 1 is armed under single-reading 23h55m grant `dc58b294...` with session advisory lock `401007311509093371` awaiting natural scheduled execution in Slot 1 (zero recurring cycles completed).
-- **Recommendation:** Maintain the hard runtime grant expiry gate (`ARX_CONTINUOUS_AUTH_EXPIRES_AT`) capped at `2026-11-25T02:35:00Z` for teardown. `HOLD_SEC_001` remains strictly in force for market-wide scanning and snapshot publication. Defer PR #310 documentation merge until a controlled release window to prevent worker container restart and grant invalidation.
+- **Evaluation:** Supervised one-shot NVDA (PR #306) and AAPL (PR #307) canaries, as well as candidate accession `0001140361-26-044952`, executed cleanly under strict authorization and are complete. Two-issuer recurring trial Day 1 completed on Nov 20 (4 cycles, 8 actual transmissions, 32 budget charged under conservative rule, remaining trial budget 64 of 96 requests, 8 of 12 cycles; latency gate failed due to retention duration). The worker is currently safely recovered in fail-closed `STANDBY` / `DISABLED` posture (`ARX_SEC_EGRESS_ROLE=DISABLED`, `ARX_CONTINUOUS_INGESTION_AUTHORIZED=false`) with advisory lock `401007311509093371` unheld (0 held locks, 0 active queue rows). Draft PR #315 addresses bounded retention duration on an isolated branch. Day 2 preflight is pending.
+- **Recommendation:** Maintain the hard runtime grant expiry gate (`ARX_CONTINUOUS_AUTH_EXPIRES_AT`) capped at `2026-11-25T02:35:00Z` for teardown. `HOLD_SEC_001` remains strictly in force for market-wide scanning and snapshot publication. Defer PR #310 documentation merge until a controlled release window to protect production worker stability.
 
 ### Perspective 5: Quality Assurance
 - **Evaluation:** The Release Qualification Suite (`run_release_ci_suite.py`) enforces 12 non-bypassable quality gates (RQ-01..12) plus RQ-13 financial evidence verification. PRs #309, #311, and #312 passed all 13 gates with 0 skipped.

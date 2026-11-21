@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-11-21T13:16:00Z",
+  "repository": "daakara/finance",
+  "open_prs_count": 7,
+  "pull_requests": [
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-20T22:57:19Z",
+      "headRefName": "feat/sec-disclosure-evidence-view",
+      "isDraft": true,
+      "number": 313,
+      "title": "feat(sec): show stored Form 4 transaction evidence \u2014 release deferred",
+      "url": "https://github.com/daakara/finance/pull/313"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-19T23:21:01Z",
+      "headRefName": "docs/reconcile-arx-status-2026-11-20",
+      "isDraft": false,
+      "number": 310,
+      "title": "docs(governance): reconcile ARX production status, operational holds, active registers, and sprint roadmap (#310)",
+      "url": "https://github.com/daakara/finance/pull/310"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-13T15:26:15Z",
+      "headRefName": "feat/ui-r3-progressive-jargon-management",
+      "isDraft": true,
+      "number": 274,
+      "title": "feat(ux): ARX-UX-R3-001 progressive jargon management and accessible JargonTip",
+      "url": "https://github.com/daakara/finance/pull/274"
+    },
+    {
+      "author": {
+        "is_bot": true,
+        "login": "app/arx-terminal-agent"
+      },
+      "createdAt": "2026-10-31T12:14:58Z",
+      "headRefName": "fix/obs-01-observability-hardening",
+      "isDraft": true,
+      "number": 146,
+      "title": "fix(observability): OBS-01 Production Observability Hardening [DRAFT]",
+      "url": "https://github.com/daakara/finance/pull/146"
+    },
+    {
+      "author": {
+        "is_bot": true,
+        "login": "app/arx-terminal-agent"
+      },
+      "createdAt": "2026-10-24T15:59:02Z",
+      "headRefName": "research/arx-hva01-v2-1-wave4c1-dual-tsa-local",
+      "isDraft": true,
+      "number": 83,
+      "title": "feat(hva01): Wave 4C-1 dual-TSA timestamp verification [DRAFT]",
+      "url": "https://github.com/daakara/finance/pull/83"
+    },
+    {
+      "author": {
+        "is_bot": true,
+        "login": "app/arx-terminal-agent"
+      },
+      "createdAt": "2026-10-24T10:03:45Z",
+      "headRefName": "research/arx-hva01-v2-1-wave4b-synthetic-witness",
+      "isDraft": true,
+      "number": 78,
+      "title": "fix(hva01): Wave 4B-S restricted canonicalization and schema remediation [DRAFT]",
+      "url": "https://github.com/daakara/finance/pull/78"
+    },
+    {
+      "author": {
+        "is_bot": true,
+        "login": "app/arx-terminal-agent"
+      },
+      "createdAt": "2026-10-23T23:43:39Z",
+      "headRefName": "research/arx-ux-instr-001-durability",
+      "isDraft": true,
+      "number": 75,
+      "title": "research(arx): INSTR-001 evidence custody and synthetic observer validation",
+      "url": "https://github.com/daakara/finance/pull/75"
+    }
+  ]
+}

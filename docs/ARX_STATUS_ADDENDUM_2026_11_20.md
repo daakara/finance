@@ -1,7 +1,7 @@
 # ARX Terminal — Integrated Status Addendum (2026-11-20)
 
-> **Authoritative Operational Reconciliation (2026-11-20, Production Baseline SHA [`868d7afcd528006c2323e6b79b5a17f2f20f677c`](https://github.com/daakara/finance/commit/868d7afcd528006c2323e6b79b5a17f2f20f677c)):**  
-> This document provides the single authoritative operational status across all five ARX Terminal engineering workstreams. It supersedes the status portion of [the 2026-11-17 addendum](ARX_STATUS_ADDENDUM_2026_11_17.md) and historical registers. All immutable receipts, historical evidence, and audit logs are preserved untouched.
+> **Authoritative Operational Reconciliation (Reconciled 2026-11-21, Production Baseline SHA [`2eccc64a2cb3c649ad4d584a942285a6406d1ce0`](https://github.com/daakara/finance/commit/2eccc64a2cb3c649ad4d584a942285a6406d1ce0)):**  
+> This document provides operational status across all five ARX Terminal engineering workstreams. It is supplemented by the authoritative [Current Reconciliation Register (2026-11-21)](planning/ARX_CURRENT_RECONCILIATION_REGISTER_2026_11_21.md) and [Comprehensive Backlog Coverage Audit](reports/ARX_BACKLOG_COVERAGE_AUDIT_2026-11-21.md). Day 1 trial completed Nov 20; worker is currently safely recovered in fail-closed `STANDBY` / `DISABLED` role. All immutable receipts, historical evidence, and audit logs are preserved untouched.
 
 ---
 
@@ -26,11 +26,11 @@ A feature may be **fully implemented** and **deployed to production** while rema
 ├────────────────────┬──────────────────┬─────────────────┬──────────────┬───────────────┤
 │ Workstream         │ Implementation   │ Deployment      │ Auth Status  │ Hold State    │
 ├────────────────────┼──────────────────┼─────────────────┼──────────────┼───────────────┤
-│ 1. Smart Money     │ COMPLETE (PR#312)│ Railway (OWNER) │ Trial Day 1  │ HOLD_SEC_001* │
-│ 2. Radar           │ COMPLETE (PR#294)│ Cloudflare LIVE │ Discovery Held │ HOLD_SCAN_001 │
+│ 1. Smart Money     │ COMPLETE (PR#316)│ Railway(STANDBY)│ Day 1 Done   │ HOLD_SEC_001* │
+│ 2. Radar           │ COMPLETE (PR#314)│ Cloudflare LIVE │ Discovery Held │ HOLD_SCAN_001 │
 │ 3. Confluence      │ DEPLOYED (PR299) │ Production LIVE │ Research OK  │ CONFLUENCE_HLD│
 │ 4. Pre-Flight / UX │ DEPLOYED (PR303) │ Production LIVE │ Research OK  │ PHASE_A3_UX_HL│
-│ 5. Infrastructure  │ VERIFIED (868d7a)│ Cloudflare / PG │ Armed (Day 1)│ HOLD_EXEC_001 │
+│ 5. Infrastructure  │ VERIFIED (2eccc6)│ Cloudflare / PG │ STANDBY      │ HOLD_EXEC_001 │
 └────────────────────┴──────────────────┴─────────────────┴──────────────┴───────────────┘
 * HOLD_SEC_001 scoped: bounded two-issuer ingestion-only trial authorized; general continuous scanning & snapshot publication strictly held.
 ```
@@ -170,12 +170,12 @@ A feature may be **fully implemented** and **deployed to production** while rema
 
 ### Workstream 5: Infrastructure & Production Telemetry
 
-- **Production Deployment Baseline:** `release/production` commit SHA [`868d7afcd528006c2323e6b79b5a17f2f20f677c`](https://github.com/daakara/finance/commit/868d7afcd528006c2323e6b79b5a17f2f20f677c).
+- **Production Deployment Baseline:** `release/production` commit SHA [`2eccc64a2cb3c649ad4d584a942285a6406d1ce0`](https://github.com/daakara/finance/commit/2eccc64a2cb3c649ad4d584a942285a6406d1ce0).
 - **Cloudflare Pages:** Serving verified production release on `https://www.arxterminal.com/`.
 - **Railway Services:**
   - `web` (`analyst-dashboard`): FastAPI 0.110+ online, serving live endpoints.
-  - `smart-money-worker`: Online in Railway production container, running in `ARX_SEC_EGRESS_ROLE=OWNER`, holding exclusive session advisory lock `401007311509093371` (`classid=93366790, objid=1926593531`), polling event loop in `HEALTHY` state.
-  - `smart-money-backup`: Automated cron (`0 */6 * * *`) online. Verified backup `sm-backup-20261120T060318Z-77e6d6e0` restored cleanly in PostgreSQL 16.2 (<3h old); fresh automated routine backup `sm-backup-20261120T080903Z-05a72cc4` stored and verified on Cloudflare R2.
+  - `smart-money-worker`: Recovered to fail-closed `STANDBY` / `DISABLED` posture (`ARX_SEC_EGRESS_ROLE=DISABLED`, `ARX_CONTINUOUS_INGESTION_AUTHORIZED=false`). Session advisory lock `401007311509093371` is unheld (0 held locks, 0 active/retryable queue rows). Day 1 completed; Day 2 preflight pending.
+  - `smart-money-backup`: Automated cron (`0 */6 * * *`) online. Routine backups stored on Cloudflare R2; isolated restore receipts required prior to trial dispatch.
   - `postgres`: PostgreSQL 16.x holding full 16 NVDA Form 4 accessions (100% trailing 90-day baseline) + 6 AAPL Form 4 accessions (including canary `0001140361-26-044773` and accession `0001140361-26-044952`), totaling 140 parsed transactions. Active snapshot `SNAP_SM_1792939989_48f30db6` (`8082f053...`) intact.
 - **Hold State: `HOLD_EXEC_001=ACTIVE`.** Zero live trade execution code exists in production runtime; all orders are simulated.
 

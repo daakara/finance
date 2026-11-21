@@ -1,0 +1,219 @@
+{
+  "generated_at": "2026-11-21T13:16:00Z",
+  "repository": "daakara/finance",
+  "open_issues_count": 16,
+  "issues": [
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-07T18:09:36Z",
+      "labels": [],
+      "number": 233,
+      "state": "OPEN",
+      "title": "[Sprint HOLD \u00b7 Planning only] Owner-gated operational and research backlog",
+      "url": "https://github.com/daakara/finance/issues/233"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-07T18:09:34Z",
+      "labels": [],
+      "number": 232,
+      "state": "OPEN",
+      "title": "[Sprint P4 \u00b7 Planned] Security and architectural hardening",
+      "url": "https://github.com/daakara/finance/issues/232"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-07T18:09:30Z",
+      "labels": [],
+      "number": 231,
+      "state": "OPEN",
+      "title": "[Sprint P3 \u00b7 Planned] Smart Money evidence and prospective quality",
+      "url": "https://github.com/daakara/finance/issues/231"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-07T18:09:28Z",
+      "labels": [],
+      "number": 230,
+      "state": "OPEN",
+      "title": "[Sprint P2 \u00b7 Planned] Radar discovery truth and coverage quality",
+      "url": "https://github.com/daakara/finance/issues/230"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-07T18:09:25Z",
+      "labels": [],
+      "number": 229,
+      "state": "OPEN",
+      "title": "[Sprint P1 \u00b7 Planned] Pre-Flight decision integrity and evidence freshness",
+      "url": "https://github.com/daakara/finance/issues/229"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-07T18:09:23Z",
+      "labels": [],
+      "number": 228,
+      "state": "OPEN",
+      "title": "[Sprint P0 \u00b7 Planned] Backlog reconciliation and historical PR closure",
+      "url": "https://github.com/daakara/finance/issues/228"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-06T07:10:20Z",
+      "labels": [],
+      "number": 204,
+      "state": "OPEN",
+      "title": "[Architecture][P1] ARX-ARCH-001 \u2014 project-wide architectural debt & boundary map",
+      "url": "https://github.com/daakara/finance/issues/204"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-06T07:05:56Z",
+      "labels": [],
+      "number": 203,
+      "state": "OPEN",
+      "title": "[Security][P1] ARX-SEC-001 \u2014 risk-ranked security debt, trust boundaries & production exposure",
+      "url": "https://github.com/daakara/finance/issues/203"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-02T17:18:58Z",
+      "labels": [],
+      "number": 166,
+      "state": "OPEN",
+      "title": "[Radar] Full Production Activation \u2014 Master Tracker (Universe \u2192 VCP Natural Scans \u2192 All Discovery Categories)",
+      "url": "https://github.com/daakara/finance/issues/166"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjUzMTI4ODI0",
+        "is_bot": false,
+        "login": "daakara",
+        "name": ""
+      },
+      "createdAt": "2026-11-02T17:06:25Z",
+      "labels": [],
+      "number": 165,
+      "state": "OPEN",
+      "title": "[Smart Money] Full Production Activation \u2014 Master Tracker (SEC ingestion \u2192 advisory scoring \u2192 evidence validation)",
+      "url": "https://github.com/daakara/finance/issues/165"
+    },
+    {
+      "author": {
+        "is_bot": true,
+        "login": "app/arx-terminal-agent"
+      },
+      "createdAt": "2026-10-23T16:10:04Z",
+      "labels": [],
+      "number": 67,
+      "state": "OPEN",
+      "title": "[Sprint 3] [P0] Evidence Quality Audit: Pre-Flight Disclosures & Smart Money Truthfulness",
+      "url": "https://github.com/daakara/finance/issues/67"
+    },
+    {
+      "author": {
+        "is_bot": true,
+        "login": "app/arx-terminal-agent"
+      },
+      "createdAt": "2026-10-23T16:01:21Z",
+      "labels": [],
+      "number": 66,
+      "state": "OPEN",
+      "title": "[Sprint 3] [P2] UX Governance: Human Pilot P00 & Frozen Prototype Local Access",
+      "url": "https://github.com/daakara/finance/issues/66"
+    },
+    {
+      "author": {
+        "is_bot": true,
+        "login": "app/arx-terminal-agent"
+      },
+      "createdAt": "2026-10-23T16:01:21Z",
+      "labels": [],
+      "number": 65,
+      "state": "OPEN",
+      "title": "[Sprint 3] [P2] Research Supply-Chain: External Research Evidence Custody & Sigstore Verification",
+      "url": "https://github.com/daakara/finance/issues/65"
+    },
+    {
+      "author": {
+        "is_bot": true,
+        "login": "app/arx-terminal-agent"
+      },
+      "createdAt": "2026-10-23T16:01:20Z",
+      "labels": [],
+      "number": 64,
+      "state": "OPEN",
+      "title": "[Sprint 3] [P0] Scanner Safety: VCP History-Boundary Containment & Operational Repair",
+      "url": "https://github.com/daakara/finance/issues/64"
+    },
+    {
+      "author": {
+        "is_bot": true,
+        "login": "app/arx-terminal-agent"
+      },
+      "createdAt": "2026-10-23T16:01:19Z",
+      "labels": [],
+      "number": 63,
+      "state": "OPEN",
+      "title": "[Sprint 3] [P1] Research Workstation: Decision-First Layout Rollout (Quality Watch Collection)",
+      "url": "https://github.com/daakara/finance/issues/63"
+    },
+    {
+      "author": {
+        "is_bot": true,
+        "login": "app/arx-terminal-agent"
+      },
+      "createdAt": "2026-10-23T16:00:34Z",
+      "labels": [],
+      "number": 60,
+      "state": "OPEN",
+      "title": "[Sprint 3] [P1] Corporate Events RC5: Quarterly Earnings Risk Integration",
+      "url": "https://github.com/daakara/finance/issues/60"
+    }
+  ]
+}

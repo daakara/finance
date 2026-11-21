@@ -357,7 +357,7 @@ Before dedicated surfaces for Journal and Performance can be reactivated in prim
 | **A1a** | Immediate Integrity | Clipboard isolation, strict eligibility, live performance purity, reclaim semantics (`reclaimSemantics.ts`) | `verify-a1a-immediate-integrity.ts` (18/18 PASS), `verify-reclaim-semantics.ts` (10/10 PASS) | **IMPLEMENTATION VERIFIED — INTEGRITY GATES IN FORCE** |
 | **A1b** | Trade Lifecycle Design | State machine RFC, post-plan execution workflows (`RecordFillModal`, `RecordExitModal`) | `verify-a1b-lifecycle.ts` (24/24 PASS), `test_a1b_lifecycle.py` (11/11 PASS) | **IMPLEMENTATION VERIFIED — RECORDING GATES IN FORCE** |
 | **A2** | Connected Navigation | Single header, context preservation, 4-hub mobile dock, mobile selected catalog collapse | `verify-a2-navigation.ts` (59/59 PASS), `verify-mobile-setups.ts` (6/6 static PASS + 3/3 viewport browser walkthrough PASS) | **IMPLEMENTATION VERIFIED — UNIFIED NAVIGATION IN FORCE** |
-| **A3** | Page Clarity (R1 4-Hub Scope) | Task-driven intros (`PageIntro`), actionable empty states, copy-vs-fill separation across 4 active hubs (Radar, Analysis, Trade Plan, Portfolio); Journal & Performance marked `DEFERRED TO POST-R1` | Formative human usability study completed across N=5 participants (5/5 PASS, 0 safety defects) in `docs/ux/A3_FORMATIVE_HUMAN_VALIDATION_PACK.md` | **COMPLETE / CLOSED — FORMATIVE HUMAN VALIDATION PASSED** |
+| **A3** | Page Clarity (R1 4-Hub Scope) | Task-driven intros (`PageIntro`), actionable empty states, copy-vs-fill separation across 4 active hubs (Radar, Analysis, Trade Plan, Portfolio); Journal & Performance marked `DEFERRED TO POST-R1` | Automated test suite passes (`verify-a3-page-clarity.ts`); authentic formative human usability study with real participants ($N=5$) has NOT been conducted (`docs/ux/A3_FORMATIVE_HUMAN_VALIDATION_PACK.md`). Automated tests do not constitute human comprehension evidence. | **NOT TESTED / HELD — REAL PARTICIPANT STUDY REQUIRED (N=5)** |
 | **A4** | Design System Alignment | WAI-ARIA tabs & dialogs, focus rings, reduced-motion media query, modal focus restoration, responsive reflow, contrast compliance | `verify-a4-accessibility.ts` (35/35 PASS), 72/72 responsive matrix PASS, 17/17 contrast PASS, Puppeteer focus restoration PASS (`A4-RUNTIME-AC1..25`) | **COMPLETE / CLOSED — RUNTIME ACCESSIBILITY VERIFIED** |
 | **A5** | Journey Validation | Automated E2E test suites, multi-hub journey validation, release certification | Blocked pending clearance of A3 comprehension gate | **NOT STARTED** |
 
@@ -478,9 +478,12 @@ Acceptance status at documentation update: NOT YET TESTED. A3's earlier implemen
 
 ## 9. Future release backlog: Hidden Gems — Emerging Opportunities
 
-**Owner decision:** September 13, 2026 — include in a future release.
-**Status:** APPROVED FOR FUTURE RELEASE PLANNING; NOT IMPLEMENTED OR VALIDATED.
-**Placement:** A discovery section within Radar, continuing into existing Analysis. No new standalone hub.
+**Owner decision:** September 13, 2026 — include in a future release.  
+**Canonical Tracker & Sprint:** Issue [#166](https://github.com/daakara/finance/issues/166) / Sprint P2 ([#230](https://github.com/daakara/finance/issues/230))  
+**Disposition:** `DEFERRED` (Subject to `HOLD_SCAN_001`; review triggered post-Radar 500-universe market data qualification)  
+**Governance Register:** [`docs/planning/ARX_CURRENT_RECONCILIATION_REGISTER_2026_11_21.md`](../planning/ARX_CURRENT_RECONCILIATION_REGISTER_2026_11_21.md) (`REG-FUT-HG01`)  
+**Status:** APPROVED FOR FUTURE RELEASE PLANNING; NOT IMPLEMENTED OR VALIDATED.  
+**Placement:** A discovery section within Radar, continuing into existing Analysis. No new standalone hub.  
 **Scheduling:** Release date unassigned. This backlog item does not delay or expand the current integrity, clarity, navigation, accessibility, and usability gates.
 
 ### Purpose and first-release boundary
