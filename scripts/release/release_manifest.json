@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "db5166c5f93c17b8ddad0fd7867601259e47d3a0",
+  "release_candidate_commit": "0220c5999e83bd2cc9b37629ad5212b80efac6bc",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
   "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -32,10 +32,10 @@
     "tests/test_fred_sec_presentation_integrity.py": {
       "operation": "M",
       "originating_pr_number": 321,
-      "originating_commit": "db5166c5f93c17b8ddad0fd7867601259e47d3a0",
+      "originating_commit": "0220c5999e83bd2cc9b37629ad5212b80efac6bc",
       "governing_requirement": "Owner directive: distinguish unassessed earnings from failed preflight risks; preserve clearance and qualify release",
-      "sha256": "4f505b73acf4d5166f02656ec8d9160f20b76b7b80d7d3db905165d1edcaa9ea",
-      "size_bytes": 21650
+      "sha256": "b63f174af023ee02f32e9b78aa4765f39130f7c53988ba0779737535a6af3249",
+      "size_bytes": 21666
     }
   },
   "qualification_framework_files": {
