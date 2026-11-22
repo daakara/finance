@@ -192,7 +192,7 @@
   },
   "qualification_framework_files": {
     "scripts/release/rq01_candidate_identity.py": {
-      "sha256": "af311f7b4048cfe147d22840b85b157506bef73ea96de6fa30875459fec8154b",
+      "sha256": "fbd32218028ddc6b9fce03c635b77a8aea596ac8b2834ee4e0fba282a82ecae8",
       "size_bytes": 8414,
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
@@ -285,6 +285,11 @@
       "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246",
       "size_bytes": 10113,
       "description": "Release qualification module: test_synthetic_merge_reproduction.py"
+    },
+    "scripts/release/rq_receipt_utils.py": {
+      "sha256": "850d87883ff90d5afd9fc51104c9f3fbd35939023b456c48dca471e23d84014c",
+      "size_bytes": 19670,
+      "description": "Release qualification module: rq_receipt_utils.py"
     }
   }
 }
