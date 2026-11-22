@@ -178,6 +178,39 @@ class ConfluenceEngine:
             smart_status = "neutral"
             smart_detail = "Foreign ADR (FPI): Executive transactions governed by local regulatory filings (e.g., BaFin Directors' Dealings, FCA DTR, TSE) rather than US SEC Form 4."
             smart_plain = "Foreign regulatory filings apply (FPI): Non-US corporate governance disclosures monitored via local stock exchanges."
+        elif smart_money_data and (smart_money_data.get("scoring_held") or smart_money_data.get("is_pipeline_held")):
+            # Decoupled disclosure availability and held scoring:
+            # Stored filings: “SEC filings available,” with count, latest filing date and actual coverage status.
+            # Held scoring: “Not assessed — ingestion-only trial.”
+            # No records with incomplete coverage: “Coverage incomplete,” not “No activity.”
+            # Verified complete search with zero results: “Verified no activity.”
+            # Repository failure: “Evidence could not be loaded.”
+            smart_score = 0.0
+            smart_status = "unavailable"
+
+            f_count = int(smart_money_data.get("filings_count", 0))
+            f_latest = smart_money_data.get("latest_filing_date")
+            cov_status = smart_money_data.get("coverage_status") or "PARTIAL"
+            is_err = bool(smart_money_data.get("is_repo_error"))
+            is_ver_empty = bool(smart_money_data.get("is_verified_empty"))
+            is_inc_cov = bool(smart_money_data.get("is_incomplete_coverage"))
+
+            if is_err:
+                smart_detail = "Evidence could not be loaded."
+                smart_plain = "SEC EDGAR Form 4 repository evidence could not be loaded."
+            elif f_count > 0:
+                latest_str = f", latest {f_latest}" if f_latest else ""
+                smart_detail = f"SEC filings available ({f_count} filings{latest_str}, coverage: {cov_status}). Not assessed — ingestion-only trial."
+                smart_plain = f"Stored SEC Form 4 filings available ({f_count} filings). Scoring not assessed — ingestion-only trial."
+            elif is_ver_empty:
+                smart_detail = "Verified no activity. Not assessed — ingestion-only trial."
+                smart_plain = "Verified complete search: 0 open-market Form 4 filings. Scoring not assessed — ingestion-only trial."
+            elif is_inc_cov or f_count == 0:
+                smart_detail = "Coverage incomplete. Not assessed — ingestion-only trial."
+                smart_plain = "SEC filings coverage incomplete. Scoring not assessed — ingestion-only trial."
+            else:
+                smart_detail = "Evidence could not be loaded."
+                smart_plain = "SEC EDGAR Form 4 repository evidence could not be loaded."
         elif smart_money_data:
             has_insider_buy = bool(smart_money_data.get("has_insider_buy", False))
             insider_val = float(smart_money_data.get("insider_value_usd", 0.0))
@@ -395,6 +428,11 @@ class ConfluenceEngine:
                 "detail": smart_detail,
                 "plainDetail": smart_plain,
                 "icon": "🏛️",
+                "filingsAvailable": bool(smart_money_data and int(smart_money_data.get("filings_count", 0)) > 0),
+                "filingsCount": int(smart_money_data.get("filings_count", 0)) if smart_money_data else 0,
+                "latestFilingDate": smart_money_data.get("latest_filing_date") if smart_money_data else None,
+                "coverageStatus": smart_money_data.get("coverage_status") if smart_money_data else None,
+                "scoringEligibility": "Not assessed — ingestion-only trial." if (smart_money_data and (smart_money_data.get("scoring_held") or smart_money_data.get("is_pipeline_held"))) else None,
             },
             {
                 "pillar": "MACRO_SAFETY_FLOOR",
