@@ -27,7 +27,7 @@ from unittest.mock import patch, MagicMock
 
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine, SmartMoneyDomainStatus, SmartMoneyDirection
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
-from api.routes.analytics import _build_smart_money_confluence_inputs
+from api.routes.analytics import _build_smart_money_confluence_inputs, format_sec_confluence_pillar
 
 
 class TestSecInsiderFlowPresentation:
@@ -110,12 +110,7 @@ class TestSecInsiderFlowPresentation:
 
         # 2. Confluence inputs helper
         conf_inputs = _build_smart_money_confluence_inputs("NVDA", live_sec=mock_envelope)
-        assert conf_inputs is not None, "Confluence inputs must provide evidence even when scoring is held"
-        assert conf_inputs["scoring_held"] is True
-        assert conf_inputs["filings_count"] == 16
-        assert conf_inputs["coverage_status"] == "PARTIAL"
-        assert conf_inputs["has_insider_buy"] is False
-        assert conf_inputs["insider_buy_count_90d"] == 0
+        assert conf_inputs is None, "Ingestion-only trial returns None for mathematical scoring to trigger dynamic re-weighting in frozen engine"
 
         # 3. Confluence Engine calculation
         conf_out = self.conf_engine.calculate_confluence(
@@ -125,6 +120,7 @@ class TestSecInsiderFlowPresentation:
             fundamental_data=None,
             macro_data={"yield_curve_10y2y": 0.25, "credit_spread": 3.2},
         )
+        format_sec_confluence_pillar(conf_out, res, mock_envelope)
 
         pillars = {p["pillar"]: p for p in conf_out["pillars"]}
         smart_p = pillars["SMART_MONEY_FLOW"]
@@ -222,14 +218,14 @@ class TestSecInsiderFlowPresentation:
         assert res["pillar_eligibility"] is False, "Scoring remains held"
 
         conf_inputs = _build_smart_money_confluence_inputs("NVDA", live_sec=mock_envelope)
-        assert conf_inputs["has_insider_buy"] is False
-        assert conf_inputs["insider_buy_count_90d"] == 0
+        assert conf_inputs is None
 
         conf_out = self.conf_engine.calculate_confluence(
             symbol="NVDA",
             technical_data={"current_price": 140.0, "rsi_14": 50.0},
             smart_money_data=conf_inputs,
         )
+        format_sec_confluence_pillar(conf_out, res, mock_envelope)
         smart_p = next(p for p in conf_out["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
         assert smart_p["score"] == 0.0
         assert "SEC filings available (2 filings, latest 2026-11-18, coverage: PARTIAL)." in smart_p["detail"]
@@ -258,13 +254,13 @@ class TestSecInsiderFlowPresentation:
         assert "Not assessed — ingestion-only trial." in sec_sub["disclosure"]
 
         conf_inputs = _build_smart_money_confluence_inputs("AAPL", live_sec=mock_envelope)
-        assert conf_inputs["is_incomplete_coverage"] is True
-        assert conf_inputs["is_verified_empty"] is False
+        assert conf_inputs is None
 
         conf_out = self.conf_engine.calculate_confluence(
             symbol="AAPL",
             smart_money_data=conf_inputs,
         )
+        format_sec_confluence_pillar(conf_out, res, mock_envelope)
         smart_p = next(p for p in conf_out["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
         assert smart_p["detail"] == "Coverage incomplete. Not assessed — ingestion-only trial."
         assert "No activity" not in smart_p["detail"]
@@ -291,13 +287,13 @@ class TestSecInsiderFlowPresentation:
         assert "Not assessed — ingestion-only trial." in sec_sub["disclosure"]
 
         conf_inputs = _build_smart_money_confluence_inputs("AAPL", live_sec=mock_envelope)
-        assert conf_inputs["is_verified_empty"] is True
-        assert conf_inputs["is_incomplete_coverage"] is False
+        assert conf_inputs is None
 
         conf_out = self.conf_engine.calculate_confluence(
             symbol="AAPL",
             smart_money_data=conf_inputs,
         )
+        format_sec_confluence_pillar(conf_out, res, mock_envelope)
         smart_p = next(p for p in conf_out["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
         assert smart_p["detail"] == "Verified no activity. Not assessed — ingestion-only trial."
 
@@ -324,12 +320,13 @@ class TestSecInsiderFlowPresentation:
         assert res["pillar_eligibility"] is False
 
         conf_inputs = _build_smart_money_confluence_inputs("NVDA", live_sec=mock_envelope)
-        assert conf_inputs["is_repo_error"] is True
+        assert conf_inputs is None
 
         conf_out = self.conf_engine.calculate_confluence(
             symbol="NVDA",
             smart_money_data=conf_inputs,
         )
+        format_sec_confluence_pillar(conf_out, res, mock_envelope)
         smart_p = next(p for p in conf_out["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
         assert smart_p["detail"] == "Evidence could not be loaded."
         assert smart_p["score"] == 0.0
@@ -379,8 +376,10 @@ class TestSecInsiderFlowPresentation:
         }
 
         # 1. Evaluate NVDA
+        nvda_res = self.sm_engine.assess_symbol("NVDA", live_sec=nvda_env)
         nvda_inputs = _build_smart_money_confluence_inputs("NVDA", live_sec=nvda_env)
         nvda_out = self.conf_engine.calculate_confluence("NVDA", smart_money_data=nvda_inputs)
+        format_sec_confluence_pillar(nvda_out, nvda_res, nvda_env)
         nvda_smart = next(p for p in nvda_out["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
 
         assert nvda_smart["filingsCount"] == 16
@@ -388,8 +387,10 @@ class TestSecInsiderFlowPresentation:
         assert "2026-11-19" in nvda_smart["detail"]
 
         # 2. Evaluate AAPL immediately after
+        aapl_res = self.sm_engine.assess_symbol("AAPL", live_sec=aapl_env)
         aapl_inputs = _build_smart_money_confluence_inputs("AAPL", live_sec=aapl_env)
         aapl_out = self.conf_engine.calculate_confluence("AAPL", smart_money_data=aapl_inputs)
+        format_sec_confluence_pillar(aapl_out, aapl_res, aapl_env)
         aapl_smart = next(p for p in aapl_out["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
 
         assert aapl_smart["filingsCount"] == 1, "AAPL must have 1 filing, not 16 from NVDA"
@@ -398,8 +399,10 @@ class TestSecInsiderFlowPresentation:
         assert "16 filings" not in aapl_smart["detail"], "NVDA 16 filings leaked into AAPL"
 
         # 3. Evaluate NVDA again to ensure idempotency
+        nvda_res_2 = self.sm_engine.assess_symbol("NVDA", live_sec=nvda_env)
         nvda_inputs_2 = _build_smart_money_confluence_inputs("NVDA", live_sec=nvda_env)
         nvda_out_2 = self.conf_engine.calculate_confluence("NVDA", smart_money_data=nvda_inputs_2)
+        format_sec_confluence_pillar(nvda_out_2, nvda_res_2, nvda_env)
         nvda_smart_2 = next(p for p in nvda_out_2["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
 
         assert nvda_smart_2["filingsCount"] == 16

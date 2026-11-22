@@ -244,45 +244,6 @@ def _build_smart_money_confluence_inputs(
         live_sec=live_sec,
     )
     if not res.get("pillar_eligibility") or res.get("reweight_required"):
-        if live_sec is not None:
-            sec_sub = res.get("subdomains", {}).get("sec_form_4", {})
-            sec_status = live_sec.get("status", "")
-            items = sec_sub.get("records") or live_sec.get("items") or []
-            cov_status = live_sec.get("coverage_status") or "PARTIAL"
-            is_err = bool(sec_sub.get("is_repo_error")) or sec_status in (
-                "BACKEND_STORAGE_ERROR",
-                "CONFIGURATION_BLOCKED",
-                "TRANSPORT_INCOMPLETE",
-                "STRUCTURALLY_INVALID",
-                "ERROR",
-                "UPSTREAM_SERVER_ERROR",
-            )
-            is_ver_empty = bool(sec_sub.get("is_verified_empty")) or (cov_status == "COMPLETE" and sec_status == "AVAILABLE_NO_RESULTS")
-            is_inc_cov = bool(sec_sub.get("is_incomplete_coverage")) or (cov_status != "COMPLETE" and (items is None or len(items) == 0))
-            f_count = len(items) if items is not None else 0
-            latest_date = sec_sub.get("latest_filing_date") or (items[0].get("filing_date") if (items and len(items) > 0) else None)
-
-            return {
-                "scoring_held": True,
-                "scoring_eligibility": "Not assessed — ingestion-only trial.",
-                "status": "unavailable",
-                "is_repo_error": is_err,
-                "filings_count": f_count,
-                "latest_filing_date": latest_date,
-                "coverage_status": cov_status,
-                "is_verified_empty": is_ver_empty,
-                "is_incomplete_coverage": is_inc_cov,
-                "records": items or [],
-                "items": items,
-                "has_insider_buy": False,
-                "has_insider_sell": False,
-                "insider_value_usd": 0.0,
-                "has_congress_buy": False,
-                "has_congress_sell": False,
-                "has_options_flow": False,
-                "insider_buy_count_90d": 0,
-                "insider_sell_count_90d": 0,
-            }
         return None
 
     if res.get("overall_status") == "VERIFIED_NO_ACTIVITY":
@@ -300,6 +261,104 @@ def _build_smart_money_confluence_inputs(
         "insider_buy_count_90d": sum(1 for t in sec_records if "PURCHASE" in (t.get("transaction_type") or "").upper() or t.get("transaction_code") == "P"),
         "insider_sell_count_90d": sum(1 for t in sec_records if "SALE" in (t.get("transaction_type") or "").upper() or t.get("transaction_code") == "S"),
     }
+
+
+def format_sec_confluence_pillar(
+    confluence_output: Dict[str, Any],
+    smart_data: Optional[Dict[str, Any]] = None,
+    live_sec: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Format and enrich the SMART_MONEY_FLOW pillar in confluence_output to decouple
+    Form 4 disclosure availability from held scoring eligibility for presentation.
+    Preserves the frozen mathematical score (0.0), status ('unavailable'),
+    and dynamic re-weighting computed by the frozen ConfluenceEngine.
+    """
+    if not confluence_output or "pillars" not in confluence_output:
+        return confluence_output
+
+    target_pillar = None
+    for p in confluence_output.get("pillars", []):
+        if p.get("pillar") == "SMART_MONEY_FLOW":
+            target_pillar = p
+            break
+
+    if not target_pillar:
+        return confluence_output
+
+    is_held = False
+    if smart_data and (smart_data.get("scoring_held") or smart_data.get("is_pipeline_held")):
+        is_held = True
+    elif live_sec and live_sec.get("is_pipeline_held"):
+        is_held = True
+
+    if not is_held:
+        return confluence_output
+
+    f_count = int(smart_data.get("filings_count", 0)) if smart_data else 0
+    if f_count == 0 and live_sec and live_sec.get("items"):
+        f_count = len(live_sec["items"])
+
+    f_latest = smart_data.get("latest_filing_date") if smart_data else None
+    if not f_latest and live_sec and live_sec.get("items"):
+        f_latest = live_sec["items"][0].get("filing_date")
+
+    cov_status = (
+        (live_sec.get("coverage_status") if live_sec else None)
+        or (smart_data.get("subdomains", {}).get("sec_form_4", {}).get("coverage_status") if (smart_data and isinstance(smart_data.get("subdomains"), dict)) else None)
+        or (smart_data.get("sec_coverage_status") if smart_data else None)
+        or "PARTIAL"
+    )
+
+    sec_status = live_sec.get("status", "") if live_sec else ""
+    is_err = bool(smart_data and smart_data.get("is_repo_error")) or sec_status in (
+        "BACKEND_STORAGE_ERROR",
+        "CONFIGURATION_BLOCKED",
+        "TRANSPORT_INCOMPLETE",
+        "STRUCTURALLY_INVALID",
+        "ERROR",
+        "UPSTREAM_SERVER_ERROR",
+    )
+    is_ver_empty = bool(smart_data and smart_data.get("is_verified_empty")) or (cov_status == "COMPLETE" and sec_status == "AVAILABLE_NO_RESULTS")
+    is_inc_cov = bool(smart_data and smart_data.get("is_incomplete_coverage")) or (cov_status != "COMPLETE" and f_count == 0)
+
+    target_pillar["scoringEligibility"] = "Not assessed — ingestion-only trial."
+    target_pillar["filingsAvailable"] = bool(f_count > 0)
+    target_pillar["filingsCount"] = f_count
+    target_pillar["latestFilingDate"] = f_latest
+    target_pillar["coverageStatus"] = cov_status
+
+    if is_err:
+        target_pillar["detail"] = "Evidence could not be loaded."
+        target_pillar["plainDetail"] = "SEC EDGAR Form 4 repository evidence could not be loaded."
+    elif f_count > 0:
+        latest_str = f", latest {f_latest}" if f_latest else ""
+        target_pillar["detail"] = f"SEC filings available ({f_count} filings{latest_str}, coverage: {cov_status}). Not assessed — ingestion-only trial."
+        target_pillar["plainDetail"] = f"Stored SEC Form 4 filings available ({f_count} filings). Scoring not assessed — ingestion-only trial."
+    elif is_ver_empty:
+        target_pillar["detail"] = "Verified no activity. Not assessed — ingestion-only trial."
+        target_pillar["plainDetail"] = "Verified complete search: 0 open-market Form 4 filings. Scoring not assessed — ingestion-only trial."
+    elif is_inc_cov or f_count == 0:
+        target_pillar["detail"] = "Coverage incomplete. Not assessed — ingestion-only trial."
+        target_pillar["plainDetail"] = "SEC filings coverage incomplete. Scoring not assessed — ingestion-only trial."
+    else:
+        target_pillar["detail"] = "Evidence could not be loaded."
+        target_pillar["plainDetail"] = "SEC EDGAR Form 4 repository evidence could not be loaded."
+
+    # Synchronize reasons and plainReasons in confluence_output
+    old_unavailable_detail = "Verified smart money regulatory filings unavailable. Dynamic re-weighting applied."
+    if "reasons" in confluence_output:
+        confluence_output["reasons"] = [
+            target_pillar["detail"] if r == old_unavailable_detail else r
+            for r in confluence_output["reasons"]
+        ]
+    if "plainReasons" in confluence_output:
+        confluence_output["plainReasons"] = [
+            target_pillar["plainDetail"] if r == old_unavailable_detail else r
+            for r in confluence_output["plainReasons"]
+        ]
+
+    return confluence_output
 
 
 def _build_tactical_setup(
@@ -1606,6 +1665,13 @@ def get_asset_analytics(
             macro_data=macro_inputs,
             fundamental_provenance=fund_prov,
             asset_class=resolved_asset_class,
+        )
+
+        # Enrich smart money confluence presentation while preserving frozen mathematical score
+        confluence_output = format_sec_confluence_pillar(
+            confluence_output=confluence_output,
+            smart_data=smart_data,
+            live_sec=sec_envelope,
         )
 
         # Canonical Decision Trace (Single source of truth for actionability & explainability)
