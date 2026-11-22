@@ -137,6 +137,8 @@ export interface PreFlightEvaluationResult {
     PreFlightCheckItem
   ];
   passedCount: number;
+  scoredCheckCount: number;
+  unassessedCount: number;
   convictionPct: number;
   isActionableGranted: boolean;
   canSizeTradeGranted: boolean;
@@ -745,7 +747,9 @@ export function evaluatePreFlightChecks(
         : `Runway > 7d (Unconfirmed)`)
     : resolvedCatalystState === "WARN"
     ? "Imminent Earnings Event"
-    : "Coverage Unavailable";
+    : resolvedCatalystState === "ERROR"
+    ? "Calendar retrieval error"
+    : "7-day calendar not verified";
 
   const releaseTimeDetail = catalystEvidence?.resultsReleaseTimeEt
     ? ` ${catalystEvidence.resultsReleaseTimeEt} ET Release`
@@ -766,13 +770,13 @@ export function evaluatePreFlightChecks(
     : resolvedCatalystState === "ERROR"
     ? "Technical error retrieving corporate earnings schedule."
     : catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
-    ? `Historical Event Elapsed (${catalystEvidence.eventDate || "prior"}). Forward calendar unverified; runway uncertified.`
+    ? `Last earnings reported: ${catalystEvidence.eventDate || "date unavailable"}. That event has passed. Next announcement date is unconfirmed; calendar coverage for the next 7 days has not been verified. This is not an imminent-earnings warning.`
     : "Earnings calendar coverage unavailable: Event runway cannot be certified.";
 
   const chk4Item: PreFlightCheckItem = {
     id: "CHK-4",
     tag: "CHK-4 CATALYST",
-    name: isPlain ? "4. News Event Safety" : "4. Catalyst Hazard Buffer",
+    name: isPlain ? "4. Upcoming Earnings Risk (Next 7 Days)" : "4. Earnings Calendar Coverage (7-Day Window)",
     status: chk4Status,
     badgeClass: resolvedCatalystState === "PASS"
       ? (isCatalystConfirmed
@@ -843,7 +847,11 @@ export function evaluatePreFlightChecks(
   ] = [chk1Item, chk2Item, chk3Item, chk4Item, chk5Item];
 
   const passedCount = checks.filter((c) => c.passed).length;
-  const convictionPct = isPriceValid ? Math.round((passedCount / 5) * 100) : 0;
+  // Unknown earnings coverage is an evidence gap, not a failed risk observation.
+  // Keep clearance verification separate from the score of assessed checks.
+  const unassessedCount = resolvedCatalystState === "UNAVAILABLE" ? 1 : 0;
+  const scoredCheckCount = checks.length - unassessedCount;
+  const convictionPct = isPriceValid ? Math.round((passedCount / scoredCheckCount) * 100) : 0;
   const isActionableGranted = isActionable === true;
 
   const mandatoryChecksVerified =
@@ -1131,6 +1139,8 @@ export function evaluatePreFlightChecks(
     symbol,
     checks,
     passedCount,
+    scoredCheckCount,
+    unassessedCount,
     convictionPct,
     isActionableGranted,
     mandatoryChecksVerified,

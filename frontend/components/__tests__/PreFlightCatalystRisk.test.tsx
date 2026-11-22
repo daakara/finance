@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import React from "react";
 import { render, screen, cleanup } from "@testing-library/react";
 import PreFlightChecklistModal from "../PreFlightChecklistModal";
+import { evaluatePreFlightChecks } from "../../lib/preflightEvaluator";
 
 // Mock analytics to avoid network calls
 vi.mock("../../lib/telemetry/analytics", () => ({
@@ -15,6 +16,19 @@ afterEach(() => {
 });
 
 describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed State Model", () => {
+  it("scores unknown earnings separately while retaining actual imminent hazards", () => {
+    const inputs = { symbol: "CZR", currentPrice: 29, stopLoss: 27, takeProfit1: 33, riskRewardRatio: 2, isActionable: true, canSizeTrade: true };
+    const unknown = evaluatePreFlightChecks({ ...inputs, catalystEvidence: { daysToEarnings: -26, eventDate: "2026-10-27", coverageStatus: "ELAPSED_RECENT", freshnessStatus: "RECENT_HISTORY" } });
+    expect(unknown.scoredCheckCount).toBe(4);
+    expect(unknown.unassessedCount).toBe(1);
+    expect(unknown.convictionPct).toBe(Math.round(unknown.passedCount / 4 * 100));
+    expect(unknown.checks[3].passed).toBe(false);
+    expect(unknown.mandatoryChecksVerified).toBe(false);
+    const hazard = evaluatePreFlightChecks({ ...inputs, hasImminentEarnings: true, catalystEvidence: { daysToEarnings: 2, freshnessStatus: "LIVE", coverageStatus: "CONFIRMED_UPCOMING" } });
+    expect(hazard.scoredCheckCount).toBe(5);
+    expect(hazard.unassessedCount).toBe(0);
+    expect(hazard.checks[3].status).toBe("HAZARD");
+  });
   const baseProps = {
     isOpen: true,
     onClose: vi.fn(),
@@ -38,7 +52,7 @@ describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed St
       />
     );
 
-    const unavailableBadges = screen.getAllByText("UNAVAILABLE");
+    const unavailableBadges = screen.getAllByText("CALENDAR NOT VERIFIED");
     expect(unavailableBadges.length).toBeGreaterThan(0);
     expect(
       screen.getByText(/Earnings calendar coverage unavailable: Event runway cannot be certified/i)
@@ -103,7 +117,7 @@ describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed St
       />
     );
 
-    const unavailableBadges = screen.getAllByText("UNAVAILABLE");
+    const unavailableBadges = screen.getAllByText("CALENDAR NOT VERIFIED");
     expect(unavailableBadges.length).toBeGreaterThan(0);
     expect(
       screen.getByText(/Earnings calendar coverage unavailable: Event runway cannot be certified/i)
@@ -145,11 +159,14 @@ describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed St
       />
     );
 
-    const unavailableBadges = screen.getAllByText("UNAVAILABLE");
+    const unavailableBadges = screen.getAllByText("CALENDAR NOT VERIFIED");
     expect(unavailableBadges.length).toBeGreaterThan(0);
     expect(
-      screen.getByText(/(?:Prior earnings reported|Historical earnings report elapsed) \(2026-10-21\)/i)
+      screen.getByText(/Last earnings reported: 2026-10-21\. That event has passed/i)
     ).toBeDefined();
+    expect(screen.getByText("CALENDAR NOT VERIFIED")).toBeDefined();
+    expect(screen.getByText(/This is not an imminent-earnings warning/i)).toBeDefined();
+    expect(screen.queryByText("HAZARD")).toBeNull();
   });
 
   it("5. Technical error explicitly renders ERROR badge", () => {
