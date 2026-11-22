@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+  "release_candidate_commit": "0b3515b9bcf84d56461ec6688c420b79418ce369",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 14,
+  "total_files": 15,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-NVDA-FUNDAMENTAL-EVIDENCE-DIAGNOSTICS-318",
   "files": {
@@ -116,6 +116,14 @@
       "governing_requirement": "Issue #165 / Sprint P3 #231: Offline regressions for hash/issuer/accession verification, null preservation, and anti-masking protection",
       "sha256": "b6548f08c11b82115cbb761ec428d71b8e5c43f035add1611f00e26a4425e6f6",
       "size_bytes": 9463
+    },
+    "scripts/research/acquire_nvda_fundamentals.py": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "0b3515b9bcf84d56461ec6688c420b79418ce369",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Bounded acquisition tooling and offline normalizer qualification for NVDA SEC EDGAR fundamentals",
+      "sha256": "80ee60f6acfb35a90563e0e3db91650987ea79770a21604180cabda22a667610",
+      "size_bytes": 14952
     }
   },
   "qualification_framework_files": {
