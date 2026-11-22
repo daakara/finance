@@ -18,6 +18,7 @@ Verifies:
    - Captures DFII10 real rate, observation dates, and series observations map.
 """
 
+import datetime
 from unittest.mock import patch, MagicMock
 import pytest
 import pandas as pd
