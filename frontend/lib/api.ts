@@ -366,7 +366,8 @@ export interface CongressTradeItem {
   ticker: string;
   asset_name: string;
   transaction_type: string;
-  amount_range: string;
+  amount_range?: string | null;
+  owner?: string | null;
   filing_date: string;
   transaction_date: string;
   strike_price?: string;
@@ -882,7 +883,7 @@ export const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
     status: "PIPELINE_PENDING",
     universeScreening: "PIPELINE_PENDING",
     singleAssetAnalysis: "AVAILABLE",
-    rationale: "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
+    rationale: "Single-asset SEC Form 4 insider disclosures active on /smart-money; Congressional STOCK Act collection is not currently monitored in live mode; universe-level institutional accumulation screener pipeline is pending deployment.",
     matchedCount: null,
     displayedStage2IntersectionCount: null,
     populationDenominator: null,
@@ -2494,6 +2495,8 @@ export interface SmartMoneyFetchOptions {
   throwOnError?: boolean;
   /** If false, fallback fixtures will not be returned on error. Defaults to true for backwards compatibility. */
   allowFallback?: boolean;
+  /** Explicitly include curated research archive. Defaults to false (unmonitored live contract); pass true only to query archived research records. */
+  includeCurated?: boolean;
 }
 
 /**
@@ -2636,7 +2639,8 @@ export async function fetchSmartMoneyOverview(options?: SmartMoneyFetchOptions):
   const shouldThrow = Boolean(options?.throwOnError || options?.allowFallback === false);
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/smart-money/overview?include_curated=true`, {
+    const includeCuratedParam = Boolean(options?.includeCurated);
+    const res = await fetch(`${baseUrl}/smart-money/overview?include_curated=${includeCuratedParam}`, {
       headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(8000),
     });

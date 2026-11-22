@@ -305,7 +305,11 @@ export const STRATEGY_DATABASE: StrategyDefinition[] = [
   }
 ];
 
-// 2. POLITICIAN CATALOG
+// 2. POLITICIAN STOCK ACT CATALOG (SYNTHETIC EDUCATIONAL FIXTURES)
+// NOTE: All profiles and trade entries below are synthetic demonstration fixtures
+// created exclusively for UI layout and latency model simulation testing.
+// They DO NOT represent authentic audited filings or factual allegations of
+// ethical/statutory misconduct against any named elected official.
 export interface PoliticianTrade {
   ticker: string;
   assetName: string;
@@ -348,7 +352,7 @@ export const POLITICIAN_DATABASE: PoliticianProfile[] = [
         stalenessStatus: "STANDARD",
         stalenessBadge: "⏳ Standard (17d lag)",
         alignmentScore: 94,
-        thesis: "Strategic timing ahead of federal AI compute export rule revisions and next-generation datacenter infrastructure appropriations."
+        thesis: "Synthetic simulation scenario: modeling semiconductor sector exposure relative to congressional calendar sessions. (Synthetic educational model; not an allegation of actual conflict or trading on non-public information)."
       },
       {
         ticker: "MSFT",
@@ -360,7 +364,7 @@ export const POLITICIAN_DATABASE: PoliticianProfile[] = [
         stalenessStatus: "STANDARD",
         stalenessBadge: "⏳ Standard (24d lag)",
         alignmentScore: 88,
-        thesis: "Enterprise cloud software expansion and federal defense generative AI procurement contracts."
+        thesis: "Synthetic simulation scenario: modeling enterprise cloud software exposure relative to public legislative sessions. (Synthetic educational model; not an allegation of actual conflict or trading on non-public information)."
       }
     ]
   },
@@ -382,7 +386,7 @@ export const POLITICIAN_DATABASE: PoliticianProfile[] = [
         stalenessStatus: "FRESH",
         stalenessBadge: "⚡ Fresh (<15d lag)",
         alignmentScore: 95,
-        thesis: "Direct oversight of intelligence community software procurement and defense AI telemetry systems."
+        thesis: "Synthetic simulation scenario: modeling public defense software telemetry within historical legislative session windows. (Synthetic educational model; not an allegation of actual conflict or trading on non-public information)."
       }
     ]
   },
@@ -404,7 +408,7 @@ export const POLITICIAN_DATABASE: PoliticianProfile[] = [
         stalenessStatus: "LATE_FILER",
         stalenessBadge: "🛑 Late Filer (58d lag)",
         alignmentScore: 48,
-        thesis: "Consumer staples and distribution expansion; non-compliant disclosure with severe time-decay penalty."
+        thesis: "Synthetic simulation scenario: modeling filing latency time-decay curves under 45-day reporting intervals. (Synthetic educational model; not an allegation of actual conflict or statutory breach)."
       }
     ]
   },
@@ -426,7 +430,7 @@ export const POLITICIAN_DATABASE: PoliticianProfile[] = [
         stalenessStatus: "STANDARD",
         stalenessBadge: "⏳ Standard (16d lag)",
         alignmentScore: 92,
-        thesis: "Transatlantic pharmaceutical supply chain discussions and federal healthcare Medicare GLP-1 reimbursement expansion deliberations."
+        thesis: "Synthetic simulation scenario: modeling pharmaceutical sector disclosure latency relative to public committee hearings. (Synthetic educational model; not an allegation of actual conflict or trading on non-public information)."
       }
     ]
   },
@@ -448,7 +452,7 @@ export const POLITICIAN_DATABASE: PoliticianProfile[] = [
         stalenessStatus: "FRESH",
         stalenessBadge: "⚡ Fresh (<15d lag)",
         alignmentScore: 91,
-        thesis: "Direct involvement in CHIPS Act national security defense allocations and Indo-Pacific supply-chain resilience."
+        thesis: "Synthetic simulation scenario: modeling semiconductor manufacturing disclosures within historical legislative intervals. (Synthetic educational model; not an allegation of actual conflict or trading on non-public information)."
       }
     ]
   },
@@ -470,7 +474,7 @@ export const POLITICIAN_DATABASE: PoliticianProfile[] = [
         stalenessStatus: "STANDARD",
         stalenessBadge: "⏳ Standard (16d lag)",
         alignmentScore: 89,
-        thesis: "Oversight of federal quantum computing appropriations and DoD cryptographic transition initiatives."
+        thesis: "Synthetic simulation scenario: modeling emerging technology sector exposure relative to committee oversight areas. (Synthetic educational model; not an allegation of actual conflict or trading on non-public information)."
       }
     ]
   },
@@ -492,7 +496,7 @@ export const POLITICIAN_DATABASE: PoliticianProfile[] = [
         stalenessStatus: "FRESH",
         stalenessBadge: "⚡ Fresh (<15d lag)",
         alignmentScore: 93,
-        thesis: "Deliberations on market structure reform legislation and digital asset regulatory clarity bills."
+        thesis: "Synthetic simulation scenario: modeling digital asset platform disclosures relative to committee jurisdiction timelines. (Synthetic educational model; not an allegation of actual conflict or trading on non-public information)."
       }
     ]
   },
@@ -514,7 +518,7 @@ export const POLITICIAN_DATABASE: PoliticianProfile[] = [
         stalenessStatus: "FRESH",
         stalenessBadge: "⚡ Fresh (<15d lag)",
         alignmentScore: 86,
-        thesis: "Federal grid modernization and green energy cooling infrastructure tax incentive alignment."
+        thesis: "Synthetic simulation scenario: modeling energy efficiency infrastructure disclosures within public legislative windows. (Synthetic educational model; not an allegation of actual conflict or trading on non-public information)."
       }
     ]
   }

@@ -57,7 +57,7 @@ def test_case_01_live_feed_disconnected(confluence):
     # Verify sub-domains
     assert res["subdomains"]["options_flow"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
     assert res["subdomains"]["sec_form_4"]["status"] == SmartMoneyDomainStatus.PIPELINE_HELD.value
-    assert res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.PIPELINE_HELD.value
+    assert res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
 
     # Confluence Engine Synthesis: Must reweight across technicals, fundamentals, macro
     conf_inputs = _build_smart_money_confluence_inputs("AAPL", include_curated=False)
@@ -83,16 +83,42 @@ def test_case_01_live_feed_disconnected(confluence):
 # -----------------------------------------------------------------------------
 # Case 2: Authoritative Completed Search with 0 Results
 # -----------------------------------------------------------------------------
+VALID_CONGRESS_COVERAGE_EVIDENCE = {
+    "source_inventory": "house_clerk_daily_index_2026",
+    "chamber": "HOUSE",
+    "interval_days": 180,
+    "symbol": "AAPL",
+    "document_identities": ["DOC_20025123", "DOC_20025145"],
+    "extraction_outcomes": {
+        "DOC_20025123": "SUCCESS",
+        "DOC_20025145": "SUCCESS",
+    },
+    "unresolved_records_count": 0,
+    "watermark_hash": "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
+}
+
 def test_case_02_verified_no_activity(confluence):
     """Case 2: Authoritative search confirms 0 results -> VERIFIED_NO_ACTIVITY, Confluence scores 50.0 neutral."""
-    res = SmartMoneyEngine.assess_symbol(
+    # Negative assertion: bare boolean without coverage evidence fails closed to PARTIAL_COVERAGE
+    bare_res = SmartMoneyEngine.assess_symbol(
         symbol="AAPL",
         options_verified_empty=True,
         sec_verified_empty=True,
         congress_verified_empty=True,
     )
+    assert bare_res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
+    assert bare_res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
 
-    assert res["overall_status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
+    # With authoritative coverage evidence:
+    res = SmartMoneyEngine.assess_symbol(
+        symbol="AAPL",
+        options_verified_empty=True,
+        sec_verified_empty=True,
+        congress_verified_empty=True,
+        congress_coverage_evidence=VALID_CONGRESS_COVERAGE_EVIDENCE,
+    )
+
+    assert res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
     assert res["pillar_eligibility"] is True
     assert res["pillar_status"] == "neutral"
     assert res["pillar_score"] == 50.0
@@ -449,6 +475,7 @@ def test_decision_trace_smart_money_synchronization(confluence):
         options_verified_empty=True,
         sec_verified_empty=True,
         congress_verified_empty=True,
+        congress_coverage_evidence=VALID_CONGRESS_COVERAGE_EVIDENCE,
     )
 
     conf = confluence.calculate_confluence(
@@ -472,7 +499,7 @@ def test_decision_trace_smart_money_synchronization(confluence):
     )
 
     sm_trace = trace["trace"]["smartMoney"]
-    assert sm_trace["overallStatus"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
+    assert sm_trace["overallStatus"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
     assert sm_trace["score"] in (50.0, 55.0)
     assert sm_trace["status"] == "neutral"
     assert sm_trace["reweighted"] is False

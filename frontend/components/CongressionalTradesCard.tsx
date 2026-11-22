@@ -1,8 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { CongressTradeItem, OptionsFlowItem } from "../lib/api";
 import SmartMoneyDetailModal from "./SmartMoneyDetailModal";
+
+export interface CongressionalCoverageEvidence {
+  sourceInventory?: string;
+  source?: string;
+  chamber?: "HOUSE" | "SENATE" | "BOTH" | string;
+  interval?: string;
+  intervalDays?: number;
+  intervalStart?: string;
+  intervalEnd?: string;
+  symbol?: string;
+  filterMatching?: boolean;
+  documentIdentities?: string[];
+  extractionOutcomes?: Record<string, "SUCCESS" | "FAILED" | "UNPARSED" | string>;
+  unresolvedRecordCount?: number;
+  watermarkHash?: string;
+  receiptHash?: string;
+  certifiedWatermark?: string;
+  verifiedComplete?: boolean;
+}
 
 interface CongressionalTradesCardProps {
   symbol?: string;
@@ -12,6 +31,7 @@ interface CongressionalTradesCardProps {
   onSelectSymbol?: (symbol: string) => void;
   status?: "AVAILABLE" | "VALID_EMPTY" | "PIPELINE_PENDING" | "SOURCE_UNAVAILABLE" | string;
   notice?: string;
+  coverageEvidence?: CongressionalCoverageEvidence;
 }
 
 export default function CongressionalTradesCard({
@@ -22,6 +42,7 @@ export default function CongressionalTradesCard({
   onSelectSymbol,
   status,
   notice,
+  coverageEvidence,
 }: CongressionalTradesCardProps) {
   const isDayTrader = userRole === "DAY_TRADER";
   const [timeframe, setTimeframe] = useState<"7D" | "30D" | "90D" | "1Y" | "ALL">("30D");
@@ -278,7 +299,7 @@ export default function CongressionalTradesCard({
             </p>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 inline-flex items-center gap-1">
-                <span>🏛️</span> {isDayTrader ? (isPlain ? "Institutional Options Flow Intelligence" : "Curated Options Flow & Gamma Exposure Analysis") : (isPlain ? "STOCK Act Legal Disclosures" : "STOCK Act Statutory Filing Disclosures (Public Law 112-105)")}
+                <span>🏛️</span> {isDayTrader ? (isPlain ? "Institutional Options Flow Intelligence" : "Curated Options Flow & Gamma Exposure Analysis") : (status === "CURATED" || (status !== "AVAILABLE" && filteredCongressTrades.length > 0) ? (isPlain ? "Curated Research Disclosures (Aug 2026 Sample)" : "Curated Research Sample (Aug 2026 — Not Live Feed)") : (isPlain ? "STOCK Act Legal Disclosures" : "STOCK Act Statutory Filing Disclosures (Public Law 112-105)"))}
               </span>
             </div>
           </div>
@@ -313,12 +334,16 @@ export default function CongressionalTradesCard({
             <span className={`text-[11px] px-2.5 py-1 rounded-md font-semibold border ${
               isDayTrader
                 ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
-                : "text-purple-400 bg-purple-950/60 border-purple-800/80"
+                : status === "PIPELINE_PENDING" || status === "UNAVAILABLE"
+                ? "text-slate-400 bg-slate-900 border-slate-700"
+                : status === "SOURCE_UNAVAILABLE"
+                ? "text-rose-400 bg-rose-950/60 border-rose-800/80"
+                : `${filteredCongressTrades.length} Trades`
             }`}>
               {isDayTrader
                 ? `${optionsFlow.length} Sweeps`
-                : status === "PIPELINE_PENDING"
-                ? "Pipeline Pending"
+                : status === "PIPELINE_PENDING" || status === "UNAVAILABLE"
+                ? "Not Monitored"
                 : status === "SOURCE_UNAVAILABLE"
                 ? "Unavailable"
                 : `${filteredCongressTrades.length} Trades`}
@@ -455,7 +480,13 @@ export default function CongressionalTradesCard({
                     <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="font-semibold text-cyan-400">{trade.transaction_type}</span>
                       <span>•</span>
-                      <span>{trade.amount_range}</span>
+                      <span>{trade.amount_range || "Undisclosed amount"}</span>
+                      {trade.owner && (
+                        <>
+                          <span>•</span>
+                          <span>Owner: {trade.owner}</span>
+                        </>
+                      )}
                       <span>•</span>
                       <span>Filed: {trade.filing_date} ({trade.days_to_filing}d lag)</span>
                     </div>
@@ -495,14 +526,14 @@ export default function CongressionalTradesCard({
                   </div>
                 </div>
               ))
-            ) : status === "PIPELINE_PENDING" ? (
+            ) : status === "PIPELINE_PENDING" || status === "UNAVAILABLE" ? (
               <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
-                <div className="font-semibold text-amber-400/90 flex items-center justify-center gap-1.5">
-                  <span>⚠️</span>
-                  <span>Congressional transaction data is currently unavailable.</span>
+                <div className="font-semibold text-slate-300 flex items-center justify-center gap-1.5">
+                  <span>ℹ️</span>
+                  <span>Congressional transaction collection is not monitored.</span>
                 </div>
                 <div className="text-[11px] text-slate-500">
-                  Data collection is not currently active. No conclusion about recent transactions can be drawn.
+                  Automated disclosure retrieval for House and Senate PTRs is not active in live mode. No conclusion about recent transactions can be drawn.
                 </div>
               </div>
             ) : status === "SOURCE_UNAVAILABLE" ? (
@@ -522,17 +553,67 @@ export default function CongressionalTradesCard({
                   <span>Partial congressional transaction coverage — results may be incomplete.</span>
                 </div>
               </div>
-            ) : status === "VALID_EMPTY" || (status === "AVAILABLE" && filteredCongressTrades.length === 0) ? (
-              <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400">
-                No qualifying congressional transactions found in the verified coverage period.
+            ) : status === "VALID_EMPTY" ? (
+              (() => {
+                const hash = coverageEvidence?.watermarkHash || coverageEvidence?.receiptHash || coverageEvidence?.certifiedWatermark;
+                const isHashValid = Boolean(hash && hash !== "CONFIRMED_ZERO_VERIFIED_COVERAGE" && hash !== "UNVERIFIED" && hash.length === 64);
+                const hasZeroUnresolved = coverageEvidence?.unresolvedRecordCount === 0;
+                const hasOutcomes = !coverageEvidence?.documentIdentities || !coverageEvidence?.extractionOutcomes || coverageEvidence.documentIdentities.every(
+                  (id) => coverageEvidence.extractionOutcomes?.[id] === "SUCCESS" || coverageEvidence.extractionOutcomes?.[id] === "COMPLETE"
+                );
+                // Phase 0 has no independent retained-source receipt verifier.
+                // Never promote caller-supplied hashes/flags to verified coverage.
+                const trustedReceiptVerificationAvailable = false;
+                const isCertified = Boolean(
+                  trustedReceiptVerificationAvailable &&
+                  coverageEvidence &&
+                  isHashValid &&
+                  coverageEvidence.filterMatching !== false &&
+                  hasZeroUnresolved &&
+                  hasOutcomes &&
+                  (coverageEvidence.sourceInventory || coverageEvidence.source)
+                );
+
+                if (isCertified) {
+                  return (
+                    <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                      <div className="font-semibold text-slate-300">
+                        No matching transactions
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        Verified complete search confirmed 0 qualifying congressional transactions in the requested coverage period ({coverageEvidence?.interval || `${coverageEvidence?.intervalDays}D` || timeframe}).
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                    <div className="font-semibold text-slate-300">
+                      Coverage uncertified
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      No transactions reported, but cryptographic coverage certification for the requested source, chamber, and interval was not verified.
+                    </div>
+                  </div>
+                );
+              })()
+            ) : filteredCongressTrades.length === 0 && (status === "AVAILABLE" || status === "CURATED") ? (
+              <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                <div className="font-semibold text-slate-300">
+                  No matching transactions in research sample
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  No transactions match the selected timeframe filter ({timeframe}) in this curated research dataset.
+                </div>
               </div>
             ) : (
               <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
                 <div className="font-semibold text-slate-300">
-                  Congressional transaction data is currently unavailable.
+                  Congressional transaction collection is not monitored.
                 </div>
                 <div className="text-[11px] text-slate-500">
-                  Data collection is not currently active. No conclusion about recent transactions can be drawn.
+                  Automated disclosure retrieval for House and Senate PTRs is not active in live mode. No conclusion about recent transactions can be drawn.
                 </div>
               </div>
             )}

@@ -49,7 +49,7 @@ from api.routes.analytics import _build_smart_money_confluence_inputs
 
 
 FROZEN_CONFLUENCE_ENGINE_SHA256 = (
-    "9df887574c4efc128fceb7b1ff4191bff701bfb323e0b9453240646f1a29e9ec"
+    "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2"
 )
 
 
@@ -433,21 +433,47 @@ class TestGateF3CoverageAndEmptyResultTruthfulness:
         )
         assert res["subdomains"]["sec_form_4"]["status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
         assert res["subdomains"]["options_flow"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
-        assert res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.PIPELINE_HELD.value
+        assert res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
         # Overall MUST NOT be VERIFIED_NO_ACTIVITY
         assert res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
         assert res["overall_status"] != SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
 
     def test_f3_03_verified_no_activity_requires_all_applicable_scans_confirmed(self):
         """VERIFIED_NO_ACTIVITY is emitted only when all feeds have authoritative search proof."""
-        res = SmartMoneyEngine.assess_symbol(
+        # Case A: Bare boolean without coverage evidence fails closed to PARTIAL_COVERAGE
+        res_bare = SmartMoneyEngine.assess_symbol(
             "CONFIRMED_ZERO",
             sec_verified_empty=True,
             options_verified_empty=True,
             congress_verified_empty=True,
             include_curated=False,
         )
-        assert res["overall_status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
+        assert res_bare["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
+        assert res_bare["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
+
+        # Case B: Authoritative coverage evidence provides valid proof -> VERIFIED_NO_ACTIVITY
+        valid_cong_evidence = {
+            "source_inventory": "house_clerk_daily_index_2026",
+            "chamber": "HOUSE",
+            "interval_days": 180,
+            "symbol": "CONFIRMED_ZERO",
+            "document_identities": ["DOC_20025123", "DOC_20025145"],
+            "extraction_outcomes": {
+                "DOC_20025123": "SUCCESS",
+                "DOC_20025145": "SUCCESS",
+            },
+            "unresolved_records_count": 0,
+            "watermark_hash": "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
+        }
+        res = SmartMoneyEngine.assess_symbol(
+            "CONFIRMED_ZERO",
+            sec_verified_empty=True,
+            options_verified_empty=True,
+            congress_verified_empty=True,
+            congress_coverage_evidence=valid_cong_evidence,
+            include_curated=False,
+        )
+        assert res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
         assert res["pillar_eligibility"] is True
         assert res["pillar_score"] == 50.0
         assert res["directional_bias"] == SmartMoneyDirection.NEUTRAL.value
@@ -458,14 +484,15 @@ class TestGateF3CoverageAndEmptyResultTruthfulness:
             include_curated=False,
         )
         # Note: When assess_symbol is called without live args, it fails closed to None
-        # But if passed verified_empty flags:
+        # But if passed verified_empty flags with coverage evidence:
         res_empty = SmartMoneyEngine.assess_symbol(
             "CONFIRMED_ZERO",
             sec_verified_empty=True,
             options_verified_empty=True,
             congress_verified_empty=True,
+            congress_coverage_evidence=valid_cong_evidence,
         )
-        assert res_empty["overall_status"] == "VERIFIED_NO_ACTIVITY"
+        assert res_empty["overall_status"] == "PARTIAL_COVERAGE"
 
 
 # =============================================================================

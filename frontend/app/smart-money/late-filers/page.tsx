@@ -3,11 +3,11 @@ import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 
 export const metadata: Metadata = {
-  title: "🛑 Congressional Late-Filer Hall of Shame: STOCK Act Violations & Decay | ARX Terminal",
-  description: "Audit US House & Senate politicians violating the 45-day statutory STOCK Act disclosure deadline. Review filing latency, -32 pt staleness decay penalties, and mean-reversion risks.",
+  title: "🏛️ Congressional Filing Latency & Time-Decay Research Model | ARX Terminal",
+  description: "Research simulation evaluating the 45-day statutory STOCK Act disclosure deadline. Review filing latency distributions, modeled staleness decay penalties, and mean-reversion analytics.",
   openGraph: {
-    title: "Congressional Late-Filer Hall of Shame & STOCK Act Violations",
-    description: "Track delayed Congressional stock disclosures, statutory compliance violations, and mathematical staleness decay penalties.",
+    title: "Congressional Filing Latency & Time-Decay Research Model",
+    description: "Evaluate delayed Congressional stock disclosures, statutory reporting intervals, and mathematical staleness decay simulations.",
     url: "https://www.arxterminal.com/smart-money/late-filers/",
     siteName: "ARX Terminal",
     type: "article",
@@ -22,7 +22,7 @@ export default function LateFilersPage() {
     {
       "@context": "https://schema.org",
       "@type": "Dataset",
-      "name": "Congressional STOCK Act Late Filers Ledger",
+      "name": "Congressional STOCK Act Filing Latency Research Models",
       "description": "Comprehensive audit of US Congressional stock transactions disclosed after the statutory 45-day deadline.",
       "url": "https://www.arxterminal.com/smart-money/late-filers/",
       "creator": {
@@ -49,7 +49,7 @@ export default function LateFilersPage() {
         {
           "@type": "ListItem",
           "position": 3,
-          "name": "Late-Filer Hall of Shame",
+          "name": "Late-Filer Time-Decay Case Studies",
           "item": "https://www.arxterminal.com/smart-money/late-filers/"
         }
       ]
@@ -66,9 +66,9 @@ export default function LateFilersPage() {
       txDate: "2026-06-25",
       filingDate: "2026-08-22",
       lagDays: 58,
-      penalty: "-32 Pts (Late Filer)",
+      penalty: "-32 Pts (Modeled Decay)",
       adjustedScore: 48,
-      thesis: "58-day filing lag severely violates 45-day STOCK Act statutory limit; alpha is already fully priced into public markets."
+      thesis: "Synthetic demonstration case study modeling the mathematical decay of trading signals exceeding the 45-day statutory window. Illustrative simulation only; not an audited determination of statutory breach."
     },
     {
       politician: "Rep. Mark Green (R-TN)",
@@ -79,9 +79,9 @@ export default function LateFilersPage() {
       txDate: "2026-06-18",
       filingDate: "2026-08-06",
       lagDays: 49,
-      penalty: "-32 Pts (Late Filer)",
+      penalty: "-32 Pts (Modeled Decay)",
       adjustedScore: 45,
-      thesis: "Disclosed 4 days past statutory limit. Time-decay penalty triggers high mean-reversion risk."
+      thesis: "Synthetic simulation scenario: modeling price absorption latency when disclosures exceed the 45-day statutory window. Illustrative scenario only; not a factual finding of violation."
     }
   ];
 
@@ -103,37 +103,48 @@ export default function LateFilersPage() {
           <span className="text-slate-300 font-bold">Late Filers</span>
         </nav>
 
+        {/* Curated Demonstration Quarantine Notice */}
+        <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-200 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span>⚠️</span>
+            <span><strong>Historical Research Case Studies:</strong> The filings below are synthetic demonstration records from August 2026. Live statutory filing latency monitoring is not currently active, and these entries do not constitute legal findings of statutory violation.</span>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-amber-900/60 border border-amber-700/80 font-bold uppercase shrink-0 hidden sm:inline">
+            Demonstration Sample
+          </span>
+        </div>
+
         {/* Hero Header */}
-        <header className="bg-[#0b1019] p-5 sm:p-6 rounded-2xl border border-rose-900/60 space-y-3">
+        <header className="bg-[#0b1019] p-5 sm:p-6 rounded-2xl border border-amber-900/60 space-y-3">
           <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-1 rounded bg-rose-950/80 text-rose-400 border border-rose-800 text-xs font-bold font-mono">
-              🛑 STATUTORY COMPLIANCE SURVEILLANCE
+            <span className="px-2.5 py-1 rounded bg-amber-950/80 text-amber-400 border border-amber-800 text-xs font-bold font-mono">
+              HISTORICAL TIME-DECAY RESEARCH CASE STUDY (AUG 2026)
             </span>
-            <span className="text-slate-500 text-xs">• Public Law 112-105</span>
+            <span className="text-slate-500 text-xs">• Public Law 112-105 Reference</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Congressional Late-Filer Hall of Shame
+            Congressional Filing Latency & Time-Decay Research Model
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 font-sans leading-relaxed">
-            Under the Stop Trading on Congressional Knowledge (STOCK) Act of 2012, members of Congress are legally mandated to disclose securities transactions within <strong>45 days</strong> of execution. When politicians file late, any strategic informational advantage has already decayed into public market noise.
+            Under the Stop Trading on Congressional Knowledge (STOCK) Act of 2012, members of Congress are legally mandated to disclose securities transactions within <strong>45 days</strong> of execution. When disclosures are delayed, informational relevance decays into public market noise.
           </p>
         </header>
 
         {/* 1-Click Interactive CTA */}
-        <section className="bg-gradient-to-r from-rose-950/40 via-[#0b1019] to-purple-950/40 p-5 rounded-2xl border border-rose-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <section className="bg-gradient-to-r from-amber-950/40 via-[#0b1019] to-purple-950/40 p-5 rounded-2xl border border-amber-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="space-y-1 text-center sm:text-left">
             <h2 className="text-sm sm:text-base font-bold text-white">
-              Filter High-Latency Disclosures in Live Scanner
+              Explore Smart Money Research Overview
             </h2>
             <p className="text-xs text-slate-300 font-sans">
-              Isolate fresh trades (&lt;15d lag) and automatically discount delayed filings.
+              Review filing latency distribution models and options flow benchmarks.
             </p>
           </div>
           <Link
             href="/smart-money"
-            className="w-full sm:w-auto px-5 py-2.5 bg-rose-500 hover:bg-rose-400 text-black text-xs font-extrabold rounded-xl shadow-lg transition-transform active:scale-95 text-center whitespace-nowrap"
+            className="w-full sm:w-auto px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-extrabold rounded-xl shadow-lg transition-transform active:scale-95 text-center whitespace-nowrap"
           >
-            Launch Live Smart Money Scanner →
+            Open Smart Money Overview →
           </Link>
         </section>
 
@@ -170,9 +181,9 @@ export default function LateFilersPage() {
         <section className="bg-[#0b1019] p-5 rounded-2xl border border-[#1e293b] space-y-4">
           <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <span>📋 Audited Statutory Violations Ledger</span>
+              <span>📋 Historical Case Study Records (August 2026)</span>
             </h2>
-            <span className="text-[11px] text-rose-400 font-sans">Late Filing Penalties Applied</span>
+            <span className="text-[11px] text-amber-400 font-sans">Demonstration of Staleness Decay Penalty Model</span>
           </div>
 
           <div className="space-y-3">
