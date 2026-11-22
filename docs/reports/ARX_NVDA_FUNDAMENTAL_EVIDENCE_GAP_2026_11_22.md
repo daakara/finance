@@ -188,9 +188,18 @@ Saved exact raw uncompressed bytes to isolated path `data/research/sourced_funda
   - Fiscal Year 2027 second quarter (Q2 FY27) concluded on `2026-07-26`.
   - Form 10-Q for Q2 FY27 was filed with the SEC on `2026-08-26` (Accession `0001045810-26-000075`, SEC acceptance `2026-08-26T20:36:00.000Z`).
   - As of the evaluation cutoff date `2026-10-16` (and through the current November 22 session), this August 26 filing is the latest available periodic disclosure (10-Q/10-K) in SEC EDGAR, as Q3 FY27 closes in late October and is typically reported in late November / early December.
+- **Acceptance-Time Discrepancy Resolution & Temporal Discipline**:
+  - Exact EDGAR acceptance timestamps from retained Submissions JSON:
+    * Form 10-Q (`0001045810-26-000075`): Filing Date `2026-08-26`, Acceptance DateTime `2026-08-26T20:36:00.000Z` (Report Date `2026-07-26`).
+    * Form 10-K (`0001045810-26-000021`): Filing Date `2026-02-25`, Acceptance DateTime `2026-02-25T21:42:19.000Z` (Report Date `2026-01-25`). (Resolves earlier drafting typo of `2026-02-21`).
+  - Strict temporal separation maintained between:
+    1. Research Cutoff Date (`2026-10-16`): The authoritative evaluation cutoff boundary.
+    2. Filing Dates (`2026-08-26` for 10-Q, `2026-02-25` for 10-K): SEC public submission dates.
+    3. Acceptance DateTime (`2026-08-26T20:36:00.000Z` / `2026-02-25T21:42:19.000Z`): EDGAR dissemination timestamps.
+    4. Retrieval / Currentness Date (`2026-11-22T08:53:12Z`): Exact byte acquisition timestamp.
 - **Duration Arithmetic & Non-Overlapping Periods**:
-  - Full fiscal year FY2026 (10-K Accn `0001045810-26-000021`, filed `2026-02-21`, accepted `2026-02-21T21:42:07Z`): `2025-01-27` to `2026-01-25` (364 days).
-  - Current YTD Q2 FY2027 (10-Q Accn `0001045810-26-000075`, filed `2026-08-26`, accepted `2026-08-26T20:36:00Z`): `2026-01-26` to `2026-07-26` (182 days).
+  - Full fiscal year FY2026 (10-K Accn `0001045810-26-000021`, filed `2026-02-25`, accepted `2026-02-25T21:42:19.000Z`): `2025-01-27` to `2026-01-25` (364 days).
+  - Current YTD Q2 FY2027 (10-Q Accn `0001045810-26-000075`, filed `2026-08-26`, accepted `2026-08-26T20:36:00.000Z`): `2026-01-26` to `2026-07-26` (182 days).
   - Prior YTD Q2 FY2026 (10-Q Accn `0001045810-26-000075`): `2025-01-27` to `2025-07-27` (182 days).
   - Derived TTM Start: `2025-07-28` (day after Prior YTD end `2025-07-27`).
   - Derived TTM End: `2026-07-26` (Current YTD end).
@@ -206,23 +215,23 @@ Saved exact raw uncompressed bytes to isolated path `data/research/sourced_funda
 
 | Metric Key | Concept | Value & Units | Form | Period | Accession Number | Acceptance DateTime | Formula / Component Tracing |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `revenue_ttm` | `us-gaap/Revenues` | $302,970,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($215,938M) + Q2_YTD ($177,837M) - Prior_Q2_YTD ($90,805M) |
-| `operating_income_ttm` | `us-gaap/OperatingIncomeLoss` | $197,579,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($130,387M) + Q2_YTD ($117,270M) - Prior_Q2_YTD ($50,078M) |
-| `net_income_ttm` | `us-gaap/NetIncomeLoss` | $192,880,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($120,067M) + Q2_YTD ($118,010M) - Prior_Q2_YTD ($45,197M) |
-| `cfo_ttm` | `us-gaap/NetCashProvidedByUsedInOperatingActivities` | $134,360,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($102,718M) + Q2_YTD ($74,421M) - Prior_Q2_YTD ($42,779M) |
-| `capex_ttm` | `us-gaap/PaymentsToAcquireProductiveAssets` | $7,354,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($6,042M) + Q2_YTD ($4,434M) - Prior_Q2_YTD ($3,122M) |
+| `revenue_ttm` | `us-gaap/Revenues` | $302,970,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | FY26 ($215,938M) + Q2_YTD ($177,837M) - Prior_Q2_YTD ($90,805M) |
+| `operating_income_ttm` | `us-gaap/OperatingIncomeLoss` | $197,579,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | FY26 ($130,387M) + Q2_YTD ($117,270M) - Prior_Q2_YTD ($50,078M) |
+| `net_income_ttm` | `us-gaap/NetIncomeLoss` | $192,880,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | FY26 ($120,067M) + Q2_YTD ($118,010M) - Prior_Q2_YTD ($45,197M) |
+| `cfo_ttm` | `us-gaap/NetCashProvidedByUsedInOperatingActivities` | $134,360,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | FY26 ($102,718M) + Q2_YTD ($74,421M) - Prior_Q2_YTD ($42,779M) |
+| `capex_ttm` | `us-gaap/PaymentsToAcquireProductiveAssets` | $7,354,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | FY26 ($6,042M) + Q2_YTD ($4,434M) - Prior_Q2_YTD ($3,122M) |
 | `cfo_minus_capex_ttm` | Derived FCF | $127,006,000,000 USD | Derived | 2025-07-28 to 2026-07-26 | N/A | N/A | CFO ($134,360M) - Capex ($7,354M) |
-| `sbc_ttm` | `us-gaap/AllocatedShareBasedCompensationExpense` | $7,241,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($6,386M) + Q2_YTD ($3,954M) - Prior_Q2_YTD ($3,099M) |
-| `cash_and_equivalents` | `us-gaap/CashAndCashEquivalentsAtCarryingValue` | $22,443,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Reported instantaneous Balance Sheet |
-| `short_term_debt` | `us-gaap/LongTermDebtCurrent` | $1,000,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Reported instantaneous Balance Sheet |
-| `long_term_debt` | `us-gaap/LongTermDebtNoncurrent` | $32,366,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Reported instantaneous Balance Sheet |
+| `sbc_ttm` | `us-gaap/AllocatedShareBasedCompensationExpense` | $7,241,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | FY26 ($6,386M) + Q2_YTD ($3,954M) - Prior_Q2_YTD ($3,099M) |
+| `cash_and_equivalents` | `us-gaap/CashAndCashEquivalentsAtCarryingValue` | $22,443,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | Reported instantaneous Balance Sheet |
+| `short_term_debt` | `us-gaap/LongTermDebtCurrent` | $1,000,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | Reported instantaneous Balance Sheet |
+| `long_term_debt` | `us-gaap/LongTermDebtNoncurrent` | $32,366,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | Reported instantaneous Balance Sheet |
 | `total_financial_debt` | Derived Debt | $33,366,000,000 USD | Derived | As of 2026-07-26 | N/A | N/A | Short-Term Debt ($1,000M) + Long-Term Debt ($32,366M) |
 | `net_debt` | Derived Net Debt | $10,923,000,000 USD | Derived | As of 2026-07-26 | N/A | N/A | Total Financial Debt ($33,366M) - Cash ($22,443M) |
-| `operating_lease_liabilities` | `us-gaap/OperatingLeaseLiability` | $5,494,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Aggregate ($5,494M) == Current ($509M) + Noncurrent ($4,985M) |
-| `stockholders_equity` | `us-gaap/StockholdersEquity` | $228,984,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Reported instantaneous Balance Sheet |
-| `tax_expense_ttm` | `us-gaap/IncomeTaxExpenseBenefit` | $36,863,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($21,383M) + Q2_YTD ($23,400M) - Prior_Q2_YTD ($7,920M) |
-| `pretax_income_ttm` | `us-gaap/IncomeLossFromContinuingOperations...` | $229,743,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($141,450M) + Q2_YTD ($141,410M) - Prior_Q2_YTD ($53,117M) |
-| `diluted_shares_weighted_avg` | `us-gaap/WeightedAverageNumberOfDilutedShares...` | 24,285,000,000 shares | 10-Q | 2026-04-27 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Reported Q2 quarterly weighted diluted shares |
+| `operating_lease_liabilities` | `us-gaap/OperatingLeaseLiability` | $5,494,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | Aggregate ($5,494M) == Current ($509M) + Noncurrent ($4,985M) |
+| `stockholders_equity` | `us-gaap/StockholdersEquity` | $228,984,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | Reported instantaneous Balance Sheet |
+| `tax_expense_ttm` | `us-gaap/IncomeTaxExpenseBenefit` | $36,863,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | FY26 ($21,383M) + Q2_YTD ($23,400M) - Prior_Q2_YTD ($7,920M) |
+| `pretax_income_ttm` | `us-gaap/IncomeLossFromContinuingOperations...` | $229,743,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | FY26 ($141,450M) + Q2_YTD ($141,410M) - Prior_Q2_YTD ($53,117M) |
+| `diluted_shares_weighted_avg` | `us-gaap/WeightedAverageNumberOfDilutedShares...` | 24,285,000,000 shares | 10-Q | 2026-04-27 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00.000Z | Reported Q2 quarterly weighted diluted shares |
 
 ### 5. Investigation of missing investment and share concepts
 Offline inspection of `CIK0001045810_companyfacts.json` clarifies the three unavailable fields:

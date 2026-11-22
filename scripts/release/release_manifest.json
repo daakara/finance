@@ -90,8 +90,8 @@
       "originating_pr_number": 318,
       "originating_commit": "37bded139a69912640b979db5609f3e6818ad240",
       "governing_requirement": "Issue #165 / Sprint P3 #231: Record the read-only NVDA source-custody inventory, limitations and separately authorized continuation boundary",
-      "sha256": "db68b56bc6ec8792f1be63228397d2aef9d82ff14073d0d197e5e6c1db8670bb",
-      "size_bytes": 22371
+      "sha256": "b1b81c5de43610f6ffdaeaa3562ded3dc1ced73c92ba4e4498c30c937123cbab",
+      "size_bytes": 23361
     },
     "tests/test_fred_sec_presentation_integrity.py": {
       "operation": "M",
