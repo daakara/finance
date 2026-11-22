@@ -137,6 +137,8 @@ export interface PreFlightEvaluationResult {
     PreFlightCheckItem
   ];
   passedCount: number;
+  scoredCheckCount: number;
+  unassessedCount: number;
   convictionPct: number;
   isActionableGranted: boolean;
   canSizeTradeGranted: boolean;
@@ -845,7 +847,11 @@ export function evaluatePreFlightChecks(
   ] = [chk1Item, chk2Item, chk3Item, chk4Item, chk5Item];
 
   const passedCount = checks.filter((c) => c.passed).length;
-  const convictionPct = isPriceValid ? Math.round((passedCount / 5) * 100) : 0;
+  // Unknown earnings coverage is an evidence gap, not a failed risk observation.
+  // Keep clearance verification separate from the score of assessed checks.
+  const unassessedCount = resolvedCatalystState === "UNAVAILABLE" ? 1 : 0;
+  const scoredCheckCount = checks.length - unassessedCount;
+  const convictionPct = isPriceValid ? Math.round((passedCount / scoredCheckCount) * 100) : 0;
   const isActionableGranted = isActionable === true;
 
   const mandatoryChecksVerified =
@@ -1133,6 +1139,8 @@ export function evaluatePreFlightChecks(
     symbol,
     checks,
     passedCount,
+    scoredCheckCount,
+    unassessedCount,
     convictionPct,
     isActionableGranted,
     mandatoryChecksVerified,

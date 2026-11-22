@@ -151,6 +151,8 @@ export default function PreFlightChecklistModal({
   const {
     checks,
     passedCount,
+    scoredCheckCount,
+    unassessedCount,
     convictionPct,
     activeBlocker,
     whatNeedsToChange,
@@ -356,7 +358,7 @@ export default function PreFlightChecklistModal({
 - **Profit Goal 2 (TP2 Runner)**: ${target2Str}
 - **Tactical Rule (Protected Trailing Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a protected trade.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
-- **Pre-Flight Score**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) · ${clearanceExportLabelPlain}
+- **Pre-Flight Score**: ${passedCount}/${scoredCheckCount} assessed checks passed; ${unassessedCount} not assessed (${convictionPct}% of assessed checks) · ${clearanceExportLabelPlain}
 
 > ⚠️ **PLATFORM HOLD NOTICE (HOLD_EXEC_001)**: Simulation and institutional quantitative research only. Zero live order execution or capital commitment authorized. All levels require live session confirmation before execution.
 `
@@ -370,7 +372,7 @@ export default function PreFlightChecklistModal({
 - **Execution Rule (Protected Trailing Ratchet)**: ${safeTarget !== null ? `Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure protected runner convexity.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Risk/Reward**: ${isRRValid && hasExecutionLevels && isLevelDirectionValid ? `${safeRR.toFixed(2)}:1 (${PREFLIGHT_CONFIG.REQUIRED_RR_LABEL})` : `Unavailable (${PREFLIGHT_CONFIG.REQUIRED_RR_LABEL})`}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
-- **Pre-Flight Clearance**: ${passedCount}/5 Checks Passed (${convictionPct}% Checklist) — ${clearanceExportLabelPro}
+- **Pre-Flight Clearance**: ${passedCount}/${scoredCheckCount} assessed checks passed; ${unassessedCount} not assessed (${convictionPct}% of assessed checks) — ${clearanceExportLabelPro}
 - **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"}${isVixElevated ? " (ELEVATED CAUTION)" : ""} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${resolvedCatalystState === "PASS" ? "CLEAR" : resolvedCatalystState === "WARN" ? "HAZARD" : resolvedCatalystState}
 
 > ⚠️ **PLATFORM HOLD NOTICE (HOLD_EXEC_001)**: Simulation and institutional quantitative research only. Zero live order execution or capital commitment authorized. All levels require live session confirmation before execution.
@@ -488,11 +490,11 @@ export default function PreFlightChecklistModal({
                         : "🟢 CLEARED TO EXECUTE")
                     : `⚠️ NOT CLEARED — ${activeBlocker}`}
                 </span>
-                <span className="text-xs font-mono font-normal">({convictionPct}% Checklist)</span>
+                <span className="text-xs font-mono font-normal">({convictionPct}% of assessed checks{unassessedCount > 0 ? ` · ${unassessedCount} not assessed` : ""})</span>
               </div>
             </div>
             <div className="text-right font-mono">
-              <span className="text-2xl sm:text-3xl font-black">{passedCount}/5</span>
+              <span className="text-2xl sm:text-3xl font-black">{passedCount}/{scoredCheckCount}</span>
               <span className="text-[10px] text-[var(--text-2)] block">Checks Passed</span>
             </div>
           </div>
