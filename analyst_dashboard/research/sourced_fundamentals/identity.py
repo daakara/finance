@@ -74,6 +74,12 @@ ATTRIBUTABLE_SEC_IDENTITY_AUTHORITY: Dict[str, IdentityBinding] = {
         company_name="Celsius Holdings, Inc.",
         exchange="NASDAQ",
     ),
+    "NVDA": IdentityBinding(
+        symbol="NVDA",
+        cik="0001045810",
+        company_name="NVIDIA CORP",
+        exchange="NASDAQ",
+    ),
 }
 
 

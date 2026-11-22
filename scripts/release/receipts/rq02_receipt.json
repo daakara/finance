@@ -2,19 +2,19 @@
   "control_id": "RQ-02",
   "name": "Release Diff Integrity",
   "status": "PASS",
-  "start_time": "2026-11-20T01:24:00.888272+00:00",
-  "end_time": "2026-11-20T01:24:01.917492+00:00",
-  "duration_sec": 1.029,
-  "candidate_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+  "start_time": "2026-11-22T14:09:14.053356+00:00",
+  "end_time": "2026-11-22T14:09:15.068954+00:00",
+  "duration_sec": 1.015,
+  "candidate_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+    "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+    "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -29,40 +29,40 @@
     {
       "assertion": "Base anchor exists in git repository history",
       "observed": {
-        "base_sha": "16549be1acb9fdafef3c6b97f9115b674f9f4842"
+        "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0"
       },
       "passed": true
     },
     {
       "assertion": "Candidate commit exists in git repository history",
       "observed": {
-        "head_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3"
+        "head_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff"
       },
       "passed": true
     },
     {
       "assertion": "Base anchor shares verified Git lineage or ancestry with candidate",
       "observed": {
-        "base_sha": "16549be1acb9fdafef3c6b97f9115b674f9f4842",
-        "head_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+        "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
+        "head_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
         "is_direct_ancestor": true,
-        "merge_base": "16549be1acb9fdafef3c6b97f9115b674f9f4842"
+        "merge_base": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0"
       },
       "passed": true
     },
     {
       "assertion": "Release base matches manifest base_anchor_commit",
       "observed": {
-        "base_sha": "16549be1acb9fdafef3c6b97f9115b674f9f4842",
-        "expected": "16549be1acb9fdafef3c6b97f9115b674f9f4842"
+        "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
+        "expected": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0"
       },
       "passed": true
     },
     {
       "assertion": "Candidate SHA matches or incorporates manifest release_candidate_commit",
       "observed": {
-        "head_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-        "expected": "259477d8517d5ac6800671fe8e67780a63989ffb"
+        "head_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+        "expected": "0b3515b9bcf84d56461ec6688c420b79418ce369"
       },
       "passed": true
     },
@@ -117,20 +117,20 @@
     "/Users/iDavid/Projects/finance-clean/scripts/release/release_manifest.json"
   ],
   "evidence_digests": {
-    "/Users/iDavid/Projects/finance-clean/scripts/release/release_manifest.json": "9390ebf8f888eccec5171c55086b5a80b9d0c60d143c933573fc7dc3795d1cc3"
+    "/Users/iDavid/Projects/finance-clean/scripts/release/release_manifest.json": "4f79c8ff01a097dcc72f59d7d2007d6e189186c0b3ee59963a0d943fc25f8163"
   },
   "errors": [],
   "metadata": {
     "mode": "cumulative",
-    "base_sha": "16549be1acb9fdafef3c6b97f9115b674f9f4842",
-    "head_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "total_diff_entries": 14,
-    "approved_files_count": 11,
+    "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
+    "head_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+    "total_diff_entries": 37,
+    "approved_files_count": 15,
     "unapproved_count": 0,
     "missing_approved_count": 0,
     "hash_mismatch_count": 0,
     "unapproved_pr_count": 0,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "2b2ab8a74cc255da8285a98a202f644e1efd912e518c1caaec1e61f12e52998e"
+  "receipt_digest": "fe4ca968a51322f50d285a094124ad3b224e117b419dc6a2168bf755acd2160a"
 }

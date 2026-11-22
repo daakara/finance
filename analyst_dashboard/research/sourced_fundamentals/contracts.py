@@ -554,6 +554,7 @@ class FinancialFact:
     period_start: Optional[str] = None  # YYYY-MM-DD for durations
     period_end: Optional[str] = None  # YYYY-MM-DD for durations and instants
     filing_date: Optional[str] = None  # YYYY-MM-DD
+    acceptance_time: Optional[str] = None  # ISO8601 or EDGAR acceptance timestamp e.g. 2026-08-26T20:36:00.000Z
     retrieval_time: Optional[str] = None  # ISO8601
     status: MetricStatus = MetricStatus.REPORTED
     formula: Optional[str] = None  # Explicit formula for derived metrics
