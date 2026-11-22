@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+  "release_candidate_commit": "d9a14cde437606439147493d2362372d311fabcf",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
   "total_files": 15,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -8,15 +8,15 @@
     "analyst_dashboard/analyzers/smart_money.py": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: decouple HOLD_SEC_001 and require verified interval coverage evidence for certified empty state",
-      "sha256": "2547e96fa9d46656da726df48b2f6c687277f697eb2173ddbd0e5e597595c29e",
-      "size_bytes": 185791
+      "sha256": "5c40c74954159629181a3f5121997808890c24e87f2fec14e3183829f405185d",
+      "size_bytes": 194136
     },
     "api/routes/smart_money.py": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: expose neutral congressional disclosure metadata and default include_curated to false",
       "sha256": "eab3394920ec7aa044de0d21da9c1352d146275a4089a582179b8b910cb3c59e",
       "size_bytes": 12322
@@ -24,15 +24,15 @@
     "docs/planning/ARX_CONGRESSIONAL_INGESTION_INVENTORY_2026_11_22.md": {
       "operation": "A",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "ARX-CONGRESSIONAL-INGESTION-001: complete system inventory, corrected DDL, prototype findings and bounded acquisition proposal",
-      "sha256": "a951a8234c00456161e505910b4d750c7ff78b81c76a1f72fb4174a71f4321fe",
-      "size_bytes": 47908
+      "sha256": "83dc266c1cf844e7e4131a2ef08a69c5b1e0a4528aa30f731fd0c7515b0140f8",
+      "size_bytes": 52346
     },
     "frontend/app/politician/[slug]/page.tsx": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: quarantine synthetic demonstration records with explicit simulation notices",
       "sha256": "a27426c97b0449770c3622c2bad7c41fed6a74219aa4c2c18666e10dff309270",
       "size_bytes": 13077
@@ -40,7 +40,7 @@
     "frontend/app/smart-money/late-filers/page.tsx": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: reframe late-filers as latency research model and eliminate sensationalist statutory allegations",
       "sha256": "3cea51fba1ea8f86b8cbb8aaa1aca95a6c688e5a96cde920cfe1a20f93528645",
       "size_bytes": 12549
@@ -48,23 +48,23 @@
     "frontend/components/CongressionalTradesCard.tsx": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: require explicit coverage evidence for certified-empty rendering and badge unmonitored status truthfully",
-      "sha256": "002c53e6eac4856b279b7474d4d6b6430f03c297f8e4283f7acd1c0eeaa8d479",
-      "size_bytes": 31601
+      "sha256": "32b31109e03d0fdcf0c392e499ec7e785d689251ff94d03f3cec920e99d540e3",
+      "size_bytes": 33428
     },
     "frontend/lib/api.ts": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: default includeCurated to false and clarify unmonitored rationale",
-      "sha256": "421bb8cbfcfb020192eacdb2f4364ee43156fe33ddacc86416d4f3855cc97f65",
-      "size_bytes": 193753
+      "sha256": "fc0383f1f9ce4356f7d7039f3131e0d3a1cd725953f69f4c41af43151be9c3b8",
+      "size_bytes": 193786
     },
     "frontend/lib/evidenceDomains.ts": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: decouple HOLD_SEC_001 from congressional evidence domain and display Not Monitored",
       "sha256": "f0a8cb74df575decf855dd493b587471d3ed0c9ab381db6302e47fdd0f1dc512",
       "size_bytes": 26486
@@ -72,7 +72,7 @@
     "frontend/lib/seoCatalogs.ts": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: replace political allegations with objective synthetic simulation models",
       "sha256": "99ada2472d9e33c214f0dc5fa7fe8f46ef50650345c51c0bf3620e3eb2d37e2f",
       "size_bytes": 27314
@@ -80,31 +80,31 @@
     "frontend/tests/congressionalDisclosureStateHandling.test.ts": {
       "operation": "A",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: frontend integration tests for truthful empty/unmonitored states and politician claim quarantine",
-      "sha256": "395a4e2b5916d524b66a3182ed8eed62f7789d5207ed4f0d483c72dc5a851286",
-      "size_bytes": 9548
+      "sha256": "9f799f794169c2416fb564232603dcd8b6e13638bfdc86e559907c1af63707b2",
+      "size_bytes": 11224
     },
     "tests/test_congressional_disclosure_state_handling.py": {
       "operation": "A",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: backend state handling suite for unmonitored status, certified-empty evidence, and SEC hold decoupling",
-      "sha256": "b4b95110a5ee7404fd6e1c8f32645715b58ed5416c5f55ac92cb5261cf201672",
-      "size_bytes": 11183
+      "sha256": "1581305ba0ffa1a4cf9ceda625024ff7748cf158b655fe4422791bbcf88d9c8f",
+      "size_bytes": 19200
     },
     "tests/test_congressional_offline_prototype.py": {
       "operation": "A",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "ARX-CONGRESSIONAL-INGESTION-001: offline parsing prototype for House XML index and PTR report in disposable SQLite",
-      "sha256": "5ab99a4a44262016d7863ef79c6b2c790eb2cccdf2b648b9d794687800df3149",
-      "size_bytes": 17676
+      "sha256": "35da5e281fe80acdba8b738337dc0d171c701fd61193c90ac6f9583455516020",
+      "size_bytes": 23373
     },
     "tests/test_fred_sec_presentation_integrity.py": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: bind fixed observation dates to reference evaluation date in macro contract test",
       "sha256": "ab79b4df0301e6b3f6dbcf40bac56c0b1f061fbdf6de7d32fe0807b67f120770",
       "size_bytes": 21674
@@ -112,18 +112,18 @@
     "tests/test_sm_act_001_falsification.py": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: assert truthful unmonitored congressional state in Smart Money falsification suite",
-      "sha256": "98667ef82432a0fa85ae2a807e3f9ae0fc64fc0954503535626958f7890c364c",
-      "size_bytes": 31973
+      "sha256": "25d47ec73a3a84ca98fa0cb9b4ce26cb6daf316dfe8b004d7a1ab12116dec8ab",
+      "size_bytes": 33318
     },
     "tests/test_smart_money_e2e_parity.py": {
       "operation": "M",
       "originating_pr_number": 320,
-      "originating_commit": "d499dac2fe7261361e2b4ef725ec8226e2f996a6",
+      "originating_commit": "d9a14cde437606439147493d2362372d311fabcf",
       "governing_requirement": "Issue #165: assert truthful unmonitored congressional state in Smart Money E2E parity suite",
-      "sha256": "fd008036ef25e0cbb44d57152b83e1a322a3ee1ad11937c5deafbdcb7d3b5be5",
-      "size_bytes": 21992
+      "sha256": "289bd4ddbf6df2b505888d04a861f46c13951c18f34d7ac865e87d54cf8373b5",
+      "size_bytes": 23146
     }
   },
   "qualification_framework_files": {
