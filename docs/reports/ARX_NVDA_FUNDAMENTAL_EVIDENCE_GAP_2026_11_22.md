@@ -98,3 +98,50 @@ not be folded into the Form 4 trial or treated as permission to activate scoring
 > tests, and an explicit `READY_FOR_SEPARATE_INTEGRATION_REVIEW` verdict. If archive
 > access or collection authority is absent, report `BLOCKED_SOURCE_EVIDENCE` and
 > stop without substituting `LIVE_RUNTIME` estimates.
+
+## Authorized acquisition attempt — 2026-11-22
+
+Owner authorization covers only the NVDA submissions and companyfacts resources,
+a maximum of four HTTP attempts including retries and redirects, and offline
+normalization. It does not authorize production or hold changes.
+
+Disposition: **BLOCKED_EGRESS_POLICY — no SEC requests attempted (0/4)**.
+The execution workspace permits network destinations chatgpt.com,
+git.chatgpt-team.site and the configured artifact-storage hosts; data.sec.gov is
+not an allowed destination. No alternate proxy, browser, search cache, fork,
+production worker or research harvester was used to bypass this restriction.
+
+Duplicate prevention: PR #318 was inspected at
+`efac1f4c043bb17a9921db940de3d29d758f478e`; its existing report was reused.
+The current workspace contains no acquisition files or manifest and no matching
+acquisition process was observed. Operator-local files, running tasks on other
+machines and unpublished acquisitions remain NOT_CHECKED; this is not a claim
+that no other acquisition exists. No duplicate acquisition session, issue or PR
+was created. No destination manifest was fabricated without source bytes.
+
+The existing harvester declares operator contact
+`ARXTerminal Research Akara.david26@gmail.com`, but independent contact ownership
+was not verified in this execution. Its current downloader uses per-resource
+retries, automatic redirect handling and JSON reserialization; invoking it
+unchanged would not establish the approved global four-attempt ceiling or retain
+original response bytes. A permitted execution must enforce those boundaries
+before using it, then pass retained JSON to the normalizer offline.
+
+Source validation, raw-byte hashes, issuer/accession linkage, usable facts and
+offline normalization are **NOT_CHECKED / NOT_RUN** because neither authorized
+resource is available here. Company Facts must be described as SEC-extracted XBRL
+disclosures, preserving 10-K, 10-Q and amendment identities rather than assuming
+all facts are audited. Filing, acceptance, reporting-period and retrieval dates
+must remain separate.
+
+Next action: continue this same authorized task in the existing operator
+workspace only after its network policy permits the two URLs and its egress and
+ownership requirements are verified. First recheck its existing manifest and
+running processes; reuse valid bytes, acquire only missing resources, preserve
+the total attempt ceiling and perform offline normalization. Do not relax
+controls or activate the Form 4 worker. Production stores, R2, trial quotas,
+scoring, baseline, snapshot and all holds remain unchanged by this task.
+
+This documentation update changes the PR head; the earlier hosted qualification
+applies to its earlier commit and is not qualification of this new head. PR #319
+remains a separate stacked candidate; no rebase or deployment was performed.
