@@ -550,12 +550,12 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       explanation = feed?.explanation || "Verified complete search: 0 congressional disclosures filed in trailing window.";
     } else if (isHeld) {
       status = "UNAVAILABLE";
-      statusLabel = "Pipeline Pending";
-      explanation = feed?.explanation || sub?.disclosure || "Congressional STOCK Act continuous sync paused under governed operational hold (HOLD_SEC_001).";
+      statusLabel = "Not Monitored";
+      explanation = feed?.explanation || sub?.disclosure || "Congressional STOCK Act disclosure collection is not currently monitored in live mode.";
     } else if (isUnavailable) {
       status = "UNAVAILABLE";
-      statusLabel = "Unavailable";
-      explanation = feed?.explanation || sub?.disclosure || "Congressional STOCK Act sync feed disconnected.";
+      statusLabel = "Not Monitored";
+      explanation = feed?.explanation || sub?.disclosure || "Congressional STOCK Act live ingestion feed is not currently monitored.";
     }
 
     domains.push({

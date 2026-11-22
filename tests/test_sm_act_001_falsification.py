@@ -433,7 +433,7 @@ class TestGateF3CoverageAndEmptyResultTruthfulness:
         )
         assert res["subdomains"]["sec_form_4"]["status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
         assert res["subdomains"]["options_flow"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
-        assert res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.PIPELINE_HELD.value
+        assert res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
         # Overall MUST NOT be VERIFIED_NO_ACTIVITY
         assert res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
         assert res["overall_status"] != SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value

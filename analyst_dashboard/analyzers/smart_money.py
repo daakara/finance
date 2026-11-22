@@ -3454,7 +3454,7 @@ class SmartMoneyEngine:
                 return {
                     "domain_id": "congressional_stock_act",
                     "status": SmartMoneyDomainStatus.UNAVAILABLE.value,
-                    "status_label": "Unavailable (Disconnected)",
+                    "status_label": "Not Monitored",
                     "available": False,
                     "is_live": False,
                     "observation_count": 0,
@@ -3462,7 +3462,7 @@ class SmartMoneyEngine:
                     "directional_bias": SmartMoneyDirection.UNASSESSED.value,
                     "net_value_usd": 0.0,
                     "provenance": "None",
-                    "disclosure": "Congressional sync feed disconnected.",
+                    "disclosure": "Congressional STOCK Act live collection is not monitored.",
                     "records": [],
                 }
 
@@ -3504,16 +3504,16 @@ class SmartMoneyEngine:
 
         return {
             "domain_id": "congressional_stock_act",
-            "status": SmartMoneyDomainStatus.PIPELINE_HELD.value,
-            "status_label": "Pipeline Pending (HOLD_SEC_001)",
+            "status": SmartMoneyDomainStatus.UNAVAILABLE.value,
+            "status_label": "Not Monitored",
             "available": False,
             "is_live": False,
             "observation_count": 0,
             "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
             "directional_bias": SmartMoneyDirection.UNASSESSED.value,
             "net_value_usd": 0.0,
-            "provenance": "House & Senate Official STOCK Act Portals",
-            "disclosure": "Congressional STOCK Act continuous sync paused under governed operational hold (HOLD_SEC_001).",
+            "provenance": "None",
+            "disclosure": "Congressional STOCK Act disclosure collection is not currently monitored in live mode.",
             "records": [],
         }
 

@@ -57,7 +57,7 @@ def test_case_01_live_feed_disconnected(confluence):
     # Verify sub-domains
     assert res["subdomains"]["options_flow"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
     assert res["subdomains"]["sec_form_4"]["status"] == SmartMoneyDomainStatus.PIPELINE_HELD.value
-    assert res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.PIPELINE_HELD.value
+    assert res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
 
     # Confluence Engine Synthesis: Must reweight across technicals, fundamentals, macro
     conf_inputs = _build_smart_money_confluence_inputs("AAPL", include_curated=False)

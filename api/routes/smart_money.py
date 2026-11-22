@@ -42,7 +42,7 @@ def get_smart_money_overview(
     overview["regulatory_sources"] = {
         "sec_edgar": "Official SEC Form 4 & 10-K Public API",
         "finra_ats": "FINRA ATS Dark Pool Transparency Aggregation",
-        "capitol_trades": "US House & Senate STOCK Act Financial Disclosures",
+        "capitol_trades": "US House & Senate STOCK Act Financial Disclosures (Not Monitored in Live Mode)",
     }
     return overview
 
@@ -68,7 +68,7 @@ def get_congress_trades(
             "dataset_date": None,
             "trades": [],
             "source_meta": capitol_fetcher.get_filing_source_info(),
-            "disclosure": "Live Congressional disclosure sync feed disconnected. Pass include_curated=true to query archived research disclosures.",
+            "disclosure": "Congressional STOCK Act disclosure collection is disconnected / not monitored in live mode. Pass include_curated=true to query archived research disclosures.",
         }
     return {
         "symbol": valid_sym,

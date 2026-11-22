@@ -103,13 +103,24 @@ export default function LateFilersPage() {
           <span className="text-slate-300 font-bold">Late Filers</span>
         </nav>
 
+        {/* Curated Demonstration Quarantine Notice */}
+        <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-200 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span>⚠️</span>
+            <span><strong>Historical Research Case Studies:</strong> The filings below are historical demonstration records from August 2026. Live statutory filing latency monitoring is not currently active.</span>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-amber-900/60 border border-amber-700/80 font-bold uppercase shrink-0 hidden sm:inline">
+            Demonstration Sample
+          </span>
+        </div>
+
         {/* Hero Header */}
-        <header className="bg-[#0b1019] p-5 sm:p-6 rounded-2xl border border-rose-900/60 space-y-3">
+        <header className="bg-[#0b1019] p-5 sm:p-6 rounded-2xl border border-amber-900/60 space-y-3">
           <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-1 rounded bg-rose-950/80 text-rose-400 border border-rose-800 text-xs font-bold font-mono">
-              🛑 STATUTORY COMPLIANCE SURVEILLANCE
+            <span className="px-2.5 py-1 rounded bg-amber-950/80 text-amber-400 border border-amber-800 text-xs font-bold font-mono">
+              HISTORICAL COMPLIANCE RESEARCH CASE STUDY (AUG 2026)
             </span>
-            <span className="text-slate-500 text-xs">• Public Law 112-105</span>
+            <span className="text-slate-500 text-xs">• Public Law 112-105 Reference</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Congressional Late-Filer Hall of Shame
@@ -120,20 +131,20 @@ export default function LateFilersPage() {
         </header>
 
         {/* 1-Click Interactive CTA */}
-        <section className="bg-gradient-to-r from-rose-950/40 via-[#0b1019] to-purple-950/40 p-5 rounded-2xl border border-rose-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <section className="bg-gradient-to-r from-amber-950/40 via-[#0b1019] to-purple-950/40 p-5 rounded-2xl border border-amber-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="space-y-1 text-center sm:text-left">
             <h2 className="text-sm sm:text-base font-bold text-white">
-              Filter High-Latency Disclosures in Live Scanner
+              Explore Smart Money Research Overview
             </h2>
             <p className="text-xs text-slate-300 font-sans">
-              Isolate fresh trades (&lt;15d lag) and automatically discount delayed filings.
+              Review filing latency distribution models and options flow benchmarks.
             </p>
           </div>
           <Link
             href="/smart-money"
-            className="w-full sm:w-auto px-5 py-2.5 bg-rose-500 hover:bg-rose-400 text-black text-xs font-extrabold rounded-xl shadow-lg transition-transform active:scale-95 text-center whitespace-nowrap"
+            className="w-full sm:w-auto px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-extrabold rounded-xl shadow-lg transition-transform active:scale-95 text-center whitespace-nowrap"
           >
-            Launch Live Smart Money Scanner →
+            Open Smart Money Overview →
           </Link>
         </section>
 
@@ -170,9 +181,9 @@ export default function LateFilersPage() {
         <section className="bg-[#0b1019] p-5 rounded-2xl border border-[#1e293b] space-y-4">
           <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <span>📋 Audited Statutory Violations Ledger</span>
+              <span>📋 Historical Case Study Records (August 2026)</span>
             </h2>
-            <span className="text-[11px] text-rose-400 font-sans">Late Filing Penalties Applied</span>
+            <span className="text-[11px] text-amber-400 font-sans">Demonstration of Staleness Decay Penalty Model</span>
           </div>
 
           <div className="space-y-3">
