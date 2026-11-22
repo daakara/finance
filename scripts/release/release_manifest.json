@@ -1,10 +1,18 @@
 {
-  "release_candidate_commit": "37bded139a69912640b979db5609f3e6818ad240",
+  "release_candidate_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 4,
+  "total_files": 14,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-NVDA-FUNDAMENTAL-EVIDENCE-DIAGNOSTICS-318",
   "files": {
+    ".gitignore": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Narrowly scoped unignore rules for reproducible raw NVDA fundamentals and custody manifest",
+      "sha256": "f4c19ffc0f9864c13118e716bc4ee4639bc0276649a86352e2d9928ab6c01df6",
+      "size_bytes": 1507
+    },
     "analyst_dashboard/provenance/evidence_contract.py": {
       "operation": "M",
       "originating_pr_number": 318,
@@ -12,6 +20,70 @@
       "governing_requirement": "Issue #165 / Sprint P3 #231: Clarify missing financial evidence without implying document authentication; expose freshness and verification diagnostics",
       "sha256": "27205f2066167a3010ddaeb58004ad0fa6f5131b1e12fa4e3b52091ead539f9b",
       "size_bytes": 14798
+    },
+    "analyst_dashboard/research/sourced_fundamentals/__init__.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Export offline reader functions and integrity error types",
+      "sha256": "e7f5345cb3e9afb1441fd2543eb38b2230f59e111f3a5374a1521c7bb5bf2b43",
+      "size_bytes": 2360
+    },
+    "analyst_dashboard/research/sourced_fundamentals/contracts.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Add acceptance_time field to FinancialFact contract",
+      "sha256": "268b018b28f5ec5acf60e35b4ce6adc5da2e50c31da5eb9950b7d97be45af314",
+      "size_bytes": 34825
+    },
+    "analyst_dashboard/research/sourced_fundamentals/identity.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Add NVDA attributable SEC identity binding (CIK 0001045810, NASDAQ)",
+      "sha256": "e4c63bd07c6d5e3cd67f2fa856538a3038cb7852f84111368f3114c259c81dcd",
+      "size_bytes": 6779
+    },
+    "analyst_dashboard/research/sourced_fundamentals/normalizer.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Resolve acceptanceDateTime directly from retained submissions; keep unmatched accessions unresolved",
+      "sha256": "90eafb6a83478dda404f2afce7dad4fad860338fc9a1eda71b2d2868e8194d2a",
+      "size_bytes": 59213
+    },
+    "analyst_dashboard/research/sourced_fundamentals/offline_reader.py": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Implement offline fundamentals reader with cryptographic hash/issuer/accession/null checks and anti-masking protection",
+      "sha256": "97a0cf158ff3b740f1bc9157d00f5adf98b1f329b9b26b9ebc3a6798ca7e7879",
+      "size_bytes": 18384
+    },
+    "data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_companyfacts.json": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Official retained SEC EDGAR company facts disclosure JSON for CIK 0001045810",
+      "sha256": "19ef503a5770f5660964b3c3aea6937579d9b359da344afe6a9adf59c63d26ff",
+      "size_bytes": 4092966
+    },
+    "data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_submissions.json": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Official retained SEC EDGAR submissions disclosure JSON for CIK 0001045810",
+      "sha256": "8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045",
+      "size_bytes": 160255
+    },
+    "data/research/sourced_fundamentals/raw/CIK0001045810/manifest.json": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Retained custody manifest and SHA-256 provenance for NVDA fundamentals files",
+      "sha256": "02e9518ca8ba5db66fc5813a6238c3f76c1069d0093e3fcbc50f08c32db0f470",
+      "size_bytes": 1382
     },
     "docs/reports/ARX_NVDA_FUNDAMENTAL_EVIDENCE_GAP_2026_11_22.md": {
       "operation": "A",
@@ -21,6 +93,14 @@
       "sha256": "db68b56bc6ec8792f1be63228397d2aef9d82ff14073d0d197e5e6c1db8670bb",
       "size_bytes": 22371
     },
+    "tests/test_fred_sec_presentation_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "6401be2381aeb933f08f3f693564f11963ca2b6d",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: make the macro freshness regression deterministic so qualification measures candidate behavior rather than wall-clock drift",
+      "sha256": "2c2d9d7db91487383e05c9d5c0ef3e8c0583b6d4b11d1f8663db940f7998b589",
+      "size_bytes": 21723
+    },
     "tests/test_fundamental_evidence_diagnostics.py": {
       "operation": "A",
       "originating_pr_number": 318,
@@ -29,13 +109,13 @@
       "sha256": "a98fbf1ba7cfc92193577157d60b5709c66d6470e0ff81c856926b1d628da7eb",
       "size_bytes": 3028
     },
-    "tests/test_fred_sec_presentation_integrity.py": {
-      "operation": "M",
+    "tests/test_offline_fundamentals_reader.py": {
+      "operation": "A",
       "originating_pr_number": 318,
-      "originating_commit": "6401be2381aeb933f08f3f693564f11963ca2b6d",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: make the macro freshness regression deterministic so qualification measures candidate behavior rather than wall-clock drift",
-      "sha256": "2c2d9d7db91487383e05c9d5c0ef3e8c0583b6d4b11d1f8663db940f7998b589",
-      "size_bytes": 21723
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Offline regressions for hash/issuer/accession verification, null preservation, and anti-masking protection",
+      "sha256": "b6548f08c11b82115cbb761ec428d71b8e5c43f035add1611f00e26a4425e6f6",
+      "size_bytes": 9463
     }
   },
   "qualification_framework_files": {
