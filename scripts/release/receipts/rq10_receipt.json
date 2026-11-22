@@ -2,19 +2,19 @@
   "control_id": "RQ-10",
   "name": "Release Configuration Integrity",
   "status": "PASS",
-  "start_time": "2026-11-22T10:02:39.376569+00:00",
-  "end_time": "2026-11-22T10:02:39.448504+00:00",
-  "duration_sec": 0.049,
-  "candidate_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
-  "source_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
-  "execution_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
+  "start_time": "2026-11-22T14:06:55.003093+00:00",
+  "end_time": "2026-11-22T14:06:55.068384+00:00",
+  "duration_sec": 0.046,
+  "candidate_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+  "source_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+  "execution_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
-    "execution_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
+    "source_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+    "execution_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -67,5 +67,5 @@
   "metadata": {
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "97fefc53ec511c77cf3e931b9869e5cb9fefa9d31f8db2072647dfe61a8c4c27"
+  "receipt_digest": "297c11ed90a9e21a64f7b1d4ea264fc1e3fdc34cef46dada734c875dc260b601"
 }

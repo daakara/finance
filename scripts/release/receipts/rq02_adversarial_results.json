@@ -1,8 +1,8 @@
 {
   "suite": "RQ-02 Adversarial Falsification Suite (ARX-036-D12A)",
-  "candidate_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
-  "candidate_tree": "cb68fb3af872e3e453d2ab61521989844233fb18",
-  "timestamp": "2026-11-22T10:01:53.743731+00:00",
+  "candidate_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+  "candidate_tree": "d7e960ce4a8fcbfc576851c5fb5e0d27d3b07146",
+  "timestamp": "2026-11-22T14:06:56.442850+00:00",
   "execution_context": {
     "is_ci": false,
     "github_run_id": null,
@@ -28,7 +28,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  [UNAPPROVED (A)] docs/reports/ARX_NVDA_FUNDAMENTAL_EVIDENCE_GAP_2026_11_22.md"
+        "  [UNAPPROVED (A)] analyst_dashboard/research/sourced_fundamentals/offline_reader.py"
       ]
     },
     {
@@ -37,7 +37,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  [UNAPPROVED (M)] analyst_dashboard/provenance/evidence_contract.py"
+        "  [UNAPPROVED (M)] .gitignore"
       ]
     },
     {
@@ -55,7 +55,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - Hash mismatch in analyst_dashboard/provenance/evidence_contract.py: expected 1111111111 got 27205f2066"
+        "  - Hash mismatch in .gitignore: expected 1111111111 got f4c19ffc0f"
       ]
     },
     {
@@ -64,7 +64,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 4ac3a16a409ed24d2dea3587d365486a6758d1fe does not match manifest candidate 0000000000000000000000000000000000000000"
+        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c does not match manifest candidate 0000000000000000000000000000000000000000"
       ]
     },
     {
@@ -82,7 +82,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - DIRTY_WORKING_TREE_MISMATCH: Candidate file 'analyst_dashboard/provenance/evidence_contract.py' has uncommitted modifications (M)"
+        "  - DIRTY_WORKING_TREE_MISMATCH: Candidate file '.gitignore' has uncommitted modifications (M)"
       ]
     },
     {
@@ -100,7 +100,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "FAIL: DUPLICATE_MANIFEST_ENTRY: DUPLICATE_MANIFEST_ENTRY: Duplicate key 'analyst_dashboard/provenance/evidence_contract.py' detected in manifest JSON."
+        "FAIL: DUPLICATE_MANIFEST_ENTRY: DUPLICATE_MANIFEST_ENTRY: Duplicate key '.gitignore' detected in manifest JSON."
       ]
     },
     {
@@ -109,7 +109,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "FAIL: UNAPPROVED_PR_ATTRIBUTION: File analyst_dashboard/provenance/evidence_contract.py attributed to unapproved or missing PR (999)"
+        "FAIL: UNAPPROVED_PR_ATTRIBUTION: File .gitignore attributed to unapproved or missing PR (999)"
       ]
     }
   ]
