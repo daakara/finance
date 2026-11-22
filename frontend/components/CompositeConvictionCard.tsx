@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { AnalyticsResponse } from "../lib/api";
 import { FredMacroData, SecForm4Trade } from "../lib/institutionalFeeds";
 
@@ -397,7 +397,30 @@ export default function CompositeConvictionCard({
               />
             </div>
 
-            <details><summary className="min-h-[44px] cursor-pointer text-xs text-[var(--text-2)] focus-visible:outline focus-visible:outline-2">{pillar.label} attribution</summary><p className="text-xs text-[var(--text-2)] leading-relaxed">{pillar.detail}</p></details>
+            <details>
+              <summary className="min-h-[44px] cursor-pointer text-xs text-[var(--text-2)] focus-visible:outline focus-visible:outline-2">{pillar.label} attribution</summary>
+              <p className="text-xs text-[var(--text-2)] leading-relaxed">{pillar.detail}</p>
+              {pillar.id === "SMART_MONEY_FLOW" && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    data-testid="link-sec-disclosure-drawer"
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(new CustomEvent("arx:open-sec-disclosures", { detail: { symbol } }));
+                        const feedEl = document.getElementById("sec-disclosures-feed") || document.getElementById("institutional-feeds");
+                        if (feedEl) feedEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }
+                    }}
+                    className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                    aria-label={`Inspect SEC Form 4 Disclosures for ${cleanSym}`}
+                  >
+                    <span>Inspect SEC Form 4 Disclosures</span>
+                    <span>→</span>
+                  </button>
+                </div>
+              )}
+            </details>
           </div>
         ))}
       </div>

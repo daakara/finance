@@ -37,6 +37,7 @@ from analyst_dashboard.data.alpaca_fetcher import AlpacaMarketFetcher
 from analyst_dashboard.data.market_price_state import resolve_dual_price_state, MarketPriceState
 from analyst_dashboard.security_master import get_security_master_service
 from api.routes.screener import CONFIRMED_CORPORATE_ACTIONS
+from api.routes.smart_money import sec_fetcher
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -215,12 +216,13 @@ def _build_smart_money_confluence_inputs(
     security_type: str = "COMMON_STOCK",
     include_curated: bool = False,
     evaluation_date: Optional[str] = None,
+    live_sec: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Build authoritative smart money confluence inputs with strict epistemic honesty.
     Evaluates Options Flow, SEC Form 4 Insider Transactions, and Congressional STOCK Act Disclosures.
     When feeds are unobserved, held under HOLD_SEC_001, or ineligible for scoring,
-    returns None to trigger fail-closed dynamic pillar reweighting in the frozen ConfluenceEngine.
+    returns decoupled disclosure evidence while keeping scoring held in the frozen ConfluenceEngine.
     """
     clean_sym = sym.upper().replace("-USD", "").strip() if sym else ""
     if evaluation_date is not None:
@@ -239,8 +241,48 @@ def _build_smart_money_confluence_inputs(
         asset_class=asset_class,
         security_type=security_type,
         include_curated=include_curated,
+        live_sec=live_sec,
     )
     if not res.get("pillar_eligibility") or res.get("reweight_required"):
+        if live_sec is not None:
+            sec_sub = res.get("subdomains", {}).get("sec_form_4", {})
+            sec_status = live_sec.get("status", "")
+            items = sec_sub.get("records") or live_sec.get("items") or []
+            cov_status = live_sec.get("coverage_status") or "PARTIAL"
+            is_err = bool(sec_sub.get("is_repo_error")) or sec_status in (
+                "BACKEND_STORAGE_ERROR",
+                "CONFIGURATION_BLOCKED",
+                "TRANSPORT_INCOMPLETE",
+                "STRUCTURALLY_INVALID",
+                "ERROR",
+                "UPSTREAM_SERVER_ERROR",
+            )
+            is_ver_empty = bool(sec_sub.get("is_verified_empty")) or (cov_status == "COMPLETE" and sec_status == "AVAILABLE_NO_RESULTS")
+            is_inc_cov = bool(sec_sub.get("is_incomplete_coverage")) or (cov_status != "COMPLETE" and (items is None or len(items) == 0))
+            f_count = len(items) if items is not None else 0
+            latest_date = sec_sub.get("latest_filing_date") or (items[0].get("filing_date") if (items and len(items) > 0) else None)
+
+            return {
+                "scoring_held": True,
+                "scoring_eligibility": "Not assessed — ingestion-only trial.",
+                "status": "unavailable",
+                "is_repo_error": is_err,
+                "filings_count": f_count,
+                "latest_filing_date": latest_date,
+                "coverage_status": cov_status,
+                "is_verified_empty": is_ver_empty,
+                "is_incomplete_coverage": is_inc_cov,
+                "records": items or [],
+                "items": items,
+                "has_insider_buy": False,
+                "has_insider_sell": False,
+                "insider_value_usd": 0.0,
+                "has_congress_buy": False,
+                "has_congress_sell": False,
+                "has_options_flow": False,
+                "insider_buy_count_90d": 0,
+                "insider_sell_count_90d": 0,
+            }
         return None
 
     if res.get("overall_status") == "VERIFIED_NO_ACTIVITY":
@@ -1504,18 +1546,34 @@ def get_asset_analytics(
                 "classification_authority": "ARX_SERVER_SECURITY_MASTER",
             }
 
+        # Smart Money Feeds: Query read-only Form 4 repository without triggering egress or database writes
+        sec_envelope = None
+        try:
+            sec_envelope = sec_fetcher.get_recent_filings_envelope(upper_sym)
+        except Exception as e:
+            logger.warning(f"Failed to query read-only Form 4 repository for {upper_sym}: {e}")
+            sec_envelope = {
+                "status": "BACKEND_STORAGE_ERROR",
+                "error_detail": str(e),
+                "items": None,
+                "coverage_status": "UNKNOWN",
+                "is_pipeline_held": True,
+            }
+
         # Smart Money Feeds (Enforce Epistemic Honesty: Stale curated data does not trigger live buy signals)
         smart_data = smart_money_engine.assess_symbol(
             symbol=upper_sym,
             asset_class=asset_class_val,
             security_type=sec_type_val,
             include_curated=False,
+            live_sec=sec_envelope,
         )
         conf_smart_inputs = _build_smart_money_confluence_inputs(
             upper_sym,
             asset_class=asset_class_val,
             security_type=sec_type_val,
             include_curated=False,
+            live_sec=sec_envelope,
         )
 
         # Macro inputs: Strictly authentic FRED observations; never fabricated fallbacks

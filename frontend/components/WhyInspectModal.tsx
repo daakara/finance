@@ -380,6 +380,29 @@ export default function WhyInspectModal({
                         {getPillarModelRule(pillar.pillar)}
                       </p>
                     </div>
+
+                    {pillar.pillar === "SMART_MONEY_FLOW" && (
+                      <div className="pt-1.5 flex justify-end">
+                        <button
+                          type="button"
+                          data-testid="why-modal-sec-disclosure-link"
+                          onClick={() => {
+                            if (typeof window !== "undefined") {
+                              window.dispatchEvent(new CustomEvent("arx:open-sec-disclosures", { detail: { symbol } }));
+                              onClose();
+                              setTimeout(() => {
+                                const el = document.getElementById("sec-disclosures-feed") || document.getElementById("institutional-feeds");
+                                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                              }, 100);
+                            }
+                          }}
+                          className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono font-semibold flex items-center gap-1 cursor-pointer py-1 px-2 rounded bg-cyan-950/40 border border-cyan-800/60 transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400"
+                        >
+                          <span>Open SEC Form 4 Disclosures</span>
+                          <span>→</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })
