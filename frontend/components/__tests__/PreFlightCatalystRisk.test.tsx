@@ -38,7 +38,7 @@ describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed St
       />
     );
 
-    const unavailableBadges = screen.getAllByText("UNAVAILABLE");
+    const unavailableBadges = screen.getAllByText("CALENDAR NOT VERIFIED");
     expect(unavailableBadges.length).toBeGreaterThan(0);
     expect(
       screen.getByText(/Earnings calendar coverage unavailable: Event runway cannot be certified/i)
@@ -103,7 +103,7 @@ describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed St
       />
     );
 
-    const unavailableBadges = screen.getAllByText("UNAVAILABLE");
+    const unavailableBadges = screen.getAllByText("CALENDAR NOT VERIFIED");
     expect(unavailableBadges.length).toBeGreaterThan(0);
     expect(
       screen.getByText(/Earnings calendar coverage unavailable: Event runway cannot be certified/i)
@@ -145,11 +145,14 @@ describe("PreFlightChecklistModal — Catalyst & Corporate Events Fail-Closed St
       />
     );
 
-    const unavailableBadges = screen.getAllByText("UNAVAILABLE");
+    const unavailableBadges = screen.getAllByText("CALENDAR NOT VERIFIED");
     expect(unavailableBadges.length).toBeGreaterThan(0);
     expect(
-      screen.getByText(/(?:Prior earnings reported|Historical earnings report elapsed) \(2026-10-21\)/i)
+      screen.getByText(/Last earnings reported: 2026-10-21\. That event has passed/i)
     ).toBeDefined();
+    expect(screen.getByText("CALENDAR NOT VERIFIED")).toBeDefined();
+    expect(screen.getByText(/This is not an imminent-earnings warning/i)).toBeDefined();
+    expect(screen.queryByText("HAZARD")).toBeNull();
   });
 
   it("5. Technical error explicitly renders ERROR badge", () => {

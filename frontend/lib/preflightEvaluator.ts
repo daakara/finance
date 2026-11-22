@@ -745,7 +745,9 @@ export function evaluatePreFlightChecks(
         : `Runway > 7d (Unconfirmed)`)
     : resolvedCatalystState === "WARN"
     ? "Imminent Earnings Event"
-    : "Coverage Unavailable";
+    : resolvedCatalystState === "ERROR"
+    ? "Calendar retrieval error"
+    : "7-day calendar not verified";
 
   const releaseTimeDetail = catalystEvidence?.resultsReleaseTimeEt
     ? ` ${catalystEvidence.resultsReleaseTimeEt} ET Release`
@@ -766,13 +768,13 @@ export function evaluatePreFlightChecks(
     : resolvedCatalystState === "ERROR"
     ? "Technical error retrieving corporate earnings schedule."
     : catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
-    ? `Historical Event Elapsed (${catalystEvidence.eventDate || "prior"}). Forward calendar unverified; runway uncertified.`
+    ? `Last earnings reported: ${catalystEvidence.eventDate || "date unavailable"}. That event has passed. Next announcement date is unconfirmed; calendar coverage for the next 7 days has not been verified. This is not an imminent-earnings warning.`
     : "Earnings calendar coverage unavailable: Event runway cannot be certified.";
 
   const chk4Item: PreFlightCheckItem = {
     id: "CHK-4",
     tag: "CHK-4 CATALYST",
-    name: isPlain ? "4. News Event Safety" : "4. Catalyst Hazard Buffer",
+    name: isPlain ? "4. Upcoming Earnings Risk (Next 7 Days)" : "4. Earnings Calendar Coverage (7-Day Window)",
     status: chk4Status,
     badgeClass: resolvedCatalystState === "PASS"
       ? (isCatalystConfirmed

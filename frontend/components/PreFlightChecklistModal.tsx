@@ -277,8 +277,8 @@ export default function PreFlightChecklistModal({
     }
     if (catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0) {
       return isPlain
-        ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}), but forward calendar is unverified. Cannot certify forward runway.`
-        : `Historical Event Elapsed: Prior report on ${catalystEvidence.eventDate || "historical record"}. Forward schedule unverified; runway uncertified.`;
+        ? `Last earnings reported: ${catalystEvidence.eventDate || "date unavailable"}. That event has passed. Next announcement date is unconfirmed; calendar coverage for the next 7 days has not been verified. This is not an imminent-earnings warning.`
+        : `Last earnings: ${catalystEvidence.eventDate || "date unavailable"} (elapsed). Next date unconfirmed; forward 7-day coverage not verified. No imminent event is established by this historical record.`;
     }
     return isPlain
       ? "Earnings calendar coverage unavailable: Event runway cannot be certified."
@@ -655,8 +655,8 @@ export default function PreFlightChecklistModal({
                   </span>
                   <span>
                     {isPlain
-                      ? "4. News Event Safety (No surprise earnings report tomorrow)"
-                      : "4. Catalyst Hazard Buffer (>7 Days to Binary Earnings)"}
+                      ? "4. Upcoming Earnings Risk (Next 7 Days)"
+                      : "4. Earnings Calendar Coverage (7-Day Window)"}
                   </span>
                 </div>
                 <p className="text-[11px] text-[var(--text-2)] pl-5">
@@ -678,7 +678,7 @@ export default function PreFlightChecklistModal({
                   ? "HAZARD"
                   : resolvedCatalystState === "ERROR"
                   ? "ERROR"
-                  : "UNAVAILABLE"}
+                  : "CALENDAR NOT VERIFIED"}
               </span>
             </div>
 
