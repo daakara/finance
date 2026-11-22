@@ -1,10 +1,11 @@
 """High-Density Institutional & Congressional Smart Money Feed Engine."""
 
 import os
+import re
 import sqlite3
 import logging
 from analyst_dashboard.analyzers.evidence_timestamp_projection import evidence_row_value
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional, Union, Tuple
 from enum import Enum
 from datetime import datetime, timezone, timedelta
 
@@ -1958,8 +1959,10 @@ def calculate_legislative_alignment(trade: Dict[str, Any]) -> int:
             break
 
     # 2. Dollar Bracket Sizing Tier (up to +15 pts)
-    amt = trade.get("amount_range", "")
-    if "$1,000,000" in amt or "$5,000,000" in amt:
+    amt = trade.get("amount_range")
+    if not amt:
+        pass  # Undisclosed amount awards zero sizing points; never invent a bracket
+    elif "$1,000,000" in amt or "$5,000,000" in amt:
         score += 15
     elif "$500,000" in amt:
         score += 11
@@ -3359,6 +3362,144 @@ class SmartMoneyEngine:
         }
 
     @classmethod
+    def validate_congressional_coverage_receipt(
+        cls,
+        coverage_evidence: Optional[Dict[str, Any]],
+        expected_symbol: str,
+        expected_interval_days: int = 30,
+    ) -> Tuple[bool, str, str]:
+        """
+        Validate a congressional coverage receipt against strict evidence-readiness invariants:
+        1. Bare booleans or hash strings must NEVER certify empty coverage.
+        2. Must bind to:
+           - source_inventory: non-empty string identifying authoritative manifest.
+           - chamber: in ('HOUSE', 'SENATE', 'BOTH').
+           - interval_days: covering at least expected_interval_days.
+           - symbol: must match expected_symbol (case-insensitive).
+           - document_identities: non-empty list of document IDs in scope.
+           - extraction_outcomes: dict mapping each document ID to 'SUCCESS' or 'COMPLETE'.
+             Any 'FAILED', 'UNPARSED', or missing document fails completeness.
+           - unresolved_records_count: must be 0 (equal document counts alone cannot certify completeness).
+           - watermark_hash or receipt_hash: must be valid 64-character hex SHA256 (not placeholder).
+        3. Returns (is_valid, domain_status, rationale_string).
+           Fails closed to UNAVAILABLE or PARTIAL_COVERAGE if any check fails.
+        """
+        clean_sym = expected_symbol.upper().strip()
+        if not isinstance(coverage_evidence, dict):
+            return (
+                False,
+                SmartMoneyDomainStatus.UNAVAILABLE.value,
+                "Missing or non-dictionary coverage evidence: bare boolean or missing evidence cannot certify empty coverage."
+            )
+
+        watermark_hash = coverage_evidence.get("watermark_hash") or coverage_evidence.get("receipt_hash")
+        if not watermark_hash or watermark_hash in ("CONFIRMED_ZERO_VERIFIED_COVERAGE", "UNVERIFIED", "NONE", ""):
+            return (
+                False,
+                SmartMoneyDomainStatus.UNAVAILABLE.value,
+                "Fabricated or placeholder watermark hash rejected: bare strings cannot certify empty coverage."
+            )
+
+        # Validate 64-character hex hash format
+        if not (isinstance(watermark_hash, str) and re.match(r"^[0-9a-fA-F]{64}$", watermark_hash)):
+            return (
+                False,
+                SmartMoneyDomainStatus.UNAVAILABLE.value,
+                "Malformed watermark hash: cryptographic coverage certification requires valid 64-character hex SHA256."
+            )
+
+        # Check source inventory
+        source_inv = coverage_evidence.get("source_inventory") or coverage_evidence.get("source")
+        if not source_inv or not isinstance(source_inv, str) or source_inv.strip() == "":
+            return (
+                False,
+                SmartMoneyDomainStatus.UNAVAILABLE.value,
+                "Missing source_inventory binding in coverage evidence."
+            )
+
+        # Check chamber binding
+        chamber = (coverage_evidence.get("chamber") or "").upper().strip()
+        if chamber not in ("HOUSE", "SENATE", "BOTH"):
+            return (
+                False,
+                SmartMoneyDomainStatus.UNAVAILABLE.value,
+                f"Invalid or missing chamber binding '{chamber}': must be HOUSE, SENATE, or BOTH."
+            )
+
+        # Check symbol binding
+        ev_sym = (coverage_evidence.get("symbol") or "").upper().strip()
+        if not ev_sym or ev_sym != clean_sym:
+            return (
+                False,
+                SmartMoneyDomainStatus.UNAVAILABLE.value,
+                f"Coverage evidence symbol '{ev_sym}' does not match requested symbol '{clean_sym}'."
+            )
+
+        # Check interval coverage
+        interval_days = coverage_evidence.get("interval_days")
+        if interval_days is not None:
+            try:
+                if int(interval_days) < expected_interval_days:
+                    return (
+                        False,
+                        SmartMoneyDomainStatus.PARTIAL_COVERAGE.value,
+                        f"Coverage interval {interval_days}d is shorter than requested {expected_interval_days}d window."
+                    )
+            except (ValueError, TypeError):
+                return (
+                    False,
+                    SmartMoneyDomainStatus.UNAVAILABLE.value,
+                    f"Malformed interval_days: {interval_days}."
+                )
+
+        # Check document identities
+        doc_ids = coverage_evidence.get("document_identities")
+        if not isinstance(doc_ids, (list, set, tuple)) or len(doc_ids) == 0:
+            return (
+                False,
+                SmartMoneyDomainStatus.UNAVAILABLE.value,
+                "Missing or empty document_identities inventory in coverage evidence."
+            )
+
+        # Check extraction outcomes for all document identities
+        outcomes = coverage_evidence.get("extraction_outcomes")
+        if not isinstance(outcomes, dict):
+            return (
+                False,
+                SmartMoneyDomainStatus.PARTIAL_COVERAGE.value,
+                "Missing extraction_outcomes mapping in coverage evidence."
+            )
+
+        for doc_id in doc_ids:
+            outcome = outcomes.get(doc_id)
+            if outcome not in ("SUCCESS", "COMPLETE"):
+                return (
+                    False,
+                    SmartMoneyDomainStatus.PARTIAL_COVERAGE.value,
+                    f"Document '{doc_id}' extraction outcome is '{outcome}': all inventoried documents must be SUCCESS."
+                )
+
+        # Check unresolved records: equal document counts alone cannot certify completeness!
+        unresolved_count = coverage_evidence.get("unresolved_records_count", 0)
+        try:
+            unresolved_count = int(unresolved_count)
+        except (ValueError, TypeError):
+            unresolved_count = -1
+
+        if unresolved_count != 0:
+            return (
+                False,
+                SmartMoneyDomainStatus.PARTIAL_COVERAGE.value,
+                f"Coverage evidence contains {unresolved_count} unresolved records: equal document counts alone cannot certify completeness."
+            )
+
+        return (
+            True,
+            SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+            f"Verified complete search confirmed 0 qualifying congressional transactions in declared {source_inv} inventory."
+        )
+
+    @classmethod
     def assess_congressional_trades(
         cls,
         symbol: str,
@@ -3391,19 +3532,14 @@ class SmartMoneyEngine:
                 "records": [],
             }
 
-        # Certified-empty state verification: requires explicit cryptographic coverage evidence
-        # matching the requested source portal, trailing interval, and symbol filter.
-        if is_verified_empty:
-            has_valid_coverage = (
-                isinstance(coverage_evidence, dict)
-                and bool(coverage_evidence.get("watermark_hash") or coverage_evidence.get("receipt_hash"))
-                and (
-                    not coverage_evidence.get("symbol")
-                    or coverage_evidence.get("symbol").upper() == clean_sym
-                )
+        # Certified-empty state verification: requires trusted, cryptographically bound receipt.
+        # Bare booleans or bare hash strings must NEVER certify empty coverage.
+        if is_verified_empty or coverage_evidence is not None:
+            is_valid, status_code, reason = cls.validate_congressional_coverage_receipt(
+                coverage_evidence, clean_sym, cls.LOOKBACK_DAYS_CONGRESS
             )
-            if has_valid_coverage:
-                src = coverage_evidence.get("source") or "House & Senate Official STOCK Act Portals"
+            if is_valid:
+                src = coverage_evidence.get("source_inventory") or coverage_evidence.get("source") or "House & Senate Official STOCK Act Portals"
                 interval_days = coverage_evidence.get("interval_days", cls.LOOKBACK_DAYS_CONGRESS)
                 return {
                     "domain_id": "congressional_stock_act",
@@ -3420,6 +3556,22 @@ class SmartMoneyEngine:
                     "coverage_evidence": coverage_evidence,
                     "records": [],
                 }
+            elif status_code == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value:
+                return {
+                    "domain_id": "congressional_stock_act",
+                    "status": SmartMoneyDomainStatus.PARTIAL_COVERAGE.value,
+                    "status_label": "Partial Coverage",
+                    "available": False,
+                    "is_live": False,
+                    "observation_count": 0,
+                    "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                    "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                    "net_value_usd": 0.0,
+                    "provenance": coverage_evidence.get("source_inventory", "None") if isinstance(coverage_evidence, dict) else "None",
+                    "disclosure": f"Congressional STOCK Act coverage is partial and uncertified: {reason}",
+                    "coverage_evidence": coverage_evidence if isinstance(coverage_evidence, dict) else None,
+                    "records": [],
+                }
             else:
                 return {
                     "domain_id": "congressional_stock_act",
@@ -3432,7 +3584,8 @@ class SmartMoneyEngine:
                     "directional_bias": SmartMoneyDirection.UNASSESSED.value,
                     "net_value_usd": 0.0,
                     "provenance": "None",
-                    "disclosure": "Congressional STOCK Act empty result lacks certified interval coverage evidence; treating as unmonitored.",
+                    "disclosure": f"Congressional STOCK Act empty search lacks certified interval coverage evidence: {reason}",
+                    "coverage_evidence": coverage_evidence if isinstance(coverage_evidence, dict) else None,
                     "records": [],
                 }
 
@@ -3465,17 +3618,12 @@ class SmartMoneyEngine:
                     "records": enriched,
                     "late_filers_count": late_filers,
                 }
-            elif is_verified_empty:
-                has_valid_coverage = (
-                    isinstance(coverage_evidence, dict)
-                    and bool(coverage_evidence.get("watermark_hash") or coverage_evidence.get("receipt_hash"))
-                    and (
-                        not coverage_evidence.get("symbol")
-                        or coverage_evidence.get("symbol").upper() == clean_sym
-                    )
+            elif is_verified_empty or coverage_evidence is not None:
+                is_valid, status_code, reason = cls.validate_congressional_coverage_receipt(
+                    coverage_evidence, clean_sym, cls.LOOKBACK_DAYS_CONGRESS
                 )
-                if has_valid_coverage:
-                    src = coverage_evidence.get("source") or "House & Senate Official STOCK Act Portals"
+                if is_valid:
+                    src = coverage_evidence.get("source_inventory") or coverage_evidence.get("source") or "House & Senate Official STOCK Act Portals"
                     interval_days = coverage_evidence.get("interval_days", cls.LOOKBACK_DAYS_CONGRESS)
                     return {
                         "domain_id": "congressional_stock_act",
@@ -3492,6 +3640,22 @@ class SmartMoneyEngine:
                         "coverage_evidence": coverage_evidence,
                         "records": [],
                     }
+                elif status_code == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value:
+                    return {
+                        "domain_id": "congressional_stock_act",
+                        "status": SmartMoneyDomainStatus.PARTIAL_COVERAGE.value,
+                        "status_label": "Partial Coverage",
+                        "available": False,
+                        "is_live": False,
+                        "observation_count": 0,
+                        "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                        "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                        "net_value_usd": 0.0,
+                        "provenance": coverage_evidence.get("source_inventory", "None") if isinstance(coverage_evidence, dict) else "None",
+                        "disclosure": f"Congressional STOCK Act coverage is partial and uncertified: {reason}",
+                        "coverage_evidence": coverage_evidence if isinstance(coverage_evidence, dict) else None,
+                        "records": [],
+                    }
                 else:
                     return {
                         "domain_id": "congressional_stock_act",
@@ -3504,7 +3668,8 @@ class SmartMoneyEngine:
                         "directional_bias": SmartMoneyDirection.UNASSESSED.value,
                         "net_value_usd": 0.0,
                         "provenance": "None",
-                        "disclosure": "Congressional STOCK Act empty live search lacks certified interval coverage evidence.",
+                        "disclosure": f"Congressional STOCK Act empty live search lacks certified interval coverage evidence: {reason}",
+                        "coverage_evidence": coverage_evidence if isinstance(coverage_evidence, dict) else None,
                         "records": [],
                     }
             else:
@@ -3640,13 +3805,8 @@ class SmartMoneyEngine:
         )
 
         cong_evidence = congress_coverage_evidence
-        if congress_verified_empty and cong_evidence is None:
-            cong_evidence = {
-                "source": "House & Senate Official STOCK Act Portals",
-                "interval_days": cls.LOOKBACK_DAYS_CONGRESS,
-                "symbol": clean_sym,
-                "watermark_hash": "CONFIRMED_ZERO_VERIFIED_COVERAGE",
-            }
+        # Fail closed on bare booleans: never synthesize fake CONFIRMED_ZERO_VERIFIED_COVERAGE.
+        # Until trusted receipt validation exists, coverage remains uncertified.
 
         cong_sub = cls.assess_congressional_trades(
             symbol=clean_sym,

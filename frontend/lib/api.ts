@@ -366,7 +366,8 @@ export interface CongressTradeItem {
   ticker: string;
   asset_name: string;
   transaction_type: string;
-  amount_range: string;
+  amount_range?: string | null;
+  owner?: string | null;
   filing_date: string;
   transaction_date: string;
   strike_price?: string;

@@ -83,13 +83,39 @@ def test_case_01_live_feed_disconnected(confluence):
 # -----------------------------------------------------------------------------
 # Case 2: Authoritative Completed Search with 0 Results
 # -----------------------------------------------------------------------------
+VALID_CONGRESS_COVERAGE_EVIDENCE = {
+    "source_inventory": "house_clerk_daily_index_2026",
+    "chamber": "HOUSE",
+    "interval_days": 180,
+    "symbol": "AAPL",
+    "document_identities": ["DOC_20025123", "DOC_20025145"],
+    "extraction_outcomes": {
+        "DOC_20025123": "SUCCESS",
+        "DOC_20025145": "SUCCESS",
+    },
+    "unresolved_records_count": 0,
+    "watermark_hash": "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
+}
+
 def test_case_02_verified_no_activity(confluence):
     """Case 2: Authoritative search confirms 0 results -> VERIFIED_NO_ACTIVITY, Confluence scores 50.0 neutral."""
+    # Negative assertion: bare boolean without coverage evidence fails closed to PARTIAL_COVERAGE
+    bare_res = SmartMoneyEngine.assess_symbol(
+        symbol="AAPL",
+        options_verified_empty=True,
+        sec_verified_empty=True,
+        congress_verified_empty=True,
+    )
+    assert bare_res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
+    assert bare_res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
+
+    # With authoritative coverage evidence:
     res = SmartMoneyEngine.assess_symbol(
         symbol="AAPL",
         options_verified_empty=True,
         sec_verified_empty=True,
         congress_verified_empty=True,
+        congress_coverage_evidence=VALID_CONGRESS_COVERAGE_EVIDENCE,
     )
 
     assert res["overall_status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
@@ -449,6 +475,7 @@ def test_decision_trace_smart_money_synchronization(confluence):
         options_verified_empty=True,
         sec_verified_empty=True,
         congress_verified_empty=True,
+        congress_coverage_evidence=VALID_CONGRESS_COVERAGE_EVIDENCE,
     )
 
     conf = confluence.calculate_confluence(

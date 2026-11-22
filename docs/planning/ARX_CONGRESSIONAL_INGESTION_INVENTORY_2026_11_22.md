@@ -330,7 +330,8 @@ CREATE TABLE IF NOT EXISTS congressional_filings (
     filing_date DATE NOT NULL,
     received_date DATE,
     source_url TEXT NOT NULL,
-    raw_document_sha256 VARCHAR(64), -- Populated upon Stage 2 PDF fetch
+    index_source_sha256 VARCHAR(64) NOT NULL, -- SHA-256 of retained raw index XML bytes
+    ptr_document_sha256 VARCHAR(64), -- Populated only upon Stage 2 PDF fetch; left NULL when unavailable
     extraction_status VARCHAR(32) NOT NULL DEFAULT 'INDEXED_PENDING_EXTRACTION', -- 'EXTRACTED', 'EXTRACTION_FAILED', 'MANUAL_REVIEW'
     amends_filing_id VARCHAR(64) REFERENCES congressional_filings(filing_id),
     ingestion_timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -339,7 +340,9 @@ CREATE TABLE IF NOT EXISTS congressional_filings (
 CREATE INDEX IF NOT EXISTS idx_cong_filing_date ON congressional_filings (filing_date);
 CREATE INDEX IF NOT EXISTS idx_cong_filing_member ON congressional_filings (bioguide_id);
 
--- 3. Disclosed Asset Transactions (Stage 2: Transaction Extraction)
+-- 3. Disclosed Asset Transactions (Stage 2: Normalization of Transcribed Records)
+-- NOTE: Until an authoritative PDF extraction pipeline is implemented and qualified,
+-- Stage 2 performs normalization of transcribed records.
 -- NOTE ON GENERATED COLUMNS: PostgreSQL generated columns cannot reference other tables.
 -- days_to_filing is therefore computed at ingestion time or evaluated dynamically via SQL View.
 CREATE TABLE IF NOT EXISTS congressional_transactions (
@@ -354,10 +357,10 @@ CREATE TABLE IF NOT EXISTS congressional_transactions (
     notification_date DATE,
     filing_date DATE NOT NULL, -- Stored redundantly at extraction for fast partitioned queries
     days_to_filing INTEGER GENERATED ALWAYS AS (filing_date - transaction_date) STORED,
-    amount_range VARCHAR(64) NOT NULL, -- '$1,001 - $15,000', '$15,001 - $50,000', etc.
-    amount_min NUMERIC(14, 2) NOT NULL,
-    amount_max NUMERIC(14, 2), -- NULL for open-ended top bracket (>$50,000,000)
-    owner_type VARCHAR(32) NOT NULL DEFAULT 'Self', -- 'Self', 'Spouse', 'Child', 'Joint'
+    amount_range VARCHAR(64), -- Nullable when undisclosed in statutory filing
+    amount_min NUMERIC(14, 2), -- Nullable when undisclosed
+    amount_max NUMERIC(14, 2), -- NULL for open-ended top bracket (>$50,000,000) or undisclosed
+    owner_type VARCHAR(32), -- Nullable when undisclosed; NEVER defaulted to 'Self'
     extraction_confidence NUMERIC(4, 3) DEFAULT 1.000, -- 1.000 for digital e-file; <1.000 for OCR
     comment TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -375,6 +378,8 @@ CREATE TABLE IF NOT EXISTS congressional_receipts (
     interval_end DATE NOT NULL,
     indexed_document_count INTEGER NOT NULL,
     extracted_document_count INTEGER NOT NULL,
+    failed_document_count INTEGER NOT NULL DEFAULT 0,
+    unresolved_records_count INTEGER NOT NULL DEFAULT 0,
     coverage_status VARCHAR(32) NOT NULL DEFAULT 'PARTIAL_COVERAGE', -- 'COMPLETE', 'PARTIAL_COVERAGE', 'PENDING'
     watermark_hash VARCHAR(64) NOT NULL,
     is_complete BOOLEAN NOT NULL DEFAULT FALSE,
@@ -382,11 +387,12 @@ CREATE TABLE IF NOT EXISTS congressional_receipts (
 );
 
 ### 7.1 Offline Prototype Findings & Revised Schema Decisions
-An offline prototype parser and verification suite (`tests/test_congressional_offline_prototype.py`) was implemented to test Stage 1 XML index parsing, Stage 2 transaction extraction, idempotent duplicate handling, and truthful coverage certification against disposable storage:
-1. **Intra-Document Transaction Keys:** Individual disclosed transaction lines within a single PTR do not carry native government accession IDs. The revised schema standardizes deterministic composite keys: `{chamber}_{doc_id}_TX_{index}`.
-2. **Explicit Unresolved Identity Tracking:** Government filings frequently disclose municipal bonds, options, or unlisted instruments without standard 1-5 character ticker symbols. The revised schema adds `unresolved_mapping_reason VARCHAR(64)` alongside `raw_asset_name` so unmapped assets are never dropped or assigned fabricated tickers.
-3. **Denormalized Dates for Latency Computation:** To prevent PostgreSQL `SQL error 42P10` (cross-table generated column violations), `filing_date` is denormalized onto `congressional_transactions` at extraction time, enabling `days_to_filing INTEGER GENERATED ALWAYS AS (filing_date - transaction_date) STORED`.
-4. **Watermark Coverage Granularity:** The coverage ledger tracks `indexed_document_count` vs `extracted_document_count`. Only when `indexed_document_count == extracted_document_count` and count > 0 can the interval be certified as `COMPLETE`. Any unparsed or pending documents mark the interval as `PARTIAL_COVERAGE`, strictly preventing false certified-empty claims.
+An offline prototype parser and verification suite (`tests/test_congressional_offline_prototype.py` and `tests/test_congressional_disclosure_state_handling.py`) was implemented and expanded to test Stage 1 XML index parsing, Stage 2 transcribed record normalization, idempotent duplicate handling, strict receipt binding, and truthful coverage certification against disposable storage:
+1. **Accurate Stage 2 Framing:** Stage 2 is framed accurately as "Normalization of Transcribed Records" rather than claiming automated PDF extraction is complete. PDF parsing remains a future phase subject to separate parser qualification.
+2. **Cryptographic Source Byte Hashing & Separation:** Retained source bytes of daily/annual XML indices are hashed directly (`index_source_sha256`). The PTR document hash (`ptr_document_sha256`) is left `NULL` (unset) until raw PTR PDF bytes are downloaded and stored. Hashing synthetic strings or metadata to fake a PDF hash is prohibited.
+3. **Preservation of Undisclosed Owner and Amount Fields as NULL:** Statutory filings often omit owner designations or describe non-bracketed/exempt transactions. The schema and engine preserve undisclosed `owner_type` and `amount_range` as `NULL`. Defaulting missing fields to `"Self"` or `"$1,001 - $15,000"` is strictly eliminated. In legislative alignment scoring, undisclosed amounts award 0 sizing points.
+4. **Equal Document Counts Alone Cannot Certify Completeness:** A pipeline may process 10 documents where 1 failed with an unparseable document or where transactions contain unmapped tickers. The receipt validator enforces that `failed_document_count == 0` AND `unresolved_records_count == 0` AND all document extraction outcomes are `SUCCESS`. If any document failed or unresolved records exist, coverage fails closed to `PARTIAL_COVERAGE`.
+5. **Elimination of Fake Fallbacks:** The synthetic fallback string `CONFIRMED_ZERO_VERIFIED_COVERAGE` has been completely eliminated from `SmartMoneyEngine.assess_symbol`. Bare booleans (`congress_verified_empty=True`) or bare hash strings without full bindings fail closed to `UNAVAILABLE` or `PARTIAL_COVERAGE`. Coverage receipts must explicitly bind to source inventory, chamber, interval, symbol, document identities, and extraction outcomes.
 ```
 
 ---
@@ -511,12 +517,82 @@ flowchart TD
 1. Update `GET /api/v1/smart-money/congress` to query `congressional_transactions` in PostgreSQL.
 2. Display verified coverage dates and raw government PDF links directly in `SmartMoneyDetailModal`.
 
-### 11.1 Bounded Source-Acquisition Proposal (Zero Automated Collection)
-Because authentic House and Senate documents and custody manifests are absent from the local repository and storage, any collection of authentic filings must follow a strictly bounded, non-automated procedure:
-1. **Target Boundary:** A single historical annual index file (`2026FD.xml`) from the House Clerk public downloads directory and exactly one sample PTR report PDF.
-2. **Ingestion Channel:** Staged manually or through a single-shot, pre-approved staging script with hardcoded rate limits (max 1 request per 5 seconds, User-Agent identification, zero session spoofing or CAPTCHA bypass).
-3. **Custody & Verification:** Staged documents must be deposited into an offline sandbox directory (`data/staging/congressional/`) with a signed `manifest.sha256` digest ledger before any parsing or ingestion code is invoked.
-4. **Governed Stop:** No automated ingestion daemon, recurring cron job, worker loop, or live network client may be activated without formal governance sign-off and legal compliance review.
+### 11.1 Bounded Source-Acquisition Proposal: ONE House Index & ONE PTR PDF
+To establish authentic offline fixtures without unmonitored scraping or ongoing network loops, the following bounded acquisition procedure is prepared for future governed execution. **All outbound requests remain strictly suspended during this turn; stop before requests.**
+
+#### 1. Exact Source Targets
+- **House Index File (ZIP/XML):**
+  - Canonical URL: `https://disclosures-clerk.house.gov/public_disc/financial-search/2026FD.ZIP` (contains official statutory index `2026FD.xml`)
+  - Alternative XML direct URL: `https://disclosures-clerk.house.gov/public_disc/financial-search/2026FD.xml`
+- **Sample PTR Report PDF:**
+  - Canonical URL: `https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2026/20025123.pdf` (official periodic transaction report document)
+
+#### 2. Access Requirements & Egress Policy
+- **User-Agent Header:** `ARXTerminal/1.0 (compliance@arxterminal.com; research-inventory)`
+- **Access Authentication:** Public statutory disclosure portals under 5 U.S.C. app. § 103 require no API key or basic authentication.
+- **Rate Limit Ceiling:** Minimum 10 seconds between requests (strictly ≤ 0.1 requests/sec).
+- **Robots / Anti-Bot Compliance:** Strict adherence to `robots.txt` on `disclosures-clerk.house.gov`. If any anti-bot challenge (CAPTCHA, Cloudflare Turnstile, browser check) is detected, the acquisition script must fail closed immediately and emit an alert. Zero challenge bypass is permitted.
+
+#### 3. Total Attempt Budget
+- **Socket Attempts:** Strictly 1 socket connection per artifact.
+- **Retry Policy:** Maximum 1 retry allowed only in the event of an unexpected TCP socket reset or timeout (HTTP 502/504). Total attempt ceiling: **2 attempts per URL**.
+- **Socket Timeout:** Hard limit of 15 seconds per connection.
+- **Fail-Closed Budget:** If the attempt budget is exhausted, the operation aborts immediately and records `ACQUISITION_FAILED` in the custody manifest.
+
+#### 4. Duplicate Prevention & Content-Addressable Storage
+- **Pre-Flight Local Check:** Before initiating any network socket, verify whether the target artifact already exists locally under `fixtures/congressional/raw/`. If present, skip outbound egress entirely.
+- **Content-Addressable Retention:** Raw downloaded bytes are hashed with SHA-256 upon reception and written to disk named by their hash:
+  - Index: `fixtures/congressional/raw/indices/{sha256}.xml` (or `.zip`)
+  - PTR: `fixtures/congressional/raw/documents/{sha256}.pdf`
+
+#### 5. Raw-Byte Custody Manifest Contract
+Every acquired artifact must be appended to the cryptographically verifiable manifest at `fixtures/congressional/custody_manifest.json`:
+```json
+{
+  "manifest_version": "1.0.0",
+  "accountable_operator": "David Akara",
+  "directive": "ARX-CONGRESSIONAL-INGESTION-001",
+  "artifacts": [
+    {
+      "document_type": "HOUSE_INDEX_XML",
+      "canonical_url": "https://disclosures-clerk.house.gov/public_disc/financial-search/2026FD.ZIP",
+      "retrieved_filename": "2026FD.xml",
+      "storage_path": "fixtures/congressional/raw/indices/<sha256>.xml",
+      "byte_count": 0,
+      "sha256": "<computed_sha256>",
+      "retrieved_at_utc": "YYYY-MM-DDTHH:MM:SSZ",
+      "http_status": 200,
+      "response_headers": {
+        "content-type": "application/xml",
+        "last-modified": "...",
+        "etag": "..."
+      },
+      "verification_status": "VERIFIED_BYTE_INTEGRITY"
+    },
+    {
+      "document_type": "HOUSE_PTR_PDF",
+      "canonical_url": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2026/20025123.pdf",
+      "retrieved_filename": "20025123.pdf",
+      "storage_path": "fixtures/congressional/raw/documents/<sha256>.pdf",
+      "byte_count": 0,
+      "sha256": "<computed_sha256>",
+      "retrieved_at_utc": "YYYY-MM-DDTHH:MM:SSZ",
+      "http_status": 200,
+      "response_headers": {
+        "content-type": "application/pdf",
+        "last-modified": "...",
+        "etag": "..."
+      },
+      "verification_status": "VERIFIED_BYTE_INTEGRITY"
+    }
+  ]
+}
+```
+
+#### 6. Governed Stop
+> [!IMPORTANT]
+> **GOVERNED STOP ENFORCED:**
+> In compliance with strict safety invariants, NO external HTTP, TCP, or scraping requests have been dispatched to `disclosures-clerk.house.gov`. The acquisition proposal is documented and reviewed; execution requires formal sign-off. Stop before requests.
 
 ---
 

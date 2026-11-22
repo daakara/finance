@@ -182,6 +182,41 @@ assert.ok(
 );
 console.log("  [OK] api.ts SMART_MONEY rationale and includeCurated parameter verified");
 
+// -----------------------------------------------------------------------------
+// Test 6: Strict Coverage Evidence & Null Value Presentation Handling
+// -----------------------------------------------------------------------------
+console.log("\nTest 6: Verifying strict coverage validation & null owner/amount preservation...");
+
+// Must reject CONFIRMED_ZERO_VERIFIED_COVERAGE in cardSource
+assert.ok(
+  cardSource.includes('hash !== "CONFIRMED_ZERO_VERIFIED_COVERAGE"'),
+  "CongressionalTradesCard must explicitly reject fabricated fallback CONFIRMED_ZERO_VERIFIED_COVERAGE"
+);
+console.log("  [OK] Fabricated fallback CONFIRMED_ZERO_VERIFIED_COVERAGE explicitly rejected in card");
+
+// Must verify 64-character hash length
+assert.ok(
+  cardSource.includes("hash.length === 64"),
+  "CongressionalTradesCard must require exact 64-character hex hash"
+);
+console.log("  [OK] 64-char hash length check verified");
+
+// Must check unresolved records and extraction outcomes
+assert.ok(
+  cardSource.includes("coverageEvidence?.unresolvedRecordCount === 0") &&
+  cardSource.includes("coverageEvidence.extractionOutcomes?.[id] === \"SUCCESS\""),
+  "CongressionalTradesCard must check for 0 unresolved records and successful document extraction"
+);
+console.log("  [OK] Unresolved records and extraction outcome checks verified");
+
+// Must preserve null amount and null owner
+assert.ok(
+  cardSource.includes('trade.amount_range || "Undisclosed amount"') &&
+  cardSource.includes("trade.owner &&"),
+  "CongressionalTradesCard must render 'Undisclosed amount' when amount is null and omit owner when null"
+);
+console.log("  [OK] Undisclosed amount and owner preservation verified");
+
 console.log("\n===============================================================================");
-console.log("   ALL 5 FRONTEND STATE HANDLING & PRESENTATION GATES PASSED!                ");
+console.log("   ALL 6 FRONTEND STATE HANDLING & PRESENTATION GATES PASSED!                ");
 console.log("===============================================================================");

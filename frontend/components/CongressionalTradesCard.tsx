@@ -5,11 +5,22 @@ import { CongressTradeItem, OptionsFlowItem } from "../lib/api";
 import SmartMoneyDetailModal from "./SmartMoneyDetailModal";
 
 export interface CongressionalCoverageEvidence {
+  sourceInventory?: string;
   source?: string;
+  chamber?: "HOUSE" | "SENATE" | "BOTH" | string;
   interval?: string;
+  intervalDays?: number;
+  intervalStart?: string;
+  intervalEnd?: string;
+  symbol?: string;
   filterMatching?: boolean;
+  documentIdentities?: string[];
+  extractionOutcomes?: Record<string, "SUCCESS" | "FAILED" | "UNPARSED" | string>;
+  unresolvedRecordCount?: number;
   watermarkHash?: string;
+  receiptHash?: string;
   certifiedWatermark?: string;
+  verifiedComplete?: boolean;
 }
 
 interface CongressionalTradesCardProps {
@@ -469,7 +480,13 @@ export default function CongressionalTradesCard({
                     <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="font-semibold text-cyan-400">{trade.transaction_type}</span>
                       <span>•</span>
-                      <span>{trade.amount_range}</span>
+                      <span>{trade.amount_range || "Undisclosed amount"}</span>
+                      {trade.owner && (
+                        <>
+                          <span>•</span>
+                          <span>Owner: {trade.owner}</span>
+                        </>
+                      )}
                       <span>•</span>
                       <span>Filed: {trade.filing_date} ({trade.days_to_filing}d lag)</span>
                     </div>
@@ -537,25 +554,46 @@ export default function CongressionalTradesCard({
                 </div>
               </div>
             ) : status === "VALID_EMPTY" ? (
-              Boolean(coverageEvidence?.watermarkHash || coverageEvidence?.certifiedWatermark) && coverageEvidence?.filterMatching !== false ? (
-                <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
-                  <div className="font-semibold text-slate-300">
-                    No matching transactions
+              (() => {
+                const hash = coverageEvidence?.watermarkHash || coverageEvidence?.receiptHash || coverageEvidence?.certifiedWatermark;
+                const isHashValid = Boolean(hash && hash !== "CONFIRMED_ZERO_VERIFIED_COVERAGE" && hash !== "UNVERIFIED" && hash.length === 64);
+                const hasZeroUnresolved = coverageEvidence?.unresolvedRecordCount === 0 || coverageEvidence?.unresolvedRecordCount === undefined;
+                const hasOutcomes = !coverageEvidence?.documentIdentities || !coverageEvidence?.extractionOutcomes || coverageEvidence.documentIdentities.every(
+                  (id) => coverageEvidence.extractionOutcomes?.[id] === "SUCCESS" || coverageEvidence.extractionOutcomes?.[id] === "COMPLETE"
+                );
+                const isCertified = Boolean(
+                  coverageEvidence &&
+                  isHashValid &&
+                  coverageEvidence.filterMatching !== false &&
+                  hasZeroUnresolved &&
+                  hasOutcomes &&
+                  (coverageEvidence.sourceInventory || coverageEvidence.source)
+                );
+
+                if (isCertified) {
+                  return (
+                    <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                      <div className="font-semibold text-slate-300">
+                        No matching transactions
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        Verified complete search confirmed 0 qualifying congressional transactions in the requested coverage period ({coverageEvidence?.interval || `${coverageEvidence?.intervalDays}D` || timeframe}).
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                    <div className="font-semibold text-slate-300">
+                      Coverage uncertified
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      No transactions reported, but cryptographic coverage certification for the requested source, chamber, and interval was not verified.
+                    </div>
                   </div>
-                  <div className="text-[11px] text-slate-500">
-                    Verified complete search confirmed 0 qualifying congressional transactions in the requested coverage period ({coverageEvidence?.interval || timeframe}).
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
-                  <div className="font-semibold text-slate-300">
-                    Coverage uncertified
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    No transactions reported, but cryptographic coverage certification for the requested source and interval was not verified.
-                  </div>
-                </div>
-              )
+                );
+              })()
             ) : filteredCongressTrades.length === 0 && (status === "AVAILABLE" || status === "CURATED") ? (
               <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
                 <div className="font-semibold text-slate-300">
