@@ -1,8 +1,9 @@
 # ARX SEC Historical Replay Qualification Report & Finalized Receipt (PR #317)
 **Trial Anchor:** `ARX-TRIAL-2026-NVDA-AAPL-001`  
-**Candidate Commit SHA:** `83c08333bfd6049c8f5332f5dd0d428febcb2bf2`  
 **PR Reference:** [daakara/finance#317](https://github.com/daakara/finance/pull/317) on `codex/sec-expansion-preparation`  
 **Base Anchor Commit:** `2eccc64a2cb3c649ad4d584a942285a6406d1ce0` (`origin/release/production`)  
+**Tested Replay Qualification Commit:** `83c08333bfd6049c8f5332f5dd0d428febcb2bf2`  
+**Report Governance Commit:** `c2456597551d50b4d06579236af238fc99e814fd`  
 **Dedicated Worktree:** `/Users/iDavid/Projects/finance-sec-expansion` (APFS isolated)  
 **Execution Environment:** Isolated PostgreSQL (`pgserver`), Loopback Guard (`sec_offline_test_support`)
 
@@ -10,17 +11,21 @@
 
 ## 1. Test Reconciliation & Exact Execution Commands
 
-- **Tested Commit:** `83c08333bfd6049c8f5332f5dd0d428febcb2bf2`
-- **Complete Combined Pytest Command:**
-  ```bash
-  PYTHONPATH=tools/qualification:tests:. python3 -m pytest -p sec_offline_test_support \
-    tests/test_sec_archived_replay_preparation.py \
-    tests/test_sec_bounded_resumable_ingestion.py \
-    tests/test_sec_resume_safety_regressions.py \
-    tests/test_sec_expanded_delivery.py \
-    tests/test_sec_historical_replay_qualification.py
-  ```
-- **Combined Test Run Result:** **65 collected, 65 passed, 0 failed, 0 skipped** in **49.90s**.
+### Commit Association
+- **Tested Commit (Offline Replay Qualified):** `83c08333bfd6049c8f5332f5dd0d428febcb2bf2`
+- **Report-Only Commit:** `c2456597551d50b4d06579236af238fc99e814fd`
+- **Candidate PR Head:** Incorporates report corrections, manifest registration, and deterministic macro presentation test fix.
+
+### Complete Combined Pytest Command
+```bash
+PYTHONPATH=tools/qualification:tests:. python3 -m pytest -p sec_offline_test_support \
+  tests/test_sec_archived_replay_preparation.py \
+  tests/test_sec_bounded_resumable_ingestion.py \
+  tests/test_sec_resume_safety_regressions.py \
+  tests/test_sec_expanded_delivery.py \
+  tests/test_sec_historical_replay_qualification.py
+```
+- **Combined Test Run Result on Commit `83c08333`:** **65 collected, 65 passed, 0 failed, 0 skipped** in **49.90s**.
 
 ### Resolution of 60-vs-65 Discrepancy & Module Timings
 The earlier "60 tests" count was a manual arithmetic undercount where `tests/test_sec_expanded_delivery.py` was miscounted as 15 tests instead of 20. Individual module timings from standalone runs:
@@ -46,8 +51,8 @@ SHA-256 digests were recomputed directly from the actual bytes of all fixtures:
 - **SHA-256 Digest:** `eadd8fccc8161b484c2727d79e75a1d37b5303a625b9a22b13c36dd8f34e1ce9`
 - **Accession / CIK:** `0001140361-26-044773` | Apple Inc. (`0000320193`)
 - **Filing Date / Acceptance:** `2026-11-18` | `2026-11-18T23:30:10Z` (Period: `2026-11-16`)
-- **Contents:** 2 non-derivative sales (Code S: 36,792 shares @ \$352.26, 53,208 shares @ \$353.43), 1 non-derivative gift (Code G: 50,000 shares @ \$0.00).
-- **Custody Provenance:** Archived bytes with a pinned SHA-256 hash (`eadd8fccc8161b484c2727d79e75a1d37b5303a625b9a22b13c36dd8f34e1ce9`) in `tests/fixtures/sec_edgar/AAPL_0001140361-26-044773.xml`, with its original acquisition and statutory authenticity not independently reverified against live SEC endpoints.
+- **Contents:** 2 non-derivative sales (Code S: 36,792 shares @ $352.26, 53,208 shares @ $353.43), 1 non-derivative gift (Code G: 50,000 shares @ $0.00).
+- **Custody Provenance:** Archived replay with pinned hash (`eadd8fccc8161b484c2727d79e75a1d37b5303a625b9a22b13c36dd8f34e1ce9`); original acquisition authenticity remains `NOT_CHECKED`.
 - **Scope Limit:** **Authentic replay demonstrated for one AAPL filing only.** Historical interval coverage remains `PARTIAL` and `NOT_CERTIFIED`.
 
 ### 2.2 Synthetic Fixtures (In-Memory XML Payloads)
@@ -62,14 +67,21 @@ SHA-256 digests were recomputed directly from the actual bytes of all fixtures:
 
 ## 3. Strict Separation of Governance, Leases, and Deployment
 
-### 3.1 Continuous Authorization Checks (Governance Layer)
-Continuous authorization is an application-memory and environment-variable policy gate evaluated prior to execution:
-- **Grant ID (`ARX_CONTINUOUS_AUTH_ID`):** Exactly 32 hex characters.
-- **Scope (`ARX_CONTINUOUS_AUTH_SCOPE`):** Restricted to `RECURRING_2_ISSUER_FORM4_TRIAL` or `RECURRING_10_ISSUER_FORM4_INGESTION_ONLY`.
+### 3.1 Continuous Authorization Requirements vs. Live Values Inspected
+Continuous authorization enforces a strict separation between policy definition and runtime execution state:
+
+#### A. Authoritative Authorization Policy Requirements (Specification)
+- **Grant ID (`ARX_CONTINUOUS_AUTH_ID`):** Exactly 32 lowercase hexadecimal characters.
+- **Scope (`ARX_CONTINUOUS_AUTH_SCOPE`):** Restricted strictly to `RECURRING_2_ISSUER_FORM4_TRIAL` or `RECURRING_10_ISSUER_FORM4_INGESTION_ONLY`.
 - **Issuer Binding:** Strictly bound to governed issuers: AAPL (`0000320193`) and NVDA (`0001045810`).
-- **Release SHA Binding:** Bound strictly to deployed production release SHA (`2eccc64a2cb3c649ad4d584a942285a6406d1ce0`).
+- **Release SHA Binding:** Bound strictly to currently deployed production release SHA (`2eccc64a2cb3c649ad4d584a942285a6406d1ce0`).
 - **Timestamps:** ISO 8601 UTC Z-terminated timestamps with maximum 24-hour validity window.
 - **Ingestion-Only Flag (`ARX_SMART_MONEY_INGESTION_ONLY`):** Strictly `true`.
+
+#### B. Actual Live Values Inspected & Current Runtime State
+- **Live Production Inspection:** In the live environment, no continuous authorization grant is active for PR #317. The production pipeline is not running.
+- **Candidate Test Context:** Replay qualification executes in an offline test harness (`sec_offline_test_support`) where authorization tokens are synthetic and scoped solely to local test memory.
+- **Candidate Invariant:** Candidate commits (`83c08333`, `c2456597`, and current PR head) are undeployed candidate commits on PR #317 and are **NEVER** bound to an active production grant.
 
 ### 3.2 Worker Lease & Queue Checks (PostgreSQL Runtime Layer)
 Separated from governance authorization; manages process concurrency:
@@ -79,15 +91,15 @@ Separated from governance authorization; manages process concurrency:
 - **Advisory Locks:** PostgreSQL `pg_locks` inspected for zero orphaned advisory locks.
 
 ### 3.3 Separation of Candidate Qualification from Production Deployment
-- **Candidate Status:** Commit `83c08333` is an **undeployed qualification candidate** on PR #317.
-- **Deployment Invariant:** Deployed production remains anchored at `2eccc64a`.
-- **Non-Bypassable Rule:** Never bind an active production authorization grant to undeployed candidate `83c08333`.
+- **Candidate Status:** Commits `83c08333`, `c2456597`, and the current PR head are **undeployed qualification candidates** on PR #317.
+- **Deployment Invariant:** Deployed production remains anchored at `2eccc64a2cb3c649ad4d584a942285a6406d1ce0`.
+- **Non-Bypassable Rule:** Never bind an active production authorization grant to undeployed candidate SHAs.
 
 ---
 
 ## 4. Production Baseline vs. Candidate PR #317 Behavior
 
-| Dimension | Deployed Production (`2eccc64a`) | Candidate PR #317 (`83c08333` on PR #317) |
+| Dimension | Deployed Production (`2eccc64a`) | Candidate PR #317 (`83c08333` / candidate head) |
 | :--- | :--- | :--- |
 | **Execution Model** | Monolithic batch in Step 6. All issuers fetched together before parsing. | Bounded-cohort execution. Commits each issuer unit atomically (`_parse_and_reconcile_transaction`). |
 | **Partial Failure Containment** | **Progress Lost:** Upstream failure on NVDA aborts batch before Step 7; 0 rows committed for earlier fetched issuers (AAPL). | **Progress Preserved:** AAPL unit is committed in PostgreSQL before NVDA is attempted. NVDA failure leaves AAPL intact. |
@@ -107,20 +119,33 @@ Separated from governance authorization; manages process concurrency:
 ## 6. Preflight Recoverability vs. Post-Cycle Backups
 
 The temporal order of backup evidence is strictly enforced:
-1. **Preflight Recoverability Evidence (Prerequisite):** Fresh preflight evidence (verifying database connectivity, pre-backup snapshot viability, and `restore_verifier` feasiblity) is required **before** dispatch.
+1. **Preflight Recoverability Evidence (Prerequisite):** A fresh preflight backup accompanied by verified evidence of a successful isolated restore (`restore_verifier` PASS on isolated test server), not merely restore feasibility, is required **before** dispatch.
 2. **Post-Cycle Backup Evidence (Post-Execution):** Post-cycle backups can only be created and assessed **after** cycle execution completes (`_step9_post_backup`).
 
 ---
 
-## 7. Hosted Qualification Status for Head `83c08333`
+## 7. Hosted Qualification Status & Independent Failure Diagnosis
 
-Committed and pushed to GitHub PR #317 (`codex/sec-expansion-preparation`). Hosted GitHub Actions execution results (Run `45005770852`):
-- `SM-ACT-020 Continuous Authorization Guard`: **SUCCESS** (Run `45005770826`)
-- `SM-ACT-020 Isolated Owner Lock Health`: **SUCCESS** (Run `45005770825`)
-- `Cloudflare Pages`: **SUCCESS**
-- `Release Qualification Suite (RQ-01..13)`: **RELEASE_QUALIFICATION_BLOCKED** (10 passed, 2 failed):
-  - Passed: RQ-01, RQ-04, RQ-05, RQ-06, RQ-07, RQ-08, RQ-09, RQ-10, RQ-11, RQ-13.
-  - Failed: **RQ-02 (Diff Integrity)** and **RQ-03 (Backend Regression)** because candidate qualification files (`test_sec_historical_replay_qualification.py` and `SEC_HISTORICAL_REPLAY_QUALIFICATION_2026_11_22.md`) are new qualification artifacts on the branch not yet bound into `release_manifest.json` (as expected prior to formal release admission).
+### Discovered CI Results for PR #317 Branches
+- **Commit `83c08333bfd6049c8f5332f5dd0d428febcb2bf2`:**
+  - `SM-ACT-020 Continuous Authorization Guard` (Run `45005770826`): **SUCCESS**
+  - `SM-ACT-020 Worker Lock Health Regression` (Run `45005770825`): **SUCCESS**
+  - `Release Qualification Suite` (Run `45005770852`): **FAILED** at RQ-02 and RQ-03.
+- **Commit `c2456597551d50b4d06579236af238fc99e814fd`:**
+  - `SM-ACT-020 Continuous Authorization Guard` (Run `45006682569`): **SUCCESS**
+  - `SM-ACT-020 Isolated Owner Lock Health` (Run `45006682573`): **SUCCESS**
+  - `Cloudflare Pages`: **SUCCESS**
+  - `Release Qualification Suite` (Run `45006682611`): **FAILED** at RQ-02 and RQ-03.
+
+### Independent Root Cause Diagnosis
+1. **RQ-02 (Release Diff Integrity):**
+   - *Failure:* `FAIL: Detected 2 unapproved files in diff: docs/reports/SEC_HISTORICAL_REPLAY_QUALIFICATION_2026_11_22.md, tests/test_sec_historical_replay_qualification.py`.
+   - *Root Cause:* The release manifest (`scripts/release/release_manifest.json`) was anchored to commit `bb460951` and lacked registration entries for the two new qualification files.
+   - *Remediation:* Register both files with cryptographic SHA-256 and byte sizes in `scripts/release/release_manifest.json` under originating PR 317.
+2. **RQ-03 (Backend Regression Suite):**
+   - *Failure:* `FAILED tests/test_fred_sec_presentation_integrity.py::test_macro_contract_inverted_yield_curve_defensive_multiplier - assert False is True`.
+   - *Root Cause (Independent of Manifest):* In `tests/test_fred_sec_presentation_integrity.py`, line 82 omitted `ref_date=datetime.date(2026, 11, 15)`, falling back to `datetime.date.today()` (`2026-11-22`). Because mock FRED observations were dated `2026-11-14` (8 days old), they breached the FRED 7-day observation freshness policy, asserting `is_live=False`.
+   - *Remediation:* Explicitly anchor `ref_date=datetime.date(2026, 11, 15)` in the test, eliminating non-deterministic wall-clock drift staleness. Register the modified test file in `scripts/release/release_manifest.json`.
 
 ---
 

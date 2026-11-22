@@ -18,6 +18,7 @@ Verifies:
    - Captures DFII10 real rate, observation dates, and series observations map.
 """
 
+import datetime
 from unittest.mock import patch, MagicMock
 import pytest
 import pandas as pd
@@ -46,7 +47,6 @@ def test_macro_contract_available_and_live():
     }
 
     with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher.get_macro_indicators", return_value=mock_indicators):
-        import datetime
         payload = _build_macro_contract_payload(ref_date=datetime.date(2026, 11, 15))
 
         assert payload["availability"] == "AVAILABLE"
@@ -79,7 +79,7 @@ def test_macro_contract_inverted_yield_curve_defensive_multiplier():
     }
 
     with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher.get_macro_indicators", return_value=mock_indicators):
-        payload = _build_macro_contract_payload()
+        payload = _build_macro_contract_payload(ref_date=datetime.date(2026, 11, 15))
 
         assert payload["is_live"] is True
         assert payload["regime"] == "RECESSIONARY_PRESSURE"
@@ -97,7 +97,7 @@ def test_macro_contract_unavailable_zero_multiplier_fabrication():
     }
 
     with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher.get_macro_indicators", return_value=mock_indicators):
-        payload = _build_macro_contract_payload()
+        payload = _build_macro_contract_payload(ref_date=datetime.date(2026, 11, 15))
 
         assert payload["availability"] == "UNAVAILABLE"
         assert payload["is_live"] is False
@@ -120,7 +120,7 @@ def test_macro_contract_missing_yield_curve_fails_closed():
     }
 
     with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher.get_macro_indicators", return_value=mock_indicators):
-        payload = _build_macro_contract_payload()
+        payload = _build_macro_contract_payload(ref_date=datetime.date(2026, 11, 15))
 
         assert payload["is_live"] is False
         assert payload["macro_multiplier"] is None

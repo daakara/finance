@@ -1,7 +1,7 @@
 {
   "release_candidate_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 14,
+  "total_files": 17,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-SEC-BOUNDED-INGESTION-317",
   "files": {
@@ -69,6 +69,22 @@
       "sha256": "e684667e5fe2896b0654ad866dad00e1dcbdb89adba9d2084379ec6f0838345a",
       "size_bytes": 10366
     },
+    "docs/reports/SEC_HISTORICAL_REPLAY_QUALIFICATION_2026_11_22.md": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "c2456597551d50b4d06579236af238fc99e814fd",
+      "governing_requirement": "Issue #165: historical replay qualification suite and evidence report",
+      "sha256": "a87a65b5cb4141b3e646405f0bb0b8850d6d85b0f1822e53d98484e4c6515d7b",
+      "size_bytes": 12699
+    },
+    "tests/test_fred_sec_presentation_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 317,
+      "originating_commit": "c2456597551d50b4d06579236af238fc99e814fd",
+      "governing_requirement": "Issue #165: deterministic macro contract ref_date presentation test",
+      "sha256": "b055cf76202501527ddcf8e318132252f3ab3fc9d4166ca42682ecb0b23256ee",
+      "size_bytes": 21606
+    },
     "tests/test_release_sec_gate.py": {
       "operation": "A",
       "originating_pr_number": 317,
@@ -100,6 +116,14 @@
       "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
       "sha256": "4e10ce635829faaa7a33bfc258a5b5d1374ae0be0612635e1a4699f2a28c5540",
       "size_bytes": 6452
+    },
+    "tests/test_sec_historical_replay_qualification.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "c2456597551d50b4d06579236af238fc99e814fd",
+      "governing_requirement": "Issue #165: historical replay qualification suite and evidence report",
+      "sha256": "68e0c80e2be334715c6f81efd2cda1f3ee1144986d39389047ee0bd56fc84c17",
+      "size_bytes": 29642
     },
     "tests/test_sec_resume_safety_regressions.py": {
       "operation": "A",
