@@ -2,19 +2,19 @@
   "control_id": "RQ-08",
   "name": "Artifact Provenance & Digest Binding",
   "status": "PASS",
-  "start_time": "2026-11-22T14:07:37.715760+00:00",
-  "end_time": "2026-11-22T14:07:37.764720+00:00",
-  "duration_sec": 0.049,
-  "candidate_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
-  "source_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
-  "execution_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+  "start_time": "2026-11-22T14:10:12.910119+00:00",
+  "end_time": "2026-11-22T14:10:12.957440+00:00",
+  "duration_sec": 0.047,
+  "candidate_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
-    "execution_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+    "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+    "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -37,13 +37,9 @@
           "rq04_receipt.json",
           "rq05_receipt.json",
           "rq06_receipt.json",
-          "rq07_receipt.json",
-          "rq09_receipt.json",
-          "rq10_receipt.json",
-          "rq11_receipt.json",
-          "rq13_receipt.json"
+          "rq07_receipt.json"
         ],
-        "count": 11
+        "count": 7
       },
       "passed": true
     }
@@ -54,12 +50,12 @@
   ],
   "evidence_digests": {
     "scripts/release/release_manifest.json": "4f79c8ff01a097dcc72f59d7d2007d6e189186c0b3ee59963a0d943fc25f8163",
-    "scripts/release/rq_provenance_receipt.json": "ca15cd03a1cd2f63aa4efc21337a14e3957a611914100751bd68cac9a9338b53"
+    "scripts/release/rq_provenance_receipt.json": "af1ba18eb64ba0fb98d888f53bf22622ea2167ae622c8bcc10aa8426c3120788"
   },
   "errors": [],
   "metadata": {
     "policy_version": "2.2.0-D074A4",
-    "bound_tree": "96d08cdb8dfebfb44968b1d2c5ea47ad9545e513"
+    "bound_tree": "1919c06eec178248ce92709fc85eab9f5760e98b"
   },
-  "receipt_digest": "9b643968ecf010b99b406298e0e36bbd19ef3b383f2ea1050516139357c4b9cc"
+  "receipt_digest": "c541a3c571f6bdf1a2a47fc94ed4de4770acc581d3e2b2336b509c6e219823fe"
 }

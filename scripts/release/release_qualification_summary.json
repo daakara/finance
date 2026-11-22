@@ -1,105 +1,102 @@
 {
   "summary_id": "ARX_RELEASE_QUALIFICATION_SUMMARY",
-  "verdict": "RELEASE_QUALIFICATION_BLOCKED",
+  "verdict": "RELEASE_QUALIFIED",
   "policy_version": "2.2.0-D074A4",
-  "candidate_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
-  "source_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
-  "execution_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+  "candidate_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
-    "execution_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+    "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+    "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
     "workflow_run_attempt": 1,
     "qualification_policy_version": "2.2.0-D074A4"
   },
-  "timestamp": "2026-11-22T14:07:40.576340+00:00",
+  "timestamp": "2026-11-22T14:10:17.962094+00:00",
   "total_controls": 12,
-  "passed_count": 10,
-  "failed_count": 2,
+  "passed_count": 12,
+  "failed_count": 0,
   "blocked_count": 0,
   "missing_count": 0,
   "stages": {
     "RQ-01": {
       "name": "Candidate Identity & Lineage",
-      "status": "CORRUPTED",
-      "valid": false,
-      "reason": "Receipt source_sha mismatch: expected 588e78bdbfd2d9116d290c456ba83a496fa41734 vs receipt 8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 0.148
     },
     "RQ-02": {
       "name": "Release Diff Integrity",
-      "status": "CORRUPTED",
-      "valid": false,
-      "reason": "Receipt source_sha mismatch: expected 588e78bdbfd2d9116d290c456ba83a496fa41734 vs receipt 8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c"
+      "status": "PASS",
+      "valid": true,
+      "duration_sec": 1.015
     },
     "RQ-03": {
       "name": "Backend Regression Suite",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 25.938
+      "duration_sec": 29.831
     },
     "RQ-04": {
       "name": "Frontend Regression & Typecheck",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 7.31
+      "duration_sec": 9.59
     },
     "RQ-05": {
       "name": "Cross-Engine Invariants",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.003
+      "duration_sec": 0.007
     },
     "RQ-06": {
       "name": "Governance & Backlog Invariants",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.415
+      "duration_sec": 0.619
     },
     "RQ-07": {
       "name": "Deployment Safety & Secret Isolation",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.056
+      "duration_sec": 0.062
     },
     "RQ-08": {
       "name": "Artifact Provenance & Digest Binding",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.049
+      "duration_sec": 0.047
     },
     "RQ-09": {
       "name": "Four-Way Cross-Platform Compatibility",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.626
+      "duration_sec": 0.635
     },
     "RQ-10": {
       "name": "Release Configuration Integrity",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.019
+      "duration_sec": 0.043
     },
     "RQ-11": {
       "name": "Rollback Readiness & Target Verification",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.124
+      "duration_sec": 0.125
     },
     "RQ-13": {
       "name": "Financial Evidence & Decision Integrity",
       "status": "PASS",
       "valid": true,
-      "duration_sec": 0.002
+      "duration_sec": 0.005
     }
   },
-  "errors": [
-    "Tampered or corrupted receipt for RQ-01: Receipt source_sha mismatch: expected 588e78bdbfd2d9116d290c456ba83a496fa41734 vs receipt 8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
-    "Tampered or corrupted receipt for RQ-02: Receipt source_sha mismatch: expected 588e78bdbfd2d9116d290c456ba83a496fa41734 vs receipt 8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c"
-  ]
+  "errors": []
 }

@@ -1,18 +1,18 @@
 {
   "record_id": "ARX_RQ08_PROVENANCE_RECORD",
   "policy_version": "2.2.0-D074A4",
-  "source_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
-  "execution_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
-  "head_commit_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
-  "tree_sha": "96d08cdb8dfebfb44968b1d2c5ea47ad9545e513",
+  "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "head_commit_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "tree_sha": "1919c06eec178248ce92709fc85eab9f5760e98b",
   "manifest_path": "scripts/release/release_manifest.json",
   "manifest_sha256": "4f79c8ff01a097dcc72f59d7d2007d6e189186c0b3ee59963a0d943fc25f8163",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
-    "execution_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+    "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+    "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -20,18 +20,14 @@
     "qualification_policy_version": "2.2.0-D074A4"
   },
   "stage_receipt_digests": {
-    "rq01_receipt.json": "58adaf06e0ae0be7f591f740e9f3ea4a8ad15e8621867ab46609e2de776b2ff8",
-    "rq02_receipt.json": "a3b530412487321932d60f305183d57ab5acefb6d602fd737e8bef2c6cb389c6",
-    "rq03_receipt.json": "eb4a9062f6b51fa830a61aff5ba1e94b5c3949a298dbafa323b37731ae3ff1a7",
-    "rq04_receipt.json": "f73194672fc892323211678a9062a329e9de790d8e95bb574f11cde87234b228",
-    "rq05_receipt.json": "565faf000a8b31cffe4bdfa7bcb9159b7b48cefdde211d4ee057512a70118ee7",
-    "rq06_receipt.json": "2bb95c12a3672980a64664774b70cd4d2fbae7cccae75738767815619b7df63e",
-    "rq07_receipt.json": "10ad8c807da7a07930ab2f57c5a4b8ba7024186f2230664d9aa8b10d871e3022",
-    "rq09_receipt.json": "841f758f4bc2d7ba62b4560f78c0a59436249fa7cf2b58dfafac7ca80fe69e8f",
-    "rq10_receipt.json": "08eeed6a7da07bf372c74847d843034f879b042446ac1ef4237517715fa67c07",
-    "rq11_receipt.json": "a55ea2d026e36ea4d5cdffee9fc4a5c84ae0e9be804a0a95f9857b41c0a44dc1",
-    "rq13_receipt.json": "9a146f8dbfb3ae85936629b3baecbad6dbd124535a9fd6a7b84232886d9248c2"
+    "rq01_receipt.json": "8c36dbb01bccb26bb17ee780ac01a0fa72d5b62f92791cbd9e3100d0263c259c",
+    "rq02_receipt.json": "8cd91a02f82f885d83cd4540f4484f0e1f76827b2aa7ddcdc3542770eb9f020b",
+    "rq03_receipt.json": "9235493318209fb4c1a5dad4d23ae5a28f0d3dd6d35ff208a631676dda4d8b2d",
+    "rq04_receipt.json": "bb35fe6a86617a01253bbb0f233cf935843d04c8866d0ba38918842f82e5d2ff",
+    "rq05_receipt.json": "454849b884da4d4f44e7531bff87bd1e61f6cddf4307c40673e9d9ae77de8729",
+    "rq06_receipt.json": "7127edd76b2ceea73d924170caee42b8ad5f6c4c5957aeeba723250430388979",
+    "rq07_receipt.json": "b3daf45f51a3c7d66acb4d73308d2c68c34452d48d1e64c9b32c5f51462ec716"
   },
-  "verification_timestamp": "2026-11-22T14:07:37.715760+00:00",
+  "verification_timestamp": "2026-11-22T14:10:12.910119+00:00",
   "authoritative_target": "release/production"
 }

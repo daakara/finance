@@ -2,19 +2,19 @@
   "control_id": "RQ-01",
   "name": "Candidate Identity & Lineage",
   "status": "PASS",
-  "start_time": "2026-11-22T14:06:43.395921+00:00",
-  "end_time": "2026-11-22T14:06:43.568055+00:00",
-  "duration_sec": 0.172,
-  "candidate_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
-  "source_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
-  "execution_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+  "start_time": "2026-11-22T14:09:13.832483+00:00",
+  "end_time": "2026-11-22T14:09:13.980331+00:00",
+  "duration_sec": 0.148,
+  "candidate_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
-    "execution_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+    "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+    "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -24,7 +24,7 @@
   "assertions": [
     {
       "assertion": "HEAD is valid 40-char hex SHA",
-      "observed": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+      "observed": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
       "passed": true
     },
     {
@@ -45,7 +45,7 @@
     {
       "assertion": "Candidate SHA incorporates authorized candidate",
       "observed": {
-        "candidate_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+        "candidate_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
         "expected": "0b3515b9bcf84d56461ec6688c420b79418ce369",
         "ancestor": true
       },
@@ -61,8 +61,8 @@
   "errors": [],
   "metadata": {
     "is_merge_commit": false,
-    "checked_out_head": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+    "checked_out_head": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "c6fd9e627b27fd20464e63e6a801dbe4853074b1830c7102e1b012e4b8c7c197"
+  "receipt_digest": "b94e9b148b8910b4940e6d1ea96ba71f2d98bc0607014c385e99b6ae053d418f"
 }
