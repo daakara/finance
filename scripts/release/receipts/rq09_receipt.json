@@ -2,19 +2,19 @@
   "control_id": "RQ-09",
   "name": "Four-Way Cross-Platform Compatibility",
   "status": "PASS",
-  "start_time": "2026-11-22T09:38:15.945624+00:00",
-  "end_time": "2026-11-22T09:38:16.754559+00:00",
-  "duration_sec": 0.779,
-  "candidate_sha": "ab913551e69a7c0cf3aa86ff0ca7f1ac1f50b002",
-  "source_sha": "ab913551e69a7c0cf3aa86ff0ca7f1ac1f50b002",
-  "execution_sha": "ab913551e69a7c0cf3aa86ff0ca7f1ac1f50b002",
+  "start_time": "2026-11-22T10:02:38.663502+00:00",
+  "end_time": "2026-11-22T10:02:39.309624+00:00",
+  "duration_sec": 0.622,
+  "candidate_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
+  "source_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
+  "execution_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "ab913551e69a7c0cf3aa86ff0ca7f1ac1f50b002",
-    "execution_sha": "ab913551e69a7c0cf3aa86ff0ca7f1ac1f50b002",
+    "source_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
+    "execution_sha": "4ac3a16a409ed24d2dea3587d365486a6758d1fe",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -139,7 +139,7 @@
   ],
   "evidence_digests": {
     "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-    "scripts/release/rq_compatibility_results.json": "cac2025f9813628623dc9130433615ba74fc7f6a833256fdef47b82d123fd55e"
+    "scripts/release/rq_compatibility_results.json": "02610f4abff30948551ba1a424be49abce4d04f7287410e997c7fb3b755b1869"
   },
   "errors": [],
   "metadata": {
@@ -152,5 +152,5 @@
     "harness_version": "2.2.0-D074A4",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "1465559292ffd4e873109fd616a288e98ff83b7f914d33a928c3743a79d7b609"
+  "receipt_digest": "e9c9deb1fc3f70aadd5637d0102846fc1c406f3939f6be863a0c1357df43ea55"
 }
