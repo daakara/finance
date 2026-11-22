@@ -160,6 +160,24 @@ def main():
         "passed": radar_passed,
     })
 
+    # 7. Congressional STOCK Act Disclosure State Handling Suite (Issue #165 / Phase 0)
+    print("Running Congressional STOCK Act Disclosure State Handling tests...")
+    cong_cmd = [npx_bin, "tsx", "tests/congressionalDisclosureStateHandling.test.ts"]
+    res_cong = subprocess.run(
+        cong_cmd, cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, encoding="utf-8", errors="ignore",
+    )
+    print(res_cong.stdout)
+    cong_passed = (res_cong.returncode == 0)
+    if not cong_passed:
+        errors.append(f"Congressional Disclosure tests failed with exit code {res_cong.returncode}")
+    assertions.append({
+        "assertion": "Congressional STOCK Act Disclosure State Handling suite passes",
+        "observed": {"exit_code": res_cong.returncode},
+        "passed": cong_passed,
+    })
+
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"
     ok, identity, err = resolve_identity_contract()
@@ -174,6 +192,7 @@ def main():
         "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts",
         "frontend/tests/secDisclosureEvidenceView.test.ts",
         "frontend/tests/radarEvidenceRankingHandoffQualification.test.ts",
+        "frontend/tests/congressionalDisclosureStateHandling.test.ts",
         "frontend/lib/radarPresentation.ts",
         "frontend/lib/radarRanking.ts",
         "frontend/lib/decisionContext.ts",

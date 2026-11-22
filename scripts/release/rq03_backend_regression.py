@@ -40,6 +40,8 @@ def main():
         "tests/test_sec_disclosure_postgres_integration.py",
         "tests/test_sec_disclosure_view.py",
         "tests/test_fred_sec_presentation_integrity.py",
+        "tests/test_congressional_disclosure_state_handling.py",
+        "tests/test_congressional_offline_prototype.py",
     ]
 
     cmd = [sys.executable, "-m", "pytest"] + test_files + ["-v"]
