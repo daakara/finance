@@ -58,8 +58,8 @@
       "originating_pr_number": 317,
       "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
       "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
-      "sha256": "158001ff1de3d37c3855658198513b8502d1ed3f3134bab349e3ea3f08e1c314",
-      "size_bytes": 10005
+      "sha256": "912dfe36c2c34ec583a80ddf828928c1326739fdca4766327b2dac15d17867a9",
+      "size_bytes": 10428
     },
     "docs/reports/ARX_ISSUE165_DAY2_READINESS_ASSESSMENT_CORRECTED_2026_11_21.md": {
       "operation": "A",
@@ -74,8 +74,8 @@
       "originating_pr_number": 317,
       "originating_commit": "c2456597551d50b4d06579236af238fc99e814fd",
       "governing_requirement": "Issue #165: historical replay qualification suite and evidence report",
-      "sha256": "a87a65b5cb4141b3e646405f0bb0b8850d6d85b0f1822e53d98484e4c6515d7b",
-      "size_bytes": 12699
+      "sha256": "4cd9042c989bdebf137539b399129abec6518a84993b71ee0ce374cb7240a1b8",
+      "size_bytes": 26927
     },
     "tests/test_fred_sec_presentation_integrity.py": {
       "operation": "M",

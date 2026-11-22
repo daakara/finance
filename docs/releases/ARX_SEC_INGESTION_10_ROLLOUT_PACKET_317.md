@@ -4,7 +4,7 @@
 
 ## 1. Separate operations
 
-Monday Nov 23's existing 08:30 Europe/Berlin read-only preflight and original AAPL/NVDA trial remain unchanged. This expanded phase begins only after that trial's independently verified teardown after `2026-11-25T02:35:00Z`. Do not deploy this candidate during an armed release-bound trial. Code qualification does not itself grant a production rollout or an ingestion exception under `HOLD_SEC_001`.
+Monday Nov 23's existing 08:30 Europe/Berlin read-only preflight and original AAPL/NVDA trial remain unchanged. Authorized execution must end no later than `2026-11-25T02:35:00Z`, with shutdown independently verified after that boundary. This expanded phase begins only after that trial's independently verified teardown after `2026-11-25T02:35:00Z`. Do not deploy this candidate during an armed release-bound trial. Code qualification does not itself grant a production rollout or an ingestion exception under `HOLD_SEC_001`.
 
 Preserve original trial ID `ARX-TRIAL-2026-NVDA-AAPL-001`, its historical reservations, charged quotas, attempts and Day 1 latency failures. Preserve frozen NVDA evidence and active snapshot `SNAP_SM_1792939989_48f30db6`. Scoring, publication, Radar, trading, UX and research holds remain independent.
 
@@ -74,4 +74,4 @@ Software rollback target is the last independently verified safe production rele
 
 ## 6. Current evidence limit
 
-This packet was prepared offline. No fresh production SQL, Railway configuration, R2 recoverability or live SEC measurement is claimed. The original Monday monitors were not changed or duplicated. Hosted run IDs, final source SHA and any outstanding qualification findings belong in the PR's current acceptance receipt; a draft packet is not a release or activation receipt.
+This packet was prepared offline. Candidate head `f25c10849773c2c234de6f4399a1410b1e18d72a` passed GitHub Actions release qualification run 45011651092. Production reference remains `2eccc64a2cb3c649ad4d584a942285a6406d1ce0`. Authorized execution for the original trial must end no later than `2026-11-25T02:35:00Z`, with shutdown independently verified after that boundary. The original Monday monitors were not changed or duplicated. Hosted run IDs, final source SHA and all Sunday preflight receipts belong in the PR's current acceptance receipt (`docs/reports/SEC_HISTORICAL_REPLAY_QUALIFICATION_2026_11_22.md`); a draft packet is not a release or activation receipt.
