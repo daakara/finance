@@ -2,6 +2,7 @@
 **Document ID:** `ARX-DOC-20261122-CONGRESSIONAL-INVENTORY-001`  
 **Evaluation Date:** 2026-11-22  
 **Authority:** ARX Architecture & Governance Board (Issue #165, Sprint P3 #231)  
+**Accountable Owner:** David Akara (ARX Lead Architecture & Engineering)  
 **Execution Context:** Strictly Read-Only Discovery, Code Audit, Production DB Inspection & State Inventory  
 **Target Repository:** `daakara/finance`  
 **Documentation Branch:** `docs/congressional-ingestion-inventory-001`  
@@ -13,11 +14,14 @@
 > [!IMPORTANT]
 > **Definite Conclusion:** There is currently **ZERO live or point-in-time (PIT) ingestion, automated retrieval, relational storage, or cryptographic verification of Congressional STOCK Act disclosures** in ARX Terminal.
 >
-> All congressional disclosures presented in the user interface or exposed via API routes are served exclusively from a static, in-memory Python array of 40 historical transactions frozen as of August 2026 (`CONGRESSIONAL_TRADES` in `analyst_dashboard/analyzers/smart_money.py`), hardcoded Next.js static catalogs (`frontend/lib/seoCatalogs.ts`), or hardcoded page mockups (`frontend/app/smart-money/late-filers/page.tsx`).
+> All congressional disclosures presented in the user interface or exposed via API routes are served exclusively from static, hardcoded research and demonstration fixtures:
+> 1. An in-memory Python array of 40 historical transactions frozen as of August 2026 (`CONGRESSIONAL_TRADES` in [smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/smart_money.py#L13-L145)).
+> 2. Hardcoded Next.js static catalogs for 8 politicians in [seoCatalogs.ts](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/lib/seoCatalogs.ts#L308-L450).
+> 3. Hardcoded static mockups on [late-filers/page.tsx](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/app/smart-money/late-filers/page.tsx).
 >
 > When the live operational mode is invoked (`include_curated=False`, the default API and backend posture), the system returns an empty list (`[]`) and reports statuses of `UNAVAILABLE` or `PIPELINE_HELD`.
 >
-> Furthermore, an authoritative inspection of the production PostgreSQL database (`finance_smart_money`) confirms that **no congressional tables, schemas, or records exist**, and an inspection of the SQLite database confirms that the single defined table `insider_disclosures` contains **0 rows** and is an abandoned, unreferenced schema declaration.
+> Furthermore, an authoritative read-only inspection of the production PostgreSQL database (`finance_smart_money`, public schema) confirms that **no congressional tables, schemas, or records exist**, and an inspection of the container SQLite database confirms that the single defined table `insider_disclosures` contains **0 rows** and is an abandoned, unreferenced schema declaration.
 
 ```mermaid
 flowchart TD
@@ -72,8 +76,8 @@ Direct inspection of remote GitHub references, local worktrees, deployed Railway
 | **Current ARX Status** | Governed limited trial (AAPL & NVDA) under `HOLD_SEC_001` with cryptographic watermarking | **Zero live ingestion; 0 rows stored; static curated archive only** |
 
 ### Critical Governance Conflation Finding
-The codebase currently contains a severe conflation of governance controls:
-In `analyst_dashboard/analyzers/smart_money.py` (lines 3505–3518), `assess_congressional_trades()` returns:
+The codebase currently contains an explicit conflation of governance controls:
+In [smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/smart_money.py#L3505-L3518), `assess_congressional_trades()` returns:
 ```python
 return {
     "domain_id": "congressional_stock_act",
@@ -92,35 +96,35 @@ return {
 ```
 
 **Defect Analysis:**
-1. `HOLD_SEC_001` is the operational hold restricting automated, continuous egress to the **SEC EDGAR system** for Form 4 filings. It has **no legal or operational authority over Congressional House or Senate disclosures**.
+1. `HOLD_SEC_001` is the operational hold restricting automated, continuous egress to the **SEC EDGAR system** for Form 4 corporate insider filings. It has **no legal or operational authority over Congressional House or Senate disclosures**.
 2. Stating that the continuous sync is "paused under governed operational hold (HOLD_SEC_001)" falsely implies to users, auditors, and systems that a functioning continuous sync pipeline exists and is temporarily paused. In reality, **no such pipeline exists**.
-3. **Remediation Requirement:** Congressional disclosures must be governed by an independent identifier (e.g., `HOLD_CONGRESS_001` or explicit status `COVERAGE_NOT_ESTABLISHED`) and completely decoupled from `HOLD_SEC_001`.
+3. **Remediation Requirement:** Congressional disclosures must be governed by an independent identifier or explicit status (`COVERAGE_NOT_ESTABLISHED` / `"Not Monitored"`) and completely decoupled from `HOLD_SEC_001`.
 
 ---
 
-## 4. Complete Component Inventory
+## 4. Complete Component Inventory & Demonstrated Provenance
 
-The following table provides a comprehensive, symbol-level audit of every file, function, class, and route in the ARX repository related to congressional disclosures:
+The following table provides a comprehensive, symbol-level audit of every file, function, class, and route in the ARX repository related to congressional disclosures, explicitly classifying each by its demonstrated provenance:
 
-| File Path | Symbol / Component | Purpose / Role | Reachable in Prod? | Backed by Live Evidence? | Existing Test Coverage | Recommended Disposition |
+| File Path | Symbol / Component | Purpose / Role | Reachable in Prod? | Demonstrated Provenance | Existing Test Coverage | Recommended Disposition |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| [smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/smart_money.py#L13-L145) | `CONGRESSIONAL_TRADES` | In-memory static list of 40 historical trades across 13 tickers and 8 politicians (Aug 2026 snapshot). | Yes (when `include_curated=True`). | **NO** (Static research archive). | `test_smart_money_api.py`, `test_live_api_provenance.py` | **Preserve as offline research fixture; quarantine from production live responses.** |
-| [smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/smart_money.py#L2926-L2936) | `SmartMoneyEngine.get_congressional_trades` | Core accessor for congressional trades. Returns `[]` if `include_curated=False`. | Yes (invoked by `/congress` and `assess_symbol`). | **NO** (Live returns empty; curated returns static). | `test_radar_cross_engine_parity_003.py`, `test_adversarial_phase16_live_data.py` | **Refactor:** Decouple from static list; interface with governed relational repository. |
-| [smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/smart_money.py#L3362-L3518) | `SmartMoneyEngine.assess_congressional_trades` | Single-asset evaluation method. Determines bullish/bearish bias from buy/sell counts. | Yes (invoked during `assess_symbol`). | **NO** (Defaults to `PIPELINE_HELD (HOLD_SEC_001)`). | `test_sm_act_001_falsification.py`, `test_smart_money_e2e_parity.py` | **Refactor:** Remove `HOLD_SEC_001` string; emit `COVERAGE_NOT_ESTABLISHED` when unmonitored. |
-| [smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/smart_money.py#L3755-L3816) | `SmartMoneyEngine.get_smart_money_overview` | Market-wide aggregate overview. Aggregates purchases/sales, sentiment, and late filers. | Yes (invoked by `/smart-money/overview`). | **NO** (Live returns all `None`/empty; curated aggregates static array). | `test_smart_money_api.py`, `test_live_api_provenance.py` | **Preserve:** Existing contract correctly separates live `None` from curated counts. |
-| [capitol_trades_fetcher.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/data/capitol_trades_fetcher.py#L1-L24) | `CapitolTradesFetcher` | 24-line stub class returning static dictionary of House and Senate portal URLs. | Yes (invoked by `/congress` to populate `source_meta`). | **NO** (Contains zero network calls, zero scrapers, zero parsers). | None | **Deprecate / Replace:** Replace with an authentic primary-source adapter architecture. |
-| [api/routes/smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/api/routes/smart_money.py#L50-L75) | `GET /api/v1/smart-money/congress` | FastAPI endpoint for congressional disclosures. | Yes (public API). | **NO** (Returns `UNAVAILABLE` or static array). | `test_smart_money_api.py`, `test_adversarial_phase17_data_reality.py` | **Preserve & Harden:** Ensure query parameter `include_curated` is never enabled by default. |
-| [api/routes/smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/api/routes/smart_money.py#L31-L48) | `GET /api/v1/smart-money/overview` | FastAPI endpoint for market overview. Lists regulatory sources. | Yes (public API). | **NO** (Claims `capitol_trades` source metadata even when disconnected). | `test_smart_money_api.py` | **Refactor:** Only declare `regulatory_sources.capitol_trades` when feed is actively connected. |
-| [confluence_engine.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/confluence_engine.py#L185-L201) | `ConfluenceEngine.calculate_confluence` | Evaluates `has_congress_buy`. If True, awards 85 points to smart money confluence score. | Yes (runs in Radar / Confluence scoring). | **NO** (Fed by upstream `assess_symbol` which is `False` in live mode). | `test_confluence_engine.py`, `test_directive_057_remediation.py` | **Preserve:** Logic correctly gates on boolean flag; safe as long as live feed does not fabricate buys. |
-| [trader_archetypes.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/trader_archetypes.py#L88-L140) | `CONGRESSIONAL_POLICY_TICKERS` | Static dictionary mapping tickers (NVDA, LLY, etc.) to policy narrative strings. | Yes (runs in `The Capitol Whale` archetype). | **NO** (Static subjective priors, not transactional disclosures). | `test_trader_archetypes.py` | **Preserve as archetype prior:** Clearly label as policy thesis mapping, not trade filings. |
-| [trader_archetypes.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/trader_archetypes.py#L391-L430) | `_evaluate_congressional_whale` | Evaluates Nancy Pelosi / Congressional Whale archetype against factor scores. | Yes (runs in Radar / Archetypes). | **NO** (Does not read live trades; reads static dictionary). | `test_trader_archetypes.py` | **Preserve:** Archetype modeling distinct from raw transaction ingestion. |
-| [market_db.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/data/market_db.py#L236-L249) | Table `insider_disclosures` | SQLite DDL for politician and insider trades. | Schema created at init; never queried or populated. | **NO** (Contains 0 rows in production; abandoned schema). | `test_alpaca_historical_sip_ingestion.py` | **Deprecate:** Dead schema. Remove in future schema cleanup or migrate to PostgreSQL. |
-| [CongressionalTradesCard.tsx](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/components/CongressionalTradesCard.tsx#L1-L560) | `CongressionalTradesCard` | Next.js React component rendering congressional trade tables, late filers, and crypto policy. | Yes (rendered on stock detail and smart money views). | **NO** (Renders static trades or empty state). | None (React UI). | **Refactor:** Fix misleading empty state copy (`"No qualifying congressional transactions found..."`). |
-| [frontend/app/politician/[slug]/page.tsx](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/app/politician/[slug]/page.tsx#L1-L320) | `PoliticianProfilePage` | Dynamic Next.js route generating programmatic SEO profile pages for 8 politicians. | Yes (reachable via URL `/politician/<slug>`). | **NO** (Renders hardcoded trades from `seoCatalogs.ts`). | None (Next.js SSR). | **Quarantine / Disclose:** Add prominent badge: *"Historical Research Sample (Aug 2026)"*. |
-| [seoCatalogs.ts](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/lib/seoCatalogs.ts#L308-L450) | `POLITICIAN_DATABASE` | Static catalog of 8 politicians, their committees, and hardcoded historical trades. | Yes (imported by politician dynamic routes). | **NO** (Static content). | None | **Preserve as static content:** Explicitly mark as non-live demonstration data. |
-| [late-filers/page.tsx](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/app/smart-money/late-filers/page.tsx#L60-L180) | `LATE_TRADES` | Static array of late trades (Tuberville, Green) rendered as "Hall of Shame". | Yes (reachable via URL `/smart-money/late-filers`). | **NO** (Static mock data). | None | **Quarantine / Disclose:** Add explicit disclaimer that this is a static historical audit. |
-| [frontend/lib/api.ts](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/lib/api.ts#L881-L894) | `SMART_MONEY` Pipeline Status | Strategy pipeline status metadata claiming single-asset congressional disclosures are active. | Yes (imported across UI). | **NO** (Claims single-asset disclosures active while live backend is disconnected). | None | **Refactor:** Correct string to indicate congressional disclosures are in development. |
-| [frontend/lib/api.ts](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/lib/api.ts#L2635-L2655) | `fetchSmartMoneyOverview` | Client-side fetcher calling `/smart-money/overview?include_curated=true`. | Yes (invoked on smart money overview page). | **NO** (Forcibly passes `include_curated=true`). | None | **Refactor:** Stop requesting `include_curated=true` as default; display honest disconnected state. |
+| [smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/smart_money.py#L13-L145) | `CONGRESSIONAL_TRADES` | In-memory static list of 40 historical trades across 13 tickers and 8 politicians (Aug 2026 snapshot). | Yes (when `include_curated=True`). | **In-Source Synthetic/Curated Research Fixture (Aug 2026)**. Contains hardcoded analytical tags (`legislative_conflict_thesis`, `annualized_tech_alpha_pct`) with zero government clerk origin. | `test_smart_money_api.py`, `test_live_api_provenance.py` | **Preserve as offline research fixture; quarantine from production live responses.** |
+| [smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/smart_money.py#L2926-L2936) | `SmartMoneyEngine.get_congressional_trades` | Core accessor for congressional trades. Returns `[]` if `include_curated=False`. | Yes (invoked by `/congress` and `assess_symbol`). | **Application Code**. Returns empty list in live mode; returns curated static fixture when requested. | `test_radar_cross_engine_parity_003.py`, `test_adversarial_phase16_live_data.py` | **Refactor:** Decouple from static list; interface with governed relational repository. |
+| [smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/smart_money.py#L3362-L3518) | `SmartMoneyEngine.assess_congressional_trades` | Single-asset evaluation method. Determines bullish/bearish bias from buy/sell counts. | Yes (invoked during `assess_symbol`). | **Application Code**. Defaults to `PIPELINE_HELD (HOLD_SEC_001)` when unmonitored. | `test_sm_act_001_falsification.py`, `test_smart_money_e2e_parity.py` | **Refactor:** Remove `HOLD_SEC_001` string; emit `Not Monitored` / `UNAVAILABLE` when unmonitored. |
+| [smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/smart_money.py#L3755-L3816) | `SmartMoneyEngine.get_smart_money_overview` | Market-wide aggregate overview. Aggregates purchases/sales, sentiment, and late filers. | Yes (invoked by `/smart-money/overview`). | **Application Code**. Live mode returns `None`/empty; curated mode aggregates static fixture. | `test_smart_money_api.py`, `test_live_api_provenance.py` | **Preserve:** Existing contract correctly separates live `None` from curated counts. |
+| [capitol_trades_fetcher.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/data/capitol_trades_fetcher.py#L1-L24) | `CapitolTradesFetcher` | 24-line stub class returning static dictionary of House and Senate portal URLs. | Yes (invoked by `/congress` to populate `source_meta`). | **Static URL Metadata Stub**. Contains zero network calls, zero scrapers, zero parsers. | None | **Deprecate / Replace:** Replace with an authentic primary-source adapter architecture. |
+| [api/routes/smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/api/routes/smart_money.py#L50-L75) | `GET /api/v1/smart-money/congress` | FastAPI endpoint for congressional disclosures. | Yes (public API). | **HTTP API Endpoint**. Returns `UNAVAILABLE` by default; returns static fixture if `include_curated=True`. | `test_smart_money_api.py`, `test_adversarial_phase17_data_reality.py` | **Preserve & Harden:** Ensure query parameter `include_curated` is never enabled by default. |
+| [api/routes/smart_money.py](file:///Users/iDavid/Projects/finance-congressional-inventory/api/routes/smart_money.py#L31-L48) | `GET /api/v1/smart-money/overview` | FastAPI endpoint for market overview. Lists regulatory sources. | Yes (public API). | **HTTP API Endpoint**. Claims `capitol_trades` source metadata even when disconnected. | `test_smart_money_api.py` | **Refactor:** Only declare `regulatory_sources.capitol_trades` when feed is actively connected. |
+| [confluence_engine.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/confluence_engine.py#L185-L201) | `ConfluenceEngine.calculate_confluence` | Evaluates `has_congress_buy`. If True, awards 85 points to smart money confluence score. | Yes (runs in Radar / Confluence scoring). | **Scoring Model**. Fed by upstream `assess_symbol` which is `False` in live mode. | `test_confluence_engine.py`, `test_directive_057_remediation.py` | **Preserve:** Logic correctly gates on boolean flag; safe as long as live feed does not fabricate buys. |
+| [trader_archetypes.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/trader_archetypes.py#L88-L140) | `CONGRESSIONAL_POLICY_TICKERS` | Static dictionary mapping tickers (NVDA, LLY, etc.) to policy narrative strings. | Yes (runs in `The Capitol Whale` archetype). | **Archetype Subjective Prior**. Policy thesis mapping, not transaction filings. | `test_trader_archetypes.py` | **Preserve as archetype prior:** Clearly label as policy thesis mapping, not trade filings. |
+| [trader_archetypes.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/analyzers/trader_archetypes.py#L391-L430) | `_evaluate_congressional_whale` | Evaluates Nancy Pelosi / Congressional Whale archetype against factor scores. | Yes (runs in Radar / Archetypes). | **Archetype Evaluator**. Does not read live trades; reads static dictionary. | `test_trader_archetypes.py` | **Preserve:** Archetype modeling distinct from raw transaction ingestion. |
+| [market_db.py](file:///Users/iDavid/Projects/finance-congressional-inventory/analyst_dashboard/data/market_db.py#L236-L249) | Table `insider_disclosures` | SQLite DDL for politician and insider trades. | Schema created at init; never queried or populated. | **Abandoned SQLite DDL**. Contains 0 rows in production; unreferenced by application code. | `test_alpaca_historical_sip_ingestion.py` | **Deprecate:** Dead schema. Remove in future schema cleanup or migrate to PostgreSQL. |
+| [CongressionalTradesCard.tsx](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/components/CongressionalTradesCard.tsx#L1-L560) | `CongressionalTradesCard` | Next.js React component rendering congressional trade tables, late filers, and crypto policy. | Yes (rendered on stock detail and smart money views). | **Frontend UI Component**. Renders static trades or empty state. | None (React UI). | **Refactor:** Fix misleading empty state copy (`"No qualifying congressional transactions found..."`). |
+| [frontend/app/politician/[slug]/page.tsx](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/app/politician/[slug]/page.tsx#L1-L320) | `PoliticianProfilePage` | Dynamic Next.js route generating programmatic SEO profile pages for 8 politicians. | Yes (reachable via URL `/politician/<slug>`). | **Static Marketing & Programmatic SEO Catalog**. Renders hardcoded trades from `seoCatalogs.ts`. | None (Next.js SSR). | **Quarantine / Disclose:** Add prominent badge: *"Historical Demonstration Fixture (Aug 2026)"*. |
+| [seoCatalogs.ts](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/lib/seoCatalogs.ts#L308-L450) | `POLITICIAN_DATABASE` | Static catalog of 8 politicians, their committees, and hardcoded historical trades. | Yes (imported by politician dynamic routes). | **Static Programmatic SEO Fixture**. In-source static data. | None | **Preserve as static content:** Explicitly mark as non-live demonstration data. |
+| [late-filers/page.tsx](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/app/smart-money/late-filers/page.tsx#L60-L180) | `LATE_TRADES` | Static array of late trades (Tuberville, Green) rendered as "Hall of Shame". | Yes (reachable via URL `/smart-money/late-filers`). | **Static Demonstration UI Fixture**. Hardcoded mock data. | None | **Quarantine / Disclose:** Add explicit disclaimer that this is a static historical audit. |
+| [frontend/lib/api.ts](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/lib/api.ts#L881-L894) | `SMART_MONEY` Pipeline Status | Strategy pipeline status metadata claiming single-asset congressional disclosures are active. | Yes (imported across UI). | **Static Frontend Metadata**. Claims single-asset disclosures active while live backend is disconnected. | None | **Refactor:** Correct string to indicate congressional disclosures are not monitored in live mode. |
+| [frontend/lib/api.ts](file:///Users/iDavid/Projects/finance-congressional-inventory/frontend/lib/api.ts#L2635-L2655) | `fetchSmartMoneyOverview` | Client-side fetcher calling `/smart-money/overview?include_curated=true`. | Yes (invoked on smart money overview page). | **Frontend API Fetcher**. Forcibly passes `include_curated=true`. | None | **Refactor:** Stop requesting `include_curated=true` as default; display honest disconnected state. |
 
 ---
 
@@ -129,12 +133,13 @@ The following table provides a comprehensive, symbol-level audit of every file, 
 Direct authenticated inspection of the production runtime environment was performed on 2026-11-22 via Railway SSH into the active web service container (`56e38249-b78c-4a60-80d7-303ce7451bd8`).
 
 ### 5.1 Production PostgreSQL Inspection (`finance_smart_money`)
-Connected via `psycopg2` within a strict read-only transaction (`SET TRANSACTION READ ONLY; BEGIN READ ONLY;`) to the database referenced by `SMART_MONEY_DATABASE_URL`:
+Connected via `psycopg2` within a strict read-only transaction (`SET TRANSACTION READ ONLY; BEGIN READ ONLY;`) on **2026-11-22 07:03:57 UTC** to the database referenced by `SMART_MONEY_DATABASE_URL`:
 
 - **Host:** Railway internal private network (`postgres.railway.internal:5432`)
 - **Database:** `finance_smart_money`
+- **Schema:** `public`
 - **User:** `smart_money_web`
-- **Query Timestamp:** 2026-11-22 07:03:57 UTC
+- **Query Timestamp:** `2026-11-22 07:03:57 UTC`
 - **Observed Public Tables (10 total):**
   1. `form4_parsed_transactions`: 140 rows (SEC Form 4 AAPL/NVDA insider trades only)
   2. `form4_raw_filings`: 54 rows (SEC Form 4 raw XML filings only)
@@ -147,86 +152,95 @@ Connected via `psycopg2` within a strict read-only transaction (`SET TRANSACTION
   9. `sm_run_requests`: 6 rows
   10. `sm_source_availability_ledger`: 45 rows (SEC EDGAR availability logs)
 
-**Result:** **ZERO congressional tables, schemas, or models exist in PostgreSQL.** There are zero rows of House or Senate disclosures.
+**Result:** **ZERO congressional tables, schemas, or models exist in the inspected `finance_smart_money` PostgreSQL public schema.** There are zero rows of House or Senate disclosures.
 
 ### 5.2 Production SQLite Inspection
-Direct read-only inspection of all local SQLite databases (`PRAGMA query_only = ON;`) on the web service container:
-- Database: `/root/.finance_market_store.db` (also mirrored at `/root/.finance_scanner_store.db` and `/root/.finance_universe_store.db`)
+Direct read-only inspection of local SQLite databases on the web service container was executed on **2026-11-22 07:08:12 UTC** with `PRAGMA query_only = ON;`:
+- Database: `/root/.finance_market_store.db` (and mirrors `/root/.finance_scanner_store.db`, `/root/.finance_universe_store.db`)
 - Checked table: `insider_disclosures`
 - Query: `SELECT COUNT(*) FROM insider_disclosures;`
 - **Result:** **0 rows.**
 - Search of codebase confirms that `insider_disclosures` is created in `market_db.py` line 236 but is **never inserted into, updated, or queried** by any application logic.
 
 ### 5.3 Production Environment Variables Audit
-Inspected 80 environment variable names on the active Railway `web` container (`/proc/1/environ`) and worker container:
+Inspected 80 environment variable names on the active Railway `web` container (`/proc/1/environ`) and worker container on **2026-11-22 07:11:45 UTC**:
 - SEC Form 4 variables present: `SMART_MONEY_DATABASE_URL`, `ARX_SEC_EGRESS_ROLE=DISABLED`, `SEC_EDGAR_USER_AGENT`, `SEC_FORM4_INGESTION_ENABLED=0`, `SMART_MONEY_WORKER_STANDBY=true`.
 - **Congressional variables present:** **EXACTLY ZERO.**
   - No `CAPITOL_TRADES_API_KEY`
   - No `HOUSE_CLERK_INGESTION_ENABLED`
   - No `SENATE_EFD_SYNC_ENABLED`
   - No `STOCK_ACT_DATABASE_URL`
+- *Note:* Inspection confirms no vendor credentials exist in the Railway environment; contractual or off-platform commercial subscription status with data vendors was not checked (`NOT_CHECKED`).
 
 ---
 
 ## 6. Evidence-Source and Provenance Assessment
 
-To transition from static mock data to verified, evidence-backed disclosures, ARX must ingest from authoritative sources. The following evaluation analyzes primary government sources versus third-party aggregators:
+> [!NOTE]
+> **UNAPPROVED DESIGN PROPOSAL:** The source evaluation and pipeline stages below represent an architectural proposal for technical review only. No external scrapers or automated crawlers are authorized for live connection in this phase.
 
 ```mermaid
-flowchart LR
-    subgraph Primary Official Sources
-        H[House Clerk PTR Portal<br>disclosures-clerk.house.gov] -->|FinancialDisclosure.xml Index<br>+ Scanned/E-filed PDFs| H_P[House Parser / OCR Engine]
-        S[Senate EFD Portal<br>efdsearch.senate.gov] -->|HTML / JSON Search<br>Requires TOS & Cookie| S_P[Senate EFD Parser]
+flowchart TD
+    subgraph Stage 1: Document Index Ingestion
+        H_IDX[House Clerk Index XML<br>FinancialDisclosure.xml] -->|Batch XML Parse| F_IDX[Filing Inventory Ledger<br>doc_id, bioguide_id, date, url]
+        S_IDX[Senate EFD Index Feed<br>Public Search Index] -->|Batch Index Parse| F_IDX
     end
 
-    subgraph Third-Party Aggregators
-        C[Capitol Trades / 2iQ] -->|Commercial API / Web Scrape| C_A[Vendor Dependency]
-        Q[Quiver Quantitative] -->|Commercial API| Q_A[Vendor Dependency]
+    subgraph Stage 2: Document Retrieval & Transaction Extraction
+        F_IDX -->|Rate-Limited Fetch| PDF_FETCH[Document Asset Retrieval]
+        PDF_FETCH --> SHA[Compute raw_document_sha256]
+        SHA --> EXTRACT{Format Type}
+        EXTRACT -- Digital E-File --> TXT_EXT[Text & Table Parser]
+        EXTRACT -- Scanned Image --> OCR_EXT[OCR Transcription Engine]
+        TXT_EXT --> TX_STAGE[Parsed Transactions Line-Items]
+        OCR_EXT --> TX_STAGE
     end
 
-    subgraph ARX Ingestion Engine
-        H_P --> G[Governed Evidence Staging]
-        S_P --> G
-        G --> R[Cryptographic Receipt Ledger]
-        R --> DB[(PostgreSQL: congressional_*)]
+    subgraph Stage 3: Verification & Watermarking
+        TX_STAGE --> REC_CERT[Interval Reconciliation Engine]
+        REC_CERT --> WATERMARK[Coverage Watermark Receipt]
     end
 ```
 
 ### 6.1 U.S. House of Representatives Office of the Clerk
-- **Authority:** Office of the Clerk, U.S. House of Representatives (Legislative Resource Center).
-- **Portal URL:** `https://disclosures-clerk.house.gov`
-- **Filing Type:** Financial Disclosure Reports — Periodic Transaction Reports (PTRs) filed under the STOCK Act (Pub. L. 112–105).
+- **Authority:** Office of the Clerk, U.S. House of Representatives (Legislative Resource Center); 5 U.S.C. app. § 101 et seq.; Pub. L. 112–105.
+- **Portal URL:** `https://disclosures-clerk.house.gov/PublicDisclosure/FinancialDisclosure`
+- **Filing Type:** Financial Disclosure Reports — Periodic Transaction Reports (PTRs).
 - **Available Data Assets:**
-  1. **Annual XML Index:** The Clerk publishes an annual zip archive containing `FinancialDisclosure.xml` (or `FD.xml`), which indexes all filings by Member Name, Office/District, Filing Year, Filing Date, and Doc ID.
-  2. **Document PDFs:** Individual PTRs are available at predictable URLs:
+  1. **Annual XML Index:** The Clerk publishes an annual zip archive containing `FinancialDisclosure.xml` (or `FD.xml`), which indexes filings by Member Name, Office/District, Filing Year, Filing Date, and Doc ID.
+  2. **Document PDFs:** Individual PTRs are available at URLs structured by filing year and document ID:
      `https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/<YEAR>/<DOC_ID>.pdf`
-- **Format Challenges:**
-  - Roughly 70% of modern House PTRs are e-filed digital forms containing readable text layers.
-  - Roughly 30% are paper submissions or scanned documents containing handwriting, requiring Optical Character Recognition (OCR) or manual transcription.
+- **Format Structure:**
+  - Disclosures include both digital text e-filings and scanned/handwritten submissions. The exact historical distribution of digital text versus scanned images across the complete corpus has not been empirically quantified (`NOT_CHECKED`).
 - **Access & Licensing:**
   - Public government records under 5 U.S.C. app. § 105.
-  - Zero API authentication required; rate-limiting must be respected (max 1 request per second recommended to avoid IP blocking).
+  - Rate-limiting, server capacity, and current `robots.txt` enforcement on clerk servers have not been measured (`NOT_CHECKED`).
 
 ### 6.2 U.S. Senate Electronic Financial Disclosure (EFD)
-- **Authority:** Select Committee on Ethics & Office of Public Records, U.S. Senate.
+- **Authority:** Select Committee on Ethics & Office of Public Records, U.S. Senate; 5 U.S.C. app. § 101 et seq.; Pub. L. 112–105.
 - **Portal URL:** `https://efdsearch.senate.gov`
 - **Filing Type:** Periodic Transaction Reports (e-filed electronically).
 - **Format:** Electronic web portal delivering HTML search results and PDF reports.
 - **Access Restrictions & Challenges:**
-  - **Statutory Terms of Service:** Users must agree that reports will not be used for commercial purposes (other than by news and communications media for publication) or for soliciting contributions (5 U.S.C. app. § 105(c)(1)).
-  - **Anti-Bot & Session Architecture:** The Senate EFD portal utilizes CSRF tokens, session cookies, and WAF challenge screens. Automated programmatic scraping without standard browser agreement violates the site's Terms of Service and Anti-Bot rules.
-  - **Ingestion Recommendation:** Direct scraping of Senate EFD must be approached through sanctioned bulk XML/CSV data feeds or compliant batch fetch mechanisms that store complete provenance receipts.
+  - **Statutory Terms of Service:** 5 U.S.C. app. § 105(c)(1) explicitly prohibits the use of financial disclosure reports for any commercial purpose (other than by news and communications media for publication) or for soliciting contributions, with civil penalties enforceable by the Attorney General.
+  - **Interactive Verification & Anti-Bot Protection:** The Senate EFD portal requires interactive agreement to its statutory terms and utilizes CSRF tokens and session protection. Live WAF blocking thresholds, Cloudflare challenges, or session timeout behaviors were not actively probed (`NOT_CHECKED`). Direct headless scraping without verified human consent violates platform safety guidelines.
 
-### 6.3 Third-Party Aggregators (Capitol Trades, Quiver Quantitative)
-- **Capitol Trades (`capitoltrades.com`):** Aggregates House and Senate trades into a commercial feed with politician committee mappings and sector tags.
-- **Evaluation:** Relying on third-party aggregators introduces single-point-of-failure vendor risk, recurring licensing costs, and unverifiable provenance chains.
-- **Architectural Decision:** ARX must prioritize **primary official government sources** (House Clerk XML indexes and Senate public disclosures) for its core database, storing the original government document URL and SHA256 digest on every transaction record.
+### 6.3 Separation of Document Hash vs. Coverage Certification
+To maintain forensic data integrity, ARX must strictly distinguish two orthogonal cryptographic concepts:
+1. **Document-Level Content Digest (`raw_document_sha256`):**
+   - SHA-256 hash computed directly on the downloaded raw PDF or XML file.
+   - Proves file immutability: the stored binary file matches what was retrieved from the clerk portal.
+   - *Limitation:* Proving that a single document has a valid SHA-256 does NOT certify that all filings for that member or interval were captured.
+2. **Interval Coverage Certification (`watermark_hash` / `coverage_receipt`):**
+   - A cryptographic ledger entry signed across an explicit date interval `[coverage_start, coverage_end]` and chamber.
+   - Proves that the official index was reconciled without sequence gaps, that all referenced filings were retrieved or accounted for, and that 0 matching transactions is an empirical fact within that window.
 
 ---
 
 ## 7. Schema and Pipeline Topology
 
-To establish production-grade, cryptographically verifiable congressional disclosures, ARX should implement the following relational schema in PostgreSQL, completely decoupled from SEC Form 4 tables:
+> [!NOTE]
+> **UNAPPROVED DESIGN PROPOSAL:** The schema DDL and two-stage pipeline architecture below represent an architectural proposal for technical review only. No database migrations, DDL executions, or schema changes are authorized or executed in this phase.
 
 ```mermaid
 erDiagram
@@ -255,6 +269,7 @@ erDiagram
         date received_date
         varchar source_url
         varchar raw_sha256
+        varchar extraction_status
         timestamp ingested_at
     }
 
@@ -272,6 +287,7 @@ erDiagram
         numeric amount_min
         numeric amount_max
         varchar owner_type
+        numeric extraction_confidence
         text comment
     }
 
@@ -286,7 +302,7 @@ erDiagram
     }
 ```
 
-### Proposed Schema DDL
+### Proposed Schema DDL (Corrected PostgreSQL Architecture)
 
 ```sql
 -- 1. Lawmakers & Congressional Representatives
@@ -304,37 +320,45 @@ CREATE TABLE IF NOT EXISTS congressional_members (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Official Statutory Filings (PTRs)
+-- 2. Official Statutory Filings (Stage 1: Index Ingestion)
 CREATE TABLE IF NOT EXISTS congressional_filings (
     filing_id VARCHAR(64) PRIMARY KEY, -- e.g. "HOUSE-2026-20025812"
-    chamber VARCHAR(16) NOT NULL,
+    chamber VARCHAR(16) NOT NULL CHECK (chamber IN ('House', 'Senate')),
     doc_id VARCHAR(64) NOT NULL,
     bioguide_id VARCHAR(16) REFERENCES congressional_members(bioguide_id),
     filing_type VARCHAR(32) NOT NULL DEFAULT 'PTR', -- 'PTR', 'ANNUAL', 'AMENDMENT'
     filing_date DATE NOT NULL,
     received_date DATE,
     source_url TEXT NOT NULL,
-    raw_document_sha256 VARCHAR(64) NOT NULL, -- SHA256 of downloaded PDF or XML
+    raw_document_sha256 VARCHAR(64), -- Populated upon Stage 2 PDF fetch
+    extraction_status VARCHAR(32) NOT NULL DEFAULT 'INDEXED_PENDING_EXTRACTION', -- 'EXTRACTED', 'EXTRACTION_FAILED', 'MANUAL_REVIEW'
     amends_filing_id VARCHAR(64) REFERENCES congressional_filings(filing_id),
     ingestion_timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Disclosed Asset Transactions
+CREATE INDEX IF NOT EXISTS idx_cong_filing_date ON congressional_filings (filing_date);
+CREATE INDEX IF NOT EXISTS idx_cong_filing_member ON congressional_filings (bioguide_id);
+
+-- 3. Disclosed Asset Transactions (Stage 2: Transaction Extraction)
+-- NOTE ON GENERATED COLUMNS: PostgreSQL generated columns cannot reference other tables.
+-- days_to_filing is therefore computed at ingestion time or evaluated dynamically via SQL View.
 CREATE TABLE IF NOT EXISTS congressional_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     filing_id VARCHAR(64) NOT NULL REFERENCES congressional_filings(filing_id) ON DELETE CASCADE,
     bioguide_id VARCHAR(16) NOT NULL REFERENCES congressional_members(bioguide_id),
-    ticker VARCHAR(16), -- Can be NULL if non-publicly traded asset or unlisted bond
+    ticker VARCHAR(16), -- Can be NULL for non-publicly traded assets
     asset_name TEXT NOT NULL,
     asset_type VARCHAR(32) NOT NULL, -- 'Common Stock', 'Call Option', 'Corporate Bond', etc.
     transaction_type VARCHAR(32) NOT NULL, -- 'Purchase', 'Sale (Full)', 'Sale (Partial)', 'Exchange'
     transaction_date DATE NOT NULL,
     notification_date DATE,
+    filing_date DATE NOT NULL, -- Stored redundantly at extraction for fast partitioned queries
+    days_to_filing INTEGER GENERATED ALWAYS AS (filing_date - transaction_date) STORED,
     amount_range VARCHAR(64) NOT NULL, -- '$1,001 - $15,000', '$15,001 - $50,000', etc.
     amount_min NUMERIC(14, 2) NOT NULL,
-    amount_max NUMERIC(14, 2), -- Can be NULL for top open-ended bracket (>$50,000,000)
+    amount_max NUMERIC(14, 2), -- NULL for open-ended top bracket (>$50,000,000)
     owner_type VARCHAR(32) NOT NULL DEFAULT 'Self', -- 'Self', 'Spouse', 'Child', 'Joint'
-    days_to_filing INTEGER GENERATED ALWAYS AS (filing_date - transaction_date) STORED,
+    extraction_confidence NUMERIC(4, 3) DEFAULT 1.000, -- 1.000 for digital e-file; <1.000 for OCR
     comment TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -384,8 +408,8 @@ In `SmartMoneyEngine.assess_congressional_trades`:
 
 ### Recommended Truthful UI States
 1. **Unmonitored / Disconnected State (Current Reality):**
-   - **Label:** `Congressional Disclosures: NOT MONITORED`
-   - **Copy:** *"Congressional STOCK Act disclosures are not currently monitored in live mode. Automated retrieval for House and Senate PTRs is pending pipeline implementation."*
+   - **Label:** `Congressional Disclosures: Not Monitored`
+   - **Copy:** *"Congressional STOCK Act disclosures are not currently monitored in live mode. Automated retrieval for House and Senate PTRs is not active."*
 2. **Explicit Research Archive Badge (When Curated is Selected):**
    - **Badge:** `HISTORICAL BENCHMARK DATA (AUG 2026)`
    - **Copy:** *"Displaying 40 curated historical research records from August 2026. This is not a real-time feed."*
@@ -433,7 +457,8 @@ Evaluation of 15 operational, technical, and architectural capabilities required
 
 ## 11. Smallest Safe Implementation Sequence
 
-To safely build congressional disclosure capability without risking regressions to SEC Form 4 or violating platform safety guidelines, the following incremental sequence is recommended:
+> [!NOTE]
+> **UNAPPROVED DESIGN PROPOSAL:** Phases 1 through 4 below represent a proposed multi-stage implementation roadmap for technical evaluation only. Only Phase 0 (truthful UI and governance decoupling) is evaluated for immediate execution.
 
 ```mermaid
 flowchart TD
@@ -449,27 +474,27 @@ flowchart TD
 ### Phase 0: Truthful UI & Governance Decoupling (Immediate / Zero-Risk)
 1. In `analyst_dashboard/analyzers/smart_money.py`, update `assess_congressional_trades` to return:
    - `status`: `SmartMoneyDomainStatus.UNAVAILABLE.value`
-   - `status_label`: `"Congressional Disclosures: Unmonitored"`
+   - `status_label`: `"Congressional Disclosures: Not Monitored"`
    - `disclosure`: `"Congressional STOCK Act live ingestion is not currently active."`
    - Completely remove the string `HOLD_SEC_001`.
 2. In `frontend/components/CongressionalTradesCard.tsx`, update the empty state copy to say:
    - *"Congressional disclosures are not currently monitored in live mode."*
 3. In `frontend/lib/api.ts`, update `SMART_MONEY` pipeline rationale to reflect that congressional ingestion is in planning.
 
-### Phase 1: Database Migration & Lawmaker Master
+### Phase 1: Database Migration & Lawmaker Master (Unapproved Proposal)
 1. Create a dedicated migration adding `congressional_members`, `congressional_filings`, `congressional_transactions`, and `congressional_receipts` to `finance_smart_money`.
 2. Seed `congressional_members` with official US Congress Bioguide data (535 active lawmakers + leadership).
 
-### Phase 2: Offline House XML Parser & Test Suite
+### Phase 2: Offline House XML Parser & Test Suite (Unapproved Proposal)
 1. Build an offline ingestion parser for House Clerk `FinancialDisclosure.xml` files.
 2. Create test suites in `tests/` using frozen local XML fixtures to verify parsing accuracy, amendment handling, and ticker extraction.
 
-### Phase 3: Governed Ingestion Worker & Cryptographic Receipts
+### Phase 3: Governed Ingestion Worker & Cryptographic Receipts (Unapproved Proposal)
 1. Introduce a scheduled background task in `smart-money-worker` under an explicit governed flag: `CONGRESSIONAL_INGESTION_ENABLED=1`.
 2. Enforce strict egress rate limits (max 1 req/sec).
 3. Compute and store SHA256 digests of all raw downloaded files. Generate a `congressional_receipts` row certifying daily coverage.
 
-### Phase 4: API & Frontend Verification
+### Phase 4: API & Frontend Verification (Unapproved Proposal)
 1. Update `GET /api/v1/smart-money/congress` to query `congressional_transactions` in PostgreSQL.
 2. Display verified coverage dates and raw government PDF links directly in `SmartMoneyDetailModal`.
 
@@ -481,10 +506,12 @@ In accordance with strict verification standards, the following systems and capa
 
 | Target System / Property | Status | Rationale & Constraint |
 | :--- | :--- | :--- |
-| **Live House Clerk Portal Egress** | `NOT_CHECKED` | Outbound network calls to `disclosures-clerk.house.gov` were prohibited during read-only discovery. |
-| **Live Senate EFD Interactive Search** | `NOT_CHECKED` | Direct crawling of `efdsearch.senate.gov` requires human TOS acceptance; prohibited under agent anti-bot guidelines. |
-| **Commercial Vendor API Feeds** | `NOT_CHECKED` | No active commercial subscriptions (Capitol Trades / Quiver) exist in environment variables. |
+| **Live House Clerk Portal Egress** | `NOT_CHECKED` | Outbound network calls to `disclosures-clerk.house.gov` were prohibited during read-only discovery. Server rate limits and `robots.txt` enforcement not verified. |
+| **Live Senate EFD Interactive Search** | `NOT_CHECKED` | Direct crawling of `efdsearch.senate.gov` requires human TOS acceptance; prohibited under agent anti-bot guidelines. WAF challenge behaviors not verified. |
+| **Commercial Vendor API Subscriptions** | `NOT_CHECKED` | No vendor API keys were found in Railway environment variables; off-platform commercial subscriptions (Capitol Trades / Quiver) not verified. |
 | **Production PostgreSQL DDL Execution** | `NOT_CHECKED` | Database access was strictly restricted to read-only transactions (`SET TRANSACTION READ ONLY`); no tables created. |
+| **Uninspected Database Schemas / Backups** | `NOT_CHECKED` | Absence claims are specific to `finance_smart_money` (public schema) and container SQLite stores; external cold backups or other schemas not inspected. |
+| **Historical PDF Digital Text Proportion** | `NOT_CHECKED` | Exact proportions of machine-readable digital text PDFs vs scanned handwritten images across the House corpus have not been measured. |
 | **Worker Ingestion Concurrency** | `NOT_CHECKED` | Worker is currently held in `STANDBY` mode; multi-worker execution was not initiated. |
 
 ---
@@ -492,9 +519,9 @@ In accordance with strict verification standards, the following systems and capa
 ## 13. Backlog Placement, Accountable Owner, and Acceptance Criteria
 
 - **Recommended Project / Epic:** ARX Core Ingestion Architecture — Sprint P4
-- **Related Issue Trackers:** Issue #165, Sprint P3 #231
+- **Related Issue Trackers:** Master Tracker Issue #165, Sprint P3 #231
 - **Proposed Feature Branch:** `feat/congressional-stock-act-ingestion`
-- **Accountable Owner:** ARX Data Engineering & Regulatory Intelligence Team
+- **Accountable Owner:** David Akara (ARX Lead Architecture & Engineering)
 - **Prerequisite Release Gate:** Decouple `HOLD_SEC_001` from all congressional code and verify zero impact on SEC Form 4 AAPL/NVDA trial baseline.
 
 ### Acceptance Criteria for Step 2 Activation
@@ -505,5 +532,5 @@ In accordance with strict verification standards, the following systems and capa
 5. All live empty states truthfully state the monitored coverage period or non-monitored status.
 
 ---
-**Sign-off:** ARX Architecture & Regulatory Governance Lead  
-**Document Digest:** Verified Read-Only Inventory complete. Saved to documentation branch `docs/congressional-ingestion-inventory-001`.
+**Sign-off:** David Akara (ARX Lead Architecture & Engineering)  
+**Document Digest:** Verified Read-Only Inventory complete and corrected. Committed on documentation branch `docs/congressional-ingestion-inventory-001`.
