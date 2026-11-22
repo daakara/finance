@@ -1,9 +1,9 @@
 {
-  "release_candidate_commit": "0b3515b9bcf84d56461ec6688c420b79418ce369",
+  "release_candidate_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 15,
+  "total_files": 23,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-NVDA-FUNDAMENTAL-EVIDENCE-DIAGNOSTICS-318",
+  "directive": "ARX-SEC-INSIDER-FLOW-PRESENTATION-319",
   "files": {
     ".gitignore": {
       "operation": "M",
@@ -124,6 +124,70 @@
       "governing_requirement": "Issue #165 / Sprint P3 #231: Bounded acquisition tooling and offline normalizer qualification for NVDA SEC EDGAR fundamentals",
       "sha256": "80ee60f6acfb35a90563e0e3db91650987ea79770a21604180cabda22a667610",
       "size_bytes": 14952
+    },
+    "analyst_dashboard/analyzers/smart_money.py": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Surface stored Form 4 disclosure metadata and counts during held scoring",
+      "sha256": "f46006e3a6c775dfe8b16cf08e87ab50e8f22715580348c595df8999f0c1b525",
+      "size_bytes": 189222
+    },
+    "api/routes/analytics.py": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Decouple Form 4 disclosure availability from held scoring in presentation layer",
+      "sha256": "fa1d06696b2277f7a9d13cf6496b1a405bbc6959e0f8c7c3560e48605053d30e",
+      "size_bytes": 93665
+    },
+    "frontend/components/CompositeConvictionCard.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Add navigation link to SEC Form 4 Disclosures in confluence conviction card",
+      "sha256": "72546b58878aa460a88587892c302e316c64048d97631dcf71422e3d2ad31540",
+      "size_bytes": 17265
+    },
+    "frontend/components/InstitutionalFeeds.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Listen for arx:open-sec-disclosures event to switch active tab to SEC_FORM4",
+      "sha256": "59e310e42ff5e74d3c0191e63329ec3c99d6117c87461877331e61788b04b3a0",
+      "size_bytes": 45537
+    },
+    "frontend/components/WhyInspectModal.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Add action link to open SEC Form 4 Disclosures in Why Inspect Modal",
+      "sha256": "cd0ab7eda9089bd9cabd533af5dfc39d2a5665b2e08e01e1e4612718d1972e07",
+      "size_bytes": 23958
+    },
+    "frontend/lib/institutionalFeeds.ts": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Pass symbol, coverageStatus, certifiedWatermark, and isPipelineHeld in SecFilingsResponse",
+      "sha256": "a33cbb8d4fe05bc819b52edc3ec327dc15a0c53ec74d39553f6ba88df119fe8c",
+      "size_bytes": 26062
+    },
+    "frontend/tests/secInsiderFlowPresentation.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 319,
+      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Verification suite for decoupled presentation, badge formatting, and disclosure link interaction",
+      "sha256": "74571490fe2be87d2bf4eb0927c8f4bce633bcbf44ed2fd3d937b8663d138661",
+      "size_bytes": 15359
+    },
+    "tests/test_sec_insider_flow_presentation.py": {
+      "operation": "A",
+      "originating_pr_number": 319,
+      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Backend verification suite for decoupled Form 4 presentation, transaction meaning, empty states, and symbol switching",
+      "sha256": "69cde717b90f632a01411501f2b29cd8068f8d181cd3e5b4df27f3a7200f70ff",
+      "size_bytes": 19099
     }
   },
   "qualification_framework_files": {
@@ -133,8 +197,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "68db0088412e2ac1e90a4d6e820fd8ff05f0c3164651bd7e2dc1102d16820660",
-      "size_bytes": 58231,
+      "sha256": "643ed8e640b5be2ced817785ca9c757dce5a04de1b563ff398ae07826812b952",
+      "size_bytes": 58236,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
