@@ -2,19 +2,19 @@
   "control_id": "RQ-05",
   "name": "Cross-Engine Invariants",
   "status": "PASS",
-  "start_time": "2026-11-22T14:06:53.242149+00:00",
-  "end_time": "2026-11-22T14:06:53.282733+00:00",
-  "duration_sec": 0.006,
-  "candidate_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
-  "source_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
-  "execution_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+  "start_time": "2026-11-22T14:07:36.981804+00:00",
+  "end_time": "2026-11-22T14:07:37.006700+00:00",
+  "duration_sec": 0.003,
+  "candidate_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+  "source_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+  "execution_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
-    "execution_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+    "source_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+    "execution_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -49,5 +49,5 @@
   "metadata": {
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "22d65359a8f0bb0d59d64f93e838639317d0be17ab6c6dd52ae88519a43e1095"
+  "receipt_digest": "f1869625dd9cdce486e7617f92ec363c675eabe550a0556192ee4592cf581c82"
 }

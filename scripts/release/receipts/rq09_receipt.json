@@ -2,19 +2,19 @@
   "control_id": "RQ-09",
   "name": "Four-Way Cross-Platform Compatibility",
   "status": "PASS",
-  "start_time": "2026-11-22T14:06:54.318742+00:00",
-  "end_time": "2026-11-22T14:06:54.936615+00:00",
-  "duration_sec": 0.595,
-  "candidate_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
-  "source_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
-  "execution_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+  "start_time": "2026-11-22T14:07:37.832239+00:00",
+  "end_time": "2026-11-22T14:07:38.479792+00:00",
+  "duration_sec": 0.626,
+  "candidate_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+  "source_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+  "execution_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
-    "execution_sha": "8e4cc0b3272c81bda5bed7f16b8ccd2bf97ce90c",
+    "source_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
+    "execution_sha": "588e78bdbfd2d9116d290c456ba83a496fa41734",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -139,7 +139,7 @@
   ],
   "evidence_digests": {
     "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-    "scripts/release/rq_compatibility_results.json": "90a40fcd83adc5936f152a2a101f8af79aa8c29256f82db1f685b3a4040fb966"
+    "scripts/release/rq_compatibility_results.json": "123e13cf37bf835d1add347447de50eccb7320fb353dc8422bce80e429f922c7"
   },
   "errors": [],
   "metadata": {
@@ -152,5 +152,5 @@
     "harness_version": "2.2.0-D074A4",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "3735380ae1efa2bc11d724e7c7bb1d1f60dc1352515b7b9ae94077ae83a369a3"
+  "receipt_digest": "dc88cc7d00414e742cf5dcb0a7c58c83860db51d2cde6403f6b000d44b33c028"
 }
