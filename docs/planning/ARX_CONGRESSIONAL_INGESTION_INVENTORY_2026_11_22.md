@@ -371,13 +371,22 @@ CREATE INDEX IF NOT EXISTS idx_cong_tx_member ON congressional_transactions (bio
 CREATE TABLE IF NOT EXISTS congressional_receipts (
     receipt_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     chamber VARCHAR(16) NOT NULL,
-    coverage_start DATE NOT NULL,
-    coverage_end DATE NOT NULL,
-    total_filings_checked INTEGER NOT NULL,
+    interval_start DATE NOT NULL,
+    interval_end DATE NOT NULL,
+    indexed_document_count INTEGER NOT NULL,
+    extracted_document_count INTEGER NOT NULL,
+    coverage_status VARCHAR(32) NOT NULL DEFAULT 'PARTIAL_COVERAGE', -- 'COMPLETE', 'PARTIAL_COVERAGE', 'PENDING'
     watermark_hash VARCHAR(64) NOT NULL,
     is_complete BOOLEAN NOT NULL DEFAULT FALSE,
     certified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+### 7.1 Offline Prototype Findings & Revised Schema Decisions
+An offline prototype parser and verification suite (`tests/test_congressional_offline_prototype.py`) was implemented to test Stage 1 XML index parsing, Stage 2 transaction extraction, idempotent duplicate handling, and truthful coverage certification against disposable storage:
+1. **Intra-Document Transaction Keys:** Individual disclosed transaction lines within a single PTR do not carry native government accession IDs. The revised schema standardizes deterministic composite keys: `{chamber}_{doc_id}_TX_{index}`.
+2. **Explicit Unresolved Identity Tracking:** Government filings frequently disclose municipal bonds, options, or unlisted instruments without standard 1-5 character ticker symbols. The revised schema adds `unresolved_mapping_reason VARCHAR(64)` alongside `raw_asset_name` so unmapped assets are never dropped or assigned fabricated tickers.
+3. **Denormalized Dates for Latency Computation:** To prevent PostgreSQL `SQL error 42P10` (cross-table generated column violations), `filing_date` is denormalized onto `congressional_transactions` at extraction time, enabling `days_to_filing INTEGER GENERATED ALWAYS AS (filing_date - transaction_date) STORED`.
+4. **Watermark Coverage Granularity:** The coverage ledger tracks `indexed_document_count` vs `extracted_document_count`. Only when `indexed_document_count == extracted_document_count` and count > 0 can the interval be certified as `COMPLETE`. Any unparsed or pending documents mark the interval as `PARTIAL_COVERAGE`, strictly preventing false certified-empty claims.
 ```
 
 ---
@@ -419,6 +428,10 @@ In `SmartMoneyEngine.assess_congressional_trades`:
 ---
 
 ## 9. Security, Legal, Operational, and Data-Quality Gaps
+
+> [!IMPORTANT]
+> **PROVISIONAL LEGAL & ACCESS ASSESSMENT:**
+> All statutory, legal, copyright, and access observations stated in this document (including references to 5 U.S.C. app. § 101 et seq. and § 105(c)(1)) are provisional and technical design evaluations only. They do NOT constitute formal legal opinions or binding regulatory counsel. All automated portal access, headless scraping, and commercial redistribution pathways remain strictly suspended pending authoritative review by licensed legal counsel and qualified compliance officers.
 
 | Category | Specific Risk / Gap | Technical Impact | Remediation Strategy |
 | :--- | :--- | :--- | :--- |
@@ -497,6 +510,13 @@ flowchart TD
 ### Phase 4: API & Frontend Verification (Unapproved Proposal)
 1. Update `GET /api/v1/smart-money/congress` to query `congressional_transactions` in PostgreSQL.
 2. Display verified coverage dates and raw government PDF links directly in `SmartMoneyDetailModal`.
+
+### 11.1 Bounded Source-Acquisition Proposal (Zero Automated Collection)
+Because authentic House and Senate documents and custody manifests are absent from the local repository and storage, any collection of authentic filings must follow a strictly bounded, non-automated procedure:
+1. **Target Boundary:** A single historical annual index file (`2026FD.xml`) from the House Clerk public downloads directory and exactly one sample PTR report PDF.
+2. **Ingestion Channel:** Staged manually or through a single-shot, pre-approved staging script with hardcoded rate limits (max 1 request per 5 seconds, User-Agent identification, zero session spoofing or CAPTCHA bypass).
+3. **Custody & Verification:** Staged documents must be deposited into an offline sandbox directory (`data/staging/congressional/`) with a signed `manifest.sha256` digest ledger before any parsing or ingestion code is invoked.
+4. **Governed Stop:** No automated ingestion daemon, recurring cron job, worker loop, or live network client may be activated without formal governance sign-off and legal compliance review.
 
 ---
 

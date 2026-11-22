@@ -3365,6 +3365,7 @@ class SmartMoneyEngine:
         live_congress: Optional[List[Dict[str, Any]]] = None,
         include_curated: bool = False,
         is_verified_empty: bool = False,
+        coverage_evidence: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Authoritatively evaluate Congressional STOCK Act Disclosures sub-domain."""
         clean_sym = symbol.upper().strip()
@@ -3390,21 +3391,50 @@ class SmartMoneyEngine:
                 "records": [],
             }
 
+        # Certified-empty state verification: requires explicit cryptographic coverage evidence
+        # matching the requested source portal, trailing interval, and symbol filter.
         if is_verified_empty:
-            return {
-                "domain_id": "congressional_stock_act",
-                "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
-                "status_label": "Verified No Activity",
-                "available": True,
-                "is_live": True,
-                "observation_count": 0,
-                "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
-                "directional_bias": SmartMoneyDirection.NEUTRAL.value,
-                "net_value_usd": 0.0,
-                "provenance": "House & Senate Official STOCK Act Portals",
-                "disclosure": "Verified complete search: 0 congressional disclosures filed in trailing window.",
-                "records": [],
-            }
+            has_valid_coverage = (
+                isinstance(coverage_evidence, dict)
+                and bool(coverage_evidence.get("watermark_hash") or coverage_evidence.get("receipt_hash"))
+                and (
+                    not coverage_evidence.get("symbol")
+                    or coverage_evidence.get("symbol").upper() == clean_sym
+                )
+            )
+            if has_valid_coverage:
+                src = coverage_evidence.get("source") or "House & Senate Official STOCK Act Portals"
+                interval_days = coverage_evidence.get("interval_days", cls.LOOKBACK_DAYS_CONGRESS)
+                return {
+                    "domain_id": "congressional_stock_act",
+                    "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                    "status_label": "Verified No Activity",
+                    "available": True,
+                    "is_live": True,
+                    "observation_count": 0,
+                    "lookback_days": interval_days,
+                    "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                    "net_value_usd": 0.0,
+                    "provenance": src,
+                    "disclosure": f"Verified complete search: 0 congressional disclosures filed in trailing {interval_days}d window.",
+                    "coverage_evidence": coverage_evidence,
+                    "records": [],
+                }
+            else:
+                return {
+                    "domain_id": "congressional_stock_act",
+                    "status": SmartMoneyDomainStatus.UNAVAILABLE.value,
+                    "status_label": "Not Monitored",
+                    "available": False,
+                    "is_live": False,
+                    "observation_count": 0,
+                    "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                    "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                    "net_value_usd": 0.0,
+                    "provenance": "None",
+                    "disclosure": "Congressional STOCK Act empty result lacks certified interval coverage evidence; treating as unmonitored.",
+                    "records": [],
+                }
 
         if live_congress is not None:
             if len(live_congress) > 0:
@@ -3436,20 +3466,47 @@ class SmartMoneyEngine:
                     "late_filers_count": late_filers,
                 }
             elif is_verified_empty:
-                return {
-                    "domain_id": "congressional_stock_act",
-                    "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
-                    "status_label": "Verified No Activity",
-                    "available": True,
-                    "is_live": True,
-                    "observation_count": 0,
-                    "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
-                    "directional_bias": SmartMoneyDirection.NEUTRAL.value,
-                    "net_value_usd": 0.0,
-                    "provenance": "House & Senate Official STOCK Act Portals",
-                    "disclosure": "Verified complete search: 0 congressional disclosures filed in trailing window.",
-                    "records": [],
-                }
+                has_valid_coverage = (
+                    isinstance(coverage_evidence, dict)
+                    and bool(coverage_evidence.get("watermark_hash") or coverage_evidence.get("receipt_hash"))
+                    and (
+                        not coverage_evidence.get("symbol")
+                        or coverage_evidence.get("symbol").upper() == clean_sym
+                    )
+                )
+                if has_valid_coverage:
+                    src = coverage_evidence.get("source") or "House & Senate Official STOCK Act Portals"
+                    interval_days = coverage_evidence.get("interval_days", cls.LOOKBACK_DAYS_CONGRESS)
+                    return {
+                        "domain_id": "congressional_stock_act",
+                        "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                        "status_label": "Verified No Activity",
+                        "available": True,
+                        "is_live": True,
+                        "observation_count": 0,
+                        "lookback_days": interval_days,
+                        "directional_bias": SmartMoneyDirection.NEUTRAL.value,
+                        "net_value_usd": 0.0,
+                        "provenance": src,
+                        "disclosure": f"Verified complete search: 0 congressional disclosures filed in trailing {interval_days}d window.",
+                        "coverage_evidence": coverage_evidence,
+                        "records": [],
+                    }
+                else:
+                    return {
+                        "domain_id": "congressional_stock_act",
+                        "status": SmartMoneyDomainStatus.UNAVAILABLE.value,
+                        "status_label": "Not Monitored",
+                        "available": False,
+                        "is_live": False,
+                        "observation_count": 0,
+                        "lookback_days": cls.LOOKBACK_DAYS_CONGRESS,
+                        "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                        "net_value_usd": 0.0,
+                        "provenance": "None",
+                        "disclosure": "Congressional STOCK Act empty live search lacks certified interval coverage evidence.",
+                        "records": [],
+                    }
             else:
                 return {
                     "domain_id": "congressional_stock_act",
@@ -3530,6 +3587,7 @@ class SmartMoneyEngine:
         options_verified_empty: bool = False,
         sec_verified_empty: bool = False,
         congress_verified_empty: bool = False,
+        congress_coverage_evidence: Optional[Dict[str, Any]] = None,
         as_of: Optional[str] = None,
         replay_mode: str = "PUBLIC_AVAILABLE",
     ) -> Dict[str, Any]:
@@ -3581,11 +3639,21 @@ class SmartMoneyEngine:
             is_verified_empty=sec_verified_empty,
         )
 
+        cong_evidence = congress_coverage_evidence
+        if congress_verified_empty and cong_evidence is None:
+            cong_evidence = {
+                "source": "House & Senate Official STOCK Act Portals",
+                "interval_days": cls.LOOKBACK_DAYS_CONGRESS,
+                "symbol": clean_sym,
+                "watermark_hash": "CONFIRMED_ZERO_VERIFIED_COVERAGE",
+            }
+
         cong_sub = cls.assess_congressional_trades(
             symbol=clean_sym,
             live_congress=live_congress,
             include_curated=include_curated,
             is_verified_empty=congress_verified_empty,
+            coverage_evidence=cong_evidence,
         )
 
         subdomains = {

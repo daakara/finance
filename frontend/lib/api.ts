@@ -2494,7 +2494,7 @@ export interface SmartMoneyFetchOptions {
   throwOnError?: boolean;
   /** If false, fallback fixtures will not be returned on error. Defaults to true for backwards compatibility. */
   allowFallback?: boolean;
-  /** Explicitly include curated research archive. Defaults to true for research overview display; pass false to query unmonitored live contract. */
+  /** Explicitly include curated research archive. Defaults to false (unmonitored live contract); pass true only to query archived research records. */
   includeCurated?: boolean;
 }
 
@@ -2638,7 +2638,7 @@ export async function fetchSmartMoneyOverview(options?: SmartMoneyFetchOptions):
   const shouldThrow = Boolean(options?.throwOnError || options?.allowFallback === false);
   try {
     const baseUrl = getApiBaseUrl();
-    const includeCuratedParam = options?.includeCurated !== undefined ? options.includeCurated : true;
+    const includeCuratedParam = Boolean(options?.includeCurated);
     const res = await fetch(`${baseUrl}/smart-money/overview?include_curated=${includeCuratedParam}`, {
       headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(8000),

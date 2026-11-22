@@ -4,6 +4,14 @@ import { useState, useEffect } from "react";
 import { CongressTradeItem, OptionsFlowItem } from "../lib/api";
 import SmartMoneyDetailModal from "./SmartMoneyDetailModal";
 
+export interface CongressionalCoverageEvidence {
+  source?: string;
+  interval?: string;
+  filterMatching?: boolean;
+  watermarkHash?: string;
+  certifiedWatermark?: string;
+}
+
 interface CongressionalTradesCardProps {
   symbol?: string;
   congressTrades?: CongressTradeItem[];
@@ -12,6 +20,7 @@ interface CongressionalTradesCardProps {
   onSelectSymbol?: (symbol: string) => void;
   status?: "AVAILABLE" | "VALID_EMPTY" | "PIPELINE_PENDING" | "SOURCE_UNAVAILABLE" | string;
   notice?: string;
+  coverageEvidence?: CongressionalCoverageEvidence;
 }
 
 export default function CongressionalTradesCard({
@@ -22,6 +31,7 @@ export default function CongressionalTradesCard({
   onSelectSymbol,
   status,
   notice,
+  coverageEvidence,
 }: CongressionalTradesCardProps) {
   const isDayTrader = userRole === "DAY_TRADER";
   const [timeframe, setTimeframe] = useState<"7D" | "30D" | "90D" | "1Y" | "ALL">("30D");
@@ -527,14 +537,25 @@ export default function CongressionalTradesCard({
                 </div>
               </div>
             ) : status === "VALID_EMPTY" ? (
-              <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
-                <div className="font-semibold text-slate-300">
-                  No matching transactions
+              Boolean(coverageEvidence?.watermarkHash || coverageEvidence?.certifiedWatermark) && coverageEvidence?.filterMatching !== false ? (
+                <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                  <div className="font-semibold text-slate-300">
+                    No matching transactions
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Verified complete search confirmed 0 qualifying congressional transactions in the requested coverage period ({coverageEvidence?.interval || timeframe}).
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-500">
-                  Verified complete search confirmed 0 qualifying congressional transactions in the requested coverage period.
+              ) : (
+                <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
+                  <div className="font-semibold text-slate-300">
+                    Coverage uncertified
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    No transactions reported, but cryptographic coverage certification for the requested source and interval was not verified.
+                  </div>
                 </div>
-              </div>
+              )
             ) : filteredCongressTrades.length === 0 && (status === "AVAILABLE" || status === "CURATED") ? (
               <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400 space-y-1">
                 <div className="font-semibold text-slate-300">

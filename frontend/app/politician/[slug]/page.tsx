@@ -117,10 +117,10 @@ export default function PoliticianProfilePage({ params }: PageProps) {
         <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-200 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span>⚠️</span>
-            <span><strong>Demonstration Research Profile:</strong> The transaction items below are curated historical research fixtures (August 2026). Live Congressional STOCK Act ingestion is not currently monitored or verified.</span>
+            <span><strong>Demonstration Research Profile:</strong> The transaction items below are synthetic illustrative fixtures for UI testing. Live Congressional STOCK Act ingestion is not currently monitored or verified, and these entries do not represent audited filings or allegations of legal or ethical misconduct.</span>
           </div>
           <span className="text-[10px] px-2 py-0.5 rounded bg-amber-900/60 border border-amber-700/80 font-bold uppercase shrink-0 hidden sm:inline">
-            Curated Research Sample
+            Synthetic Demonstration Sample
           </span>
         </div>
 
@@ -193,9 +193,9 @@ export default function PoliticianProfilePage({ params }: PageProps) {
         <section className="bg-[#0b1019] p-5 rounded-2xl border border-[#1e293b] space-y-4">
           <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <span>🏛️ Curated Demonstration Disclosures (August 2026 Sample)</span>
+              <span>🏛️ Synthetic Demonstration Disclosures (August 2026 Sample)</span>
             </h2>
-            <span className="text-[11px] text-slate-500 font-sans">Historical Reference Sample — Not Monitored in Live Mode</span>
+            <span className="text-[11px] text-slate-500 font-sans">Synthetic Simulation Fixtures — Not an Audited Record or Allegation of Misconduct</span>
           </div>
 
           <div className="space-y-3">
@@ -239,7 +239,7 @@ export default function PoliticianProfilePage({ params }: PageProps) {
                 </div>
 
                 <p className="text-[11px] text-slate-300 font-sans leading-relaxed pt-1 border-t border-[#141b26]">
-                  <strong>Strategic Conflict Thesis:</strong> {trade.thesis}
+                  <strong>Demonstration Scenario Context:</strong> {trade.thesis}
                 </p>
               </div>
             ))}

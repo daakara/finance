@@ -98,6 +98,13 @@ assert.ok(
 );
 console.log("  [OK] Misleading 'verified coverage period' on unverified empty arrays eliminated");
 
+// Must require explicit coverage evidence before rendering certified empty
+assert.ok(
+  cardSource.includes("coverageEvidence?.watermarkHash") || cardSource.includes("certifiedWatermark"),
+  "CongressionalTradesCard must require explicit cryptographic coverage evidence for certified-empty state"
+);
+console.log("  [OK] Certified-empty rendering requires explicit coverage evidence");
+
 // Must display explicit curated badge when displaying research sample
 assert.ok(
   cardSource.includes("Curated Research Sample (Aug 2026 — Not Live Feed)") ||
@@ -115,7 +122,7 @@ const polSource = fs.readFileSync(polPath, "utf8");
 
 assert.ok(
   polSource.includes("Demonstration Research Profile:") &&
-  polSource.includes("The transaction items below are curated historical research fixtures"),
+  polSource.includes("The transaction items below are synthetic illustrative fixtures"),
   "Politician page must display prominent demonstration research quarantine banner"
 );
 assert.ok(
@@ -137,8 +144,12 @@ const lateSource = fs.readFileSync(latePath, "utf8");
 
 assert.ok(
   lateSource.includes("Historical Research Case Studies:") &&
-  lateSource.includes("The filings below are historical demonstration records"),
+  lateSource.includes("The filings below are synthetic demonstration records"),
   "Late filers page must display historical demonstration quarantine notice"
+);
+assert.ok(
+  !lateSource.includes("Late-Filer Hall of Shame"),
+  "Late filers page must NOT use sensationalist 'Hall of Shame' title"
 );
 assert.ok(
   !lateSource.includes("🛑 STATUTORY COMPLIANCE SURVEILLANCE"),
@@ -164,6 +175,10 @@ assert.ok(
 assert.ok(
   apiSource.includes("includeCurated?: boolean"),
   "SmartMoneyFetchOptions must explicitly support includeCurated parameter"
+);
+assert.ok(
+  apiSource.includes("const includeCuratedParam = Boolean(options?.includeCurated);"),
+  "includeCurated must default to false at call sites"
 );
 console.log("  [OK] api.ts SMART_MONEY rationale and includeCurated parameter verified");
 

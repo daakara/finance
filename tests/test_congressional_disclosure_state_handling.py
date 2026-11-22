@@ -106,23 +106,55 @@ class TestCongressionalDisclosureStateHandling:
         assert res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
 
     # -------------------------------------------------------------------------
-    # State 3: CERTIFIED_EMPTY (Explicit Verification of 0 Records)
+    # State 3: CERTIFIED_EMPTY (Explicit Verification with Coverage Evidence)
     # -------------------------------------------------------------------------
-    def test_state_03_certified_empty_requires_authoritative_flag(self):
-        """Explicit is_verified_empty=True correctly establishes VERIFIED_NO_ACTIVITY."""
-        assessment = SmartMoneyEngine.assess_congressional_trades(
+    def test_state_03_certified_empty_requires_authoritative_coverage_evidence(self):
+        """Explicit is_verified_empty=True without coverage evidence fails closed to UNAVAILABLE."""
+        unverified = SmartMoneyEngine.assess_congressional_trades(
             symbol="NVDA",
             is_verified_empty=True,
             include_curated=False,
+            coverage_evidence=None,
         )
+        assert unverified["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
+        assert unverified["status_label"] == "Not Monitored"
+        assert "lacks certified interval coverage" in unverified["disclosure"]
 
-        assert assessment["status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
-        assert assessment["status_label"] == "Verified No Activity"
-        assert assessment["available"] is True
-        assert assessment["is_live"] is True
-        assert assessment["observation_count"] == 0
-        assert assessment["directional_bias"] == SmartMoneyDirection.NEUTRAL.value
-        assert "0 congressional disclosures" in assessment["disclosure"]
+        # Valid coverage evidence matching requested symbol and interval establishes VERIFIED_NO_ACTIVITY
+        valid_evidence = {
+            "source": "House Clerk & Senate EFD Portals",
+            "interval_days": 45,
+            "symbol": "NVDA",
+            "watermark_hash": "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
+        }
+        certified = SmartMoneyEngine.assess_congressional_trades(
+            symbol="NVDA",
+            is_verified_empty=True,
+            include_curated=False,
+            coverage_evidence=valid_evidence,
+        )
+        assert certified["status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
+        assert certified["status_label"] == "Verified No Activity"
+        assert certified["available"] is True
+        assert certified["is_live"] is True
+        assert certified["observation_count"] == 0
+        assert certified["directional_bias"] == SmartMoneyDirection.NEUTRAL.value
+        assert "0 congressional disclosures" in certified["disclosure"]
+
+        # Mismatching symbol filter fails closed
+        mismatch_evidence = {
+            "source": "House Clerk & Senate EFD Portals",
+            "interval_days": 45,
+            "symbol": "AAPL",  # mismatched symbol
+            "watermark_hash": "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
+        }
+        mismatched = SmartMoneyEngine.assess_congressional_trades(
+            symbol="NVDA",
+            is_verified_empty=True,
+            include_curated=False,
+            coverage_evidence=mismatch_evidence,
+        )
+        assert mismatched["status"] == SmartMoneyDomainStatus.UNAVAILABLE.value
 
     # -------------------------------------------------------------------------
     # State 4: CURATED_RECORDS (Explicit include_curated=True)
