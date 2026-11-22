@@ -145,3 +145,112 @@ scoring, baseline, snapshot and all holds remain unchanged by this task.
 This documentation update changes the PR head; the earlier hosted qualification
 applies to its earlier commit and is not qualification of this new head. PR #319
 remains a separate stacked candidate; no rebase or deployment was performed.
+
+## Executed bounded acquisition receipt (November 22, 2026)
+
+Under explicit operator owner directive ("GO — execute the existing NVDA fundamentals acquisition proposal once"), a single-pass bounded acquisition of official SEC EDGAR company facts and submissions for NVIDIA Corporation (CIK `0001045810`) was executed and validated offline.
+
+### 1. Execution boundaries & quota accounting
+- **Prior Attempt Reconciliation**:
+  - ChatGPT recorded `BLOCKED_EGRESS_POLICY` at commit `406d2e0a` and made 0 SEC requests due to sandbox egress restrictions.
+  - Permitted operator network execution attempted 2 HTTP requests (zero retries, zero redirects, both HTTP 200 OK).
+  - Current continuation session inspected local state, found valid archived evidence, and reused valid existing bytes, executing 0 new HTTP requests.
+  - Total attempts made across all sessions: 2 of 4 ceiling (2 attempts unconsumed).
+- **Trial & Service Isolation**: Completely separate from Form 4 trial `ARX-TRIAL-2026-NVDA-AAPL-001` and Issue #165 Form 4 ingestion. Zero Form 4 requests or trial quotas were consumed by this acquisition. Current production Form 4 counters are `NOT_CHECKED` (no production database connection or SQL query was made during this session). Dated prior accounting from Saturday Nov 21 recorded 64 of 96 charged requests and 8 of 12 cycles remaining.
+- **Egress Limits & Accounting**:
+  - Request budget ceiling: 4 attempts maximum.
+  - Actual HTTP requests attempted: 2 (zero retries, zero redirects).
+  - Rate ceiling: <= 4.0 req/sec (minimum interval 0.5s enforced, peak rate <= 2.0 req/sec).
+  - Operator User-Agent: `ARXTerminal Research Akara.david26@gmail.com`.
+  - Duplicate prevention: Existing valid bytes in `data/research/sourced_fundamentals/raw/CIK0001045810/` are reused without additional network calls.
+
+### 2. Acquired source evidence & custody reconciliation
+Saved exact raw uncompressed bytes to isolated path `data/research/sourced_fundamentals/raw/CIK0001045810/` and reconciled root cache `data/research/sourced_fundamentals/raw/`:
+
+| Document Type | Source URL | Raw Bytes | HTTP Status | SHA-256 Digest | Retrieval Time (UTC) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `submissions` | `https://data.sec.gov/submissions/CIK0001045810.json` | 160,255 | 200 OK | `8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045` | `2026-11-22T08:53:12Z` |
+| `companyfacts` | `https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json` | 4,092,966 | 200 OK | `19ef503a5770f5660964b3c3aea6937579d9b359da344afe6a9adf59c63d26ff` | `2026-11-22T08:53:13Z` |
+
+- **Hash & Cache Reconciliation**:
+  - `data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_submissions.json` and `data/research/sourced_fundamentals/raw/CIK0001045810_submissions.json` have identical byte length (160,255) and matching SHA-256 (`8dd44fbc...`).
+  - `data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_companyfacts.json` and `data/research/sourced_fundamentals/raw/CIK0001045810_companyfacts.json` have identical byte length (4,092,966) and matching SHA-256 (`19ef503a...`).
+  - Both manifests (`manifest.json` in issuer-specific and root cache) are reconciled and match on-disk file digests and attempt counters (2 attempts made of 4 budget). Unrelated files were preserved.
+- **Durable Custody Finding**:
+  - Local cache files are currently ignored by Git under `.gitignore:42:data/*`.
+  - Ignored local files alone are **insufficient for reproducible custody** across clean checkouts or off-host CI environments.
+  - Reproducible custody requires either off-host WORM object store replication (Cloudflare R2 / S3 under an authorized custody task) or an explicit repository gitignore allowlist inclusion. Until then, raw bytes remain in local research custody only.
+
+### 3. Normalization qualification & filing selection
+- **Evaluation Cutoff Date**: `RESEARCH_CUTOFF_DATE = 2026-10-16` (per `sec_harvester.py`).
+- **Filing Selection (August 26, 2026)**:
+  - NVIDIA Corporation operates on a 52/53-week fiscal year ending on the last Sunday of January (fiscal year-end `0131`).
+  - Fiscal Year 2027 second quarter (Q2 FY27) concluded on `2026-07-26`.
+  - Form 10-Q for Q2 FY27 was filed with the SEC on `2026-08-26` (Accession `0001045810-26-000075`, SEC acceptance `2026-08-26T20:36:00.000Z`).
+  - As of the evaluation cutoff date `2026-10-16` (and through the current November 22 session), this August 26 filing is the latest available periodic disclosure (10-Q/10-K) in SEC EDGAR, as Q3 FY27 closes in late October and is typically reported in late November / early December.
+- **Duration Arithmetic & Non-Overlapping Periods**:
+  - Full fiscal year FY2026 (10-K Accn `0001045810-26-000021`, filed `2026-02-21`, accepted `2026-02-21T21:42:07Z`): `2025-01-27` to `2026-01-25` (364 days).
+  - Current YTD Q2 FY2027 (10-Q Accn `0001045810-26-000075`, filed `2026-08-26`, accepted `2026-08-26T20:36:00Z`): `2026-01-26` to `2026-07-26` (182 days).
+  - Prior YTD Q2 FY2026 (10-Q Accn `0001045810-26-000075`): `2025-01-27` to `2025-07-27` (182 days).
+  - Derived TTM Start: `2025-07-28` (day after Prior YTD end `2025-07-27`).
+  - Derived TTM End: `2026-07-26` (Current YTD end).
+  - Derived TTM Duration: `2025-07-28` to `2026-07-26` = 364 days (exact 52 weeks). Non-overlapping, continuous, and duration-verified.
+- **Amendment Handling**:
+  - Company Facts contains 0 amendment observations (`/A` forms count: 0). No restatement or amendment collisions exist in the NVDA disclosures.
+- **Unmatched Accessions Resolution**:
+  - Company Facts contains 70 unique accession numbers across 627 US-GAAP concepts.
+  - 25 accessions match filings in the Submissions `recent` envelope (1,003 items, covering 2020–2026).
+  - **45 accessions remain explicitly unresolved**: These 45 accessions belong to historical filings spanning 2009–2020 (11 Form 10-Ks, 34 Form 10-Qs) that precede the recent envelope. They are recorded in older submission partitions (`CIK0001045810-submissions-001.json`, etc.) which were not retrieved under the strict 2-request budget limit.
+
+### 4. Normalized facts & component tracing
+
+| Metric Key | Concept | Value & Units | Form | Period | Accession Number | Acceptance DateTime | Formula / Component Tracing |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `revenue_ttm` | `us-gaap/Revenues` | $302,970,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($215,938M) + Q2_YTD ($177,837M) - Prior_Q2_YTD ($90,805M) |
+| `operating_income_ttm` | `us-gaap/OperatingIncomeLoss` | $197,579,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($130,387M) + Q2_YTD ($117,270M) - Prior_Q2_YTD ($50,078M) |
+| `net_income_ttm` | `us-gaap/NetIncomeLoss` | $192,880,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($120,067M) + Q2_YTD ($118,010M) - Prior_Q2_YTD ($45,197M) |
+| `cfo_ttm` | `us-gaap/NetCashProvidedByUsedInOperatingActivities` | $134,360,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($102,718M) + Q2_YTD ($74,421M) - Prior_Q2_YTD ($42,779M) |
+| `capex_ttm` | `us-gaap/PaymentsToAcquireProductiveAssets` | $7,354,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($6,042M) + Q2_YTD ($4,434M) - Prior_Q2_YTD ($3,122M) |
+| `cfo_minus_capex_ttm` | Derived FCF | $127,006,000,000 USD | Derived | 2025-07-28 to 2026-07-26 | N/A | N/A | CFO ($134,360M) - Capex ($7,354M) |
+| `sbc_ttm` | `us-gaap/AllocatedShareBasedCompensationExpense` | $7,241,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($6,386M) + Q2_YTD ($3,954M) - Prior_Q2_YTD ($3,099M) |
+| `cash_and_equivalents` | `us-gaap/CashAndCashEquivalentsAtCarryingValue` | $22,443,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Reported instantaneous Balance Sheet |
+| `short_term_debt` | `us-gaap/LongTermDebtCurrent` | $1,000,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Reported instantaneous Balance Sheet |
+| `long_term_debt` | `us-gaap/LongTermDebtNoncurrent` | $32,366,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Reported instantaneous Balance Sheet |
+| `total_financial_debt` | Derived Debt | $33,366,000,000 USD | Derived | As of 2026-07-26 | N/A | N/A | Short-Term Debt ($1,000M) + Long-Term Debt ($32,366M) |
+| `net_debt` | Derived Net Debt | $10,923,000,000 USD | Derived | As of 2026-07-26 | N/A | N/A | Total Financial Debt ($33,366M) - Cash ($22,443M) |
+| `operating_lease_liabilities` | `us-gaap/OperatingLeaseLiability` | $5,494,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Aggregate ($5,494M) == Current ($509M) + Noncurrent ($4,985M) |
+| `stockholders_equity` | `us-gaap/StockholdersEquity` | $228,984,000,000 USD | 10-Q | As of 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Reported instantaneous Balance Sheet |
+| `tax_expense_ttm` | `us-gaap/IncomeTaxExpenseBenefit` | $36,863,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($21,383M) + Q2_YTD ($23,400M) - Prior_Q2_YTD ($7,920M) |
+| `pretax_income_ttm` | `us-gaap/IncomeLossFromContinuingOperations...` | $229,743,000,000 USD | 10-Q/10-K_TTM | 2025-07-28 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | FY26 ($141,450M) + Q2_YTD ($141,410M) - Prior_Q2_YTD ($53,117M) |
+| `diluted_shares_weighted_avg` | `us-gaap/WeightedAverageNumberOfDilutedShares...` | 24,285,000,000 shares | 10-Q | 2026-04-27 to 2026-07-26 | `0001045810-26-000075` | 2026-08-26T20:36:00Z | Reported Q2 quarterly weighted diluted shares |
+
+### 5. Investigation of missing investment and share concepts
+Offline inspection of `CIK0001045810_companyfacts.json` clarifies the three unavailable fields:
+1. `short_term_investments`: `None` (`MetricStatus.UNAVAILABLE`)
+   - Normalizer priority cascade searches `["MarketableSecuritiesCurrent", "ShortTermInvestments", "AvailableForSaleSecuritiesCurrent", "AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearAmortizedCost"]`.
+   - **Source Disclosure Reality**: NVIDIA DOES disclose marketable securities in its XBRL facts, but reports them under `us-gaap/AvailableForSaleSecuritiesDebtSecurities` ($46,900,000,000 USD) and `us-gaap/AvailableForSaleSecuritiesDebtMaturitiesWithinOneYearFairValue` ($41,000,000,000 USD).
+   - **Distinction**: This is a **missing concept mapping** in the normalizer's taxonomy cascade, NOT an absence of source disclosure. Per governance rules, the metric is strictly preserved as `None` without ad-hoc normalizer modification.
+2. `total_cash_and_investments`: `None` (`MetricStatus.UNAVAILABLE`)
+   - Direct consequence of unmapped short-term investments; preserved as `None`.
+3. `common_shares_outstanding`: `None` (`MetricStatus.UNAVAILABLE`)
+   - Normalizer searches `us-gaap/CommonStockSharesOutstanding`.
+   - **Source Disclosure Reality**: NVIDIA reports common shares outstanding under the SEC Document and Entity Information taxonomy (`dei/EntityCommonStockSharesOutstanding`: 24,100,000,000 shares as of `2026-08-21`), basic shares under `us-gaap/WeightedAverageNumberOfSharesOutstandingBasic` (24,190,000,000 shares), and diluted shares under `us-gaap/WeightedAverageNumberOfDilutedSharesOutstanding` (24,285,000,000 shares). It does not populate `us-gaap/CommonStockSharesOutstanding`.
+   - **Distinction**: This is a **taxonomy scope limitation** (the normalizer only inspects `us-gaap` concepts, omitting `dei`). Preserved as `None`.
+
+### 6. Derived financial ratios (`DerivedMetrics`)
+- Operating Margin: **65.21%**
+- Net Margin: **63.66%**
+- FCF Conversion (EBIT): **64.28%**
+- FCF Conversion (Net Income): **65.85%**
+- Effective Tax Rate: **16.05%**
+- Invested Capital: **$239,907,000,000 USD**
+- NOPAT TTM: **$165,867,570,500 USD**
+- ROIC: **69.14%**
+- SBC / Revenue: **2.39%**
+
+### 7. Governance, boundaries & readiness verdict
+- **Production Fundamentals NOT Marked VERIFIED**: Acquired filings exist strictly in offline research custody (`data/research/sourced_fundamentals/raw/CIK0001045810/`). Production market store (`/root/.finance_market_store.db`), PostgreSQL (`finance_smart_money`), and Cloudflare R2 databases remain 100% untouched.
+- **Production Status**: Production NVDA factor rows remain unverified `LIVE_RUNTIME` estimates.
+- **Boundary Preservation**: Zero calls to `/analytics/NVDA`. Zero Form 4 trial quota changes. Snapshot `SNAP_SM_1792939989_48f30db6`, frozen NVDA baseline, and all operational holds remain strictly intact.
+- **Stacked PR Governance**: PR #319 (`fix/sec-insider-flow-presentation`) is stacked on top of PR #318 (`fix/fundamental-evidence-diagnostics`). PR #319's dependency is preserved.
+- **Readiness State**: `READY_FOR_SEPARATE_INTEGRATION_REVIEW`. Offline acquisition, custody hashes, filing tracing, and normalizer qualification are complete. No production integration, scoring, publication, deployment, grants or hold changes.
