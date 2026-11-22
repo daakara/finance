@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "af4769b460500c3c4355239362bb8d2ef163c8d1",
+  "release_candidate_commit": "6401be2381aeb933f08f3f693564f11963ca2b6d",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 3,
+  "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-NVDA-FUNDAMENTAL-EVIDENCE-DIAGNOSTICS-318",
   "files": {
@@ -28,6 +28,14 @@
       "governing_requirement": "Issue #165 / Sprint P3 #231: Offline regressions for runtime estimates, metadata-only verification, missing/future/stale evidence and ETF exemption",
       "sha256": "a98fbf1ba7cfc92193577157d60b5709c66d6470e0ff81c856926b1d628da7eb",
       "size_bytes": 3028
+    },
+    "tests/test_fred_sec_presentation_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "6401be2381aeb933f08f3f693564f11963ca2b6d",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: make the macro freshness regression deterministic so qualification measures candidate behavior rather than wall-clock drift",
+      "sha256": "2c2d9d7db91487383e05c9d5c0ef3e8c0583b6d4b11d1f8663db940f7998b589",
+      "size_bytes": 21723
     }
   },
   "qualification_framework_files": {
