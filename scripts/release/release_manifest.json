@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "6401be2381aeb933f08f3f693564f11963ca2b6d",
+  "release_candidate_commit": "37bded139a69912640b979db5609f3e6818ad240",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
   "total_files": 4,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -16,10 +16,10 @@
     "docs/reports/ARX_NVDA_FUNDAMENTAL_EVIDENCE_GAP_2026_11_22.md": {
       "operation": "A",
       "originating_pr_number": 318,
-      "originating_commit": "af4769b460500c3c4355239362bb8d2ef163c8d1",
+      "originating_commit": "37bded139a69912640b979db5609f3e6818ad240",
       "governing_requirement": "Issue #165 / Sprint P3 #231: Record the read-only NVDA source-custody inventory, limitations and separately authorized continuation boundary",
-      "sha256": "e6539526214a83e9b8701df462a80764c02357fb43557d5b751b4184f1ccab0a",
-      "size_bytes": 6233
+      "sha256": "db68b56bc6ec8792f1be63228397d2aef9d82ff14073d0d197e5e6c1db8670bb",
+      "size_bytes": 22371
     },
     "tests/test_fundamental_evidence_diagnostics.py": {
       "operation": "A",

@@ -2,19 +2,19 @@
   "control_id": "RQ-03",
   "name": "Backend Regression Suite",
   "status": "PASS",
-  "start_time": "2026-11-20T01:24:18.165706+00:00",
-  "end_time": "2026-11-20T01:24:39.025637+00:00",
-  "duration_sec": 20.836,
-  "candidate_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+  "start_time": "2026-11-22T09:36:54.288054+00:00",
+  "end_time": "2026-11-22T09:37:43.006558+00:00",
+  "duration_sec": 48.689,
+  "candidate_sha": "ab913551e69a7c0cf3aa86ff0ca7f1ac1f50b002",
+  "source_sha": "ab913551e69a7c0cf3aa86ff0ca7f1ac1f50b002",
+  "execution_sha": "ab913551e69a7c0cf3aa86ff0ca7f1ac1f50b002",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+    "source_sha": "ab913551e69a7c0cf3aa86ff0ca7f1ac1f50b002",
+    "execution_sha": "ab913551e69a7c0cf3aa86ff0ca7f1ac1f50b002",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -25,7 +25,7 @@
     {
       "assertion": "All backend regression tests pass",
       "observed": {
-        "passed": 199,
+        "passed": 278,
         "failed": 0,
         "exit_code": 0
       },
@@ -40,11 +40,15 @@
     "tests/test_confluence_cross_component_parity.py",
     "tests/test_financial_correctness_authority_035.py",
     "tests/test_smart_money_backup_retention_safety.py",
+    "tests/test_smart_money_backup_retention_bounded_adversarial.py",
     "tests/test_rq10_manifest_authority_negative_cases.py",
     "tests/test_smart_money_provenance.py",
     "tests/test_smart_money_two_issuer_trial.py",
     "tests/test_sm_act_020_continuous_authorization.py",
-    "tests/test_smart_money_worker_lifecycle_and_fencing.py"
+    "tests/test_smart_money_worker_lifecycle_and_fencing.py",
+    "tests/test_sec_disclosure_postgres_integration.py",
+    "tests/test_sec_disclosure_view.py",
+    "tests/test_fred_sec_presentation_integrity.py"
   ],
   "evidence_digests": {
     "tests/test_directive_057_remediation.py": "3b9514d235f2ac1462e904444912c0bea616404de2d521a26d87a6ea7db5e348",
@@ -53,19 +57,23 @@
     "tests/test_confluence_provenance_wiring_003.py": "c23970f3938a30fbdf80cc5d535e65cbd3bbd590df6baddae9ee8caaed45cd18",
     "tests/test_confluence_cross_component_parity.py": "c3a8c2d6dc3b09d227681deb92a26611e77bec4504a6279daa1fca0d7ddef042",
     "tests/test_financial_correctness_authority_035.py": "514bc9375a5b73b003a05132a4c608ede23fb964c383608290c122e880965b00",
-    "tests/test_smart_money_backup_retention_safety.py": "6d6345f459b43c1d61975d913d785f754abfcdd00d0ebe7e8c4e0e2be6fa0a56",
+    "tests/test_smart_money_backup_retention_safety.py": "63681bbf13be0c9c0a38a0f3e3fd9506b7f80d4bb8645a07ee33bf0af5a72638",
+    "tests/test_smart_money_backup_retention_bounded_adversarial.py": "bcfa2c1534d2b1aacb6146ff3d96ad80d85effedfd71cbe98f01fbae3cd3439f",
     "tests/test_rq10_manifest_authority_negative_cases.py": "a2e36908703d125f44067812e594f487de00aeda56a50024b0d2f589067423e9",
     "tests/test_smart_money_provenance.py": "3b9896cb38c09283235ed372bf185cea9180968d39e7b816d496db19f6b2bc04",
-    "tests/test_smart_money_two_issuer_trial.py": "814e603c2bed553423d8a117aeaf05d288d2c2afc8e58f511e7eccc156aee0b0",
+    "tests/test_smart_money_two_issuer_trial.py": "187a3e60deb99660f260db04a8b1a8cc074c4fe37d4c5a94e2cef5efeaa2bfe5",
     "tests/test_sm_act_020_continuous_authorization.py": "4d4d85eb4420f629aaa30648bb21eea7a3cbe115ba3aed974ac392d5d9504dd9",
-    "tests/test_smart_money_worker_lifecycle_and_fencing.py": "d1515ea74413c3548b0faab616cc9ddea82ae39d519b17fbd756ce4bbc23e810"
+    "tests/test_smart_money_worker_lifecycle_and_fencing.py": "d1515ea74413c3548b0faab616cc9ddea82ae39d519b17fbd756ce4bbc23e810",
+    "tests/test_sec_disclosure_postgres_integration.py": "f74cc353f27fe791f1fa8a91adccaadd0111b84f863fc94a4130edec49b29f74",
+    "tests/test_sec_disclosure_view.py": "d83bb8a22199984c0999220a49da39c178cb432f2d2574c22bca11dee79f6c8f",
+    "tests/test_fred_sec_presentation_integrity.py": "2c2d9d7db91487383e05c9d5c0ef3e8c0583b6d4b11d1f8663db940f7998b589"
   },
   "errors": [],
   "metadata": {
-    "pytest_passed": 199,
+    "pytest_passed": 278,
     "pytest_failed": 0,
-    "pytest_duration": 20.836230039596558,
+    "pytest_duration": 48.688912868499756,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "ecfe00bf6323ec444b67731e98782acfc16615fee5b0c205e1517224e5787cf8"
+  "receipt_digest": "025c7832b49484a88b4969a0f97fd269e5f063148f9462b1bd29d5d0c96c718a"
 }
