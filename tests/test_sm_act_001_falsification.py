@@ -473,7 +473,7 @@ class TestGateF3CoverageAndEmptyResultTruthfulness:
             congress_coverage_evidence=valid_cong_evidence,
             include_curated=False,
         )
-        assert res["overall_status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
+        assert res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
         assert res["pillar_eligibility"] is True
         assert res["pillar_score"] == 50.0
         assert res["directional_bias"] == SmartMoneyDirection.NEUTRAL.value
@@ -492,7 +492,7 @@ class TestGateF3CoverageAndEmptyResultTruthfulness:
             congress_verified_empty=True,
             congress_coverage_evidence=valid_cong_evidence,
         )
-        assert res_empty["overall_status"] == "VERIFIED_NO_ACTIVITY"
+        assert res_empty["overall_status"] == "PARTIAL_COVERAGE"
 
 
 # =============================================================================

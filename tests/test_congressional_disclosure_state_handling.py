@@ -24,6 +24,8 @@ Verifies state handling across required operational states & adversarial invaria
 """
 
 import pytest
+import hashlib
+import json
 from analyst_dashboard.analyzers.smart_money import (
     SmartMoneyEngine,
     SmartMoneyDomainStatus,
@@ -34,6 +36,46 @@ from analyst_dashboard.analyzers.smart_money import (
 
 class TestCongressionalDisclosureStateHandling:
     """Rigorous verification of congressional state handling & adversarial invariants."""
+
+    @pytest.mark.parametrize("mutation", [
+        "self_signed", "changed_hash", "missing_interval", "missing_unresolved",
+        "stale_dates", "house_only", "forged_trusted_flag",
+    ])
+    def test_untrusted_complete_receipts_never_certify_or_enable_scoring(self, mutation):
+        evidence = {
+            "source_inventory": "invented-inventory", "chamber": "BOTH",
+            "interval_days": 180, "interval_start": "2026-01-01",
+            "interval_end": "2026-06-30", "as_of": "2026-06-30T23:59:59Z",
+            "symbol": "NVDA", "document_identities": ["invented-document"],
+            "extraction_outcomes": {"invented-document": "SUCCESS"},
+            "unresolved_records_count": 0,
+        }
+        evidence["watermark_hash"] = hashlib.sha256(
+            json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        if mutation == "changed_hash":
+            evidence["watermark_hash"] = "f" * 64
+        elif mutation == "missing_interval":
+            evidence.pop("interval_days")
+        elif mutation == "missing_unresolved":
+            evidence.pop("unresolved_records_count")
+        elif mutation == "house_only":
+            evidence["chamber"] = "HOUSE"
+        elif mutation == "forged_trusted_flag":
+            evidence["trusted_receipt_verified"] = True
+
+        sub = SmartMoneyEngine.assess_congressional_trades(
+            "NVDA", is_verified_empty=True, coverage_evidence=evidence
+        )
+        assert sub["status"] in ("UNAVAILABLE", "PARTIAL_COVERAGE")
+        assert sub["is_live"] is False
+        assert sub["available"] is False
+        assessment = SmartMoneyEngine.assess_symbol(
+            "NVDA", congress_verified_empty=True, congress_coverage_evidence=evidence
+        )
+        assert assessment["pillar_eligibility"] is False
+        assert assessment["pillar_score"] is None
+        assert assessment["reweight_required"] is True
 
     # -------------------------------------------------------------------------
     # State 1: UNMONITORED (Default Live Posture)
@@ -112,7 +154,7 @@ class TestCongressionalDisclosureStateHandling:
     # State 3: CERTIFIED_EMPTY & STRICT EVIDENCE-READINESS BINDING
     # -------------------------------------------------------------------------
     def test_state_03_certified_empty_requires_authoritative_coverage_evidence(self):
-        """Valid coverage evidence matching requested symbol and full bindings establishes VERIFIED_NO_ACTIVITY."""
+        """Complete-looking caller assertions cannot establish authoritative coverage."""
         valid_evidence = {
             "source_inventory": "house_clerk_daily_index_2026",
             "chamber": "HOUSE",
@@ -132,13 +174,13 @@ class TestCongressionalDisclosureStateHandling:
             include_curated=False,
             coverage_evidence=valid_evidence,
         )
-        assert certified["status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
-        assert certified["status_label"] == "Verified No Activity"
-        assert certified["available"] is True
-        assert certified["is_live"] is True
+        assert certified["status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
+        assert certified["status_label"] == "Partial Coverage"
+        assert certified["available"] is False
+        assert certified["is_live"] is False
         assert certified["observation_count"] == 0
-        assert certified["directional_bias"] == SmartMoneyDirection.NEUTRAL.value
-        assert "0 congressional disclosures" in certified["disclosure"]
+        assert certified["directional_bias"] == SmartMoneyDirection.UNASSESSED.value
+        assert "NOT_CERTIFIED" in certified["disclosure"]
 
     def test_adversarial_bare_boolean_fails_closed(self):
         """Bare boolean is_verified_empty=True without coverage evidence fails closed to UNAVAILABLE."""
@@ -279,8 +321,8 @@ class TestCongressionalDisclosureStateHandling:
         assert res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
         assert res["overall_status"] != SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
 
-    def test_adversarial_assess_symbol_with_valid_receipt_certifies_neutral_zero(self):
-        """assess_symbol called with authoritative valid coverage evidence emits VERIFIED_NO_ACTIVITY."""
+    def test_adversarial_assess_symbol_rejects_self_asserted_complete_receipt(self):
+        """Structurally complete claims do not establish neutral verified evidence."""
         valid_cong_evidence = {
             "source_inventory": "house_clerk_daily_index_2026",
             "chamber": "HOUSE",
@@ -298,9 +340,8 @@ class TestCongressionalDisclosureStateHandling:
             congress_verified_empty=True,
             congress_coverage_evidence=valid_cong_evidence,
         )
-        assert res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
-        assert res["overall_status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
-        assert res["pillar_score"] == 50.0
+        assert res["subdomains"]["congressional_stock_act"]["status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
+        assert res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
 
     def test_adversarial_legislative_alignment_undisclosed_amount_zero_points(self):
         """Undisclosed amount_range in calculate_legislative_alignment awards 0 sizing points (never defaults to a bracket)."""

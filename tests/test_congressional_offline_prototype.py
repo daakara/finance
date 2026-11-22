@@ -482,8 +482,8 @@ class TestCongressionalOfflinePrototype:
         wm = cur.fetchone()
         assert wm["coverage_status"] == "PARTIAL_COVERAGE"
 
-    def test_prototype_05_trusted_coverage_receipt_validation(self):
-        """Coverage certification requires 0 failures, 0 unresolved records, and full binding."""
+    def test_prototype_05_equal_counts_are_not_trusted_coverage(self):
+        """Successful local extraction counts do not prove source inventory completeness."""
         conn = init_disposable_db()
         cur = conn.cursor()
         
@@ -501,20 +501,20 @@ class TestCongressionalOfflinePrototype:
         failed = 0
         unresolved_count = 0
         
-        is_complete = (indexed > 0 and indexed == extracted and failed == 0 and unresolved_count == 0)
-        assert is_complete is True
+        extraction_counts_reconciled = (indexed > 0 and indexed == extracted and failed == 0 and unresolved_count == 0)
+        assert extraction_counts_reconciled is True
         
         cur.execute("""
         INSERT INTO congressional_coverage_watermarks (
             watermark_id, source_inventory, chamber, symbol, interval_start, interval_end,
             indexed_document_count, extracted_document_count, failed_document_count,
             unresolved_records_count, coverage_status, watermark_hash
-        ) VALUES ('WM_PERFECT', 'house_clerk_2026', 'HOUSE', 'AAPL', '2026-08-01', '2026-08-31', 3, 3, 0, 0, 'COMPLETE', 'a'*64);
+        ) VALUES ('WM_PERFECT', 'house_clerk_2026', 'HOUSE', 'AAPL', '2026-08-01', '2026-08-31', 3, 3, 0, 0, 'PARTIAL_COVERAGE', 'untrusted-local-assertion');
         """)
         conn.commit()
         
         cur.execute("SELECT * FROM congressional_coverage_watermarks WHERE watermark_id = 'WM_PERFECT';")
         wm = cur.fetchone()
-        assert wm["coverage_status"] == "COMPLETE"
+        assert wm["coverage_status"] == "PARTIAL_COVERAGE"
         assert wm["unresolved_records_count"] == 0
         assert wm["failed_document_count"] == 0

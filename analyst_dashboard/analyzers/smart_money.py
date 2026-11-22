@@ -3369,7 +3369,9 @@ class SmartMoneyEngine:
         expected_interval_days: int = 30,
     ) -> Tuple[bool, str, str]:
         """
-        Validate a congressional coverage receipt against strict evidence-readiness invariants:
+        Check caller-supplied coverage structure, without certifying its authority.
+        No trusted retained-inventory verifier exists in Phase 0. Even a well-formed
+        receipt must therefore remain PARTIAL_COVERAGE, never verified/live evidence.
         1. Bare booleans or hash strings must NEVER certify empty coverage.
         2. Must bind to:
            - source_inventory: non-empty string identifying authoritative manifest.
@@ -3437,6 +3439,9 @@ class SmartMoneyEngine:
 
         # Check interval coverage
         interval_days = coverage_evidence.get("interval_days")
+        if interval_days is None or isinstance(interval_days, bool):
+            return (False, SmartMoneyDomainStatus.UNAVAILABLE.value,
+                    "Missing or invalid explicit interval_days: coverage is not certified.")
         if interval_days is not None:
             try:
                 if int(interval_days) < expected_interval_days:
@@ -3480,7 +3485,10 @@ class SmartMoneyEngine:
                 )
 
         # Check unresolved records: equal document counts alone cannot certify completeness!
-        unresolved_count = coverage_evidence.get("unresolved_records_count", 0)
+        if "unresolved_records_count" not in coverage_evidence or isinstance(coverage_evidence["unresolved_records_count"], bool):
+            return (False, SmartMoneyDomainStatus.UNAVAILABLE.value,
+                    "Missing or invalid explicit unresolved_records_count: unknown is not zero.")
+        unresolved_count = coverage_evidence["unresolved_records_count"]
         try:
             unresolved_count = int(unresolved_count)
         except (ValueError, TypeError):
@@ -3493,10 +3501,16 @@ class SmartMoneyEngine:
                 f"Coverage evidence contains {unresolved_count} unresolved records: equal document counts alone cannot certify completeness."
             )
 
+        # Do not add a caller-controlled 'trusted' flag here. A formatted hash,
+        # self-computed digest, date range, or claimed SUCCESS is not evidence that
+        # the authoritative inventory and every document were actually inspected.
+        # Receipt digest/custody, absolute interval/as-of, chamber/filter scope and
+        # extraction reconciliation require an independent retained-source verifier.
         return (
-            True,
-            SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
-            f"Verified complete search confirmed 0 qualifying congressional transactions in declared {source_inv} inventory."
+            False,
+            SmartMoneyDomainStatus.PARTIAL_COVERAGE.value,
+            "NOT_CERTIFIED: trusted retained-source receipt verification is unavailable; "
+            "caller-supplied inventory, hashes and extraction assertions cannot certify no activity."
         )
 
     @classmethod
@@ -3863,6 +3877,12 @@ class SmartMoneyEngine:
             SmartMoneyDomainStatus.CURATED_RESEARCH.value,
             SmartMoneyDomainStatus.PARTIAL_COVERAGE.value,
         )
+        if overall_status == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value:
+            pillar_eligibility = any(s in (
+                SmartMoneyDomainStatus.VERIFIED_SIGNAL.value,
+                SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
+                SmartMoneyDomainStatus.CURATED_RESEARCH.value,
+            ) for s in statuses)
 
         # Compute composite directional score and pillar contribution
         if not pillar_eligibility:

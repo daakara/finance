@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { CongressTradeItem, OptionsFlowItem } from "../lib/api";
 import SmartMoneyDetailModal from "./SmartMoneyDetailModal";
 
@@ -557,11 +557,15 @@ export default function CongressionalTradesCard({
               (() => {
                 const hash = coverageEvidence?.watermarkHash || coverageEvidence?.receiptHash || coverageEvidence?.certifiedWatermark;
                 const isHashValid = Boolean(hash && hash !== "CONFIRMED_ZERO_VERIFIED_COVERAGE" && hash !== "UNVERIFIED" && hash.length === 64);
-                const hasZeroUnresolved = coverageEvidence?.unresolvedRecordCount === 0 || coverageEvidence?.unresolvedRecordCount === undefined;
+                const hasZeroUnresolved = coverageEvidence?.unresolvedRecordCount === 0;
                 const hasOutcomes = !coverageEvidence?.documentIdentities || !coverageEvidence?.extractionOutcomes || coverageEvidence.documentIdentities.every(
                   (id) => coverageEvidence.extractionOutcomes?.[id] === "SUCCESS" || coverageEvidence.extractionOutcomes?.[id] === "COMPLETE"
                 );
+                // Phase 0 has no independent retained-source receipt verifier.
+                // Never promote caller-supplied hashes/flags to verified coverage.
+                const trustedReceiptVerificationAvailable = false;
                 const isCertified = Boolean(
+                  trustedReceiptVerificationAvailable &&
                   coverageEvidence &&
                   isHashValid &&
                   coverageEvidence.filterMatching !== false &&

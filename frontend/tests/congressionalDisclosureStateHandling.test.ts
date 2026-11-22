@@ -12,6 +12,12 @@
 import assert from "node:assert";
 import fs from "node:fs";
 import path from "node:path";
+import React from "react";
+import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
+const { renderToStaticMarkup } = require("react-dom/server") as {
+  renderToStaticMarkup: (element: React.ReactElement) => string;
+};
+import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import { resolveNineEvidenceDomains } from "../lib/evidenceDomains";
 
 console.log("===============================================================================");
@@ -216,6 +222,20 @@ assert.ok(
   "CongressionalTradesCard must render 'Undisclosed amount' when amount is null and omit owner when null"
 );
 console.log("  [OK] Undisclosed amount and owner preservation verified");
+
+const forgedReceiptMarkup = renderToStaticMarkup(React.createElement(AppRouterContext.Provider, {
+  value: { push() {}, replace() {}, refresh() {}, back() {}, forward() {}, prefetch() {} },
+}, React.createElement(CongressionalTradesCard, {
+  symbol: "NVDA", status: "VALID_EMPTY", congressTrades: [],
+  coverageEvidence: {
+    sourceInventory: "invented", chamber: "HOUSE", symbol: "NVDA",
+    intervalDays: 180, documentIdentities: ["invented"],
+    extractionOutcomes: { invented: "SUCCESS" }, unresolvedRecordCount: 0,
+    watermarkHash: "f".repeat(64), filterMatching: true, verifiedComplete: true,
+  },
+})));
+assert.ok(forgedReceiptMarkup.includes("Coverage uncertified"));
+assert.ok(!forgedReceiptMarkup.includes("Verified complete search confirmed"));
 
 console.log("\n===============================================================================");
 console.log("   ALL 6 FRONTEND STATE HANDLING & PRESENTATION GATES PASSED!                ");

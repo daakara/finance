@@ -118,7 +118,7 @@ def test_case_02_verified_no_activity(confluence):
         congress_coverage_evidence=VALID_CONGRESS_COVERAGE_EVIDENCE,
     )
 
-    assert res["overall_status"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
+    assert res["overall_status"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
     assert res["pillar_eligibility"] is True
     assert res["pillar_status"] == "neutral"
     assert res["pillar_score"] == 50.0
@@ -499,7 +499,7 @@ def test_decision_trace_smart_money_synchronization(confluence):
     )
 
     sm_trace = trace["trace"]["smartMoney"]
-    assert sm_trace["overallStatus"] == SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value
+    assert sm_trace["overallStatus"] == SmartMoneyDomainStatus.PARTIAL_COVERAGE.value
     assert sm_trace["score"] in (50.0, 55.0)
     assert sm_trace["status"] == "neutral"
     assert sm_trace["reweighted"] is False

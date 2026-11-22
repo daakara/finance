@@ -520,30 +520,46 @@ flowchart TD
 ### 11.1 Bounded Source-Acquisition Proposal: ONE House Index & ONE PTR PDF
 To establish authentic offline fixtures without unmonitored scraping or ongoing network loops, the following bounded acquisition procedure is prepared for future governed execution. **All outbound requests remain strictly suspended during this turn; stop before requests.**
 
+**Receipt trust correction (2026-11-23):** Phase 0 does not contain an independent
+retained-source receipt verifier. `validate_congressional_coverage_receipt` checks
+structure only and now fails closed even for complete-looking caller assertions.
+No supplied digest, signed-looking payload, `trusted` flag or equal counts can
+authorize `VERIFIED_NO_ACTIVITY` or live coverage. Missing interval/count fields
+are not inferred. The UI also keeps such empty responses uncertified. Partial
+coverage alone cannot enable a scoring pillar without independently eligible
+evidence from another domain. A future verifier must recompute a canonical receipt
+digest and reconcile trusted inventory bytes, exact document identities/hashes,
+absolute start/end/as-of, chamber/filter scope, successful extraction and all
+unresolved records. This remains unimplemented, not silently delegated to callers.
+The offline normalization prototype does not establish source completeness.
+One index and one PDF establish sample validation only; Senate and overall
+congressional coverage remain PARTIAL / NOT_CERTIFIED.
+
 #### 1. Exact Source Targets
 - **House Index File (ZIP/XML):**
   - Canonical URL: `https://disclosures-clerk.house.gov/public_disc/financial-search/2026FD.ZIP` (contains official statutory index `2026FD.xml`)
   - Alternative XML direct URL: `https://disclosures-clerk.house.gov/public_disc/financial-search/2026FD.xml`
 - **Sample PTR Report PDF:**
-  - Canonical URL: `https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2026/20025123.pdf` (official periodic transaction report document)
+  - Exact PDF URL remains unresolved until a real PTR is selected from the retained authentic index. Document ID `20025123` came from a synthetic fixture and is not an authenticated acquisition target. Record the selected index row, document identity and URL before requesting the PDF.
 
 #### 2. Access Requirements & Egress Policy
-- **User-Agent Header:** `ARXTerminal/1.0 (compliance@arxterminal.com; research-inventory)`
-- **Access Authentication:** Public statutory disclosure portals under 5 U.S.C. app. § 103 require no API key or basic authentication.
+- **User-Agent Header:** Use the previously verified operator contact `Daakara admin@daakara.com`; do not invent a compliance mailbox.
+- **Access Authentication:** Live access and permitted use remain NOT_CHECKED. Review applicable portal requirements before acquisition; do not infer authorization from public availability.
 - **Rate Limit Ceiling:** Minimum 10 seconds between requests (strictly ≤ 0.1 requests/sec).
 - **Robots / Anti-Bot Compliance:** Strict adherence to `robots.txt` on `disclosures-clerk.house.gov`. If any anti-bot challenge (CAPTCHA, Cloudflare Turnstile, browser check) is detected, the acquisition script must fail closed immediately and emit an alert. Zero challenge bypass is permitted.
 
 #### 3. Total Attempt Budget
-- **Socket Attempts:** Strictly 1 socket connection per artifact.
-- **Retry Policy:** Maximum 1 retry allowed only in the event of an unexpected TCP socket reset or timeout (HTTP 502/504). Total attempt ceiling: **2 attempts per URL**.
+- **Shared HTTP Attempt Ceiling:** Maximum **4 total HTTP attempts for the entire acquisition**, including policy/robots retrieval, redirects, alternative URLs, failures and retries. Socket reuse is irrelevant to accounting. Reserve/count each attempt before transmission and preserve the shared counter on continuation.
+- **Retry Policy:** No automatic retry or redirect. Any permitted follow-up consumes the same shared ceiling; stop on access denial/challenge or exhaustion rather than resetting the budget.
 - **Socket Timeout:** Hard limit of 15 seconds per connection.
 - **Fail-Closed Budget:** If the attempt budget is exhausted, the operation aborts immediately and records `ACQUISITION_FAILED` in the custody manifest.
 
 #### 4. Duplicate Prevention & Content-Addressable Storage
-- **Pre-Flight Local Check:** Before initiating any network socket, verify whether the target artifact already exists locally under `fixtures/congressional/raw/`. If present, skip outbound egress entirely.
+- **Pre-Flight Local Check:** Inspect running acquisition work and existing custody manifests first. Reuse existing artifacts only after validating bytes, size, hashes and identity. Resume the same attempt ledger; do not duplicate sessions or overwrite unrelated artifacts.
 - **Content-Addressable Retention:** Raw downloaded bytes are hashed with SHA-256 upon reception and written to disk named by their hash:
   - Index: `fixtures/congressional/raw/indices/{sha256}.xml` (or `.zip`)
   - PTR: `fixtures/congressional/raw/documents/{sha256}.pdf`
+  - Preserve the original ZIP response bytes separately from extracted XML bytes. Record the ZIP digest, member name, extracted-member digest and extraction lineage; extraction is not another network request.
 
 #### 5. Raw-Byte Custody Manifest Contract
 Every acquired artifact must be appended to the cryptographically verifiable manifest at `fixtures/congressional/custody_manifest.json`:
@@ -554,16 +570,18 @@ Every acquired artifact must be appended to the cryptographically verifiable man
   "directive": "ARX-CONGRESSIONAL-INGESTION-001",
   "artifacts": [
     {
-      "document_type": "HOUSE_INDEX_XML",
+      "document_type": "HOUSE_INDEX_ZIP",
       "canonical_url": "https://disclosures-clerk.house.gov/public_disc/financial-search/2026FD.ZIP",
-      "retrieved_filename": "2026FD.xml",
-      "storage_path": "fixtures/congressional/raw/indices/<sha256>.xml",
+      "retrieved_filename": "2026FD.ZIP",
+      "storage_path": "fixtures/congressional/raw/indices/<zip_sha256>.zip",
+      "extracted_member_name": "<inspect_archive_member_name>",
+      "extracted_member_sha256": "<computed_xml_sha256>",
       "byte_count": 0,
       "sha256": "<computed_sha256>",
       "retrieved_at_utc": "YYYY-MM-DDTHH:MM:SSZ",
       "http_status": 200,
       "response_headers": {
-        "content-type": "application/xml",
+        "content-type": "<observed_response_content_type>",
         "last-modified": "...",
         "etag": "..."
       },
@@ -571,8 +589,8 @@ Every acquired artifact must be appended to the cryptographically verifiable man
     },
     {
       "document_type": "HOUSE_PTR_PDF",
-      "canonical_url": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2026/20025123.pdf",
-      "retrieved_filename": "20025123.pdf",
+      "canonical_url": "<select_exact_ptr_url_from_authentic_index>",
+      "retrieved_filename": "<index_selected_document_id>.pdf",
       "storage_path": "fixtures/congressional/raw/documents/<sha256>.pdf",
       "byte_count": 0,
       "sha256": "<computed_sha256>",
