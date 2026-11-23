@@ -1,0 +1,33 @@
+name: Paper Trading Offline Capture
+on:
+  pull_request:
+    paths:
+      - 'analyst_dashboard/governance/**'
+      - 'scripts/capture_forward_candidates.py'
+      - 'tests/test_forward_candidate_capture.py'
+      - 'tests/test_paper_trading*'
+      - 'tests/fixtures/paper_trading*'
+      - 'docs/governance/ARX_FORWARD_PILOT_UNIVERSE_V1.json'
+      - 'tools/qualification/paper_trading_offline_support.py'
+      - '.github/workflows/paper-trading-offline.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt pytest
+      - name: Capture, baseline and evaluator regressions without sockets or databases
+        env:
+          PYTHONPATH: 'tools/qualification:.'
+        run: >-
+          python -m pytest --noconftest -p paper_trading_offline_support
+          tests/test_forward_candidate_capture.py
+          tests/test_paper_trading_baseline_determinism.py
+          tests/test_paper_trading_outcome_evaluator.py -q

@@ -110,7 +110,7 @@ flowchart LR
 - **Quality Gates & Acceptance Criteria:**
   - **No Look-Ahead:** Capture timestamp must precede $T+1$ market open by $\ge 12$ hours.
   - **No Cherry-Picking:** All 10 candidates evaluated in each daily cycle are recorded in the capture stream ($D_1$ preserved).
-  - **Deterministic ID:** Decision IDs match `DEC_{sha256(symbol + cycle_id + engine_sha)[:16]}`.
+  - **Deterministic ID:** Reuse `compute_decision_id(symbol, cycle_id, engine_sha, decision_schema_version)` from the existing capture engine. Its canonical JSON tuple encoding prevents concatenation ambiguity.
   - **Append-Only:** Capture stream written as immutable JSONL to `data/forward_pilot/capture_stream.jsonl`.
 - **Rollback / Disable Procedure:** Disable forward capture script; zero web service disruption.
 - **Effort Range & Decision:**
@@ -214,7 +214,7 @@ flowchart LR
 - **Planning Boundary:** This roadmap authorizes design and review only. It does **not** authorize activating live background schedulers, placing broker orders, modifying production databases, or altering frozen Contract V1.0.1.
 - **Decoupling from Existing Holds:**
   - `HOLD_SEC_001` (SEC Form 4 Ingestion): **Completely decoupled.** The forward paper-trading pilot uses market price bars and Radar setups, not SEC EDGAR filings.
-  - `HOLD_SCAN_001` (Continuous Scanning): **Preserved.** Continuous background polling remains disabled. The pilot operates via a single, scheduled post-market batch CLI call daily.
+  - `HOLD_SCAN_001` (Continuous Scanning): **Preserved.** Continuous background polling remains disabled. The initial CLI is manually invoked against retained inputs; scheduling and live model evaluation remain unactivated.
   - `HOLD_EXEC_001` (Financial Execution): **Strictly Preserved.** No broker order routing is implemented. All executions are simulated internally.
   - `PHASE_3_HOLD` (Autonomous Trading): **Preserved.** Model weights remain frozen; no online learning.
 

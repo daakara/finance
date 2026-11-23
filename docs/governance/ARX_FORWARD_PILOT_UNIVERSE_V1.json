@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "universeId": "ARX_FORWARD_PILOT_UNIVERSE_001",
+  "calendar": "XNYS",
+  "captureSessions": 20,
+  "simulatedEntryCap": 20,
+  "minutesAfterClose": 15,
+  "minimumHoursBeforeNextOpen": 12,
+  "symbols": ["VOO", "QQQM", "IWM", "XLE", "XLK", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"]
+}

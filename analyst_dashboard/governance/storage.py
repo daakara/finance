@@ -570,6 +570,12 @@ def validate_forward_write_path(
             base_name = os.path.basename(abs_target)
             real_target = os.path.join(real_parent, base_name)
 
+    # realpath also resolves dangling intermediate symlinks. The ancestor walk
+    # above must not treat a missing symlink destination as an ordinary directory.
+    real_target = os.path.realpath(abs_target)
+    if real_target == root:
+        raise ValueError("FAIL_CLOSED: target must be a file strictly inside the forward root.")
+
     # Double check commonpath containment
     try:
         common = os.path.commonpath([root, real_target])
@@ -589,13 +595,14 @@ def validate_forward_write_path(
     for hp in historical_protected:
         if os.path.exists(hp):
             try:
-                if os.path.commonpath([hp, real_target]) == hp:
-                    raise ValueError(
-                        f"FAIL_CLOSED: target path '{real_target}' intersects protected historical "
-                        f"path '{hp}'. Writes to historical directories are strictly prohibited."
-                    )
+                protected = os.path.commonpath([hp, real_target]) == hp
             except ValueError:
-                pass
+                protected = False  # Different drives cannot intersect.
+            if protected:
+                raise ValueError(
+                    f"FAIL_CLOSED: target path '{real_target}' intersects protected historical "
+                    f"path '{hp}'. Writes to historical directories are strictly prohibited."
+                )
 
     return real_target
 
@@ -627,6 +634,11 @@ def safe_write_forward_pilot_file(
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp_path, validated_path)
+        directory_fd = os.open(parent_dir, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
         logger.info(f"Safely wrote forward pilot file at '{validated_path}' for cohort '{cohort_id}'.")
         return validated_path
     finally:

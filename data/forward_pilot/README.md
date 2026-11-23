@@ -13,9 +13,12 @@ This directory is the dedicated, durable storage location for the ARX Forward Pa
 ```
 data/forward_pilot/
 ├── README.md                  # This specification and isolation contract
-├── capture_stream.jsonl       # Immutable append-only candidate evaluation decisions
-├── settlement_ledger.json     # State checkpoint for forward setups & outcome events (flock protected)
-└── raw_responses/             # Preserved raw daily price responses & SHA-256 integrity metadata
+└── COHORT_FORWARD_PILOT_002/   # Independent namespace per cohort
+    ├── cohort.json            # Immutable start session, universe/contract digest and engine SHA
+    ├── inputs/                # Content-addressed original evaluation batches
+    ├── capture_stream.jsonl   # Immutable candidate records, ten per committed cycle
+    ├── settlement_ledger.json # Future PT-03 checkpoint (not implemented/activated)
+    └── raw_responses/         # Future retained market-data custody
 ```
 
 ---
@@ -42,3 +45,73 @@ data/forward_pilot/
    - No records in this directory interact with production PostgreSQL, production historical databases, or `.finance_market_store.db`.
 7. **Zero Broker API Connectivity:**
    - No broker order routing or execution adapters are wired. All entries and exits are simulated internally under Contract V1.0.1 rules.
+
+## 3. PR-PT-02 manual retained-input capture
+
+`scripts/capture_forward_candidates.py` is a local, offline-input capture adapter.
+It does **not** fetch data, run Radar/Confluence, schedule work, enter simulated
+trades, or settle outcomes. Production-runtime execution is rejected. A future
+qualified evaluator adapter is required for natural forward evidence.
+
+Input JSON schema (all ten symbols are expected; missing rows are recorded):
+
+```json
+{
+  "schemaVersion": "1.0",
+  "samplingMode": "SYSTEMATIC",
+  "sessionDate": "2026-11-23",
+  "engineSha": "<actual 40-character lowercase engine commit SHA>",
+  "evaluations": {
+    "AAPL": {
+      "decisionState": "VALID_SETUP",
+      "sourceTimestampUtc": "2026-11-23T21:00:00Z",
+      "observedAtUtc": "2026-11-23T21:10:00Z",
+      "plan": {
+        "spot": 100, "corridorMin": 98, "corridorMax": 102,
+        "stopLoss": 95, "takeProfit1": 110, "confluenceScore": 70
+      }
+    }
+  }
+}
+```
+
+The prices above illustrate the schema only; they are not an authentic signal.
+Rows may instead carry `error` for a failed upstream evaluation. Each missing,
+failed, stale/future or invalid result remains in the ten-symbol denominator,
+with no fabricated plan. All imports are labelled `OFFLINE_INPUT` and
+`eligibleForOpportunityCapture=false`; metadata alone does not certify origin.
+
+For a new cohort, from repository root (local implementation use only):
+
+```bash
+python scripts/capture_forward_candidates.py \
+  --input /absolute/path/to/retained-batch.json \
+  --forward-root /absolute/path/to/existing-isolated-forward-root \
+  --cohort-id COHORT_FORWARD_PILOT_002 --start-session YYYY-MM-DD --initialize
+```
+
+Omit `--initialize` on continuation. Missing/corrupt streams or manifests stop
+continuation rather than reset history. The input session must be the actual
+current New York session; the CLI has no backdating/clock override. Capture is
+allowed from exchange close +15 minutes until next session open minus 12 hours.
+XNYS holidays, DST and early closes are respected (16:15 ET on regular days).
+
+The frozen manifest is `docs/governance/ARX_FORWARD_PILOT_UNIVERSE_V1.json`.
+The first valid capture binds the cohort's engine, contract, universe and start
+session. Exactly ten records are committed atomically under `flock`; identical
+retries are no-ops, conflicting retries fail, and later cycles preserve existing
+record bytes. Twenty consecutive exchange-session opportunities permit up to
+200 records. Missed sessions are not backfilled or counted as completed.
+The 20-entry cap belongs to future settlement; this CLI creates **zero entries**.
+
+Verification (blocks socket/database connections and bypasses unrelated DB seeds):
+
+```bash
+PYTHONPATH=tools/qualification:. python -m pytest --noconftest \
+  -p paper_trading_offline_support tests/test_forward_candidate_capture.py \
+  tests/test_paper_trading_baseline_determinism.py tests/test_paper_trading_outcome_evaluator.py -q
+```
+
+Git does not persist operational captures (only this README is allowlisted).
+Atomic replacement/fsync protects local writes; it does not prove a durable
+production mount or authorize activation. No hold or runtime setting is changed.
