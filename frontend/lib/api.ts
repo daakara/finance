@@ -700,6 +700,12 @@ export interface ConfluencePillar {
   detail: string;
   plainDetail: string;
   icon: string;
+  scoringEligibility?: string;
+  filingsAvailable?: boolean;
+  filingsCount?: number;
+  latestFilingDate?: string | null;
+  coverageStatus?: string;
+  issuerSupportStatus?: string | null;
 }
 
 export interface ConfluenceData {

@@ -193,16 +193,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-        <noscript>
-          <p>
-            <img
-              referrerPolicy="no-referrer-when-downgrade"
-              src="https://data.fpldna.com/matomo/matomo.php?idsite=3&rec=1"
-              style={{ border: 0 }}
-              alt=""
-            />
-          </p>
-        </noscript>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(rootJsonLd).replace(/</g, "\\u003c") }}

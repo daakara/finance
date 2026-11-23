@@ -1,9 +1,9 @@
 {
-  "release_candidate_commit": "0b3515b9bcf84d56461ec6688c420b79418ce369",
+  "release_candidate_commit": "ac2d3c8f46a6e69ca55a5f367f7e3bbfd08a9ff6",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 15,
+  "total_files": 32,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-NVDA-FUNDAMENTAL-EVIDENCE-DIAGNOSTICS-318",
+  "directive": "ARX-SEC-INSIDER-FLOW-PRESENTATION-319",
   "files": {
     ".gitignore": {
       "operation": "M",
@@ -12,6 +12,14 @@
       "governing_requirement": "Issue #165 / Sprint P3 #231: Narrowly scoped unignore rules for reproducible raw NVDA fundamentals and custody manifest",
       "sha256": "f4c19ffc0f9864c13118e716bc4ee4639bc0276649a86352e2d9928ab6c01df6",
       "size_bytes": 1507
+    },
+    "analyst_dashboard/analyzers/smart_money.py": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Surface stored Form 4 disclosure metadata and counts during held scoring",
+      "sha256": "315068f78fc8d8bd6d5c01cc72676e3c65a6e296cfd4ad05e4ba5cec8f38653d",
+      "size_bytes": 190534
     },
     "analyst_dashboard/provenance/evidence_contract.py": {
       "operation": "M",
@@ -61,6 +69,14 @@
       "sha256": "97a0cf158ff3b740f1bc9157d00f5adf98b1f329b9b26b9ebc3a6798ca7e7879",
       "size_bytes": 18384
     },
+    "api/routes/analytics.py": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "febf76bb4017199434119687d0d3f724173cae9242488b3f868fda4c2c9bdc8b",
+      "size_bytes": 94795
+    },
     "data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_companyfacts.json": {
       "operation": "A",
       "originating_pr_number": 318,
@@ -93,6 +109,126 @@
       "sha256": "b1b81c5de43610f6ffdaeaa3562ded3dc1ced73c92ba4e4498c30c937123cbab",
       "size_bytes": 23361
     },
+    "frontend/app/layout.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Eliminate redundant Matomo image preload warning while preserving analytics",
+      "sha256": "f0d36424f44ea84daa3a9ca2bcb7c6316d9b609891b3fefe15542301010b4813",
+      "size_bytes": 8107
+    },
+    "frontend/components/CompositeConvictionCard.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "8132077c79dd176eee10d32ef3ba150439cdf362bffa38ad10d2eda27a1709de",
+      "size_bytes": 17481
+    },
+    "frontend/components/InstitutionalFeeds.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Listen for arx:open-sec-disclosures event to switch active tab to SEC_FORM4",
+      "sha256": "59e310e42ff5e74d3c0191e63329ec3c99d6117c87461877331e61788b04b3a0",
+      "size_bytes": 45537
+    },
+    "frontend/components/WhyInspectModal.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "b27d8eeebdced87443e7f1bd19cf82867fb432097b98d5b6f54909f205e4fa1f",
+      "size_bytes": 24556
+    },
+    "frontend/lib/api.ts": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "0ce7b964b0d72f6ddc706d100fbb4118e49156ecdfa088f7470c071dc9c6cee8",
+      "size_bytes": 193621
+    },
+    "frontend/lib/evidenceDomains.ts": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Decouple stored filings from scoring eligibility and report uncertified interval",
+      "sha256": "d42e941a970aa536a63c1a74ff97c4faafc31564f5e8745d9b2e62f94f71dec3",
+      "size_bytes": 28788
+    },
+    "frontend/lib/institutionalFeeds.ts": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Pass symbol, coverageStatus, certifiedWatermark, and isPipelineHeld in SecFilingsResponse",
+      "sha256": "a33cbb8d4fe05bc819b52edc3ec327dc15a0c53ec74d39553f6ba88df119fe8c",
+      "size_bytes": 26062
+    },
+    "frontend/lib/preflightEvaluator.ts": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Prioritize Stage 4 structural distribution blocker ahead of sizing prohibition",
+      "sha256": "57723434d787323a796af6708d8007afba97691df2e6f94ed3b572ba459821d8",
+      "size_bytes": 49389
+    },
+    "frontend/package.json": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Add integrity test script for CSP and telemetry console",
+      "sha256": "47d0fcec6339ffcee611e5e860f7cbd2c04bddd6b16d0076142693b281ab2ba1",
+      "size_bytes": 4006
+    },
+    "frontend/public/_headers": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Permit exact Sentry ingestion origin in Content-Security-Policy connect-src",
+      "sha256": "ccdd5fea22e4b1fc02da126e1412b4a51c04de6fce07bd3f19c5e1b3ab748684",
+      "size_bytes": 1981
+    },
+    "frontend/tests/cspAndTelemetryConsoleIntegrity.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Automated invariant tests for CSP connect-src and Matomo preload elimination",
+      "sha256": "85decedf7074b8bc0d18bdfdbff8ee10795a0d987d5c7c59dc0133eb0b2656e2",
+      "size_bytes": 3493
+    },
+    "frontend/tests/secInsiderFlowPresentation.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "951f9c7824931c7e983644d7d509554ec06565eeaec067e8db8b8a0d81344ae6",
+      "size_bytes": 18182
+    },
+    "requirements.txt": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "ac2d3c8f46a6e69ca55a5f367f7e3bbfd08a9ff6",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Cap sentry-sdk below 3.0.0 to prevent breaking change in worker exception capture",
+      "sha256": "514e6161fb66b25a3b6d2c29cb973c30a3171634fc0da27b31b7b8b3cbb28d28",
+      "size_bytes": 472
+    },
+    "scripts/research/acquire_nvda_fundamentals.py": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "0b3515b9bcf84d56461ec6688c420b79418ce369",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Bounded acquisition tooling and offline normalizer qualification for NVDA SEC EDGAR fundamentals",
+      "sha256": "80ee60f6acfb35a90563e0e3db91650987ea79770a21604180cabda22a667610",
+      "size_bytes": 14952
+    },
+    "tests/test_adversarial_phase16_verification.py": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Add regression tests for exact Sentry CSP connect-src and Matomo preload removal",
+      "sha256": "c8d375baef4836d92df55a84a8d5a92509b13c4a810b119b34c60383087c552b",
+      "size_bytes": 7350
+    },
     "tests/test_fred_sec_presentation_integrity.py": {
       "operation": "M",
       "originating_pr_number": 318,
@@ -117,24 +253,24 @@
       "sha256": "b6548f08c11b82115cbb761ec428d71b8e5c43f035add1611f00e26a4425e6f6",
       "size_bytes": 9463
     },
-    "scripts/research/acquire_nvda_fundamentals.py": {
+    "tests/test_sec_insider_flow_presentation.py": {
       "operation": "A",
-      "originating_pr_number": 318,
-      "originating_commit": "0b3515b9bcf84d56461ec6688c420b79418ce369",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Bounded acquisition tooling and offline normalizer qualification for NVDA SEC EDGAR fundamentals",
-      "sha256": "80ee60f6acfb35a90563e0e3db91650987ea79770a21604180cabda22a667610",
-      "size_bytes": 14952
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "35deae6ceeae171d69822197517406f1c336bc2d5979559474e538d70514a304",
+      "size_bytes": 25864
     }
   },
   "qualification_framework_files": {
     "scripts/release/rq01_candidate_identity.py": {
-      "sha256": "af311f7b4048cfe147d22840b85b157506bef73ea96de6fa30875459fec8154b",
+      "sha256": "fbd32218028ddc6b9fce03c635b77a8aea596ac8b2834ee4e0fba282a82ecae8",
       "size_bytes": 8414,
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "68db0088412e2ac1e90a4d6e820fd8ff05f0c3164651bd7e2dc1102d16820660",
-      "size_bytes": 58231,
+      "sha256": "643ed8e640b5be2ced817785ca9c757dce5a04de1b563ff398ae07826812b952",
+      "size_bytes": 58236,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
@@ -221,6 +357,11 @@
       "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246",
       "size_bytes": 10113,
       "description": "Release qualification module: test_synthetic_merge_reproduction.py"
+    },
+    "scripts/release/rq_receipt_utils.py": {
+      "sha256": "850d87883ff90d5afd9fc51104c9f3fbd35939023b456c48dca471e23d84014c",
+      "size_bytes": 19670,
+      "description": "Release qualification module: rq_receipt_utils.py"
     }
   }
 }

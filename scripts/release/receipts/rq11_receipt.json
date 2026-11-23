@@ -2,20 +2,20 @@
   "control_id": "RQ-11",
   "name": "Rollback Readiness & Target Authority",
   "status": "PASS",
-  "start_time": "2026-11-22T14:10:13.879417+00:00",
-  "end_time": "2026-11-22T14:10:14.005655+00:00",
-  "duration_sec": 0.125,
-  "candidate_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-  "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-  "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "start_time": "2026-11-22T23:28:24.081143+00:00",
+  "end_time": "2026-11-22T23:28:24.267655+00:00",
+  "duration_sec": 0.186,
+  "candidate_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+  "source_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+  "execution_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-    "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "source_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+    "execution_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+    "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
     "workflow_run_attempt": 1,
@@ -68,7 +68,7 @@
     "scripts/release/rq_rollback_targets.json"
   ],
   "evidence_digests": {
-    "scripts/release/rq_rollback_targets.json": "a9a4df7005889a1c5de066fa21b9f8ea838f06ca9bcca4b578a91eb0d2fd87c8"
+    "scripts/release/rq_rollback_targets.json": "caa7b5866800dddc68398e3d418f21262ac0029a06633a5c9309baa40ce218e0"
   },
   "errors": [],
   "metadata": {
@@ -76,5 +76,5 @@
     "live_mutation_barred": true,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "dd3ad5dd7e1f60a88e887d06f27b3d9fbe0856535b6347a1f6ec1ec0a4c36427"
+  "receipt_digest": "c80351cbe3fb468df145f4b98436289424fb1e9ceeba2160625cc492d9e8d50a"
 }

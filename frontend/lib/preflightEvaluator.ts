@@ -945,13 +945,13 @@ export function evaluatePreFlightChecks(
   // Active Blockers Resolution (collecting all active blockers for discoverability)
   const allBlockers: string[] = [];
   if (!isActionableGranted) allBlockers.push("CANONICAL SETUP NON-ACTIONABLE");
+  if (isStage4) allBlockers.push("STAGE 4 DISTRIBUTION STRUCTURE");
   if (!canSizeTradeGranted) allBlockers.push("CANONICAL SIZING PROHIBITED");
   if (!isPriceValid || !hasExecutionLevels) allBlockers.push("UNVERIFIED EXECUTION LEVELS");
   if (isPriceStale) allBlockers.push("STALE PRICE OBSERVATION");
   if (isPriceDelayed) allBlockers.push("DELAYED PRICE OBSERVATION");
   if (isPriceUnverified && !isPriceStale) allBlockers.push("UNVERIFIED PRICE PROVENANCE");
   if (!isLevelDirectionValid) allBlockers.push("INVERTED EXECUTION BOUNDARIES");
-  if (isStage4) allBlockers.push("STAGE 4 DISTRIBUTION STRUCTURE");
   if (!isRRPassed) allBlockers.push("REWARD/RISK ASYMMETRY (< 2.0:1)");
   if (!isTrendPassed) allBlockers.push("TECHNICAL STRUCTURE NOT CONFIRMED");
   if (!isCapitalRiskPassed) {
@@ -997,6 +997,9 @@ export function evaluatePreFlightChecks(
     if (!isActionableGranted) {
       return "Wait for price action to confirm the canonical setup trigger within the accumulation corridor before sizing.";
     }
+    if (isStage4) {
+      return "Wait for post-breakout base consolidation above the 50-day moving average before accumulation.";
+    }
     if (!canSizeTradeGranted) {
       return "Execution eligibility prohibited: Position sizing cannot be authorized until canonical risk gate clears.";
     }
@@ -1016,9 +1019,6 @@ export function evaluatePreFlightChecks(
       return safeStop! >= safePrice
         ? "Establish valid stop loss below current market price to define defensive risk floor."
         : "Establish valid profit target above current market price to define prospective reward objective.";
-    }
-    if (isStage4) {
-      return "Wait for post-breakout base consolidation above the 50-day moving average before accumulation.";
     }
     if (!isRRPassed) {
       return "Wait for favorable pullback closer to stop loss to expand asymmetric reward/risk ratio (>= 2.0:1).";

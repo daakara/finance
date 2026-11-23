@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FredMacroData,
   SecForm4Trade,
@@ -20,6 +20,14 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
   const [activeTab, setActiveTab] = useState<"FRED_MACRO" | "SEC_FORM4">("FRED_MACRO");
   const [showTechnicalEvidence, setShowTechnicalEvidence] = useState<boolean>(false);
   const [expandedAccession, setExpandedAccession] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleOpenSec = () => {
+      setActiveTab("SEC_FORM4");
+    };
+    window.addEventListener("arx:open-sec-disclosures", handleOpenSec);
+    return () => window.removeEventListener("arx:open-sec-disclosures", handleOpenSec);
+  }, []);
 
   const cleanSym = activeSymbol.toUpperCase().replace("-USD", "");
 
@@ -144,7 +152,7 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
   };
 
   return (
-    <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
+    <div id="sec-disclosures-feed" data-testid="sec-disclosures-feed" className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
       {/* Header with Sub-Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1b2434] pb-3">
         <div className="flex items-center space-x-2">
@@ -168,6 +176,8 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
             📊 FRED Macro Regime
           </button>
           <button
+            id="tab-sec-form4"
+            data-testid="tab-sec-form4"
             type="button"
             onClick={() => setActiveTab("SEC_FORM4")}
             className={`px-2.5 py-1 text-xs font-bold rounded-md transition-colors ${

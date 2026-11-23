@@ -2,20 +2,20 @@
   "control_id": "RQ-09",
   "name": "Four-Way Cross-Platform Compatibility",
   "status": "PASS",
-  "start_time": "2026-11-22T14:10:13.026330+00:00",
-  "end_time": "2026-11-22T14:10:13.682876+00:00",
-  "duration_sec": 0.635,
-  "candidate_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-  "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-  "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "start_time": "2026-11-22T23:28:22.237732+00:00",
+  "end_time": "2026-11-22T23:28:23.741302+00:00",
+  "duration_sec": 1.465,
+  "candidate_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+  "source_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+  "execution_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-    "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "source_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+    "execution_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+    "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
     "workflow_run_attempt": 1,
@@ -139,7 +139,7 @@
   ],
   "evidence_digests": {
     "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-    "scripts/release/rq_compatibility_results.json": "92f304f1183cbfdb212015e320510282a90eff10e1f9432d1ec4ef633f015ec4"
+    "scripts/release/rq_compatibility_results.json": "b0085f3bfb238f2fd364bf4d7b806266888bb7fcbc352743ecb7945fd8c3155a"
   },
   "errors": [],
   "metadata": {
@@ -152,5 +152,5 @@
     "harness_version": "2.2.0-D074A4",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "f0a500f4dc9d74f3652e5cc07a451028cf1dc3bffde28b46d438a6a4fc9cabd4"
+  "receipt_digest": "abdb2f002d8ada51cd694d451da5ca0311af0f3e4ad50c21dfa9964681e8cdae"
 }

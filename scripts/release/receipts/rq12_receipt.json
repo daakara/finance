@@ -2,20 +2,20 @@
   "control_id": "RQ-12",
   "name": "Qualification Summary Aggregation",
   "status": "PASS",
-  "start_time": "2026-11-22T14:10:17.916038+00:00",
-  "end_time": "2026-11-22T14:10:17.966306+00:00",
-  "duration_sec": 0.046,
-  "candidate_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-  "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-  "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
+  "start_time": "2026-11-22T23:29:44.681578+00:00",
+  "end_time": "2026-11-22T23:29:44.755933+00:00",
+  "duration_sec": 0.073,
+  "candidate_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+  "source_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+  "execution_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-    "execution_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "source_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+    "execution_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+    "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
     "workflow_run_attempt": 1,
@@ -38,7 +38,7 @@
     "scripts/release/release_qualification_summary.json"
   ],
   "evidence_digests": {
-    "scripts/release/release_qualification_summary.json": "26c2d051e0d8b53f3c6a5cdf979c4ddfecf29024758713478e9ec4c4eb76c80b"
+    "scripts/release/release_qualification_summary.json": "f9205f6213d658e9167c92d0bd6cf92c505f46bb5313382d9dff612776a2e7cf"
   },
   "errors": [],
   "metadata": {
@@ -47,5 +47,5 @@
     "total_controls": 12,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "872d922d0d9066a9138ba832574fa19ecb572a77f9f147734c726d6add5be9f5"
+  "receipt_digest": "12ed9274795e79a1a2a79f1f3964bbe0e7823b8283a4f750b55d193b9a119e23"
 }

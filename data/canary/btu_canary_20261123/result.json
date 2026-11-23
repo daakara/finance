@@ -1,0 +1,60 @@
+{
+  "checkoutHeadSha": "f1c5e0d33cda1d73d959a43fef1c5b5044bfae56",
+  "workerReleaseAnchor": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
+  "scopedFilesParity": "IDENTICAL_0_DIFFS",
+  "sourceCommit": "f1c5e0d33cda1d73d959a43fef1c5b5044bfae56 (tested discovery/parser/persistence files match worker release 2eccc64a2cb3c649ad4d584a942285a6406d1ce0 with 0 diffs)",
+  "postgresVersion": "PostgreSQL 16.2 on aarch64-apple-darwin23.5.0, compiled by Apple clang version 15.0.0 (clang-1500.0.40.1), 64-bit",
+  "databaseUri": "postgresql://postgres@local-disposable-socket/postgres",
+  "issuer": "BTU",
+  "issuerCik": "0001064728",
+  "accession": "0001570382-26-000015",
+  "filingDate": "2026-11-23",
+  "acceptanceUtc": "2026-11-23T13:01:04.000Z",
+  "xmlBytes": 3971,
+  "xmlSha256": "7a9ce89854a10df267715b2b0e9c4c6e11ff12553c73aa4e296abd3e4ed9e530",
+  "sourceTransactions": [
+    {
+      "code": "P",
+      "date": "2026-11-20",
+      "shares": 4411.0,
+      "price": 15.99,
+      "derivative": false
+    }
+  ],
+  "parsedTransactions": 1,
+  "reportingOwners": [
+    "Grech James C."
+  ],
+  "signalTypes": [
+    "OPEN_MARKET_PURCHASE"
+  ],
+  "discoveryFirstPass": 1,
+  "discoveryReplay": 0,
+  "retainedAdapterCalls": [
+    "https://data.sec.gov/submissions/CIK0001064728.json",
+    "https://www.sec.gov/Archives/edgar/data/1064728/000157038226000015/xslF345X06/wk-form4_1795438862.xml",
+    "https://www.sec.gov/Archives/edgar/data/1064728/000157038226000015/wk-form4_1795438862.xml"
+  ],
+  "mechanicsVerdict": "PASS",
+  "postgresPersistence": "PASS",
+  "tableRowCounts": {
+    "form4_raw_filings": 1,
+    "form4_parsed_transactions": 1,
+    "sm_source_availability_ledger": 1,
+    "sm_reconciliation_receipts": 6
+  },
+  "replayStateUnchanged": true,
+  "identicalReplayCount": 5,
+  "conflictingHashRejected": true,
+  "conflictRollbackVerified": true,
+  "productionWrites": 0,
+  "networkDuringReplay": 0,
+  "coverageStatus": "PARTIAL_UNCERTIFIED",
+  "scoring": "HELD",
+  "btuProductionDispatch": "NOT_EXERCISED",
+  "btuProductionAuthorization": "NOT_EXERCISED",
+  "btuScoringIntegration": "NOT_EXERCISED",
+  "aaplNvdaProductionTrial": "SEPARATE_AND_UNCHANGED",
+  "scope": "ISOLATED_LOCAL_POSTGRES_CANARY_MECHANICS",
+  "limitation": "BTU discovery, parsing, and local PostgreSQL persistence mechanics verified. BTU production dispatch, production authorization, and scoring integration were not exercised or authorized. Historical coverage across trial universe remains uncertified. The separate AAPL/NVDA production trial remains distinct and unchanged."
+}

@@ -1,8 +1,8 @@
 {
   "suite": "Gate H: 12 Adversarial Workflow Attacks (ARX-036-D12C)",
-  "candidate_sha": "0d0c9044eb6f05047a8a8dfb945966ab6f2273ff",
-  "candidate_tree": "1919c06eec178248ce92709fc85eab9f5760e98b",
-  "timestamp": "2026-11-22T14:09:32.118155+00:00",
+  "candidate_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+  "candidate_tree": "343d8eb198dd6d611a5125ac5d1ed961b0651c88",
+  "timestamp": "2026-11-22T23:24:14.971083+00:00",
   "execution_context": {
     "is_ci": false,
     "github_run_id": null,

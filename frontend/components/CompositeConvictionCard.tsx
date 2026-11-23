@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { AnalyticsResponse } from "../lib/api";
 import { FredMacroData, SecForm4Trade } from "../lib/institutionalFeeds";
 
@@ -34,9 +34,10 @@ export interface ConfluencePillarDisplay {
   icon: string;
 }
 
-export function formatPillarScore(p?: { score: number | null; status?: string | null }): string {
+export function formatPillarScore(p?: { score: number | null; status?: string | null; scoringEligibility?: string }): string {
   if (!p) return "UNAVAILABLE";
   const st = (p.status || "").toLowerCase().trim();
+  if ((st === "unavailable" || st === "pipeline_held") && p.scoringEligibility === "Not assessed — ingestion-only trial.") return "NOT ASSESSED";
   if (st === "unverified" || st === "synthetic") return "UNVERIFIED";
   if (st === "unavailable" || st === "pipeline_held") return "UNAVAILABLE";
   if (st === "not_applicable") return "EXEMPT";
@@ -48,6 +49,7 @@ export function getPillarScoreColor(scoreDisplay: string, score: number | null):
   if (
     score === null ||
     scoreDisplay === "UNAVAILABLE" ||
+    scoreDisplay === "NOT ASSESSED" ||
     scoreDisplay === "PENDING" ||
     scoreDisplay === "UNVERIFIED" ||
     scoreDisplay === "EXEMPT"
@@ -397,7 +399,30 @@ export default function CompositeConvictionCard({
               />
             </div>
 
-            <details><summary className="min-h-[44px] cursor-pointer text-xs text-[var(--text-2)] focus-visible:outline focus-visible:outline-2">{pillar.label} attribution</summary><p className="text-xs text-[var(--text-2)] leading-relaxed">{pillar.detail}</p></details>
+            <details>
+              <summary className="min-h-[44px] cursor-pointer text-xs text-[var(--text-2)] focus-visible:outline focus-visible:outline-2">{pillar.label} attribution</summary>
+              <p className="text-xs text-[var(--text-2)] leading-relaxed">{pillar.detail}</p>
+              {pillar.id === "SMART_MONEY_FLOW" && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    data-testid="link-sec-disclosure-drawer"
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(new CustomEvent("arx:open-sec-disclosures", { detail: { symbol } }));
+                        const feedEl = document.getElementById("sec-disclosures-feed") || document.getElementById("institutional-feeds");
+                        if (feedEl) feedEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }
+                    }}
+                    className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                    aria-label={`Inspect SEC Form 4 Disclosures for ${cleanSym}`}
+                  >
+                    <span>Inspect SEC Form 4 Disclosures</span>
+                    <span>→</span>
+                  </button>
+                </div>
+              )}
+            </details>
           </div>
         ))}
       </div>

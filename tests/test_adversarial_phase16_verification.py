@@ -92,7 +92,7 @@ def test_adversarial_cache_clear_get_rejected():
 
 
 def test_adversarial_csp_header_contains_query2():
-    """Verify that frontend/public/_headers includes query2.finance.yahoo.com in CSP connect-src."""
+    """Verify that frontend/public/_headers includes query2.finance.yahoo.com and exact Sentry origin in CSP connect-src."""
     headers_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "public", "_headers")
     assert os.path.exists(headers_path), "_headers file must exist in frontend/public"
     with open(headers_path, "r", encoding="utf-8") as f:
@@ -100,6 +100,27 @@ def test_adversarial_csp_header_contains_query2():
 
     assert "https://query2.finance.yahoo.com" in content, (
         "CSP connect-src must include https://query2.finance.yahoo.com for client failover"
+    )
+    assert "https://o4511406482522112.ingest.de.sentry.io" in content, (
+        "CSP connect-src must include exact Sentry ingestion origin https://o4511406482522112.ingest.de.sentry.io"
+    )
+    assert "*.sentry.io" not in content, (
+        "CSP connect-src must not contain broad wildcard *.sentry.io"
+    )
+
+
+def test_adversarial_matomo_preload_eliminated():
+    """Verify that frontend/app/layout.tsx does not contain the <noscript> image tag causing unnecessary preload warnings."""
+    layout_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "app", "layout.tsx")
+    assert os.path.exists(layout_path), "layout.tsx must exist"
+    with open(layout_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "https://data.fpldna.com/matomo/matomo.php?idsite=3&rec=1" not in content, (
+        "Unnecessary Matomo image fallback must be removed from layout.tsx to eliminate browser preload warning"
+    )
+    assert "_paq.push(['setTrackerUrl', 'https://data.fpldna.com/matomo/matomo.php']);" in content, (
+        "Normal JavaScript Matomo analytics tracking must be preserved in layout.tsx"
     )
 
 
