@@ -44,6 +44,10 @@ data/*
 !data/__init__.py
 !analyst_dashboard/data/
 !analyst_dashboard/data/paper_trading_ledger.json
+# Forward Paper-Trading Pilot storage specification
+!data/forward_pilot/
+data/forward_pilot/*
+!data/forward_pilot/README.md
 *.csv
 *.xlsx
 *.db
