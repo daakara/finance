@@ -359,4 +359,168 @@ Track 3: Later Expanded-Phase Activation (10 Issuers)
 4. **Shutdown Boundary Verification:** Authorized execution must end no later than `2026-11-25T02:35:00Z`, with shutdown independently verified after that boundary.
 5. **Expanded Phase Gating:** Expanded 10-issuer phase activation remains gated pending original-trial teardown after `2026-11-25T02:35:00Z` and explicit operator ratification of rollout parameters.
 
-*Zero mutations, merges, deployments, configuration updates, grant renewals, dispatches, SEC requests, or hold modifications occurred.*
+---
+
+## 11. ARX Issue #165 — Offline NVDA Form 4 Evidence Reconciliation & Window Audit
+
+### 11.1 Baseline Inventory & Cryptographic Parity (16 Filings)
+Recomputed SHA-256 digests directly from `xml_content.encode("utf-8")` across all 16 frozen filings in `form4_raw_filings` (exported to `data/research/nvda_form4_frozen_baseline_export.json`):
+
+| # | Accession Number | Filing Date | Accepted Datetime (UTC) | Reporting Owner (CIK) | XML Size (bytes) | SHA-256 Digest | Match |
+| - | :--- | :---: | :---: | :--- | :---: | :--- | :---: |
+| 1 | `0001347842-26-000015` | `2026-08-24` | `2026-08-24T21:32:04Z` | Puri Ajay K (`0001347842`) | 2,044 | `55fb0a5b2692762de621421e0726267b8eb3f9c2e8b66bf17874fdb8c5a741d1` | **MATCH** |
+| 2 | `0001199039-26-000012` | `2026-09-02` | `2026-09-02T22:10:34Z` | Stevens Mark A (`0001199039`) | 16,761 | `d22cd5d85d32dbf39d62d7d6e599089411c4c11191642ab3618ab8c2dbcb7d33` | **MATCH** |
+| 3 | `0001696841-26-000010` | `2026-09-02` | `2026-09-02T22:07:18Z` | Teter Timothy S. (`0001696841`) | 8,630 | `86679077ccf5f0c83f960b34407f5af9d2c8df44f1ff885ffe9368527b4264d7` | **MATCH** |
+| 4 | `0001197647-26-000009` | `2026-09-04` | `2026-09-04T21:00:35Z` | Coxe Tench (`0001197647`) | 5,282 | `2d3af938f865688553a60efb056ef6c5c607712c17112cad294006dd5a4c112f` | **MATCH** |
+| 5 | `0001199039-26-000014` | `2026-09-08` | `2026-09-08T21:09:19Z` | Stevens Mark A (`0001199039`) | 16,764 | `e902c5ae660d258a2606ad30dc7b756adc0f76271d83e319cc0ddabc50a7e5e6` | **MATCH** |
+| 6 | `0002152188-26-000005` | `2026-09-11` | `2026-09-11T21:04:47Z` | Parker Nicholas P. (`0002152188`) | 3,952 | `21657169ed85656c099bdd3126f26de59d91b02c9f198d290a966af0ba29a7bc` | **MATCH** |
+| 7 | `0001197649-26-000012` | `2026-09-18` | `2026-09-18T21:10:59Z` | Huang Jen Hsun (`0001197649`) | 12,761 | `822eaaac11fc1cd84bead616a51b338fc8b5511b763a5ad0ac1e694272cecfab` | **MATCH** |
+| 8 | `0001243821-26-000007` | `2026-09-18` | `2026-09-18T21:15:34Z` | Gawel Scott (`0001243821`) | 3,659 | `3b434b21cb3b6e0d166dfd360fc1fabb67a4b804797be0b6042f08a515d40c23` | **MATCH** |
+| 9 | `0001283854-26-000010` | `2026-09-18` | `2026-09-18T21:14:45Z` | Shoquist Debora (`0001283854`) | 4,796 | `9030fa885d369e1b4d9d5f1247dd18205e9f233667a710a68f905c623fecfde7` | **MATCH** |
+| 10 | `0001588670-26-000014` | `2026-09-18` | `2026-09-18T21:12:42Z` | Kress Colette (`0001588670`) | 14,906 | `1f019bc438b269561e5c054aec78c42956daa558e4d6bc89a0900c9f532c3afd` | **MATCH** |
+| 11 | `0001696841-26-000012` | `2026-09-18` | `2026-09-18T21:13:29Z` | Teter Timothy S. (`0001696841`) | 4,586 | `7f70894a4cf331995cf3a1fa40388d6db78b7c19836a834fae28b909d1ceb80c` | **MATCH** |
+| 12 | `0001199039-26-000016` | `2026-09-22` | `2026-09-22T20:56:23Z` | Stevens Mark A (`0001199039`) | 7,281 | `872cdb869ad15f7a8a6d3396e722d23ba32e66af46cc4c495795765615594548` | **MATCH** |
+| 13 | `0001696841-26-000014` | `2026-09-23` | `2026-09-23T20:56:28Z` | Teter Timothy S. (`0001696841`) | 8,873 | `87b3a8f9f46990cc520bcd8af0970fbfb1aac270147ef430a23e24ef926be228` | **MATCH** |
+| 14 | `0001197647-26-000011` | `2026-10-09` | `2026-10-09T21:04:09Z` | Coxe Tench (`0001197647`) | 5,282 | `708b054a77a77701bd7bb39802e4ac07cdf15876c461825ecb14cd4695374985` | **MATCH** |
+| 15 | `0002152188-26-000007` | `2026-10-13` | `2026-10-13T21:09:29Z` | Parker Nicholas P. (`0002152188`) | 4,189 | `2ac0f16ab6661c9ccd85c35f476657b9dbdc4b4109b15607709522e45de92f56` | **MATCH** |
+| 16 | `0001197647-26-000013` | `2026-11-06` | `2026-11-06T21:12:02Z` | Coxe Tench (`0001197647`) | 5,282 | `1488ef1a14107224ff366fa9164f2ec6c9e2b709c236206b8e8da43e3d95295d` | **MATCH** |
+
+- **Integrity Result:** 16/16 verified exactly against internal database content hashes and raw XML digests.
+- **Ordered Concatenated Aggregate SHA-256:** `c6c246f7a18315399160e1c6e8db540fcce9152672ac75c54ac481e9781faee2`.
+- **Issuer Identity:** 100% NVDA / CIK `0001045810` / `NVIDIA CORP`. Zero cross-issuer pollution.
+- **Duplicate Records:** **0 duplicates** (16 unique accessions).
+- **Missing Records:** **0 missing** (16 of 16 accessions resolved with full XML payloads).
+
+---
+
+### 11.2 Derivation of the 36 Parsed Transactions & Code Distribution
+
+Each XML document was parsed with `Form4XmlParser.parse_filing`, deriving transaction lines into non-derivative and derivative tables:
+
+| Accession Number | Document Type | Filing Date | Non-Derivative Txs | Derivative Txs | Disclosed Codes | Total Rows |
+| :--- | :---: | :---: | :---: | :---: | :--- | :---: |
+| `0001347842-26-000015` | `4` | `2026-08-24` | 0 | 0 | None (retirement exit disclosure) | **0** |
+| `0001199039-26-000012` | `4` | `2026-09-02` | 7 | 0 | 7× Code S | **7** |
+| `0001696841-26-000010` | `4` | `2026-09-02` | 3 | 0 | 3× Code S | **3** |
+| `0001197647-26-000009` | `4` | `2026-09-04` | 1 | 0 | 1× Code G | **1** |
+| `0001199039-26-000014` | `4` | `2026-09-08` | 7 | 0 | 7× Code S | **7** |
+| `0002152188-26-000005` | `4` | `2026-09-11` | 1 | 0 | 1× Code A (172,507 shares) | **1** |
+| `0001197649-26-000012` | `4` | `2026-09-18` | 2 | 0 | 1× Code F, 1× Code G | **2** |
+| `0001243821-26-000007` | `4` | `2026-09-18` | 1 | 0 | 1× Code F | **1** |
+| `0001283854-26-000010` | `4` | `2026-09-18` | 1 | 0 | 1× Code F | **1** |
+| `0001588670-26-000014` | `4` | `2026-09-18` | 4 | 0 | 1× Code F, 3× Code S | **4** |
+| `0001696841-26-000012` | `4` | `2026-09-18` | 1 | 0 | 1× Code F | **1** |
+| `0001199039-26-000016` | `4` | `2026-09-22` | 2 | 0 | 2× Code S | **2** |
+| `0001696841-26-000014` | `4` | `2026-09-23` | 3 | 0 | 3× Code S | **3** |
+| `0001197647-26-000011` | `4` | `2026-10-09` | 1 | 0 | 1× Code G | **1** |
+| `0002152188-26-000007` | `4/A` | `2026-10-13` | 1 | 0 | 1× Code A (160,418 shares) | **1** |
+| `0001197647-26-000013` | `4` | `2026-11-06` | 1 | 0 | 1× Code G | **1** |
+| **Total Baseline** | — | — | **36** | **0** | **25 S, 5 F, 4 G, 2 A** | **36** |
+
+#### A. Root Cause of Zero-Transaction Parse (`0001347842-26-000015`)
+- Accession `0001347842-26-000015` was filed by Ajay K. Puri on `2026-08-24`.
+- XML content has completely empty `<nonDerivativeTable>` and `<derivativeTable>` elements, and zero `<nonDerivativeHolding>` / `<derivativeHolding>` entries.
+- Explicit `<remarks>` element states:  
+  `"The Reporting Person retired from his role of Executive Vice President, Worldwide Field Operations effective August 24, 2026 and is no longer subject to Section 16."`
+- The filing is an administrative retirement notification (exit notice from Section 16 insider reporting obligations) rather than a transaction report.
+- The parser disposition is correctly set to `FETCHED_NO_RELEVANT_TRANSACTIONS`, confirming that the zero-transaction parse is legally and structurally authentic.
+
+#### B. Disclosed Transaction Code Inventory
+- **Code S (Open Market Sale):** 25 transactions ($70\%$ of total) across Mark Stevens, Timothy Teter, and Colette Kress.
+- **Code F (Tax Withholding):** 5 transactions ($14\%$) across Jen-Hsun Huang, Scott Gawel, Debora Shoquist, Colette Kress, and Timothy Teter.
+- **Code G (Bona Fide Gift):** 4 transactions ($11\%$) across Tench Coxe and Jen-Hsun Huang.
+- **Code A (Equity Grant / RSU Award):** 2 transactions ($5\%$) across Nicholas Parker (base grant + amendment).
+- **Code P (Open Market Purchase):** **0 transactions** ($0\%$). No insider buying occurred in this interval.
+
+---
+
+### 11.3 Form 4/A Amendment Validation & Deduplication Analysis
+
+#### A. Amendment Document Evidence & Scope Classification
+- **Amendment Filing:** `0002152188-26-000007` (Form 4/A, filed `2026-10-13`, accepted `2026-10-13T21:09:29Z`).
+- **Base Filing:** `0002152188-26-000005` (Form 4, filed `2026-09-11`, accepted `2026-09-11T21:04:47Z`).
+- **Reporting Owner:** Nicholas P. Parker (CIK `0002152188`).
+- **Date of Original Submission:** `2026-09-11`.
+- **Period of Report:** `2026-09-09`.
+- **Disclosed Remarks in XML:**  
+  `"This amendment is being filed solely to correct an administrative error in the number of acquired shares on the Reporting Person's Form 4 filed on September 11, 2026."`
+- **Classifier Verdict:** Formally evaluated by `classify_amendment_effect`:
+  - **Status:** `PARTIAL_CORRECTION`
+  - **Reason:** `"Explicit partial correction phrase verified in source narrative: 'solely to correct'."`
+  - **1-to-1 Mapping:** Base transaction `0002152188-26-000005:0002152188:NON_DERIVATIVE:0` (172,507 shares @ $0.00, Code A) $\rightarrow$ Amendment transaction `0002152188-26-000007:0002152188:NON_DERIVATIVE:0` (160,418 shares @ $0.00, Code A).
+
+#### B. Point-in-Time Supersession vs Static Aggregation (Preventing Double-Counting)
+- **Static Raw Database Count:** 36 transaction rows exist in `form4_parsed_transactions`.
+- **Point-in-Time Supersession Rule:** Prior to `2026-10-13T21:09:29Z`, the base transaction (172,507 shares) was public truth. After `2026-10-13T21:09:29Z`, the amendment transaction (160,418 shares) superseded the base line.
+- **Active Effective Transactions:** To avoid double-counting superseded historical awards, the active transaction count as of today is:  
+  $$\text{Active Transactions} = 36 - 1 = \mathbf{35}$$
+
+---
+
+### 11.4 Submissions Index Comparison (August 26 – November 23, 2026)
+
+Reconciled against retained external catalog `CIK0001045810_submissions.json` (SHA-256 `8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045`), retrieved `2026-11-22T08:53:12Z`:
+
+#### A. Window Comparison Table
+
+| Accession Number | Document Form | Filing Date | Acceptance Datetime | In Window (Aug 26 – Nov 23)? | In Frozen Baseline? | Disposition |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| `0001197647-26-000013` | `4` | `2026-11-06` | `2026-11-06T21:12:02Z` | **YES** | **YES** | In-window baseline filing |
+| `0002152188-26-000007` | `4/A` | `2026-10-13` | `2026-10-13T21:09:29Z` | **YES** | **YES** | In-window amendment |
+| `0001197647-26-000011` | `4` | `2026-10-09` | `2026-10-09T21:04:09Z` | **YES** | **YES** | In-window baseline filing |
+| `0001696841-26-000014` | `4` | `2026-09-23` | `2026-09-23T20:56:28Z` | **YES** | **YES** | In-window baseline filing |
+| `0001199039-26-000016` | `4` | `2026-09-22` | `2026-09-22T20:56:23Z` | **YES** | **YES** | In-window baseline filing |
+| `0001243821-26-000007` | `4` | `2026-09-18` | `2026-09-18T21:15:34Z` | **YES** | **YES** | In-window baseline filing |
+| `0001283854-26-000010` | `4` | `2026-09-18` | `2026-09-18T21:14:45Z` | **YES** | **YES** | In-window baseline filing |
+| `0001696841-26-000012` | `4` | `2026-09-18` | `2026-09-18T21:13:29Z` | **YES** | **YES** | In-window baseline filing |
+| `0001588670-26-000014` | `4` | `2026-09-18` | `2026-09-18T21:12:42Z` | **YES** | **YES** | In-window baseline filing |
+| `0001197649-26-000012` | `4` | `2026-09-18` | `2026-09-18T21:10:59Z` | **YES** | **YES** | In-window baseline filing |
+| `0002152188-26-000005` | `4` | `2026-09-11` | `2026-09-11T21:04:47Z` | **YES** | **YES** | In-window baseline filing |
+| `0001199039-26-000014` | `4` | `2026-09-08` | `2026-09-08T21:09:19Z` | **YES** | **YES** | In-window baseline filing |
+| `0001197647-26-000009` | `4` | `2026-09-04` | `2026-09-04T21:00:35Z` | **YES** | **YES** | In-window baseline filing |
+| `0001199039-26-000012` | `4` | `2026-09-02` | `2026-09-02T22:10:34Z` | **YES** | **YES** | In-window baseline filing |
+| `0001696841-26-000010` | `4` | `2026-09-02` | `2026-09-02T22:07:18Z` | **YES** | **YES** | In-window baseline filing |
+| `0001347842-26-000015` | `4` | `2026-08-24` | `2026-08-24T21:32:04Z` | **NO** (Pre-window) | **YES** | Retained older baseline member |
+| `0001310264-26-000008` | `4` | `2026-08-12` | `2026-08-12T21:13:10Z` | **NO** (Pre-window) | **NO** | Outside baseline window |
+| `0001197647-26-000007` | `4` | `2026-08-07` | `2026-08-07T20:47:24Z` | **NO** (Pre-window) | **NO** | Outside baseline window |
+
+#### B. Submissions Index Window Accounting
+- **Unique In-Window Accessions in Submissions Index (`2026-08-26` to `2026-11-23`):** Exactly **15 unique accessions** (14 Form 4 + 1 Form 4/A).
+- **Baseline Agreement:** All 15 in-window accessions exist in the retained baseline (100% agreement).
+- **August 24 Out-of-Window Accession (`0001347842-26-000015`):** Filed two days prior to the August 26 window start. Retained in the older 16-filing baseline from the initial August 18–November 16 setup.
+- **August 12 & August 7 Accessions:** Filed prior to August 26; properly excluded from the 16-filing baseline.
+
+---
+
+### 11.5 Epistemic Labeling & Critical Scope Limits
+
+1. **Source Freshness Boundary:**  
+   The retained submissions catalog was retrieved on `2026-11-22T08:53:12Z`. **A November 22 retrieval cannot certify completeness through November 23.** Any Form 4 filed during Monday November 23 trading hours (or Sunday evening post-retrieval) cannot be proven absent from historical evidence alone.
+2. **Filing-Date vs Transaction-Date Coverage:**  
+   Filing-date completeness does not equal transaction-date completeness:
+   - Section 16(a) allows a 2-business-day reporting delay, meaning transactions on Friday November 20 or Monday November 23 may not be filed until Wednesday November 25.
+   - Conversely, filings in this window include transactions that occurred in earlier calendar periods.
+3. **Anti-Inference Rule Enforced:**  
+   Coverage status remains **`PARTIAL`** and **`NOT_CERTIFIED`**. Absence of index entries or matching counts does not authorize removing operational holds or publishing snapshots.
+4. **Preserved Operational Holds:**  
+   `HOLD_SEC_001` remains **`ACTIVE`**. Egress remains `DISABLED`.
+
+---
+
+### 11.6 Summary of Reconciliation Findings & Smallest Remaining Action
+
+| Dimension | Previous Status / Finding | Reconciled Finding | Authoritative Evidence |
+| :--- | :--- | :--- | :--- |
+| **Baseline Inventory** | 16 raw filings reported | **16 raw filings verified (16/16 SHA-256 match)** | Recomputed digests match `form4_raw_filings` |
+| **Issuer Identity** | NVDA reported | **100% NVDA (`0001045810`), 0 duplicates** | All 16 XML roots verified |
+| **Parsed Transactions** | 36 reported | **36 parsed rows (all 36 non-derivative, 0 derivative)** | Full ElementTree parse of all 16 filings |
+| **Zero-Transaction Filing** | 1 unexplained zero parse | **`0001347842-26-000015` verified retirement exit notice** | Section 16 retirement text in `<remarks>` |
+| **Amendment Effect** | Unclassified / ambiguous | **`PARTIAL_CORRECTION` via classifier** | 1-to-1 share correction (172,507 $\rightarrow$ 160,418) |
+| **Active Transactions** | 36 reported | **35 active point-in-time transactions** | Deduplication of superseded base transaction |
+| **In-Window Filings** | Ambiguous 15 vs 16 | **Exactly 15 in-window filings (`2026-08-26` to `2026-11-23`)** | Aug 24 filing is pre-window baseline member |
+| **Coverage Certification** | Unproved | **`PARTIAL` / `NOT_CERTIFIED`** | Nov 22 snapshot cannot certify Nov 23 |
+
+#### Smallest Remaining Action for Full Closure:
+Conduct the scheduled Monday preflight on deployed production release `2eccc64a` (verifying queue/lock/grant/backup freshness $\le 12$h) without modifying candidate PR #317 or unmerging draft protections, keeping candidate deployment gated until trial completion after `2026-11-25T02:35:00Z`.
+
+*Zero production writes, zero SEC wire requests, zero schedule activations, zero hold changes, and zero credentials modified.*
