@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
+  "release_candidate_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 41,
+  "total_files": 45,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-DYNAMIC-ASSET-DISCOVERY-323",
   "files": {
@@ -151,11 +151,11 @@
     },
     "frontend/components/UniversalOmniSearch.tsx": {
       "operation": "M",
-      "sha256": "310604a6d93324cdbb96d144de4defa861f6a1d567b41231b3e0a91832f0066d",
-      "size_bytes": 17777,
       "originating_pr_number": 323,
-      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
-      "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "1081a92e02a0f71cf5dbf155abee0bc83194d12d02d6f22772cb153033fb3991",
+      "size_bytes": 17787
     },
     "frontend/components/WhyInspectModal.tsx": {
       "operation": "M",
@@ -175,19 +175,19 @@
     },
     "frontend/functions/api/assets/search.ts": {
       "operation": "A",
-      "sha256": "7ce4306d2e4f5c46fe438c7d3b6f4544efc3d9ad5ba9759f31c3caacdc5f6488",
-      "size_bytes": 1887,
       "originating_pr_number": 323,
-      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
-      "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "33a3a9ec02fb8833741901a884e1574632d1379d8e0049c132715f95850449a0",
+      "size_bytes": 2255
     },
     "frontend/hooks/__tests__/useAssetDiscovery.test.tsx": {
       "operation": "A",
-      "sha256": "8b6d75900f6900f87ad5fca3a395c6302420a73c29911c14d285a155b06b2765",
-      "size_bytes": 2648,
       "originating_pr_number": 323,
-      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
-      "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "617835ca8e26fe58ecd7ac182318a0e496a49606f27f94b91a58521263782bab",
+      "size_bytes": 2650
     },
     "frontend/hooks/useAssetDiscovery.ts": {
       "operation": "A",
@@ -199,11 +199,11 @@
     },
     "frontend/lib/__tests__/assetDiscovery.test.ts": {
       "operation": "A",
-      "sha256": "fe699dfc0cbfa14ad2ba0c8189990d2efe8c66930ae6bcd594ec673a1822b861",
-      "size_bytes": 5276,
       "originating_pr_number": 323,
-      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
-      "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "6bb0f4ff68edd1bc7ce83a2f5d521364ed1c153ecadb0caa6b2981f52815c5b1",
+      "size_bytes": 5441
     },
     "frontend/lib/api.ts": {
       "operation": "M",
@@ -215,11 +215,11 @@
     },
     "frontend/lib/assetDiscovery.ts": {
       "operation": "A",
-      "sha256": "71c0f5df07107671f1346278e3d8f379de72fe3f2fe17b3f1b9fc57a432511e4",
-      "size_bytes": 2606,
       "originating_pr_number": 323,
-      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
-      "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "4b2496fe7ac85c0e80f39d2c43e90990d651bb683dd8f546b955d809651ded4b",
+      "size_bytes": 2623
     },
     "frontend/lib/evidenceDomains.ts": {
       "operation": "M",
@@ -332,6 +332,38 @@
       "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
       "sha256": "35deae6ceeae171d69822197517406f1c336bc2d5979559474e538d70514a304",
       "size_bytes": 25864
+    },
+    "analyst_dashboard/data/asset_discovery.py": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "a9b70e3aa640b8d5b0bf744c60177003144dd9de517e0e482fce5adf3525afa4",
+      "size_bytes": 5041
+    },
+    "api/middleware/api_key_auth.py": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "8fac0bdedfd12373a2e80dd44fc747d15f5fcfcb3c5e6d604ae5f65867cf154f",
+      "size_bytes": 11718
+    },
+    "api/routes/market.py": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "1b9795b06e12fc51c9365fe5a8dce7f12526bde35ba9e81465d1362ef962987b",
+      "size_bytes": 4458
+    },
+    "tests/test_asset_directory_discovery.py": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "844aeb0a54e0594c5d8c1eea3a0c9dbbfb3d1c60117921c9db48fbcb3ff1ab85",
+      "size_bytes": 6529
     }
   },
   "qualification_framework_files": {
@@ -346,8 +378,8 @@
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "5f2404e0110196f4420b5912a8c54a7796f3a76bc4803de57cd918f73b6c23d7",
-      "size_bytes": 4089,
+      "sha256": "07ba823fc22bd7266d8a5006e258d03cd825255677ecf0a71fb8f660b529b2e1",
+      "size_bytes": 4140,
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
