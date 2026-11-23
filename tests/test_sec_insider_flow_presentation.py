@@ -63,8 +63,10 @@ class TestSecInsiderFlowPresentation:
         assert pillar["issuerSupportStatus"] == (legacy if legacy.endswith("ISSUER") else None)
         assert "SUPPORTED_SEC_ISSUER" not in pillar["detail"]
         assert "UNSUPPORTED_ISSUER" not in pillar["detail"]
-        if expected == "UNKNOWN":
-            assert "coverage: not verified" in pillar["detail"]
+        if expected in ("UNKNOWN", "PARTIAL"):
+            assert "Historical coverage not certified" in pillar["detail"]
+        elif expected == "COMPLETE":
+            assert "Historical coverage certified" in pillar["detail"]
         assert [(p["score"], p["status"]) for p in output["pillars"]] == math_before
         assert {k: v for k, v in output.items() if k not in ("pillars", "reasons", "plainReasons")} == aggregate_before
 
@@ -146,11 +148,11 @@ class TestSecInsiderFlowPresentation:
 
         # Disclosure text must explain both availability and held scoring
         sec_sub = res["subdomains"]["sec_form_4"]
-        assert "SEC filings available" in sec_sub["disclosure"]
-        assert "16 filings" in sec_sub["disclosure"]
-        assert "latest 2026-11-19" in sec_sub["disclosure"]
-        assert "coverage: PARTIAL" in sec_sub["disclosure"]
-        assert "Not assessed — ingestion-only trial." in sec_sub["disclosure"]
+        assert sec_sub["disclosure"] == "16 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
+        assert sec_sub["filings_count"] == 16
+        assert sec_sub["parsed_transactions_count"] == 16
+        assert sec_sub["coverage_certified"] is False
+        assert sec_sub["status_label"] == "Coverage Uncertified"
 
         # 2. Confluence inputs helper
         conf_inputs = _build_smart_money_confluence_inputs("NVDA", live_sec=mock_envelope)
@@ -178,8 +180,8 @@ class TestSecInsiderFlowPresentation:
         assert smart_p["coverageStatus"] == "PARTIAL"
 
         # Detail must match exact disclosure requirement:
-        assert "SEC filings available (16 filings, latest 2026-11-19, coverage: PARTIAL)." in smart_p["detail"]
-        assert "Not assessed — ingestion-only trial." in smart_p["detail"]
+        assert smart_p["detail"] == "16 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
+        assert smart_p["plainDetail"] == "16 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
         assert "Verified smart money regulatory filings unavailable" not in smart_p["detail"]
 
         # Confluence verified pillar count must NOT increment for held smart money
@@ -272,7 +274,7 @@ class TestSecInsiderFlowPresentation:
         format_sec_confluence_pillar(conf_out, res, mock_envelope)
         smart_p = next(p for p in conf_out["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
         assert smart_p["score"] == 0.0
-        assert "SEC filings available (2 filings, latest 2026-11-18, coverage: PARTIAL)." in smart_p["detail"]
+        assert smart_p["detail"] == "2 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
 
     def test_case_03_empty_records_with_incomplete_coverage(self):
         """Case 3: Empty records with incomplete coverage.
@@ -427,8 +429,8 @@ class TestSecInsiderFlowPresentation:
         nvda_smart = next(p for p in nvda_out["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
 
         assert nvda_smart["filingsCount"] == 16
-        assert "16 filings" in nvda_smart["detail"]
-        assert "2026-11-19" in nvda_smart["detail"]
+        assert "16 SEC Form 4 filings stored" in nvda_smart["detail"]
+        assert "Historical coverage not certified" in nvda_smart["detail"]
 
         # 2. Evaluate AAPL immediately after
         aapl_res = self.sm_engine.assess_symbol("AAPL", live_sec=aapl_env)
@@ -438,9 +440,8 @@ class TestSecInsiderFlowPresentation:
         aapl_smart = next(p for p in aapl_out["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
 
         assert aapl_smart["filingsCount"] == 1, "AAPL must have 1 filing, not 16 from NVDA"
-        assert "1 filings" in aapl_smart["detail"]
-        assert "2026-11-05" in aapl_smart["detail"]
-        assert "16 filings" not in aapl_smart["detail"], "NVDA 16 filings leaked into AAPL"
+        assert "1 SEC Form 4 filings stored" in aapl_smart["detail"]
+        assert "16 SEC Form 4 filings stored" not in aapl_smart["detail"], "NVDA 16 filings leaked into AAPL"
 
         # 3. Evaluate NVDA again to ensure idempotency
         nvda_res_2 = self.sm_engine.assess_symbol("NVDA", live_sec=nvda_env)
@@ -450,4 +451,90 @@ class TestSecInsiderFlowPresentation:
         nvda_smart_2 = next(p for p in nvda_out_2["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
 
         assert nvda_smart_2["filingsCount"] == 16
-        assert "16 filings" in nvda_smart_2["detail"]
+        assert "16 SEC Form 4 filings stored" in nvda_smart_2["detail"]
+
+    def test_filing_count_separated_from_transaction_count(self):
+        """Acceptance Criteria: No transaction count is inferred from filing count.
+
+        A multi-transaction filing or zero-transaction filing must decouple
+        the count of filed forms from parsed transactions.
+        """
+        envelope = {
+            "symbol": "NVDA",
+            "status": "AVAILABLE_WITH_RESULTS",
+            "coverage_status": "PARTIAL",
+            "is_pipeline_held": True,
+            "items": [
+                {
+                    "accession_number": "0001045810-26-000001",
+                    "filing_date": "2026-11-06",
+                    "transactions": [
+                        {"transaction_id": "tx-1", "transaction_code": "S"},
+                        {"transaction_id": "tx-2", "transaction_code": "S"},
+                        {"transaction_id": "tx-3", "transaction_code": "S"},
+                    ],
+                },
+                {
+                    "accession_number": "0001045810-26-000002",
+                    "filing_date": "2026-11-04",
+                    "transactions": [],  # 0 transactions parsed
+                },
+            ],
+        }
+        res = self.sm_engine.assess_symbol("NVDA", live_sec=envelope)
+        sec_sub = res["subdomains"]["sec_form_4"]
+        assert sec_sub["filings_count"] == 2
+        assert sec_sub["parsed_transactions_count"] == 3
+        assert sec_sub["filings_count"] != sec_sub["parsed_transactions_count"]
+        # Must not infer 2 transactions from 2 filings
+        assert "2 SEC Form 4 filings stored" in sec_sub["disclosure"]
+        assert "Historical coverage not certified" in sec_sub["disclosure"]
+
+    def test_source_verification_cannot_imply_scoring_eligibility(self):
+        """Acceptance Criteria: Source verification cannot imply scoring eligibility.
+
+        Even with authentic verified source XMLs, scoring eligibility remains held.
+        """
+        envelope = {
+            "symbol": "NVDA",
+            "status": "AVAILABLE_WITH_RESULTS",
+            "coverage_status": "PARTIAL",
+            "is_pipeline_held": True,
+            "items": [
+                {
+                    "accession_number": "0001045810-26-000001",
+                    "filing_date": "2026-11-06",
+                    "transactions": [{"transaction_id": "tx-1", "transaction_code": "S"}],
+                }
+            ],
+        }
+        res = self.sm_engine.assess_symbol("NVDA", live_sec=envelope)
+        assert res["pillar_eligibility"] is False
+        assert res["pillar_score"] is None
+        assert res["scoring_held"] is True
+        assert "HOLD_SEC_001" in res["active_holds"]
+
+        conf_inputs = _build_smart_money_confluence_inputs("NVDA", live_sec=envelope)
+        assert conf_inputs is None
+
+        conf_out = self.conf_engine.calculate_confluence("NVDA", smart_money_data=conf_inputs)
+        format_sec_confluence_pillar(conf_out, res, envelope)
+        smart_p = next(p for p in conf_out["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
+        assert smart_p["score"] == 0.0
+        assert smart_p["status"] == "unavailable"
+        assert smart_p["scoringEligibility"] == "Not assessed — ingestion-only trial."
+
+    def test_no_complete_90_day_coverage_without_interval_bound_evidence(self):
+        """Acceptance Criteria: No complete 90-day coverage claim without interval-bound evidence."""
+        envelope = {
+            "symbol": "NVDA",
+            "status": "AVAILABLE_WITH_RESULTS",
+            "coverage_status": "PARTIAL",
+            "is_pipeline_held": True,
+            "items": [{"filing_date": "2026-11-06"}],
+        }
+        res = self.sm_engine.assess_symbol("NVDA", live_sec=envelope)
+        sec_sub = res["subdomains"]["sec_form_4"]
+        assert sec_sub["coverage_certified"] is False
+        assert sec_sub["status_label"] == "Coverage Uncertified"
+        assert "Historical coverage not certified" in sec_sub["disclosure"]

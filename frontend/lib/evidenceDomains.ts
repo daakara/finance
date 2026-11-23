@@ -450,6 +450,9 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     let observationTime = (feed as any)?.observation_time || (feed as any)?.observed_at || "Trailing 90 Days";
     let applicability: DomainApplicability = "OPTIONAL";
 
+    const filingsCount = (sub as any)?.filings_count ?? (feed as any)?.filings_count ?? (smartMoney as any)?.filingsCount ?? (smartMoney as any)?.filings_count ?? (hasTrades ? trades.length : 0);
+    const isCoverageCertified = (sub as any)?.coverage_certified === true || (feed as any)?.coverage_certified === true || (sub as any)?.coverage_status === "COMPLETE" || (feed as any)?.coverage_status === "COMPLETE" || (sub as any)?.coverage_status === "CERTIFIED" || (feed as any)?.coverage_status === "CERTIFIED";
+
     if (isEtf || isCrypto) {
       status = "INAPPLICABLE";
       statusLabel = "Inapplicable";
@@ -462,22 +465,44 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       applicability = "INAPPLICABLE";
       explanation = feed?.explanation || "Foreign Private Issuer (FPI) exempt from US SEC Form 4 filings; local regulatory disclosures apply.";
       provenance = feed?.provenance || "Home Country Regulatory Authorities";
+    } else if (isHeld) {
+      status = "UNAVAILABLE";
+      if (filingsCount > 0) {
+        statusLabel = isCoverageCertified ? "Historical Coverage Certified" : "Coverage Uncertified";
+        explanation = `${filingsCount} SEC Form 4 filings stored. Historical coverage ${isCoverageCertified ? "certified" : "not certified"}. Scoring not assessed — ingestion-only trial.`;
+        if (!isCoverageCertified) {
+          observationTime = (feed as any)?.observation_time || (feed as any)?.observed_at || "Uncertified Interval";
+        }
+      } else {
+        statusLabel = "Pipeline Pending";
+        explanation = feed?.explanation || sub?.disclosure || "SEC Form 4 continuous ingestion paused under governed operational hold (HOLD_SEC_001).";
+      }
     } else if (feed && feed.status === "VERIFIED") {
-      status = "VERIFIED";
-      statusLabel = "Verified";
-      explanation = feed.explanation || `${feed.observation_count || trades.length} Form 4 insider transactions evaluated.`;
+      const isUncertified = (feed as any)?.coverage_certified === false || (feed as any)?.coverage_status === "PARTIAL" || (feed as any)?.coverage_status === "UNKNOWN" || (feed as any)?.scoring_held === true;
+      if (isUncertified) {
+        status = "UNAVAILABLE";
+        statusLabel = "Coverage Uncertified";
+        explanation = `${filingsCount} SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial.`;
+        observationTime = (feed as any)?.observation_time || (feed as any)?.observed_at || "Uncertified Interval";
+      } else {
+        status = "VERIFIED";
+        statusLabel = "Verified";
+        const txCount = (feed as any)?.parsed_transactions_count ?? (feed as any)?.transaction_count ?? (sub as any)?.parsed_transactions_count;
+        explanation = feed.explanation || (txCount !== undefined
+          ? `${txCount} Form 4 insider transactions evaluated.`
+          : `${feed.observation_count || trades.length} Form 4 insider transactions evaluated.`);
+      }
     } else if (hasTrades) {
       status = "VERIFIED";
       statusLabel = "Verified";
-      explanation = `${trades.length} Form 4 insider transactions evaluated.`;
+      const txCount = (sub as any)?.parsed_transactions_count ?? (feed as any)?.parsed_transactions_count;
+      explanation = txCount !== undefined
+        ? `${txCount} Form 4 insider transactions evaluated.`
+        : `${trades.length} Form 4 insider transactions evaluated.`;
     } else if (isVerifiedEmpty) {
       status = "NO_OBSERVATIONS";
       statusLabel = "No Observations";
       explanation = feed?.explanation || "Verified complete search: 0 open-market Form 4 transactions filed in trailing 90 days.";
-    } else if (isHeld) {
-      status = "UNAVAILABLE";
-      statusLabel = "Pipeline Pending";
-      explanation = feed?.explanation || sub?.disclosure || "SEC Form 4 continuous ingestion paused under governed operational hold (HOLD_SEC_001).";
     } else if (isUnavailable) {
       status = "UNAVAILABLE";
       statusLabel = "Unavailable";

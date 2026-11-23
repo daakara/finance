@@ -32,6 +32,7 @@ import CompositeConvictionCard, {
 } from "../components/CompositeConvictionCard";
 import { ConfluenceData, AnalyticsResponse } from "../lib/api";
 import { fetchSecForm4Insiders } from "../lib/institutionalFeeds";
+import { resolveNineEvidenceDomains } from "../lib/evidenceDomains";
 
 console.log("=====================================================================");
 console.log("ARX SEC INSIDER FLOW PRESENTATION TRUTH SUITE (Issue #165 / #231)");
@@ -100,8 +101,8 @@ async function runAllTests() {
           plainLabel: "Smart Money Flow",
           score: 0.0,
           status: "unavailable",
-          detail: "SEC filings available (16 filings, latest 2026-11-19, coverage: PARTIAL). Not assessed — ingestion-only trial.",
-          plainDetail: "Stored SEC Form 4 filings available (16 filings). Scoring not assessed — ingestion-only trial.",
+          detail: "16 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial.",
+          plainDetail: "16 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial.",
           icon: "🏛️",
         },
         {
@@ -145,8 +146,8 @@ async function runAllTests() {
         feeds: {
           sec_form4: {
             status: "PIPELINE_PENDING",
-            status_label: "Not assessed — ingestion-only trial",
-            disclosure: "SEC filings available (16 filings, latest 2026-11-19, coverage: PARTIAL). Not assessed — ingestion-only trial.",
+            status_label: "Coverage Uncertified",
+            disclosure: "16 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial.",
           },
         },
         secInsiderTrades: new Array(16).fill({ accession_number: "test" }),
@@ -165,8 +166,7 @@ async function runAllTests() {
 
     // Detail must state filings are available and explain held scoring
     assert.ok(
-      cardMarkup.includes("SEC filings available (16 filings, latest 2026-11-19, coverage: PARTIAL). Not assessed — ingestion-only trial.") ||
-      cardMarkup.includes("Stored SEC Form 4 filings available (16 filings). Scoring not assessed — ingestion-only trial."),
+      cardMarkup.includes("16 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."),
       "Card must state filings are available and scoring is held under trial"
     );
     assert.ok(
@@ -199,7 +199,7 @@ async function runAllTests() {
     assert.strictEqual(nvdaConfluence.confluenceScore, 21);
 
     assert.ok(
-      modalMarkup.includes("SEC filings available (16 filings, latest 2026-11-19, coverage: PARTIAL). Not assessed — ingestion-only trial."),
+      modalMarkup.includes("16 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."),
       "Modal must render decoupled disclosure availability and held scoring"
     );
     assert.ok(
@@ -223,7 +223,7 @@ async function runAllTests() {
           label: "Corporate Insiders & Flow",
           score: 0.0,
           status: "unavailable",
-          detail: "SEC filings available (2 filings, latest 2026-11-18, coverage: PARTIAL). Not assessed — ingestion-only trial.",
+          detail: "2 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial.",
           icon: "🏛️",
         },
       ],
@@ -242,7 +242,7 @@ async function runAllTests() {
     // Must not contain false accumulation or buy claims
     assert.ok(!modalMarkup.includes("open-market purchases"), "Sales/gifts must not claim purchases");
     assert.ok(!modalMarkup.includes("accumulating"), "Sales/gifts must not claim accumulation");
-    assert.ok(modalMarkup.includes("SEC filings available (2 filings"), "Must accurately report 2 filings");
+    assert.ok(modalMarkup.includes("2 SEC Form 4 filings stored"), "Must accurately report 2 filings");
 
     console.log("  ✓ Passed: Sales and gifts preserved without purchase bias.");
     passed++;
@@ -416,8 +416,62 @@ async function runAllTests() {
     }
   }
 
+  // ── Test 7: Evidence Domain 6 Truth & Decoupling (Issue #165 Acceptance Criteria)
+  console.log("\nTest 7: Evidence Domain 6 decouples filings, transactions, and held scoring...");
+  {
+    const domains = resolveNineEvidenceDomains({
+      symbol: "NVDA",
+      assetClass: "EQUITY",
+      candles: [],
+      confluence: null,
+      isStage4: true,
+      vix: 19.4,
+      preflightCleared: false,
+      activeBlocker: null,
+      preflightChecksPassed: 4,
+      smartMoney: {
+        overallStatus: "PIPELINE_HELD",
+        status: "PIPELINE_PENDING",
+        filingsCount: 16,
+        parsedTransactionsCount: 36,
+        feeds: {
+          sec_form4: {
+            status: "PIPELINE_PENDING",
+            status_label: "Coverage Uncertified",
+            filings_count: 16,
+            parsed_transactions_count: 36,
+            coverage_certified: false,
+            coverage_status: "PARTIAL",
+            disclosure: "16 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial.",
+          },
+        },
+        secInsiderTrades: new Array(16).fill({ accession_number: "0001045810-26-000001" }),
+      },
+      currentPrice: 140,
+    });
+
+    const insiderDomain = domains.find((d) => d.id === "insider_transactions");
+    assert.ok(insiderDomain, "Domain 6 must exist");
+
+    // Acceptance Criteria:
+    // 1. Where coverage remains uncertified, display dynamic text
+    assert.strictEqual(
+      insiderDomain.explanation,
+      "16 SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
+    );
+    // 2. Status cannot be VERIFIED when scoring is held
+    assert.strictEqual(insiderDomain.status, "UNAVAILABLE", "Source verification cannot imply scoring eligibility");
+    assert.strictEqual(insiderDomain.statusLabel, "Coverage Uncertified");
+    // 3. No complete 90-day coverage claim without interval-bound evidence
+    assert.strictEqual(insiderDomain.observationTime, "Uncertified Interval");
+    assert.notStrictEqual(insiderDomain.observationTime, "Trailing 90 Days");
+
+    console.log("  ✓ Passed: Domain 6 decoupled presentation and strict acceptance criteria verified.");
+    passed++;
+  }
+
   console.log(`\n=====================================================================`);
-  console.log(`ALL ${passed}/6 PRESENTATION & DECOUPLING TEST CASES PASSED (100%)`);
+  console.log(`ALL ${passed}/7 PRESENTATION & DECOUPLING TEST CASES PASSED (100%)`);
   console.log(`=====================================================================\n`);
 }
 

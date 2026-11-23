@@ -339,9 +339,12 @@ def format_sec_confluence_pillar(
         target_pillar["detail"] = "Evidence could not be loaded."
         target_pillar["plainDetail"] = "SEC EDGAR Form 4 repository evidence could not be loaded."
     elif f_count > 0:
-        latest_str = f", latest {f_latest}" if f_latest else ""
-        target_pillar["detail"] = f"SEC filings available ({f_count} filings{latest_str}, coverage: {coverage_label}). Not assessed — ingestion-only trial."
-        target_pillar["plainDetail"] = f"Stored SEC Form 4 filings available ({f_count} filings). Scoring not assessed — ingestion-only trial."
+        if cov_status in ("COMPLETE", "CERTIFIED"):
+            target_pillar["detail"] = f"{f_count} SEC Form 4 filings stored. Historical coverage certified. Scoring not assessed — ingestion-only trial."
+            target_pillar["plainDetail"] = f"{f_count} SEC Form 4 filings stored. Historical coverage certified. Scoring not assessed — ingestion-only trial."
+        else:
+            target_pillar["detail"] = f"{f_count} SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
+            target_pillar["plainDetail"] = f"{f_count} SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
     elif is_ver_empty:
         target_pillar["detail"] = "Verified no activity. Not assessed — ingestion-only trial."
         target_pillar["plainDetail"] = "Verified complete search: 0 open-market Form 4 filings. Scoring not assessed — ingestion-only trial."
@@ -1937,6 +1940,8 @@ def get_asset_analytics(
                     "sec_form4": (smart_data.get("subdomains", {}).get("sec_form_4") if smart_data else None) or {"status": "PIPELINE_PENDING"},
                     "congressional_disclosures": (smart_data.get("subdomains", {}).get("congressional_stock_act") if smart_data else None) or {"status": "PIPELINE_PENDING"},
                 },
+                "filingsCount": smart_data.get("filings_count", 0) if smart_data else 0,
+                "parsedTransactionsCount": smart_data.get("parsed_transactions_count", 0) if smart_data else 0,
                 "congressTrades": smart_data.get("congress_trades", []) if smart_data else [],
                 "optionsFlow": smart_data.get("options_flow", []) if smart_data else [],
                 "secInsiderTrades": smart_data.get("sec_insider_trades", []) if smart_data else [],

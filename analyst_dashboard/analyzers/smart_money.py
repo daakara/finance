@@ -3287,24 +3287,39 @@ class SmartMoneyEngine:
 
                     latest_date = items[0].get("filing_date") or items[0].get("filingDate") or ""
                     latest_str = f", latest {latest_date}" if latest_date else ""
-                    disclosure = f"SEC filings available ({len(items)} filings{latest_str}, coverage: {cov_status}). Not assessed — ingestion-only trial."
+                    is_cov_certified = cov_status in ("COMPLETE", "CERTIFIED")
+                    if is_cov_certified:
+                        disclosure = f"{len(items)} SEC Form 4 filings stored. Historical coverage certified. Scoring not assessed — ingestion-only trial."
+                        status_label = "Historical Coverage Certified"
+                    else:
+                        disclosure = f"{len(items)} SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
+                        status_label = "Coverage Uncertified"
+
+                    total_tx_count = sum(
+                        len(f.get("transactions")) if isinstance(f.get("transactions"), list)
+                        else (1 if f.get("transaction_code") or f.get("transaction_type") or f.get("transaction_id") else 0)
+                        for f in items
+                    )
 
                     return {
                         "domain_id": "sec_form_4",
                         "status": SmartMoneyDomainStatus.PIPELINE_HELD.value,
-                        "status_label": "Not assessed — ingestion-only trial",
+                        "status_label": status_label,
                         "available": True,
                         "is_live": False,
                         "observation_count": len(items),
+                        "filings_count": len(items),
+                        "parsed_transactions_count": total_tx_count,
+                        "transaction_count": total_tx_count,
                         "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
                         "directional_bias": SmartMoneyDirection.UNASSESSED.value,
                         "net_value_usd": 0.0,
                         "provenance": "SEC EDGAR Form 4 Feed",
                         "disclosure": disclosure,
                         "records": items,
-                        "filings_count": len(items),
                         "latest_filing_date": latest_date,
                         "coverage_status": cov_status,
+                        "coverage_certified": is_cov_certified,
                         "scoring_held": True,
                         "is_pipeline_held": True,
                         "buys_count": buys,
@@ -3337,7 +3352,10 @@ class SmartMoneyEngine:
                         "is_pipeline_held": True,
                         "scoring_held": True,
                         "filings_count": 0,
+                        "parsed_transactions_count": 0,
+                        "transaction_count": 0,
                         "coverage_status": cov_status,
+                        "coverage_certified": bool(cov_status in ("COMPLETE", "CERTIFIED")),
                         "is_verified_empty": is_ver_empty,
                         "is_incomplete_coverage": not is_ver_empty,
                     }
@@ -3877,6 +3895,8 @@ class SmartMoneyEngine:
             "latest_filing_date": sec_sub.get("latest_filing_date") or (sec_records[0].get("filing_date") if sec_records else None),
             "filings_available": bool(sec_records),
             "filings_count": len(sec_records),
+            "parsed_transactions_count": sec_sub.get("parsed_transactions_count", len(sec_records)),
+            "coverage_certified": bool(sec_sub.get("coverage_certified", False)),
             "scoring_held": bool(sec_sub.get("scoring_held")),
             "is_repo_error": bool(sec_sub.get("is_repo_error")),
             "is_verified_empty": bool(sec_sub.get("is_verified_empty")),
