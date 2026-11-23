@@ -183,3 +183,32 @@ ledger; reconcile that state explicitly rather than reinitializing it.
 No scheduler, production writes, broker adapter, hold changes or activation are
 included. Settlement can continue beyond capture Session 20 so the last setup
 receives its full entry and holding windows (up to pilot Session 44).
+
+---
+
+## 4. Operational Modes: Fixture Validation, Authentic Source Verification, and Pilot Activation
+
+To prevent epistemic contamination and ensure strict governance, the ARX paper-trading infrastructure distinguishes three operational states:
+
+### 1. Fixture Validation Mode (`OFFLINE_INPUT`)
+- **Usage:** Offline deterministic test suites (`tests/test_forward_*.py`, `tests/test_paper_trading_*.py`).
+- **Data Provenance:** Uses retained offline fixtures or synthetic series.
+- **Adjustment Authority:** Marked `adjustmentEvidenceAuthority: "RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED"`.
+- **Purpose:** Verifies system mechanics—chronological 20-slot capacity ceiling, intraday collision reservation, five-session entry and 20-session holding horizons, 25 bps transaction friction, replay determinism, and price revision rejection—without external data dependencies.
+
+### 2. Authentic Source Verification Mode (`AUTHENTIC_FORWARD`)
+- **Usage:** Pre-activation qualification and natural forward pilot evidence evaluation.
+- **Governing Engine:** `analyst_dashboard/governance/market_data_adapter.py`.
+- **Cryptographic Traceability:** Every price bar is deterministically parsed from retained raw response bytes (`rawResponseBytes` -> `rawResponseSha256`). Raw bytes are retained content-addressed under `data/forward_pilot/<cohort_id>/raw_responses/<sha256>.raw` and `<sha256>.meta.json`.
+- **Tamper Rejection:** Any single-byte discrepancy between raw bytes and recorded SHA-256 raises `RAW_BYTES_HASH_MISMATCH` and fails closed before bar extraction or ledger writing (zero disk modifications).
+- **Adjustment Authentication:** Rejects claims inferred merely from field names (`priceBasis: "SPLIT_ADJUSTED_ONLY"`) or empty split lists (`splitEvents: []`). Requires explicit `corporateActionReference` containing authentic source type, 64-hex source digest, verified interval coverage, and proof of zero stock splits (`verifiedZeroSplits: true`). Non-empty split events raise `UNSUPPORTED_SPLIT_ADJUSTMENT` until multiplier qualification is approved. Dividend-adjusted series raise `DIVIDEND_ADJUSTED_DATA_REJECTED`.
+- **Authority Label:** Settled batches carry `evidenceOrigin: "AUTHENTIC_FORWARD"` and `adjustmentEvidenceAuthority: "AUTHENTIC_VERIFIED"`.
+
+### 3. Pilot Activation (STRICTLY DISABLED)
+- **Status:** **`DISABLED`** (`HOLD_SCAN_001=ACTIVE`, `HOLD_EXEC_001=ACTIVE`).
+- **Enforcement:**
+  - Zero background daemon / cron executions (`VCP_NATURAL_SCHEDULER_ENABLED=0`).
+  - Zero live broker order placement (Alpaca Paper API integration is deferred to Phase 2).
+  - Zero production database mutations (writes to `/root/analyst_dashboard/data` or `governance.db` are blocked).
+  - Zero model retraining or heuristic adjustments.
+- **Activation Blockers:** Activation requires formal unfreeze authorization by Accountable Owner (`daakara`), completion of natural recommendation candidate capture qualification, and full release qualification (RQ-01 through RQ-13).

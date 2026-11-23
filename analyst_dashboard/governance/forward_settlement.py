@@ -21,6 +21,15 @@ from analyst_dashboard.governance.forward_capture import (
     CONTRACT_PATH, UNIVERSE_PATH, canonical, digest, normalize_evaluation, utc, session_window,
     compute_decision_id, compute_evaluation_cycle_id, DECISION_SCHEMA_VERSION,
 )
+from analyst_dashboard.governance.market_data_adapter import (
+    verify_raw_response_bytes,
+    verify_corporate_action_evidence,
+    normalize_yahoo_chart_bars,
+    RawBytesHashMismatchError,
+    UnverifiedAdjustmentEvidenceError,
+    UnsupportedSplitAdjustmentError,
+    DividendAdjustedDataError,
+)
 from analyst_dashboard.governance.paper_trading_outcome_evaluator import PaperTradingOutcomeEvaluator
 from analyst_dashboard.governance.storage import (
     is_production_runtime, safe_write_forward_pilot_file, validate_forward_write_path,
@@ -83,19 +92,39 @@ def read_capture(root, cohort_id):
 
 
 def validate_series(item, expected, as_of):
-    """Validate supplied, retained provenance assertions; no external certification."""
+    """Validate supplied, retained provenance assertions and market data integrity."""
     if not isinstance(item, dict) or not item.get('provider'):
         raise ValueError('Missing price provider')
+
+    # If raw response bytes are provided, cryptographically verify and normalize them
+    if 'rawResponseBytes' in item or 'rawBytes' in item:
+        raw_b = item.get('rawResponseBytes') or item.get('rawBytes')
+        if isinstance(raw_b, str):
+            raw_b = raw_b.encode('utf-8')
+        raw_sha = item.get('rawResponseSha256')
+        if not raw_sha:
+            raise ValueError('Missing rawResponseSha256 for provided raw response bytes')
+        verify_raw_response_bytes(raw_b, raw_sha)
+        if item.get('provider') == 'YAHOO_FINANCE' and 'symbol' in item:
+            derived_bars = normalize_yahoo_chart_bars(raw_b, item['symbol'], as_of=as_of)
+            if item.get('bars') and derived_bars != item['bars']:
+                raise ValueError('NORMALIZATION_DESYNC: normalized bars do not match raw response bytes')
+    elif 'rawResponseSha256' in item:
+        raw_sha = str(item['rawResponseSha256'])
+        if not re.fullmatch(r'[a-f0-9]{64}', raw_sha):
+            raise ValueError('Invalid rawResponseSha256 format')
+
     proof = item.get('adjustmentEvidence', {})
-    # Support no-split intervals first. Split-factor application needs separate qualification.
-    if (proof.get('status') != 'VERIFIED' or proof.get('priceBasis') != 'SPLIT_ADJUSTED_ONLY'
-            or proof.get('cashDividendsAdjusted') is not False or proof.get('splitEvents') != []
-            or not re.fullmatch(r'[a-f0-9]{64}', str(proof.get('sourceSha256', '')))
-            or not proof.get('sourceDescription')):
-        raise ValueError('UNRESOLVED_ADJUSTMENT_PROVENANCE')
-    if expected and (proof.get('coverageStart', '9999') > min(expected)
-                     or proof.get('coverageEnd', '') < max(expected)):
-        raise ValueError('Adjustment evidence does not cover required interval')
+    require_auth = (item.get('evidenceOrigin') == 'AUTHENTIC_FORWARD' or 'corporateActionReference' in proof)
+    try:
+        verify_corporate_action_evidence(proof, expected, require_authoritative_ref=require_auth)
+    except (UnverifiedAdjustmentEvidenceError, UnsupportedSplitAdjustmentError, DividendAdjustedDataError) as e:
+        raise ValueError(str(e))
+    except ValueError as e:
+        if 'UNSUPPORTED_ADJUSTMENT_BASIS' in str(e) or 'cash dividends' in str(e):
+            raise ValueError('UNRESOLVED_ADJUSTMENT_PROVENANCE')
+        raise
+
     bars = item.get('bars')
     if not isinstance(bars, list):
         raise ValueError('Missing retained daily bars')
@@ -212,13 +241,31 @@ def settle_batch(raw_batch: bytes, *, cohort_id: str, forward_root: Path,
                 uncertain_count += int(uncertain)
             else:
                 results[decision_id] = {'status': 'SKIPPED_CAP_REACHED', 'result': None}
+        price_history = {}
+        for s, bars in prices.items():
+            entry = {'provider': series[s]['provider'], 'bars': bars}
+            if 'rawResponseSha256' in series[s]:
+                entry['rawResponseSha256'] = series[s]['rawResponseSha256']
+            if 'retrievalTimestampUtc' in series[s]:
+                entry['retrievalTimestampUtc'] = series[s]['retrievalTimestampUtc']
+            if 'timezone' in series[s]:
+                entry['timezone'] = series[s]['timezone']
+            price_history[s] = entry
+
+        evidence_origin = batch.get('evidenceOrigin', 'OFFLINE_INPUT')
+        evidence_auth = (
+            'AUTHENTIC_VERIFIED'
+            if evidence_origin == 'AUTHENTIC_FORWARD'
+            else 'RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED'
+        )
+
         state = {'schemaVersion': '1.0', 'binding': binding, 'asOfSession': as_of,
-                 'evidenceOrigin': 'OFFLINE_INPUT', 'eligibleForOpportunityCapture': False,
-                 'adjustmentEvidenceAuthority': 'RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED',
+                 'evidenceOrigin': evidence_origin, 'eligibleForOpportunityCapture': False,
+                 'adjustmentEvidenceAuthority': evidence_auth,
                  'results': results, 'reservedEntrySlots': len(admitted),
                  'uncertainEntryReservations': uncertain_count,
                  'triggeredEntries': len(admitted) - uncertain_count,
-                 'priceHistory': {s: {'provider': series[s]['provider'], 'bars': bars} for s, bars in prices.items()}}
+                 'priceHistory': price_history}
         if previous and all(previous.get(k) == v for k, v in state.items()):
             return {'written': 0, 'totalCandidates': len(records), 'reservedEntrySlots': len(admitted)}
         old_results = previous['results'] if previous else {}
@@ -230,6 +277,31 @@ def settle_batch(raw_batch: bytes, *, cohort_id: str, forward_root: Path,
         state['events'] = events
         state['runs'] = (previous['runs'] if previous else []) + [{'asOfSession': as_of, 'inputSha256': raw_sha}]
         state['stateSha256'] = digest(state)
+
+        # Retain raw response bytes into raw_responses/ if provided
+        raw_responses_dir = directory / 'raw_responses'
+        for s, s_data in series.items():
+            if isinstance(s_data, dict) and ('rawResponseBytes' in s_data or 'rawBytes' in s_data) and 'rawResponseSha256' in s_data:
+                r_sha = s_data['rawResponseSha256']
+                r_b = s_data.get('rawResponseBytes') or s_data.get('rawBytes')
+                if isinstance(r_b, str):
+                    r_b = r_b.encode('utf-8')
+                raw_file = raw_responses_dir / f"{r_sha}.raw"
+                meta_file = raw_responses_dir / f"{r_sha}.meta.json"
+                validate_forward_write_path(str(raw_file), cohort_id, str(root))
+                validate_forward_write_path(str(meta_file), cohort_id, str(root))
+                safe_write_forward_pilot_file(str(raw_file), cohort_id, r_b, str(root))
+                meta_payload = {
+                    'symbol': s,
+                    'provider': s_data.get('provider'),
+                    'rawSha256': r_sha,
+                    'retrievalTimestampUtc': s_data.get('retrievalTimestampUtc'),
+                    'timezone': s_data.get('timezone', 'America/New_York'),
+                    'byteLength': len(r_b),
+                    'targetUrl': s_data.get('targetUrl'),
+                }
+                safe_write_forward_pilot_file(str(meta_file), cohort_id, canonical(meta_payload) + '\n', str(root))
+
         raw_path = inputs_dir / (raw_sha + '.json')
         safe_write_forward_pilot_file(str(raw_path), cohort_id, raw_batch.decode('utf-8'), str(root))
         safe_write_forward_pilot_file(str(ledger_path), cohort_id, canonical(state) + '\n', str(root))

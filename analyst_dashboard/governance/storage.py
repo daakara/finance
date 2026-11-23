@@ -21,7 +21,7 @@ import uuid
 import stat
 import shutil
 import logging
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, Union
 
 logger = logging.getLogger("arx.governance.storage")
 
@@ -610,7 +610,7 @@ def validate_forward_write_path(
 def safe_write_forward_pilot_file(
     target_path: str,
     cohort_id: str,
-    content: str,
+    content: Union[str, bytes],
     forward_root: Optional[str] = None,
 ) -> str:
     """Atomically writes content to a forward pilot file after strict path validation.
@@ -620,6 +620,7 @@ def safe_write_forward_pilot_file(
     - If validation fails, zero files or directories are created or modified.
     - Writes are atomic via temporary file within forward_root followed by atomic rename.
     - Fsync is issued to ensure physical persistence.
+    - Supports both text (str) and binary (bytes) payloads.
     """
     validated_path = validate_forward_write_path(target_path, cohort_id, forward_root=forward_root)
 
@@ -629,10 +630,16 @@ def safe_write_forward_pilot_file(
     tmp_id = f".forward_write_{os.getpid()}_{uuid.uuid4().hex[:8]}.tmp"
     tmp_path = os.path.join(parent_dir, tmp_id)
     try:
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            f.write(content)
-            f.flush()
-            os.fsync(f.fileno())
+        if isinstance(content, bytes):
+            with open(tmp_path, "wb") as f:
+                f.write(content)
+                f.flush()
+                os.fsync(f.fileno())
+        else:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                f.write(content)
+                f.flush()
+                os.fsync(f.fileno())
         os.replace(tmp_path, validated_path)
         directory_fd = os.open(parent_dir, os.O_RDONLY)
         try:

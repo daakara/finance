@@ -7,6 +7,7 @@ on:
       - 'scripts/settle_forward_cohort.py'
       - 'tests/test_forward_candidate_capture.py'
       - 'tests/test_forward_settlement.py'
+      - 'tests/test_forward_market_data_adapter.py'
       - 'tests/test_paper_trading*'
       - 'tests/fixtures/paper_trading*'
       - 'docs/governance/ARX_FORWARD_PILOT_UNIVERSE_V1.json'
@@ -32,5 +33,6 @@ jobs:
           python -m pytest --noconftest -p paper_trading_offline_support
           tests/test_forward_candidate_capture.py
           tests/test_forward_settlement.py
+          tests/test_forward_market_data_adapter.py
           tests/test_paper_trading_baseline_determinism.py
           tests/test_paper_trading_outcome_evaluator.py -q

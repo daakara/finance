@@ -2,7 +2,7 @@
 
 **Document ID:** `PLN-ROADMAP-PT-2026-11-23`  
 **Effective Date:** 2026-11-23  
-**Status:** Offline capture and manual settlement implemented; natural forward activation pending source/evaluator adapter qualification
+**Status:** Offline capture, settlement, and market-data/corporate-action adapter qualified (PR #322); pilot activation remains strictly disabled under operational holds
 **Accountable Owner:** `daakara`  
 **Classification:** Canonical Implementation Roadmap  
 **Governing Contract:** ARX Paper-Trading Outcome Evaluation Contract V1.0.1 ([`docs/governance/ARX_PAPER_TRADING_OUTCOME_CONTRACT_V1.json`](../governance/ARX_PAPER_TRADING_OUTCOME_CONTRACT_V1.json))  
@@ -143,20 +143,20 @@ flowchart LR
     - Per-cohort checkpoint at `data/forward_pilot/<cohort-id>/settlement_ledger.json` under the shared capture `flock`.
     - Missing required sessions block the batch before ledger advancement. No prices or outcomes are invented.
     - Twenty capacity slots are allocated chronologically, independent of returns; uncertain entries reserve capacity without counting as confirmed fills. Multiple same-symbol setups remain independent simulated recommendations, not a portfolio.
-    - Retained adjustment metadata is an input assertion, not independent source authentication. The implemented adapter accepts no-split intervals only; source-byte and adjustment reconciliation remain prerequisites for natural forward activation.
+    - Retained adjustment metadata is an input assertion, not independent source authentication. The qualified market-data adapter (`analyst_dashboard/governance/market_data_adapter.py`) enforces cryptographic raw-byte retention, fail-closed SHA-256 verification, and explicit `corporateActionReference` checks (rejecting field-name and empty-split-list inferences).
 - **Dependencies & Accountable Owner:**
   - Dependencies: Milestone 2 capture stream; daily price bar ingest.
   - Accountable Owner: `daakara`.
 - **Smallest Reviewable PR:**  
-  `PR-PT-03: Implement idempotent outcome settlement batch runner and event ledger`.
+  `PR-PT-03: Implement idempotent outcome settlement batch runner, market-data adapter, and event ledger`.
 - **Quality Gates & Acceptance Criteria:**
   - **Idempotency:** Executing settlement runner 5 times consecutively produces identical state and zero duplicate outcome events.
   - **Immutability:** Signal inputs (corridor, stop, targets) are never modified during settlement.
-  - **Adjustment Basis:** Documented adjustment provenance verified prior to settling any trade.
+  - **Adjustment Basis:** Documented adjustment provenance verified prior to settling any trade; unverified corporate actions fail closed.
 - **Rollback / Disable Procedure:** Stop daily settlement batch; state is preserved in append-only JSON ledger.
 - **Effort Range & Decision:**
-  - Effort: 3–4 engineering days.
-  - Key Decision: Choice of price tape source for daily settlement (Yahoo Finance chart API via `BoundedHttpClient` vs. Alpaca IEX bars).
+  - Effort: 3–4 engineering days (Completed on PR #322).
+  - Key Decision: Qualified Yahoo Finance v8 chart adapter via `MarketDataPayload` with non-dividend-adjusted OHLCV (`quote` array only, `adjclose` strictly ignored) and authentic corporate action verification.
 
 ---
 
