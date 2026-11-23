@@ -49,7 +49,7 @@ export interface EvidenceResolutionContext {
   assetClass?: string;
   securityType?: string;
   candles?: CandleData[];
-  confluence?: ConfluenceData;
+  confluence?: ConfluenceData | null;
   optimalExecution?: OptimalExecutionPlan;
   smartMoney?: {
     status?: string;
@@ -65,6 +65,13 @@ export interface EvidenceResolutionContext {
     optionsFlow?: any[];
     secForm4Trades?: any[];
     secInsiderTrades?: any[];
+    filingsCount?: number;
+    filings_count?: number;
+    parsedTransactionsCount?: number;
+    parsed_transactions_count?: number;
+    transaction_count?: number;
+    coverage_certified?: boolean;
+    coverage_status?: string;
     feeds?: {
       options_flow?: any;
       sec_form4?: any;
