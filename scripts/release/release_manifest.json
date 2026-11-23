@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+  "release_candidate_commit": "ac2d3c8f46a6e69ca55a5f367f7e3bbfd08a9ff6",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 31,
+  "total_files": 32,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-SEC-INSIDER-FLOW-PRESENTATION-319",
   "files": {
@@ -204,6 +204,14 @@
       "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
       "sha256": "951f9c7824931c7e983644d7d509554ec06565eeaec067e8db8b8a0d81344ae6",
       "size_bytes": 18182
+    },
+    "requirements.txt": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "ac2d3c8f46a6e69ca55a5f367f7e3bbfd08a9ff6",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Cap sentry-sdk below 3.0.0 to prevent breaking change in worker exception capture",
+      "sha256": "514e6161fb66b25a3b6d2c29cb973c30a3171634fc0da27b31b7b8b3cbb28d28",
+      "size_bytes": 472
     },
     "scripts/research/acquire_nvda_fundamentals.py": {
       "operation": "A",
