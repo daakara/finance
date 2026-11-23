@@ -430,7 +430,7 @@ Each XML document was parsed with `Form4XmlParser.parse_filing`, deriving transa
 - **Code F (Tax Withholding):** 5 transactions ($14\%$) across Jen-Hsun Huang, Scott Gawel, Debora Shoquist, Colette Kress, and Timothy Teter.
 - **Code G (Bona Fide Gift):** 4 transactions ($11\%$) across Tench Coxe and Jen-Hsun Huang.
 - **Code A (Equity Grant / RSU Award):** 2 transactions ($5\%$) across Nicholas Parker (base grant + amendment).
-- **Code P (Open Market Purchase):** **0 transactions** ($0\%$). No insider buying occurred in this interval.
+- **Code P (Open Market Purchase):** **0 transactions** ($0\%$). No code-P transactions were found in the retained baseline.
 
 ---
 
@@ -449,11 +449,13 @@ Each XML document was parsed with `Form4XmlParser.parse_filing`, deriving transa
   - **Reason:** `"Explicit partial correction phrase verified in source narrative: 'solely to correct'."`
   - **1-to-1 Mapping:** Base transaction `0002152188-26-000005:0002152188:NON_DERIVATIVE:0` (172,507 shares @ $0.00, Code A) $\rightarrow$ Amendment transaction `0002152188-26-000007:0002152188:NON_DERIVATIVE:0` (160,418 shares @ $0.00, Code A).
 
-#### B. Point-in-Time Supersession vs Static Aggregation (Preventing Double-Counting)
-- **Static Raw Database Count:** 36 transaction rows exist in `form4_parsed_transactions`.
-- **Point-in-Time Supersession Rule:** Prior to `2026-10-13T21:09:29Z`, the base transaction (172,507 shares) was public truth. After `2026-10-13T21:09:29Z`, the amendment transaction (160,418 shares) superseded the base line.
-- **Active Effective Transactions:** To avoid double-counting superseded historical awards, the active transaction count as of today is:  
-  $$\text{Active Transactions} = 36 - 1 = \mathbf{35}$$
+#### B. Point-in-Time Supersession vs Static Aggregation (Verified in Disposable PostgreSQL)
+- **Static Raw Database Storage:** Exactly 36 transaction rows are persisted in `form4_parsed_transactions` (complete audit trail preserved; no raw rows are deleted upon amendment).
+- **Point-in-Time Supersession Query Behavior (`get_bulk_transactions_as_of`):**
+  - **Before Amendment Boundary (`2026-10-13T21:09:28Z`):** 14 filings are available (Filings 1–14). Base transaction `0002152188-26-000005:0002152188:NON_DERIVATIVE:0` is effective with 172,507 shares. Amendment is not yet available. Returns **34 effective transactions**.
+  - **At/After Amendment Boundary (`2026-10-13T21:09:29Z`):** Amendment `0002152188-26-000007` becomes available and supersedes the base transaction via verified mapping in `sm_audit_events`. Base transaction is excluded; amendment line is included with 160,418 shares. Later filing 16 is not yet available. Returns **34 effective transactions** ($34 - 1 + 1 = 34$).
+  - **After All Baseline Filings Available (`2026-11-20T00:00:00Z`):** Filing 16 (`0001197647-26-000013`, accepted `2026-11-06T21:12:02Z`, 1 transaction) is now available. Base line remains superseded. Returns **35 effective transactions**.
+  - **Raw Stored Rows:** Database maintains strictly **36 raw parsed rows** across all temporal query boundaries.
 
 ---
 
@@ -516,11 +518,11 @@ Reconciled against retained external catalog `CIK0001045810_submissions.json` (S
 | **Parsed Transactions** | 36 reported | **36 parsed rows (all 36 non-derivative, 0 derivative)** | Full ElementTree parse of all 16 filings |
 | **Zero-Transaction Filing** | 1 unexplained zero parse | **`0001347842-26-000015` verified retirement exit notice** | Section 16 retirement text in `<remarks>` |
 | **Amendment Effect** | Unclassified / ambiguous | **`PARTIAL_CORRECTION` via classifier** | 1-to-1 share correction (172,507 $\rightarrow$ 160,418) |
-| **Active Transactions** | 36 reported | **35 active point-in-time transactions** | Deduplication of superseded base transaction |
+| **Active Transactions** | 36 reported | **34 $\rightarrow$ 34 $\rightarrow$ 35 effective transactions** | Real PostgreSQL `get_bulk_transactions_as_of` |
 | **In-Window Filings** | Ambiguous 15 vs 16 | **Exactly 15 in-window filings (`2026-08-26` to `2026-11-23`)** | Aug 24 filing is pre-window baseline member |
 | **Coverage Certification** | Unproved | **`PARTIAL` / `NOT_CERTIFIED`** | Nov 22 snapshot cannot certify Nov 23 |
 
-#### Smallest Remaining Action for Full Closure:
-Conduct the scheduled Monday preflight on deployed production release `2eccc64a` (verifying queue/lock/grant/backup freshness $\le 12$h) without modifying candidate PR #317 or unmerging draft protections, keeping candidate deployment gated until trial completion after `2026-11-25T02:35:00Z`.
+#### Review and Candidate Disposition:
+Review candidate PR #317 against offline qualification evidence. Candidate code remains strictly offline, non-deployable, with `HOLD_SEC_001=ACTIVE` remaining active. Zero production database writes, zero live SEC HTTP wire requests, zero schedule activations, zero grant renewals, and zero hold mutations.
 
 *Zero production writes, zero SEC wire requests, zero schedule activations, zero hold changes, and zero credentials modified.*

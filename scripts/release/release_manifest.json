@@ -1,7 +1,7 @@
 {
   "release_candidate_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 17,
+  "total_files": 21,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-SEC-BOUNDED-INGESTION-317",
   "files": {
@@ -74,8 +74,32 @@
       "originating_pr_number": 317,
       "originating_commit": "c2456597551d50b4d06579236af238fc99e814fd",
       "governing_requirement": "Issue #165: historical replay qualification suite and evidence report",
-      "sha256": "4cd9042c989bdebf137539b399129abec6518a84993b71ee0ce374cb7240a1b8",
-      "size_bytes": 26927
+      "sha256": "0637363f87d5c64e04890725663e75d344bc1c76d8e1087e8c77df3e9f64ce89",
+      "size_bytes": 42956
+    },
+    "scripts/reconcile_nvda_baseline.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "b77b2ddb02d1def4b5b1ac1dd99f7bb3b81a65ef",
+      "governing_requirement": "Issue #165: NVDA Form 4 baseline reconciliation script",
+      "sha256": "eac3adc4835b8b5f0438d8bccaed94d3cc17dfbb0c50950f4115e2c337441ff8",
+      "size_bytes": 11870
+    },
+    "tests/fixtures/sec_edgar/CIK0001045810_submissions.json": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "b77b2ddb02d1def4b5b1ac1dd99f7bb3b81a65ef",
+      "governing_requirement": "Issue #165: retained SEC submissions catalog for NVDA CIK 0001045810",
+      "sha256": "8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045",
+      "size_bytes": 160255
+    },
+    "tests/fixtures/sec_edgar/nvda_form4_frozen_baseline_export.json": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "b77b2ddb02d1def4b5b1ac1dd99f7bb3b81a65ef",
+      "governing_requirement": "Issue #165: credential-free frozen baseline export of 16 NVDA Form 4 filings and 36 transactions",
+      "sha256": "09b35a42e7e0529d012ccafe9178de32aca4e500d80ebddd4cb93da1ab277e57",
+      "size_bytes": 188136
     },
     "tests/test_fred_sec_presentation_integrity.py": {
       "operation": "M",
@@ -125,6 +149,14 @@
       "sha256": "68e0c80e2be334715c6f81efd2cda1f3ee1144986d39389047ee0bd56fc84c17",
       "size_bytes": 29642
     },
+    "tests/test_sec_nvda_baseline_reconciliation.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "b77b2ddb02d1def4b5b1ac1dd99f7bb3b81a65ef",
+      "governing_requirement": "Issue #165: NVDA Form 4 baseline reconciliation offline suite across 5 gates",
+      "sha256": "f5ceeb91b92dd63f5bbfe58dcc6972eddc4786ad17233a00a70935d942fc2df0",
+      "size_bytes": 25435
+    },
     "tests/test_sec_resume_safety_regressions.py": {
       "operation": "A",
       "originating_pr_number": 317,
@@ -154,8 +186,8 @@
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "29c0c5e4ec8db4cbf3921a40534672d14bb005e55bdc164d02049b123506953d",
-      "size_bytes": 6369,
+      "sha256": "81d8e4df5bffbf306377ed489848763dd4890f86a0a8630a629332fc1b6fa136",
+      "size_bytes": 6423,
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {

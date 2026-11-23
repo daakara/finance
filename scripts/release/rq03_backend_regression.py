@@ -24,6 +24,7 @@ OFFLINE_SEC_FILES = [
     'tests/test_smart_money_two_issuer_trial.py',
     'tests/test_sec_ingestion_evidence_integrity.py',
     'tests/test_smart_money_continuous_ingestion.py',
+    'tests/test_sec_nvda_baseline_reconciliation.py',
 ]
 
 def offline_sec_verdict(returncode, output):

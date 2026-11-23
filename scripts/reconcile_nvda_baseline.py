@@ -7,11 +7,17 @@ Performs offline, deterministic audit of the 16-filing baseline and compares aga
 import json
 import hashlib
 import xml.etree.ElementTree as ET
+import sys
 from pathlib import Path
 from collections import Counter
 
-EXPORT_PATH = Path("/Users/iDavid/Projects/finance-sec-expansion/data/research/nvda_form4_frozen_baseline_export.json")
-SUBMISSIONS_PATH = Path("/Users/iDavid/Projects/finance-clean/data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_submissions.json")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures" / "sec_edgar"
+EXPORT_PATH = FIXTURES_DIR / "nvda_form4_frozen_baseline_export.json"
+SUBMISSIONS_PATH = FIXTURES_DIR / "CIK0001045810_submissions.json"
 
 def main():
     print("=" * 80)
