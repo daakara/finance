@@ -2,19 +2,19 @@
   "control_id": "RQ-06",
   "name": "Governance & Backlog Invariants",
   "status": "PASS",
-  "start_time": "2026-11-23T18:09:34.295551+00:00",
-  "end_time": "2026-11-23T18:09:34.995728+00:00",
-  "duration_sec": 0.679,
-  "candidate_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
-  "source_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
-  "execution_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+  "start_time": "2026-11-23T18:23:18.858208+00:00",
+  "end_time": "2026-11-23T18:23:21.716260+00:00",
+  "duration_sec": 2.838,
+  "candidate_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
+  "source_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
+  "execution_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
-    "execution_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+    "source_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
+    "execution_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -55,5 +55,5 @@
     "backlog_validator_exit": 0,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "46f910a3eccba063eba5354e36bd3518ffd261a170263153009acf809832e222"
+  "receipt_digest": "83ffb1dd7050956ba7f3b33d36962ef75064ee0458741669f508e2ffc68e582b"
 }

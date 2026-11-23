@@ -2,19 +2,19 @@
   "control_id": "RQ-11",
   "name": "Rollback Readiness & Target Authority",
   "status": "PASS",
-  "start_time": "2026-11-23T18:09:36.306472+00:00",
-  "end_time": "2026-11-23T18:09:36.433849+00:00",
-  "duration_sec": 0.126,
-  "candidate_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
-  "source_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
-  "execution_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+  "start_time": "2026-11-23T18:23:23.171070+00:00",
+  "end_time": "2026-11-23T18:23:23.360621+00:00",
+  "duration_sec": 0.189,
+  "candidate_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
+  "source_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
+  "execution_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
-    "execution_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+    "source_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
+    "execution_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -68,7 +68,7 @@
     "scripts/release/rq_rollback_targets.json"
   ],
   "evidence_digests": {
-    "scripts/release/rq_rollback_targets.json": "01c582a7921109594077e4ee783590af074abab6eed206d5348e8ac7281456ce"
+    "scripts/release/rq_rollback_targets.json": "f797c625bb2ab3675c80bd796669b8c17b746d58354fa6877ef201fdf1a9ae6c"
   },
   "errors": [],
   "metadata": {
@@ -76,5 +76,5 @@
     "live_mutation_barred": true,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "18bec51edb90caf1a1237d29c199bccd2d9f1e35a22a0484e0e7c6d2ffa7848d"
+  "receipt_digest": "264409ef6d6018c0f6d99b30925c4fdb1cd1a05c8009420f813431e6aa5c5039"
 }
