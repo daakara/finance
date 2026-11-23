@@ -1,7 +1,7 @@
 {
   "release_candidate_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 22,
+  "total_files": 23,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-SEC-BOUNDED-INGESTION-317",
   "files": {
@@ -76,6 +76,14 @@
       "governing_requirement": "Issue #165: historical replay qualification suite and evidence report",
       "sha256": "0637363f87d5c64e04890725663e75d344bc1c76d8e1087e8c77df3e9f64ce89",
       "size_bytes": 42956
+    },
+    "requirements.txt": {
+      "operation": "M",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: pin sentry-sdk to supported 2.x range to preserve push_scope runtime compatibility",
+      "sha256": "514e6161fb66b25a3b6d2c29cb973c30a3171634fc0da27b31b7b8b3cbb28d28",
+      "size_bytes": 472
     },
     "scripts/reconcile_nvda_baseline.py": {
       "operation": "A",
@@ -170,8 +178,8 @@
       "originating_pr_number": 317,
       "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
       "governing_requirement": "Issue #165: continuous authorization sentry scope mock compatibility across SDK versions",
-      "sha256": "bac3eac1a10f6aef7858d268f1d31f28b499eab8cba4f3c2d1528be4bcd6f089",
-      "size_bytes": 13068
+      "sha256": "adb39c07b11273b853399e63f3ab37a3ed06edc4a32b906b7f349a0457bda522",
+      "size_bytes": 15907
     },
     "tools/qualification/sec_offline_test_support.py": {
       "operation": "A",

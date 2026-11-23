@@ -238,7 +238,7 @@ def test_worker_sentry_telemetry_initialization(monkeypatch):
     monkeypatch.setenv("ARX_ENVIRONMENT", "production")
 
     mock_scope = MagicMock()
-    with patch("sentry_sdk.init") as mock_init, patch("sentry_sdk.get_global_scope", create=True, return_value=mock_scope):
+    with patch("sentry_sdk.init") as mock_init, patch("sentry_sdk.get_global_scope", return_value=mock_scope):
         res = init_worker_sentry()
         assert res is True
         mock_init.assert_called_once()
@@ -249,7 +249,7 @@ def test_worker_sentry_telemetry_initialization(monkeypatch):
 def test_worker_sentry_capture_exception():
     """Verify capture_worker_exception adds subsystem=smart_money tag."""
     mock_scope = MagicMock()
-    with patch("sentry_sdk.push_scope", create=True) as mock_push, patch("sentry_sdk.capture_exception", create=True, return_value="test-event-id") as mock_capture:
+    with patch("sentry_sdk.push_scope") as mock_push, patch("sentry_sdk.capture_exception", return_value="test-event-id") as mock_capture:
         mock_push.return_value.__enter__.return_value = mock_scope
         exc = ValueError("test synthetic error")
         event_id = capture_worker_exception(exc, tags={"test_tag": "test_val"})
@@ -257,6 +257,71 @@ def test_worker_sentry_capture_exception():
         mock_scope.set_tag.assert_any_call("service", "arx-smart-money-worker")
         mock_scope.set_tag.assert_any_call("subsystem", "smart_money")
         mock_scope.set_tag.assert_any_call("test_tag", "test_val")
+
+
+def test_worker_sentry_real_sdk_offline_runtime_capture(monkeypatch):
+    """Offline runtime integration test verifying capture_worker_exception using the real installed SDK.
+
+    Validates that real sentry_sdk provides functioning push_scope, set_tag,
+    and capture_exception APIs and captures structured exceptions with accurate
+    service, subsystem, release, and environment attribution using an in-memory
+    transport with zero network egress.
+    """
+    import sentry_sdk
+    from sentry_sdk.transport import Transport
+
+    captured_envelopes = []
+    captured_events = []
+
+    class InMemoryTestTransport(Transport):
+        def __init__(self, options=None):
+            super().__init__(options)
+
+        def capture_envelope(self, envelope):
+            captured_envelopes.append(envelope)
+            for item in envelope.items:
+                if item.type == "event":
+                    captured_events.append(item.payload.json)
+
+        def capture_event(self, event):
+            captured_events.append(event)
+
+    orig_client = sentry_sdk.get_client()
+    try:
+        test_client = sentry_sdk.Client(
+            dsn="https://synthetic_key@synthetic.ingest.sentry.io/9999999",
+            transport=InMemoryTestTransport,
+            environment="production",
+            release="d1add8390712da372e2443a3fdac5cd03cff1a9f",
+        )
+        sentry_sdk.get_global_scope().set_client(test_client)
+
+        monkeypatch.delenv("SENTRY_DSN", raising=False)
+        monkeypatch.setenv("ARX_ENVIRONMENT", "production")
+        monkeypatch.setenv("ARX_RELEASE_SHA", "d1add8390712da372e2443a3fdac5cd03cff1a9f")
+
+        exc = RuntimeError("Synthetic offline worker exception for compatibility check")
+        event_id = capture_worker_exception(exc, tags={"custom_trace": "offline_probe_001"})
+
+        assert event_id is not None, "Real SDK must return a non-null event_id"
+        assert len(captured_events) == 1, "Expected exactly 1 captured event in memory transport"
+
+        event = captured_events[0]
+        tags = event.get("tags", {})
+        assert tags.get("service") == "arx-smart-money-worker", f"Missing service tag: {tags}"
+        assert tags.get("subsystem") == "smart_money", f"Missing subsystem tag: {tags}"
+        assert tags.get("custom_trace") == "offline_probe_001", f"Missing custom tag: {tags}"
+
+        assert event.get("environment") == "production"
+        assert event.get("release") == "d1add8390712da372e2443a3fdac5cd03cff1a9f"
+        assert tags.get("environment") == "production"
+        assert tags.get("release") == "d1add8390712da372e2443a3fdac5cd03cff1a9f"
+
+        exc_values = event.get("exception", {}).get("values", [])
+        assert len(exc_values) >= 1
+        assert "Synthetic offline worker exception" in exc_values[0].get("value", "")
+    finally:
+        sentry_sdk.get_global_scope().set_client(orig_client)
 
 
 def test_monday_nov16_utc_window_authorization():
