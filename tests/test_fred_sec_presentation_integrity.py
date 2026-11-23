@@ -79,7 +79,8 @@ def test_macro_contract_inverted_yield_curve_defensive_multiplier():
     }
 
     with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher.get_macro_indicators", return_value=mock_indicators):
-        payload = _build_macro_contract_payload()
+        import datetime
+        payload = _build_macro_contract_payload(ref_date=datetime.date(2026, 11, 15))
 
         assert payload["is_live"] is True
         assert payload["regime"] == "RECESSIONARY_PRESSURE"
