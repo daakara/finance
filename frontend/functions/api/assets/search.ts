@@ -20,7 +20,8 @@ export async function onRequestGet({ request }: Context): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 4000);
   try {
-    const response = await fetch(upstream, { redirect: "error", signal: controller.signal,
+    // Workers supports manual/follow, not the Fetch standard's error mode.
+    const response = await fetch(upstream, { redirect: "manual", signal: controller.signal,
       headers: { Accept: "application/json" } });
     if (!response.ok) return json({ status: "UNAVAILABLE", results: [],
       reason: "PROVIDER_HTTP_ERROR", upstreamStatus: response.status }, 503);

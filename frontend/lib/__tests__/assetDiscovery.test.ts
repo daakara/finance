@@ -34,7 +34,7 @@ describe("provider-backed discovery without analytics prerequisites", () => {
     expect(url.origin).toBe("https://query1.finance.yahoo.com");
     expect(url.searchParams.get("q")).toBe("Newly Listed");
     expect(url.searchParams.get("newsCount")).toBe("0");
-    expect(options.redirect).toBe("error");
+    expect(options.redirect).toBe("manual");
     expect(options.headers).toEqual({ Accept: "application/json" });
     expect((await response.json()).results[0].identityVerified).toBe(false);
   });
@@ -53,6 +53,15 @@ describe("provider-backed discovery without analytics prerequisites", () => {
       reason: kind === "http" ? "PROVIDER_HTTP_ERROR" : "PROVIDER_RESPONSE_ERROR" });
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it("rejects a redirect without following or retrying", async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(null, { status: 302, headers: { Location: "https://elsewhere.example" } }));
+    vi.stubGlobal("fetch", fetcher);
+    const response = await onRequestGet({ request: new Request("https://arxterminal.com/api/assets/search?q=NEWCO") });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ reason: "PROVIDER_HTTP_ERROR", upstreamStatus: 302 });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0][1].redirect).toBe("manual");
   });
   it("browser requests the same-origin discovery route, not analytics", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "AVAILABLE", results: [{
