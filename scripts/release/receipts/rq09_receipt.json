@@ -2,19 +2,19 @@
   "control_id": "RQ-09",
   "name": "Four-Way Cross-Platform Compatibility",
   "status": "PASS",
-  "start_time": "2026-11-23T15:52:09.996322+00:00",
-  "end_time": "2026-11-23T15:52:10.627112+00:00",
-  "duration_sec": 0.607,
-  "candidate_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
-  "source_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
-  "execution_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+  "start_time": "2026-11-23T18:09:35.327450+00:00",
+  "end_time": "2026-11-23T18:09:36.110140+00:00",
+  "duration_sec": 0.755,
+  "candidate_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+  "source_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+  "execution_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
-    "execution_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+    "source_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+    "execution_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -139,7 +139,7 @@
   ],
   "evidence_digests": {
     "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-    "scripts/release/rq_compatibility_results.json": "80ffe6de3d6d33b1a272b2b3acb6b14ccce55dc6126a361b1dba37127210da2d"
+    "scripts/release/rq_compatibility_results.json": "21ed7e3cd7a25b90060b88284c5b70cbcc340d11bc2a1f3a127906da2b980494"
   },
   "errors": [],
   "metadata": {
@@ -152,5 +152,5 @@
     "harness_version": "2.2.0-D074A4",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "a5b3d4b6d52bb9b1979da6843382d4431c5db9e6c3fcf0b91c898bf5c20fdcba"
+  "receipt_digest": "66543e2ef3b8e15105bbe21de36843334ba6b084a0138dd5c8348e21bf4edff3"
 }

@@ -1,58 +1,60 @@
 {
   "total": 13,
-  "passed": 13,
-  "failed": 0,
-  "duration_sec": 77.25,
+  "passed": 10,
+  "failed": 3,
+  "duration_sec": 67.59,
   "results": {
     "RQ-01": {
       "name": "Candidate Identity",
-      "status": "PASS",
-      "elapsed_sec": 0.23
+      "status": "FAIL",
+      "exit_code": 1,
+      "elapsed_sec": 0.28
     },
     "RQ-02": {
       "name": "Release Diff Integrity",
-      "status": "PASS",
-      "elapsed_sec": 20.4
+      "status": "FAIL",
+      "exit_code": 1,
+      "elapsed_sec": 1.61
     },
     "RQ-03": {
       "name": "Backend Regression",
       "status": "PASS",
-      "elapsed_sec": 37.83
+      "elapsed_sec": 34.99
     },
     "RQ-04": {
       "name": "Frontend Regression",
       "status": "PASS",
-      "elapsed_sec": 14.07
+      "elapsed_sec": 25.54
     },
     "RQ-05": {
       "name": "Cross-Engine Invariants",
       "status": "PASS",
-      "elapsed_sec": 0.1
+      "elapsed_sec": 0.14
     },
     "RQ-06": {
       "name": "Governance Invariants",
       "status": "PASS",
-      "elapsed_sec": 0.74
+      "elapsed_sec": 0.76
     },
     "RQ-07": {
       "name": "Deployment Safety",
       "status": "PASS",
-      "elapsed_sec": 0.17
+      "elapsed_sec": 0.15
     },
     "RQ-08": {
       "name": "Artifact Provenance",
       "status": "PASS",
-      "elapsed_sec": 0.13
+      "elapsed_sec": 0.12
     },
     "RQ-09": {
       "name": "Compatibility Suite",
       "status": "PASS",
-      "elapsed_sec": 0.71
+      "elapsed_sec": 0.85
     },
     "RQ-10": {
       "name": "Configuration Integrity",
       "status": "PASS",
-      "elapsed_sec": 0.15
+      "elapsed_sec": 0.12
     },
     "RQ-11": {
       "name": "Rollback Readiness",
@@ -62,12 +64,13 @@
     "RQ-13": {
       "name": "Financial Integrity",
       "status": "PASS",
-      "elapsed_sec": 2.42
+      "elapsed_sec": 2.71
     },
     "RQ-12": {
       "name": "Qualification Summary",
-      "status": "PASS",
-      "elapsed_sec": 0.11
+      "status": "FAIL",
+      "exit_code": 1,
+      "elapsed_sec": 0.12
     }
   }
 }

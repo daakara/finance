@@ -1,20 +1,20 @@
 {
   "control_id": "RQ-01",
   "name": "Candidate Identity & Lineage",
-  "status": "PASS",
-  "start_time": "2026-11-23T15:50:56.338611+00:00",
-  "end_time": "2026-11-23T15:50:56.486132+00:00",
-  "duration_sec": 0.147,
-  "candidate_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
-  "source_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
-  "execution_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+  "status": "FAIL",
+  "start_time": "2026-11-23T18:08:31.773234+00:00",
+  "end_time": "2026-11-23T18:08:31.952765+00:00",
+  "duration_sec": 0.179,
+  "candidate_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+  "source_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+  "execution_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
-    "execution_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+    "source_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+    "execution_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -24,7 +24,7 @@
   "assertions": [
     {
       "assertion": "HEAD is valid 40-char hex SHA",
-      "observed": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+      "observed": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
       "passed": true
     },
     {
@@ -45,11 +45,11 @@
     {
       "assertion": "Candidate SHA incorporates authorized candidate",
       "observed": {
-        "candidate_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
-        "expected": "487ee39d9ca710f98909ea6a96bececa5378008a",
-        "ancestor": true
+        "candidate_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+        "expected": "42518a05318db4be6a3e2e85a06c5fc346988899",
+        "ancestor": false
       },
-      "passed": true
+      "passed": false
     }
   ],
   "evidence_paths": [
@@ -58,11 +58,13 @@
   "evidence_digests": {
     ".github/workflows/release-qualification.yml": "1ee5cb46b349c2b8cd7fd209cc969c8f7d5d949ba86c5fc6e4c178c8b7722d4e"
   },
-  "errors": [],
+  "errors": [
+    "Candidate a3cbee55b11e8b3df2601ba2ca7cae489fd2f973 does not incorporate authorized candidate 42518a05318db4be6a3e2e85a06c5fc346988899."
+  ],
   "metadata": {
     "is_merge_commit": false,
-    "checked_out_head": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+    "checked_out_head": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "a4908396e1c9635c566b6113c36cc9568d9673f11052ef295b9304ab256812f1"
+  "receipt_digest": "314089904a732a4a35a2f9ed052f7ede1879b8837d5376907e3ca9da17c1cfd9"
 }

@@ -1,20 +1,20 @@
 {
   "control_id": "RQ-12",
   "name": "Qualification Summary Aggregation",
-  "status": "PASS",
-  "start_time": "2026-11-23T15:52:13.470178+00:00",
-  "end_time": "2026-11-23T15:52:13.510675+00:00",
-  "duration_sec": 0.04,
-  "candidate_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
-  "source_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
-  "execution_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+  "status": "FAIL",
+  "start_time": "2026-11-23T18:09:39.211859+00:00",
+  "end_time": "2026-11-23T18:09:39.263739+00:00",
+  "duration_sec": 0.05,
+  "candidate_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+  "source_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+  "execution_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
-    "execution_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+    "source_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
+    "execution_sha": "a3cbee55b11e8b3df2601ba2ca7cae489fd2f973",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -26,26 +26,29 @@
       "assertion": "All 11 mandatory release qualification stages passed",
       "observed": {
         "total": 12,
-        "passed": 12,
-        "failed": 0,
+        "passed": 10,
+        "failed": 2,
         "blocked": 0,
         "missing": 0
       },
-      "passed": true
+      "passed": false
     }
   ],
   "evidence_paths": [
     "scripts/release/release_qualification_summary.json"
   ],
   "evidence_digests": {
-    "scripts/release/release_qualification_summary.json": "4ba83154c9c6eaf55e9bad225297d765f2f53807342f6e29d121255b33b373fc"
+    "scripts/release/release_qualification_summary.json": "8d1233ebdc0da5999d2c74ae544476a20f5e69468ec922b35ac86a95a7549c17"
   },
-  "errors": [],
+  "errors": [
+    "Stage RQ-01 failed with status FAIL",
+    "Stage RQ-02 failed with status FAIL"
+  ],
   "metadata": {
-    "summary_verdict": "RELEASE_QUALIFIED",
-    "passed_controls": 12,
+    "summary_verdict": "RELEASE_QUALIFICATION_BLOCKED",
+    "passed_controls": 10,
     "total_controls": 12,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "3c8923ac084ba51b11bb7046ef66df1e15163784ec2594a4503986d730047436"
+  "receipt_digest": "69957d35ce8863d27013373e39962c33a6606e916cf2a9a5040252ced41f3275"
 }
