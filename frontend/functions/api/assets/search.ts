@@ -22,12 +22,14 @@ export async function onRequestGet({ request }: Context): Promise<Response> {
   try {
     const response = await fetch(upstream, { redirect: "error", signal: controller.signal,
       headers: { Accept: "application/json" } });
-    if (!response.ok) return json({ status: "UNAVAILABLE", results: [] }, 503);
+    if (!response.ok) return json({ status: "UNAVAILABLE", results: [],
+      reason: "PROVIDER_HTTP_ERROR", upstreamStatus: response.status }, 503);
     const payload = await response.json();
     return json({ status: "AVAILABLE", results: normalizeDiscoveryResults(payload),
       source: "YAHOO_FINANCE_SEARCH", identityVerified: false });
   } catch {
-    return json({ status: "UNAVAILABLE", results: [] }, 503);
+    return json({ status: "UNAVAILABLE", results: [],
+      reason: controller.signal.aborted ? "PROVIDER_TIMEOUT" : "PROVIDER_RESPONSE_ERROR" }, 503);
   } finally {
     clearTimeout(timer);
   }

@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
@@ -29,3 +29,4 @@ jobs:
           hooks/__tests__/useAssetDiscovery.test.tsx
           components/__tests__/UniversalOmniSearch.test.tsx
           components/__tests__/AssetDiscoveryMenus.test.tsx
+          --maxWorkers=1 --minWorkers=1

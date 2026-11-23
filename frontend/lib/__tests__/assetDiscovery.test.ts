@@ -49,7 +49,8 @@ describe("provider-backed discovery without analytics prerequisites", () => {
     vi.stubGlobal("fetch", fetcher);
     const response = await onRequestGet({ request: new Request("https://arxterminal.com/api/assets/search?q=NEWCO") });
     expect(response.status).toBe(503);
-    expect(await response.json()).toEqual({ status: "UNAVAILABLE", results: [] });
+    expect(await response.json()).toMatchObject({ status: "UNAVAILABLE", results: [],
+      reason: kind === "http" ? "PROVIDER_HTTP_ERROR" : "PROVIDER_RESPONSE_ERROR" });
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
