@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+  "release_candidate_commit": "94d1deb93ab5ecbc9877a55078b93658240d76ae",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 23,
+  "total_files": 25,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-PAPER-TRADING-322",
   "files": {
@@ -10,8 +10,8 @@
       "originating_pr_number": 322,
       "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
       "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
-      "sha256": "ef18a17126e650a750a95f8e5fe89f2f2faf164e090711575636f75b3515695b",
-      "size_bytes": 1294
+      "sha256": "d61e87c7573615e1a6a5c22eb0cd836fb3b82373836d8382c4372f1bc2bd2642",
+      "size_bytes": 1398
     },
     ".gitignore": {
       "operation": "M",
@@ -42,24 +42,24 @@
       "originating_pr_number": 322,
       "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
       "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
-      "sha256": "1ff5ea594c12ad34aaa1077ba87dec3f1f2c7c91a46e63ebc5bb7499924a874e",
-      "size_bytes": 14240
+      "sha256": "7d9483f6897746c63a2e0c16314febb206cc7df57297aed4382759fc3156fa2f",
+      "size_bytes": 17580
     },
     "analyst_dashboard/governance/storage.py": {
       "operation": "M",
       "originating_pr_number": 322,
       "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
       "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
-      "sha256": "83d95765c94052019ad97f8818742fe1ba29dce9c33f9e28f4f85f3612da480e",
-      "size_bytes": 25927
+      "sha256": "f01fe721e09ce757ae20b1d99fe5aac075542b64709f04fedf32c0217baef402",
+      "size_bytes": 26217
     },
     "data/forward_pilot/README.md": {
       "operation": "A",
       "originating_pr_number": 322,
       "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
       "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
-      "sha256": "a827a642a4582a69326d58158e739e0d4135ab166d77006a8617fc7883557136",
-      "size_bytes": 10690
+      "sha256": "4d7f8965a437e63dbb251ca6d67e5173146e3df12403b2ce77db9799c6a8d0a5",
+      "size_bytes": 13688
     },
     "docs/ARX_STATUS_ADDENDUM_2026_11_23.md": {
       "operation": "A",
@@ -114,8 +114,8 @@
       "originating_pr_number": 322,
       "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
       "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
-      "sha256": "059e9da9ef124af29bff90324dcc823703b6390aa74270823de3db824945d465",
-      "size_bytes": 22969
+      "sha256": "3bcf8790633b168a97779ea8859484936a7c80d9ac9c27a6309d5b0ee9e2df17",
+      "size_bytes": 23280
     },
     "requirements.txt": {
       "operation": "M",
@@ -188,6 +188,22 @@
       "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
       "sha256": "c3c5039edc4aa6fdd94a63fdc211dd78eab21a728e9cd5ba06860962eb2c9527",
       "size_bytes": 663
+    },
+    "analyst_dashboard/governance/market_data_adapter.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "94d1deb93ab5ecbc9877a55078b93658240d76ae",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "b7a784c6a236759fd24e4eeb99c74891d7b539fecd06264e9114eb637dccdca1",
+      "size_bytes": 13266
+    },
+    "tests/test_forward_market_data_adapter.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "94d1deb93ab5ecbc9877a55078b93658240d76ae",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "beb3ebc66459a64a08403bad1da41ee118bfdac3e0e07bac3b1dfe02745aea04",
+      "size_bytes": 23065
     }
   },
   "qualification_framework_files": {
