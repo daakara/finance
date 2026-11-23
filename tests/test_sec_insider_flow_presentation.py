@@ -38,6 +38,50 @@ class TestSecInsiderFlowPresentation:
         cls.sm_engine = SmartMoneyEngine()
         cls.conf_engine = ConfluenceEngine()
 
+    @pytest.mark.parametrize("legacy, historical, expected", [
+        ("SUPPORTED_SEC_ISSUER", None, "UNKNOWN"),
+        ("UNSUPPORTED_ISSUER", None, "UNKNOWN"),
+        ("SUPPORTED_SEC_ISSUER", "PARTIAL", "PARTIAL"),
+        ("PARTIAL", None, "PARTIAL"),
+        ("COMPLETE", None, "COMPLETE"),
+    ])
+    def test_issuer_support_is_not_historical_coverage(self, legacy, historical, expected):
+        envelope = {
+            "status": "AVAILABLE_WITH_RESULTS", "is_pipeline_held": True,
+            "coverage_status": legacy, "historical_coverage_status": historical,
+            "items": [{"filing_date": "2026-11-06"}],
+        }
+        output = self.conf_engine.calculate_confluence(
+            "NVDA", technical_data={}, smart_money_data=None,
+            fundamental_data=None, macro_data=None,
+        )
+        math_before = [(p["score"], p["status"]) for p in output["pillars"]]
+        aggregate_before = {k: v for k, v in output.items() if k not in ("pillars", "reasons", "plainReasons")}
+        format_sec_confluence_pillar(output, None, envelope)
+        pillar = next(p for p in output["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
+        assert pillar["coverageStatus"] == expected
+        assert pillar["issuerSupportStatus"] == (legacy if legacy.endswith("ISSUER") else None)
+        assert "SUPPORTED_SEC_ISSUER" not in pillar["detail"]
+        assert "UNSUPPORTED_ISSUER" not in pillar["detail"]
+        if expected == "UNKNOWN":
+            assert "coverage: not verified" in pillar["detail"]
+        assert [(p["score"], p["status"]) for p in output["pillars"]] == math_before
+        assert {k: v for k, v in output.items() if k not in ("pillars", "reasons", "plainReasons")} == aggregate_before
+
+    def test_repository_error_does_not_claim_cached_filings_are_available(self):
+        envelope = {
+            "status": "BACKEND_STORAGE_ERROR", "is_pipeline_held": True,
+            "items": [{"filing_date": "2026-11-06"}],
+        }
+        output = self.conf_engine.calculate_confluence(
+            "NVDA", technical_data={}, smart_money_data=None,
+            fundamental_data=None, macro_data=None,
+        )
+        format_sec_confluence_pillar(output, None, envelope)
+        pillar = next(p for p in output["pillars"] if p["pillar"] == "SMART_MONEY_FLOW")
+        assert pillar["filingsAvailable"] is False
+        assert pillar["detail"] == "Evidence could not be loaded."
+
     def test_case_01_nvda_filings_present_while_scoring_held(self):
         """Case 1: NVDA filings exist in stored evidence view while scoring is held.
 

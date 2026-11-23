@@ -303,12 +303,18 @@ def format_sec_confluence_pillar(
     if not f_latest and live_sec and live_sec.get("items"):
         f_latest = live_sec["items"][0].get("filing_date")
 
+    raw_coverage = (live_sec.get("coverage_status") if live_sec else None)
+    issuer_support = raw_coverage if raw_coverage in ("SUPPORTED_SEC_ISSUER", "UNSUPPORTED_ISSUER") else None
     cov_status = (
-        (live_sec.get("coverage_status") if live_sec else None)
+        (live_sec.get("historical_coverage_status") if live_sec else None)
+        or (raw_coverage if raw_coverage in ("COMPLETE", "PARTIAL", "DEGRADED", "FAILED", "UNKNOWN") else None)
         or (smart_data.get("subdomains", {}).get("sec_form_4", {}).get("coverage_status") if (smart_data and isinstance(smart_data.get("subdomains"), dict)) else None)
         or (smart_data.get("sec_coverage_status") if smart_data else None)
-        or "PARTIAL"
+        or "UNKNOWN"
     )
+    if cov_status not in ("COMPLETE", "PARTIAL", "DEGRADED", "FAILED", "UNKNOWN"):
+        cov_status = "UNKNOWN"
+    coverage_label = "not verified" if cov_status == "UNKNOWN" else cov_status
 
     sec_status = live_sec.get("status", "") if live_sec else ""
     is_err = bool(smart_data and smart_data.get("is_repo_error")) or sec_status in (
@@ -323,17 +329,18 @@ def format_sec_confluence_pillar(
     is_inc_cov = bool(smart_data and smart_data.get("is_incomplete_coverage")) or (cov_status != "COMPLETE" and f_count == 0)
 
     target_pillar["scoringEligibility"] = "Not assessed — ingestion-only trial."
-    target_pillar["filingsAvailable"] = bool(f_count > 0)
+    target_pillar["filingsAvailable"] = bool(f_count > 0 and not is_err)
     target_pillar["filingsCount"] = f_count
     target_pillar["latestFilingDate"] = f_latest
     target_pillar["coverageStatus"] = cov_status
+    target_pillar["issuerSupportStatus"] = issuer_support
 
     if is_err:
         target_pillar["detail"] = "Evidence could not be loaded."
         target_pillar["plainDetail"] = "SEC EDGAR Form 4 repository evidence could not be loaded."
     elif f_count > 0:
         latest_str = f", latest {f_latest}" if f_latest else ""
-        target_pillar["detail"] = f"SEC filings available ({f_count} filings{latest_str}, coverage: {cov_status}). Not assessed — ingestion-only trial."
+        target_pillar["detail"] = f"SEC filings available ({f_count} filings{latest_str}, coverage: {coverage_label}). Not assessed — ingestion-only trial."
         target_pillar["plainDetail"] = f"Stored SEC Form 4 filings available ({f_count} filings). Scoring not assessed — ingestion-only trial."
     elif is_ver_empty:
         target_pillar["detail"] = "Verified no activity. Not assessed — ingestion-only trial."

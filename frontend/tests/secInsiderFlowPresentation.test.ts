@@ -118,10 +118,13 @@ async function runAllTests() {
     };
 
     const smartP = nvdaConfluence.pillars.find((p) => p.pillar === "SMART_MONEY_FLOW")!;
+    smartP.scoringEligibility = "Not assessed — ingestion-only trial.";
+    smartP.filingsAvailable = true;
+    smartP.filingsCount = 16;
 
     // 1. Check score formatting in CompositeConvictionCard
     const scoreDisplay = formatPillarScore(smartP);
-    assert.strictEqual(scoreDisplay, "UNAVAILABLE", "Held scoring must format as 'UNAVAILABLE'");
+    assert.strictEqual(scoreDisplay, "NOT ASSESSED", "Held scoring must not imply missing filings");
     assert.strictEqual(
       getPillarScoreColor(scoreDisplay, smartP.score),
       "text-[var(--text-2)] font-semibold text-sm",
@@ -185,6 +188,15 @@ async function runAllTests() {
         confluence: nvdaConfluence,
       })
     );
+    const smartMarkup = modalMarkup.split('data-testid="pillar-card-smart_money_flow"')[1]
+      .split('data-testid="pillar-card-macro_safety_floor"')[0];
+    assert.ok(smartMarkup.includes("NOT ASSESSED"));
+    assert.ok(smartMarkup.includes("Filings available"));
+    assert.ok(!smartMarkup.includes(">UNAVAILABLE<"));
+    assert.ok(!smartMarkup.includes("0 / 100"));
+    assert.strictEqual(smartP.status, "unavailable");
+    assert.strictEqual(smartP.score, 0);
+    assert.strictEqual(nvdaConfluence.confluenceScore, 21);
 
     assert.ok(
       modalMarkup.includes("SEC filings available (16 filings, latest 2026-11-19, coverage: PARTIAL). Not assessed — ingestion-only trial."),

@@ -34,9 +34,10 @@ export interface ConfluencePillarDisplay {
   icon: string;
 }
 
-export function formatPillarScore(p?: { score: number | null; status?: string | null }): string {
+export function formatPillarScore(p?: { score: number | null; status?: string | null; scoringEligibility?: string }): string {
   if (!p) return "UNAVAILABLE";
   const st = (p.status || "").toLowerCase().trim();
+  if ((st === "unavailable" || st === "pipeline_held") && p.scoringEligibility === "Not assessed — ingestion-only trial.") return "NOT ASSESSED";
   if (st === "unverified" || st === "synthetic") return "UNVERIFIED";
   if (st === "unavailable" || st === "pipeline_held") return "UNAVAILABLE";
   if (st === "not_applicable") return "EXEMPT";
@@ -48,6 +49,7 @@ export function getPillarScoreColor(scoreDisplay: string, score: number | null):
   if (
     score === null ||
     scoreDisplay === "UNAVAILABLE" ||
+    scoreDisplay === "NOT ASSESSED" ||
     scoreDisplay === "PENDING" ||
     scoreDisplay === "UNVERIFIED" ||
     scoreDisplay === "EXEMPT"
