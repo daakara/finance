@@ -1,0 +1,31 @@
+name: Asset Discovery Verification
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/asset-discovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run type-check
+      - run: >-
+          npx --no-install vitest run
+          lib/__tests__/assetDiscovery.test.ts
+          hooks/__tests__/useAssetDiscovery.test.tsx
+          components/__tests__/UniversalOmniSearch.test.tsx
+          components/__tests__/AssetDiscoveryMenus.test.tsx

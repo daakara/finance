@@ -9,6 +9,7 @@ import { TradeSetupSpec } from "../lib/simulation/governorSizingEngine";
 import { CANONICAL_HUBS } from "../lib/canonicalNav";
 import MiniSparkline from "./MiniSparkline";
 import { toggleTerminalTheme } from "../lib/terminalTheme";
+import { useAssetDiscovery } from "../hooks/useAssetDiscovery";
 
 interface CommandItem {
   id: string;
@@ -35,6 +36,7 @@ export default function CommandPaletteModal({
   onSelectSymbol,
 }: CommandPaletteModalProps) {
   const [query, setQuery] = useState("");
+  const discovery = useAssetDiscovery(query, isOpen && !query.startsWith("/"));
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [tacticalSetups, setTacticalSetups] = useState<TradeSetupSpec[]>([]);
   const [setupsLoading, setSetupsLoading] = useState(false);
@@ -306,8 +308,21 @@ export default function CommandPaletteModal({
       });
     }
 
+    // Provider suggestions do not depend on catalog membership or price history.
+    discovery.results.forEach((asset) => {
+      items.push({ id: `discovered-${asset.symbol}`, category: "ASSET",
+        title: `${asset.symbol} — ${asset.name}`,
+        subtitle: `${asset.exchange} · Provider match · Analysis availability checked when opened`,
+        badge: asset.type, icon: "📊", action: () => {
+          if (onSelectSymbol) onSelectSymbol(asset.symbol);
+          else router.push(`/?symbol=${encodeURIComponent(asset.symbol)}`);
+          onClose();
+        } });
+    });
+
     // 4. Assets from Master Catalog
     Object.values(MASTER_ASSET_CATALOG).forEach((asset) => {
+      if (discovery.results.some(match => match.symbol === asset.symbol)) return;
       const reg = SpotPriceRegistry.get(asset.symbol);
       const snap = getPersistedMarketSnapshot(asset.symbol);
       const effectivePrice = (reg?.price && reg.price > 0)
@@ -361,7 +376,7 @@ export default function CommandPaletteModal({
     });
 
     return items;
-  }, [router, onClose, onSelectSymbol, tacticalSetups, setupsLoading, setupsError]);
+  }, [router, onClose, onSelectSymbol, tacticalSetups, setupsLoading, setupsError, discovery.results]);
 
   // Filter commands by query with dynamic ticker navigation support
   const filteredCommands = useMemo(() => {
@@ -383,7 +398,8 @@ export default function CommandPaletteModal({
     }
 
     // If query looks like a ticker symbol, prepend explicit direct routes honoring the ticker parameter
-    if (isTickerQuery && !base.some((b) => b.id === `ticket-${q.toLowerCase()}`)) {
+    if (isTickerQuery && !discovery.results.some(asset => asset.symbol !== q && asset.name.toUpperCase().startsWith(q))
+        && !base.some((b) => b.id === `ticket-${q.toLowerCase()}`)) {
       const dynamicTickerCommands: CommandItem[] = [
         {
           id: `dynamic-setup-${q.toLowerCase()}`,
@@ -414,7 +430,7 @@ export default function CommandPaletteModal({
     }
 
     return base;
-  }, [allCommands, query, router, onClose]);
+  }, [allCommands, query, router, onClose, discovery.results]);
 
   // Reset selected index if results change
   useEffect(() => {
