@@ -2,19 +2,19 @@
   "control_id": "RQ-09",
   "name": "Four-Way Cross-Platform Compatibility",
   "status": "PASS",
-  "start_time": "2026-11-20T01:24:51.661088+00:00",
-  "end_time": "2026-11-20T01:24:52.498912+00:00",
-  "duration_sec": 0.81,
-  "candidate_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+  "start_time": "2026-11-23T15:52:09.996322+00:00",
+  "end_time": "2026-11-23T15:52:10.627112+00:00",
+  "duration_sec": 0.607,
+  "candidate_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+  "source_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+  "execution_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+    "source_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+    "execution_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -139,7 +139,7 @@
   ],
   "evidence_digests": {
     "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-    "scripts/release/rq_compatibility_results.json": "839df496a34f5667d8ae2b46c6441eebc64df12851f4d04507e70a47d9740ac0"
+    "scripts/release/rq_compatibility_results.json": "80ffe6de3d6d33b1a272b2b3acb6b14ccce55dc6126a361b1dba37127210da2d"
   },
   "errors": [],
   "metadata": {
@@ -152,5 +152,5 @@
     "harness_version": "2.2.0-D074A4",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "238b7d10a08de7184feb642cce20878a2c098dd7653db3add940bf620158af12"
+  "receipt_digest": "a5b3d4b6d52bb9b1979da6843382d4431c5db9e6c3fcf0b91c898bf5c20fdcba"
 }

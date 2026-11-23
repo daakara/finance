@@ -1,18 +1,18 @@
 {
   "record_id": "ARX_RQ08_PROVENANCE_RECORD",
   "policy_version": "2.2.0-D074A4",
-  "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "head_commit_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "tree_sha": "1ce6e943ff7f12f1d4ce959327b3896cf2de588e",
+  "source_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+  "execution_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+  "head_commit_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+  "tree_sha": "7216db89cc598876217b4a08f5f1aba464447f0f",
   "manifest_path": "scripts/release/release_manifest.json",
-  "manifest_sha256": "9390ebf8f888eccec5171c55086b5a80b9d0c60d143c933573fc7dc3795d1cc3",
+  "manifest_sha256": "c4007deec52606e96a36ac21bd60cf6a088264bd0cc6a103a17e34b2ee7d05e4",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+    "source_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
+    "execution_sha": "5962388450a937d8f516a4fc63c7a76c3fbe146b",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -20,14 +20,14 @@
     "qualification_policy_version": "2.2.0-D074A4"
   },
   "stage_receipt_digests": {
-    "rq01_receipt.json": "ff51c1a6c540b28d99679c3fdc943da04763dafc8cdb97e99ac11febc73683b8",
-    "rq02_receipt.json": "adaaeb16c3fb68ed22c6de67a50bb00d18c4fd534d1a1426579d961fb5d10131",
-    "rq03_receipt.json": "45f265f28361a610ca949b4dd452e1872f3a7431689548f84a37a6b470f08f9a",
-    "rq04_receipt.json": "006c065337692c9d2a47d359401e5dce5008a74e8615d065800661a6f93a9b2d",
-    "rq05_receipt.json": "771010243b9ad4fb69460545323e09cdb74455885fe792535e9b7f5c6ed297c9",
-    "rq06_receipt.json": "2e7200e5ba805bdb6572c15be1d6b02b80424e3687b209576e4170ec529b0e02",
-    "rq07_receipt.json": "d03a4e39ffd4938cb9dc9498f04a8684891c14506c2dcce7debd3aa79d9eaa9a"
+    "rq01_receipt.json": "8318590915f665a15197e6f217b49848b2a209b693849619818afdfcb77207a3",
+    "rq02_receipt.json": "61b5e1fded6f7a1eba27e13ddeb98f5e408c04badff710b3937c6e57dcf8e2b9",
+    "rq03_receipt.json": "d9cb0ea7178c323f1a290b09a5015f5574d5a71e8526be7fbb0a0b1c3f25f66f",
+    "rq04_receipt.json": "01c0d88786b1c4f1416ec8636421911093ef5ca3830fc0ec7a3a78c66e2a3d57",
+    "rq05_receipt.json": "ef795ff0890a6e8080176e6c740344cddc0f8ca710193c74c28e5723546efe81",
+    "rq06_receipt.json": "6846ac813d679206120af058e9eafb2fea3142068bab8ce9035f4f1e8483ef23",
+    "rq07_receipt.json": "fcb84ccfdaa3fc41ce764f57cc8d698cb176144e6690066e29240665a40dca75"
   },
-  "verification_timestamp": "2026-11-20T01:24:51.541371+00:00",
+  "verification_timestamp": "2026-11-23T15:52:09.864828+00:00",
   "authoritative_target": "release/production"
 }
