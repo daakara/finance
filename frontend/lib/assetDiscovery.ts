@@ -11,6 +11,14 @@ export interface DiscoveredAsset {
 export const DISCOVERY_SYMBOL = /^[A-Z0-9^][A-Z0-9.^=_-]{0,15}$/;
 const TYPES = new Set(["EQUITY", "ETF", "CRYPTOCURRENCY", "INDEX", "CURRENCY", "FUTURE", "MUTUALFUND"]);
 
+export function resolveDiscoveredSymbol(query: string, results: DiscoveredAsset[]): string | null {
+  const q = query.trim().toUpperCase();
+  const exact = results.find(asset => asset.symbol === q);
+  if (exact) return exact.symbol;
+  const names = results.filter(asset => asset.name.toUpperCase().startsWith(q));
+  return names.length === 1 ? names[0].symbol : null;
+}
+
 export function normalizeDiscoveryResults(payload: unknown): DiscoveredAsset[] {
   const quotes = (payload as { quotes?: unknown })?.quotes;
   if (!Array.isArray(quotes)) throw new Error("Invalid discovery response");

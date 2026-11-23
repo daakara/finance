@@ -10,7 +10,7 @@ import { prefetchAssetAnalytics, SpotPriceRegistry } from "../lib/api";
 import { resolveAssetAlias } from "../lib/assetRegistry";
 import { getPersistedMarketSnapshot } from "../lib/marketDatabase";
 import { useAssetDiscovery } from "../hooks/useAssetDiscovery";
-import { DISCOVERY_SYMBOL } from "../lib/assetDiscovery";
+import { DISCOVERY_SYMBOL, resolveDiscoveredSymbol } from "../lib/assetDiscovery";
 
 export default function UniversalOmniSearch() {
   const router = useRouter();
@@ -114,9 +114,10 @@ export default function UniversalOmniSearch() {
     if (cleanQ) {
       if (aliasMatch) {
         handleSelectTicker(aliasMatch.canonicalTicker);
-      } else if (discovery.results.length === 1 &&
-                 (discovery.results[0].symbol === cleanQ || discovery.results[0].name.toUpperCase().startsWith(cleanQ))) {
-        handleSelectTicker(discovery.results[0].symbol);
+      } else if (resolveDiscoveredSymbol(cleanQ, discovery.results)) {
+        handleSelectTicker(resolveDiscoveredSymbol(cleanQ, discovery.results)!);
+      } else if (discovery.results.length > 0) {
+        return; // Ambiguous company matches require explicit selection.
       } else if (DISCOVERY_SYMBOL.test(cleanQ)) {
         handleSelectTicker(cleanQ);
       }

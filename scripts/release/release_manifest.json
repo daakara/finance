@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "e105988576637768035946fe548e7343daaf7656",
+  "release_candidate_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
   "total_files": 41,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -10,7 +10,7 @@
       "sha256": "6d7b45380fc7525cf36082eb3fc0f86aa9a3888f46fac7fcf237083596a678a3",
       "size_bytes": 889,
       "originating_pr_number": 323,
-      "originating_commit": "e105988576637768035946fe548e7343daaf7656",
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     ".gitignore": {
@@ -130,7 +130,7 @@
       "sha256": "294706e925213def9f534d4b2229efd83ea103e2e66ec4f2ea275d237770787d",
       "size_bytes": 23836,
       "originating_pr_number": 323,
-      "originating_commit": "e105988576637768035946fe548e7343daaf7656",
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     "frontend/components/CompositeConvictionCard.tsx": {
@@ -151,10 +151,10 @@
     },
     "frontend/components/UniversalOmniSearch.tsx": {
       "operation": "M",
-      "sha256": "022ea881eee699f648224943d233fece0e742b0852ff7e1520f3ae11c3839d4c",
-      "size_bytes": 17709,
+      "sha256": "310604a6d93324cdbb96d144de4defa861f6a1d567b41231b3e0a91832f0066d",
+      "size_bytes": 17777,
       "originating_pr_number": 323,
-      "originating_commit": "e105988576637768035946fe548e7343daaf7656",
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     "frontend/components/WhyInspectModal.tsx": {
@@ -170,15 +170,15 @@
       "sha256": "05be8233b8cb768c9a9a977615b0b4d2e5cce88f618fad103c3b5148da9eb2d9",
       "size_bytes": 2063,
       "originating_pr_number": 323,
-      "originating_commit": "e105988576637768035946fe548e7343daaf7656",
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     "frontend/functions/api/assets/search.ts": {
       "operation": "A",
-      "sha256": "ec06e0d95880661dc14d064ce1cfc808cec0eef5af0da311812d2de94535330b",
-      "size_bytes": 1810,
+      "sha256": "7ce4306d2e4f5c46fe438c7d3b6f4544efc3d9ad5ba9759f31c3caacdc5f6488",
+      "size_bytes": 1887,
       "originating_pr_number": 323,
-      "originating_commit": "e105988576637768035946fe548e7343daaf7656",
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     "frontend/hooks/__tests__/useAssetDiscovery.test.tsx": {
@@ -186,7 +186,7 @@
       "sha256": "8b6d75900f6900f87ad5fca3a395c6302420a73c29911c14d285a155b06b2765",
       "size_bytes": 2648,
       "originating_pr_number": 323,
-      "originating_commit": "e105988576637768035946fe548e7343daaf7656",
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     "frontend/hooks/useAssetDiscovery.ts": {
@@ -194,15 +194,15 @@
       "sha256": "fc766977a08b3adf32a11569a9f3f36239759de299a89c85fb5fcd0c2a3c10dc",
       "size_bytes": 1458,
       "originating_pr_number": 323,
-      "originating_commit": "e105988576637768035946fe548e7343daaf7656",
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     "frontend/lib/__tests__/assetDiscovery.test.ts": {
       "operation": "A",
-      "sha256": "9130d869851d305e66acc3248c71cdedbe96d7d8d98a566115be39b3a2c8a4b1",
-      "size_bytes": 4059,
+      "sha256": "fe699dfc0cbfa14ad2ba0c8189990d2efe8c66930ae6bcd594ec673a1822b861",
+      "size_bytes": 5276,
       "originating_pr_number": 323,
-      "originating_commit": "e105988576637768035946fe548e7343daaf7656",
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     "frontend/lib/api.ts": {
@@ -215,10 +215,10 @@
     },
     "frontend/lib/assetDiscovery.ts": {
       "operation": "A",
-      "sha256": "5facc4093c7e5027a72a26868f6aaca7fcd788cce873c3a6a5ff75b9eb75bc0c",
-      "size_bytes": 2235,
+      "sha256": "71c0f5df07107671f1346278e3d8f379de72fe3f2fe17b3f1b9fc57a432511e4",
+      "size_bytes": 2606,
       "originating_pr_number": 323,
-      "originating_commit": "e105988576637768035946fe548e7343daaf7656",
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     "frontend/lib/evidenceDomains.ts": {

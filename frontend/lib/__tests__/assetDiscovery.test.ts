@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { normalizeDiscoveryResults, discoverAssets } from "../assetDiscovery";
+import { normalizeDiscoveryResults, discoverAssets, resolveDiscoveredSymbol } from "../assetDiscovery";
 import { onRequestGet } from "../../functions/api/assets/search";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -21,6 +21,15 @@ describe("provider-backed discovery without analytics prerequisites", () => {
   });
   it("does not turn empty provider results into an error", () => {
     expect(normalizeDiscoveryResults({ quotes: [] })).toEqual([]);
+  });
+  it("resolves a company name among related funds, but never guesses ambiguous names", () => {
+    const matches = normalizeDiscoveryResults({ quotes: [
+      { ...quote, symbol: "ANT", longname: "Anthropic, PBC" },
+      { ...quote, symbol: "AIL", longname: "GraniteShares 2x Long Anthropic Daily ETF" },
+    ] });
+    expect(resolveDiscoveredSymbol("Anthropic", matches)).toBe("ANT");
+    expect(resolveDiscoveredSymbol("AIL", matches)).toBe("AIL");
+    expect(resolveDiscoveredSymbol("Anthropic", [...matches, { ...matches[0], symbol: "OTHER" }])).toBeNull();
   });
   it("uses one fixed upstream request and never forwards client credentials", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ quotes: [quote] })));
