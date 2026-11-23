@@ -4,7 +4,7 @@ import { useAssetDiscovery } from "../useAssetDiscovery";
 import { discoverAssets } from "../../lib/assetDiscovery";
 vi.mock("../../lib/assetDiscovery", () => ({ discoverAssets: vi.fn() }));
 const mock = vi.mocked(discoverAssets);
-const match = { symbol: "ANT", name: "Anthropic PBC", exchange: "NASDAQ", type: "EQUITY", source: "YAHOO_FINANCE_SEARCH" as const, identityVerified: false as const };
+const match = { symbol: "ANT", name: "Anthropic PBC", exchange: "NASDAQ", type: "EQUITY", source: "ALPACA_ASSET_DIRECTORY" as const, identityVerified: false as const };
 beforeEach(() => { vi.useFakeTimers(); mock.mockReset(); });
 afterEach(() => vi.useRealTimers());
 describe("bounded live asset search", () => {

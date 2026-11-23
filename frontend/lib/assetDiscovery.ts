@@ -4,12 +4,12 @@ export interface DiscoveredAsset {
   name: string;
   exchange: string;
   type: string;
-  source: "YAHOO_FINANCE_SEARCH";
+  source: "ALPACA_ASSET_DIRECTORY";
   identityVerified: false;
 }
 
 export const DISCOVERY_SYMBOL = /^[A-Z0-9^][A-Z0-9.^=_-]{0,15}$/;
-const TYPES = new Set(["EQUITY", "ETF", "CRYPTOCURRENCY", "INDEX", "CURRENCY", "FUTURE", "MUTUALFUND"]);
+const TYPES = new Set(["US_EQUITY", "EQUITY", "ETF", "CRYPTOCURRENCY", "INDEX", "CURRENCY", "FUTURE", "MUTUALFUND"]);
 
 export function resolveDiscoveredSymbol(query: string, results: DiscoveredAsset[]): string | null {
   const q = query.trim().toUpperCase();
@@ -33,7 +33,7 @@ export function normalizeDiscoveryResults(payload: unknown): DiscoveredAsset[] {
     seen.add(symbol);
     matches.push({ symbol, name: name.slice(0, 160), type: quoteType,
       exchange: typeof exchDisp === "string" ? exchDisp.slice(0, 60) : typeof exchange === "string" ? exchange.slice(0, 60) : "Not supplied",
-      source: "YAHOO_FINANCE_SEARCH", identityVerified: false });
+      source: "ALPACA_ASSET_DIRECTORY", identityVerified: false });
     if (matches.length === 8) break;
   }
   return matches;

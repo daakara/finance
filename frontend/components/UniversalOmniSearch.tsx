@@ -228,7 +228,7 @@ export default function UniversalOmniSearch() {
               )}
               {discovery.results.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs text-slate-300 px-1">Live asset matches · analysis availability checked when opened</p>
+                  <p className="text-xs text-slate-300 px-1">Live US-listed asset matches · analysis availability checked when opened</p>
                   {discovery.results.map((item) => (
                     <button key={`discovery-${item.symbol}`} type="button"
                       onClick={() => handleSelectTicker(item.symbol)}

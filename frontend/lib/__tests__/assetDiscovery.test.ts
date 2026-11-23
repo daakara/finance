@@ -9,7 +9,7 @@ describe("provider-backed discovery without analytics prerequisites", () => {
   it("discovers an unregistered listing without price/history/scoring fields", () => {
     expect(normalizeDiscoveryResults({ quotes: [quote] })).toEqual([{
       symbol: "NEWCO", name: quote.longname, type: "EQUITY", exchange: "NASDAQ",
-      source: "YAHOO_FINANCE_SEARCH", identityVerified: false,
+      source: "ALPACA_ASSET_DIRECTORY", identityVerified: false,
     }]);
   });
   it("rejects malformed symbols/types, deduplicates and bounds results", () => {
@@ -32,7 +32,7 @@ describe("provider-backed discovery without analytics prerequisites", () => {
     expect(resolveDiscoveredSymbol("Anthropic", [...matches, { ...matches[0], symbol: "OTHER" }])).toBeNull();
   });
   it("uses one fixed upstream request and never forwards client credentials", async () => {
-    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ quotes: [quote] })));
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: "AVAILABLE", source: "ALPACA_ASSET_DIRECTORY", results: [{ symbol: quote.symbol, name: quote.longname, type: quote.quoteType, exchange: quote.exchDisp }] })));
     vi.stubGlobal("fetch", fetcher);
     const response = await onRequestGet({ request: new Request("https://arxterminal.com/api/assets/search?q=Newly%20Listed", {
       headers: { Authorization: "secret", Cookie: "private" },
@@ -40,9 +40,9 @@ describe("provider-backed discovery without analytics prerequisites", () => {
     expect(response.status).toBe(200);
     expect(fetcher).toHaveBeenCalledTimes(1);
     const [url, options] = fetcher.mock.calls[0];
-    expect(url.origin).toBe("https://query1.finance.yahoo.com");
+    expect(url.origin).toBe("https://web-production-e370b.up.railway.app");
     expect(url.searchParams.get("q")).toBe("Newly Listed");
-    expect(url.searchParams.get("newsCount")).toBe("0");
+    expect(url.pathname).toBe("/api/v1/market/assets/search");
     expect(options.redirect).toBe("manual");
     expect(options.headers).toEqual({ Accept: "application/json" });
     expect((await response.json()).results[0].identityVerified).toBe(false);
