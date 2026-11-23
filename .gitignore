@@ -44,6 +44,9 @@ data/*
 !data/__init__.py
 !analyst_dashboard/data/
 !analyst_dashboard/data/paper_trading_ledger.json
+# Unignore canary evidence packages
+!data/canary/
+!data/canary/**
 # Unignore NVDA Sourced Fundamentals raw evidence & custody manifest
 !data/research/
 data/research/*
