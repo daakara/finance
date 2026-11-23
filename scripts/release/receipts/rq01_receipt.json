@@ -1,20 +1,20 @@
 {
   "control_id": "RQ-01",
   "name": "Candidate Identity & Lineage",
-  "status": "FAIL",
-  "start_time": "2026-11-21T06:53:19.940991+00:00",
-  "end_time": "2026-11-21T06:53:20.091974+00:00",
-  "duration_sec": 0.151,
-  "candidate_sha": "178229bda34e2078864034e69793aaf601168341",
-  "source_sha": "178229bda34e2078864034e69793aaf601168341",
-  "execution_sha": "178229bda34e2078864034e69793aaf601168341",
+  "status": "PASS",
+  "start_time": "2026-11-23T15:35:52.474216+00:00",
+  "end_time": "2026-11-23T15:35:52.617660+00:00",
+  "duration_sec": 0.143,
+  "candidate_sha": "9f5cc35a0bc8268359cd2403713bb0175d6930a3",
+  "source_sha": "9f5cc35a0bc8268359cd2403713bb0175d6930a3",
+  "execution_sha": "9f5cc35a0bc8268359cd2403713bb0175d6930a3",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "178229bda34e2078864034e69793aaf601168341",
-    "execution_sha": "178229bda34e2078864034e69793aaf601168341",
+    "source_sha": "9f5cc35a0bc8268359cd2403713bb0175d6930a3",
+    "execution_sha": "9f5cc35a0bc8268359cd2403713bb0175d6930a3",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -24,12 +24,12 @@
   "assertions": [
     {
       "assertion": "HEAD is valid 40-char hex SHA",
-      "observed": "178229bda34e2078864034e69793aaf601168341",
+      "observed": "9f5cc35a0bc8268359cd2403713bb0175d6930a3",
       "passed": true
     },
     {
       "assertion": "Base anchor exists in repo history",
-      "observed": "041ab6e7930037531853362b7b06139e9a54cb1c",
+      "observed": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
       "passed": true
     },
     {
@@ -45,11 +45,11 @@
     {
       "assertion": "Candidate SHA incorporates authorized candidate",
       "observed": {
-        "candidate_sha": "178229bda34e2078864034e69793aaf601168341",
-        "expected": "e9db1980a3bf6bfcb0a969be4b46c6ffc6a2e4ba",
-        "ancestor": false
+        "candidate_sha": "9f5cc35a0bc8268359cd2403713bb0175d6930a3",
+        "expected": "487ee39d9ca710f98909ea6a96bececa5378008a",
+        "ancestor": true
       },
-      "passed": false
+      "passed": true
     }
   ],
   "evidence_paths": [
@@ -58,13 +58,11 @@
   "evidence_digests": {
     ".github/workflows/release-qualification.yml": "1ee5cb46b349c2b8cd7fd209cc969c8f7d5d949ba86c5fc6e4c178c8b7722d4e"
   },
-  "errors": [
-    "Candidate 178229bda34e2078864034e69793aaf601168341 does not incorporate authorized candidate e9db1980a3bf6bfcb0a969be4b46c6ffc6a2e4ba."
-  ],
+  "errors": [],
   "metadata": {
     "is_merge_commit": false,
-    "checked_out_head": "178229bda34e2078864034e69793aaf601168341",
+    "checked_out_head": "9f5cc35a0bc8268359cd2403713bb0175d6930a3",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "56b3805f5064dbf80bd12b8912f517e7cdd2b42da9da80f68a8b986d7cfb8e59"
+  "receipt_digest": "596df3380603b88adb17b6523299b17d07fbb44808432634dec38e41a3646742"
 }
