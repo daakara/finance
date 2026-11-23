@@ -91,10 +91,14 @@ def read_capture(root, cohort_id):
     return binding, records
 
 
-def validate_series(item, expected, as_of):
+def validate_series(item, expected, as_of, symbol=None, artifacts_dir=None):
     """Validate supplied, retained provenance assertions and market data integrity."""
     if not isinstance(item, dict) or not item.get('provider'):
         raise ValueError('Missing price provider')
+
+    item_symbol = symbol or item.get('symbol')
+    if symbol and item.get('symbol') and item['symbol'].upper() != symbol.upper():
+        raise ValueError(f"Symbol mismatch in series item: expected {symbol}, got {item['symbol']}")
 
     # If raw response bytes are provided, cryptographically verify and normalize them
     if 'rawResponseBytes' in item or 'rawBytes' in item:
@@ -105,8 +109,8 @@ def validate_series(item, expected, as_of):
         if not raw_sha:
             raise ValueError('Missing rawResponseSha256 for provided raw response bytes')
         verify_raw_response_bytes(raw_b, raw_sha)
-        if item.get('provider') == 'YAHOO_FINANCE' and 'symbol' in item:
-            derived_bars = normalize_yahoo_chart_bars(raw_b, item['symbol'], as_of=as_of)
+        if item.get('provider') == 'YAHOO_FINANCE' and item_symbol:
+            derived_bars = normalize_yahoo_chart_bars(raw_b, item_symbol, as_of=as_of)
             if item.get('bars') and derived_bars != item['bars']:
                 raise ValueError('NORMALIZATION_DESYNC: normalized bars do not match raw response bytes')
     elif 'rawResponseSha256' in item:
@@ -116,12 +120,27 @@ def validate_series(item, expected, as_of):
 
     proof = item.get('adjustmentEvidence', {})
     require_auth = (item.get('evidenceOrigin') == 'AUTHENTIC_FORWARD' or 'corporateActionReference' in proof)
+    raw_ca = (
+        item.get('corporateActionRawBytes')
+        or item.get('corporateActionBytes')
+        or (proof.get('corporateActionReference') and (
+            proof['corporateActionReference'].get('rawArtifactBytes')
+            or proof['corporateActionReference'].get('rawBytes')
+        ))
+    )
     try:
-        verify_corporate_action_evidence(proof, expected, require_authoritative_ref=require_auth)
+        verify_corporate_action_evidence(
+            proof,
+            expected,
+            require_authoritative_ref=require_auth,
+            symbol=item_symbol,
+            raw_artifact_bytes=raw_ca,
+            artifacts_dir=artifacts_dir,
+        )
     except (UnverifiedAdjustmentEvidenceError, UnsupportedSplitAdjustmentError, DividendAdjustedDataError) as e:
         raise ValueError(str(e))
     except ValueError as e:
-        if 'UNSUPPORTED_ADJUSTMENT_BASIS' in str(e) or 'cash dividends' in str(e):
+        if 'UNSUPPORTED_ADJUSTMENT_BASIS' in str(e) or 'cash dividends' in str(e) or 'UNRESOLVED_ADJUSTMENT_PROVENANCE' in str(e):
             raise ValueError('UNRESOLVED_ADJUSTMENT_PROVENANCE')
         raise
 
@@ -177,6 +196,7 @@ def settle_batch(raw_batch: bytes, *, cohort_id: str, forward_root: Path,
         directory = root / cohort_id
         ledger_path = directory / 'settlement_ledger.json'
         inputs_dir = directory / 'settlement_inputs'
+        raw_responses_dir = directory / 'raw_responses'
         validate_forward_write_path(str(ledger_path), cohort_id, str(root))
         validate_forward_write_path(str(inputs_dir), cohort_id, str(root))
         previous = None
@@ -205,7 +225,10 @@ def settle_batch(raw_batch: bytes, *, cohort_id: str, forward_root: Path,
         series = batch.get('series', {})
         if not isinstance(series, dict) or set(series) - set(json.loads(UNIVERSE_PATH.read_bytes())['symbols']):
             raise ValueError('Invalid price series universe')
-        prices = {s: validate_series(series.get(s), dates, as_of) for s, dates in expected.items()}
+        prices = {
+            s: validate_series(series.get(s), dates, as_of, symbol=s, artifacts_dir=raw_responses_dir)
+            for s, dates in expected.items()
+        }
         if previous:
             # An expanded snapshot may add bars, but cannot revise any retained history/provider.
             for s, old in previous['priceHistory'].items():
@@ -252,20 +275,60 @@ def settle_batch(raw_batch: bytes, *, cohort_id: str, forward_root: Path,
                 entry['timezone'] = series[s]['timezone']
             price_history[s] = entry
 
-        evidence_origin = batch.get('evidenceOrigin', 'OFFLINE_INPUT')
-        evidence_auth = (
-            'AUTHENTIC_VERIFIED'
-            if evidence_origin == 'AUTHENTIC_FORWARD'
-            else 'RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED'
-        )
+        candidate_origin = records[0]['evidenceOrigin'] if records else 'OFFLINE_INPUT'
+        if batch.get('evidenceOrigin') == 'AUTHENTIC_FORWARD' and candidate_origin == 'OFFLINE_INPUT':
+            raise ValueError(
+                'CANNOT_UPGRADE_OFFLINE_DECISIONS: Authentic prices cannot upgrade OFFLINE_INPUT candidate decisions to authentic forward observations'
+            )
 
-        state = {'schemaVersion': '1.0', 'binding': binding, 'asOfSession': as_of,
-                 'evidenceOrigin': evidence_origin, 'eligibleForOpportunityCapture': False,
-                 'adjustmentEvidenceAuthority': evidence_auth,
-                 'results': results, 'reservedEntrySlots': len(admitted),
-                 'uncertainEntryReservations': uncertain_count,
-                 'triggeredEntries': len(admitted) - uncertain_count,
-                 'priceHistory': price_history}
+        all_series_authentic_prices = True
+        all_series_authentic_ca = True
+
+        for s in expected:
+            s_data = series.get(s, {})
+            proof = s_data.get('adjustmentEvidence', {})
+            corp_ref = proof.get('corporateActionReference') or s_data.get('corporateActionReference')
+            has_raw_prices = (
+                ('rawResponseBytes' in s_data or 'rawBytes' in s_data or (raw_responses_dir / f"{s_data.get('rawResponseSha256')}.raw").exists())
+                and bool(s_data.get('rawResponseSha256'))
+            )
+            if not (s_data.get('provider') == 'YAHOO_FINANCE' and has_raw_prices):
+                all_series_authentic_prices = False
+
+            ca_bytes_present = bool(
+                corp_ref and (
+                    corp_ref.get('rawArtifactBytes') or corp_ref.get('rawBytes') or
+                    s_data.get('corporateActionRawBytes') or s_data.get('corporateActionBytes') or
+                    (raw_responses_dir / f"{corp_ref.get('sourceSha256')}.ca.raw").exists() or
+                    (raw_responses_dir / f"{corp_ref.get('sourceSha256')}.raw").exists()
+                )
+            )
+            if not (corp_ref and ca_bytes_present):
+                all_series_authentic_ca = False
+
+        price_source_provenance = 'AUTHENTIC_RETAINED_SOURCE' if all_series_authentic_prices else 'OFFLINE_FIXTURE'
+        adj_authority = 'AUTHENTIC_CORPORATE_ACTION_VERIFIED' if all_series_authentic_ca else 'RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED'
+
+        if batch.get('priceSourceProvenance') == 'AUTHENTIC_RETAINED_SOURCE' and not all_series_authentic_prices:
+            raise ValueError('AUTHENTIC_PRICE_PROVENANCE_MISMATCH: Batch asserted AUTHENTIC_RETAINED_SOURCE but price series lacked verified raw response bytes')
+
+        state = {
+            'schemaVersion': '1.0',
+            'binding': binding,
+            'asOfSession': as_of,
+            'candidateEvidenceOrigin': candidate_origin,
+            'candidateOpportunityEligible': False,
+            'priceSourceProvenance': price_source_provenance,
+            'adjustmentEvidenceAuthority': adj_authority,
+            'activationState': 'DISABLED',
+            'eligibleForOpportunityCapture': False,
+            'evidenceOrigin': candidate_origin,
+            'results': results,
+            'reservedEntrySlots': len(admitted),
+            'uncertainEntryReservations': uncertain_count,
+            'triggeredEntries': len(admitted) - uncertain_count,
+            'priceHistory': price_history,
+        }
         if previous and all(previous.get(k) == v for k, v in state.items()):
             return {'written': 0, 'totalCandidates': len(records), 'reservedEntrySlots': len(admitted)}
         old_results = previous['results'] if previous else {}
@@ -279,28 +342,54 @@ def settle_batch(raw_batch: bytes, *, cohort_id: str, forward_root: Path,
         state['stateSha256'] = digest(state)
 
         # Retain raw response bytes into raw_responses/ if provided
-        raw_responses_dir = directory / 'raw_responses'
         for s, s_data in series.items():
-            if isinstance(s_data, dict) and ('rawResponseBytes' in s_data or 'rawBytes' in s_data) and 'rawResponseSha256' in s_data:
-                r_sha = s_data['rawResponseSha256']
-                r_b = s_data.get('rawResponseBytes') or s_data.get('rawBytes')
-                if isinstance(r_b, str):
-                    r_b = r_b.encode('utf-8')
-                raw_file = raw_responses_dir / f"{r_sha}.raw"
-                meta_file = raw_responses_dir / f"{r_sha}.meta.json"
-                validate_forward_write_path(str(raw_file), cohort_id, str(root))
-                validate_forward_write_path(str(meta_file), cohort_id, str(root))
-                safe_write_forward_pilot_file(str(raw_file), cohort_id, r_b, str(root))
-                meta_payload = {
-                    'symbol': s,
-                    'provider': s_data.get('provider'),
-                    'rawSha256': r_sha,
-                    'retrievalTimestampUtc': s_data.get('retrievalTimestampUtc'),
-                    'timezone': s_data.get('timezone', 'America/New_York'),
-                    'byteLength': len(r_b),
-                    'targetUrl': s_data.get('targetUrl'),
-                }
-                safe_write_forward_pilot_file(str(meta_file), cohort_id, canonical(meta_payload) + '\n', str(root))
+            if isinstance(s_data, dict):
+                if ('rawResponseBytes' in s_data or 'rawBytes' in s_data) and 'rawResponseSha256' in s_data:
+                    r_sha = s_data['rawResponseSha256']
+                    r_b = s_data.get('rawResponseBytes') or s_data.get('rawBytes')
+                    if isinstance(r_b, str):
+                        r_b = r_b.encode('utf-8')
+                    raw_file = raw_responses_dir / f"{r_sha}.raw"
+                    meta_file = raw_responses_dir / f"{r_sha}.meta.json"
+                    validate_forward_write_path(str(raw_file), cohort_id, str(root))
+                    validate_forward_write_path(str(meta_file), cohort_id, str(root))
+                    safe_write_forward_pilot_file(str(raw_file), cohort_id, r_b, str(root))
+                    meta_payload = {
+                        'symbol': s,
+                        'provider': s_data.get('provider'),
+                        'rawSha256': r_sha,
+                        'retrievalTimestampUtc': s_data.get('retrievalTimestampUtc'),
+                        'timezone': s_data.get('timezone', 'America/New_York'),
+                        'byteLength': len(r_b),
+                        'targetUrl': s_data.get('targetUrl'),
+                    }
+                    safe_write_forward_pilot_file(str(meta_file), cohort_id, canonical(meta_payload) + '\n', str(root))
+
+                proof = s_data.get('adjustmentEvidence') or {}
+                corp_ref = proof.get('corporateActionReference') or s_data.get('corporateActionReference')
+                ca_bytes = (
+                    (corp_ref and (corp_ref.get('rawArtifactBytes') or corp_ref.get('rawBytes')))
+                    or s_data.get('corporateActionRawBytes')
+                    or s_data.get('corporateActionBytes')
+                )
+                if corp_ref and ca_bytes and 'sourceSha256' in corp_ref:
+                    ca_sha = corp_ref['sourceSha256']
+                    if isinstance(ca_bytes, str):
+                        ca_bytes = ca_bytes.encode('utf-8')
+                    ca_file = raw_responses_dir / f"{ca_sha}.ca.raw"
+                    ca_meta_file = raw_responses_dir / f"{ca_sha}.ca.meta.json"
+                    validate_forward_write_path(str(ca_file), cohort_id, str(root))
+                    validate_forward_write_path(str(ca_meta_file), cohort_id, str(root))
+                    safe_write_forward_pilot_file(str(ca_file), cohort_id, ca_bytes, str(root))
+                    ca_meta_payload = {
+                        'symbol': s,
+                        'sourceType': corp_ref.get('sourceType'),
+                        'sourceSha256': ca_sha,
+                        'coverageStart': corp_ref.get('coverageStart'),
+                        'coverageEnd': corp_ref.get('coverageEnd'),
+                        'byteLength': len(ca_bytes),
+                    }
+                    safe_write_forward_pilot_file(str(ca_meta_file), cohort_id, canonical(ca_meta_payload) + '\n', str(root))
 
         raw_path = inputs_dir / (raw_sha + '.json')
         safe_write_forward_pilot_file(str(raw_path), cohort_id, raw_batch.decode('utf-8'), str(root))

@@ -97,13 +97,16 @@ flowchart LR
     - **Capture Horizon:** Exactly **20 capture sessions** (trading days).
     - **Evaluated Volume:** 20 sessions × 10 symbols = **exactly 200 evaluation records** ($D_1$ denominator).
     - **Separate Entry Cap:** Cap simulated triggered entries at a maximum of **20 triggered trades** ($D_3 \le 20$). If 20 entries trigger before Session 20, further candidate setups are marked `SKIPPED_CAP_REACHED` for simulation purposes while candidate evaluation logging continues.
-    - **Capture Trigger:** Daily post-market run at **16:15 ET** (after market close, before next-session open).
+    - **Execution Model:** Begin with an **operator-triggered systematic ten-symbol batch** per completed trading session (manual CLI invocation after market close 16:15 ET, before next-session open -12h).
+    - **Scheduling Decoupling:** Automated background scheduling (daemon, cron, or CI scheduled workflow) is a **later operational choice**, not an initial pilot prerequisite.
+    - **Broker/Execution Holds Preserved:** Maintain `HOLD_EXEC_001=ACTIVE` strictly throughout internal simulation. Zero live or broker-paper order placement.
+    - **Durable Storage Attestation Required:** Require physical storage persistence attestation (`analyst_dashboard.governance.storage.attest_persistent_storage()`, verifying persistent volume mount distinct from container root overlayfs) prior to any operational pilot activation or forward writes.
   - Decision Recording Standards:
     - Record every evaluated symbol: `ACTIONABLE_SETUP`, `VALID_SETUP`, `INSUFFICIENT_DATA`, `EVIDENCE_INCOMPLETE`.
     - Freeze signal plan: spot price, corridor [min, max], stop floor, take profit targets, confluence score, engine SHA (`7ad4459...`), and timestamp UTC.
     - Sampling Mode: `samplingMode = "SYSTEMATIC"` (`SCHEDULED_UNIVERSE_SCAN`). Only systematic evaluations enter the forward performance denominator.
 - **Dependencies & Accountable Owner:**
-  - Dependencies: Milestone 1 baseline lock; daily market data snapshot.
+  - Dependencies: Milestone 1 baseline lock; daily market data snapshot; durable storage attestation.
   - Accountable Owner: `daakara`.
 - **Smallest Reviewable PR:**  
   `PR-PT-02: Implement forward cohort candidate capture CLI and frozen universe manifest`.
@@ -112,10 +115,11 @@ flowchart LR
   - **No Cherry-Picking:** All 10 candidates evaluated in each daily cycle are recorded in the capture stream ($D_1$ preserved).
   - **Deterministic ID:** Reuse `compute_decision_id(symbol, cycle_id, engine_sha, decision_schema_version)` from the existing capture engine. Its canonical JSON tuple encoding prevents concatenation ambiguity.
   - **Append-Only:** Capture stream written as immutable JSONL to `data/forward_pilot/capture_stream.jsonl`.
+  - **Storage Durability Attested:** Fails closed if running against unmounted or ephemeral storage without persistent volume attestation.
 - **Rollback / Disable Procedure:** Disable forward capture script; zero web service disruption.
 - **Effort Range & Decision:**
   - Effort: 2–3 engineering days.
-  - Key Decision: Confirm daily capture execution method (operator-dispatched batch script vs. CI schedule).
+  - Key Decision: Operator-triggered systematic batch confirmed; automated scheduling deferred to post-pilot operational phase.
 
 ---
 
@@ -216,9 +220,10 @@ flowchart LR
 - **Planning Boundary:** This roadmap authorizes design and review only. It does **not** authorize activating live background schedulers, placing broker orders, modifying production databases, or altering frozen Contract V1.0.1.
 - **Decoupling from Existing Holds:**
   - `HOLD_SEC_001` (SEC Form 4 Ingestion): **Completely decoupled.** The forward paper-trading pilot uses market price bars and Radar setups, not SEC EDGAR filings.
-  - `HOLD_SCAN_001` (Continuous Scanning): **Preserved.** Continuous background polling remains disabled. The initial CLI is manually invoked against retained inputs; scheduling and live model evaluation remain unactivated.
-  - `HOLD_EXEC_001` (Financial Execution): **Strictly Preserved.** No broker order routing is implemented. All executions are simulated internally.
+  - `HOLD_SCAN_001` (Continuous Scanning): **Preserved.** Continuous background polling remains disabled. The operational pilot begins exclusively with an operator-triggered systematic ten-symbol batch per completed session; background daemon/cron scheduling is deferred as a later operational choice.
+  - `HOLD_EXEC_001` (Financial Execution): **Strictly Preserved.** No broker order routing is implemented. All executions are simulated internally under Contract V1.0.1 rules.
   - `PHASE_3_HOLD` (Autonomous Trading): **Preserved.** Model weights remain frozen; no online learning.
+  - **Storage Attestation Invariant:** Physical persistent volume attestation via `analyst_dashboard.governance.storage.attest_persistent_storage()` is mandatory before any operational candidate capture or settlement execution to prevent ephemeral data loss.
 
 ---
 
@@ -233,8 +238,10 @@ Pilot Configuration:
   Evaluation Volume: 20 sessions × 10 symbols = 200 evaluated records (D1)
   Simulated Entry Cap: Maximum 20 triggered entries (D3 <= 20)
   Settlement Horizon: Up to 44 XNYS trading sessions (allowing session 20 signals full 5d entry + 20d hold)
-  Execution Mode: 100% Internal Simulation (Zero Broker APIs, Zero Capital)
-  Settlement: Daily post-market batch execution at 16:30 ET
+  Execution Mode: 100% Internal Simulation (HOLD_EXEC_001=ACTIVE strictly preserved, zero broker APIs)
+  Trigger Mechanism: Operator-triggered systematic ten-symbol batch (scheduling is a later operational choice)
+  Storage Attestation: Mandatory durable volume attestation (attest_persistent_storage()) before operational use
+  Settlement: Manual offline batch CLI replay (16:30 ET proposed schedule deferred)
   Transaction Friction: 25 bps flat fee per triggered trade
   Storage Location: data/forward_pilot/ (capture_stream.jsonl, settlement_ledger.json, raw_responses/)
 ```

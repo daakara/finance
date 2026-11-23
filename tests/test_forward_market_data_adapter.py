@@ -15,6 +15,7 @@ import json
 import math
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
 import exchange_calendars as xcals
 import pytest
@@ -94,6 +95,41 @@ def get_retained_raw_bytes(symbol: str) -> bytes:
         }
     }
     return json.dumps(payload, separators=(",", ":")).encode("utf-8")
+
+
+def make_ca_artifact(
+    symbol: str = "VOO",
+    source_type: str = "SEC_EDGAR_DISCLOSURE",
+    coverage_start: str = "2026-09-20",
+    coverage_end: str = "2026-11-05",
+    splits: Optional[list] = None,
+    verified_zero_splits: bool = True,
+    has_splits: bool = False,
+) -> Tuple[bytes, str, Dict[str, Any]]:
+    """Generates authentic corporate-action artifact bytes and corroborating reference."""
+    artifact = {
+        "symbol": symbol,
+        "sourceType": source_type,
+        "coverageStart": coverage_start,
+        "coverageEnd": coverage_end,
+        "hasSplits": has_splits,
+        "verifiedZeroSplits": verified_zero_splits,
+        "splits": splits if splits is not None else [],
+    }
+    raw_str = json.dumps(artifact, sort_keys=True)
+    raw_b = raw_str.encode("utf-8")
+    sha = hashlib.sha256(raw_b).hexdigest()
+    ref = {
+        "symbol": symbol,
+        "sourceType": source_type,
+        "sourceSha256": sha,
+        "coverageStart": coverage_start,
+        "coverageEnd": coverage_end,
+        "hasSplits": has_splits,
+        "verifiedZeroSplits": verified_zero_splits,
+        "rawArtifactBytes": raw_str,
+    }
+    return raw_b, sha, ref
 
 
 @pytest.fixture(autouse=True)
@@ -222,23 +258,20 @@ def test_corporate_action_verification_rejects_empty_list_and_field_name_inferen
         verify_corporate_action_evidence(unverified_assertion, expected_sessions, require_authoritative_ref=True)
 
     # Valid authoritative corporate action reference passes
+    ca_b, ca_sha, ca_ref = make_ca_artifact("VOO", coverage_start="2026-09-20", coverage_end="2026-11-05")
     verified_with_ref = {
         **unverified_assertion,
-        "corporateActionReference": {
-            "sourceType": "SEC_EDGAR_DISCLOSURE",
-            "sourceSha256": "c" * 64,
-            "coverageStart": "2026-09-20",
-            "coverageEnd": "2026-11-05",
-            "hasSplits": False,
-            "verifiedZeroSplits": True,
-        },
+        "corporateActionReference": ca_ref,
     }
-    proof = verify_corporate_action_evidence(verified_with_ref, expected_sessions, require_authoritative_ref=True)
+    proof = verify_corporate_action_evidence(
+        verified_with_ref, expected_sessions, require_authoritative_ref=True, symbol="VOO"
+    )
     assert proof["status"] == "VERIFIED"
 
 
 def test_corporate_action_verification_rejects_splits_and_dividends():
     expected_sessions = {"2026-09-25", "2026-09-28"}
+    ca_b, ca_sha, ca_ref = make_ca_artifact("VOO", source_type="EXCHANGE_NOTICE", coverage_start="2026-09-20", coverage_end="2026-10-10")
     base_proof = {
         "status": "VERIFIED",
         "priceBasis": "SPLIT_ADJUSTED_ONLY",
@@ -246,40 +279,33 @@ def test_corporate_action_verification_rejects_splits_and_dividends():
         "splitEvents": [],
         "coverageStart": "2026-09-20",
         "coverageEnd": "2026-10-10",
-        "corporateActionReference": {
-            "sourceType": "EXCHANGE_NOTICE",
-            "sourceSha256": "d" * 64,
-            "coverageStart": "2026-09-20",
-            "coverageEnd": "2026-10-10",
-            "hasSplits": False,
-            "verifiedZeroSplits": True,
-        },
+        "corporateActionReference": ca_ref,
     }
 
     # Cash dividend adjustment rejected
     div_adjusted = copy.deepcopy(base_proof)
     div_adjusted["cashDividendsAdjusted"] = True
     with pytest.raises(DividendAdjustedDataError, match="DIVIDEND_ADJUSTED_DATA_REJECTED"):
-        verify_corporate_action_evidence(div_adjusted, expected_sessions)
+        verify_corporate_action_evidence(div_adjusted, expected_sessions, symbol="VOO")
 
     # Stock split event present rejected (multiplier handling requires qualification)
     split_occurred = copy.deepcopy(base_proof)
     split_occurred["splitEvents"] = [{"date": "2026-09-26", "factor": 2.0}]
     with pytest.raises(UnsupportedSplitAdjustmentError, match="UNSUPPORTED_SPLIT_ADJUSTMENT"):
-        verify_corporate_action_evidence(split_occurred, expected_sessions)
+        verify_corporate_action_evidence(split_occurred, expected_sessions, symbol="VOO")
 
     # Corporate action reference indicating split rejected
     ref_split = copy.deepcopy(base_proof)
     ref_split["corporateActionReference"]["hasSplits"] = True
     ref_split["corporateActionReference"]["verifiedZeroSplits"] = False
     with pytest.raises(UnsupportedSplitAdjustmentError, match="UNSUPPORTED_SPLIT_ADJUSTMENT"):
-        verify_corporate_action_evidence(ref_split, expected_sessions)
+        verify_corporate_action_evidence(ref_split, expected_sessions, symbol="VOO")
 
     # Missing coverage interval rejected
     short_cov = copy.deepcopy(base_proof)
     short_cov["coverageEnd"] = "2026-09-26"
     with pytest.raises(ValueError, match="does not cover required interval"):
-        verify_corporate_action_evidence(short_cov, expected_sessions)
+        verify_corporate_action_evidence(short_cov, expected_sessions, symbol="VOO")
 
 
 # ==============================================================================
@@ -289,6 +315,7 @@ def test_corporate_action_verification_rejects_splits_and_dividends():
 def test_market_data_payload_lifecycle():
     raw_b = get_retained_raw_bytes("VOO")
     raw_sha = hashlib.sha256(raw_b).hexdigest()
+    ca_b, ca_sha, ca_ref = make_ca_artifact("VOO", coverage_start="2026-09-20", coverage_end="2026-11-05")
 
     payload = MarketDataPayload(
         symbol="VOO",
@@ -298,14 +325,8 @@ def test_market_data_payload_lifecycle():
         raw_bytes=raw_b,
         raw_sha256=raw_sha,
         target_url="https://query1.finance.yahoo.com/v8/finance/chart/VOO?...",
-        corporate_action_reference={
-            "sourceType": "SEC_EDGAR_DISCLOSURE",
-            "sourceSha256": "e" * 64,
-            "coverageStart": "2026-09-20",
-            "coverageEnd": "2026-11-05",
-            "hasSplits": False,
-            "verifiedZeroSplits": True,
-        },
+        corporate_action_reference=ca_ref,
+        corporate_action_raw_bytes=ca_b,
         adjustment_evidence={
             "status": "VERIFIED",
             "priceBasis": "SPLIT_ADJUSTED_ONLY",
@@ -392,6 +413,7 @@ def test_end_to_end_retained_raw_responses_to_settlement_ledger(tmp_path):
             norm_bars.append({"date": missing_d, "Open": 100.0, "High": 102.0, "Low": 98.0, "Close": 100.5, "Volume": 100000})
         norm_bars = sorted(norm_bars, key=lambda b: b["date"])
 
+        ca_b, ca_sha, ca_ref = make_ca_artifact(s, coverage_start="2026-09-20", coverage_end="2026-11-05")
         series[s] = {
             "provider": "YAHOO_FINANCE",
             "symbol": s,
@@ -405,18 +427,11 @@ def test_end_to_end_retained_raw_responses_to_settlement_ledger(tmp_path):
                 "priceBasis": "SPLIT_ADJUSTED_ONLY",
                 "cashDividendsAdjusted": False,
                 "splitEvents": [],
-                "sourceSha256": "f" * 64,
+                "sourceSha256": ca_sha,
                 "sourceDescription": f"Verified SEC EDGAR filings for {s}",
                 "coverageStart": "2026-09-20",
                 "coverageEnd": "2026-11-05",
-                "corporateActionReference": {
-                    "sourceType": "SEC_EDGAR_DISCLOSURE",
-                    "sourceSha256": "f" * 64,
-                    "coverageStart": "2026-09-20",
-                    "coverageEnd": "2026-11-05",
-                    "hasSplits": False,
-                    "verifiedZeroSplits": True,
-                },
+                "corporateActionReference": ca_ref,
             },
             "bars": norm_bars,
         }
@@ -425,7 +440,8 @@ def test_end_to_end_retained_raw_responses_to_settlement_ledger(tmp_path):
         "schemaVersion": "1.0",
         "cohortId": cohort_id,
         "asOfSession": as_of,
-        "evidenceOrigin": "AUTHENTIC_FORWARD",
+        "evidenceOrigin": "OFFLINE_INPUT",
+        "priceSourceProvenance": "AUTHENTIC_RETAINED_SOURCE",
         "series": series,
     }
     settle_raw = json.dumps(settle_batch_data).encode("utf-8")
@@ -455,12 +471,25 @@ def test_end_to_end_retained_raw_responses_to_settlement_ledger(tmp_path):
         assert meta["rawSha256"] == sha
         assert meta["provider"] == "YAHOO_FINANCE"
 
+        # Check corporate-action raw retention
+        ca_sha = series[s]["adjustmentEvidence"]["corporateActionReference"]["sourceSha256"]
+        ca_file = raw_dir / f"{ca_sha}.ca.raw"
+        ca_meta = raw_dir / f"{ca_sha}.ca.meta.json"
+        assert ca_file.exists(), f"Missing retained CA raw file for {s}"
+        assert ca_meta.exists(), f"Missing retained CA meta file for {s}"
+        assert hashlib.sha256(ca_file.read_bytes()).hexdigest() == ca_sha
+
     # Step 4: Verify settlement ledger state
     ledger_path = tmp_path / cohort_id / "settlement_ledger.json"
     assert ledger_path.exists()
     state = json.loads(ledger_path.read_text())
-    assert state["evidenceOrigin"] == "AUTHENTIC_FORWARD"
-    assert state["adjustmentEvidenceAuthority"] == "AUTHENTIC_VERIFIED"
+    assert state["candidateEvidenceOrigin"] == "OFFLINE_INPUT"
+    assert state["candidateOpportunityEligible"] is False
+    assert state["priceSourceProvenance"] == "AUTHENTIC_RETAINED_SOURCE"
+    assert state["adjustmentEvidenceAuthority"] == "AUTHENTIC_CORPORATE_ACTION_VERIFIED"
+    assert state["activationState"] == "DISABLED"
+    assert state["eligibleForOpportunityCapture"] is False
+    assert state["evidenceOrigin"] == "OFFLINE_INPUT"
     assert len(state["results"]) == 10
 
     # Verify priceHistory records metadata
@@ -564,3 +593,336 @@ def test_tampered_raw_bytes_in_settle_batch_fails_closed(tmp_path):
     # Fail closed: zero files written
     assert not (tmp_path / cohort_id / "settlement_ledger.json").exists()
     assert not (tmp_path / cohort_id / "raw_responses").exists()
+
+
+# ==============================================================================
+# Quality Gate 6: Adversarial Corporate Action & Provenance Decoupling Tests
+# ==============================================================================
+
+def test_adversarial_correct_hash_paired_with_fabricated_source_metadata():
+    """Verifies that matching artifact hashes with fabricated metadata fails closed."""
+    expected_sessions = {"2026-09-25", "2026-09-28"}
+    raw_b, real_sha, valid_ref = make_ca_artifact("VOO", coverage_start="2026-09-20", coverage_end="2026-11-05")
+
+    # Control: valid passes
+    valid_proof = {
+        "status": "VERIFIED",
+        "priceBasis": "SPLIT_ADJUSTED_ONLY",
+        "cashDividendsAdjusted": False,
+        "splitEvents": [],
+        "coverageStart": "2026-09-20",
+        "coverageEnd": "2026-11-05",
+        "corporateActionReference": valid_ref,
+    }
+    res = verify_corporate_action_evidence(valid_proof, expected_sessions, symbol="VOO")
+    assert res["status"] == "VERIFIED"
+
+    # Adversarial A: Reference claims symbol AAPL, but artifact bytes are for VOO
+    bad_sym_ref = copy.deepcopy(valid_ref)
+    bad_sym_ref["symbol"] = "AAPL"
+    proof_bad_sym = {**valid_proof, "corporateActionReference": bad_sym_ref}
+    with pytest.raises(UnverifiedAdjustmentEvidenceError, match="INSTRUMENT_IDENTITY_MISMATCH"):
+        verify_corporate_action_evidence(proof_bad_sym, expected_sessions, symbol="VOO")
+
+    # Adversarial B: Reference claims sourceType UNVERIFIED_BLOG, but artifact bytes declare SEC_EDGAR_DISCLOSURE
+    bad_type_ref = copy.deepcopy(valid_ref)
+    bad_type_ref["sourceType"] = "UNVERIFIED_BLOG"
+    proof_bad_type = {**valid_proof, "corporateActionReference": bad_type_ref}
+    with pytest.raises(UnverifiedAdjustmentEvidenceError, match="SOURCE_METADATA_MISMATCH"):
+        verify_corporate_action_evidence(proof_bad_type, expected_sessions, symbol="VOO")
+
+    # Adversarial C: Reference claims coverage extends to 2026-12-31, but artifact only covers to 2026-11-05
+    bad_cov_ref = copy.deepcopy(valid_ref)
+    bad_cov_ref["coverageEnd"] = "2026-12-31"
+    proof_bad_cov = {**valid_proof, "corporateActionReference": bad_cov_ref}
+    with pytest.raises(UnverifiedAdjustmentEvidenceError, match="SOURCE_METADATA_MISMATCH"):
+        verify_corporate_action_evidence(proof_bad_cov, expected_sessions, symbol="VOO")
+
+    # Adversarial D: Reference self-asserts verifiedZeroSplits: True, but artifact has verifiedZeroSplits: False
+    art_false_zero = {
+        "symbol": "VOO",
+        "sourceType": "SEC_EDGAR_DISCLOSURE",
+        "coverageStart": "2026-09-20",
+        "coverageEnd": "2026-11-05",
+        "hasSplits": True,
+        "verifiedZeroSplits": False,
+        "splits": [],
+    }
+    raw_fz = json.dumps(art_false_zero, sort_keys=True).encode("utf-8")
+    sha_fz = hashlib.sha256(raw_fz).hexdigest()
+    ref_self_asserted = {
+        "symbol": "VOO",
+        "sourceType": "SEC_EDGAR_DISCLOSURE",
+        "sourceSha256": sha_fz,
+        "coverageStart": "2026-09-20",
+        "coverageEnd": "2026-11-05",
+        "hasSplits": False,
+        "verifiedZeroSplits": True,  # self-asserted contrary to artifact!
+        "rawArtifactBytes": raw_fz,
+    }
+    proof_self_asserted = {**valid_proof, "corporateActionReference": ref_self_asserted}
+    with pytest.raises(UnverifiedAdjustmentEvidenceError, match="SELF_ASSERTED_ZERO_SPLITS_REJECTED"):
+        verify_corporate_action_evidence(proof_self_asserted, expected_sessions, symbol="VOO")
+
+
+def test_adversarial_corporate_action_reference_with_no_retained_artifact(tmp_path):
+    """Verifies that corporateActionReference lacking retained source bytes fails closed."""
+    expected_sessions = {"2026-09-25", "2026-09-28"}
+    phantom_ref = {
+        "symbol": "VOO",
+        "sourceType": "SEC_EDGAR_DISCLOSURE",
+        "sourceSha256": "1" * 64,  # Valid SHA format, but zero bytes retained
+        "coverageStart": "2026-09-20",
+        "coverageEnd": "2026-11-05",
+        "hasSplits": False,
+        "verifiedZeroSplits": True,
+        # rawArtifactBytes omitted
+    }
+    proof = {
+        "status": "VERIFIED",
+        "priceBasis": "SPLIT_ADJUSTED_ONLY",
+        "cashDividendsAdjusted": False,
+        "splitEvents": [],
+        "coverageStart": "2026-09-20",
+        "coverageEnd": "2026-11-05",
+        "corporateActionReference": phantom_ref,
+    }
+
+    # 1. Direct adapter call fails closed
+    with pytest.raises(UnverifiedAdjustmentEvidenceError, match="MISSING_RETAINED_CORPORATE_ACTION_ARTIFACT"):
+        verify_corporate_action_evidence(proof, expected_sessions, symbol="VOO")
+
+    # 2. Settle batch attempt fails closed and writes zero files
+    cohort_id = "COHORT_FORWARD_PILOT_PHANTOM_CA"
+    start_session = "2026-09-24"
+    close = CAL.session_close(start_session).to_pydatetime()
+    evaluations = {
+        s: {
+            "decisionState": "VALID_SETUP",
+            "sourceTimestampUtc": close.isoformat(),
+            "observedAtUtc": close.isoformat(),
+            "plan": {"spot": 100.0, "corridorMin": 98.0, "corridorMax": 102.0, "stopLoss": 95.0, "takeProfit1": 110.0, "confluenceScore": 70.0},
+        }
+        for s in SYMBOLS
+    }
+    capture_batch(
+        json.dumps({
+            "schemaVersion": "1.0",
+            "samplingMode": "SYSTEMATIC",
+            "sessionDate": start_session,
+            "engineSha": "e" * 40,
+            "evaluations": evaluations,
+        }).encode("utf-8"),
+        cohort_id=cohort_id,
+        start_session=start_session,
+        forward_root=tmp_path,
+        initialize=True,
+        now=close + timedelta(minutes=20),
+    )
+
+    as_of = "2026-10-28"
+    sessions_needed = [s.date().isoformat() for s in CAL.sessions_in_range("2026-09-25", as_of)]
+    series = {}
+    for s in SYMBOLS:
+        raw_b = get_retained_raw_bytes(s)
+        norm_bars = normalize_yahoo_chart_bars(raw_b, s, as_of=as_of)
+        bar_dates = {b["date"] for b in norm_bars}
+        for missing_d in set(sessions_needed) - bar_dates:
+            norm_bars.append({"date": missing_d, "Open": 100.0, "High": 102.0, "Low": 98.0, "Close": 100.5, "Volume": 100000})
+        norm_bars = sorted(norm_bars, key=lambda b: b["date"])
+        series[s] = {
+            "provider": "YAHOO_FINANCE",
+            "symbol": s,
+            "rawResponseBytes": raw_b.decode("utf-8", errors="ignore"),
+            "rawResponseSha256": hashlib.sha256(raw_b).hexdigest(),
+            "adjustmentEvidence": proof,
+            "bars": norm_bars,
+        }
+    settle_batch_data = {
+        "schemaVersion": "1.0",
+        "cohortId": cohort_id,
+        "asOfSession": as_of,
+        "series": series,
+    }
+    close_asof = CAL.session_close(as_of).to_pydatetime()
+    with pytest.raises(ValueError, match="MISSING_RETAINED_CORPORATE_ACTION_ARTIFACT"):
+        settle_batch(
+            json.dumps(settle_batch_data).encode("utf-8"),
+            cohort_id=cohort_id,
+            forward_root=tmp_path,
+            initialize=True,
+            now=close_asof + timedelta(hours=2),
+        )
+    assert not (tmp_path / cohort_id / "settlement_ledger.json").exists()
+
+
+def test_adversarial_wrong_symbol_interval_or_price_basis():
+    """Verifies that wrong symbol, insufficient interval, or invalid price basis fails closed."""
+    expected_sessions = {"2026-09-25", "2026-09-28", "2026-10-28"}
+    raw_b, sha, ref = make_ca_artifact("VOO", coverage_start="2026-09-20", coverage_end="2026-11-05")
+
+    # 1. Wrong symbol: passing symbol NVDA against VOO artifact
+    proof_nvda = {
+        "status": "VERIFIED",
+        "priceBasis": "SPLIT_ADJUSTED_ONLY",
+        "cashDividendsAdjusted": False,
+        "splitEvents": [],
+        "coverageStart": "2026-09-20",
+        "coverageEnd": "2026-11-05",
+        "corporateActionReference": ref,
+    }
+    with pytest.raises(UnverifiedAdjustmentEvidenceError, match="INSTRUMENT_IDENTITY_MISMATCH"):
+        verify_corporate_action_evidence(proof_nvda, expected_sessions, symbol="NVDA")
+
+    # 2. Insufficient interval: coverage ends before required sessions
+    raw_short, sha_short, ref_short = make_ca_artifact("VOO", coverage_start="2026-09-20", coverage_end="2026-09-26")
+    proof_short = {
+        "status": "VERIFIED",
+        "priceBasis": "SPLIT_ADJUSTED_ONLY",
+        "cashDividendsAdjusted": False,
+        "splitEvents": [],
+        "coverageStart": "2026-09-20",
+        "coverageEnd": "2026-09-26",
+        "corporateActionReference": ref_short,
+    }
+    with pytest.raises(ValueError, match="does not cover required interval"):
+        verify_corporate_action_evidence(proof_short, expected_sessions, symbol="VOO")
+
+    # 3. Wrong price basis: DIVIDEND_AND_SPLIT_ADJUSTED fails closed
+    proof_wrong_basis = {
+        "status": "VERIFIED",
+        "priceBasis": "DIVIDEND_AND_SPLIT_ADJUSTED",
+        "cashDividendsAdjusted": False,
+        "splitEvents": [],
+        "coverageStart": "2026-09-20",
+        "coverageEnd": "2026-11-05",
+        "corporateActionReference": ref,
+    }
+    with pytest.raises(ValueError, match="UNSUPPORTED_ADJUSTMENT_BASIS"):
+        verify_corporate_action_evidence(proof_wrong_basis, expected_sessions, symbol="VOO")
+
+
+def test_adversarial_authentic_historical_prices_with_imported_candidate_decisions(tmp_path):
+    """Proves authentic price evidence NEVER upgrades OFFLINE_INPUT candidate decisions.
+
+    Guarantees:
+    1. An authentic price batch passing evidenceOrigin: AUTHENTIC_FORWARD fails closed
+       with CANNOT_UPGRADE_OFFLINE_DECISIONS.
+    2. Legitimate settlement with authentic retained prices records:
+       - candidateEvidenceOrigin: OFFLINE_INPUT
+       - priceSourceProvenance: AUTHENTIC_RETAINED_SOURCE
+       - adjustmentEvidenceAuthority: AUTHENTIC_CORPORATE_ACTION_VERIFIED
+       - activationState: DISABLED
+       - eligibleForOpportunityCapture: False
+       - candidateOpportunityEligible: False
+       - evidenceOrigin: OFFLINE_INPUT (never upgraded!).
+    """
+    cohort_id = "COHORT_FORWARD_PILOT_NO_UPGRADE"
+    start_session = "2026-09-24"
+    close = CAL.session_close(start_session).to_pydatetime()
+
+    evaluations = {
+        s: {
+            "decisionState": "VALID_SETUP",
+            "sourceTimestampUtc": close.isoformat(),
+            "observedAtUtc": close.isoformat(),
+            "plan": {"spot": 100.0, "corridorMin": 98.0, "corridorMax": 102.0, "stopLoss": 95.0, "takeProfit1": 110.0, "confluenceScore": 70.0},
+        }
+        for s in SYMBOLS
+    }
+    capture_batch(
+        json.dumps({
+            "schemaVersion": "1.0",
+            "samplingMode": "SYSTEMATIC",
+            "sessionDate": start_session,
+            "engineSha": "e" * 40,
+            "evaluations": evaluations,
+        }).encode("utf-8"),
+        cohort_id=cohort_id,
+        start_session=start_session,
+        forward_root=tmp_path,
+        initialize=True,
+        now=close + timedelta(minutes=20),
+    )
+
+    as_of = "2026-10-28"
+    sessions_needed = [s.date().isoformat() for s in CAL.sessions_in_range("2026-09-25", as_of)]
+    series = {}
+    for s in SYMBOLS:
+        raw_b = get_retained_raw_bytes(s)
+        sha = hashlib.sha256(raw_b).hexdigest()
+        ca_b, ca_sha, ca_ref = make_ca_artifact(s, coverage_start="2026-09-20", coverage_end="2026-11-05")
+        norm_bars = normalize_yahoo_chart_bars(raw_b, s, as_of=as_of)
+        bar_dates = {b["date"] for b in norm_bars}
+        for missing_d in set(sessions_needed) - bar_dates:
+            norm_bars.append({"date": missing_d, "Open": 100.0, "High": 102.0, "Low": 98.0, "Close": 100.5, "Volume": 100000})
+        norm_bars = sorted(norm_bars, key=lambda b: b["date"])
+        series[s] = {
+            "provider": "YAHOO_FINANCE",
+            "symbol": s,
+            "rawResponseBytes": raw_b.decode("utf-8", errors="ignore"),
+            "rawResponseSha256": sha,
+            "retrievalTimestampUtc": "2026-11-23T06:44:55Z",
+            "timezone": "America/New_York",
+            "adjustmentEvidence": {
+                "status": "VERIFIED",
+                "priceBasis": "SPLIT_ADJUSTED_ONLY",
+                "cashDividendsAdjusted": False,
+                "splitEvents": [],
+                "sourceSha256": ca_sha,
+                "sourceDescription": f"Verified SEC EDGAR filings for {s}",
+                "coverageStart": "2026-09-20",
+                "coverageEnd": "2026-11-05",
+                "corporateActionReference": ca_ref,
+            },
+            "bars": norm_bars,
+        }
+
+    close_asof = CAL.session_close(as_of).to_pydatetime()
+
+    # Adversarial Attack: Attempt to upgrade candidate decisions by claiming AUTHENTIC_FORWARD in batch
+    illegal_upgrade_batch = {
+        "schemaVersion": "1.0",
+        "cohortId": cohort_id,
+        "asOfSession": as_of,
+        "evidenceOrigin": "AUTHENTIC_FORWARD",  # ILLEGAL UPGRADE ATTEMPT!
+        "series": series,
+    }
+    with pytest.raises(ValueError, match="CANNOT_UPGRADE_OFFLINE_DECISIONS"):
+        settle_batch(
+            json.dumps(illegal_upgrade_batch).encode("utf-8"),
+            cohort_id=cohort_id,
+            forward_root=tmp_path,
+            initialize=True,
+            now=close_asof + timedelta(hours=2),
+        )
+
+    # Legitimate settlement: correctly passes OFFLINE_INPUT candidate origin with authentic prices
+    legit_batch = {
+        "schemaVersion": "1.0",
+        "cohortId": cohort_id,
+        "asOfSession": as_of,
+        "evidenceOrigin": "OFFLINE_INPUT",
+        "priceSourceProvenance": "AUTHENTIC_RETAINED_SOURCE",
+        "series": series,
+    }
+    res = settle_batch(
+        json.dumps(legit_batch).encode("utf-8"),
+        cohort_id=cohort_id,
+        forward_root=tmp_path,
+        initialize=True,
+        now=close_asof + timedelta(hours=2),
+    )
+    assert res["written"] == 10
+
+    ledger_path = tmp_path / cohort_id / "settlement_ledger.json"
+    state = json.loads(ledger_path.read_text())
+
+    # STRICT PROVENANCE SEPARATION INVARIANTS:
+    assert state["candidateEvidenceOrigin"] == "OFFLINE_INPUT"
+    assert state["candidateOpportunityEligible"] is False
+    assert state["priceSourceProvenance"] == "AUTHENTIC_RETAINED_SOURCE"
+    assert state["adjustmentEvidenceAuthority"] == "AUTHENTIC_CORPORATE_ACTION_VERIFIED"
+    assert state["activationState"] == "DISABLED"
+    assert state["eligibleForOpportunityCapture"] is False
+    assert state["evidenceOrigin"] == "OFFLINE_INPUT"  # NEVER upgraded to AUTHENTIC_FORWARD!

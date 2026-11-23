@@ -17,7 +17,8 @@ import math
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Union
 from zoneinfo import ZoneInfo
 
 import exchange_calendars as xcals
@@ -60,11 +61,16 @@ def verify_corporate_action_evidence(
     proof: Dict[str, Any],
     expected_sessions: Set[str],
     require_authoritative_ref: bool = True,
+    symbol: Optional[str] = None,
+    raw_artifact_bytes: Optional[Union[bytes, str]] = None,
+    artifacts_dir: Optional[Union[str, Path]] = None,
 ) -> Dict[str, Any]:
     """Explicitly verifies corporate-action coverage and split adjustment basis.
 
     Rejects attempts to infer adjustment from field names ('SPLIT_ADJUSTED_ONLY')
     or empty lists ('splitEvents: []') without an authentic corporateActionReference.
+    Resolves corporateActionReference to retained source bytes, verifying hash,
+    instrument identity, source metadata, covered interval, and zero-splits corroboration.
     """
     if not isinstance(proof, dict):
         raise UnverifiedAdjustmentEvidenceError("Adjustment evidence must be a dictionary")
@@ -108,6 +114,13 @@ def verify_corporate_action_evidence(
                 f"coverage [{cov_start}, {cov_end}] does not span expected [{min_expected}, {max_expected}]"
             )
 
+    # Symbol consistency check if symbol provided in proof
+    proof_sym = proof.get("symbol")
+    if symbol and proof_sym and proof_sym.upper() != symbol.upper():
+        raise ValueError(
+            f"Symbol mismatch in adjustment evidence: expected {symbol}, got {proof_sym}"
+        )
+
     # Corporate action reference verification
     corp_ref = proof.get("corporateActionReference")
     if require_authoritative_ref:
@@ -131,12 +144,130 @@ def verify_corporate_action_evidence(
         if expected_sessions:
             if ref_start > min_expected or ref_end < max_expected:
                 raise UnverifiedAdjustmentEvidenceError(
-                    f"UNVERIFIED_ADJUSTMENT_EVIDENCE: corporateActionReference coverage [{ref_start}, {ref_end}] "
+                    f"CORPORATE_ACTION_INTERVAL_INSUFFICIENT: corporateActionReference coverage [{ref_start}, {ref_end}] "
                     f"does not span expected sessions [{min_expected}, {max_expected}]"
                 )
         if corp_ref.get("hasSplits") is not False or corp_ref.get("verifiedZeroSplits") is not True:
             raise UnsupportedSplitAdjustmentError(
                 "UNSUPPORTED_SPLIT_ADJUSTMENT: corporateActionReference did not verify zero stock splits"
+            )
+
+        ref_symbol = corp_ref.get("symbol")
+        if symbol and ref_symbol and ref_symbol.upper() != symbol.upper():
+            raise UnverifiedAdjustmentEvidenceError(
+                f"INSTRUMENT_IDENTITY_MISMATCH: corporateActionReference symbol '{ref_symbol}' does not match expected '{symbol}'"
+            )
+
+        # Resolve corporateActionReference to retained source bytes
+        raw_b = None
+        if raw_artifact_bytes is not None:
+            raw_b = raw_artifact_bytes
+        elif corp_ref.get("rawArtifactBytes") is not None:
+            raw_b = corp_ref.get("rawArtifactBytes")
+        elif corp_ref.get("rawBytes") is not None:
+            raw_b = corp_ref.get("rawBytes")
+        elif proof.get("corporateActionRawBytes") is not None:
+            raw_b = proof.get("corporateActionRawBytes")
+        elif artifacts_dir:
+            adir = Path(artifacts_dir)
+            if adir.is_dir():
+                for fname in (f"{source_sha}.ca.raw", f"{source_sha}.ca.json", f"{source_sha}.raw", f"{source_sha}.json"):
+                    cand = adir / fname
+                    if cand.is_file():
+                        try:
+                            raw_b = cand.read_bytes()
+                            break
+                        except Exception:
+                            pass
+
+        if raw_b is None:
+            raise UnverifiedAdjustmentEvidenceError(
+                f"MISSING_RETAINED_CORPORATE_ACTION_ARTIFACT: corporateActionReference '{source_sha}' has no retained source bytes or artifact file"
+            )
+
+        if isinstance(raw_b, str):
+            raw_b = raw_b.encode("utf-8")
+        elif not isinstance(raw_b, (bytes, bytearray)):
+            raise TypeError("Corporate action raw artifact bytes must be bytes, bytearray, or str")
+        raw_b = bytes(raw_b)
+
+        # Hash verification
+        computed_sha = hashlib.sha256(raw_b).hexdigest()
+        if computed_sha != source_sha:
+            raise RawBytesHashMismatchError(
+                f"RAW_BYTES_HASH_MISMATCH: Corporate action artifact computed {computed_sha} does not match expected {source_sha}"
+            )
+
+        # Parse artifact contents
+        try:
+            artifact = json.loads(raw_b.decode("utf-8"))
+        except Exception as e:
+            raise UnverifiedAdjustmentEvidenceError(
+                f"CORRUPT_CORPORATE_ACTION_ARTIFACT: Could not parse JSON from artifact: {e}"
+            )
+
+        if not isinstance(artifact, dict):
+            raise UnverifiedAdjustmentEvidenceError(
+                "CORRUPT_CORPORATE_ACTION_ARTIFACT: Parsed artifact is not a dictionary"
+            )
+
+        # Instrument identity in artifact
+        art_symbol = artifact.get("symbol") or artifact.get("ticker")
+        if not art_symbol:
+            raise UnverifiedAdjustmentEvidenceError(
+                "INSTRUMENT_IDENTITY_MISMATCH: Corporate action artifact missing symbol"
+            )
+        if symbol and art_symbol.upper() != symbol.upper():
+            raise UnverifiedAdjustmentEvidenceError(
+                f"INSTRUMENT_IDENTITY_MISMATCH: Corporate action artifact symbol '{art_symbol}' does not match expected '{symbol}'"
+            )
+        if ref_symbol and art_symbol.upper() != ref_symbol.upper():
+            raise UnverifiedAdjustmentEvidenceError(
+                f"INSTRUMENT_IDENTITY_MISMATCH: corporateActionReference symbol '{ref_symbol}' does not match artifact symbol '{art_symbol}'"
+            )
+
+        # Source metadata in artifact
+        art_source_type = artifact.get("sourceType")
+        if art_source_type and art_source_type != source_type:
+            raise UnverifiedAdjustmentEvidenceError(
+                f"SOURCE_METADATA_MISMATCH: corporateActionReference sourceType '{source_type}' does not match artifact sourceType '{art_source_type}'"
+            )
+
+        # Covered interval in artifact
+        art_start = artifact.get("coverageStart", "9999")
+        art_end = artifact.get("coverageEnd", "")
+        if expected_sessions:
+            if art_start > min_expected or art_end < max_expected:
+                raise UnverifiedAdjustmentEvidenceError(
+                    f"CORPORATE_ACTION_INTERVAL_INSUFFICIENT: Artifact coverage [{art_start}, {art_end}] "
+                    f"does not span expected sessions [{min_expected}, {max_expected}]"
+                )
+        if corp_ref.get("coverageStart") and art_start != "9999" and corp_ref["coverageStart"] < art_start:
+            raise UnverifiedAdjustmentEvidenceError(
+                f"SOURCE_METADATA_MISMATCH: corporateActionReference coverageStart '{corp_ref['coverageStart']}' precedes artifact start '{art_start}'"
+            )
+        if corp_ref.get("coverageEnd") and art_end and corp_ref["coverageEnd"] > art_end:
+            raise UnverifiedAdjustmentEvidenceError(
+                f"SOURCE_METADATA_MISMATCH: corporateActionReference coverageEnd '{corp_ref['coverageEnd']}' exceeds artifact end '{art_end}'"
+            )
+
+        # Actual contents: splits list
+        art_splits = artifact.get("splits") if "splits" in artifact else artifact.get("splitEvents")
+        if art_splits is None or not isinstance(art_splits, list):
+            raise UnverifiedAdjustmentEvidenceError(
+                "CORRUPT_CORPORATE_ACTION_ARTIFACT: Artifact missing valid 'splits' or 'splitEvents' list"
+            )
+        if len(art_splits) > 0:
+            raise UnsupportedSplitAdjustmentError(
+                f"UNSUPPORTED_SPLIT_ADJUSTMENT: Retained corporate action artifact records splits: {art_splits}"
+            )
+
+        # Corroborating zero-splits attestation (reject self-asserted flags without artifact corroboration)
+        art_zero_splits = artifact.get("verifiedZeroSplits")
+        art_has_splits = artifact.get("hasSplits")
+        if art_has_splits is True or (art_zero_splits is not True and art_has_splits is not False):
+            raise UnverifiedAdjustmentEvidenceError(
+                "SELF_ASSERTED_ZERO_SPLITS_REJECTED: Reference asserted verifiedZeroSplits but artifact does not corroborate zero splits"
             )
     else:
         # Fixture / legacy assertion fallback: requires 64-hex sourceSha256 and non-empty sourceDescription
@@ -260,6 +391,7 @@ class MarketDataPayload:
     raw_sha256: str
     target_url: Optional[str] = None
     corporate_action_reference: Optional[Dict[str, Any]] = None
+    corporate_action_raw_bytes: Optional[bytes] = None
     adjustment_evidence: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
@@ -293,11 +425,20 @@ class MarketDataPayload:
         self,
         expected_sessions: Set[str],
         require_authoritative_ref: bool = True,
+        artifacts_dir: Optional[Union[str, Path]] = None,
     ) -> Dict[str, Any]:
         """Verifies adjustment evidence attached to this payload."""
-        proof = self.adjustment_evidence or {}
+        proof = dict(self.adjustment_evidence or {})
         if self.corporate_action_reference and "corporateActionReference" not in proof:
-            proof = {**proof, "corporateActionReference": self.corporate_action_reference}
+            proof["corporateActionReference"] = self.corporate_action_reference
+        raw_ca = self.corporate_action_raw_bytes
+        if not raw_ca and self.corporate_action_reference:
+            raw_ca = self.corporate_action_reference.get("rawArtifactBytes") or self.corporate_action_reference.get("rawBytes")
         return verify_corporate_action_evidence(
-            proof, expected_sessions, require_authoritative_ref=require_authoritative_ref
+            proof,
+            expected_sessions,
+            require_authoritative_ref=require_authoritative_ref,
+            symbol=self.symbol,
+            raw_artifact_bytes=raw_ca,
+            artifacts_dir=artifacts_dir,
         )
