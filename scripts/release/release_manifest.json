@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
+  "release_candidate_commit": "0860f6d3ccd91ec063460d91dfd7bdb5424592f4",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 23,
+  "total_files": 24,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-SEC-INSIDER-FLOW-PRESENTATION-319",
   "files": {
@@ -136,18 +136,18 @@
     "api/routes/analytics.py": {
       "operation": "M",
       "originating_pr_number": 319,
-      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Decouple Form 4 disclosure availability from held scoring in presentation layer",
-      "sha256": "fa1d06696b2277f7a9d13cf6496b1a405bbc6959e0f8c7c3560e48605053d30e",
-      "size_bytes": 93665
+      "originating_commit": "0860f6d3ccd91ec063460d91dfd7bdb5424592f4",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "9f2d9b822c081eb8abbb6a162137e59caf08f89dd3facfa52d976a3325b7311e",
+      "size_bytes": 94250
     },
     "frontend/components/CompositeConvictionCard.tsx": {
       "operation": "M",
       "originating_pr_number": 319,
-      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Add navigation link to SEC Form 4 Disclosures in confluence conviction card",
-      "sha256": "72546b58878aa460a88587892c302e316c64048d97631dcf71422e3d2ad31540",
-      "size_bytes": 17265
+      "originating_commit": "0860f6d3ccd91ec063460d91dfd7bdb5424592f4",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "8132077c79dd176eee10d32ef3ba150439cdf362bffa38ad10d2eda27a1709de",
+      "size_bytes": 17481
     },
     "frontend/components/InstitutionalFeeds.tsx": {
       "operation": "M",
@@ -160,10 +160,10 @@
     "frontend/components/WhyInspectModal.tsx": {
       "operation": "M",
       "originating_pr_number": 319,
-      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Add action link to open SEC Form 4 Disclosures in Why Inspect Modal",
-      "sha256": "cd0ab7eda9089bd9cabd533af5dfc39d2a5665b2e08e01e1e4612718d1972e07",
-      "size_bytes": 23958
+      "originating_commit": "0860f6d3ccd91ec063460d91dfd7bdb5424592f4",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "b27d8eeebdced87443e7f1bd19cf82867fb432097b98d5b6f54909f205e4fa1f",
+      "size_bytes": 24556
     },
     "frontend/lib/institutionalFeeds.ts": {
       "operation": "M",
@@ -174,20 +174,28 @@
       "size_bytes": 26062
     },
     "frontend/tests/secInsiderFlowPresentation.test.ts": {
-      "operation": "A",
+      "operation": "M",
       "originating_pr_number": 319,
-      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Verification suite for decoupled presentation, badge formatting, and disclosure link interaction",
-      "sha256": "74571490fe2be87d2bf4eb0927c8f4bce633bcbf44ed2fd3d937b8663d138661",
-      "size_bytes": 15359
+      "originating_commit": "0860f6d3ccd91ec063460d91dfd7bdb5424592f4",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "a333c1fd84fd782a6026badc01de0b231f64a60c4d1d1c98797cb563988d6b3c",
+      "size_bytes": 16028
     },
     "tests/test_sec_insider_flow_presentation.py": {
-      "operation": "A",
+      "operation": "M",
       "originating_pr_number": 319,
-      "originating_commit": "0791ab739ac50254aba42451b2a11fd1f023061b",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Backend verification suite for decoupled Form 4 presentation, transaction meaning, empty states, and symbol switching",
-      "sha256": "69cde717b90f632a01411501f2b29cd8068f8d181cd3e5b4df27f3a7200f70ff",
-      "size_bytes": 19099
+      "originating_commit": "0860f6d3ccd91ec063460d91dfd7bdb5424592f4",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "d7469dc44f23c8bc0a86286f55626e1e02601c35f4b1faef9dc120470a0b331e",
+      "size_bytes": 21516
+    },
+    "frontend/lib/api.ts": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "0860f6d3ccd91ec063460d91dfd7bdb5424592f4",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "0ce7b964b0d72f6ddc706d100fbb4118e49156ecdfa088f7470c071dc9c6cee8",
+      "size_bytes": 193621
     }
   },
   "qualification_framework_files": {
