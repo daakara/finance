@@ -249,7 +249,7 @@ def test_worker_sentry_telemetry_initialization(monkeypatch):
 def test_worker_sentry_capture_exception():
     """Verify capture_worker_exception adds subsystem=smart_money tag."""
     mock_scope = MagicMock()
-    with patch("sentry_sdk.push_scope") as mock_push, patch("sentry_sdk.capture_exception", return_value="test-event-id") as mock_capture:
+    with patch("sentry_sdk.push_scope", create=True) as mock_push, patch("sentry_sdk.capture_exception", create=True, return_value="test-event-id") as mock_capture:
         mock_push.return_value.__enter__.return_value = mock_scope
         exc = ValueError("test synthetic error")
         event_id = capture_worker_exception(exc, tags={"test_tag": "test_val"})

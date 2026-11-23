@@ -1,7 +1,7 @@
 {
   "release_candidate_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 21,
+  "total_files": 22,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-SEC-BOUNDED-INGESTION-317",
   "files": {
@@ -164,6 +164,14 @@
       "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
       "sha256": "f38c32ee163fb9717d3d8fceed95ead70400489ce9bde1575060dcc8a233adcf",
       "size_bytes": 17939
+    },
+    "tests/test_sm_act_020_continuous_authorization.py": {
+      "operation": "M",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: continuous authorization sentry scope mock compatibility across SDK versions",
+      "sha256": "bac3eac1a10f6aef7858d268f1d31f28b499eab8cba4f3c2d1528be4bcd6f089",
+      "size_bytes": 13068
     },
     "tools/qualification/sec_offline_test_support.py": {
       "operation": "A",
