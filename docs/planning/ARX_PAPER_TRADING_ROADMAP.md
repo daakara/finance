@@ -2,7 +2,7 @@
 
 **Document ID:** `PLN-ROADMAP-PT-2026-11-23`  
 **Effective Date:** 2026-11-23  
-**Status:** REVISED / PENDING OWNER APPROVAL  
+**Status:** Offline capture and manual settlement implemented; natural forward activation pending source/evaluator adapter qualification
 **Accountable Owner:** `daakara`  
 **Classification:** Canonical Implementation Roadmap  
 **Governing Contract:** ARX Paper-Trading Outcome Evaluation Contract V1.0.1 ([`docs/governance/ARX_PAPER_TRADING_OUTCOME_CONTRACT_V1.json`](../governance/ARX_PAPER_TRADING_OUTCOME_CONTRACT_V1.json))  
@@ -137,11 +137,13 @@ flowchart LR
   - Price Adjustment Provenance:
     - Reading `indicators.quote[0]` alone does not prove split adjustment.
     - Require documented adjustment provenance: inspect provider split events metadata, check corporate actions calendars, and confirm split factors. Any unverified corporate action leaves adjustment status `UNRESOLVED_ADJUSTMENT_PROVENANCE` (fails closed).
-  - Automated Daily Settlement CLI (`scripts/settle_forward_cohort.py`):
-    - Runs daily at **16:30 ET** post-close.
-    - Advances open setups; appends immutable outcome events (`ENTRY_TRIGGERED`, `STOP_LOSS`, `TAKE_PROFIT_1`, `HORIZON_EXIT`, `ENTRY_WINDOW_EXPIRED`).
-    - Durable state checkpointing in `data/forward_pilot/settlement_ledger.json` under POSIX `fcntl.flock`.
-    - Fail-Closed Missing Data: Missing sessions leave setups `UNMATURED` or `OUTCOME_DATA_MISSING` without inventing prices.
+  - Manual Offline Settlement CLI (`scripts/settle_forward_cohort.py`):
+    - Implemented for retained price batches only; **16:30 ET** remains a proposed later schedule, not an active job.
+    - Reuses the frozen evaluator, retaining unresolved daily collisions; prior result-change events are preserved in each atomic state snapshot.
+    - Per-cohort checkpoint at `data/forward_pilot/<cohort-id>/settlement_ledger.json` under the shared capture `flock`.
+    - Missing required sessions block the batch before ledger advancement. No prices or outcomes are invented.
+    - Twenty capacity slots are allocated chronologically, independent of returns; uncertain entries reserve capacity without counting as confirmed fills. Multiple same-symbol setups remain independent simulated recommendations, not a portfolio.
+    - Retained adjustment metadata is an input assertion, not independent source authentication. The implemented adapter accepts no-split intervals only; source-byte and adjustment reconciliation remain prerequisites for natural forward activation.
 - **Dependencies & Accountable Owner:**
   - Dependencies: Milestone 2 capture stream; daily price bar ingest.
   - Accountable Owner: `daakara`.

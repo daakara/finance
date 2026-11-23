@@ -102,16 +102,84 @@ session. Exactly ten records are committed atomically under `flock`; identical
 retries are no-ops, conflicting retries fail, and later cycles preserve existing
 record bytes. Twenty consecutive exchange-session opportunities permit up to
 200 records. Missed sessions are not backfilled or counted as completed.
-The 20-entry cap belongs to future settlement; this CLI creates **zero entries**.
+This capture CLI creates **zero entries**. The separate offline settlement CLI
+enforces the 20-slot cap described below.
 
 Verification (blocks socket/database connections and bypasses unrelated DB seeds):
 
 ```bash
 PYTHONPATH=tools/qualification:. python -m pytest --noconftest \
   -p paper_trading_offline_support tests/test_forward_candidate_capture.py \
-  tests/test_paper_trading_baseline_determinism.py tests/test_paper_trading_outcome_evaluator.py -q
+  tests/test_forward_settlement.py tests/test_paper_trading_baseline_determinism.py \
+  tests/test_paper_trading_outcome_evaluator.py -q
 ```
 
 Git does not persist operational captures (only this README is allowlisted).
 Atomic replacement/fsync protects local writes; it does not prove a durable
 production mount or authorize activation. No hold or runtime setting is changed.
+
+## PT-03: manual offline settlement
+
+```bash
+python scripts/settle_forward_cohort.py \
+  --input /absolute/path/to/retained-price-batch.json \
+  --forward-root /absolute/path/to/existing-isolated-forward-root \
+  --cohort-id COHORT_FORWARD_PILOT_002 --initialize
+```
+
+Omit `--initialize` for continuation. This command neither fetches prices nor
+evaluates the live model. It rejects production execution and leaves capture
+records unchanged. All results retain `OFFLINE_INPUT` and opportunity-ineligible
+labels. They are simulated paths, not broker fills or a certified forward cohort.
+
+The price batch has `schemaVersion: "1.0"`, `cohortId`, `asOfSession` (a completed
+XNYS session), and `series` keyed by symbol. Each series contains `provider`,
+`bars` (ordered objects with `date`, `Open`, `High`, `Low`, `Close`, `Volume`) and
+`adjustmentEvidence`. Required evidence fields are:
+
+```json
+{
+  "status": "VERIFIED",
+  "priceBasis": "SPLIT_ADJUSTED_ONLY",
+  "cashDividendsAdjusted": false,
+  "splitEvents": [],
+  "sourceSha256": "<64 lowercase hexadecimal characters>",
+  "sourceDescription": "<retained corporate-action metadata reference>",
+  "coverageStart": "YYYY-MM-DD",
+  "coverageEnd": "YYYY-MM-DD"
+}
+```
+
+These are retained **input assertions**, not independently authenticated evidence.
+The runner requires them but cannot establish that an upstream source or its
+corporate-action inventory is complete. Never manufacture these fields to pass
+validation. A real source adapter and its byte-to-bar/adjustment reconciliation
+must be qualified before natural forward use. This version supports no-split
+intervals only; nonempty split events or unverified basis block the batch.
+
+Supply the complete retained price prefix at every run, including every XNYS
+session from the next session after each eligible signal through `asOfSession`,
+bounded to its maximum 24-session evaluation horizon. Gaps, duplicates, future
+bars, nonfinite OHLCV, changed providers and historical revisions block advancement.
+The frozen evaluator applies the 5-session entry window, 20-session holding
+window, gap/limit rules, 25 bps friction and unresolved daily-bar collisions.
+
+Capacity is allocated by entry date, then signal date, frozen universe order and
+decision ID, independent of returns. A daily collision with uncertain entry
+reserves one slot conservatively without claiming a confirmed fill; thus confirmed
+entries plus uncertain reservations never exceed 20. Later triggered candidates
+are `SKIPPED_CAP_REACHED`; all captured decisions stay in the denominator.
+Multiple setups for one symbol remain independent simulated recommendations;
+this is not a portfolio, position-sizing or cash-account simulator.
+
+`settlement_inputs/{sha256}.json` retains original batch bytes.
+`settlement_ledger.json` contains current results, price history, immutable prior
+event entries, input receipts and a state digest. A shared capture lock serializes
+capture/settlement; atomic replacement commits each complete state. Five identical
+replays leave ledger bytes unchanged. Missing/corrupt state or receipts block
+continuation. An interrupted initial commit can leave a raw input without a
+ledger; reconcile that state explicitly rather than reinitializing it.
+
+No scheduler, production writes, broker adapter, hold changes or activation are
+included. Settlement can continue beyond capture Session 20 so the last setup
+receives its full entry and holding windows (up to pilot Session 44).
