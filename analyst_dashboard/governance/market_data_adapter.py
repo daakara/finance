@@ -269,6 +269,45 @@ def verify_corporate_action_evidence(
             raise UnverifiedAdjustmentEvidenceError(
                 "SELF_ASSERTED_ZERO_SPLITS_REJECTED: Reference asserted verifiedZeroSplits but artifact does not corroborate zero splits"
             )
+
+        # Authenticity Provenance Verification:
+        # Matching bytes, hashes, and metadata establish integrity and schema consistency.
+        # Source authenticity requires verified acquisition provenance from an authoritative external provider.
+        acq_prov = corp_ref.get("acquisitionProvenance") or artifact.get("acquisitionProvenance")
+        is_authentic_source = False
+        if isinstance(acq_prov, dict):
+            provider = acq_prov.get("provider")
+            target_url = acq_prov.get("targetUrl")
+            retrieval_ts = acq_prov.get("retrievalTimestampUtc")
+            http_status = acq_prov.get("httpStatus")
+            if (
+                provider in ("SEC_EDGAR_SUBMISSIONS", "SEC_EDGAR", "OFFICIAL_EXCHANGE_DISCLOSURE", "OFFICIAL_EXCHANGE_NOTICE")
+                and isinstance(target_url, str) and (target_url.startswith("https://") or target_url.startswith("http://"))
+                and isinstance(retrieval_ts, str) and len(retrieval_ts) >= 19
+                and http_status == 200
+            ):
+                is_authentic_source = True
+
+        # Enforce fail-closed check against unsupported authenticity or zero-splits certification claims:
+        # Do not accept fabricated or fixture JSON claiming source authenticity or certified zero splits merely because fields agree.
+        claims_authentic = (
+            proof.get("authenticityLevel") == "AUTHENTIC_CORPORATE_ACTION_VERIFIED"
+            or corp_ref.get("authenticityLevel") == "AUTHENTIC_CORPORATE_ACTION_VERIFIED"
+            or proof.get("sourceAuthenticityVerified") is True
+            or corp_ref.get("sourceAuthenticityVerified") is True
+            or proof.get("certifiedZeroSplits") is True
+            or corp_ref.get("certifiedZeroSplits") is True
+        )
+        if claims_authentic and not is_authentic_source:
+            raise UnverifiedAdjustmentEvidenceError(
+                "UNSUPPORTED_AUTHENTICITY_CLAIM: Source authenticity and zero-splits certification require "
+                "verified acquisition provenance from an authoritative external provider (e.g. SEC EDGAR); "
+                "fabricated or fixture JSON with agreeing fields only establishes schema consistency."
+            )
+
+        proof["authenticityLevel"] = "AUTHENTIC_CORPORATE_ACTION_VERIFIED" if is_authentic_source else "INTEGRITY_VERIFIED_SCHEMA_CONSISTENT"
+        proof["sourceAuthenticityVerified"] = is_authentic_source
+        proof["zeroSplitsCorroboration"] = "AUTHENTIC_SOURCE_CORROBORATED" if is_authentic_source else "FIXTURE_CONSISTENT_ONLY"
     else:
         # Fixture / legacy assertion fallback: requires 64-hex sourceSha256 and non-empty sourceDescription
         src_sha = proof.get("sourceSha256", "")
@@ -276,6 +315,9 @@ def verify_corporate_action_evidence(
             raise ValueError("UNRESOLVED_ADJUSTMENT_PROVENANCE: Missing 64-hex sourceSha256")
         if not proof.get("sourceDescription"):
             raise ValueError("UNRESOLVED_ADJUSTMENT_PROVENANCE: Missing sourceDescription")
+        proof["authenticityLevel"] = "RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED"
+        proof["sourceAuthenticityVerified"] = False
+        proof["zeroSplitsCorroboration"] = "INPUT_ASSERTION_ONLY"
 
     return proof
 

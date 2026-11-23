@@ -186,25 +186,30 @@ receives its full entry and holding windows (up to pilot Session 44).
 
 ---
 
-## 4. Operational Modes: Fixture Validation, Authentic Source Verification, and Pilot Activation
+## 4. Operational Modes, Authenticity Audit, and Evidence Inventory
 
-To prevent epistemic contamination and ensure strict governance, the ARX paper-trading infrastructure distinguishes three operational states:
+To prevent epistemic contamination and ensure strict governance, the ARX paper-trading infrastructure enforces strict separation between integrity, source authenticity, candidate origin, and activation states.
 
-### 1. Fixture Validation Mode (`OFFLINE_INPUT`)
-- **Usage:** Offline deterministic test suites (`tests/test_forward_*.py`, `tests/test_paper_trading_*.py`).
-- **Data Provenance:** Uses retained offline fixtures or synthetic series.
-- **Adjustment Authority:** Marked `adjustmentEvidenceAuthority: "RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED"`.
-- **Purpose:** Verifies system mechanics—chronological 20-slot capacity ceiling, intraday collision reservation, five-session entry and 20-session holding horizons, 25 bps transaction friction, replay determinism, and price revision rejection—without external data dependencies.
+### 1. Four-Layer Evidence Inventory
+1. **Historical Retained Prices (Custody Verified):** Authentic raw response bytes from Yahoo Finance v8 chart API exist for `VOO`, `QQQM` (both spanning 2026-09-25 to 2026-10-28), and `JEPI` (2026-09-25 to 2026-10-22). Each retained file is content-addressed under its SHA-256 digest with UTC retrieval timestamp and timezone metadata.
+2. **Current-Universe Overlap (2 of 10 Symbols in Custody):** The forward pilot universe manifest (`ARX_FORWARD_PILOT_UNIVERSE_V1.json`) defines 10 symbols: `VOO`, `QQQM`, `IWM`, `XLE`, `XLK`, `AAPL`, `MSFT`, `NVDA`, `AMZN`, `GOOGL`. Exactly **two symbols** (`VOO` and `QQQM`) overlap with retained historical price custody. `JEPI` is outside the forward universe; the other 8 symbols have zero authentic historical price custody.
+3. **Corporate-Action Evidence (Zero External Filings Acquired):** Exactly **zero** authentic external corporate-action filings have been acquired. All existing references are input assertions or synthetic fixtures. No authentic zero-splits certification exists. Matching bytes, hashes, and schema metadata establish integrity and schema consistency; source authenticity requires external acquisition provenance.
+4. **Forward Readiness (Simulation Ready, Live Activation Disabled):** Internal simulation, candidate capture (`capture_stream.jsonl`), and outcome settlement (`settlement_ledger.json`) mechanics are 100% qualified and idempotent offline. Live forward pilot activation remains strictly disabled (`HOLD_SCAN_001=ACTIVE`, `HOLD_EXEC_001=ACTIVE`, `activationState: DISABLED`). All imported decisions remain `OFFLINE_INPUT` and opportunity-ineligible (`eligibleForOpportunityCapture: False`).
 
-### 2. Authentic Source Verification Mode (`AUTHENTIC_FORWARD`)
-- **Usage:** Pre-activation qualification and natural forward pilot evidence evaluation.
-- **Governing Engine:** `analyst_dashboard/governance/market_data_adapter.py`.
-- **Cryptographic Traceability:** Every price bar is deterministically parsed from retained raw response bytes (`rawResponseBytes` -> `rawResponseSha256`). Raw bytes are retained content-addressed under `data/forward_pilot/<cohort_id>/raw_responses/<sha256>.raw` and `<sha256>.meta.json`.
-- **Tamper Rejection:** Any single-byte discrepancy between raw bytes and recorded SHA-256 raises `RAW_BYTES_HASH_MISMATCH` and fails closed before bar extraction or ledger writing (zero disk modifications).
-- **Adjustment Authentication:** Rejects claims inferred merely from field names (`priceBasis: "SPLIT_ADJUSTED_ONLY"`) or empty split lists (`splitEvents: []`). Requires explicit `corporateActionReference` containing authentic source type, 64-hex source digest, verified interval coverage, and proof of zero stock splits (`verifiedZeroSplits: true`). Non-empty split events raise `UNSUPPORTED_SPLIT_ADJUSTMENT` until multiplier qualification is approved. Dividend-adjusted series raise `DIVIDEND_ADJUSTED_DATA_REJECTED`.
-- **Authority Label:** Settled batches carry `evidenceOrigin: "AUTHENTIC_FORWARD"` and `adjustmentEvidenceAuthority: "AUTHENTIC_VERIFIED"`.
+### 2. Audit of Authenticity Labels: Integrity vs. Source Authenticity
+- **Integrity and Schema Consistency (`INTEGRITY_VERIFIED_SCHEMA_CONSISTENT`):** Matching SHA-256 digests, valid JSON structure, matching symbols, and agreeing date intervals prove that bytes have not been corrupted and fields conform to schema. They do **not** prove that the data originated from an authoritative external market data provider.
+- **Source Authenticity (`AUTHENTIC_CORPORATE_ACTION_VERIFIED`):** Source authenticity requires verified **external acquisition provenance** (`acquisitionProvenance` containing authoritative external provider such as `SEC_EDGAR_SUBMISSIONS`, canonical target URL, ISO 8601 UTC timestamp, and HTTP status 200). Fabricated or fixture JSON claiming source authenticity or zero-splits certification without external acquisition provenance fails closed with `UNSUPPORTED_AUTHENTICITY_CLAIM`.
+- **Authority Labeling in Offline Execution:** Because zero authentic corporate-action filings have been acquired, all offline and fixture settlement runs record `adjustmentEvidenceAuthority: "RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED"`. Attempting to record `AUTHENTIC_CORPORATE_ACTION_VERIFIED` without verified external acquisition provenance fails closed with `UNSUPPORTED_AUTHENTICITY_CERTIFICATION`.
+- **Candidate Decoupling Invariant:** Authentic price evidence can **never** upgrade imported candidate decisions (`evidenceOrigin: OFFLINE_INPUT`) to authentic forward observations. Attempts to pass `evidenceOrigin: AUTHENTIC_FORWARD` against imported decisions fail closed with `CANNOT_UPGRADE_OFFLINE_DECISIONS`.
 
-### 3. Pilot Activation (STRICTLY DISABLED)
+### 3. Smallest Useful Validation Specification
+Rather than executing an unnecessary ten-symbol historical price download, the smallest useful validation reuses retained `VOO` and `QQQM` price tape (0 price download requests) and acquires only the genuinely missing corporate-action filings from SEC EDGAR:
+- **Request Accounting:** Exactly 2 external HTTP GET requests total (0 price requests, 2 corporate-action requests, 0 metadata requests).
+- **Target 1 (VOO):** Vanguard Index Funds (CIK `0000036405`), submissions URL `https://data.sec.gov/submissions/CIK0000036405.json`. Covered interval: `2026-09-20` to `2026-11-05`.
+- **Target 2 (QQQM):** Invesco Exchange-Traded Fund Trust II (CIK `0001378872`), submissions URL `https://data.sec.gov/submissions/CIK0001378872.json`. Covered interval: `2026-09-20` to `2026-11-05`.
+- **Completeness Evidence:** `filings.recent` form history confirms zero stock split corporate actions across the 24-session evaluation window.
+
+### 4. Pilot Activation (STRICTLY DISABLED)
 - **Status:** **`DISABLED`** (`HOLD_SCAN_001=ACTIVE`, `HOLD_EXEC_001=ACTIVE`).
 - **Enforcement:**
   - Zero background daemon / cron executions (`VCP_NATURAL_SCHEDULER_ENABLED=0`).

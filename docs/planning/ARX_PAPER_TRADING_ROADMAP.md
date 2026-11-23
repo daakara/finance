@@ -33,6 +33,20 @@ The recently concluded **Bounded Offline Recommendation Outcome Pilot (`ARX_BOUN
 - **Empirical Results:** Mean net return of **+0.54%** across 10 resolved trades (+0.16R reconciled from trades; prior reported -0.65% net and +0.08R reflected legacy transcription errors); historical baseline yielded +0.60% net (+0.17R reconciled; prior -1.78% net and -0.01R reflected CELH/CRSP/NET/ANET transcription errors) with a 60% stop-out rate, while prospective clean setups yielded +0.47% net (+0.15R reconciled, prior +0.18R) with 100% horizon exits. Pure daily resolved (N=8) yielded +1.48% net (+0.45R).
 - **Epistemic Constraint:** This offline pilot serves strictly as **historical validation of evaluation mechanics**, not proof of profitability, statistical edge, or production readiness.
 
+### Four-Layer Evidence Inventory & Operational State
+
+To eliminate ambiguity across datasets and execution states, the project enforces a strict four-layer evidence hierarchy:
+
+1. **Layer 1: Historical Retained Prices (Custody Verified):**
+   Authentic raw response bytes from Yahoo Finance v8 chart API exist for `VOO`, `QQQM` (both covering 2026-09-25 to 2026-10-28), and `JEPI` (2026-09-25 to 2026-10-22). Each retained file is content-addressed under its SHA-256 digest with UTC retrieval timestamp and timezone metadata.
+2. **Layer 2: Current-Universe Overlap (2 of 10 Symbols in Custody):**
+   The forward pilot universe manifest (`ARX_FORWARD_PILOT_UNIVERSE_V1.json`) defines 10 symbols: `VOO`, `QQQM`, `IWM`, `XLE`, `XLK`, `AAPL`, `MSFT`, `NVDA`, `AMZN`, `GOOGL`.
+   Exactly **two symbols** (`VOO` and `QQQM`) overlap with retained historical price custody. `JEPI` is in historical custody but outside the forward universe. The remaining 8 symbols have zero authentic historical price custody in the repository.
+3. **Layer 3: Corporate-Action Evidence (Zero External Filings Acquired):**
+   Exactly **zero** authentic external corporate-action filings have been acquired. All corporate action references currently in the repository are input assertions or synthetic fixtures. No authentic zero-splits certification exists. Matching bytes, hashes, and schema metadata establish integrity and schema consistency; source authenticity requires external acquisition provenance.
+4. **Layer 4: Forward Readiness (Simulation Ready, Live Activation Disabled):**
+   Internal candidate capture (`scripts/capture_forward_candidates.py`), market-data normalization (`analyst_dashboard/governance/market_data_adapter.py`), and outcome settlement (`scripts/settle_forward_cohort.py`) engines are 100% qualified and idempotent offline. Live forward pilot activation remains strictly disabled (`HOLD_SCAN_001=ACTIVE`, `HOLD_EXEC_001=ACTIVE`, `activationState: DISABLED`). All imported decisions remain `OFFLINE_INPUT` and opportunity-ineligible (`eligibleForOpportunityCapture: False`).
+
 ---
 
 ## 2. Confirmed Capabilities vs. Identified Gaps
@@ -141,6 +155,8 @@ flowchart LR
   - Price Adjustment Provenance:
     - Reading `indicators.quote[0]` alone does not prove split adjustment.
     - Require documented adjustment provenance: inspect provider split events metadata, check corporate actions calendars, and confirm split factors. Any unverified corporate action leaves adjustment status `UNRESOLVED_ADJUSTMENT_PROVENANCE` (fails closed).
+    - **Integrity vs. Source Authenticity:** Matching bytes, hashes, and schema fields establish integrity and schema consistency (`INTEGRITY_VERIFIED_SCHEMA_CONSISTENT`). Source authenticity requires verified acquisition provenance (`acquisitionProvenance` with provider `SEC_EDGAR_SUBMISSIONS`, target URL, UTC timestamp, HTTP 200). Offline fixture runs record `adjustmentEvidenceAuthority: "RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED"`.
+    - **Smallest Useful Validation:** Replaces any broad 10-symbol historical download proposal by reusing retained `VOO` and `QQQM` price tape (0 price download requests) and requiring only 2 external HTTP requests to SEC EDGAR for corporate-action submissions.
   - Manual Offline Settlement CLI (`scripts/settle_forward_cohort.py`):
     - Implemented for retained price batches only; **16:30 ET** remains a proposed later schedule, not an active job.
     - Reuses the frozen evaluator, retaining unresolved daily collisions; prior result-change events are preserved in each atomic state snapshot.
@@ -250,46 +266,45 @@ Pilot Configuration:
 
 ## 7. Next Three Concrete Actions
 
-1. **Submit `PR-PT-01` (Baseline Preservation):** Add `tests/test_paper_trading_baseline_determinism.py` recomputing all 19 historical pilot records from first principles and locking the baseline.
-2. **Submit `PR-PT-02` (Forward Capture CLI):** Implement `scripts/capture_forward_candidates.py` configuring the 10-symbol MVP universe for 20 daily capture sessions under Contract V1.0.1.
-3. **Submit `PR-PT-03` (Automated Settlement Runner):** Implement `scripts/settle_forward_cohort.py` providing idempotent, fail-closed daily outcome settlement with append-only event logging.
+1. **Complete PR #322 Qualification:** Land qualified market-data adapter, corporate-action evidence engine, and integrity/provenance separation without external acquisition.
+2. **Execute Smallest Useful Validation (SEC EDGAR Corporate-Action Proof):** Execute exactly 2 external HTTP requests to SEC EDGAR for VOO and QQQM submissions (`CIK0000036405.json` and `CIK0001378872.json`) to corroborate zero splits over `2026-09-20` to `2026-11-05`, reusing retained VOO/QQQM price tape (0 price download requests).
+3. **Verify Storage Persistence Attestation:** Prior to any operational candidate capture, execute `storage.attest_persistent_storage()` on the deployment environment to verify persistent volume mount isolation from ephemeral container overlayfs.
 
 ---
 
-## 8. Ready-to-Run Prompt for First Implementation PR (`PR-PT-01`)
+## 8. Ready-to-Run Minimal Acquisition Prompt for Genuinely Missing Corporate-Action Evidence
 
 ```markdown
-Implement PR-PT-01: Historical Baseline First-Principles Recomputation & Isolation Lock for ARX Paper Trading.
+GO: Execute ARX_TWO_SYMBOL_CORPORATE_ACTION_ACQUISITION_MANIFEST_001 for VOO and QQQM.
 
-Follow docs/planning/ARX_PAPER_TRADING_ROADMAP.md Milestone 1:
+Scope & Request Accounting:
+- Exactly 2 external HTTP GET requests total (0 price requests, 2 corporate-action requests, 0 metadata requests).
+- Reuse retained authentic price response bytes for VOO and QQQM spanning 2026-09-25 to 2026-10-28; do not re-download market data.
+- Strict 6-HTTP-attempt reservation budget; single-attempt reservation per request under POSIX flock. No automatic redirects or retries.
 
-1. Create `tests/test_paper_trading_baseline_determinism.py`:
-   - Load the frozen 19-record inventory and signal plans from `docs/governance/ARX_BOUNDED_OFFLINE_OUTCOME_PILOT_RECEIPT.json`.
-   - Load raw price evidence from retained fixtures and `scratch/acquired_etf_bars.json`.
-   - Recompute every trade outcome from scratch using `PaperTradingOutcomeEvaluator.evaluate_signal`.
-   - Assert from first principles:
-     * D1=19 total, 1 synthetic excluded, D1(natural)=18.
-     * Exactly 10 triggered entries (D3=10) and 8 untriggered setups.
-     * Recomputed trade outcomes match Contract V1.0.1:
-       - NET: SUCCESS (+14.59% gross, +14.34% net, +3.09R)
-       - TMDX: FAILURE (-10.55% gross, -10.80% net, -1.00R)
-       - VOO: NEUTRAL (-0.55% gross, -0.80% net, -0.14R)
-       - JEPI: NEUTRAL (+1.29% gross, +1.04% net, +0.37R)
-       - QQQM: ENTRY_NOT_TRIGGERED
-       - CELH & CRSP: UNRESOLVED_INTRABAR on pure daily; FAILURE on 1-min intraday bars.
-     * Statistical averages recomputed from individual trades match:
-       - Historical Net: +0.60%, Reconciled R: +0.17R (prior reported -1.78% net and -0.01R reconciled from verified fills)
-       - Prospective Net: +0.47%, Reconciled R: +0.15R (prior reported +0.18R reconciled)
-       - Pooled Net: +0.54%, Reconciled R: +0.16R (prior reported -0.65% net and +0.08R reconciled)
-       - Pure Daily Net (N=8): +1.48%, Reconciled R: +0.45R (excluding unsequenced CELH and CRSP)
-     * Serialized output hash matches SHA-256 `a9675c9592c474c2b3ad94998922c3c184d4a27305b091e42cdcd9e92eda2895`.
+Target Endpoints & Trust Identities:
+1. Symbol: VOO
+   - Trust: Vanguard Index Funds
+   - CIK: 0000036405
+   - URL: https://data.sec.gov/submissions/CIK0000036405.json
+   - Interval: 2026-09-20 to 2026-11-05
+2. Symbol: QQQM
+   - Trust: Invesco Exchange-Traded Fund Trust II
+   - CIK: 0001378872
+   - URL: https://data.sec.gov/submissions/CIK0001378872.json
+   - Interval: 2026-09-20 to 2026-11-05
 
-2. Establish isolated durable project storage:
-   - Create `data/forward_pilot/` with README.md documenting storage layout.
-   - Assert in unit test that forward cohort prefix `COHORT_FORWARD_*` cannot overwrite historical records.
+Compliance & Provenance Requirements:
+- Compliant SEC EDGAR User-Agent header: "ARX-Terminal-Auditor/1.0 (contact: admin@arx-terminal.local)".
+- Retain raw response bytes into content-addressed files under `data/forward_pilot/<cohort_id>/raw_responses/<sha256>.ca.raw`.
+- Emit companion metadata `<sha256>.ca.meta.json` containing:
+  * symbol, sourceType ("SEC_EDGAR_SUBMISSIONS"), sourceSha256, coverageStart ("2026-09-20"), coverageEnd ("2026-11-05"), byteLength
+  * acquisitionProvenance: {provider: "SEC_EDGAR_SUBMISSIONS", targetUrl, retrievalTimestampUtc, httpStatus: 200, rawSha256}
 
-3. Strict Execution Isolation:
-   - Zero network socket calls, zero database writes, and zero modifications to Contract V1.0.1.
+Verification & Fail-Closed Rules:
+- Parse `filings.recent`, inspect form types (e.g. 497, 485BPOS, 8-K) over the interval, and verify zero stock split corporate actions.
+- Reject if any stock split occurred, if the filing date interval does not span 2026-09-20 to 2026-11-05, or if CIK/symbol identity mismatches.
+- Fails closed on any HTTP status != 200, byte truncation, or hash mismatch.
 
-Run pytest to verify 100% pass, and provide git diff for review.
+Zero production writes, broker calls, scheduler activations, model tuning, or hold mutations (HOLD_SCAN_001=ACTIVE, HOLD_EXEC_001=ACTIVE).
 ```

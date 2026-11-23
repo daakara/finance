@@ -105,8 +105,9 @@ def make_ca_artifact(
     splits: Optional[list] = None,
     verified_zero_splits: bool = True,
     has_splits: bool = False,
+    acquisition_provenance: Optional[Dict[str, Any]] = None,
 ) -> Tuple[bytes, str, Dict[str, Any]]:
-    """Generates authentic corporate-action artifact bytes and corroborating reference."""
+    """Generates corporate-action artifact bytes and corroborating reference."""
     artifact = {
         "symbol": symbol,
         "sourceType": source_type,
@@ -116,6 +117,8 @@ def make_ca_artifact(
         "verifiedZeroSplits": verified_zero_splits,
         "splits": splits if splits is not None else [],
     }
+    if acquisition_provenance:
+        artifact["acquisitionProvenance"] = acquisition_provenance
     raw_str = json.dumps(artifact, sort_keys=True)
     raw_b = raw_str.encode("utf-8")
     sha = hashlib.sha256(raw_b).hexdigest()
@@ -129,6 +132,8 @@ def make_ca_artifact(
         "verifiedZeroSplits": verified_zero_splits,
         "rawArtifactBytes": raw_str,
     }
+    if acquisition_provenance:
+        ref["acquisitionProvenance"] = acquisition_provenance
     return raw_b, sha, ref
 
 
@@ -486,7 +491,7 @@ def test_end_to_end_retained_raw_responses_to_settlement_ledger(tmp_path):
     assert state["candidateEvidenceOrigin"] == "OFFLINE_INPUT"
     assert state["candidateOpportunityEligible"] is False
     assert state["priceSourceProvenance"] == "AUTHENTIC_RETAINED_SOURCE"
-    assert state["adjustmentEvidenceAuthority"] == "AUTHENTIC_CORPORATE_ACTION_VERIFIED"
+    assert state["adjustmentEvidenceAuthority"] == "RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED"
     assert state["activationState"] == "DISABLED"
     assert state["eligibleForOpportunityCapture"] is False
     assert state["evidenceOrigin"] == "OFFLINE_INPUT"
@@ -811,7 +816,7 @@ def test_adversarial_authentic_historical_prices_with_imported_candidate_decisio
     2. Legitimate settlement with authentic retained prices records:
        - candidateEvidenceOrigin: OFFLINE_INPUT
        - priceSourceProvenance: AUTHENTIC_RETAINED_SOURCE
-       - adjustmentEvidenceAuthority: AUTHENTIC_CORPORATE_ACTION_VERIFIED
+       - adjustmentEvidenceAuthority: RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED
        - activationState: DISABLED
        - eligibleForOpportunityCapture: False
        - candidateOpportunityEligible: False
@@ -922,7 +927,164 @@ def test_adversarial_authentic_historical_prices_with_imported_candidate_decisio
     assert state["candidateEvidenceOrigin"] == "OFFLINE_INPUT"
     assert state["candidateOpportunityEligible"] is False
     assert state["priceSourceProvenance"] == "AUTHENTIC_RETAINED_SOURCE"
-    assert state["adjustmentEvidenceAuthority"] == "AUTHENTIC_CORPORATE_ACTION_VERIFIED"
+    assert state["adjustmentEvidenceAuthority"] == "RETAINED_INPUT_ASSERTION_NOT_INDEPENDENTLY_AUTHENTICATED"
     assert state["activationState"] == "DISABLED"
     assert state["eligibleForOpportunityCapture"] is False
     assert state["evidenceOrigin"] == "OFFLINE_INPUT"  # NEVER upgraded to AUTHENTIC_FORWARD!
+
+
+def test_adversarial_fabricated_json_cannot_certify_source_authenticity():
+    """Proves matching bytes/hashes/metadata establish integrity & consistency only, not source authenticity.
+
+    Guarantees:
+    1. Fabricated JSON with agreeing fields without acquisition provenance verifies as
+       INTEGRITY_VERIFIED_SCHEMA_CONSISTENT (sourceAuthenticityVerified: False).
+    2. Attempting to self-assert authenticityLevel: AUTHENTIC_CORPORATE_ACTION_VERIFIED or
+       sourceAuthenticityVerified: True on fabricated JSON fails closed with UNSUPPORTED_AUTHENTICITY_CLAIM.
+    """
+    expected_sessions = {"2026-09-25", "2026-09-28"}
+    raw_b, real_sha, valid_ref = make_ca_artifact("VOO", coverage_start="2026-09-20", coverage_end="2026-11-05")
+
+    valid_proof = {
+        "status": "VERIFIED",
+        "priceBasis": "SPLIT_ADJUSTED_ONLY",
+        "cashDividendsAdjusted": False,
+        "splitEvents": [],
+        "coverageStart": "2026-09-20",
+        "coverageEnd": "2026-11-05",
+        "corporateActionReference": valid_ref,
+    }
+
+    # Control: verifies integrity & schema consistency cleanly, but NOT authentic source
+    res = verify_corporate_action_evidence(valid_proof, expected_sessions, symbol="VOO")
+    assert res["status"] == "VERIFIED"
+    assert res["authenticityLevel"] == "INTEGRITY_VERIFIED_SCHEMA_CONSISTENT"
+    assert res["sourceAuthenticityVerified"] is False
+    assert res["zeroSplitsCorroboration"] == "FIXTURE_CONSISTENT_ONLY"
+
+    # Adversarial Attack: Claiming source authenticity without acquisition provenance
+    bad_ref_claims_auth = copy.deepcopy(valid_ref)
+    bad_ref_claims_auth["authenticityLevel"] = "AUTHENTIC_CORPORATE_ACTION_VERIFIED"
+    proof_claims_auth = {**valid_proof, "corporateActionReference": bad_ref_claims_auth}
+    with pytest.raises(UnverifiedAdjustmentEvidenceError, match="UNSUPPORTED_AUTHENTICITY_CLAIM"):
+        verify_corporate_action_evidence(proof_claims_auth, expected_sessions, symbol="VOO")
+
+    bad_ref_claims_verified = copy.deepcopy(valid_ref)
+    bad_ref_claims_verified["sourceAuthenticityVerified"] = True
+    proof_claims_verified = {**valid_proof, "corporateActionReference": bad_ref_claims_verified}
+    with pytest.raises(UnverifiedAdjustmentEvidenceError, match="UNSUPPORTED_AUTHENTICITY_CLAIM"):
+        verify_corporate_action_evidence(proof_claims_verified, expected_sessions, symbol="VOO")
+
+
+def test_adversarial_settlement_batch_claiming_unsupported_ca_authenticity(tmp_path):
+    """Proves settlement batch claiming AUTHENTIC_CORPORATE_ACTION_VERIFIED fails closed without provenance."""
+    cohort_id = "COHORT_FORWARD_PILOT_CA_AUTH_FAIL"
+    start_session = "2026-09-24"
+    close = CAL.session_close(start_session).to_pydatetime()
+
+    evaluations = {
+        s: {
+            "decisionState": "VALID_SETUP",
+            "sourceTimestampUtc": close.isoformat(),
+            "observedAtUtc": close.isoformat(),
+            "plan": {"spot": 100.0, "corridorMin": 98.0, "corridorMax": 102.0, "stopLoss": 95.0, "takeProfit1": 110.0, "confluenceScore": 70.0},
+        }
+        for s in SYMBOLS
+    }
+    capture_batch(
+        json.dumps({
+            "schemaVersion": "1.0",
+            "samplingMode": "SYSTEMATIC",
+            "sessionDate": start_session,
+            "engineSha": "e" * 40,
+            "evaluations": evaluations,
+        }).encode("utf-8"),
+        cohort_id=cohort_id,
+        start_session=start_session,
+        forward_root=tmp_path,
+        initialize=True,
+        now=close + timedelta(minutes=20),
+    )
+
+    as_of = "2026-10-28"
+    sessions_needed = [s.date().isoformat() for s in CAL.sessions_in_range("2026-09-25", as_of)]
+    series = {}
+    for s in SYMBOLS:
+        raw_b = get_retained_raw_bytes(s)
+        sha = hashlib.sha256(raw_b).hexdigest()
+        ca_b, ca_sha, ca_ref = make_ca_artifact(s, coverage_start="2026-09-20", coverage_end="2026-11-05")
+        norm_bars = normalize_yahoo_chart_bars(raw_b, s, as_of=as_of)
+        bar_dates = {b["date"] for b in norm_bars}
+        for missing_d in set(sessions_needed) - bar_dates:
+            norm_bars.append({"date": missing_d, "Open": 100.0, "High": 102.0, "Low": 98.0, "Close": 100.5, "Volume": 100000})
+        norm_bars = sorted(norm_bars, key=lambda b: b["date"])
+        series[s] = {
+            "provider": "YAHOO_FINANCE",
+            "symbol": s,
+            "rawResponseBytes": raw_b.decode("utf-8", errors="ignore"),
+            "rawResponseSha256": sha,
+            "retrievalTimestampUtc": "2026-11-23T06:44:55Z",
+            "timezone": "America/New_York",
+            "adjustmentEvidence": {
+                "status": "VERIFIED",
+                "priceBasis": "SPLIT_ADJUSTED_ONLY",
+                "cashDividendsAdjusted": False,
+                "splitEvents": [],
+                "sourceSha256": ca_sha,
+                "sourceDescription": f"Fixture for {s}",
+                "coverageStart": "2026-09-20",
+                "coverageEnd": "2026-11-05",
+                "corporateActionReference": ca_ref,
+            },
+            "bars": norm_bars,
+        }
+
+    close_asof = CAL.session_close(as_of).to_pydatetime()
+    unsupported_batch = {
+        "schemaVersion": "1.0",
+        "cohortId": cohort_id,
+        "asOfSession": as_of,
+        "evidenceOrigin": "OFFLINE_INPUT",
+        "adjustmentEvidenceAuthority": "AUTHENTIC_CORPORATE_ACTION_VERIFIED",  # UNSUPPORTED CLAIM!
+        "series": series,
+    }
+    with pytest.raises(ValueError, match="UNSUPPORTED_AUTHENTICITY_CERTIFICATION"):
+        settle_batch(
+            json.dumps(unsupported_batch).encode("utf-8"),
+            cohort_id=cohort_id,
+            forward_root=tmp_path,
+            initialize=True,
+            now=close_asof + timedelta(hours=2),
+        )
+
+
+def test_authentic_external_acquisition_provenance_verification():
+    """Verifies that authentic external acquisition provenance (e.g. SEC EDGAR) certifies source authenticity."""
+    expected_sessions = {"2026-09-25", "2026-09-28"}
+    acq_provenance = {
+        "provider": "SEC_EDGAR_SUBMISSIONS",
+        "targetUrl": "https://data.sec.gov/submissions/CIK0000036405.json",
+        "retrievalTimestampUtc": "2026-11-23T06:44:55Z",
+        "httpStatus": 200,
+    }
+    raw_b, sha, ref = make_ca_artifact(
+        "VOO",
+        source_type="SEC_EDGAR_SUBMISSIONS",
+        coverage_start="2026-09-20",
+        coverage_end="2026-11-05",
+        acquisition_provenance=acq_provenance,
+    )
+    proof = {
+        "status": "VERIFIED",
+        "priceBasis": "SPLIT_ADJUSTED_ONLY",
+        "cashDividendsAdjusted": False,
+        "splitEvents": [],
+        "coverageStart": "2026-09-20",
+        "coverageEnd": "2026-11-05",
+        "corporateActionReference": ref,
+    }
+    verified = verify_corporate_action_evidence(proof, expected_sessions, symbol="VOO")
+    assert verified["status"] == "VERIFIED"
+    assert verified["authenticityLevel"] == "AUTHENTIC_CORPORATE_ACTION_VERIFIED"
+    assert verified["sourceAuthenticityVerified"] is True
+    assert verified["zeroSplitsCorroboration"] == "AUTHENTIC_SOURCE_CORROBORATED"

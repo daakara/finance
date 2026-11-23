@@ -303,7 +303,15 @@ def settle_batch(raw_batch: bytes, *, cohort_id: str, forward_root: Path,
                     (raw_responses_dir / f"{corp_ref.get('sourceSha256')}.raw").exists()
                 )
             )
-            if not (corp_ref and ca_bytes_present):
+            ca_acq = (corp_ref.get('acquisitionProvenance') if corp_ref else None) or proof.get('acquisitionProvenance')
+            ca_has_acquisition = bool(
+                isinstance(ca_acq, dict) and
+                ca_acq.get('provider') in ('SEC_EDGAR_SUBMISSIONS', 'SEC_EDGAR', 'OFFICIAL_EXCHANGE_DISCLOSURE', 'OFFICIAL_EXCHANGE_NOTICE') and
+                ca_acq.get('httpStatus') == 200 and
+                bool(ca_acq.get('targetUrl')) and
+                bool(ca_acq.get('retrievalTimestampUtc'))
+            )
+            if not (corp_ref and ca_bytes_present and ca_has_acquisition):
                 all_series_authentic_ca = False
 
         price_source_provenance = 'AUTHENTIC_RETAINED_SOURCE' if all_series_authentic_prices else 'OFFLINE_FIXTURE'
@@ -311,6 +319,9 @@ def settle_batch(raw_batch: bytes, *, cohort_id: str, forward_root: Path,
 
         if batch.get('priceSourceProvenance') == 'AUTHENTIC_RETAINED_SOURCE' and not all_series_authentic_prices:
             raise ValueError('AUTHENTIC_PRICE_PROVENANCE_MISMATCH: Batch asserted AUTHENTIC_RETAINED_SOURCE but price series lacked verified raw response bytes')
+
+        if batch.get('adjustmentEvidenceAuthority') == 'AUTHENTIC_CORPORATE_ACTION_VERIFIED' and not all_series_authentic_ca:
+            raise ValueError('UNSUPPORTED_AUTHENTICITY_CERTIFICATION: Batch claimed AUTHENTIC_CORPORATE_ACTION_VERIFIED but corporate-action evidence lacks verified external acquisition provenance')
 
         state = {
             'schemaVersion': '1.0',
@@ -389,6 +400,8 @@ def settle_batch(raw_batch: bytes, *, cohort_id: str, forward_root: Path,
                         'coverageEnd': corp_ref.get('coverageEnd'),
                         'byteLength': len(ca_bytes),
                     }
+                    if corp_ref.get('acquisitionProvenance'):
+                        ca_meta_payload['acquisitionProvenance'] = corp_ref['acquisitionProvenance']
                     safe_write_forward_pilot_file(str(ca_meta_file), cohort_id, canonical(ca_meta_payload) + '\n', str(root))
 
         raw_path = inputs_dir / (raw_sha + '.json')
