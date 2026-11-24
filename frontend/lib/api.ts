@@ -124,14 +124,14 @@ export interface TechnicalIndicators {
 }
 
 export interface AssetFactorScores {
-  growthScore: number;
-  qualityScore: number;
-  valuationScore: number;
-  momentumScore: number;
-  tailRiskScore: number;
-  compositeFactorScore: number;
-  verdict: string;
-  piotroskiFScore?: number;
+  growthScore?: number | null;
+  qualityScore?: number | null;
+  valuationScore?: number | null;
+  momentumScore?: number | null;
+  tailRiskScore?: number | null;
+  compositeFactorScore?: number | null;
+  verdict?: string;
+  piotroskiFScore?: number | null;
 }
 
 export type AssetDNAScores = AssetFactorScores;
@@ -810,13 +810,21 @@ export interface AnalyticsResponse {
   classificationStatus?: string;
   analytics?: {
     advanced_metrics?: {
-      VaR_95?: number;
-      VaR_99?: number;
-      Modified_VaR_95?: number;
-      Modified_VaR_99?: number;
-      Sortino_Ratio?: number;
-      Calmar_Ratio?: number;
-      Max_Drawdown?: number;
+      VaR_95?: number | null;
+      VaR_99?: number | null;
+      Modified_VaR_95?: number | null;
+      Modified_VaR_99?: number | null;
+      Modified_CVaR_95?: number | null;
+      Sortino_Ratio?: number | null;
+      Calmar_Ratio?: number | null;
+      Max_Drawdown?: number | null;
+    };
+    cornish_fisher?: {
+      status: "AVAILABLE" | "UNAVAILABLE";
+      reason?: string | null;
+      actual_observations?: number;
+      required_observations?: number;
+      message?: string | null;
     };
   };
 }

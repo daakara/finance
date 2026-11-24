@@ -24,6 +24,7 @@ def main():
 
     print("=== [RQ-03] BACKEND REGRESSION SUITE ===")
     test_files = [
+        "tests/test_cornish_fisher_sufficiency_gate.py",
         "tests/test_asset_directory_discovery.py",
         "tests/test_directive_057_remediation.py",
         "tests/test_confluence_engine.py",
