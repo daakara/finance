@@ -2,19 +2,19 @@
   "control_id": "RQ-09",
   "name": "Four-Way Cross-Platform Compatibility",
   "status": "PASS",
-  "start_time": "2026-11-24T02:08:58.403451+00:00",
-  "end_time": "2026-11-24T02:08:59.652532+00:00",
-  "duration_sec": 1.205,
-  "candidate_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
-  "source_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
-  "execution_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
+  "start_time": "2026-11-24T02:34:08.395646+00:00",
+  "end_time": "2026-11-24T02:34:08.998378+00:00",
+  "duration_sec": 0.58,
+  "candidate_sha": "0d833461601331452ad936c04b9ce01fd4781fa3",
+  "source_sha": "0d833461601331452ad936c04b9ce01fd4781fa3",
+  "execution_sha": "0d833461601331452ad936c04b9ce01fd4781fa3",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
-    "execution_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
+    "source_sha": "0d833461601331452ad936c04b9ce01fd4781fa3",
+    "execution_sha": "0d833461601331452ad936c04b9ce01fd4781fa3",
     "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -139,7 +139,7 @@
   ],
   "evidence_digests": {
     "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-    "scripts/release/rq_compatibility_results.json": "bb725b26b6ce72b224dc2a4475669673f2db4e2a77e043ef04b61cc75b26f1e7"
+    "scripts/release/rq_compatibility_results.json": "0701e5c5f39f232cc7fdec6faeede052454c1d85922dda865410a44ba6c1ab56"
   },
   "errors": [],
   "metadata": {
@@ -152,5 +152,5 @@
     "harness_version": "2.2.0-D074A4",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "e3f5c365cfe002a24ad0d2f5f9ada7f4df221bbd8aa6ddf4d6dce4fd9b7a9de5"
+  "receipt_digest": "a9d6fb9c4da5036df9063df69e70b11e9e1fd9639d4cd4731e83cdbf21952337"
 }
