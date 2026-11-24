@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+  "release_candidate_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 45,
+  "total_files": 49,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-DYNAMIC-ASSET-DISCOVERY-323",
   "files": {
@@ -127,10 +127,10 @@
     },
     "frontend/components/CommandPaletteModal.tsx": {
       "operation": "M",
-      "sha256": "294706e925213def9f534d4b2229efd83ea103e2e66ec4f2ea275d237770787d",
-      "size_bytes": 23836,
+      "sha256": "1b915af8a22461555c3493e559c73b4641debb8e82b1f337e58171f524e70865",
+      "size_bytes": 24572,
       "originating_pr_number": 323,
-      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     "frontend/components/CompositeConvictionCard.tsx": {
@@ -152,10 +152,10 @@
     "frontend/components/UniversalOmniSearch.tsx": {
       "operation": "M",
       "originating_pr_number": 323,
-      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
       "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
-      "sha256": "1081a92e02a0f71cf5dbf155abee0bc83194d12d02d6f22772cb153033fb3991",
-      "size_bytes": 17787
+      "sha256": "6026e40f5056c50e097f6ef98b5181bb4461f12979b8c9563268779787c01ba9",
+      "size_bytes": 18005
     },
     "frontend/components/WhyInspectModal.tsx": {
       "operation": "M",
@@ -167,10 +167,10 @@
     },
     "frontend/components/__tests__/AssetDiscoveryMenus.test.tsx": {
       "operation": "A",
-      "sha256": "05be8233b8cb768c9a9a977615b0b4d2e5cce88f618fad103c3b5148da9eb2d9",
-      "size_bytes": 2063,
+      "sha256": "e7b248cd6d3ceac7c93d0038f313da9dbeeaa4aa6d66ac2dc9049dff8f9aacd3",
+      "size_bytes": 8292,
       "originating_pr_number": 323,
-      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
       "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
     "frontend/functions/api/assets/search.ts": {
@@ -208,10 +208,10 @@
     "frontend/lib/api.ts": {
       "operation": "M",
       "originating_pr_number": 319,
-      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
       "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
-      "sha256": "0ce7b964b0d72f6ddc706d100fbb4118e49156ecdfa088f7470c071dc9c6cee8",
-      "size_bytes": 193621
+      "sha256": "171b11e3ab90351d0c04dc79f614378e80c3fe9f05fb93c7b65d254f2d327d88",
+      "size_bytes": 195285
     },
     "frontend/lib/assetDiscovery.ts": {
       "operation": "A",
@@ -364,6 +364,38 @@
       "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
       "sha256": "844aeb0a54e0594c5d8c1eea3a0c9dbbfb3d1c60117921c9db48fbcb3ff1ab85",
       "size_bytes": 6529
+    },
+    "frontend/app/page.tsx": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "governing_requirement": "PR #323: clear asset analytics on selection change and render explicit unavailable state on 404",
+      "sha256": "fd324b814a3dbdbb517933e9c77ffd40ee34828ddb073ca93350ec1f050b1f26",
+      "size_bytes": 54241
+    },
+    "frontend/components/discovery/DiscoveryLandingView.tsx": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "governing_requirement": "PR #323: reuse dynamic asset discovery hook and resolution logic in homepage search",
+      "sha256": "968d8b20972a55b17e933b69c96fb46e249d959a5e794ca7d0ffe112ef36385a",
+      "size_bytes": 21732
+    },
+    "frontend/lib/insightGenerator.ts": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "governing_requirement": "PR #323: do not claim stale historical tape when data is unavailable or unverified",
+      "sha256": "a1d50d4a37710f49e35b508d17bbe9a25b8a72b596aaf7ddf6fb74eb1aa117d4",
+      "size_bytes": 42410
+    },
+    "frontend/lib/__tests__/analyticsUnavailableHandling.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "governing_requirement": "PR #323: behavioral tests for 404 unavailable and insufficient history handling",
+      "sha256": "a1679947bcdeb5e9838ecb6afa8a20e468c1a499a94a9d3307284d3832157216",
+      "size_bytes": 2822
     }
   },
   "qualification_framework_files": {
