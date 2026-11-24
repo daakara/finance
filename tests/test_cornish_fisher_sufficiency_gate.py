@@ -184,6 +184,96 @@ class TestCornishFisherSufficiencyGate(unittest.TestCase):
         self.assertEqual(len(valid_rets), 1)
         self.assertAlmostEqual(float(valid_rets.iloc[0]), 0.02, places=4)
 
+    def test_unverified_exchange_calendar_fails_closed(self):
+        """Unverified exchange calendar (UNKNOWN, UNVERIFIED, None) must fail closed."""
+        dates = pd.date_range("2024-01-02", periods=35, freq="B")
+        prices = pd.Series([100.0 * (1.001 ** i) for i in range(35)], index=dates)
+
+        for unverified_ex in ["UNKNOWN", "UNVERIFIED", "", None]:
+            rets = extract_valid_returns(prices, exchange=unverified_ex)
+            self.assertEqual(len(rets), 0)
+            self.assertEqual(rets.attrs.get("calendar_error"), "UNVERIFIED_EXCHANGE_CALENDAR")
+
+            res = self.analyzer.analyze_comprehensive_risk(prices, exchange=unverified_ex)
+            cf = res["cornish_fisher"]
+            adv = res["advanced_metrics"]
+
+            self.assertEqual(cf["status"], "UNAVAILABLE")
+            self.assertEqual(cf["reason"], "UNVERIFIED_EXCHANGE_CALENDAR")
+            self.assertEqual(cf["actual_observations"], 0)
+            self.assertEqual(cf["required_observations"], 30)
+            self.assertIsNone(adv["Modified_VaR_95"])
+            self.assertIsNone(adv["Modified_VaR_99"])
+            self.assertIsNone(adv["Modified_CVaR_95"])
+
+    def test_unsupported_exchange_calendar_fails_closed(self):
+        """Unsupported exchange calendar (e.g. LSE, TSX) must fail closed."""
+        dates = pd.date_range("2024-01-02", periods=35, freq="B")
+        prices = pd.Series([100.0 * (1.001 ** i) for i in range(35)], index=dates)
+
+        for unsupported_ex in ["LSE", "TSX", "INVALID_EXCHANGE"]:
+            rets = extract_valid_returns(prices, exchange=unsupported_ex)
+            self.assertEqual(len(rets), 0)
+            self.assertEqual(rets.attrs.get("calendar_error"), "UNSUPPORTED_EXCHANGE_CALENDAR")
+
+            res = self.analyzer.analyze_comprehensive_risk(prices, exchange=unsupported_ex)
+            cf = res["cornish_fisher"]
+            adv = res["advanced_metrics"]
+
+            self.assertEqual(cf["status"], "UNAVAILABLE")
+            self.assertEqual(cf["reason"], "UNSUPPORTED_EXCHANGE_CALENDAR")
+            self.assertEqual(cf["actual_observations"], 0)
+            self.assertEqual(cf["required_observations"], 30)
+            self.assertIsNone(adv["Modified_VaR_95"])
+            self.assertIsNone(adv["Modified_VaR_99"])
+            self.assertIsNone(adv["Modified_CVaR_95"])
+
+    def test_nasdaq_calendar_alignment_success(self):
+        """NASDAQ (XNAS, NASDAQ, NMS) calendar session alignment generates valid Cornish-Fisher metrics."""
+        import exchange_calendars as xcals
+        cal = xcals.get_calendar("XNAS")
+        sessions = cal.sessions_in_range("2024-01-02", "2024-04-30")[:35]
+
+        np.random.seed(105)
+        rets_34 = np.random.normal(0.001, 0.015, 34)
+        prices_35 = 100.0 * np.cumprod(np.insert(1 + rets_34, 0, 1.0))
+        prices = pd.Series(prices_35, index=sessions)
+
+        for ex in ["NASDAQ", "XNAS", "NMS"]:
+            valid_rets = extract_valid_returns(prices, exchange=ex)
+            self.assertEqual(len(valid_rets), 34)
+
+            res = self.analyzer.analyze_comprehensive_risk(prices, exchange=ex)
+            cf = res["cornish_fisher"]
+            adv = res["advanced_metrics"]
+
+            self.assertEqual(cf["status"], "AVAILABLE")
+            self.assertIsNone(cf["reason"])
+            self.assertEqual(cf["actual_observations"], 34)
+            self.assertIsNotNone(adv["Modified_VaR_95"])
+            self.assertLessEqual(adv["Modified_VaR_99"], adv["Modified_VaR_95"])
+
+    def test_arca_and_bats_calendar_alignment_success(self):
+        """NYSE Arca and BATS calendar session alignments succeed for verified ETF/equity instruments."""
+        import exchange_calendars as xcals
+        cal = xcals.get_calendar("ARCX")
+        sessions = cal.sessions_in_range("2024-01-02", "2024-04-30")[:35]
+
+        np.random.seed(106)
+        rets_34 = np.random.normal(0.001, 0.012, 34)
+        prices_35 = 100.0 * np.cumprod(np.insert(1 + rets_34, 0, 1.0))
+        prices = pd.Series(prices_35, index=sessions)
+
+        for ex in ["ARCA", "ARCX", "PCX", "BATS", "BZX"]:
+            valid_rets = extract_valid_returns(prices, exchange=ex)
+            self.assertEqual(len(valid_rets), 34)
+
+            res = self.analyzer.analyze_comprehensive_risk(prices, exchange=ex)
+            cf = res["cornish_fisher"]
+            self.assertEqual(cf["status"], "AVAILABLE")
+            self.assertIsNone(cf["reason"])
+            self.assertEqual(cf["actual_observations"], 34)
+
     # -------------------------------------------------------------------------
     # 2. Strict Boundary Tests: 29 vs 30 vs 31 Valid Returns
     # -------------------------------------------------------------------------
@@ -297,7 +387,7 @@ class TestCornishFisherSufficiencyGate(unittest.TestCase):
         prices = 100 * np.cumprod(1 + returns)
         price_data = pd.DataFrame({"Close": prices}, index=sessions)
 
-        res = self.analyzer.analyze_comprehensive_risk(price_data)
+        res = self.analyzer.analyze_comprehensive_risk(price_data, exchange="XNYS")
         adv = res["advanced_metrics"]
         cf = res["cornish_fisher"]
 

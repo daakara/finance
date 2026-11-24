@@ -1264,11 +1264,71 @@ def get_asset_analytics(
         else:
             freshness_status = "LIVE" if staleness_days <= 1 else ("RECENT" if staleness_days <= 4 else "STALE_HISTORICAL")
 
+        # Authoritative canonical instrument classification envelope from Security Master
+        try:
+            sec_master_service = get_security_master_service()
+            instrument_obj = sec_master_service.get_or_resolve_instrument(upper_sym)
+            sec_type_val = instrument_obj.security_type
+            asset_class_val = instrument_obj.asset_class
+            instrument_envelope = {
+                "symbol": instrument_obj.symbol,
+                "provider_symbol": instrument_obj.provider_symbol,
+                "asset_class": instrument_obj.asset_class.value if hasattr(instrument_obj.asset_class, "value") else str(instrument_obj.asset_class),
+                "security_type": instrument_obj.security_type.value if hasattr(instrument_obj.security_type, "value") else str(instrument_obj.security_type),
+                "primary_exchange": instrument_obj.primary_exchange,
+                "listing_status": instrument_obj.listing_status.value if hasattr(instrument_obj.listing_status, "value") else str(instrument_obj.listing_status),
+                "classification_status": instrument_obj.classification_status.value if hasattr(instrument_obj.classification_status, "value") else str(instrument_obj.classification_status),
+                "execution_eligibility": instrument_obj.execution_eligibility.value if hasattr(instrument_obj.execution_eligibility, "value") else str(instrument_obj.execution_eligibility),
+                "classification_authority": instrument_obj.classification_authority,
+            }
+        except Exception as e:
+            logger.warning(f"Security Master resolution failed for {upper_sym}: {e}")
+            sec_type_val = "UNKNOWN"
+            asset_class_val = "UNKNOWN"
+            instrument_envelope = {
+                "symbol": upper_sym,
+                "provider_symbol": upper_sym,
+                "asset_class": "UNKNOWN",
+                "security_type": "UNKNOWN",
+                "primary_exchange": "UNKNOWN",
+                "listing_status": "UNKNOWN",
+                "classification_status": "UNVERIFIED",
+                "execution_eligibility": "FAIL_CLOSED",
+                "classification_authority": "ARX_SERVER_SECURITY_MASTER",
+            }
+
+        # Resolve authoritative exchange calendar and timezone metadata
+        meta = getattr(ticker_obj, "history_metadata", None)
+        sm_exchange = instrument_envelope.get("primary_exchange")
+        sm_asset_class = instrument_envelope.get("asset_class")
+        if is_crypto_sym or sm_asset_class == "CRYPTO":
+            cal_exchange = "24/7"
+            cal_asset_class = "CRYPTO"
+            cal_tz = "UTC"
+        else:
+            cal_asset_class = sm_asset_class if sm_asset_class and sm_asset_class != "UNKNOWN" else ("ETF" if upper_sym in KNOWN_ETFS else "EQUITY")
+            cal_tz = (meta.get("exchangeTimezoneName") if isinstance(meta, dict) else None) or "America/New_York"
+            if sm_exchange and sm_exchange not in ("UNKNOWN", "UNVERIFIED"):
+                cal_exchange = sm_exchange
+            elif isinstance(meta, dict) and meta.get("exchangeName"):
+                cal_exchange = meta.get("exchangeName")
+            elif isinstance(meta, dict) and meta.get("fullExchangeName"):
+                cal_exchange = meta.get("fullExchangeName")
+            else:
+                cal_exchange = "UNKNOWN"
+
         # Intraday Technicals
         technicals = compute_intraday_technicals(hist)
 
         # Advanced Risk Analytics (VaR 95%, Modified VaR, Sortino, Calmar, Max Drawdown)
-        risk_output = risk_analyzer.analyze_comprehensive_risk(price_data=hist, is_crypto=is_crypto_sym)
+        risk_output = risk_analyzer.analyze_comprehensive_risk(
+            price_data=hist,
+            exchange=cal_exchange,
+            asset_class=cal_asset_class,
+            timezone=cal_tz,
+            is_crypto=is_crypto_sym,
+            require_verified_calendar=True,
+        )
         adv_metrics = risk_output.get("advanced_metrics", {})
 
         # Compute Fundamental Factor / DNA Scores & Piotroski F-Score (cached to avoid redundant multi-second scrapes)
@@ -1471,38 +1531,7 @@ def get_asset_analytics(
         except Exception:
             pass
 
-        # Authoritative canonical instrument classification envelope
-        try:
-            sec_master_service = get_security_master_service()
-            instrument_obj = sec_master_service.get_or_resolve_instrument(upper_sym)
-            sec_type_val = instrument_obj.security_type
-            asset_class_val = instrument_obj.asset_class
-            instrument_envelope = {
-                "symbol": instrument_obj.symbol,
-                "provider_symbol": instrument_obj.provider_symbol,
-                "asset_class": instrument_obj.asset_class.value if hasattr(instrument_obj.asset_class, "value") else str(instrument_obj.asset_class),
-                "security_type": instrument_obj.security_type.value if hasattr(instrument_obj.security_type, "value") else str(instrument_obj.security_type),
-                "primary_exchange": instrument_obj.primary_exchange,
-                "listing_status": instrument_obj.listing_status.value if hasattr(instrument_obj.listing_status, "value") else str(instrument_obj.listing_status),
-                "classification_status": instrument_obj.classification_status.value if hasattr(instrument_obj.classification_status, "value") else str(instrument_obj.classification_status),
-                "execution_eligibility": instrument_obj.execution_eligibility.value if hasattr(instrument_obj.execution_eligibility, "value") else str(instrument_obj.execution_eligibility),
-                "classification_authority": instrument_obj.classification_authority,
-            }
-        except Exception as e:
-            logger.warning(f"Security Master resolution failed for {upper_sym}: {e}")
-            sec_type_val = "UNKNOWN"
-            asset_class_val = "UNKNOWN"
-            instrument_envelope = {
-                "symbol": upper_sym,
-                "provider_symbol": upper_sym,
-                "asset_class": "UNKNOWN",
-                "security_type": "UNKNOWN",
-                "primary_exchange": "UNKNOWN",
-                "listing_status": "UNKNOWN",
-                "classification_status": "UNVERIFIED",
-                "execution_eligibility": "FAIL_CLOSED",
-                "classification_authority": "ARX_SERVER_SECURITY_MASTER",
-            }
+        # Authoritative canonical instrument classification envelope (resolved above for calendar and risk analytics)
 
         # Smart Money Feeds (Enforce Epistemic Honesty: Stale curated data does not trigger live buy signals)
         smart_data = smart_money_engine.assess_symbol(

@@ -15,6 +15,35 @@ REQUIRED_CORNISH_FISHER_OBSERVATIONS = 30
 
 _EXCHANGE_CALENDARS: Dict[str, Any] = {}
 
+SUPPORTED_EXCHANGE_MAP: Dict[str, Tuple[str, str]] = {
+    # US Equities / ETFs
+    "XNYS": ("XNYS", "America/New_York"),
+    "NYSE": ("XNYS", "America/New_York"),
+    "NYQ": ("XNYS", "America/New_York"),
+
+    "XNAS": ("XNAS", "America/New_York"),
+    "NASDAQ": ("XNAS", "America/New_York"),
+    "NMS": ("XNAS", "America/New_York"),
+    "NGS": ("XNAS", "America/New_York"),
+    "NCM": ("XNAS", "America/New_York"),
+
+    "ARCX": ("ARCX", "America/New_York"),
+    "ARCA": ("ARCX", "America/New_York"),
+    "PCX": ("ARCX", "America/New_York"),
+    "ASE": ("ARCX", "America/New_York"),
+
+    "BATS": ("BATS", "America/New_York"),
+    "BZX": ("BATS", "America/New_York"),
+    "BTS": ("BATS", "America/New_York"),
+
+    # Crypto 24/7
+    "24/7": ("24/7", "UTC"),
+    "CRYPTO": ("24/7", "UTC"),
+    "CCC": ("24/7", "UTC"),
+    "CCY": ("24/7", "UTC"),
+    "CRYPTO_24_7": ("24/7", "UTC"),
+}
+
 
 def get_exchange_calendar(exchange: str = "XNYS") -> Optional[Any]:
     """Cached accessor for exchange calendar instance."""
@@ -28,10 +57,46 @@ def get_exchange_calendar(exchange: str = "XNYS") -> Optional[Any]:
     return _EXCHANGE_CALENDARS.get(exchange)
 
 
+def resolve_calendar_metadata(
+    exchange: Optional[str] = None,
+    asset_class: Optional[str] = None,
+    timezone: Optional[str] = None,
+    is_crypto: bool = False,
+) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
+    """Resolves exchange calendar code, timezone, and error reason (if unverified or unsupported).
+
+    Returns:
+        (cal_code, tz_name, error_reason, error_message)
+    """
+    clean_ac = str(asset_class).strip().upper() if asset_class else ""
+    if is_crypto or clean_ac == "CRYPTO":
+        return "24/7", "UTC", None, None
+
+    clean_ex = str(exchange).strip().upper() if exchange else ""
+    if not clean_ex or clean_ex in ("UNKNOWN", "UNVERIFIED", "NONE"):
+        return None, None, "UNVERIFIED_EXCHANGE_CALENDAR", (
+            f"Exchange calendar is unverified for exchange '{exchange or 'UNKNOWN'}'; "
+            "Cornish-Fisher risk estimates require verified exchange calendar session alignment."
+        )
+
+    if clean_ex in SUPPORTED_EXCHANGE_MAP:
+        cal_code, default_tz = SUPPORTED_EXCHANGE_MAP[clean_ex]
+        tz_name = timezone or default_tz
+        return cal_code, tz_name, None, None
+
+    return None, None, "UNSUPPORTED_EXCHANGE_CALENDAR", (
+        f"Exchange calendar '{exchange}' is not supported; "
+        "Cornish-Fisher risk estimates require a supported exchange calendar (XNYS, XNAS, ARCX, BATS, 24/7)."
+    )
+
+
 def extract_valid_returns(
     price_data: Any,
-    exchange: Optional[str] = "XNYS",
+    exchange: Optional[str] = None,
+    asset_class: Optional[str] = None,
+    timezone: Optional[str] = None,
     is_crypto: bool = False,
+    require_verified_calendar: bool = False,
 ) -> pd.Series:
     """Extract valid finite 1-session daily return observations from price data.
 
@@ -42,13 +107,19 @@ def extract_valid_returns(
        at both session t and session t+1.
     3. Authoritative exchange calendar and timezone alignment:
        - When price data has a date/datetime index, the series is aligned against the
-         asset's authoritative exchange calendar (e.g. XNYS for US equities/ETFs, or
-         24/7 daily calendar for crypto).
+         asset's authoritative exchange calendar (e.g. XNYS for NYSE, XNAS for NASDAQ,
+         ARCX for NYSE Arca, BATS for BATS, or 24/7 daily calendar for crypto).
+       - If exchange is UNKNOWN, UNVERIFIED, '', None and metadata is unverified:
+         Fails closed to UNAVAILABLE with reason UNVERIFIED_EXCHANGE_CALENDAR.
+       - If exchange is unsupported (e.g. LSE, TSX):
+         Fails closed to UNAVAILABLE with reason UNSUPPORTED_EXCHANGE_CALENDAR.
        - Omitted trading dates (missing entirely from input) are exposed as explicit NaNs,
          preventing multi-session price jumps from being counted as 1-session returns.
-       - Valid transitions across weekends and exchange holidays (e.g. Friday to Monday,
-         or Friday to Tuesday across MLK Day) are preserved as consecutive 1-session returns.
-    4. Output contains only valid, finite returns.
+       - Valid transitions across weekends and exchange holidays are preserved as consecutive 1-session returns.
+    4. Synthetic non-date test fixtures (with pure integer RangeIndex):
+       - Can evaluate numeric samples without calendar alignment for pure statistical unit tests
+         when require_verified_calendar is False.
+    5. Output contains only valid, finite returns.
     """
     if price_data is None:
         return pd.Series(dtype=float)
@@ -88,9 +159,20 @@ def extract_valid_returns(
             dt_index = None
 
     if dt_index is not None and len(dt_index) >= 2:
-        cal = None if is_crypto else (get_exchange_calendar(exchange) if exchange else None)
+        cal_code, tz_name, cal_err, cal_msg = resolve_calendar_metadata(
+            exchange=exchange,
+            asset_class=asset_class,
+            timezone=timezone,
+            is_crypto=is_crypto,
+        )
+        if cal_err is not None:
+            empty_s = pd.Series(dtype=float)
+            empty_s.attrs["calendar_error"] = cal_err
+            empty_s.attrs["calendar_message"] = cal_msg
+            return empty_s
+
         try:
-            if is_crypto or (exchange is None and cal is None):
+            if cal_code == "24/7":
                 # 24/7/365 daily calendar for crypto
                 if dt_index.tz is not None:
                     local_dates = dt_index.tz_convert("UTC").normalize().tz_localize(None)
@@ -109,10 +191,18 @@ def extract_valid_returns(
                     rets = aligned_prices.pct_change(fill_method=None)
                     valid_rets = rets[np.isfinite(rets)]
                     return valid_rets
-            elif cal is not None:
-                # Authoritative Exchange Calendar (e.g. XNYS for US equities/ETFs)
+            else:
+                cal = get_exchange_calendar(cal_code)
+                if cal is None:
+                    empty_s = pd.Series(dtype=float)
+                    empty_s.attrs["calendar_error"] = "UNSUPPORTED_EXCHANGE_CALENDAR"
+                    empty_s.attrs["calendar_message"] = f"Failed to load exchange calendar for '{cal_code}'."
+                    return empty_s
+
+                # Authoritative Exchange Calendar
+                effective_tz = tz_name or getattr(cal, "tz", "America/New_York")
                 if dt_index.tz is not None:
-                    local_dates = dt_index.tz_convert(cal.tz).normalize().tz_localize(None)
+                    local_dates = dt_index.tz_convert(effective_tz).normalize().tz_localize(None)
                 else:
                     local_dates = dt_index.normalize()
 
@@ -129,10 +219,16 @@ def extract_valid_returns(
                     rets = aligned_prices.pct_change(fill_method=None)
                     valid_rets = rets[np.isfinite(rets)]
                     return valid_rets
-        except Exception as cal_err:
-            logger.debug(f"Calendar session alignment fallback: {cal_err}")
+        except Exception as cal_err_exc:
+            logger.debug(f"Calendar session alignment exception: {cal_err_exc}")
 
-    # Fallback / Sequential Index without calendar
+    # Fallback / Sequential Index without calendar (for pure RangeIndex synthetic test fixtures)
+    if require_verified_calendar and dt_index is None:
+        empty_s = pd.Series(dtype=float)
+        empty_s.attrs["calendar_error"] = "UNVERIFIED_EXCHANGE_CALENDAR"
+        empty_s.attrs["calendar_message"] = "Price data lacks date/datetime index and cannot be aligned against a verified exchange calendar."
+        return empty_s
+
     # CRITICAL: Without forward-fill (fill_method=None), pct_change produces NaN at index t
     # if either valid_prices[t-1] is NaN or valid_prices[t] is NaN.
     # It NEVER forward-fills missing prices and NEVER bridges missing sessions.
@@ -148,12 +244,22 @@ class AdvancedRiskAnalyzer:
         self,
         price_data: Any, 
         benchmark_data: Optional[Any] = None,
-        exchange: str = "XNYS",
+        exchange: Optional[str] = None,
+        asset_class: Optional[str] = None,
+        timezone: Optional[str] = None,
         is_crypto: bool = False,
+        require_verified_calendar: bool = False,
     ) -> Dict[str, Any]:
         """Perform comprehensive risk analysis with Cornish-Fisher sufficiency gating."""
         try:
-            valid_returns = extract_valid_returns(price_data, exchange=exchange, is_crypto=is_crypto)
+            valid_returns = extract_valid_returns(
+                price_data,
+                exchange=exchange,
+                asset_class=asset_class,
+                timezone=timezone,
+                is_crypto=is_crypto,
+                require_verified_calendar=require_verified_calendar,
+            )
             adv_metrics = self._calculate_advanced_risk_metrics(valid_returns)
             cf_state = adv_metrics.get("cornish_fisher", {
                 "status": "UNAVAILABLE",
@@ -183,7 +289,14 @@ class AdvancedRiskAnalyzer:
             }
             
             if benchmark_data is not None:
-                benchmark_returns = extract_valid_returns(benchmark_data, exchange=exchange, is_crypto=is_crypto)
+                benchmark_returns = extract_valid_returns(
+                    benchmark_data,
+                    exchange=exchange,
+                    asset_class=asset_class,
+                    timezone=timezone,
+                    is_crypto=is_crypto,
+                    require_verified_calendar=require_verified_calendar,
+                )
                 if hasattr(self, "_analyze_relative_risk"):
                     risk_analysis['relative_risk'] = self._analyze_relative_risk(
                         valid_returns, benchmark_returns
@@ -211,6 +324,9 @@ class AdvancedRiskAnalyzer:
             metrics = {}
 
             # 1. Clean and count valid finite return observations
+            cal_err = returns.attrs.get("calendar_error") if hasattr(returns, "attrs") else None
+            cal_msg = returns.attrs.get("calendar_message") if hasattr(returns, "attrs") else None
+
             if returns is None or len(returns) == 0:
                 clean_returns = pd.Series(dtype=float)
             else:
@@ -220,7 +336,11 @@ class AdvancedRiskAnalyzer:
             n_obs = len(clean_returns)
 
             # 2. Evaluate Cornish-Fisher Data Sufficiency and Validity Gates
-            if n_obs < REQUIRED_CORNISH_FISHER_OBSERVATIONS:
+            if cal_err is not None:
+                cf_available = False
+                cf_reason = cal_err
+                cf_message = cal_msg or f"Exchange calendar error: {cal_err}"
+            elif n_obs < REQUIRED_CORNISH_FISHER_OBSERVATIONS:
                 cf_available = False
                 cf_reason = "INSUFFICIENT_OBSERVATIONS"
                 cf_message = f"Cornish-Fisher risk estimates require at least 30 valid closed daily return observations (found {n_obs})."
