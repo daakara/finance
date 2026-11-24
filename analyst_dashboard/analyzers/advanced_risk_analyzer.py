@@ -6,125 +6,484 @@ Sophisticated risk metrics beyond basic volatility and Sharpe ratio
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any, Union
 import logging
 
 logger = logging.getLogger(__name__)
 
+REQUIRED_CORNISH_FISHER_OBSERVATIONS = 30
+
+_EXCHANGE_CALENDARS: Dict[str, Any] = {}
+
+SUPPORTED_EXCHANGE_MAP: Dict[str, Tuple[str, str]] = {
+    # US Equities / ETFs
+    "XNYS": ("XNYS", "America/New_York"),
+    "NYSE": ("XNYS", "America/New_York"),
+    "NYQ": ("XNYS", "America/New_York"),
+
+    "XNAS": ("XNAS", "America/New_York"),
+    "NASDAQ": ("XNAS", "America/New_York"),
+    "NMS": ("XNAS", "America/New_York"),
+    "NGS": ("XNAS", "America/New_York"),
+    "NCM": ("XNAS", "America/New_York"),
+
+    "ARCX": ("ARCX", "America/New_York"),
+    "ARCA": ("ARCX", "America/New_York"),
+    "PCX": ("ARCX", "America/New_York"),
+    "ASE": ("ARCX", "America/New_York"),
+
+    "BATS": ("BATS", "America/New_York"),
+    "BZX": ("BATS", "America/New_York"),
+    "BTS": ("BATS", "America/New_York"),
+
+    # Crypto 24/7
+    "24/7": ("24/7", "UTC"),
+    "CRYPTO": ("24/7", "UTC"),
+    "CCC": ("24/7", "UTC"),
+    "CCY": ("24/7", "UTC"),
+    "CRYPTO_24_7": ("24/7", "UTC"),
+}
+
+
+def get_exchange_calendar(exchange: str = "XNYS") -> Optional[Any]:
+    """Cached accessor for exchange calendar instance."""
+    if exchange not in _EXCHANGE_CALENDARS:
+        try:
+            import exchange_calendars as xcals
+            _EXCHANGE_CALENDARS[exchange] = xcals.get_calendar(exchange)
+        except Exception as e:
+            logger.debug(f"exchange_calendars {exchange} fallback: {e}")
+            _EXCHANGE_CALENDARS[exchange] = None
+    return _EXCHANGE_CALENDARS.get(exchange)
+
+
+def resolve_calendar_metadata(
+    exchange: Optional[str] = None,
+    asset_class: Optional[str] = None,
+    timezone: Optional[str] = None,
+    is_crypto: bool = False,
+) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
+    """Resolves exchange calendar code, timezone, and error reason (if unverified or unsupported).
+
+    Returns:
+        (cal_code, tz_name, error_reason, error_message)
+    """
+    clean_ac = str(asset_class).strip().upper() if asset_class else ""
+    if is_crypto or clean_ac == "CRYPTO":
+        return "24/7", "UTC", None, None
+
+    clean_ex = str(exchange).strip().upper() if exchange else ""
+    if not clean_ex or clean_ex in ("UNKNOWN", "UNVERIFIED", "NONE"):
+        return None, None, "UNVERIFIED_EXCHANGE_CALENDAR", (
+            f"Exchange calendar is unverified for exchange '{exchange or 'UNKNOWN'}'; "
+            "Cornish-Fisher risk estimates require verified exchange calendar session alignment."
+        )
+
+    if clean_ex in SUPPORTED_EXCHANGE_MAP:
+        cal_code, default_tz = SUPPORTED_EXCHANGE_MAP[clean_ex]
+        tz_name = timezone or default_tz
+        return cal_code, tz_name, None, None
+
+    return None, None, "UNSUPPORTED_EXCHANGE_CALENDAR", (
+        f"Exchange calendar '{exchange}' is not supported; "
+        "Cornish-Fisher risk estimates require a supported exchange calendar (XNYS, XNAS, ARCX, BATS, 24/7)."
+    )
+
+
+def extract_valid_returns(
+    price_data: Any,
+    exchange: Optional[str] = None,
+    asset_class: Optional[str] = None,
+    timezone: Optional[str] = None,
+    is_crypto: bool = False,
+    require_verified_calendar: bool = False,
+) -> pd.Series:
+    """Extract valid finite 1-session daily return observations from price data.
+
+    Invariants (Directive TASK-OPEN-03):
+    1. Input prices must be strictly positive (> 0) and finite.
+    2. Consecutive session requirement: Never forward-fill missing prices or bridge
+       missing sessions. A missing or non-positive price at session t suppresses returns
+       at both session t and session t+1.
+    3. Authoritative exchange calendar and timezone alignment:
+       - When price data has a date/datetime index, the series is aligned against the
+         asset's authoritative exchange calendar (e.g. XNYS for NYSE, XNAS for NASDAQ,
+         ARCX for NYSE Arca, BATS for BATS, or 24/7 daily calendar for crypto).
+       - If exchange is UNKNOWN, UNVERIFIED, '', None and metadata is unverified:
+         Fails closed to UNAVAILABLE with reason UNVERIFIED_EXCHANGE_CALENDAR.
+       - If exchange is unsupported (e.g. LSE, TSX):
+         Fails closed to UNAVAILABLE with reason UNSUPPORTED_EXCHANGE_CALENDAR.
+       - Omitted trading dates (missing entirely from input) are exposed as explicit NaNs,
+         preventing multi-session price jumps from being counted as 1-session returns.
+       - Valid transitions across weekends and exchange holidays are preserved as consecutive 1-session returns.
+    4. Synthetic non-date test fixtures (with pure integer RangeIndex):
+       - Can evaluate numeric samples without calendar alignment for pure statistical unit tests
+         when require_verified_calendar is False.
+    5. Output contains only valid, finite returns.
+    """
+    if price_data is None:
+        return pd.Series(dtype=float)
+
+    if isinstance(price_data, pd.DataFrame):
+        if "Close" in price_data.columns:
+            prices = price_data["Close"]
+        elif "close" in price_data.columns:
+            prices = price_data["close"]
+        else:
+            prices = price_data.iloc[:, 0] if len(price_data.columns) > 0 else pd.Series(dtype=float)
+    elif isinstance(price_data, pd.Series):
+        prices = price_data
+    else:
+        try:
+            prices = pd.Series(price_data, dtype=float)
+        except Exception:
+            return pd.Series(dtype=float)
+
+    if len(prices) == 0:
+        return pd.Series(dtype=float)
+
+    numeric_prices = pd.to_numeric(prices, errors="coerce")
+    # Strictly positive and finite prices
+    valid_prices = numeric_prices.where((numeric_prices > 0) & np.isfinite(numeric_prices))
+
+    # Check for datetime-like index
+    dt_index = None
+    if isinstance(valid_prices.index, pd.DatetimeIndex):
+        dt_index = valid_prices.index
+    elif isinstance(valid_prices.index, pd.Index) and not isinstance(valid_prices.index, (pd.RangeIndex, pd.MultiIndex)):
+        try:
+            parsed = pd.to_datetime(valid_prices.index, errors="coerce")
+            if parsed.notna().sum() >= max(2, int(len(valid_prices) * 0.8)):
+                dt_index = parsed
+        except Exception:
+            dt_index = None
+
+    if dt_index is not None and len(dt_index) >= 2:
+        cal_code, tz_name, cal_err, cal_msg = resolve_calendar_metadata(
+            exchange=exchange,
+            asset_class=asset_class,
+            timezone=timezone,
+            is_crypto=is_crypto,
+        )
+        if cal_err is not None:
+            empty_s = pd.Series(dtype=float)
+            empty_s.attrs["calendar_error"] = cal_err
+            empty_s.attrs["calendar_message"] = cal_msg
+            return empty_s
+
+        try:
+            if cal_code == "24/7":
+                # 24/7/365 daily calendar for crypto
+                if dt_index.tz is not None:
+                    local_dates = dt_index.tz_convert("UTC").normalize().tz_localize(None)
+                else:
+                    local_dates = dt_index.normalize()
+
+                p = valid_prices.copy()
+                p.index = local_dates
+                p = p[~p.index.duplicated(keep="last")]
+
+                min_date = local_dates.min()
+                max_date = local_dates.max()
+                if min_date != max_date:
+                    full_days = pd.date_range(min_date, max_date, freq="D")
+                    aligned_prices = p.reindex(full_days)
+                    rets = aligned_prices.pct_change(fill_method=None)
+                    valid_rets = rets[np.isfinite(rets)]
+                    return valid_rets
+            else:
+                cal = get_exchange_calendar(cal_code)
+                if cal is None:
+                    empty_s = pd.Series(dtype=float)
+                    empty_s.attrs["calendar_error"] = "UNSUPPORTED_EXCHANGE_CALENDAR"
+                    empty_s.attrs["calendar_message"] = f"Failed to load exchange calendar for '{cal_code}'."
+                    return empty_s
+
+                # Authoritative Exchange Calendar
+                effective_tz = tz_name or getattr(cal, "tz", "America/New_York")
+                if dt_index.tz is not None:
+                    local_dates = dt_index.tz_convert(effective_tz).normalize().tz_localize(None)
+                else:
+                    local_dates = dt_index.normalize()
+
+                p = valid_prices.copy()
+                p.index = local_dates
+                p = p[~p.index.duplicated(keep="last")]
+
+                start_str = str(local_dates.min().date())
+                end_str = str(local_dates.max().date())
+                sessions = cal.sessions_in_range(start_str, end_str)
+                if len(sessions) > 0:
+                    sessions_idx = pd.to_datetime(sessions.date)
+                    aligned_prices = p.reindex(sessions_idx)
+                    rets = aligned_prices.pct_change(fill_method=None)
+                    valid_rets = rets[np.isfinite(rets)]
+                    return valid_rets
+        except Exception as cal_err_exc:
+            logger.debug(f"Calendar session alignment exception: {cal_err_exc}")
+
+    # Fallback / Sequential Index without calendar (for pure RangeIndex synthetic test fixtures)
+    if require_verified_calendar and dt_index is None:
+        empty_s = pd.Series(dtype=float)
+        empty_s.attrs["calendar_error"] = "UNVERIFIED_EXCHANGE_CALENDAR"
+        empty_s.attrs["calendar_message"] = "Price data lacks date/datetime index and cannot be aligned against a verified exchange calendar."
+        return empty_s
+
+    # CRITICAL: Without forward-fill (fill_method=None), pct_change produces NaN at index t
+    # if either valid_prices[t-1] is NaN or valid_prices[t] is NaN.
+    # It NEVER forward-fills missing prices and NEVER bridges missing sessions.
+    rets = valid_prices.pct_change(fill_method=None)
+    valid_rets = rets[np.isfinite(rets)]
+    return valid_rets
+
+
 class AdvancedRiskAnalyzer:
     """Advanced risk analysis capabilities for professional-grade insights"""
     
-    def analyze_comprehensive_risk(self, price_data: pd.DataFrame, 
-                                 benchmark_data: Optional[pd.DataFrame] = None) -> Dict[str, Any]:
-        """Perform comprehensive risk analysis"""
+    def analyze_comprehensive_risk(
+        self,
+        price_data: Any, 
+        benchmark_data: Optional[Any] = None,
+        exchange: Optional[str] = None,
+        asset_class: Optional[str] = None,
+        timezone: Optional[str] = None,
+        is_crypto: bool = False,
+        require_verified_calendar: bool = False,
+    ) -> Dict[str, Any]:
+        """Perform comprehensive risk analysis with Cornish-Fisher sufficiency gating."""
         try:
-            returns = price_data['Close'].pct_change().dropna()
+            valid_returns = extract_valid_returns(
+                price_data,
+                exchange=exchange,
+                asset_class=asset_class,
+                timezone=timezone,
+                is_crypto=is_crypto,
+                require_verified_calendar=require_verified_calendar,
+            )
+            adv_metrics = self._calculate_advanced_risk_metrics(valid_returns)
+            cf_state = adv_metrics.get("cornish_fisher", {
+                "status": "UNAVAILABLE",
+                "reason": "INSUFFICIENT_OBSERVATIONS",
+                "actual_observations": len(valid_returns),
+                "required_observations": REQUIRED_CORNISH_FISHER_OBSERVATIONS,
+                "message": f"Cornish-Fisher risk estimates require at least 30 valid closed daily return observations (found {len(valid_returns)})."
+            })
+
+            # Extract price series for drawdowns
+            if isinstance(price_data, pd.DataFrame):
+                close_series = price_data["Close"] if "Close" in price_data.columns else (
+                    price_data["close"] if "close" in price_data.columns else price_data.iloc[:, 0]
+                )
+            elif isinstance(price_data, pd.Series):
+                close_series = price_data
+            else:
+                close_series = pd.Series(dtype=float)
+
+            clean_close = pd.to_numeric(close_series, errors="coerce").dropna()
             
             risk_analysis = {
-                'advanced_metrics': self._calculate_advanced_risk_metrics(returns),
-                'drawdown_analysis': self._analyze_drawdowns(price_data['Close']),
-                'regime_analysis': self._detect_market_regimes(returns)
+                'advanced_metrics': adv_metrics,
+                'drawdown_analysis': self._analyze_drawdowns(clean_close) if len(clean_close) > 0 else {},
+                'regime_analysis': self._detect_market_regimes(valid_returns) if len(valid_returns) > 0 else {},
+                'cornish_fisher': cf_state
             }
             
             if benchmark_data is not None:
-                benchmark_returns = benchmark_data['Close'].pct_change().dropna()
-                risk_analysis['relative_risk'] = self._analyze_relative_risk(
-                    returns, benchmark_returns
+                benchmark_returns = extract_valid_returns(
+                    benchmark_data,
+                    exchange=exchange,
+                    asset_class=asset_class,
+                    timezone=timezone,
+                    is_crypto=is_crypto,
+                    require_verified_calendar=require_verified_calendar,
                 )
-            
+                if hasattr(self, "_analyze_relative_risk"):
+                    risk_analysis['relative_risk'] = self._analyze_relative_risk(
+                        valid_returns, benchmark_returns
+                    )
 
             return risk_analysis
             
         except Exception as e:
             logger.error(f"Error in comprehensive risk analysis: {str(e)}")
-            return {'error': str(e)}
+            return {
+                'error': str(e),
+                'advanced_metrics': {},
+                'cornish_fisher': {
+                    'status': 'UNAVAILABLE',
+                    'reason': 'CALCULATION_ERROR',
+                    'actual_observations': 0,
+                    'required_observations': REQUIRED_CORNISH_FISHER_OBSERVATIONS,
+                    'message': str(e)
+                }
+            }
     
-    def _calculate_advanced_risk_metrics(self, returns: pd.Series) -> Dict[str, float]:
-        """Calculate sophisticated risk metrics"""
+    def _calculate_advanced_risk_metrics(self, returns: pd.Series) -> Dict[str, Any]:
+        """Calculate sophisticated risk metrics with strict Cornish-Fisher sufficiency gating (>= 30 valid returns)."""
         try:
             metrics = {}
-            
-            # Value at Risk (VaR) at different confidence levels
-            metrics['VaR_95'] = np.percentile(returns, 5) * 100
-            metrics['VaR_99'] = np.percentile(returns, 1) * 100
-            
-            # Conditional Value at Risk (Expected Shortfall)
-            metrics['CVaR_95'] = returns[returns <= np.percentile(returns, 5)].mean() * 100
-            metrics['CVaR_99'] = returns[returns <= np.percentile(returns, 1)].mean() * 100
-            
-            # Tail Ratio (95th percentile / 5th percentile)
-            p5 = np.percentile(returns, 5)
-            p95 = np.percentile(returns, 95)
-            metrics['Tail_Ratio'] = float(abs(p95 / p5)) if p5 != 0 else 1.25
-            
-            # Skewness and Kurtosis (Clipped to prevent polynomial inversion on extreme outliers)
-            raw_skew = float(stats.skew(returns.dropna()))
-            raw_kurt = float(stats.kurtosis(returns.dropna()))  # excess kurtosis
-            
-            skew = float(np.clip(raw_skew if not np.isnan(raw_skew) else 0.0, -3.0, 3.0))
-            kurt = float(np.clip(raw_kurt if not np.isnan(raw_kurt) else 0.0, -1.0, 10.0))
-            metrics['Skewness'] = raw_skew if not np.isnan(raw_skew) else 0.0
-            metrics['Kurtosis'] = raw_kurt if not np.isnan(raw_kurt) else 0.0
 
-            # Cornish-Fisher Expansion for Modified VaR (adjusts for non-normality)
-            # z_95 = -1.64485, z_99 = -2.32635 for left tail
-            z_95 = -1.644853
-            z_99 = -2.326348
-            
-            cf_z_95 = z_95 + (z_95**2 - 1) * (skew / 6.0) + (z_95**3 - 3 * z_95) * (kurt / 24.0) - (2 * z_95**3 - 5 * z_95) * (skew**2 / 36.0)
-            cf_z_99 = z_99 + (z_99**2 - 1) * (skew / 6.0) + (z_99**3 - 3 * z_99) * (kurt / 24.0) - (2 * z_99**3 - 5 * z_99) * (skew**2 / 36.0)
-            
-            # Enforce monotonicity: 99% VaR tail multiplier must be strictly deeper than 95%
-            if cf_z_99 > cf_z_95:
-                cf_z_99 = cf_z_95 - 0.681495  # Fallback to standard Gaussian spread
-            
-            mean_ret = returns.mean()
-            std_ret = returns.std()
-            
-            var_95_val = (mean_ret + cf_z_95 * std_ret) * 100
-            var_99_val = (mean_ret + cf_z_99 * std_ret) * 100
-            
-            metrics['Modified_VaR_95'] = var_95_val
-            metrics['Modified_VaR_99'] = min(var_99_val, var_95_val)  # Guarantee 99% VaR is more conservative
-            
-            # Modified CVaR using returns exceeding Modified VaR threshold
-            mvar_threshold = (mean_ret + cf_z_95 * std_ret)
-            tail_returns = returns[returns <= mvar_threshold]
-            metrics['Modified_CVaR_95'] = tail_returns.mean() * 100 if len(tail_returns) > 0 else metrics['CVaR_95']
-            
-            # Calmar Ratio (Annual Return / Max Drawdown)
-            annual_return = returns.mean() * 252
-            max_dd = self._calculate_max_drawdown(returns)
-            metrics['Calmar_Ratio'] = annual_return / max(0.001, abs(max_dd)) if max_dd != 0 else 0
-            
-            # Sortino Ratio (standard full-sample downside semi-deviation)
-            risk_free_rate = 0.0
-            downside_diff = np.minimum(0.0, returns - (risk_free_rate / 252.0))
-            downside_dev = np.sqrt(np.mean(downside_diff ** 2)) * np.sqrt(252)
-            metrics['Downside_Deviation'] = downside_dev * 100
-            metrics['Sortino_Ratio'] = (annual_return * 100) / max(0.001, downside_dev * 100) if downside_dev != 0 else 0
-            
-            # Omega Ratio
-            threshold = 0  # Risk-free rate
-            excess_returns = returns - threshold
-            positive_returns = excess_returns[excess_returns > 0].sum()
-            negative_returns = abs(excess_returns[excess_returns < 0].sum())
-            metrics['Omega_Ratio'] = positive_returns / max(1e-6, negative_returns) if negative_returns != 0 else 10.0
-            
-            # Pain Ratio
-            pain_index = self._calculate_pain_index(returns)
-            metrics['Pain_Ratio'] = annual_return / max(0.001, pain_index) if pain_index != 0 else 0
-            
+            # 1. Clean and count valid finite return observations
+            cal_err = returns.attrs.get("calendar_error") if hasattr(returns, "attrs") else None
+            cal_msg = returns.attrs.get("calendar_message") if hasattr(returns, "attrs") else None
+
+            if returns is None or len(returns) == 0:
+                clean_returns = pd.Series(dtype=float)
+            else:
+                num_rets = pd.to_numeric(returns, errors="coerce")
+                clean_returns = num_rets[np.isfinite(num_rets)]
+
+            n_obs = len(clean_returns)
+
+            # 2. Evaluate Cornish-Fisher Data Sufficiency and Validity Gates
+            if cal_err is not None:
+                cf_available = False
+                cf_reason = cal_err
+                cf_message = cal_msg or f"Exchange calendar error: {cal_err}"
+            elif n_obs < REQUIRED_CORNISH_FISHER_OBSERVATIONS:
+                cf_available = False
+                cf_reason = "INSUFFICIENT_OBSERVATIONS"
+                cf_message = f"Cornish-Fisher risk estimates require at least 30 valid closed daily return observations (found {n_obs})."
+            else:
+                # Sample variance / degeneracy check
+                std_ret = float(clean_returns.std())
+                if std_ret <= 0.0 or np.isnan(std_ret) or np.isinf(std_ret):
+                    cf_available = False
+                    cf_reason = "DEGENERATE_SAMPLE"
+                    cf_message = "Return series has zero or non-finite variance; Cornish-Fisher expansion is undefined."
+                else:
+                    raw_skew = float(stats.skew(clean_returns))
+                    raw_kurt = float(stats.kurtosis(clean_returns))
+                    if np.isnan(raw_skew) or np.isnan(raw_kurt) or np.isinf(raw_skew) or np.isinf(raw_kurt):
+                        cf_available = False
+                        cf_reason = "NON_FINITE_DISTRIBUTION"
+                        cf_message = "Skewness or kurtosis is non-finite; Cornish-Fisher expansion is undefined."
+                    else:
+                        cf_available = True
+                        cf_reason = None
+                        cf_message = None
+
+            # 3. Empirical Percentile & Ratio Metrics (computed when sample has finite returns)
+            if n_obs > 0:
+                metrics['VaR_95'] = float(np.percentile(clean_returns, 5) * 100)
+                metrics['VaR_99'] = float(np.percentile(clean_returns, 1) * 100)
+                
+                p5 = float(np.percentile(clean_returns, 5))
+                p95 = float(np.percentile(clean_returns, 95))
+                metrics['Tail_Ratio'] = float(abs(p95 / p5)) if p5 != 0 else 1.25
+                
+                tail_5 = clean_returns[clean_returns <= p5]
+                metrics['CVaR_95'] = float(tail_5.mean() * 100) if len(tail_5) > 0 else metrics['VaR_95']
+
+                p1 = float(np.percentile(clean_returns, 1))
+                tail_1 = clean_returns[clean_returns <= p1]
+                metrics['CVaR_99'] = float(tail_1.mean() * 100) if len(tail_1) > 0 else metrics['VaR_99']
+
+                annual_return = float(clean_returns.mean() * 252)
+                max_dd = float(self._calculate_max_drawdown(clean_returns))
+                metrics['Calmar_Ratio'] = float(annual_return / max(0.001, abs(max_dd))) if max_dd != 0 else 0.0
+                
+                risk_free_rate = 0.0
+                downside_diff = np.minimum(0.0, clean_returns - (risk_free_rate / 252.0))
+                downside_dev = float(np.sqrt(np.mean(downside_diff ** 2)) * np.sqrt(252))
+                metrics['Downside_Deviation'] = float(downside_dev * 100)
+                metrics['Sortino_Ratio'] = float((annual_return * 100) / max(0.001, downside_dev * 100)) if downside_dev != 0 else 0.0
+                
+                excess_returns = clean_returns
+                positive_returns = float(excess_returns[excess_returns > 0].sum())
+                negative_returns = float(abs(excess_returns[excess_returns < 0].sum()))
+                metrics['Omega_Ratio'] = float(positive_returns / max(1e-6, negative_returns)) if negative_returns != 0 else 10.0
+                
+                pain_index = float(self._calculate_pain_index(clean_returns))
+                metrics['Pain_Ratio'] = float(annual_return / max(0.001, pain_index)) if pain_index != 0 else 0.0
+            else:
+                metrics['VaR_95'] = None
+                metrics['VaR_99'] = None
+                metrics['CVaR_95'] = None
+                metrics['CVaR_99'] = None
+                metrics['Tail_Ratio'] = None
+                metrics['Calmar_Ratio'] = None
+                metrics['Downside_Deviation'] = None
+                metrics['Sortino_Ratio'] = None
+                metrics['Omega_Ratio'] = None
+                metrics['Pain_Ratio'] = None
+
+            # 4. Cornish-Fisher Expansion for Modified VaR (adjusts for non-normality)
+            if cf_available:
+                skew = float(np.clip(raw_skew, -3.0, 3.0))
+                kurt = float(np.clip(raw_kurt, -1.0, 10.0))
+                metrics['Skewness'] = raw_skew
+                metrics['Kurtosis'] = raw_kurt
+
+                # z_95 = -1.64485, z_99 = -2.32635 for left tail
+                z_95 = -1.644853
+                z_99 = -2.326348
+                
+                cf_z_95 = z_95 + (z_95**2 - 1) * (skew / 6.0) + (z_95**3 - 3 * z_95) * (kurt / 24.0) - (2 * z_95**3 - 5 * z_95) * (skew**2 / 36.0)
+                cf_z_99 = z_99 + (z_99**2 - 1) * (skew / 6.0) + (z_99**3 - 3 * z_99) * (kurt / 24.0) - (2 * z_99**3 - 5 * z_99) * (skew**2 / 36.0)
+                
+                # Enforce monotonicity: 99% VaR tail multiplier must be strictly deeper than 95%
+                if cf_z_99 > cf_z_95:
+                    cf_z_99 = cf_z_95 - 0.681495  # Fallback to standard Gaussian spread
+                
+                mean_ret = float(clean_returns.mean())
+                
+                var_95_val = float((mean_ret + cf_z_95 * std_ret) * 100)
+                var_99_val = float((mean_ret + cf_z_99 * std_ret) * 100)
+                
+                metrics['Modified_VaR_95'] = var_95_val
+                metrics['Modified_VaR_99'] = min(var_99_val, var_95_val)  # Guarantee 99% VaR is more conservative
+                
+                # Modified CVaR using returns exceeding Modified VaR threshold
+                mvar_threshold = mean_ret + cf_z_95 * std_ret
+                tail_returns = clean_returns[clean_returns <= mvar_threshold]
+                metrics['Modified_CVaR_95'] = float(tail_returns.mean() * 100) if len(tail_returns) > 0 else metrics.get('CVaR_95')
+            else:
+                metrics['Modified_VaR_95'] = None
+                metrics['Modified_VaR_99'] = None
+                metrics['Modified_CVaR_95'] = None
+                metrics['Skewness'] = None
+                metrics['Kurtosis'] = None
+
+            # 5. Cornish-Fisher Explicit State Object
+            cf_state = {
+                'status': 'AVAILABLE' if cf_available else 'UNAVAILABLE',
+                'reason': cf_reason,
+                'actual_observations': n_obs,
+                'required_observations': REQUIRED_CORNISH_FISHER_OBSERVATIONS,
+                'message': cf_message,
+            }
+            metrics['cornish_fisher'] = cf_state
+
+            # 6. Sanitize metrics: Preserves None, converts NaN/Inf to None, preserves dicts
             sanitized_metrics = {}
             for k, v in metrics.items():
-                if v is None or (isinstance(v, (float, int, np.floating)) and (np.isnan(v) or np.isinf(v))):
-                    sanitized_metrics[k] = 0.0
+                if k == 'cornish_fisher':
+                    sanitized_metrics[k] = v
+                elif v is None:
+                    sanitized_metrics[k] = None
+                elif isinstance(v, (float, int, np.floating)):
+                    if np.isnan(v) or np.isinf(v):
+                        sanitized_metrics[k] = None
+                    else:
+                        sanitized_metrics[k] = float(v)
                 else:
-                    sanitized_metrics[k] = float(v)
+                    sanitized_metrics[k] = v
             return sanitized_metrics
         except Exception as e:
             logger.error(f"Error calculating advanced risk metrics: {str(e)}")
-            return {}
+            return {
+                'Modified_VaR_95': None,
+                'Modified_VaR_99': None,
+                'Modified_CVaR_95': None,
+                'cornish_fisher': {
+                    'status': 'UNAVAILABLE',
+                    'reason': 'CALCULATION_ERROR',
+                    'actual_observations': 0,
+                    'required_observations': REQUIRED_CORNISH_FISHER_OBSERVATIONS,
+                    'message': str(e)
+                }
+            }
     
     def _analyze_tail_risk(self, returns: pd.Series) -> Dict[str, Any]:
         """Analyze tail risk characteristics"""

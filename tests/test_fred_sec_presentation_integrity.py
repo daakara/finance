@@ -64,6 +64,8 @@ def test_macro_contract_available_and_live():
 
 def test_macro_contract_inverted_yield_curve_defensive_multiplier():
     """Verify that an inverted yield curve produces RECESSIONARY_PRESSURE and defensive multiplier (0.85)."""
+    import datetime
+
     mock_indicators = {
         "availability": "AVAILABLE",
         "yield_curve_10y2y": -0.35,
@@ -79,7 +81,9 @@ def test_macro_contract_inverted_yield_curve_defensive_multiplier():
     }
 
     with patch("analyst_dashboard.data.fred_fetcher.FredMacroFetcher.get_macro_indicators", return_value=mock_indicators):
-        payload = _build_macro_contract_payload()
+        # Pin the contract date so this regression does not become stale as wall
+        # clock time advances beyond the fixture's November 2026 observations.
+        payload = _build_macro_contract_payload(ref_date=datetime.date(2026, 11, 15))
 
         assert payload["is_live"] is True
         assert payload["regime"] == "RECESSIONARY_PRESSURE"

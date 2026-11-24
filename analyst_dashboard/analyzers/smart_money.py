@@ -3194,7 +3194,7 @@ class SmartMoneyEngine:
                 "records": [],
             }
 
-        if is_verified_empty or (live_sec is not None and live_sec.get("status") == "AVAILABLE_NO_RESULTS"):
+        if is_verified_empty and live_sec is None:
             return {
                 "domain_id": "sec_form_4",
                 "status": SmartMoneyDomainStatus.VERIFIED_NO_ACTIVITY.value,
@@ -3213,6 +3213,152 @@ class SmartMoneyEngine:
         if live_sec is not None:
             sec_status = live_sec.get("status", "")
             items = live_sec.get("items") or live_sec.get("filings") or []
+            is_pipeline_held = bool(live_sec.get("is_pipeline_held", False))
+
+            # When continuous ingestion is held under HOLD_SEC_001 (ingestion-only trial),
+            # represent disclosure availability and scoring eligibility separately.
+            if is_pipeline_held:
+                cov_status = live_sec.get("coverage_status") or "PARTIAL"
+                is_repo_error = sec_status in (
+                    "BACKEND_STORAGE_ERROR",
+                    "CONFIGURATION_BLOCKED",
+                    "TRANSPORT_INCOMPLETE",
+                    "STRUCTURALLY_INVALID",
+                    "ERROR",
+                    "UPSTREAM_SERVER_ERROR",
+                )
+
+                if is_repo_error:
+                    return {
+                        "domain_id": "sec_form_4",
+                        "status": SmartMoneyDomainStatus.UNAVAILABLE.value,
+                        "status_label": "Evidence could not be loaded",
+                        "available": False,
+                        "is_live": False,
+                        "observation_count": 0,
+                        "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                        "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                        "net_value_usd": 0.0,
+                        "provenance": "SEC EDGAR Form 4 Local Store",
+                        "disclosure": "Evidence could not be loaded.",
+                        "records": [],
+                        "is_repo_error": True,
+                        "is_pipeline_held": True,
+                        "scoring_held": True,
+                        "filings_count": 0,
+                        "coverage_status": cov_status,
+                    }
+
+                if len(items) > 0:
+                    buys = 0
+                    sells = 0
+                    gifts = 0
+                    exercises = 0
+                    withholdings = 0
+                    for f in items:
+                        raw_txs = f.get("transactions", [])
+                        if raw_txs:
+                            for tx in raw_txs:
+                                code = str(tx.get("transaction_code") or tx.get("transactionCode") or "").upper()
+                                tt = str(tx.get("transaction_type") or tx.get("transactionType") or "").upper()
+                                if code == "P" or "PURCHASE" in tt or "BUY" in tt:
+                                    buys += 1
+                                elif code == "S" or "SALE" in tt or "SELL" in tt:
+                                    sells += 1
+                                elif code == "G" or "GIFT" in tt:
+                                    gifts += 1
+                                elif code in ("M", "X") or "EXERCISE" in tt:
+                                    exercises += 1
+                                elif code == "F" or "TAX" in tt:
+                                    withholdings += 1
+                        else:
+                            code = str(f.get("transaction_code") or "").upper()
+                            tt = str(f.get("transaction_type") or f.get("type") or "").upper()
+                            if code == "P" or "PURCHASE" in tt or "BUY" in tt:
+                                buys += 1
+                            elif code == "S" or "SALE" in tt or "SELL" in tt:
+                                sells += 1
+                            elif code == "G" or "GIFT" in tt:
+                                gifts += 1
+                            elif code in ("M", "X") or "EXERCISE" in tt:
+                                exercises += 1
+                            elif code == "F" or "TAX" in tt:
+                                withholdings += 1
+
+                    latest_date = items[0].get("filing_date") or items[0].get("filingDate") or ""
+                    latest_str = f", latest {latest_date}" if latest_date else ""
+                    is_cov_certified = cov_status in ("COMPLETE", "CERTIFIED")
+                    if is_cov_certified:
+                        disclosure = f"{len(items)} SEC Form 4 filings stored. Historical coverage certified. Scoring not assessed — ingestion-only trial."
+                        status_label = "Historical Coverage Certified"
+                    else:
+                        disclosure = f"{len(items)} SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
+                        status_label = "Coverage Uncertified"
+
+                    total_tx_count = sum(
+                        len(f.get("transactions")) if isinstance(f.get("transactions"), list)
+                        else (1 if f.get("transaction_code") or f.get("transaction_type") or f.get("transaction_id") else 0)
+                        for f in items
+                    )
+
+                    return {
+                        "domain_id": "sec_form_4",
+                        "status": SmartMoneyDomainStatus.PIPELINE_HELD.value,
+                        "status_label": status_label,
+                        "available": True,
+                        "is_live": False,
+                        "observation_count": len(items),
+                        "filings_count": len(items),
+                        "parsed_transactions_count": total_tx_count,
+                        "transaction_count": total_tx_count,
+                        "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                        "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                        "net_value_usd": 0.0,
+                        "provenance": "SEC EDGAR Form 4 Feed",
+                        "disclosure": disclosure,
+                        "records": items,
+                        "latest_filing_date": latest_date,
+                        "coverage_status": cov_status,
+                        "coverage_certified": is_cov_certified,
+                        "scoring_held": True,
+                        "is_pipeline_held": True,
+                        "buys_count": buys,
+                        "sells_count": sells,
+                        "gifts_count": gifts,
+                        "exercises_count": exercises,
+                    }
+                else:
+                    is_ver_empty = bool(cov_status == "COMPLETE" and sec_status == "AVAILABLE_NO_RESULTS")
+                    if is_ver_empty:
+                        disclosure = "Verified no activity. Not assessed — ingestion-only trial."
+                        status_label = "Verified No Activity"
+                    else:
+                        disclosure = "Coverage incomplete. Not assessed — ingestion-only trial."
+                        status_label = "Coverage incomplete"
+
+                    return {
+                        "domain_id": "sec_form_4",
+                        "status": SmartMoneyDomainStatus.PIPELINE_HELD.value,
+                        "status_label": status_label,
+                        "available": False,
+                        "is_live": False,
+                        "observation_count": 0,
+                        "lookback_days": cls.LOOKBACK_DAYS_INSIDER,
+                        "directional_bias": SmartMoneyDirection.UNASSESSED.value,
+                        "net_value_usd": 0.0,
+                        "provenance": "SEC EDGAR Form 4 Feed",
+                        "disclosure": disclosure,
+                        "records": [],
+                        "is_pipeline_held": True,
+                        "scoring_held": True,
+                        "filings_count": 0,
+                        "parsed_transactions_count": 0,
+                        "transaction_count": 0,
+                        "coverage_status": cov_status,
+                        "coverage_certified": bool(cov_status in ("COMPLETE", "CERTIFIED")),
+                        "is_verified_empty": is_ver_empty,
+                        "is_incomplete_coverage": not is_ver_empty,
+                    }
 
             if sec_status == "AVAILABLE_WITH_RESULTS" or len(items) > 0:
                 buys = 0
@@ -3746,7 +3892,15 @@ class SmartMoneyEngine:
             # Historical evidence is non-live and must not imply SEC egress is on.
             "pit_evidence": pit_evidence,
             "coverage_status": overall_status,
-            "latest_filing_date": sec_sub.get("records", [{}])[0].get("filing_date") if sec_sub.get("records") else None,
+            "latest_filing_date": sec_sub.get("latest_filing_date") or (sec_records[0].get("filing_date") if sec_records else None),
+            "filings_available": bool(sec_records),
+            "filings_count": len(sec_records),
+            "parsed_transactions_count": sec_sub.get("parsed_transactions_count", len(sec_records)),
+            "coverage_certified": bool(sec_sub.get("coverage_certified", False)),
+            "scoring_held": bool(sec_sub.get("scoring_held")),
+            "is_repo_error": bool(sec_sub.get("is_repo_error")),
+            "is_verified_empty": bool(sec_sub.get("is_verified_empty")),
+            "is_incomplete_coverage": bool(sec_sub.get("is_incomplete_coverage")),
             "latest_successful_ingestion": None,  # Legacy composite has no certified ARX ingestion ledger.
             "unresolved_failures_count": 0,
         }

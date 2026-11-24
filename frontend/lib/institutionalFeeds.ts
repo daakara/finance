@@ -564,17 +564,29 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilings
 
       if (status === "AVAILABLE_NO_RESULTS") {
         return {
+          symbol: symClean,
           status: "AVAILABLE_NO_RESULTS",
           items: [],
           message: data.message || "0 filings match criteria",
+          coverageStatus: data.coverage_status || null,
+          certifiedWatermark: data.certified_watermark || null,
+          asOf: data.as_of || null,
+          servedAt: data.served_at || null,
+          isPipelineHeld: typeof data.is_pipeline_held === "boolean" ? data.is_pipeline_held : true,
         };
       }
 
       // Explicit upstream failure/unavailable states preserve items: null
       return {
+        symbol: symClean,
         status,
         items: null,
         message: data.message || null,
+        coverageStatus: data.coverage_status || null,
+        certifiedWatermark: data.certified_watermark || null,
+        asOf: data.as_of || null,
+        servedAt: data.served_at || null,
+        isPipelineHeld: typeof data.is_pipeline_held === "boolean" ? data.is_pipeline_held : true,
       };
     } else {
       const status: SecFilingsStatus = res.status === 429
@@ -585,17 +597,23 @@ export async function fetchSecForm4Insiders(symbol?: string): Promise<SecFilings
         ? "UPSTREAM_SERVER_ERROR"
         : "UNKNOWN_FAIL_CLOSED";
       return {
+        symbol: symClean,
         status,
         items: null,
         message: `HTTP error ${res.status}`,
+        coverageStatus: null,
+        isPipelineHeld: true,
       };
     }
   } catch (err: any) {
     console.warn("Live SEC EDGAR filings fetch failed:", err);
     return {
+      symbol: symClean,
       status: "TRANSPORT_INCOMPLETE",
       items: null,
       message: err?.message || "Transport connection failed",
+      coverageStatus: null,
+      isPipelineHeld: true,
     };
   }
 }

@@ -160,6 +160,27 @@ def main():
         "passed": radar_passed,
     })
 
+    # 7. Risk Metrics & Sizing Behavioral Suite (TASK-OPEN-03)
+    print("Running Risk Metrics & Sizing Behavioral qualification tests...")
+    risk_cmd = [vitest_bin, "run", "components/__tests__/RiskMetricsAndSizingBehavior.test.tsx"]
+    if not os.path.isfile(vitest_bin):
+        errors.append("Local Vitest binary missing: npm ci must provision pinned test dependencies")
+        res_risk = None
+    else:
+        res_risk = subprocess.run(
+            risk_cmd, cwd=FRONTEND_DIR,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="ignore",
+        )
+        print(res_risk.stdout)
+        if res_risk.returncode != 0:
+            errors.append(f"Risk Metrics and Sizing behavioral tests failed with exit code {res_risk.returncode}")
+    assertions.append({
+        "assertion": "Risk metrics card and position sizer null-safety and behavioral suite passes",
+        "observed": {"exit_code": res_risk.returncode if res_risk is not None else None},
+        "passed": res_risk is not None and res_risk.returncode == 0,
+    })
+
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"
     ok, identity, err = resolve_identity_contract()
@@ -178,6 +199,10 @@ def main():
         "frontend/lib/radarRanking.ts",
         "frontend/lib/decisionContext.ts",
         "frontend/app/radar/page.tsx",
+        "frontend/components/RiskMetricsCard.tsx",
+        "frontend/components/AssetFactorRadar.tsx",
+        "frontend/components/DayTraderPositionSizer.tsx",
+        "frontend/components/__tests__/RiskMetricsAndSizingBehavior.test.tsx",
     ]
 
     receipt = create_stage_receipt(

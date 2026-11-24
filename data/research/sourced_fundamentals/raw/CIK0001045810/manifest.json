@@ -1,0 +1,35 @@
+{
+  "title": "ARX Terminal NVDA Sourced Fundamentals Evidence Manifest",
+  "cik": "0001045810",
+  "symbol": "NVDA",
+  "generated_at_utc": "2026-11-22T09:17:14.012476+00:00",
+  "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
+  "rate_ceiling": "<= 4.0 req/sec",
+  "attempts_made": 2,
+  "max_attempts_budget": 4,
+  "files": {
+    "CIK0001045810_submissions.json": {
+      "doc_type": "submissions",
+      "cik": "0001045810",
+      "entity": "NVIDIA CORP",
+      "source_url": "https://data.sec.gov/submissions/CIK0001045810.json",
+      "sha256": "8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045",
+      "size_bytes": 160255,
+      "status_code": 200,
+      "retrieval_timestamp_utc": "2026-11-22T08:53:12.691561+00:00",
+      "operator_identity": "ARXTerminal Research Akara.david26@gmail.com"
+    },
+    "CIK0001045810_companyfacts.json": {
+      "doc_type": "companyfacts",
+      "cik": "0001045810",
+      "entity": "NVIDIA CORP",
+      "source_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json",
+      "sha256": "19ef503a5770f5660964b3c3aea6937579d9b359da344afe6a9adf59c63d26ff",
+      "size_bytes": 4092966,
+      "status_code": 200,
+      "retrieval_timestamp_utc": "2026-11-22T08:53:13.353662+00:00",
+      "operator_identity": "ARXTerminal Research Akara.david26@gmail.com"
+    }
+  },
+  "reused_existing_files": true
+}

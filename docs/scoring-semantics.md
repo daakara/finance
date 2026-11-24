@@ -121,5 +121,5 @@ This specification formally establishes the mathematical foundations, data requi
 | **Output Range** | `[0, 100]` integer. Higher = safer (lower tail risk). |
 | **Mathematical Formula** | Derived from Cornish-Fisher Modified VaR 95%: \(\text{TailRisk} = \min(99, \max(40, \text{round}(100 - |\text{MVaR}_{95}| \times 7)))\). |
 | **Interpretation** | • `80–99`: Mild Downside Tail Risk (Low skewness, low kurtosis)<br>• `60–79`: Moderate Volatility Exposure<br>• `40–59`: Severe Fat-Tail Exposure (High negative skew / kurtosis leptokurtic distribution) |
-| **Minimum Data** | Minimum 30 closed daily returns. |
-| **Missing-Data Behavior** | Defaults to neutral baseline (65) when kurtosis cannot be reliably computed. |
+| **Minimum Data** | Strictly requires at least 30 valid closed daily return observations (\(N_{rets} \ge 30\), requiring \(\ge 31\) valid positive closing prices without forward-filling or session-bridging). |
+| **Missing-Data Behavior** | When \(N_{rets} < 30\), or when the series has zero/non-finite variance or non-finite higher moments, Cornish-Fisher expansion fails closed: `Modified_VaR_95`, `Modified_VaR_99`, `Modified_CVaR_95`, and derived `tailRiskScore` return `null` (`None`). The API emits an explicit `cornish_fisher` metadata block (`status="UNAVAILABLE"`, `reason="INSUFFICIENT_OBSERVATIONS"` or `"DEGENERATE_SAMPLE"`, `actual_observations`, `required_observations=30`). Missing-data states are never defaulted to `0` or `65`. |

@@ -2,20 +2,20 @@
   "control_id": "RQ-13",
   "name": "Financial Evidence & Decision Integrity",
   "status": "PASS",
-  "start_time": "2026-11-20T01:24:55.121939+00:00",
-  "end_time": "2026-11-20T01:24:55.145504+00:00",
-  "duration_sec": 0.002,
-  "candidate_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+  "start_time": "2026-11-24T06:03:26.686628+00:00",
+  "end_time": "2026-11-24T06:03:26.716800+00:00",
+  "duration_sec": 0.003,
+  "candidate_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+  "source_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+  "execution_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "source_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+    "execution_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+    "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
     "workflow_run_attempt": 1,
@@ -65,11 +65,11 @@
     "analyst_dashboard/smart_money/form4_parser.py": "68d95e24feaa72cefad219b95c421cbedb85fda06a94fc9772e8473564c07031",
     "analyst_dashboard/smart_money/form4_models.py": "c7111457655cfffb13c8614ad3f71ee5232c9a1a36a94814889c24b2f53b16e3",
     "api/routes/screener.py": "71511d94b6467e2c6819f0a70d634f40b5fec51d75a789710ff606eb0496c2dc",
-    "frontend/lib/insightGenerator.ts": "6de7fd382cd91c3c56b197a593f50061c1c829d1eebafca38df1c784fc95c0c9"
+    "frontend/lib/insightGenerator.ts": "a1d50d4a37710f49e35b508d17bbe9a25b8a72b596aaf7ddf6fb74eb1aa117d4"
   },
   "errors": [],
   "metadata": {
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "d40dcaaffc2e13bd2d1f85a4137bd54266957a490563330e0a22a58a1d8ef4f9"
+  "receipt_digest": "ee96d14ad95aaf402483b4a6b322ede393bb9a8145d4d34ca1aad413732ba63d"
 }

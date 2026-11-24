@@ -31,12 +31,17 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
-  const var95 = metrics?.Modified_VaR_95 ?? -3.42;
-  const var99 = metrics?.Modified_VaR_99 ?? -5.18;
-  const sortino = metrics?.Sortino_Ratio ?? 1.84;
-  const calmar = metrics?.Calmar_Ratio ?? 2.15;
-  const atr14 = technicals?.atr_14 ?? 4.25;
-  const rsi14 = technicals?.rsi_14 ?? 52.0;
+  const cfState = analyticsData?.analytics?.cornish_fisher;
+  const rawVar95 = metrics?.Modified_VaR_95;
+  const rawVar99 = metrics?.Modified_VaR_99;
+  const isVar95Valid = typeof rawVar95 === "number" && Number.isFinite(rawVar95);
+  const isVar99Valid = typeof rawVar99 === "number" && Number.isFinite(rawVar99);
+  const isCornishFisherUnavailable = cfState?.status === "UNAVAILABLE" || (!isVar95Valid && !isVar99Valid);
+
+  const sortino = typeof metrics?.Sortino_Ratio === "number" && Number.isFinite(metrics.Sortino_Ratio) ? metrics.Sortino_Ratio : null;
+  const calmar = typeof metrics?.Calmar_Ratio === "number" && Number.isFinite(metrics.Calmar_Ratio) ? metrics.Calmar_Ratio : null;
+  const atr14 = typeof technicals?.atr_14 === "number" && Number.isFinite(technicals.atr_14) ? technicals.atr_14 : null;
+  const rsi14 = typeof technicals?.rsi_14 === "number" && Number.isFinite(technicals.rsi_14) ? technicals.rsi_14 : null;
 
   return (
     <div className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-sans transition-colors ${
@@ -68,11 +73,26 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
         <span className={`text-xs px-2.5 py-0.5 rounded-md font-semibold border ${
           isDayTrader
             ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
-            : "text-cyan-400 bg-cyan-950/60 border-cyan-800/80"
+            : isCornishFisherUnavailable
+              ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
+              : "text-cyan-400 bg-cyan-950/60 border-cyan-800/80"
         }`}>
-          {isDayTrader ? (isPlain ? "Intraday Guardrails" : "Intraday Risk Engine") : (isPlain ? "Crash Test Engine" : "Crash-Adjusted VaR")}
+          {isDayTrader
+            ? (isPlain ? "Intraday Guardrails" : "Intraday Risk Engine")
+            : isCornishFisherUnavailable
+              ? "Cornish-Fisher VaR Unavailable"
+              : (isPlain ? "Crash Test Engine" : "Crash-Adjusted VaR")}
         </span>
       </div>
+
+      {isCornishFisherUnavailable && !isDayTrader && (
+        <div className="bg-amber-950/30 border border-amber-800/50 rounded-lg p-2.5 text-xs text-amber-300/90 flex items-center gap-2">
+          <span className="text-sm">⚠️</span>
+          <span>
+            {cfState?.message || "Cornish-Fisher Modified VaR requires at least 30 valid closed return observations. Tail-risk estimates are withheld until sample sufficiency is achieved."}
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {/* Metric 1 */}
@@ -85,14 +105,23 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
               {isDayTrader ? "Daily Move" : "95% Level"}
             </span>
           </div>
-          <span className={`text-xl sm:text-2xl font-bold block tabular-nums ${isDayTrader ? "text-amber-400" : "text-rose-400"}`}>
-            {isDayTrader ? `$${atr14.toFixed(2)}` : `${var95.toFixed(2)}%`}
+          <span className={`text-xl sm:text-2xl font-bold block tabular-nums ${isDayTrader ? "text-amber-400" : isVar95Valid ? "text-rose-400" : "text-slate-400"}`}>
+            {isDayTrader
+              ? (atr14 !== null ? `$${atr14.toFixed(2)}` : "Unavailable")
+              : (isVar95Valid ? `${rawVar95.toFixed(2)}%` : "Unavailable")}
           </span>
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
-            <div className={`${isDayTrader ? "bg-amber-500" : "bg-rose-500"} h-full rounded-full`} style={{ width: `${Math.min(100, Math.abs(var95) * 15)}%` }}></div>
+            <div
+              className={`${isDayTrader ? "bg-amber-500" : "bg-rose-500"} h-full rounded-full`}
+              style={{ width: isDayTrader ? (atr14 !== null ? `${Math.min(100, atr14 * 10)}%` : "0%") : (isVar95Valid ? `${Math.min(100, Math.abs(rawVar95) * 15)}%` : "0%") }}
+            ></div>
           </div>
           <span className="text-[10px] text-slate-400 block">
-            {isDayTrader ? "Average swing per trading day" : "Expected max drop 19 out of 20 days"}
+            {isDayTrader
+              ? "Average swing per trading day"
+              : isVar95Valid
+                ? "Expected max drop 19 out of 20 days"
+                : cfState?.message || "Requires \u226530 closed return observations"}
           </span>
         </div>
 
@@ -106,14 +135,19 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
               {isDayTrader ? "Hard Stop" : "99% Shock"}
             </span>
           </div>
-          <span className="text-xl sm:text-2xl font-bold text-rose-500 block tabular-nums">
-            {var99.toFixed(2)}%
+          <span className={`text-xl sm:text-2xl font-bold block tabular-nums ${isVar99Valid ? "text-rose-500" : "text-slate-400"}`}>
+            {isVar99Valid ? `${rawVar99.toFixed(2)}%` : "Unavailable"}
           </span>
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
-            <div className="bg-rose-600 h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(var99) * 12)}%` }}></div>
+            <div
+              className="bg-rose-600 h-full rounded-full"
+              style={{ width: isVar99Valid ? `${Math.min(100, Math.abs(rawVar99) * 12)}%` : "0%" }}
+            ></div>
           </div>
           <span className="text-[10px] text-slate-400 block">
-            {isDayTrader ? "Do not hold through this loss level" : "Estimated worst 1-day crash in 100 sessions"}
+            {isDayTrader
+              ? (isVar99Valid ? "Do not hold through this loss level" : "Requires \u226530 closed returns for VaR stop")
+              : (isVar99Valid ? "Estimated worst 1-day crash in 100 sessions" : cfState?.message || "Requires \u226530 closed return observations")}
           </span>
         </div>
 
@@ -127,14 +161,19 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
               {isDayTrader ? "Downside" : "Armor"}
             </span>
           </div>
-          <span className="text-xl sm:text-2xl font-bold text-emerald-400 block tabular-nums">
-            {sortino.toFixed(2)}
+          <span className={`text-xl sm:text-2xl font-bold block tabular-nums ${sortino !== null ? "text-emerald-400" : "text-slate-400"}`}>
+            {sortino !== null ? sortino.toFixed(2) : "Unavailable"}
           </span>
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
-            <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${Math.min(100, sortino * 35)}%` }}></div>
+            <div
+              className="bg-emerald-500 h-full rounded-full"
+              style={{ width: sortino !== null ? `${Math.min(100, sortino * 35)}%` : "0%" }}
+            ></div>
           </div>
           <span className="text-[10px] text-slate-400 block">
-            {sortino >= 1.5 ? "Excellent downside protection" : "Moderate downside turbulence"}
+            {sortino !== null
+              ? (sortino >= 1.5 ? "Excellent downside protection" : "Moderate downside turbulence")
+              : "Downside deviation unavailable"}
           </span>
         </div>
 
@@ -150,18 +189,21 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
           </div>
           <span className={`text-xl sm:text-2xl font-bold block tabular-nums ${
             isDayTrader
-              ? rsi14 > 70 ? "text-rose-400" : rsi14 < 30 ? "text-emerald-400" : "text-amber-300"
-              : "text-purple-400"
+              ? (rsi14 !== null ? (rsi14 > 70 ? "text-rose-400" : rsi14 < 30 ? "text-emerald-400" : "text-amber-300") : "text-slate-400")
+              : (calmar !== null ? "text-purple-400" : "text-slate-400")
           }`}>
-            {isDayTrader ? rsi14.toFixed(1) : calmar.toFixed(2)}
+            {isDayTrader ? (rsi14 !== null ? rsi14.toFixed(1) : "Unavailable") : (calmar !== null ? calmar.toFixed(2) : "Unavailable")}
           </span>
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
-            <div className={`${isDayTrader ? "bg-amber-500" : "bg-purple-500"} h-full rounded-full`} style={{ width: `${Math.min(100, isDayTrader ? rsi14 : calmar * 30)}%` }}></div>
+            <div
+              className={`${isDayTrader ? "bg-amber-500" : "bg-purple-500"} h-full rounded-full`}
+              style={{ width: `${Math.min(100, isDayTrader ? (rsi14 ?? 0) : ((calmar ?? 0) * 30))}%` }}
+            ></div>
           </div>
           <span className="text-[10px] text-slate-400 block">
             {isDayTrader
-              ? rsi14 > 70 ? "Overheating (Don't chase high)" : rsi14 < 30 ? "Oversold (Watch for bounce)" : "Cruising in middle gear"
-              : "Historical return vs deepest drawdown"}
+              ? (rsi14 !== null ? (rsi14 > 70 ? "Overheating (Don't chase high)" : rsi14 < 30 ? "Oversold (Watch for bounce)" : "Cruising in middle gear") : "RSI indicator unavailable")
+              : (calmar !== null ? "Historical return vs deepest drawdown" : "Calmar ratio unavailable")}
           </span>
         </div>
       </div>

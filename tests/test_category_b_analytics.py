@@ -27,7 +27,7 @@ class TestCategoryBAnalytics(unittest.TestCase):
 
     def test_cornish_fisher_var_metrics_exist(self):
         """Verify Cornish-Fisher Modified VaR and CVaR calculations."""
-        result = self.risk_analyzer.analyze_comprehensive_risk(self.price_data)
+        result = self.risk_analyzer.analyze_comprehensive_risk(self.price_data, exchange="XNYS")
         self.assertNotIn("error", result)
         adv_metrics = result.get("advanced_metrics", {})
 

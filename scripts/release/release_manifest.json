@@ -1,71 +1,535 @@
 {
-  "release_candidate_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-  "base_anchor_commit": "978123f7217e871ed6097da08a2feb9db7bec8b2",
-  "total_files": 5,
+  "release_candidate_commit": "885e149f13d61e4b8bf28a1fedc862b96bdba2fb",
+  "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
+  "total_files": 63,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-RETENTION-BOUNDED",
+  "directive": "ARX-EXCHANGE-CALENDARS-COMPAT-326",
   "files": {
-    "analyst_dashboard/smart_money/continuous_pipeline.py": {
-      "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: defer remote retention entirely during two-issuer trial cycles; propagate deadlines for other retention calls",
-      "sha256": "0bb10186e1a9e04004f1be9bd3dbd65cb5c60b9906d648a11983c2c167baf0d2",
-      "size_bytes": 105626
-    },
-    "analyst_dashboard/smart_money/storage/backup/retention.py": {
-      "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: bound retention verification & pruning by monotonic deadline, eliminate unbounded fallback, enforce legacy manifest contract",
-      "sha256": "adeca9fec2d06d7af301fd82c7a995195af4b938508e27d9e58626d4b28fb7b8",
-      "size_bytes": 19567
-    },
-    "analyst_dashboard/smart_money/storage/backup/storage_adapter.py": {
-      "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: enforce single total SDK attempt, remaining-budget socket timeouts and metadata deadline checks; close streamed responses",
-      "sha256": "9aa52186639c7305c6eac2321e0721af5c66baec056278847c16f19a549ff1c7",
-      "size_bytes": 23391
-    },
-    "tests/test_smart_money_backup_retention_bounded_adversarial.py": {
+    ".github/workflows/asset-discovery.yml": {
       "operation": "A",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: adversarial offline suite for 55+ backup catalog, slow storage, deadline exhaustion, and zero abandoned work",
-      "sha256": "bcfa2c1534d2b1aacb6146ff3d96ad80d85effedfd71cbe98f01fbae3cd3439f",
-      "size_bytes": 29007
+      "sha256": "6d7b45380fc7525cf36082eb3fc0f86aa9a3888f46fac7fcf237083596a678a3",
+      "size_bytes": 889,
+      "originating_pr_number": 323,
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
+      "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
     },
-    "tests/test_smart_money_backup_retention_safety.py": {
+    ".gitignore": {
       "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: safe pruning invariants and legacy manifest contract test coverage",
-      "sha256": "63681bbf13be0c9c0a38a0f3e3fd9506b7f80d4bb8645a07ee33bf0af5a72638",
-      "size_bytes": 6480
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Narrowly scoped unignore rules for reproducible raw NVDA fundamentals and custody manifest",
+      "sha256": "f4c19ffc0f9864c13118e716bc4ee4639bc0276649a86352e2d9928ab6c01df6",
+      "size_bytes": 1507
+    },
+    "analyst_dashboard/analyzers/smart_money.py": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Surface stored Form 4 disclosure metadata and counts during held scoring",
+      "sha256": "315068f78fc8d8bd6d5c01cc72676e3c65a6e296cfd4ad05e4ba5cec8f38653d",
+      "size_bytes": 190534
+    },
+    "analyst_dashboard/provenance/evidence_contract.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "af4769b460500c3c4355239362bb8d2ef163c8d1",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Clarify missing financial evidence without implying document authentication; expose freshness and verification diagnostics",
+      "sha256": "27205f2066167a3010ddaeb58004ad0fa6f5131b1e12fa4e3b52091ead539f9b",
+      "size_bytes": 14798
+    },
+    "analyst_dashboard/research/sourced_fundamentals/__init__.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Export offline reader functions and integrity error types",
+      "sha256": "e7f5345cb3e9afb1441fd2543eb38b2230f59e111f3a5374a1521c7bb5bf2b43",
+      "size_bytes": 2360
+    },
+    "analyst_dashboard/research/sourced_fundamentals/contracts.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Add acceptance_time field to FinancialFact contract",
+      "sha256": "268b018b28f5ec5acf60e35b4ce6adc5da2e50c31da5eb9950b7d97be45af314",
+      "size_bytes": 34825
+    },
+    "analyst_dashboard/research/sourced_fundamentals/identity.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Add NVDA attributable SEC identity binding (CIK 0001045810, NASDAQ)",
+      "sha256": "e4c63bd07c6d5e3cd67f2fa856538a3038cb7852f84111368f3114c259c81dcd",
+      "size_bytes": 6779
+    },
+    "analyst_dashboard/research/sourced_fundamentals/normalizer.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Resolve acceptanceDateTime directly from retained submissions; keep unmatched accessions unresolved",
+      "sha256": "90eafb6a83478dda404f2afce7dad4fad860338fc9a1eda71b2d2868e8194d2a",
+      "size_bytes": 59213
+    },
+    "analyst_dashboard/research/sourced_fundamentals/offline_reader.py": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Implement offline fundamentals reader with cryptographic hash/issuer/accession/null checks and anti-masking protection",
+      "sha256": "97a0cf158ff3b740f1bc9157d00f5adf98b1f329b9b26b9ebc3a6798ca7e7879",
+      "size_bytes": 18384
+    },
+    "api/routes/analytics.py": {
+      "operation": "M",
+      "originating_pr_number": 324,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "TASK-OPEN-03 / PR #324 + PR #323: Cornish-Fisher gate integration with dynamic asset discovery",
+      "sha256": "c411ec36084469b80000cbb66e275807101b6c1b3ac6fdc03417af23b360ad38",
+      "size_bytes": 97681
+    },
+    "data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_companyfacts.json": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Official retained SEC EDGAR company facts disclosure JSON for CIK 0001045810",
+      "sha256": "19ef503a5770f5660964b3c3aea6937579d9b359da344afe6a9adf59c63d26ff",
+      "size_bytes": 4092966
+    },
+    "data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_submissions.json": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Official retained SEC EDGAR submissions disclosure JSON for CIK 0001045810",
+      "sha256": "8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045",
+      "size_bytes": 160255
+    },
+    "data/research/sourced_fundamentals/raw/CIK0001045810/manifest.json": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Retained custody manifest and SHA-256 provenance for NVDA fundamentals files",
+      "sha256": "02e9518ca8ba5db66fc5813a6238c3f76c1069d0093e3fcbc50f08c32db0f470",
+      "size_bytes": 1382
+    },
+    "docs/reports/ARX_NVDA_FUNDAMENTAL_EVIDENCE_GAP_2026_11_22.md": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "37bded139a69912640b979db5609f3e6818ad240",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Record the read-only NVDA source-custody inventory, limitations and separately authorized continuation boundary",
+      "sha256": "b1b81c5de43610f6ffdaeaa3562ded3dc1ced73c92ba4e4498c30c937123cbab",
+      "size_bytes": 23361
+    },
+    "frontend/app/layout.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Eliminate redundant Matomo image preload warning while preserving analytics",
+      "sha256": "f0d36424f44ea84daa3a9ca2bcb7c6316d9b609891b3fefe15542301010b4813",
+      "size_bytes": 8107
+    },
+    "frontend/components/CommandPaletteModal.tsx": {
+      "operation": "M",
+      "sha256": "1b915af8a22461555c3493e559c73b4641debb8e82b1f337e58171f524e70865",
+      "size_bytes": 24572,
+      "originating_pr_number": 323,
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
+    },
+    "frontend/components/CompositeConvictionCard.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "8132077c79dd176eee10d32ef3ba150439cdf362bffa38ad10d2eda27a1709de",
+      "size_bytes": 17481
+    },
+    "frontend/components/InstitutionalFeeds.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Listen for arx:open-sec-disclosures event to switch active tab to SEC_FORM4",
+      "sha256": "59e310e42ff5e74d3c0191e63329ec3c99d6117c87461877331e61788b04b3a0",
+      "size_bytes": 45537
+    },
+    "frontend/components/UniversalOmniSearch.tsx": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "6026e40f5056c50e097f6ef98b5181bb4461f12979b8c9563268779787c01ba9",
+      "size_bytes": 18005
+    },
+    "frontend/components/WhyInspectModal.tsx": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "b27d8eeebdced87443e7f1bd19cf82867fb432097b98d5b6f54909f205e4fa1f",
+      "size_bytes": 24556
+    },
+    "frontend/components/__tests__/AssetDiscoveryMenus.test.tsx": {
+      "operation": "A",
+      "sha256": "e7b248cd6d3ceac7c93d0038f313da9dbeeaa4aa6d66ac2dc9049dff8f9aacd3",
+      "size_bytes": 8292,
+      "originating_pr_number": 323,
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
+    },
+    "frontend/functions/api/assets/search.ts": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "33a3a9ec02fb8833741901a884e1574632d1379d8e0049c132715f95850449a0",
+      "size_bytes": 2255
+    },
+    "frontend/hooks/__tests__/useAssetDiscovery.test.tsx": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "617835ca8e26fe58ecd7ac182318a0e496a49606f27f94b91a58521263782bab",
+      "size_bytes": 2650
+    },
+    "frontend/hooks/useAssetDiscovery.ts": {
+      "operation": "A",
+      "sha256": "fc766977a08b3adf32a11569a9f3f36239759de299a89c85fb5fcd0c2a3c10dc",
+      "size_bytes": 1458,
+      "originating_pr_number": 323,
+      "originating_commit": "478243106f57a49c9a6ced05867ccac792b898f5",
+      "governing_requirement": "PR #323: dynamic provider-backed asset discovery without scoring/identity promotion"
+    },
+    "frontend/lib/__tests__/assetDiscovery.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "6bb0f4ff68edd1bc7ce83a2f5d521364ed1c153ecadb0caa6b2981f52815c5b1",
+      "size_bytes": 5441
+    },
+    "frontend/lib/api.ts": {
+      "operation": "M",
+      "originating_pr_number": 324,
+      "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
+      "governing_requirement": "TASK-OPEN-03 / PR #324 + PR #323: Cornish-Fisher factor scores null-safety and dynamic asset discovery types",
+      "sha256": "e516788253ffc8ba6d1d1da85d93a3e0124e8fcfb0ecdb35a84e53e5b8cd7b15",
+      "size_bytes": 196930
+    },
+    "frontend/lib/assetDiscovery.ts": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "6bc4d21c38c3fa76b74ce041c4b49b2798efc169e0a7334037c288f2b86130f5",
+      "size_bytes": 2787
+    },
+    "frontend/lib/evidenceDomains.ts": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Decouple stored filings from scoring eligibility and report uncertified interval",
+      "sha256": "d42e941a970aa536a63c1a74ff97c4faafc31564f5e8745d9b2e62f94f71dec3",
+      "size_bytes": 28788
+    },
+    "frontend/lib/institutionalFeeds.ts": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Pass symbol, coverageStatus, certifiedWatermark, and isPipelineHeld in SecFilingsResponse",
+      "sha256": "a33cbb8d4fe05bc819b52edc3ec327dc15a0c53ec74d39553f6ba88df119fe8c",
+      "size_bytes": 26062
+    },
+    "frontend/lib/preflightEvaluator.ts": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Prioritize Stage 4 structural distribution blocker ahead of sizing prohibition",
+      "sha256": "57723434d787323a796af6708d8007afba97691df2e6f94ed3b572ba459821d8",
+      "size_bytes": 49389
+    },
+    "frontend/package.json": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Add integrity test script for CSP and telemetry console",
+      "sha256": "47d0fcec6339ffcee611e5e860f7cbd2c04bddd6b16d0076142693b281ab2ba1",
+      "size_bytes": 4006
+    },
+    "frontend/public/_headers": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Permit exact Sentry ingestion origin in Content-Security-Policy connect-src",
+      "sha256": "ccdd5fea22e4b1fc02da126e1412b4a51c04de6fce07bd3f19c5e1b3ab748684",
+      "size_bytes": 1981
+    },
+    "frontend/tests/cspAndTelemetryConsoleIntegrity.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Automated invariant tests for CSP connect-src and Matomo preload elimination",
+      "sha256": "85decedf7074b8bc0d18bdfdbff8ee10795a0d987d5c7c59dc0133eb0b2656e2",
+      "size_bytes": 3493
+    },
+    "frontend/tests/secInsiderFlowPresentation.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "951f9c7824931c7e983644d7d509554ec06565eeaec067e8db8b8a0d81344ae6",
+      "size_bytes": 18182
+    },
+    "requirements.txt": {
+      "operation": "M",
+      "originating_pr_number": 326,
+      "originating_commit": "9e8a3f480d1a7b17607720f8600b8769153d7e01",
+      "governing_requirement": "PR #326: require exchange_calendars>=4.13.1,<5.0.0 for ARCX and pandas 3 compatibility",
+      "sha256": "6c82b3584954ec2afe84ff9262b015097b85805a234947f200120b6869f33e48",
+      "size_bytes": 480
+    },
+    "scripts/research/acquire_nvda_fundamentals.py": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "0b3515b9bcf84d56461ec6688c420b79418ce369",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Bounded acquisition tooling and offline normalizer qualification for NVDA SEC EDGAR fundamentals",
+      "sha256": "80ee60f6acfb35a90563e0e3db91650987ea79770a21604180cabda22a667610",
+      "size_bytes": 14952
+    },
+    "tests/test_adversarial_phase16_verification.py": {
+      "operation": "M",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Add regression tests for exact Sentry CSP connect-src and Matomo preload removal",
+      "sha256": "c8d375baef4836d92df55a84a8d5a92509b13c4a810b119b34c60383087c552b",
+      "size_bytes": 7350
+    },
+    "tests/test_fred_sec_presentation_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 318,
+      "originating_commit": "6401be2381aeb933f08f3f693564f11963ca2b6d",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: make the macro freshness regression deterministic so qualification measures candidate behavior rather than wall-clock drift",
+      "sha256": "2c2d9d7db91487383e05c9d5c0ef3e8c0583b6d4b11d1f8663db940f7998b589",
+      "size_bytes": 21723
+    },
+    "tests/test_fundamental_evidence_diagnostics.py": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "af4769b460500c3c4355239362bb8d2ef163c8d1",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Offline regressions for runtime estimates, metadata-only verification, missing/future/stale evidence and ETF exemption",
+      "sha256": "a98fbf1ba7cfc92193577157d60b5709c66d6470e0ff81c856926b1d628da7eb",
+      "size_bytes": 3028
+    },
+    "tests/test_offline_fundamentals_reader.py": {
+      "operation": "A",
+      "originating_pr_number": 318,
+      "originating_commit": "74b39e7fe6112985c2208f08cd8ad75d0ee0d3ea",
+      "governing_requirement": "Issue #165 / Sprint P3 #231: Offline regressions for hash/issuer/accession verification, null preservation, and anti-masking protection",
+      "sha256": "b6548f08c11b82115cbb761ec428d71b8e5c43f035add1611f00e26a4425e6f6",
+      "size_bytes": 9463
+    },
+    "tests/test_sec_insider_flow_presentation.py": {
+      "operation": "A",
+      "originating_pr_number": 319,
+      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
+      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
+      "sha256": "35deae6ceeae171d69822197517406f1c336bc2d5979559474e538d70514a304",
+      "size_bytes": 25864
+    },
+    "analyst_dashboard/data/asset_discovery.py": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "a9b70e3aa640b8d5b0bf744c60177003144dd9de517e0e482fce5adf3525afa4",
+      "size_bytes": 5041
+    },
+    "api/middleware/api_key_auth.py": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "8fac0bdedfd12373a2e80dd44fc747d15f5fcfcb3c5e6d604ae5f65867cf154f",
+      "size_bytes": 11718
+    },
+    "api/routes/market.py": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "1b9795b06e12fc51c9365fe5a8dce7f12526bde35ba9e81465d1362ef962987b",
+      "size_bytes": 4458
+    },
+    "tests/test_asset_directory_discovery.py": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
+      "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
+      "sha256": "844aeb0a54e0594c5d8c1eea3a0c9dbbfb3d1c60117921c9db48fbcb3ff1ab85",
+      "size_bytes": 6529
+    },
+    "frontend/app/page.tsx": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
+      "governing_requirement": "PR #323: clear asset analytics on selection change and render explicit unavailable state on 404",
+      "sha256": "b12f31faa5cc258d61ec146b77ca157995745302bc4d37872fbd641e2607ed20",
+      "size_bytes": 56369
+    },
+    "frontend/components/discovery/DiscoveryLandingView.tsx": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "governing_requirement": "PR #323: reuse dynamic asset discovery hook and resolution logic in homepage search",
+      "sha256": "968d8b20972a55b17e933b69c96fb46e249d959a5e794ca7d0ffe112ef36385a",
+      "size_bytes": 21732
+    },
+    "frontend/lib/insightGenerator.ts": {
+      "operation": "M",
+      "originating_pr_number": 323,
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "governing_requirement": "PR #323: do not claim stale historical tape when data is unavailable or unverified",
+      "sha256": "a1d50d4a37710f49e35b508d17bbe9a25b8a72b596aaf7ddf6fb74eb1aa117d4",
+      "size_bytes": 42410
+    },
+    "frontend/lib/__tests__/analyticsUnavailableHandling.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "governing_requirement": "PR #323: behavioral tests for 404 unavailable and insufficient history handling",
+      "sha256": "bd5ab02ad5d416f3371d6b8030a552202212cd51f7138f84eec6e6fc45928f94",
+      "size_bytes": 4670
+    },
+    "frontend/lib/limitedHistoryPresentation.ts": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
+      "governing_requirement": "PR #323: decouple listing identity from sec filing coverage in limited history presentation",
+      "sha256": "44d03c420fb295ef8edb884fcb9e99355023f551cd60e5c97525e3703d08901f",
+      "size_bytes": 5630
+    },
+    "frontend/lib/__tests__/limitedHistoryPresentation.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
+      "governing_requirement": "PR #323: behavioral tests for decoupled listing identity and sec filing coverage",
+      "sha256": "a4003d97aaf4e8c3201c8b3c77d09c6f5aadcb6dc8270ca3b00e1ebce5826495",
+      "size_bytes": 7683
+    },
+    "analyst_dashboard/analyzers/advanced_risk_analyzer.py": {
+      "operation": "M",
+      "sha256": "d5d5fc8ff86da46272cd5f4ad1a5aa5fc8454b16bf7fc6da51891a96a98986e1",
+      "size_bytes": 33262,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "analyst_dashboard/analyzers/self_healing_engine.py": {
+      "operation": "M",
+      "sha256": "7709829d4af1592ad126f0ff5d5f261aaca9a1932f6a6089f739f73c0b350c4a",
+      "size_bytes": 4673,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "api/routes/regimes.py": {
+      "operation": "M",
+      "sha256": "0dea43c7f0c9a3599eabf0cde82c94ad26ff0bb185b67d3793ae5db090d3ea09",
+      "size_bytes": 14402,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "docs/scoring-semantics.md": {
+      "operation": "M",
+      "sha256": "ce7b2cec1cec1156271d0159610ad7b60941b81abb64e733f7d7af60bb065c1f",
+      "size_bytes": 9494,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/app/stock/page.tsx": {
+      "operation": "M",
+      "sha256": "09532537431cab9fd4b0cd7b5bdff60793ef442f3d62d9133fee536ebb96ec7d",
+      "size_bytes": 19668,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/AssetFactorRadar.tsx": {
+      "operation": "M",
+      "sha256": "be72dea5f8cb26c896635ff8644851f9e357dcdac260b3e12f334a618f71988d",
+      "size_bytes": 10583,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/DayTraderPositionSizer.tsx": {
+      "operation": "M",
+      "sha256": "e46123bc8af1cfc2b11ac4e1dfaba2dc5b7df33c6f52ca15551956030d4b99fc",
+      "size_bytes": 23941,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/RiskMetricsCard.tsx": {
+      "operation": "M",
+      "sha256": "2d0ff0ea80f2162423a8dc437392d7b1922cab3af43de0e154c7386a71cbd3d6",
+      "size_bytes": 11768,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/__tests__/RiskMetricsAndSizingBehavior.test.tsx": {
+      "operation": "A",
+      "sha256": "6c2bdce0d10fe107bfb31a8c1963a75e7b53f57857c1c30e8e959a53eaadb4c6",
+      "size_bytes": 8563,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "tests/test_category_b_analytics.py": {
+      "operation": "M",
+      "sha256": "7ade743cb33afa3a8e6659152ba8741dcf80ffa8c381dd17d0fb0e8bec7d4ec2",
+      "size_bytes": 2048,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "tests/test_cornish_fisher_sufficiency_gate.py": {
+      "operation": "M",
+      "originating_pr_number": 326,
+      "originating_commit": "9e8a3f480d1a7b17607720f8600b8769153d7e01",
+      "governing_requirement": "PR #326: verify dependency declarations exclude incompatible calendars and resolve XNYS/XNAS/ARCX/BATS",
+      "sha256": "fd67d74189cf7b18813c799c49ac8e212389282a27c07031c0d6cc2db441b6e4",
+      "size_bytes": 24376
+    },
+    "pyproject.toml": {
+      "operation": "M",
+      "originating_pr_number": 326,
+      "originating_commit": "9e8a3f480d1a7b17607720f8600b8769153d7e01",
+      "governing_requirement": "PR #326: align pyproject.toml exchange_calendars>=4.13.1,<5.0.0",
+      "sha256": "f07270fa93fdcaaf8446bcbf723aa883e4aef2e0d721bd0828775d55f9e7aeeb",
+      "size_bytes": 1301
     }
   },
   "qualification_framework_files": {
     "scripts/release/rq01_candidate_identity.py": {
-      "sha256": "af311f7b4048cfe147d22840b85b157506bef73ea96de6fa30875459fec8154b",
+      "sha256": "fbd32218028ddc6b9fce03c635b77a8aea596ac8b2834ee4e0fba282a82ecae8",
       "size_bytes": 8414,
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "d668ef5eae9d41ec51fe1b43206df7b60792bfe31103fb827a3c3cc9b3eae8eb",
-      "size_bytes": 58226,
-      "description": "Release qualification module: rq02_diff_integrity.py"
+      "description": "Hardened diff integrity validation with approved PR list including PR #326",
+      "sha256": "63600d264f9c84b92a53fbee9df18b105c7152d028d15ca6af5ae4065600a29b",
+      "size_bytes": 58251
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "5f2404e0110196f4420b5912a8c54a7796f3a76bc4803de57cd918f73b6c23d7",
-      "size_bytes": 4089,
-      "description": "Release qualification module: rq03_backend_regression.py"
+      "description": "Backend regression runner including Cornish-Fisher test suite",
+      "sha256": "e22fad47a981850eacfa8f394058053e5b2e8266a66834bb323ecafa3b906b4d",
+      "size_bytes": 4197
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "sha256": "141ed87266fb744754c3c939d2b02156e924f98b7ba7efc3abfbe89342340ed4",
-      "size_bytes": 8672,
-      "description": "Release qualification module: rq04_frontend_regression.py"
+      "description": "Frontend regression runner including RiskMetricsAndSizingBehavior test suite",
+      "sha256": "2cd3e3fe47d1a2a31abedbd8b01703b1b680c58bc53666c4e12d47f5586d0e4c",
+      "size_bytes": 10003
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
       "sha256": "f3f1039896aa258834f24144d69c5b42552df7b5173a09f09833ff46b6e3be0a",
@@ -141,6 +605,18 @@
       "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246",
       "size_bytes": 10113,
       "description": "Release qualification module: test_synthetic_merge_reproduction.py"
+    },
+    "scripts/release/rq_receipt_utils.py": {
+      "sha256": "850d87883ff90d5afd9fc51104c9f3fbd35939023b456c48dca471e23d84014c",
+      "size_bytes": 19670,
+      "description": "Release qualification module: rq_receipt_utils.py"
+    },
+    ".github/workflows/release-qualification.yml": {
+      "description": "Hosted release runtime aligned with frontend CI Node 24; all qualification steps preserved",
+      "sha256": "09c648995962beb4aebfa3c61fc5b09963be2eb0299f3c18e744f94a758d8ab1",
+      "size_bytes": 4773
     }
-  }
+  },
+  "candidate_commit_sha": "885e149f13d61e4b8bf28a1fedc862b96bdba2fb",
+  "target_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486"
 }

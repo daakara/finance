@@ -124,14 +124,14 @@ export interface TechnicalIndicators {
 }
 
 export interface AssetFactorScores {
-  growthScore: number;
-  qualityScore: number;
-  valuationScore: number;
-  momentumScore: number;
-  tailRiskScore: number;
-  compositeFactorScore: number;
-  verdict: string;
-  piotroskiFScore?: number;
+  growthScore?: number | null;
+  qualityScore?: number | null;
+  valuationScore?: number | null;
+  momentumScore?: number | null;
+  tailRiskScore?: number | null;
+  compositeFactorScore?: number | null;
+  verdict?: string;
+  piotroskiFScore?: number | null;
 }
 
 export type AssetDNAScores = AssetFactorScores;
@@ -700,6 +700,12 @@ export interface ConfluencePillar {
   detail: string;
   plainDetail: string;
   icon: string;
+  scoringEligibility?: string;
+  filingsAvailable?: boolean;
+  filingsCount?: number;
+  latestFilingDate?: string | null;
+  coverageStatus?: string;
+  issuerSupportStatus?: string | null;
 }
 
 export interface ConfluenceData {
@@ -804,13 +810,21 @@ export interface AnalyticsResponse {
   classificationStatus?: string;
   analytics?: {
     advanced_metrics?: {
-      VaR_95?: number;
-      VaR_99?: number;
-      Modified_VaR_95?: number;
-      Modified_VaR_99?: number;
-      Sortino_Ratio?: number;
-      Calmar_Ratio?: number;
-      Max_Drawdown?: number;
+      VaR_95?: number | null;
+      VaR_99?: number | null;
+      Modified_VaR_95?: number | null;
+      Modified_VaR_99?: number | null;
+      Modified_CVaR_95?: number | null;
+      Sortino_Ratio?: number | null;
+      Calmar_Ratio?: number | null;
+      Max_Drawdown?: number | null;
+    };
+    cornish_fisher?: {
+      status: "AVAILABLE" | "UNAVAILABLE";
+      reason?: string | null;
+      actual_observations?: number;
+      required_observations?: number;
+      message?: string | null;
     };
   };
 }
@@ -1259,6 +1273,39 @@ export function isQuoteFresh(timestamp?: number): boolean {
   return age >= 0 && age < QUOTE_MAX_AGE_MS;
 }
 
+export class AssetNotFoundError extends Error {
+  readonly status = 404;
+  readonly code = "ASSET_NOT_FOUND";
+  constructor(symbol: string, message?: string) {
+    super(message || `Asset unavailable or not found: "${symbol}" is not recognized on exchange tape or market data feeds.`);
+    this.name = "AssetNotFoundError";
+  }
+}
+
+export class InsufficientHistoryError extends Error {
+  readonly status = 422;
+  readonly code = "INSUFFICIENT_HISTORY";
+  readonly symbol: string;
+  readonly instrument?: CanonicalInstrumentEnvelope | null;
+  readonly coverageCertified?: boolean | null;
+  readonly coverageStatus?: string | null;
+
+  constructor(
+    symbol: string,
+    message?: string,
+    instrument?: CanonicalInstrumentEnvelope | null,
+    coverageStatus?: string | null,
+    coverageCertified?: boolean | null
+  ) {
+    super(message || `Asset "${symbol}" has insufficient trading history on record.`);
+    this.name = "InsufficientHistoryError";
+    this.symbol = symbol;
+    this.instrument = instrument;
+    this.coverageStatus = coverageStatus;
+    this.coverageCertified = coverageCertified;
+  }
+}
+
 // High-Fidelity Epistemic Fallback: Refuses to fabricate synthetic candles, fake recommendations, or use cold stored quotes
 export function generateFallbackAnalytics(
   symbol: string,
@@ -1358,7 +1405,6 @@ export function generateFallbackAnalytics(
     freshness: {
       status: "UNAVAILABLE",
       providerSource: "none",
-      stalenessDays: 999,
       candleCount: 0,
     },
     decisionTrace: {
@@ -1726,6 +1772,11 @@ export async function fetchAssetAnalytics(
   const upper = symbol.toUpperCase().replace("-USD", "");
 
   // 1. Fetch live production API with 4000ms timeout
+  let isNotFound = false;
+  let isInsufficient = false;
+  let notFoundDetail = "";
+  let insufficientDetail = "";
+
   try {
     const baseUrl = getApiBaseUrl();
     const cleanRole = userRole === "DAY_TRADER" ? "DAY_TRADER" : "LONG_TERM";
@@ -1815,8 +1866,24 @@ export async function fetchAssetAnalytics(
           return analyticsPayload;
         }
       }
+    } else {
+      if (res.status === 404) {
+        isNotFound = true;
+        try {
+          const body = await res.json();
+          if (body?.detail) notFoundDetail = body.detail;
+        } catch {}
+      } else if (res.status === 422) {
+        isInsufficient = true;
+        try {
+          const body = await res.json();
+          if (body?.detail) insufficientDetail = body.detail;
+        } catch {}
+        throw new InsufficientHistoryError(upper, insufficientDetail || `Asset "${upper}" has insufficient trading history on record (minimum 15 daily sessions required).`);
+      }
     }
   } catch (err) {
+    if (err instanceof InsufficientHistoryError) throw err;
     // Backend unavailable or timed out; emit telemetry and proceed to Direct Yahoo Finance Client Fetcher
     if (typeof window !== "undefined" && (window as any)._paq) {
       (window as any)._paq.push(["trackEvent", "Terminal Interaction", "Backend API Failover", upper]);
@@ -1834,6 +1901,27 @@ export async function fetchAssetAnalytics(
     if (typeof window !== "undefined" && (window as any)._paq) {
       (window as any)._paq.push(["trackEvent", "Terminal Interaction", "Direct Yahoo Failover", upper]);
     }
+  }
+
+  // If backend explicitly returned 404 and direct lookup found no candles, check security master before declaring unknown
+  if (isNotFound) {
+    try {
+      const canonical = await fetchCanonicalInstrument(upper);
+      if (canonical && canonical.listing_status === "ACTIVE" && canonical.classification_status === "VERIFIED") {
+        throw new InsufficientHistoryError(
+          upper,
+          `Asset "${upper}" is a recognized ${canonical.primary_exchange || "exchange-listed"} ${canonical.security_type || "security"}, but has insufficient completed daily trading sessions on record (minimum 15 daily sessions required for multi-factor analytics).`,
+          canonical
+        );
+      }
+    } catch (e) {
+      if (e instanceof InsufficientHistoryError) throw e;
+    }
+
+    const message = notFoundDetail && notFoundDetail.toLowerCase().includes("not found")
+      ? notFoundDetail
+      : `Asset unavailable or not found: ${notFoundDetail || `"${upper}" is not recognized on exchange tape or market data feeds.`}`;
+    throw new AssetNotFoundError(upper, message);
   }
 
   // 3. Fallback when providers are unavailable: current-price fields MUST remain unavailable
@@ -1860,7 +1948,7 @@ export async function fetchCanonicalInstrument(
     });
     if (!res.ok) return null;
     const body = await res.json();
-    return body?.instrument || null;
+    return body?.instrument || (body?.symbol ? body : null);
   } catch {
     return null;
   }

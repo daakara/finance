@@ -33,6 +33,7 @@ DEV_DOCS_PATHS: Set[str] = {"/docs", "/openapi.json", "/redoc"}
 PUBLIC_RESEARCH_SPECS: List[Tuple[str, str]] = [
     ("GET", "/health"),
     ("GET", "/api/v1/market/instruments/{symbol}"),
+    ("GET", "/api/v1/market/assets/search"),
     ("GET", "/api/v1/security-master/instruments/{symbol}"),
     ("GET", "/api/v1/security-master/status"),
     ("POST", "/api/v1/security-master/instruments/batch"),
