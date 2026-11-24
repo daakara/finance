@@ -694,10 +694,15 @@ To eliminate misleading diagnostics and unverified assertions, securities transi
                                     │ Trading Sessions ≥ 15 (Baseline) & ≥ 50
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│ STATE 3: FULL ANALYTICAL SEASONING                                     │
-│ • Trading history meets indicator burn-in horizons (50d / 200d).       │
-│ • HTTP 200 OK with complete multi-pillar Confluence payload.           │
-│ • Full interactive dual-horizon candlestick geometry & VCP detection.  │
+│ STATE 3: QUANTITATIVE TAPE OBSERVABLE (HTTP 200)                       │
+│ • Completed daily exchange sessions ≥ 15 (validate_and_prune).         │
+│ • Daily candlestick series and intraday VWAP observable.               │
+│ • Downstream models evaluate per individual input requirements:        │
+│   - 50 sessions for 50 SMA & swing trade setups (optimal_execution.py) │
+│   - 200+ sessions for 200 SMA & Minervini Stage 2 (classifier.py)      │
+│ • Non-conflation: Session count does NOT confer scoring eligibility    │
+│   (held under ARX_CONFLUENCE_INTEGRITY_HOLD) or live execution         │
+│   clearance (strictly held under HOLD_EXEC_001).                       │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -706,4 +711,7 @@ In accordance with invariant `ARX_INV_001` and `ARX_INV_003`:
 1. **Listing Identity (`Verified`):** Confirms an active equity listing on a recognized US exchange in the Security Master.
 2. **SEC Filing Coverage (`Not verified`):** Defaults strictly to unverified unless backed by verified Form 4 / Form 13F metadata in the persistence store.
 3. **Non-Conflation Guarantee:** An active listing identity **never** implies filing completeness, insider ownership verification, or quantitative scoring eligibility.
+4. **The Cardinal Separation Principle:**
+   $$\boxed{\text{Listing Identity} \ne \text{SEC Filing Completeness} \ne \text{Scoring Eligibility} \ne \text{Execution Clearance}}$$
+   Sufficient session counts never automatically establish analytical, scoring, or execution readiness. Live execution code remains permanently disabled under `HOLD_EXEC_001`.
 

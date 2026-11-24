@@ -311,13 +311,16 @@ The primary atomic decision bundle driving Stages 1–5 in the Ticker Workspace.
 When an asset is in `INSUFFICIENT_HISTORY` state, presentation surfaces must adhere to the following decoupled capability contract:
 1. **Listing Identity**: `Verified` (if exchange-listed in Security Master) vs `Not verified`.
 2. **SEC Filing Coverage**: `Not verified` (strictly defaults to unverified; active listing does NOT imply filing completeness, insider ownership verification, or scoring eligibility).
-3. **Indicator History Progression**: 15 sessions is the baseline modeling gate, *not* an automatic readiness date for every indicator:
-   - `15 daily sessions`: Minimum baseline for initial exploratory modeling.
-   - `20 daily sessions`: 20 EMA, 20-day ADV.
-   - `30 daily sessions`: Cornish-Fisher Modified VaR 95% (Tail Risk).
-   - `50 daily sessions`: 50 SMA, Stage 2 Trend Template baseline, Confluence scoring.
-   - `200 daily sessions`: 200 SMA, full Minervini VCP Stage 2 qualification.
-4. **Epistemic Zero-Invariance (`ARX_INV_001`)**: Missing indicators or factor scores must be presented as `UNAVAILABLE` or `N/A`, never as numerical `0` or `0/100`.
+3. **Indicator History Progression & Implementation Realities**: 15 sessions is the baseline modeling gate, *not* an automatic readiness date for every indicator:
+   - `15 daily sessions`: Enforced runtime gate (`validate_and_prune_daily_history` in `api/routes/analytics.py:1121`). Minimum input count for daily decision analytics.
+   - `20 daily sessions`: Smoothing heuristic for 20 EMA / 20 ADV (`api/routes/analytics.py:143`, `optimal_execution.py:194`). Unenforced runtime gate (`pandas.ewm` initializes from $N \ge 1$).
+   - `30 daily sessions`: Statistical confidence standard (`ARX_INV_013` sample size $N \ge 30$). Runtime gate in `advanced_risk_analyzer.py` is unresolved; calculation proceeds on available returns.
+   - `50 daily sessions`: Enforced runtime gate for 50 SMA (`api/routes/analytics.py:156`) and swing trade level generation (`optimal_execution.py:137`). `ConfluenceEngine` itself does not enforce a 50-session cutoff.
+   - `200+ daily sessions`: Enforced mathematical requirement for 200 SMA (200 bars), 22-session slope (222 bars), and 52-week metrics (up to 252 bars) in Minervini Stage 2 trend evaluation (`classifier.py:82-90`, `predicate_registry.py:132,163`).
+4. **The Cardinal Separation Principle**:
+   $$\text{Listing Identity} \ne \text{SEC Filing Completeness} \ne \text{Scoring Eligibility} \ne \text{Execution Clearance}$$
+   Meeting price-history thresholds never confers automatic analytical readiness, scoring eligibility (held under `ARX_CONFLUENCE_INTEGRITY_HOLD`), or live execution clearance (permanently held under `HOLD_EXEC_001`).
+5. **Epistemic Zero-Invariance (`ARX_INV_001`)**: Missing indicators or factor scores must be presented as `UNAVAILABLE` or `N/A`, never as numerical `0` or `0/100`.
 
 - `503 Service Unavailable`: Upstream market feeds offline and no verified cached store available.
   ```json

@@ -69,8 +69,16 @@ QUANTITATIVE_BEHAVIOR_CHANGE =
 4. **Epistemic Tri-State Architecture:**
    - State 1: `asset-not-found-state` (HTTP 404).
    - State 2: `insufficient-history-state` (HTTP 422).
-   - State 3: Full Quantitative Workstation (HTTP 200).
+   - State 3: Quantitative Tape Observable (HTTP 200).
 5. **Decoupled Verification Invariant:** Active exchange listing in the Security Master verifies listing identity, but **never** implies filing completeness, insider ownership verification, or scoring eligibility.
+6. **The Cardinal Separation Principle:**
+   $$\boxed{\text{Listing Identity} \ne \text{SEC Filing Completeness} \ne \text{Scoring Eligibility} \ne \text{Execution Clearance}}$$
+   Sufficient session counts never automatically establish analytical, scoring, or execution readiness:
+   - *15 sessions:* Enforced runtime gate for daily analytics (`validate_and_prune_daily_history` in `api/routes/analytics.py:1121`). Minimum input count for daily decision analytics.
+   - *20 sessions:* Smoothing heuristic for 20 EMA / 20 ADV (`api/routes/analytics.py:143`, `optimal_execution.py:194`). Unenforced runtime gate (`pandas.ewm` calculates from $N \ge 1$).
+   - *30 sessions:* Statistical confidence standard (`ARX_INV_013` sample size $N \ge 30$). Runtime gate in `advanced_risk_analyzer.py` is unresolved; calculation proceeds on available returns.
+   - *50 sessions:* Enforced runtime gate for 50 SMA (`api/routes/analytics.py:156`) and swing trade level generation (`optimal_execution.py:137`). `ConfluenceEngine` does not enforce a 50-session cutoff.
+   - *200+ sessions:* Enforced mathematical requirement for 200 SMA (200 bars), 22-session slope (222 bars), and 52-week metrics (up to 252 bars) in Minervini Stage 2 evaluation (`classifier.py:82-90`, `predicate_registry.py:132,163`).
 
 ---
 
@@ -81,7 +89,7 @@ QUANTITATIVE_BEHAVIOR_CHANGE =
 | **RQ-01** | Candidate Identity | **PASS** | Validated commit `6419213f56695cbc0a5fa6dc08b10e0496f37afa` ancestry. |
 | **RQ-02** | Release Diff Integrity | **PASS** | 51/51 files strictly contained in `release_manifest.json`. |
 | **RQ-03** | Backend Regression | **PASS** | Complete backend test suite passed with 0 failures. |
-| **RQ-04** | Frontend Regression | **PASS** | Type-check and unit tests passed (including 10/10 presentation & 5/5 unavailable tests). |
+| **RQ-04** | Frontend Regression & Typecheck | **PASS** | Verified 6 targeted qualification controls: TypeScript typecheck (0 errors), 17/17 governor sizing tests, weekly spotlight selection, CDNS price trend parity, SEC disclosure view, and radar ranking handoff. |
 | **RQ-05** | Cross-Engine Invariants | **PASS** | 28 domain invariants verified across all engines. |
 | **RQ-06** | Governance Invariants | **PASS** | Backlog integrity, JSON schema, and Sprint 5 lock verified. |
 | **RQ-07** | Deployment Safety | **PASS** | Environment configs, CSP headers, and secret isolation verified. |
@@ -91,6 +99,18 @@ QUANTITATIVE_BEHAVIOR_CHANGE =
 | **RQ-11** | Rollback Readiness | **PASS** | Zero destructive migrations; forward and rollback paths verified. |
 | **RQ-13** | Financial Integrity | **PASS** | Zero synthetic market data in production ledgers; sizing contracts verified. |
 | **RQ-12** | Qualification Summary | **PASS** | Master receipt emitted with PASS verdict (Duration: 100.33s). |
+
+---
+
+### Frontend Test Suite Distinction & Unit Run Disposition
+
+- **Targeted RQ-04 Qualification Scope:** Executed `scripts/release/rq04_frontend_regression.py` covering targeted regression gates (TypeScript type-check, 17 governor sizing tests, spotlight selection, CDNS trend parity, SEC disclosure view, and radar ranking handoff). All 6 checks passed cleanly (`PASS`).
+- **Full Unit Suite Scope (`npm test` / `vitest run`):** Executed all 63 test files across the frontend application (684 tests):
+  - 61 test files passed (682 tests passed).
+  - 2 test files reported 1 failure each (exiting with code 1):
+    1. `components/__tests__/DecisionSurfaceIntegrity.test.tsx` (Test: `ensures all three terminal views render identical actionability badge and zero duplicate label`): Assertion failed at line 402 (`expect(screen.queryByText(/^WAIT FOR TRIGGER$/i)).toBeNull()`). Root cause: `GuidedTerminalView` renders a `<button ...>Wait for Trigger</button>`. **Disposition: PRE-EXISTING** (verified identical in baseline commit `2eccc64a2cb3c649ad4d584a942285a6406d1ce0` at `components/terminal/GuidedTerminalView.tsx:301`).
+    2. `components/__tests__/Wave1DeclutterPreservation.test.tsx` (Test: `page.tsx relocates PageIntro, IntentHero, and WeeklyConfluenceSpotlight below detailed tabs`): Assertion failed at line 179 (`expect(pageIntroIdx).toBeGreaterThan(detailedTabsIdx)`). Root cause: In `page.tsx`, `<PageIntro` (line 455) appears prior to `detailed-domain-content` (line 780). **Disposition: PRE-EXISTING** (verified identical in baseline commit `2eccc64a2cb3c649ad4d584a942285a6406d1ce0`).
+- **PR #323 Candidate Behavioral Tests:** 10/10 tests passed in `lib/__tests__/limitedHistoryPresentation.test.ts` and 5/5 tests passed in `lib/__tests__/analyticsUnavailableHandling.test.ts`.
 
 ---
 

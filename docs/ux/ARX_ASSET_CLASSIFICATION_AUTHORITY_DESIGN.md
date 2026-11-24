@@ -343,9 +343,13 @@ To ensure epistemic truthfulness and prevent user confusion, the frontend adhere
    - **Observation Bounds:** Displays exact start/end dates and session count (e.g. *"5 completed daily sessions observed (2026-11-18 to 2026-11-22)"*).
    - **Zero-Invariance:** Missing indicators are displayed as `UNAVAILABLE` or `N/A`, never as numerical `0` or `0/100`.
 
-3. **State 3 — Seasoned Quantitative Workstation:**
-   - **Trigger:** HTTP 200 with full session history ($\ge 50$ bars).
-   - **Visual Presentation:** Dual-horizon charts, Minervini VCP setups, multi-pillar Confluence score, and execution corridor.
+3. **State 3 — Quantitative Workstation (HTTP 200):**
+   - **Trigger:** HTTP 200 when completed daily exchange sessions $\ge 15$ (`validate_and_prune_daily_history`).
+   - **Progressive Indicator Rendering:**
+     - Candlestick history and intraday VWAP render immediately upon passing the 15-day gate.
+     - Moving averages and trade setups evaluate subject to their individual input requirements: 50 sessions for 50 SMA and swing trade setups (`optimal_execution.py`); 200+ sessions for 200 SMA and Minervini Stage 2 trend evaluation (`classifier.py`).
+     - Missing indicators or unverified pillars display honest unseasoned or unavailable indicators (`ARX_INV_001`).
+   - **Epistemic Invariant:** Meeting price-history thresholds never implies fundamental verification, scoring promotion (held under `ARX_CONFLUENCE_INTEGRITY_HOLD`), or live execution clearance (strictly held under `HOLD_EXEC_001`).
 
 ### 10.2 Dynamic Discovery Search Interaction Contract
 Across `DiscoveryLandingView`, `UniversalOmniSearch`, and the Command Palette:
