@@ -1,9 +1,9 @@
 {
-  "release_candidate_commit": "94f5fae4e6c3fb955dc235cf4bbbd1364bade242",
+  "release_candidate_commit": "838616a53e8a6f680525496f6068800fb490613f",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 62,
+  "total_files": 71,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-DYNAMIC-DISCOVERY-RISK-GATE-324",
+  "directive": "ARX-S4-RADAR-001",
   "files": {
     ".github/workflows/asset-discovery.yml": {
       "operation": "A",
@@ -207,11 +207,11 @@
     },
     "frontend/lib/api.ts": {
       "operation": "M",
-      "originating_pr_number": 324,
-      "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
-      "governing_requirement": "TASK-OPEN-03 / PR #324 + PR #323: Cornish-Fisher factor scores null-safety and dynamic asset discovery types",
-      "sha256": "e516788253ffc8ba6d1d1da85d93a3e0124e8fcfb0ecdb35a84e53e5b8cd7b15",
-      "size_bytes": 196930
+      "sha256": "7b186fd73564d8736df14306c755642fa3a38f755c613eab477185e023aa1438",
+      "size_bytes": 204358,
+      "originating_pr_number": 327,
+      "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
+      "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
     },
     "frontend/lib/assetDiscovery.ts": {
       "operation": "A",
@@ -500,6 +500,78 @@
       "originating_pr_number": 324,
       "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
       "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "analyst_dashboard/analyzers/scanner_runner.py": {
+      "operation": "M",
+      "sha256": "9accbb7d8e2902cda37871fcea6fcc9963794e839ef8af61676d7e9de8f6082c",
+      "size_bytes": 86778,
+      "originating_pr_number": 327,
+      "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
+      "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
+    },
+    "api/routes/screener.py": {
+      "operation": "M",
+      "sha256": "3e658db0d558c651e3574a10960f99758cb9e03e61cc358d89cf102e591a8183",
+      "size_bytes": 141169,
+      "originating_pr_number": 327,
+      "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
+      "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
+    },
+    "frontend/app/radar/page.tsx": {
+      "operation": "M",
+      "sha256": "74a1d4eef520e2531ac7ea7344889c3b22ed106bdd68cc025a61968d2599d9fb",
+      "size_bytes": 139614,
+      "originating_pr_number": 327,
+      "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
+      "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
+    },
+    "frontend/components/__tests__/RadarPageRenderTruth.test.tsx": {
+      "operation": "A",
+      "sha256": "1dd75f5aa694ff35eb6d0fff4f12be8a9e6ed6bf6445eab192f0e5d3fd540d80",
+      "size_bytes": 15531,
+      "originating_pr_number": 327,
+      "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
+      "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
+    },
+    "frontend/lib/__tests__/radarS4OperationalTruth.test.ts": {
+      "operation": "A",
+      "sha256": "58d5fff1e880192bb8b65933c6c39e5ac51bc7dfd7c32ccfa95415376ea63a84",
+      "size_bytes": 6823,
+      "originating_pr_number": 327,
+      "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
+      "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
+    },
+    "frontend/lib/radarPresentation.ts": {
+      "operation": "M",
+      "sha256": "1ce305a9cdb131af7ab99785563cba281547452c1898146d88327e1da5ae8d98",
+      "size_bytes": 25274,
+      "originating_pr_number": 327,
+      "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
+      "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
+    },
+    "frontend/tests/preflightRadarCopyRemediation.test.ts": {
+      "operation": "M",
+      "sha256": "a88727ca09aa584ce3ff5271d57597c950eb062a9b1344c21cfb686d8620448d",
+      "size_bytes": 10730,
+      "originating_pr_number": 327,
+      "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
+      "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
+    },
+    "frontend/tests/radarCategoryIntegrity002.test.ts": {
+      "operation": "M",
+      "sha256": "5bdd39b0a3d277dd58ed31ef03b3271f54f3d082f407485ea5ee0f3550f0e80f",
+      "size_bytes": 11677,
+      "originating_pr_number": 327,
+      "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
+      "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
+    },
+    "tests/test_arx_s4_radar_001_operational_truth.py": {
+      "operation": "A",
+      "sha256": "ec70e0c784b4fd2f4ed5685b2c288dfabd0b986df29408d07870c9961f871b4f",
+      "size_bytes": 25124,
+      "originating_pr_number": 327,
+      "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
+      "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
     }
   },
   "qualification_framework_files": {
@@ -509,19 +581,19 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "description": "Hardened diff integrity validation with approved PR list including PR #324",
-      "sha256": "a28c914726b5e20201357e12843ec33b861818faaba709cd5511fcac97ca5eb2",
-      "size_bytes": 58246
+      "description": "Hardened diff integrity validation with approved PR list including PR #327",
+      "sha256": "7eed3e889b902e60732baf31f259e94e2a4fe74f854c6321e4eb2b2d66ac7a69",
+      "size_bytes": 58251
     },
     "scripts/release/rq03_backend_regression.py": {
-      "description": "Backend regression runner including Cornish-Fisher test suite",
-      "sha256": "e22fad47a981850eacfa8f394058053e5b2e8266a66834bb323ecafa3b906b4d",
-      "size_bytes": 4197
+      "description": "Backend regression runner including Cornish-Fisher and Radar behavioral test suites",
+      "sha256": "5daa26fe779a91dee3d33f39cd33a90573b1116e8a7bc2e044bd664737d1c7b1",
+      "size_bytes": 4598
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "description": "Frontend regression runner including RiskMetricsAndSizingBehavior test suite",
-      "sha256": "2cd3e3fe47d1a2a31abedbd8b01703b1b680c58bc53666c4e12d47f5586d0e4c",
-      "size_bytes": 10003
+      "description": "Frontend regression runner including Sizing, RiskMetrics, and Radar operational truth suites",
+      "sha256": "6f7af6859705783f24de21aa37153228dd5c5f8bc41d3f1e59650f2c5a67129f",
+      "size_bytes": 13028
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
       "sha256": "f3f1039896aa258834f24144d69c5b42552df7b5173a09f09833ff46b6e3be0a",
@@ -609,6 +681,6 @@
       "size_bytes": 4773
     }
   },
-  "candidate_commit_sha": "94f5fae4e6c3fb955dc235cf4bbbd1364bade242",
+  "candidate_commit_sha": "838616a53e8a6f680525496f6068800fb490613f",
   "target_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486"
 }
