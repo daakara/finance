@@ -1292,7 +1292,7 @@ def get_asset_analytics(
             valuation_score = None
             momentum_score = min(99, max(55, int(65 + price_change_pct * 3.5)))
             mvar = adv_metrics.get("Modified_VaR_95")
-            tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else None
+            tail_risk_score = min(99, max(40, int(round(100 - abs(mvar) * 7)))) if (mvar is not None and isinstance(mvar, (int, float, np.floating)) and math.isfinite(mvar)) else None
             valid_scores = [s for s in [momentum_score, tail_risk_score] if s is not None]
             composite_score = int(np.mean(valid_scores)) if valid_scores else None
             verdict = "Benchmark ETF Instrument (Fundamental Scoring Not Applicable)"
@@ -1303,7 +1303,7 @@ def get_asset_analytics(
             valuation_score = None
             momentum_score = min(99, max(30, int(50 + price_change_pct * 2.0)))
             mvar = adv_metrics.get("Modified_VaR_95")
-            tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else None
+            tail_risk_score = min(99, max(40, int(round(100 - abs(mvar) * 7)))) if (mvar is not None and isinstance(mvar, (int, float, np.floating)) and math.isfinite(mvar)) else None
             valid_scores = [s for s in [momentum_score, tail_risk_score] if s is not None]
             composite_score = int(np.mean(valid_scores)) if valid_scores else None
             verdict = "Awaiting Verified Fundamental Filing"
@@ -1334,7 +1334,7 @@ def get_asset_analytics(
             ret_20d = float((hist["Close"].iloc[-1] - hist["Close"].iloc[-min(20, len(hist))]) / hist["Close"].iloc[-min(20, len(hist))]) * 100 if len(hist) >= 5 else price_change_pct
             momentum_score = min(99, max(30, int(round(50 + price_change_pct * 1.5 + ret_20d * 0.8))))
             mvar = adv_metrics.get("Modified_VaR_95")
-            tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else None
+            tail_risk_score = min(99, max(40, int(round(100 - abs(mvar) * 7)))) if (mvar is not None and isinstance(mvar, (int, float, np.floating)) and math.isfinite(mvar)) else None
             valid_scores = [s for s in [growth_score, quality_score, valuation_score, momentum_score, tail_risk_score] if s is not None]
             composite_score = int(np.mean(valid_scores)) if valid_scores else None
             verdict = "High Quality Profile" if composite_score and composite_score >= 80 else ("Moderate Quality Profile" if composite_score and composite_score >= 60 else "Speculative Profile")

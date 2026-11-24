@@ -314,10 +314,10 @@ function StockDynamicContent() {
                   <span className="text-slate-400 block">Piotroski F-Score</span>
                   <div className="flex items-center justify-between">
                     <strong className="text-white text-base font-mono">
-                      {piotroskiScore !== undefined ? piotroskiScore : (data?.analytics as any)?.piotroski_f_score ?? "N/A"}
+                      {piotroskiScore != null ? piotroskiScore : (data?.analytics as any)?.piotroski_f_score ?? "N/A"}
                     </strong>
                     <span className="text-[10px] text-cyan-400">
-                      {piotroskiScore !== undefined && piotroskiScore >= 7 ? "/ 9 (Pristine)" : "/ 9"}
+                      {piotroskiScore != null && piotroskiScore >= 7 ? "/ 9 (Pristine)" : "/ 9"}
                     </span>
                   </div>
                 </div>

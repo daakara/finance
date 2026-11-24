@@ -67,7 +67,10 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   const dollarRisk = accountSize * (riskPct / 100);
 
   // Statistical stop distance derived from Cornish-Fisher Modified VaR 95% and ATR 14
-  const mVaR95Pct = Math.abs(metrics.Modified_VaR_95 || (technicals.atr_14 ? (technicals.atr_14 / currentPrice) * 100 : 2.5));
+  const rawMVaR = metrics.Modified_VaR_95;
+  const isMVaRValid = typeof rawMVaR === "number" && Number.isFinite(rawMVaR) && !Number.isNaN(rawMVaR) && rawMVaR !== 0;
+  const fallbackPct = technicals.atr_14 && currentPrice > 0 ? (technicals.atr_14 / currentPrice) * 100 : 2.5;
+  const mVaR95Pct = Math.abs(isMVaRValid ? rawMVaR : fallbackPct);
   const stopDistancePct = Math.max(0.8, Math.min(6.0, mVaR95Pct * 0.65));
   const stopDistanceDollar = currentPrice * (stopDistancePct / 100);
 
@@ -336,7 +339,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
           <span className="text-[10px] text-slate-400 block">Statistical Stop Dist</span>
           <span className="text-base sm:text-lg font-bold text-purple-400 tabular-nums">${stopDistanceDollar.toFixed(2)}</span>
-          <span className="text-[9px] text-slate-400 block mt-0.5 tabular-nums">{stopDistancePct.toFixed(2)}% mVaR Vol</span>
+          <span className="text-[9px] text-slate-400 block mt-0.5 tabular-nums">{stopDistancePct.toFixed(2)}% {isMVaRValid ? "mVaR Vol" : "ATR Vol"}</span>
         </div>
 
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
