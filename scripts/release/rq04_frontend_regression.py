@@ -181,6 +181,63 @@ def main():
         "passed": res_risk is not None and res_risk.returncode == 0,
     })
 
+    # 8. Radar Operational Truth & Render Behavioral Suite (ARX-S4-RADAR-001)
+    print("Running Radar Operational Truth & Render behavioral qualification tests...")
+    radar_vitest_cmd = [
+        vitest_bin,
+        "run",
+        "components/__tests__/RadarPageRenderTruth.test.tsx",
+        "lib/__tests__/radarS4OperationalTruth.test.ts",
+        "lib/__tests__/radarPartialPresentation.test.ts",
+    ]
+    if not os.path.isfile(vitest_bin):
+        errors.append("Local Vitest binary missing: npm ci must provision pinned test dependencies")
+        res_radar_vitest = None
+    else:
+        res_radar_vitest = subprocess.run(
+            radar_vitest_cmd, cwd=FRONTEND_DIR,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="ignore",
+        )
+        print(res_radar_vitest.stdout)
+        if res_radar_vitest.returncode != 0:
+            errors.append(f"Radar operational truth Vitest suite failed with exit code {res_radar_vitest.returncode}")
+    assertions.append({
+        "assertion": "Radar desktop/mobile render truth and operational state Vitest suites pass",
+        "observed": {"exit_code": res_radar_vitest.returncode if res_radar_vitest is not None else None},
+        "passed": res_radar_vitest is not None and res_radar_vitest.returncode == 0,
+    })
+
+    radar_cat_cmd = [npx_bin, "tsx", "tests/radarCategoryIntegrity002.test.ts"]
+    res_radar_cat = subprocess.run(
+        radar_cat_cmd, cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, encoding="utf-8", errors="ignore",
+    )
+    print(res_radar_cat.stdout)
+    if res_radar_cat.returncode != 0:
+        errors.append(f"Radar category integrity suite failed with exit code {res_radar_cat.returncode}")
+    assertions.append({
+        "assertion": "Radar category integrity & provenance suite passes",
+        "observed": {"exit_code": res_radar_cat.returncode},
+        "passed": res_radar_cat.returncode == 0,
+    })
+
+    radar_copy_cmd = [npx_bin, "tsx", "tests/preflightRadarCopyRemediation.test.ts"]
+    res_radar_copy = subprocess.run(
+        radar_copy_cmd, cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, encoding="utf-8", errors="ignore",
+    )
+    print(res_radar_copy.stdout)
+    if res_radar_copy.returncode != 0:
+        errors.append(f"Radar copy remediation suite failed with exit code {res_radar_copy.returncode}")
+    assertions.append({
+        "assertion": "Radar capability copy & error-vs-pending separation suite passes",
+        "observed": {"exit_code": res_radar_copy.returncode},
+        "passed": res_radar_copy.returncode == 0,
+    })
+
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"
     ok, identity, err = resolve_identity_contract()
@@ -195,6 +252,11 @@ def main():
         "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts",
         "frontend/tests/secDisclosureEvidenceView.test.ts",
         "frontend/tests/radarEvidenceRankingHandoffQualification.test.ts",
+        "frontend/components/__tests__/RadarPageRenderTruth.test.tsx",
+        "frontend/lib/__tests__/radarS4OperationalTruth.test.ts",
+        "frontend/lib/__tests__/radarPartialPresentation.test.ts",
+        "frontend/tests/radarCategoryIntegrity002.test.ts",
+        "frontend/tests/preflightRadarCopyRemediation.test.ts",
         "frontend/lib/radarPresentation.ts",
         "frontend/lib/radarRanking.ts",
         "frontend/lib/decisionContext.ts",
