@@ -38,7 +38,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   };
 
   const isTechnicalsUnavailable = !data || !data.currentPrice || data.currentPrice <= 0 || !data.technicals;
-  const currentPrice = data?.currentPrice && data.currentPrice > 0 ? data.currentPrice : 0;
+  const currentPrice = data?.currentPrice && data.currentPrice > 0 && Number.isFinite(data.currentPrice) ? data.currentPrice : 0;
   const metrics = data?.analytics?.advanced_metrics || {};
   const technicals = data?.technicals || null;
 
@@ -61,22 +61,50 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
     );
   }
 
+  // Validate volatility inputs: Cornish-Fisher VaR 95% or valid ATR-14 fallback
+  const rawMVaR = metrics.Modified_VaR_95;
+  const isMVaRValid = typeof rawMVaR === "number" && Number.isFinite(rawMVaR) && !Number.isNaN(rawMVaR) && rawMVaR !== 0;
+
+  const rawAtr = technicals.atr_14;
+  const isAtrValid = typeof rawAtr === "number" && Number.isFinite(rawAtr) && !Number.isNaN(rawAtr) && rawAtr > 0;
+
+  if (!isMVaRValid && !isAtrValid) {
+    return (
+      <section className="bg-[#0b1019] p-4 sm:p-5 rounded-2xl border border-[#243044] space-y-3 font-sans">
+        <div className="flex items-center gap-2.5 text-slate-300">
+          <span className="text-xl">⚖️</span>
+          <h3 className="text-sm sm:text-base font-bold text-white">
+            Rule #1: Protect The Castle ({symbol} Position Sizer)
+          </h3>
+        </div>
+        <div className="p-4 bg-slate-900/60 border border-slate-700/60 rounded-xl text-slate-300 text-xs space-y-1">
+          <strong className="text-slate-200 block">Volatility Telemetry Unavailable:</strong>
+          <p className="text-slate-400 leading-relaxed">
+            Neither Cornish-Fisher Modified VaR nor valid ATR-14 volatility telemetry could be established for {symbol}. Position sizing is disabled to protect capital from unverified volatility assumptions.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   const rsi = technicals.rsi_14 ?? 50.0;
 
-  // Calculate Dollar Risk Budget
-  const dollarRisk = accountSize * (riskPct / 100);
+  // Calculate Dollar Risk Budget safely
+  const validAccountSize = typeof accountSize === "number" && Number.isFinite(accountSize) && accountSize > 0 ? accountSize : 0;
+  const validRiskPct = typeof riskPct === "number" && Number.isFinite(riskPct) && riskPct > 0 ? riskPct : 0;
+  const dollarRisk = validAccountSize * (validRiskPct / 100);
 
-  // Statistical stop distance derived from Cornish-Fisher Modified VaR 95% and ATR 14
-  const mVaR95Pct = Math.abs(metrics.Modified_VaR_95 || (technicals.atr_14 ? (technicals.atr_14 / currentPrice) * 100 : 2.5));
-  const stopDistancePct = Math.max(0.8, Math.min(6.0, mVaR95Pct * 0.65));
+  // Statistical stop distance derived from Cornish-Fisher Modified VaR 95% or permitted ATR 14 fallback
+  const stopVolPct = isMVaRValid ? Math.abs(rawMVaR as number) : ((rawAtr as number) / currentPrice) * 100;
+  const stopDistancePct = Math.max(0.8, Math.min(6.0, stopVolPct * 0.65));
   const stopDistanceDollar = currentPrice * (stopDistancePct / 100);
 
   // If account size is less than 1 whole share, fractional sizing is active to avoid pricing out micro wallets
-  const isMicroWallet = accountSize < currentPrice;
+  const isMicroWallet = validAccountSize < currentPrice;
   const isFractionalActive = allowFractional || isMicroWallet;
 
   // Unconstrained statistical units based on volatility stop
-  const rawVolatilityUnits = stopDistanceDollar > 0
+  const rawVolatilityUnits = stopDistanceDollar > 0 && dollarRisk > 0
     ? isFractionalActive
       ? Number((dollarRisk / stopDistanceDollar).toFixed(4))
       : Math.floor(dollarRisk / stopDistanceDollar)
@@ -84,15 +112,15 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
 
   // Maximum units constrained by 100% cash buying power
   const maxCashUnits = isFractionalActive
-    ? Number((accountSize / currentPrice).toFixed(4))
-    : Math.floor(accountSize / currentPrice);
+    ? Number((validAccountSize / currentPrice).toFixed(4))
+    : Math.floor(validAccountSize / currentPrice);
 
   // In CASH mode, clamp position units to available cash equity
   const positionUnits = accountType === "CASH" ? Math.min(maxCashUnits, rawVolatilityUnits) : rawVolatilityUnits;
   const isCappedByCash = accountType === "CASH" && rawVolatilityUnits > maxCashUnits;
 
   const totalPositionValue = Number((positionUnits * currentPrice).toFixed(2));
-  const leverageRatio = accountSize > 0 ? (totalPositionValue / accountSize).toFixed(1) : "1.0";
+  const leverageRatio = validAccountSize > 0 ? (totalPositionValue / validAccountSize).toFixed(1) : "1.0";
 
   // Price targets based on Risk-to-Reward multiples (Long-Only Model)
   const stopPrice = Math.max(0.01, currentPrice - stopDistanceDollar);
@@ -336,7 +364,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
           <span className="text-[10px] text-slate-400 block">Statistical Stop Dist</span>
           <span className="text-base sm:text-lg font-bold text-purple-400 tabular-nums">${stopDistanceDollar.toFixed(2)}</span>
-          <span className="text-[9px] text-slate-400 block mt-0.5 tabular-nums">{stopDistancePct.toFixed(2)}% mVaR Vol</span>
+          <span className="text-[9px] text-slate-400 block mt-0.5 tabular-nums">{stopDistancePct.toFixed(2)}% {isMVaRValid ? "mVaR Vol" : "ATR Vol"}</span>
         </div>
 
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">

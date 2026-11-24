@@ -61,7 +61,7 @@ from analyst_dashboard.smart_money.continuous_pipeline import (
     TRIAL_2_GOVERNED_ISSUERS,
 )
 from analyst_dashboard.smart_money.continuous_authorization import require_continuous_authorization
-from analyst_dashboard.smart_money.smart_money_scheduler import TwoIssuerTrialScheduler
+from analyst_dashboard.smart_money.smart_money_scheduler import TwoIssuerTrialScheduler, ExpandedIngestionSchedule
 import threading
 
 logger = logging.getLogger("smart_money.worker")
@@ -500,6 +500,7 @@ class SmartMoneyIngestionWorker:
         self._shutdown_requested = False
         scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
         self.is_trial_2_issuer = (scope == "RECURRING_2_ISSUER_FORM4_TRIAL")
+        self.is_expanded_10_ingestion = (scope == "RECURRING_10_ISSUER_FORM4_INGESTION_ONLY")
         env_ingestion_only = os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower()
         if self.is_trial_2_issuer:
             if env_ingestion_only in ("false", "0", "no"):
@@ -543,6 +544,23 @@ class SmartMoneyIngestionWorker:
     def _trial_slot_subject(self, slot_id: str) -> str:
         payload = json.dumps([self.trial_scheduler.trial_id, slot_id], separators=(",", ":"))
         return hashlib.sha256(payload.encode()).hexdigest()
+
+    def dispatch_expanded_slot(self):
+        """Deliver one durable phase/date key, only under explicit schedule GO."""
+        if not getattr(self, 'is_expanded_10_ingestion', False):
+            return None
+        if os.environ.get('ARX_INGESTION_SCHEDULE_ENABLED') != 'true':
+            return None
+        require_continuous_authorization(issuers=self.governed_issuers)
+        if os.environ.get('ARX_EMERGENCY_STOP_ACTIVE', '').upper() in ('TRUE', '1', 'YES'):
+            raise RuntimeError('EMERGENCY_STOP_ACTIVE')
+        if not self._has_verified_owner_lock():
+            raise RuntimeError('EXPANDED_DISPATCH_OWNER_LOCK_UNVERIFIED')
+        policy = ExpandedIngestionSchedule.from_environment()
+        due, _ = policy.evaluate()
+        if not due:
+            return None
+        return self.repository.enqueue_expanded_daily_request(policy.subject_for(policy.get_ny_now().date()))
 
     def validate_preflight(self) -> bool:
         """
@@ -760,6 +778,15 @@ class SmartMoneyIngestionWorker:
                     failure_code="TRIAL_SLOT_DELIVERY_EXPIRED",
                 )
                 return 1
+        if claimed.get('request_type') == 'EXPANDED_DAILY_FORM4':
+            policy = ExpandedIngestionSchedule.from_environment() if getattr(self, 'is_expanded_10_ingestion', False) else None
+            due, _ = policy.evaluate() if policy else (False, 'PROFILE_MISMATCH')
+            if (not getattr(self, 'is_expanded_10_ingestion', False)
+                    or os.environ.get('ARX_INGESTION_SCHEDULE_ENABLED') != 'true'
+                    or not due or claimed.get('requested_by_subject_hash') != policy.subject_for(policy.get_ny_now().date())):
+                self.repository.complete_run_request(req_id, lease_token=lease_token,
+                    status='SKIPPED_NOT_ELIGIBLE', failure_code='EXPANDED_DELIVERY_EXPIRED')
+                return 1
         logger.info(f"Claimed operator run request: {req_id} (token={lease_token})")
 
         # Heartbeat renewal during processing
@@ -861,6 +888,7 @@ class SmartMoneyIngestionWorker:
 
         # Process any pending run requests
         self.dispatch_trial_slot()
+        self.dispatch_expanded_slot()
         try:
             self.process_run_requests()
         except Exception as e:

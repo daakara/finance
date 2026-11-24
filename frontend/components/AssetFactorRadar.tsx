@@ -107,17 +107,22 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
           { label: "Valuation", plainLabel: "Bargain Level", score: scores.valuationScore, color: "text-purple-400", bar: "bg-purple-500" },
           { label: "Momentum", plainLabel: "Trend Force", score: scores.momentumScore, color: "text-amber-400", bar: "bg-amber-500" },
           { label: "Tail Risk", plainLabel: "Crash Armor", score: scores.tailRiskScore, color: "text-rose-400", bar: "bg-rose-500" },
-        ].map((f) => (
-          <div key={f.label} className="bg-[#090d14] p-3 rounded-lg border border-[#243044] space-y-1.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400">{isPlain ? f.plainLabel : f.label}</span>
-              <span className={`font-bold ${f.color}`}>{f.score}</span>
+        ].map((f) => {
+          const isValidScore = typeof f.score === "number" && Number.isFinite(f.score) && !Number.isNaN(f.score);
+          const displayScore = isValidScore ? f.score : "N/A";
+          const barWidth = isValidScore ? `${Math.max(0, Math.min(100, f.score as number))}%` : "0%";
+          return (
+            <div key={f.label} className="bg-[#090d14] p-3 rounded-lg border border-[#243044] space-y-1.5">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400">{isPlain ? f.plainLabel : f.label}</span>
+                <span className={`font-bold ${isValidScore ? f.color : "text-slate-400"}`}>{displayScore}</span>
+              </div>
+              <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
+                <div className={`${isValidScore ? f.bar : "bg-slate-700"} h-full rounded-full`} style={{ width: barWidth }}></div>
+              </div>
             </div>
-            <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
-              <div className={`${f.bar} h-full rounded-full`} style={{ width: `${f.score}%` }}></div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Macro Regime Intelligence & 90-Day Expected Return Grid */}

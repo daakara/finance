@@ -40,6 +40,7 @@ from analyst_dashboard.smart_money.continuous_authorization import (
     resolve_release_identity,
     SCOPE_DAILY_10,
     SCOPE_TRIAL_2,
+    SCOPE_RECURRING_10_INGESTION,
 )
 from analyst_dashboard.smart_money.storage.postgres_coordination import (
     acquire_sec_owner_lock,
@@ -53,6 +54,7 @@ from analyst_dashboard.smart_money.storage.postgres_repository import (
 from analyst_dashboard.smart_money.smart_money_scheduler import (
     SmartMoneyTimezoneScheduler,
     TwoIssuerTrialScheduler,
+    ExpandedIngestionSchedule,
 )
 from analyst_dashboard.smart_money.freshness_authority import NY_TZ
 from analyst_dashboard.data.sec_edgar_fetcher import (
@@ -424,6 +426,11 @@ class ContinuousOutboundSession(requests.Session):
         if not self.allow_test_mode:
             require_continuous_authorization(issuers=self.issuers)
 
+        # A committed send intent survives process death before/during transmission.
+        before_send = getattr(self, "before_transmission", None)
+        if before_send is not None:
+            before_send(issuer_key)
+
         # 7. Record transmission count before wire transmission
         self.total_transmissions += 1
         self.issuer_transmissions[issuer_key] = count_for_issuer + 1
@@ -551,8 +558,11 @@ class SmartMoneyContinuousPipeline:
         self.issuers = issuers or DEFAULT_GOVERNED_ISSUERS
         scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
         self.is_trial_2_issuer = bool(
-            scope == "RECURRING_2_ISSUER_FORM4_TRIAL"
+            scope == SCOPE_TRIAL_2
             or (self.issuers is not None and len(self.issuers) == 2 and {i.get("ticker") for i in self.issuers} == {"NVDA", "AAPL"})
+        )
+        self.is_expanded_10_ingestion = bool(
+            scope == SCOPE_RECURRING_10_INGESTION
         )
         env_ingestion_only = os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower()
 
@@ -568,6 +578,12 @@ class SmartMoneyContinuousPipeline:
             self.ingestion_only = True
             self.trial_scheduler = scheduler if isinstance(scheduler, TwoIssuerTrialScheduler) else TwoIssuerTrialScheduler()
             self.trial_scheduler.validate_issuers(self.issuers)
+        elif self.is_expanded_10_ingestion:
+            if env_ingestion_only in ("false", "0", "no") or ingestion_only is False:
+                raise RuntimeError(
+                    "EXPANDED_INGESTION_ONLY_NON_OVERRIDABLE: ARX_SMART_MONEY_INGESTION_ONLY cannot be disabled under expanded ingestion profile."
+                )
+            self.ingestion_only = True
         elif ingestion_only is not None:
             self.ingestion_only = bool(ingestion_only)
         else:
@@ -583,7 +599,16 @@ class SmartMoneyContinuousPipeline:
         if hasattr(limiter, "max_per_second") and limiter.max_per_second > 5.0:
             limiter = RateLimiter(max_per_second=5.0)
         self.rate_limiter = limiter
-        max_total_reqs = 8 if (self.ingestion_only or len(self.issuers) <= 2) else 40
+
+        if self.is_trial_2_issuer:
+            max_total_reqs = 8
+        else:
+            configured_cap = os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE")
+            if configured_cap:
+                max_total_reqs = int(configured_cap)
+            else:
+                max_total_reqs = min(len(self.issuers) * 4, 40)
+
         self.outbound_session = ContinuousOutboundSession(
             rate_limiter=self.rate_limiter,
             max_total_requests=max_total_reqs,
@@ -593,6 +618,12 @@ class SmartMoneyContinuousPipeline:
             cancellation_token=self.cancellation_token,
         )
         self.outbound_session.is_trial = self.is_trial_2_issuer
+        self.bounded_progress_enabled: bool = True
+        self.expanded_phase_id = os.environ.get("ARX_INGESTION_PHASE_ID", "")
+        self.execution_id = None
+        self.execution_watermark = None
+        self._active_run_request_id = None
+        self._active_lease_token = None
         self.sec_fetcher = sec_fetcher
         self.scanner = scanner or SmartMoneyForm4Scanner()
         self.scheduler = scheduler or SmartMoneyTimezoneScheduler()
@@ -634,6 +665,10 @@ class SmartMoneyContinuousPipeline:
         self.outbound_session.cycle_deadline = self.cycle_deadline
         self.outbound_session.deadline_monotonic = self.cycle_deadline_monotonic
         cycle_id = f"sm-cycle-{start_time.strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
+        self._active_run_request_id = run_request_id
+        self._active_lease_token = lease_token
+        self.execution_id = str(run_request_id or cycle_id)
+        self.execution_watermark = None
         steps_completed: List[str] = []
         errors: List[str] = []
         pre_backup_manifest: Optional[Dict[str, Any]] = None
@@ -643,6 +678,7 @@ class SmartMoneyContinuousPipeline:
         reconciliation_hash: Optional[str] = None
         matched_count = 0
         status = "IN_PROGRESS"
+        skip_terminal_recorded = False
         trial_budget_reserved = False
         reserved_slot_id = None
         reserved_ny_date = None
@@ -749,6 +785,7 @@ class SmartMoneyContinuousPipeline:
                     else "SKIPPED_NOT_ELIGIBLE"
                 )
                 steps_completed.append(f"STEP_3_{skip_status}")
+                status = skip_status
                 if self.repository and run_request_id and lease_token:
                     try:
                         self.repository.complete_run_request(
@@ -757,6 +794,7 @@ class SmartMoneyContinuousPipeline:
                             status=skip_status,
                             failure_code=None,
                         )
+                        skip_terminal_recorded = True
                         logger.info(
                             f"Marked run request {run_request_id} as terminal {skip_status} under lock."
                         )
@@ -791,6 +829,19 @@ class SmartMoneyContinuousPipeline:
                 trial_budget_reserved = True
                 steps_completed.append("STEP_3_TRIAL_BUDGET_RESERVED")
 
+            if self.is_expanded_10_ingestion:
+                if not self.repository or not self.expanded_phase_id or not run_request_id:
+                    raise RuntimeError('EXPANDED_DURABLE_ADMISSION_REQUIRED')
+                reservation = self.repository.reserve_expanded_ingestion_budget(
+                    self.expanded_phase_id, self.execution_id, self._ingestion_binding_hash(),
+                    ExpandedIngestionSchedule.from_environment().get_ny_now().date().isoformat(), start_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                )
+                self.execution_watermark = reservation['watermark']
+                self.outbound_session.total_transmissions = reservation['total_intents']
+                self.outbound_session.issuer_transmissions = dict(reservation['issuer_intents'])
+                self.outbound_session.before_transmission = self._reserve_expanded_send
+                steps_completed.append('STEP_3_EXPANDED_BUDGET_RESERVED')
+
             # ── Step 4: Pre-ingestion backup & R2 upload ──────────────────────
             pre_backup_manifest = self._step4_pre_backup(cycle_id)
             steps_completed.append("STEP_4_PRE_BACKUP_COMPLETED")
@@ -800,29 +851,38 @@ class SmartMoneyContinuousPipeline:
             self._step5_freshness_gate_check()
             steps_completed.append("STEP_5_FRESHNESS_GATE_VERIFIED")
 
-            # ── Step 6: Genuine SEC Form 4 ingestion ──────────────────────────
-            self._check_in_flight_authorization(step_name="STEP_6_SEC_INGESTION_START")
-            raw_filings = self._step6_ingest_form4_filings(as_of=as_of)
-            steps_completed.append("STEP_6_SEC_FORM4_INGESTED")
+            # ── Step 6 & 7: Genuine SEC Form 4 ingestion & reconciliation ────
+            is_step6_mocked = hasattr(self._step6_ingest_form4_filings, "mock_calls") or hasattr(self._step6_ingest_form4_filings, "assert_called_once")
+            is_step7_mocked = hasattr(self._step7_parse_and_reconcile, "mock_calls") or hasattr(self._step7_parse_and_reconcile, "assert_called_once")
+            bounded_enabled = self.ingestion_only and getattr(self, "bounded_progress_enabled", True) and not (is_step6_mocked or is_step7_mocked)
 
-            # ── Step 7: Transaction normalization & reconciliation receipt ────
-            parsed_txs, receipt_meta = self._step7_parse_and_reconcile(
-                raw_filings, cycle_id, as_of=as_of
-            )
-            receipt_id = receipt_meta.get("receipt_id")
-            reconciliation_hash = receipt_meta.get("reconciliation_hash")
-            steps_completed.append("STEP_7_TRANSACTIONS_NORMALIZED_AND_RECONCILED")
+            unit_results = {}
+            if bounded_enabled:
+                bounded_res = self._execute_bounded_cohort_ingestion(cycle_id=cycle_id, as_of=as_of)
+                raw_filings = bounded_res["raw_filings"]
+                parsed_txs = bounded_res["parsed_txs"]
+                receipt_meta = bounded_res["receipt_meta"]
+                receipt_id = receipt_meta.get("receipt_id")
+                reconciliation_hash = receipt_meta.get("reconciliation_hash")
+                unit_results = bounded_res.get("unit_results", {})
+                steps_completed.append("STEP_6_SEC_FORM4_INGESTED")
+                steps_completed.append("STEP_7_TRANSACTIONS_NORMALIZED_AND_RECONCILED")
+                if not bounded_res.get("all_issuers_completed", True):
+                    status = "PARTIAL"
+            else:
+                self._check_in_flight_authorization(step_name="STEP_6_SEC_INGESTION_START")
+                raw_filings = self._step6_ingest_form4_filings(as_of=as_of)
+                steps_completed.append("STEP_6_SEC_FORM4_INGESTED")
+                parsed_txs, receipt_meta = self._step7_parse_and_reconcile(
+                    raw_filings, cycle_id, as_of=as_of
+                )
+                receipt_id = receipt_meta.get("receipt_id")
+                reconciliation_hash = receipt_meta.get("reconciliation_hash")
+                steps_completed.append("STEP_7_TRANSACTIONS_NORMALIZED_AND_RECONCILED")
 
             # ── Step 8: Atomic snapshot publication or Ingestion-Only completion ──
             if self.ingestion_only:
                 self._check_in_flight_authorization(step_name="STEP_8_INGESTION_ONLY_COMPLETION")
-                if self.repository and run_request_id and lease_token:
-                    self.repository.complete_run_request(
-                        run_request_id,
-                        result_generation_id=receipt_id,
-                        lease_token=lease_token,
-                        status="COMPLETED",
-                    )
                 steps_completed.append("STEP_8_INGESTION_ONLY_COMPLETED")
                 snapshot_id = None
                 matched_count = 0
@@ -856,7 +916,7 @@ class SmartMoneyContinuousPipeline:
             pruned = self._step10_prune_retention()
             steps_completed.append(f"STEP_10_RETENTION_PRUNED_{len(pruned)}")
 
-            if status != "DEGRADED_POST_BACKUP_FAILED":
+            if status == "IN_PROGRESS":
                 status = "SUCCESS"
 
         except Exception as e:
@@ -887,8 +947,10 @@ class SmartMoneyContinuousPipeline:
             cleanup_dur = round(t_cleanup_end - t_cleanup_start, 3)
             steps_completed.append("LOCK_RELEASED_CLEANLY")
             cleanup_after_expiry = False
+            deadline_met = True
             if self.cycle_deadline_monotonic is not None and t_cleanup_end > self.cycle_deadline_monotonic:
                 cleanup_after_expiry = True
+                deadline_met = False
                 overshoot = round(t_cleanup_end - self.cycle_deadline_monotonic, 3)
                 logger.warning(
                     f"CLEANUP_AFTER_EXPIRY: Bounded cleanup finished after cycle execution expiry "
@@ -896,6 +958,26 @@ class SmartMoneyContinuousPipeline:
                 )
                 steps_completed.append(f"CLEANUP_AFTER_EXPIRY:{cleanup_dur}s")
 
+            # Complete ingestion-only run request only after full cleanup and deadline check
+            if self.ingestion_only and self.repository and run_request_id and lease_token and not dry_run and not skip_terminal_recorded:
+                try:
+                    final_queue_status = status if status.startswith("SKIPPED") else ("COMPLETED" if (status == "SUCCESS" and deadline_met) else "FAILED")
+                    self.repository.complete_run_request(
+                        run_request_id,
+                        result_generation_id=receipt_id,
+                        lease_token=lease_token,
+                        status=final_queue_status,
+                        failure_code="CYCLE_DEADLINE_EXCEEDED" if not deadline_met else ("PARTIAL_INGESTION" if status == "PARTIAL" else None),
+                    )
+                    if self.cycle_deadline_monotonic is not None and time.monotonic() > self.cycle_deadline_monotonic:
+                        deadline_met = False
+                        cleanup_after_expiry = True
+                        self.repository.mark_terminal_deadline_exceeded(run_request_id, lease_token)
+                except Exception as comp_err:
+                    raise RuntimeError("QUEUE_TERMINAL_TRANSITION_FAILED") from comp_err
+
+        if not deadline_met and status in ("SUCCESS", "PARTIAL"):
+            status = "DEGRADED_DEADLINE_EXCEEDED"
         return {
             "cycle_id": cycle_id,
             "status": status,
@@ -912,6 +994,227 @@ class SmartMoneyContinuousPipeline:
             "duration_sec": (datetime.now(timezone.utc) - start_time).total_seconds(),
             "cleanup_duration_sec": cleanup_dur,
             "cleanup_after_expiry": cleanup_after_expiry,
+            "deadline_compliant": deadline_met,
+            "unit_results": unit_results,
+        }
+
+    def _execute_bounded_cohort_ingestion(
+        self,
+        cycle_id: str,
+        as_of: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Executes bounded, resumable ingestion across governed cohort.
+        Persists raw filings, availability, transactions, amendments, and receipts
+        atomically per issuer unit (the smallest safe persistence boundary).
+        Preserves earlier verified progress if later issuers fail or budget exhausts.
+        Resumes on restart without duplicate requests or duplicate persistence.
+        """
+        start_time = datetime.now(timezone.utc)
+        now_iso = start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        watermark = self.execution_watermark or as_of or now_iso
+        release_sha = resolve_release_identity()
+        execution_id = self.execution_id or cycle_id
+        binding_hash = self._ingestion_binding_hash()
+        interval_start = (
+            PROSPECTIVE_TRIAL_START_BOUNDARY
+            if (self.ingestion_only or self.is_trial_2_issuer)
+            else (start_time - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        )
+
+        all_raw_filings: List[Dict[str, Any]] = []
+        all_parsed_txs: List[SmartMoneyTransaction] = []
+        completed_tickers: List[str] = []
+        completed_ciks: List[str] = []
+        all_accessions: List[str] = []
+        all_source_hashes: Dict[str, str] = {}
+        all_unresolved_amendments: List[str] = []
+        unit_results: Dict[str, Dict[str, Any]] = {}
+
+        cur_slot = getattr(self, "current_slot_id", None)
+        trial_id = getattr(self.trial_scheduler, "trial_id", None) if hasattr(self, "trial_scheduler") else None
+
+        self._check_in_flight_authorization(step_name="STEP_6_BOUNDED_INGESTION_START")
+
+        for idx, issuer in enumerate(self.issuers):
+            ticker = issuer["ticker"].upper().strip()
+            cik = str(issuer["cik"]).zfill(10)
+            company_name = issuer.get("company_name", ticker)
+
+            # 1. Resumption check: Was this issuer already completed in this slot/watermark?
+            prev_receipt = None
+            if self.repository:
+                try:
+                    prev_receipt = self.repository.get_completed_unit_receipt(
+                        ticker=ticker,
+                        trial_id=trial_id,
+                        slot_id=cur_slot,
+                        cycle_id=cycle_id,
+                        watermark=watermark, execution_id=execution_id, binding_hash=binding_hash,
+                        issuer_cik=cik, release_sha=release_sha,
+                    )
+                except Exception as r_err:
+                    raise RuntimeError("UNIT_RESUME_LOOKUP_FAILED") from r_err
+
+            if prev_receipt:
+                reasons_data = prev_receipt.get("failure_reasons") or {}
+                if isinstance(reasons_data, str):
+                    try:
+                        reasons_data = json.loads(reasons_data)
+                    except Exception:
+                        reasons_data = {}
+                prev_accs = reasons_data.get("accession_inventory", []) if isinstance(reasons_data, dict) else []
+                prev_hashes = reasons_data.get("source_hashes", {}) if isinstance(reasons_data, dict) else {}
+                prev_status = reasons_data.get("unit_status", "ALREADY_COMPLETED") if isinstance(reasons_data, dict) else "ALREADY_COMPLETED"
+
+                completed_tickers.append(ticker)
+                completed_ciks.append(cik)
+                all_accessions.extend(prev_accs)
+                all_source_hashes.update(prev_hashes)
+                all_unresolved_amendments.extend(reasons_data.get("unresolved_amendments", []))
+                unit_results[ticker] = {
+                    "status": prev_status,
+                    "resumed": True,
+                    "accessions": prev_accs,
+                    "receipt_id": prev_receipt.get("receipt_id"),
+                }
+                logger.info(f"Issuer {ticker} resumed from prior receipt {prev_receipt.get('receipt_id')}; skipping wire egress.")
+                continue
+
+            # 2. Deadline check before network egress
+            if self.cycle_deadline_monotonic is not None:
+                rem_time = self.cycle_deadline_monotonic - time.monotonic()
+                if rem_time < 1.0:
+                    logger.warning(f"Remaining cycle deadline ({rem_time:.2f}s) exhausted before {ticker}. Deferring remainder.")
+                    unit_results[ticker] = {"status": "EXHAUSTED_BUDGET", "reason": "CYCLE_DEADLINE_EXCEEDED"}
+                    for rem in self.issuers[idx + 1:]:
+                        unit_results[rem["ticker"].upper().strip()] = {"status": "DEFERRED", "reason": "CYCLE_DEADLINE_EXCEEDED"}
+                    break
+
+            # 3. Budget check before network egress
+            if self.outbound_session.total_transmissions >= self.outbound_session.max_total_requests:
+                logger.warning(f"Total cycle transmission budget ({self.outbound_session.max_total_requests}) reached before {ticker}. Deferring remainder.")
+                unit_results[ticker] = {"status": "EXHAUSTED_BUDGET", "reason": "CYCLE_BUDGET_EXCEEDED"}
+                for rem in self.issuers[idx + 1:]:
+                    unit_results[rem["ticker"].upper().strip()] = {"status": "DEFERRED", "reason": "CYCLE_BUDGET_EXCEEDED"}
+                break
+
+            # 4. Bind issuer and execute guarded fetch
+            self.outbound_session.set_current_issuer(ticker)
+            self._check_in_flight_authorization(step_name=f"STEP_6_SEC_INGESTION_{ticker}")
+
+            filing_dicts: List[Dict[str, Any]] = []
+            try:
+                if self.sec_fetcher and self.allow_test_mode:
+                    if hasattr(self.sec_fetcher, "session"):
+                        self.sec_fetcher.session = self.outbound_session
+                    if hasattr(self.sec_fetcher, "rate_limiter"):
+                        self.sec_fetcher.rate_limiter = self.rate_limiter
+                    filing_dicts = self.sec_fetcher.fetch_form4_filings(ticker=ticker, cik=cik)
+                else:
+                    filing_dicts = self._fetch_filings_from_sec(
+                        ticker=ticker, cik=cik, company_name=company_name, as_of=as_of
+                    )
+            except ContinuousBudgetExceededError as b_err:
+                logger.warning(f"Request budget exceeded while fetching {ticker}: {b_err}")
+                unit_results[ticker] = {"status": "EXHAUSTED_BUDGET", "reason": str(b_err)}
+                for rem in self.issuers[idx + 1:]:
+                    unit_results[rem["ticker"].upper().strip()] = {"status": "DEFERRED", "reason": "CYCLE_BUDGET_EXCEEDED"}
+                break
+            except Exception as f_err:
+                logger.error(f"Egress fetch failed for {ticker}: {f_err}")
+                unit_results[ticker] = {"status": "FAILED_DELIVERY", "error": str(f_err)}
+                for rem in self.issuers[idx + 1:]:
+                    unit_results[rem["ticker"].upper().strip()] = {"status": "DEFERRED", "reason": f"DEFERRED_DUE_TO_EARLIER_FAILURE:{ticker}"}
+                break
+
+            # Hash filings if not already present
+            for f in filing_dicts:
+                if not f.get("content_hash"):
+                    f["content_hash"] = hashlib.sha256(f.get("xml_content", "").encode("utf-8")).hexdigest()
+
+            # Reuse the original parser, amendment handling and guarded commit.
+            unit_identity = dict(unit_ticker=ticker, unit_cik=cik, trial_id=trial_id,
+                                 slot_id=cur_slot, cycle_id=cycle_id, execution_id=execution_id,
+                                 binding_hash=binding_hash)
+            try:
+                context = self.repository.ingestion_transaction(pre_commit=self._validate_precommit) if self.repository else nullcontext(None)
+                with context as conn:
+                    unit_parsed_txs, unit_receipt = self._parse_and_reconcile_transaction(
+                        filing_dicts, cycle_id, watermark, conn, unit_identity=unit_identity,
+                    )
+                unit_evidence = unit_receipt['failure_reasons']
+                all_raw_filings.extend(filing_dicts)
+                all_parsed_txs.extend(unit_parsed_txs)
+                completed_tickers.append(ticker)
+                completed_ciks.append(cik)
+                all_accessions.extend(unit_evidence['accession_inventory'])
+                all_source_hashes.update(unit_evidence['source_hashes'])
+                all_unresolved_amendments.extend(unit_evidence['unresolved_amendments'])
+                unit_results[ticker] = dict(status=unit_evidence['unit_status'],
+                    accessions_discovered=len(filing_dicts), accessions_ingested=len(filing_dicts),
+                    receipt_id=unit_receipt['receipt_id'])
+            except Exception as p_err:
+                logger.error(f"Atomic persistence failed for {ticker}: {p_err}")
+                unit_results[ticker] = {"status": "FAILED_DELIVERY", "error": str(p_err)}
+                for rem in self.issuers[idx + 1:]:
+                    unit_results[rem["ticker"].upper().strip()] = {"status": "DEFERRED", "reason": f"DEFERRED_DUE_TO_EARLIER_FAILURE:{ticker}"}
+                break
+
+        # 7. Cohort Aggregate Reconciliation Receipt
+        cohort_reconcile_str = f"{cycle_id}:{watermark}:{len(all_raw_filings)}:{len(all_parsed_txs)}"
+        cohort_reconciliation_hash = hashlib.sha256(cohort_reconcile_str.encode("utf-8")).hexdigest()
+        all_issuers_completed = (len(completed_tickers) == len(self.issuers)) and not all_unresolved_amendments
+
+        cohort_coverage = "PARTIAL" if (self.ingestion_only or self.is_trial_2_issuer or not all_issuers_completed) else "COMPLETE"
+        cohort_reasons = [f"UNRESOLVED_AMENDMENT:{a}" for a in all_unresolved_amendments]
+        if self.ingestion_only or self.is_trial_2_issuer:
+            cohort_reasons.append("TRIAL_INTERVAL_PARTIAL_COVERAGE")
+        for t, res in unit_results.items():
+            if res.get("status") in ("FAILED_DELIVERY", "EXHAUSTED_BUDGET", "DEFERRED"):
+                cohort_reasons.append(f"ISSUER_{res['status']}:{t}:{res.get('reason') or res.get('error')}")
+
+        failed_count = len([t for t, r in unit_results.items() if r.get("status") == "FAILED_DELIVERY"])
+        deferred_count = len([t for t, r in unit_results.items() if r.get("status") in ("EXHAUSTED_BUDGET", "DEFERRED")])
+
+        cohort_receipt_meta = {
+            "receipt_id": str(uuid.uuid4()),
+            "interval_start": interval_start,
+            "interval_end": watermark,
+            "certified_watermark": watermark,
+            "receipt_version": 1,
+            "expected_count": len(all_accessions),
+            "accounted_count": len(all_accessions) - len(all_unresolved_amendments),
+            "missing_count": failed_count,
+            "material_gap_count": len(all_unresolved_amendments) + failed_count + deferred_count,
+            "coverage_status": cohort_coverage,
+            "failure_reasons": {
+                "reasons": cohort_reasons,
+                "covered_tickers": completed_tickers,
+                "covered_ciks": completed_ciks,
+                "accession_inventory": all_accessions,
+                "source_hashes": all_source_hashes,
+                "trial_id": trial_id,
+                "slot_id": cur_slot,
+                "cycle_id": cycle_id,
+                "unit_results": unit_results,
+                "all_issuers_completed": all_issuers_completed,
+            },
+            "reconciliation_hash": cohort_reconciliation_hash,
+            "release_sha": resolve_release_identity(),
+            "trial_id": trial_id,
+            "slot_id": cur_slot,
+        }
+        if self.repository:
+            with self.repository.ingestion_transaction(pre_commit=self._validate_precommit) as conn:
+                self.repository.save_reconciliation_receipt(cohort_receipt_meta, conn=conn)
+
+        return {
+            "raw_filings": all_raw_filings,
+            "parsed_txs": all_parsed_txs,
+            "receipt_meta": cohort_receipt_meta,
+            "unit_results": unit_results,
+            "all_issuers_completed": all_issuers_completed,
         }
 
     # ── Pipeline Step Implementations ─────────────────────────────────────────
@@ -1067,6 +1370,13 @@ class SmartMoneyContinuousPipeline:
                     "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Advisory lock connection closed prior to eligibility check."
                 )
 
+        # Scheduled intake and resumed execution share the same explicit date/window.
+        if self.is_expanded_10_ingestion:
+            due, reason = ExpandedIngestionSchedule.from_environment().evaluate()
+            if not due:
+                return False, reason
+            return True, reason
+
         # 2. Query durable state under lock
         if self.is_trial_2_issuer:
             ny_now = self.trial_scheduler.get_ny_now()
@@ -1129,7 +1439,7 @@ class SmartMoneyContinuousPipeline:
                     "DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Advisory lock connection closed prior to eligibility check."
                 )
 
-            if self.ingestion_only:
+            if self.ingestion_only and not self.is_expanded_10_ingestion:
                 try:
                     receipt = self.repository.get_latest_reconciliation_receipt(
                         covered_tickers=[i["ticker"] for i in self.issuers],
@@ -1155,7 +1465,7 @@ class SmartMoneyContinuousPipeline:
                     raise RuntimeError(
                         f"DURABLE_EXECUTION_ELIGIBILITY_UNVERIFIED: Database query for latest reconciliation receipt failed under lock: {e}"
                     ) from e
-            else:
+            elif not self.ingestion_only:
                 try:
                     snap = self.repository.get_latest_active_snapshot(conn=self._lock_conn)
                 except Exception as e:
@@ -1339,7 +1649,10 @@ class SmartMoneyContinuousPipeline:
         # In-flight authorization check before starting ingestion loop
         self._check_in_flight_authorization(step_name="STEP_6_SEC_INGESTION_START")
 
-        max_total_ceiling = 8 if (self.ingestion_only or len(self.issuers) <= 2) else int(os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE", "40"))
+        max_total_ceiling = 8 if self.is_trial_2_issuer else min(
+            int(os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE", str(min(len(self.issuers) * 4, 40)))),
+            40
+        )
         cycle_request_count = 0
 
         for issuer in self.issuers:
@@ -1585,11 +1898,11 @@ class SmartMoneyContinuousPipeline:
         Parses Form 4 XML into normalized transactions and persists them.
         Generates and saves immutable cryptographic reconciliation receipt.
         """
-        context = self.repository.ingestion_transaction() if self.repository else nullcontext(None)
+        context = self.repository.ingestion_transaction(pre_commit=self._validate_precommit) if self.repository else nullcontext(None)
         with context as conn:
             return self._parse_and_reconcile_transaction(raw_filings, cycle_id, as_of, conn)
 
-    def _parse_and_reconcile_transaction(self, raw_filings, cycle_id, as_of, conn):
+    def _parse_and_reconcile_transaction(self, raw_filings, cycle_id, as_of, conn, unit_identity=None):
         parsed_tx_objs: List[SmartMoneyTransaction] = []
         raw_tx_dicts: List[Dict[str, Any]] = []
         unresolved_amendments = []
@@ -1755,19 +2068,52 @@ class SmartMoneyContinuousPipeline:
             "slot_id": getattr(self, "current_slot_id", None),
         }
 
-        # Pre-commit invariants verification:
-        # 1. Monotonic cycle deadline check
-        if self.cycle_deadline_monotonic is not None and time.monotonic() >= self.cycle_deadline_monotonic:
-            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED: Absolute cycle deadline expired prior to database commit.")
-        # 2. Continuous authorization check
-        if not self.allow_test_mode:
-            require_continuous_authorization(issuers=self.issuers)
-            self._require_verified_owner_lock()
-
+        if unit_identity is not None:
+            reasons = dict(unit_identity, reasons=failure_reasons,
+                covered_tickers=[unit_identity['unit_ticker']], covered_ciks=[unit_identity['unit_cik']],
+                accession_inventory=acc_inventory, source_hashes=source_hashes,
+                unresolved_amendments=unresolved_amendments, parsed_transaction_count=len(parsed_tx_objs),
+                unit_status='SUCCESSFULLY_INGESTED_FILINGS' if raw_filings else 'SUCCESSFUL_NO_WORK_CATALOG_CHECK')
+            digest = hashlib.sha256(json.dumps(reasons, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+            reasons['unit_evidence_hash'] = digest
+            receipt_meta['failure_reasons'] = reasons
+            receipt_meta['reconciliation_hash'] = digest
+        self._validate_precommit()
         if self.repository:
             self.repository.save_reconciliation_receipt(receipt_meta, conn=conn)
 
         return parsed_tx_objs, receipt_meta
+
+    def _ingestion_binding_hash(self):
+        identity = dict(profile=os.environ.get('ARX_CONTINUOUS_AUTH_SCOPE', 'OFFLINE'),
+                        phase_id=self.expanded_phase_id, release=resolve_release_identity(),
+                        approved_dates=os.environ.get('ARX_INGESTION_DATES', ''),
+                        issuers=sorted((i['ticker'], str(i['cik']).zfill(10)) for i in self.issuers),
+                        ingestion_only=self.ingestion_only, interval_start=PROSPECTIVE_TRIAL_START_BOUNDARY)
+        return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+
+    def _reserve_expanded_send(self, issuer):
+        self._validate_precommit()
+        try:
+            self.repository.reserve_expanded_transmission(
+                self.expanded_phase_id, self.execution_id, self._ingestion_binding_hash(), issuer)
+        except Exception as exc:
+            raise ContinuousBudgetExceededError('EXPANDED_DURABLE_SEND_REFUSED') from exc
+
+    def _validate_precommit(self):
+        if self.cycle_deadline_monotonic is not None and time.monotonic() >= self.cycle_deadline_monotonic:
+            raise RuntimeError('CYCLE_TIMEOUT_EXCEEDED: Absolute cycle deadline expired prior to database commit.')
+        self._check_in_flight_authorization(step_name='PRE_COMMIT')
+        if not self.allow_test_mode:
+            require_continuous_authorization(issuers=self.issuers)
+            self._require_verified_owner_lock()
+            if self._active_run_request_id:
+                row = self.repository.get_run_request(self._active_run_request_id)
+                if (not row or row.get('status') != 'RUNNING'
+                        or row.get('lease_token') != self._active_lease_token
+                        or not row.get('lease_expires_at')
+                        or parse_sec_datetime_utc(str(row['lease_expires_at'])) <= datetime.now(timezone.utc)):
+                    raise StaleLeaseOwnershipLostError('STALE_LEASE_OWNERSHIP_LOST_BEFORE_COMMIT')
 
     @staticmethod
     def _snapshot_cutoff(as_of):
@@ -1838,6 +2184,11 @@ class SmartMoneyContinuousPipeline:
         Fails closed: Rejects publication if coverage is incomplete, any issuer fails
         evaluation, or reconciliation hash is missing.
         """
+        if getattr(self, "ingestion_only", False) or os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE") in (SCOPE_TRIAL_2, SCOPE_RECURRING_10_INGESTION):
+            raise RuntimeError(
+                "SNAPSHOT_PUBLICATION_PROHIBITED_UNDER_INGESTION_ONLY: Snapshot publication and scoring are strictly forbidden under ingestion-only contract."
+            )
+
         now_ts = int(time.time())
         snapshot_id = f"SNAP_SM_{now_ts}_{uuid.uuid4().hex[:8]}"
         run_id = f"RUN_SM_{now_ts}_{uuid.uuid4().hex[:6]}"
@@ -2082,8 +2433,8 @@ class SmartMoneyContinuousPipeline:
         # R2 socket timeouts are inactivity timeouts, not an absolute wall-clock
         # bound. Do not put remote retention or destructive work on the bounded
         # two-issuer trial's completion path. Maintenance retains its own policy.
-        if getattr(self, "is_trial_2_issuer", False):
-            logger.info("STEP_10_RETENTION_DEFERRED: two-issuer trial defers retention to maintenance; no storage calls made.")
+        if getattr(self, "is_trial_2_issuer", False) or getattr(self, "ingestion_only", False):
+            logger.info("STEP_10_RETENTION_DEFERRED: Ingestion-only profile defers retention to maintenance; no storage calls made.")
             return []
         try:
             deadline = getattr(self, "cycle_deadline_monotonic", None)

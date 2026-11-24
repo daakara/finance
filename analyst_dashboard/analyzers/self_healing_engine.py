@@ -34,18 +34,24 @@ class SelfHealingForecastAuditor:
         daily_returns = price_df["Close"].pct_change().dropna().values
 
         # 1. Kupiec POF VaR 95% Breach Rate Test
-        var_95_threshold = abs(float(current_risk_metrics.get("Modified_VaR_95", 2.5))) / 100.0
-        breaches = sum(1 for r in daily_returns if r < -var_95_threshold)
-        total_days = len(daily_returns)
-        actual_breach_rate = round((breaches / max(1, total_days)) * 100, 2)
+        raw_mvar = current_risk_metrics.get("Modified_VaR_95") if current_risk_metrics else None
+        if raw_mvar is not None and not (isinstance(raw_mvar, float) and (np.isnan(raw_mvar) or np.isinf(raw_mvar))):
+            var_95_threshold = abs(float(raw_mvar)) / 100.0
+            breaches = sum(1 for r in daily_returns if r < -var_95_threshold)
+            total_days = len(daily_returns)
+            actual_breach_rate = round((breaches / max(1, total_days)) * 100, 2)
 
-        # Expected breach rate for 95% VaR is ~5.0%
-        if actual_breach_rate <= 5.5:
-            var_status = "Optimal (Passed Kupiec POF Test)"
-            var_adjustment = "VaR fat-tail multiplier within historical benchmark (unmodified)"
+            # Expected breach rate for 95% VaR is ~5.0%
+            if actual_breach_rate <= 5.5:
+                var_status = "Optimal (Passed Kupiec POF Test)"
+                var_adjustment = "VaR fat-tail multiplier within historical benchmark (unmodified)"
+            else:
+                var_status = "Elevated Volatility Regime"
+                var_adjustment = f"Advisory: Elevated volatility breach rate ({actual_breach_rate}%) suggests widening VaR multiplier (unapplied)"
         else:
-            var_status = "Elevated Volatility Regime"
-            var_adjustment = f"Advisory: Elevated volatility breach rate ({actual_breach_rate}%) suggests widening VaR multiplier (unapplied)"
+            actual_breach_rate = None
+            var_status = "Cornish-Fisher VaR Unavailable (Kupiec POF Test Deferred)"
+            var_adjustment = "Awaiting sufficient return observations (>= 30) for Cornish-Fisher VaR threshold"
 
         # 2. 30-Day Walk-Forward Forecast Accuracy & RMSE
         # Ensure safely bounded indices

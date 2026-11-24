@@ -1,0 +1,784 @@
+{
+  "title": "ARX NVDA Historical SEC Form 4 Bounded Coverage Reconciliation Receipt",
+  "governing_issue": "ARX Issue #165 \u2014 Bounded Resumable Ingestion & Exact Phase Delivery",
+  "trial_identifier": "ARX-TRIAL-2026-NVDA-AAPL-001",
+  "receipt_timestamp_utc": "2026-11-24T09:30:43.466034+00:00",
+  "database_as_of_timestamp_utc": "2026-11-24T10:28:40Z",
+  "database_source": "postgresql://crossover.proxy.rlwy.net:17685/finance_smart_money",
+  "issuer_profile": {
+    "ticker": "NVDA",
+    "cik": "0001045810",
+    "company_name": "NVIDIA CORP",
+    "sic": "3674",
+    "fiscal_year_end": "0131"
+  },
+  "corrections_and_superseded_claims": {
+    "catalog_completeness_reconciliation": {
+      "previous_claim": "Preliminary report stated catalog could not prove absence of Form 4s through Nov 19 because latest Form 4 was Nov 06.",
+      "corrected_finding": "An authoritative, validated SEC submissions catalog is technically capable of supporting the absence of Form 4 filings within any interval it contiguously spans (establishing technical evidence, not a legal opinion). For [2026-08-26, 2026-11-19T21:45:59Z], the catalog contiguously covers the interval, and all 15 in-window Form 4/A accessions are fully accounted for. However, for the full trial operational interval [2026-08-26, 2026-11-24], the catalog fails the governing validation requirement (validate_submissions_catalog_evidence Section 8) because it was acquired on 2026-11-22T08:53:12Z (latest filing: 2026-11-19T21:45:59Z), which is prior to the trial end date and prior to forward filing 0001696841-26-000016 (accepted 2026-11-23T21:54:28Z)."
+    },
+    "aapl_count_discrepancy_reconciliation": {
+      "previous_claim": "Report previously stated 38 AAPL filings and 104 AAPL transactions by subtracting NVDA from total database rows (55 - 17 = 38; 152 - 48 = 104).",
+      "corrected_finding": "Subtraction error corrected by grouping live database storage by actual issuer CIK and ticker. AAPL has exactly 6 raw filings and 18 parsed transactions in the database (100% agreement with earlier audits). The remaining 32 filings and 86 transactions belong to 11 other historical governed issuers (GOOGL: 4/29, TSLA: 4/14, META: 4/12, MSFT: 4/7, V: 3/9, BRK-B: 3/5, AMZN: 4/4, JPM: 3/3, ACLS: 1/1, LLY: 1/1, VRTX: 1/1)."
+    },
+    "sale_terminology_correction": {
+      "previous_claim": "Code S was labeled broadly as \"open-market sale\" based on trading plan and pricing footnotes.",
+      "corrected_finding": "Code S is strictly labeled as \"Sale\" per SEC Form 4 official specification. Rule 10b5-1 plan status and weighted-average pricing are tracked as distinct transaction attributes. The phrase \"open-market sale\" is suppressed because zero filings explicitly state an open-market execution venue in their narrative text."
+    }
+  },
+  "catalog_completeness_assessment": {
+    "retained_catalog_file": "tests/fixtures/sec_edgar/CIK0001045810_submissions.json",
+    "sha256": "8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045",
+    "size_bytes": 160255,
+    "retrieval_timestamp_utc": "2026-11-22T08:53:12.691561+00:00",
+    "source_url": "https://data.sec.gov/submissions/CIK0001045810.json",
+    "operator_identity": "ARXTerminal Research Akara.david26@gmail.com",
+    "issuer_identity_verified": {
+      "cik": "0001045810",
+      "ticker": "NVDA",
+      "company": "NVIDIA CORP"
+    },
+    "schema_verified": true,
+    "pagination_verified": true,
+    "pagination_details": "CIK0001045810-submissions-001.json spans 1998-03-06 to 2020-09-16; all 2026 filings are 100% self-contained in recent catalog.",
+    "governing_validation_contract": "analyst_dashboard.smart_money.storage.postgres_repository:validate_submissions_catalog_evidence",
+    "covered_interval_status": {
+      "closed_interval_20260826_to_20261119": {
+        "interval_start": "2026-08-26",
+        "interval_end": "2026-11-19T21:45:59Z",
+        "eligible_form4_accessions_in_catalog": 15,
+        "accounted_in_baseline": 15,
+        "missing_accessions": 0,
+        "open_source_gaps": 0,
+        "status": "INTERVALLY_COMPLETE_FOR_COVERED_WINDOW",
+        "absence_of_unlisted_filings_supported": true,
+        "completeness_basis": "Derived from validated submissions catalog schema, contiguous accession ordering, and Section 8 coverage rules (not from presence of non-Form-4 filings alone)."
+      },
+      "operational_trial_interval_20260826_to_20261124": {
+        "interval_start": "2026-08-26",
+        "interval_end": "2026-11-24T09:50:00Z",
+        "status": "UNMET_INTERVAL_CONDITION",
+        "precise_unmet_condition": "Catalog retrieval timestamp (2026-11-22T08:53:12Z) and latest recorded filing (2026-11-19T21:45:59Z) pre-date the trial end date (2026-11-24) and pre-date forward filing 0001696841-26-000016 (accepted 2026-11-23T21:54:28Z). Fails Section 8 interval traversal requirement for the post-Nov 19 operational period."
+      }
+    }
+  },
+  "trial_evidence_retention_audit": {
+    "catalog_response_bytes_retained_in_natural_trial": false,
+    "trial_retention_audit_findings": "Read-only inspection of sm_audit_events, sm_reconciliation_receipts, and pipeline code confirms that natural trial runs (such as Slot 4) do NOT retain raw submissions response bytes, acquisition timestamps, source URL, or catalog SHA-256 in PostgreSQL or on disk. The trial worker persisted raw XML and content_hash for the newly ingested primary document (0001696841-26-000016), but did not retain the parent submissions index.",
+    "single_filing_non_proof_rule": "Ingesting forward accession 0001696841-26-000016 proves that Timothy S. Teter filed on Nov 23, but does NOT prove that other NVDA Form 4 filings did not occur between Nov 06 and Nov 24."
+  },
+  "frozen_baseline_evidence": {
+    "relative_path": "tests/fixtures/sec_edgar/nvda_form4_frozen_baseline_export.json",
+    "export_timestamp_utc": "2026-11-23T20:22:19.184646+00:00",
+    "source_identity": "railway:production:smart-money-worker:finance_smart_money",
+    "qualifying_backup_reference": "sm-backup-20261122T120306Z-a1179f0e",
+    "qualifying_backup_sha256": "cb63fe7a39f0fde755699d8a28200ca382eb4bbdfd0e2a914449467c3c15ed5f",
+    "aggregate_content_digest_sha256": "c6c246f7a18315399160e1c6e8db540fcce9152672ac75c54ac481e9781faee2",
+    "ordering_basis": "sorted by filing_date ASC, accession_number ASC",
+    "raw_filings_count": 16,
+    "raw_parsed_transactions_count": 36,
+    "effective_amended_transactions_progression": {
+      "before_amendment_20261013T210928Z": 34,
+      "at_amendment_20261013T210929Z": 34,
+      "after_all_baseline_filings_20261106T211202Z": 35
+    },
+    "all_content_hashes_match": true,
+    "immutability_status": "STRICTLY_IMMUTABLE"
+  },
+  "forward_trial_accretion": {
+    "accession_number": "0001696841-26-000016",
+    "run_request_id": "52e3acb1-e682-4302-84b4-2f40f030d78f",
+    "slot_number": 4,
+    "ingestion_timestamp_utc": "2026-11-24T01:30:06.960248+00:00",
+    "filing_date": "2026-11-23",
+    "accepted_datetime_utc": "2026-11-23T21:54:28+00:00",
+    "content_hash_sha256": "c7ee40386d6a142d3c644acc348ce994aaf1f57a1ce8207fa40e0b9148f73077",
+    "recomputed_hash_match": true,
+    "reporting_owner": "Teter Timothy S.",
+    "stored_raw_transactions_count": 12,
+    "transaction_code_breakdown": {
+      "Sale (Code S)": 12
+    },
+    "transaction_attributes": {
+      "is_rule_10b5_1_trading_plan": true,
+      "is_weighted_average_price": true,
+      "execution_venue_stated_as_open_market": false,
+      "execution_venue_note": "Open market not explicitly stated in filing narrative"
+    }
+  },
+  "issuer_storage_breakdown_as_of_20261124": {
+    "as_of_timestamp_utc": "2026-11-24T10:28:40Z",
+    "nvda": {
+      "cik": "0001045810",
+      "raw_filings": 17,
+      "raw_filings_composition": {
+        "frozen_baseline": 16,
+        "forward_trial_accretion": 1
+      },
+      "stored_raw_transactions": 48,
+      "effective_amended_transactions": 47,
+      "transaction_code_breakdown": {
+        "Sale (Code S)": 37,
+        "Tax Withholding (Code F)": 5,
+        "Bona Fide Gift (Code G)": 4,
+        "Equity Grant / Award (Code A)": 2,
+        "Purchase (Code P)": 0
+      }
+    },
+    "aapl": {
+      "cik": "0000320193",
+      "raw_filings": 6,
+      "raw_filings_composition": {
+        "frozen_baseline": 6,
+        "forward_trial_accretion": 0
+      },
+      "stored_raw_transactions": 18,
+      "effective_amended_transactions": 18
+    },
+    "other_governed_issuers": {
+      "total_raw_filings": 32,
+      "total_stored_raw_transactions": 86,
+      "per_issuer_breakdown": {
+        "ACLS": {
+          "cik": "0001113232",
+          "raw_filings": 1,
+          "stored_transactions": 1
+        },
+        "AMZN": {
+          "cik": "0001018724",
+          "raw_filings": 4,
+          "stored_transactions": 4
+        },
+        "BRK-B": {
+          "cik": "0001067983",
+          "raw_filings": 3,
+          "stored_transactions": 5
+        },
+        "GOOGL": {
+          "cik": "0001652044",
+          "raw_filings": 4,
+          "stored_transactions": 29
+        },
+        "JPM": {
+          "cik": "0000019617",
+          "raw_filings": 3,
+          "stored_transactions": 3
+        },
+        "LLY": {
+          "cik": "0000059478",
+          "raw_filings": 1,
+          "stored_transactions": 1
+        },
+        "META": {
+          "cik": "0001326801",
+          "raw_filings": 4,
+          "stored_transactions": 12
+        },
+        "MSFT": {
+          "cik": "0000789019",
+          "raw_filings": 4,
+          "stored_transactions": 7
+        },
+        "TSLA": {
+          "cik": "0001318605",
+          "raw_filings": 4,
+          "stored_transactions": 14
+        },
+        "V": {
+          "cik": "0001403161",
+          "raw_filings": 3,
+          "stored_transactions": 9
+        },
+        "VRTX": {
+          "cik": "0000875320",
+          "raw_filings": 1,
+          "stored_transactions": 1
+        }
+      }
+    },
+    "total_database_all_issuers": {
+      "raw_filings": 55,
+      "stored_raw_transactions": 152,
+      "reconciled_sum_filings_check": true,
+      "reconciled_sum_transactions_check": true
+    }
+  },
+  "accession_reconciliation_inventory": [
+    {
+      "accession_number": "0001197647-26-000009",
+      "document_type": "4",
+      "filing_date": "2026-09-04",
+      "accepted_datetime_utc": "2026-09-04T21:00:35+00:00",
+      "reporting_owner_name": "COXE TENCH",
+      "reporting_owner_cik": "0001197647",
+      "period_of_report": "2026-09-02",
+      "content_hash_sha256": "2d3af938f865688553a60efb056ef6c5c607712c17112cad294006dd5a4c112f",
+      "hash_match": true,
+      "xml_non_derivative_count": 1,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 1,
+      "transaction_code_breakdown": {
+        "G": 1
+      },
+      "labeled_transaction_codes": {
+        "Bona Fide Gift (Code G)": 1
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": true,
+        "is_weighted_average_price": false,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001197647-26-000011",
+      "document_type": "4",
+      "filing_date": "2026-10-09",
+      "accepted_datetime_utc": "2026-10-09T21:04:09+00:00",
+      "reporting_owner_name": "COXE TENCH",
+      "reporting_owner_cik": "0001197647",
+      "period_of_report": "2026-10-07",
+      "content_hash_sha256": "708b054a77a77701bd7bb39802e4ac07cdf15876c461825ecb14cd4695374985",
+      "hash_match": true,
+      "xml_non_derivative_count": 1,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 1,
+      "transaction_code_breakdown": {
+        "G": 1
+      },
+      "labeled_transaction_codes": {
+        "Bona Fide Gift (Code G)": 1
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": true,
+        "is_weighted_average_price": false,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001197647-26-000013",
+      "document_type": "4",
+      "filing_date": "2026-11-06",
+      "accepted_datetime_utc": "2026-11-06T21:12:02+00:00",
+      "reporting_owner_name": "COXE TENCH",
+      "reporting_owner_cik": "0001197647",
+      "period_of_report": "2026-11-04",
+      "content_hash_sha256": "1488ef1a14107224ff366fa9164f2ec6c9e2b709c236206b8e8da43e3d95295d",
+      "hash_match": true,
+      "xml_non_derivative_count": 1,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 1,
+      "transaction_code_breakdown": {
+        "G": 1
+      },
+      "labeled_transaction_codes": {
+        "Bona Fide Gift (Code G)": 1
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": true,
+        "is_weighted_average_price": false,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001197649-26-000012",
+      "document_type": "4",
+      "filing_date": "2026-09-18",
+      "accepted_datetime_utc": "2026-09-18T21:10:59+00:00",
+      "reporting_owner_name": "HUANG JEN HSUN",
+      "reporting_owner_cik": "0001197649",
+      "period_of_report": "2026-09-16",
+      "content_hash_sha256": "822eaaac11fc1cd84bead616a51b338fc8b5511b763a5ad0ac1e694272cecfab",
+      "hash_match": true,
+      "xml_non_derivative_count": 2,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 2,
+      "transaction_code_breakdown": {
+        "F": 1,
+        "G": 1
+      },
+      "labeled_transaction_codes": {
+        "Tax Withholding (Code F)": 1,
+        "Bona Fide Gift (Code G)": 1
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": false,
+        "is_weighted_average_price": false,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001199039-26-000012",
+      "document_type": "4",
+      "filing_date": "2026-09-02",
+      "accepted_datetime_utc": "2026-09-02T22:10:34+00:00",
+      "reporting_owner_name": "STEVENS MARK A",
+      "reporting_owner_cik": "0001199039",
+      "period_of_report": "2026-08-31",
+      "content_hash_sha256": "d22cd5d85d32dbf39d62d7d6e599089411c4c11191642ab3618ab8c2dbcb7d33",
+      "hash_match": true,
+      "xml_non_derivative_count": 7,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 7,
+      "transaction_code_breakdown": {
+        "S": 7
+      },
+      "labeled_transaction_codes": {
+        "Sale (Code S)": 7
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": false,
+        "is_weighted_average_price": true,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001199039-26-000014",
+      "document_type": "4",
+      "filing_date": "2026-09-08",
+      "accepted_datetime_utc": "2026-09-08T21:09:19+00:00",
+      "reporting_owner_name": "STEVENS MARK A",
+      "reporting_owner_cik": "0001199039",
+      "period_of_report": "2026-09-03",
+      "content_hash_sha256": "e902c5ae660d258a2606ad30dc7b756adc0f76271d83e319cc0ddabc50a7e5e6",
+      "hash_match": true,
+      "xml_non_derivative_count": 7,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 7,
+      "transaction_code_breakdown": {
+        "S": 7
+      },
+      "labeled_transaction_codes": {
+        "Sale (Code S)": 7
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": false,
+        "is_weighted_average_price": true,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001199039-26-000016",
+      "document_type": "4",
+      "filing_date": "2026-09-22",
+      "accepted_datetime_utc": "2026-09-22T20:56:23+00:00",
+      "reporting_owner_name": "STEVENS MARK A",
+      "reporting_owner_cik": "0001199039",
+      "period_of_report": "2026-09-18",
+      "content_hash_sha256": "872cdb869ad15f7a8a6d3396e722d23ba32e66af46cc4c495795765615594548",
+      "hash_match": true,
+      "xml_non_derivative_count": 2,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 2,
+      "transaction_code_breakdown": {
+        "S": 2
+      },
+      "labeled_transaction_codes": {
+        "Sale (Code S)": 2
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": false,
+        "is_weighted_average_price": true,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001243821-26-000007",
+      "document_type": "4",
+      "filing_date": "2026-09-18",
+      "accepted_datetime_utc": "2026-09-18T21:15:34+00:00",
+      "reporting_owner_name": "GAWEL SCOTT",
+      "reporting_owner_cik": "0001243821",
+      "period_of_report": "2026-09-16",
+      "content_hash_sha256": "3b434b21cb3b6e0d166dfd360fc1fabb67a4b804797be0b6042f08a515d40c23",
+      "hash_match": true,
+      "xml_non_derivative_count": 1,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 1,
+      "transaction_code_breakdown": {
+        "F": 1
+      },
+      "labeled_transaction_codes": {
+        "Tax Withholding (Code F)": 1
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": false,
+        "is_weighted_average_price": false,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001283854-26-000010",
+      "document_type": "4",
+      "filing_date": "2026-09-18",
+      "accepted_datetime_utc": "2026-09-18T21:14:45+00:00",
+      "reporting_owner_name": "Shoquist Debora",
+      "reporting_owner_cik": "0001283854",
+      "period_of_report": "2026-09-16",
+      "content_hash_sha256": "9030fa885d369e1b4d9d5f1247dd18205e9f233667a710a68f905c623fecfde7",
+      "hash_match": true,
+      "xml_non_derivative_count": 1,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 1,
+      "transaction_code_breakdown": {
+        "F": 1
+      },
+      "labeled_transaction_codes": {
+        "Tax Withholding (Code F)": 1
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": false,
+        "is_weighted_average_price": false,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001347842-26-000015",
+      "document_type": "4",
+      "filing_date": "2026-08-24",
+      "accepted_datetime_utc": "2026-08-24T21:32:04+00:00",
+      "reporting_owner_name": "Puri Ajay K",
+      "reporting_owner_cik": "0001347842",
+      "period_of_report": "2026-08-24",
+      "content_hash_sha256": "55fb0a5b2692762de621421e0726267b8eb3f9c2e8b66bf17874fdb8c5a741d1",
+      "hash_match": true,
+      "xml_non_derivative_count": 0,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 0,
+      "transaction_code_breakdown": {},
+      "labeled_transaction_codes": {},
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": false,
+        "is_weighted_average_price": false,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": false,
+      "classification_category": "PRE_WINDOW_BASELINE_MEMBER",
+      "accounting_status": "LEGITIMATE_ZERO_TRANSACTIONS_DISCLOSURE",
+      "disclosure_notes": "The Reporting Person retired from his role of Executive Vice President, Worldwide Field Operations effective August 24, 2026 and is no longer subject to  Section 16."
+    },
+    {
+      "accession_number": "0001588670-26-000014",
+      "document_type": "4",
+      "filing_date": "2026-09-18",
+      "accepted_datetime_utc": "2026-09-18T21:12:42+00:00",
+      "reporting_owner_name": "Kress Colette",
+      "reporting_owner_cik": "0001588670",
+      "period_of_report": "2026-09-16",
+      "content_hash_sha256": "1f019bc438b269561e5c054aec78c42956daa558e4d6bc89a0900c9f532c3afd",
+      "hash_match": true,
+      "xml_non_derivative_count": 4,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 4,
+      "transaction_code_breakdown": {
+        "F": 1,
+        "S": 3
+      },
+      "labeled_transaction_codes": {
+        "Tax Withholding (Code F)": 1,
+        "Sale (Code S)": 3
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": true,
+        "is_weighted_average_price": true,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001696841-26-000010",
+      "document_type": "4",
+      "filing_date": "2026-09-02",
+      "accepted_datetime_utc": "2026-09-02T22:07:18+00:00",
+      "reporting_owner_name": "Teter Timothy S.",
+      "reporting_owner_cik": "0001696841",
+      "period_of_report": "2026-08-31",
+      "content_hash_sha256": "86679077ccf5f0c83f960b34407f5af9d2c8df44f1ff885ffe9368527b4264d7",
+      "hash_match": true,
+      "xml_non_derivative_count": 3,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 3,
+      "transaction_code_breakdown": {
+        "S": 3
+      },
+      "labeled_transaction_codes": {
+        "Sale (Code S)": 3
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": true,
+        "is_weighted_average_price": true,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001696841-26-000012",
+      "document_type": "4",
+      "filing_date": "2026-09-18",
+      "accepted_datetime_utc": "2026-09-18T21:13:29+00:00",
+      "reporting_owner_name": "Teter Timothy S.",
+      "reporting_owner_cik": "0001696841",
+      "period_of_report": "2026-09-16",
+      "content_hash_sha256": "7f70894a4cf331995cf3a1fa40388d6db78b7c19836a834fae28b909d1ceb80c",
+      "hash_match": true,
+      "xml_non_derivative_count": 1,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 1,
+      "transaction_code_breakdown": {
+        "F": 1
+      },
+      "labeled_transaction_codes": {
+        "Tax Withholding (Code F)": 1
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": false,
+        "is_weighted_average_price": false,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001696841-26-000014",
+      "document_type": "4",
+      "filing_date": "2026-09-23",
+      "accepted_datetime_utc": "2026-09-23T20:56:28+00:00",
+      "reporting_owner_name": "Teter Timothy S.",
+      "reporting_owner_cik": "0001696841",
+      "period_of_report": "2026-09-21",
+      "content_hash_sha256": "87b3a8f9f46990cc520bcd8af0970fbfb1aac270147ef430a23e24ef926be228",
+      "hash_match": true,
+      "xml_non_derivative_count": 3,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 3,
+      "transaction_code_breakdown": {
+        "S": 3
+      },
+      "labeled_transaction_codes": {
+        "Sale (Code S)": 3
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": true,
+        "is_weighted_average_price": true,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0001696841-26-000016",
+      "document_type": "4",
+      "filing_date": "2026-11-23",
+      "accepted_datetime_utc": "2026-11-23T21:54:28+00:00",
+      "reporting_owner_name": "Teter Timothy S.",
+      "reporting_owner_cik": "0001696841",
+      "period_of_report": "2026-11-19",
+      "content_hash_sha256": "c7ee40386d6a142d3c644acc348ce994aaf1f57a1ce8207fa40e0b9148f73077",
+      "hash_match": true,
+      "xml_non_derivative_count": 12,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 12,
+      "transaction_code_breakdown": {
+        "S": 12
+      },
+      "labeled_transaction_codes": {
+        "Sale (Code S)": 12
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": true,
+        "is_weighted_average_price": true,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": false,
+      "in_submissions_catalog": false,
+      "in_closed_baseline_window_20260826_20261106": false,
+      "classification_category": "FORWARD_TRIAL_SLOT4_ACCRETION",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0002152188-26-000005",
+      "document_type": "4",
+      "filing_date": "2026-09-11",
+      "accepted_datetime_utc": "2026-09-11T21:04:47+00:00",
+      "reporting_owner_name": "Parker Nicholas P.",
+      "reporting_owner_cik": "0002152188",
+      "period_of_report": "2026-09-09",
+      "content_hash_sha256": "21657169ed85656c099bdd3126f26de59d91b02c9f198d290a966af0ba29a7bc",
+      "hash_match": true,
+      "xml_non_derivative_count": 1,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 1,
+      "transaction_code_breakdown": {
+        "A": 1
+      },
+      "labeled_transaction_codes": {
+        "Equity Grant / Award (Code A)": 1
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": false,
+        "is_weighted_average_price": false,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "ACCOUNTED_AND_PARSED",
+      "disclosure_notes": null
+    },
+    {
+      "accession_number": "0002152188-26-000007",
+      "document_type": "4/A",
+      "filing_date": "2026-10-13",
+      "accepted_datetime_utc": "2026-10-13T21:09:29+00:00",
+      "reporting_owner_name": "Parker Nicholas P.",
+      "reporting_owner_cik": "0002152188",
+      "period_of_report": "2026-09-09",
+      "content_hash_sha256": "2ac0f16ab6661c9ccd85c35f476657b9dbdc4b4109b15607709522e45de92f56",
+      "hash_match": true,
+      "xml_non_derivative_count": 1,
+      "xml_derivative_count": 0,
+      "stored_raw_transaction_count": 1,
+      "transaction_code_breakdown": {
+        "A": 1
+      },
+      "labeled_transaction_codes": {
+        "Equity Grant / Award (Code A)": 1
+      },
+      "transaction_attributes": {
+        "is_rule_10b5_1_trading_plan": false,
+        "is_weighted_average_price": false,
+        "execution_venue_stated_as_open_market": false,
+        "execution_venue_note": "Open market not explicitly stated in filing narrative"
+      },
+      "in_frozen_baseline": true,
+      "in_submissions_catalog": true,
+      "in_closed_baseline_window_20260826_20261106": true,
+      "classification_category": "IN_WINDOW_BASELINE_FILING",
+      "accounting_status": "AMENDMENT_RESOLVED_PARTIAL_CORRECTION",
+      "disclosure_notes": "This amendment is being filed solely to correct an administrative error in the number of acquired shares on the Reporting Person's Form 4 filed on September 11, 2026."
+    }
+  ],
+  "guardrails_and_radar_state": {
+    "production_coverage_status": "PARTIAL",
+    "active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+    "snapshot_publication_status": "AVAILABLE",
+    "subsequent_published_snapshots": 0,
+    "reconciliation_receipts_in_db": {
+      "PARTIAL": 11,
+      "COMPLETE": 1
+    },
+    "radar_scoring_policy": "FAIL_CLOSED (is_governed_issuer and not has_complete_coverage_receipt)",
+    "operational_holds": {
+      "HOLD_SEC_001": "ACTIVE",
+      "SCORING_RADAR_PUBLISHING": "HELD",
+      "LIVE_TRADING": "HELD"
+    }
+  },
+  "reconciliation_verdict_and_single_post_trial_step": {
+    "production_coverage_verdict": "PARTIAL_UNCERTIFIED",
+    "verdict_rationale": "Production coverage remains PARTIAL_UNCERTIFIED across the operational period. While the retained catalog authoritatively validates zero unindexed Form 4 filings for the closed window [2026-08-26, 2026-11-19T21:45:59Z] based on schema and coverage rules, evidence is insufficient for the full operational span through 2026-11-24. The catalog pre-dates November 23/24, and the natural trial cycle ingested 0001696841-26-000016 without retaining submissions catalog response bytes.",
+    "egress_boundary_note": "Zero egress applies strictly to this offline audit assessment; the running authorized trial (ARX-TRIAL-2026-NVDA-AAPL-001) may continue making scheduled SEC requests under its active lease.",
+    "single_post_trial_step": {
+      "action": "Execute bounded submissions catalog acquisition post-trial if no suitable retained catalog has become available.",
+      "execution_timing": "Strictly post-trial after verified trial shutdown and authorization expiry (2026-11-25T02:35:00Z).",
+      "backup_search_policy": "Repeated backup searching is bypassed since catalog retention during natural trial execution is already confirmed absent.",
+      "bounded_acquisition_proposal": {
+        "status": "PROPOSED_ONLY_NOT_EXECUTED",
+        "target_resource": "https://data.sec.gov/submissions/CIK0001045810.json",
+        "method": "Single HTTP GET via SecRateLimiter (pacing <= 4.0 req/sec)",
+        "trigger_condition": "Executed ONLY after verified trial shutdown completes if no suitable retained catalog has become available."
+      }
+    }
+  }
+}

@@ -1,49 +1,321 @@
 {
-  "release_candidate_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-  "base_anchor_commit": "978123f7217e871ed6097da08a2feb9db7bec8b2",
-  "total_files": 5,
+  "release_candidate_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+  "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
+  "total_files": 39,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-RETENTION-BOUNDED",
+  "directive": "ARX-CORNISH-FISHER-SUFFICIENCY-324",
   "files": {
+    ".gitignore": {
+      "operation": "M",
+      "sha256": "2eb954bfd078ac8caeb52cce3492a48789d96adc06eef38ba696d9d37b9edd1b",
+      "size_bytes": 997,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "analyst_dashboard/analyzers/advanced_risk_analyzer.py": {
+      "operation": "M",
+      "sha256": "d5d5fc8ff86da46272cd5f4ad1a5aa5fc8454b16bf7fc6da51891a96a98986e1",
+      "size_bytes": 33262,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "analyst_dashboard/analyzers/self_healing_engine.py": {
+      "operation": "M",
+      "sha256": "7709829d4af1592ad126f0ff5d5f261aaca9a1932f6a6089f739f73c0b350c4a",
+      "size_bytes": 4673,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "analyst_dashboard/smart_money/continuous_authorization.py": {
+      "operation": "M",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "98f1aacdff2a6bbb5c29bc25fb85637a078fff0e64e891b9c1c2789909171bf1",
+      "size_bytes": 8464
+    },
     "analyst_dashboard/smart_money/continuous_pipeline.py": {
       "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: defer remote retention entirely during two-issuer trial cycles; propagate deadlines for other retention calls",
-      "sha256": "0bb10186e1a9e04004f1be9bd3dbd65cb5c60b9906d648a11983c2c167baf0d2",
-      "size_bytes": 105626
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "ed98e733aac8bf250adb6c59a37f9ae9d6aa1ae85b0f9f652c66f3a0026a6360",
+      "size_bytes": 126008
     },
-    "analyst_dashboard/smart_money/storage/backup/retention.py": {
+    "analyst_dashboard/smart_money/smart_money_scheduler.py": {
       "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: bound retention verification & pruning by monotonic deadline, eliminate unbounded fallback, enforce legacy manifest contract",
-      "sha256": "adeca9fec2d06d7af301fd82c7a995195af4b938508e27d9e58626d4b28fb7b8",
-      "size_bytes": 19567
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "684b8a1a4cc793953a14f01b71c9d23d6ada24e59534475939199165b6481b86",
+      "size_bytes": 20032
     },
-    "analyst_dashboard/smart_money/storage/backup/storage_adapter.py": {
+    "analyst_dashboard/smart_money/storage/postgres_repository.py": {
       "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: enforce single total SDK attempt, remaining-budget socket timeouts and metadata deadline checks; close streamed responses",
-      "sha256": "9aa52186639c7305c6eac2321e0721af5c66baec056278847c16f19a549ff1c7",
-      "size_bytes": 23391
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "a8adea9e8a220cc8c759416cb69711855f9c256e89841df286cd019a9efe0c2f",
+      "size_bytes": 141104
     },
-    "tests/test_smart_money_backup_retention_bounded_adversarial.py": {
+    "analyst_dashboard/smart_money/worker.py": {
+      "operation": "M",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "c1e2da9d93fd663b6a0109b581c0c04a00750451c2db3f30e00d7911b562c9b9",
+      "size_bytes": 52026
+    },
+    "api/routes/analytics.py": {
+      "operation": "M",
+      "sha256": "eb25bb6dcb76788936a3ea72f40ea1dd8051725fb1dc57d9ea2e62d199912d01",
+      "size_bytes": 89474,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "api/routes/regimes.py": {
+      "operation": "M",
+      "sha256": "0dea43c7f0c9a3599eabf0cde82c94ad26ff0bb185b67d3793ae5db090d3ea09",
+      "size_bytes": 14402,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "data/research/nvda_historical_coverage_reconciliation_165.json": {
       "operation": "A",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: adversarial offline suite for 55+ backup catalog, slow storage, deadline exhaustion, and zero abandoned work",
-      "sha256": "bcfa2c1534d2b1aacb6146ff3d96ad80d85effedfd71cbe98f01fbae3cd3439f",
-      "size_bytes": 29007
+      "sha256": "bc5faebfcf5724d2779e1991d19314f7a9f4e64870bc87542fb828dc8223057c",
+      "size_bytes": 34032,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
     },
-    "tests/test_smart_money_backup_retention_safety.py": {
+    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_24.md": {
+      "operation": "A",
+      "sha256": "ab5a853e91b559c6f59a6789e8c32d52f89bc1b19e1746c834010d0739a6b45c",
+      "size_bytes": 32849,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "docs/planning/ARX_SEC_10_ISSUER_INGESTION_PREPARATION_2026_11_21.md": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "2f803260f5605eabdc86122f9fae35a7abd4d9da6e6d855663deb1579923a215",
+      "size_bytes": 10302
+    },
+    "docs/releases/ARX_SEC_INGESTION_10_ROLLOUT_PACKET_317.md": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "912dfe36c2c34ec583a80ddf828928c1326739fdca4766327b2dac15d17867a9",
+      "size_bytes": 10428
+    },
+    "docs/reports/ARX_ISSUE165_DAY2_READINESS_ASSESSMENT_CORRECTED_2026_11_21.md": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "e684667e5fe2896b0654ad866dad00e1dcbdb89adba9d2084379ec6f0838345a",
+      "size_bytes": 10366
+    },
+    "docs/reports/SEC_HISTORICAL_REPLAY_QUALIFICATION_2026_11_22.md": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "c2456597551d50b4d06579236af238fc99e814fd",
+      "governing_requirement": "Issue #165: historical replay qualification suite and evidence report",
+      "sha256": "b862e6ea84fddac1f7a40a97d37f387240d0758db2238d2d181877bd261bf0f2",
+      "size_bytes": 57552
+    },
+    "docs/scoring-semantics.md": {
       "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: safe pruning invariants and legacy manifest contract test coverage",
-      "sha256": "63681bbf13be0c9c0a38a0f3e3fd9506b7f80d4bb8645a07ee33bf0af5a72638",
-      "size_bytes": 6480
+      "sha256": "ce7b2cec1cec1156271d0159610ad7b60941b81abb64e733f7d7af60bb065c1f",
+      "size_bytes": 9494,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/app/stock/page.tsx": {
+      "operation": "M",
+      "sha256": "09532537431cab9fd4b0cd7b5bdff60793ef442f3d62d9133fee536ebb96ec7d",
+      "size_bytes": 19668,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/AssetFactorRadar.tsx": {
+      "operation": "M",
+      "sha256": "be72dea5f8cb26c896635ff8644851f9e357dcdac260b3e12f334a618f71988d",
+      "size_bytes": 10583,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/DayTraderPositionSizer.tsx": {
+      "operation": "M",
+      "sha256": "e46123bc8af1cfc2b11ac4e1dfaba2dc5b7df33c6f52ca15551956030d4b99fc",
+      "size_bytes": 23941,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/RiskMetricsCard.tsx": {
+      "operation": "M",
+      "sha256": "2d0ff0ea80f2162423a8dc437392d7b1922cab3af43de0e154c7386a71cbd3d6",
+      "size_bytes": 11768,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/__tests__/RiskMetricsAndSizingBehavior.test.tsx": {
+      "operation": "A",
+      "sha256": "6c2bdce0d10fe107bfb31a8c1963a75e7b53f57857c1c30e8e959a53eaadb4c6",
+      "size_bytes": 8563,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/lib/api.ts": {
+      "operation": "M",
+      "sha256": "21c539e962c3d20a40a573134673b9385b2811997f6cce5468c3a49f154dc0eb",
+      "size_bytes": 193786,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "requirements.txt": {
+      "operation": "M",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: pin sentry-sdk to supported 2.x range to preserve push_scope runtime compatibility",
+      "sha256": "514e6161fb66b25a3b6d2c29cb973c30a3171634fc0da27b31b7b8b3cbb28d28",
+      "size_bytes": 472
+    },
+    "scripts/reconcile_nvda_baseline.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "b77b2ddb02d1def4b5b1ac1dd99f7bb3b81a65ef",
+      "governing_requirement": "Issue #165: NVDA Form 4 baseline reconciliation script",
+      "sha256": "eac3adc4835b8b5f0438d8bccaed94d3cc17dfbb0c50950f4115e2c337441ff8",
+      "size_bytes": 11870
+    },
+    "tests/fixtures/sec_edgar/CIK0001045810_submissions.json": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "b77b2ddb02d1def4b5b1ac1dd99f7bb3b81a65ef",
+      "governing_requirement": "Issue #165: retained SEC submissions catalog for NVDA CIK 0001045810",
+      "sha256": "8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045",
+      "size_bytes": 160255
+    },
+    "tests/fixtures/sec_edgar/nvda_form4_frozen_baseline_export.json": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "b77b2ddb02d1def4b5b1ac1dd99f7bb3b81a65ef",
+      "governing_requirement": "Issue #165: credential-free frozen baseline export of 16 NVDA Form 4 filings and 36 transactions",
+      "sha256": "09b35a42e7e0529d012ccafe9178de32aca4e500d80ebddd4cb93da1ab277e57",
+      "size_bytes": 188136
+    },
+    "tests/test_category_b_analytics.py": {
+      "operation": "M",
+      "sha256": "7ade743cb33afa3a8e6659152ba8741dcf80ffa8c381dd17d0fb0e8bec7d4ec2",
+      "size_bytes": 2048,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "tests/test_cornish_fisher_sufficiency_gate.py": {
+      "operation": "A",
+      "sha256": "1dc1208879abcf3d84aab566b85ea4a71d708fea57f480afe073d3be5bc41e9e",
+      "size_bytes": 22657,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "tests/test_fred_sec_presentation_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 317,
+      "originating_commit": "c2456597551d50b4d06579236af238fc99e814fd",
+      "governing_requirement": "Issue #165: deterministic macro contract ref_date presentation test",
+      "sha256": "b055cf76202501527ddcf8e318132252f3ab3fc9d4166ca42682ecb0b23256ee",
+      "size_bytes": 21606
+    },
+    "tests/test_release_sec_gate.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "9de3c8bbf94aed8fb5c50a03cd4cd6d993e4513bcb4b903511b1fab556745b02",
+      "size_bytes": 635
+    },
+    "tests/test_sec_archived_replay_preparation.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "e74bbbcdd9ab21943eaa046b35b8e5ae2d0ec2c8226dfe0f09b9df3d24c5d382",
+      "size_bytes": 4647
+    },
+    "tests/test_sec_bounded_resumable_ingestion.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "bd8a24a0c4c7436de8c985c705658b91908893bd06923c3dbf74f42f6d634a4d",
+      "size_bytes": 18897
+    },
+    "tests/test_sec_expanded_delivery.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "4e10ce635829faaa7a33bfc258a5b5d1374ae0be0612635e1a4699f2a28c5540",
+      "size_bytes": 6452
+    },
+    "tests/test_sec_historical_replay_qualification.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "c2456597551d50b4d06579236af238fc99e814fd",
+      "governing_requirement": "Issue #165: historical replay qualification suite and evidence report",
+      "sha256": "68e0c80e2be334715c6f81efd2cda1f3ee1144986d39389047ee0bd56fc84c17",
+      "size_bytes": 29642
+    },
+    "tests/test_sec_nvda_baseline_reconciliation.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "b77b2ddb02d1def4b5b1ac1dd99f7bb3b81a65ef",
+      "governing_requirement": "Issue #165: NVDA Form 4 baseline reconciliation offline suite across 5 gates",
+      "sha256": "f5ceeb91b92dd63f5bbfe58dcc6972eddc4786ad17233a00a70935d942fc2df0",
+      "size_bytes": 25435
+    },
+    "tests/test_sec_resume_safety_regressions.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "f38c32ee163fb9717d3d8fceed95ead70400489ce9bde1575060dcc8a233adcf",
+      "size_bytes": 17939
+    },
+    "tests/test_sm_act_020_continuous_authorization.py": {
+      "operation": "M",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: continuous authorization sentry scope mock compatibility across SDK versions",
+      "sha256": "adb39c07b11273b853399e63f3ab37a3ed06edc4a32b906b7f349a0457bda522",
+      "size_bytes": 15907
+    },
+    "tools/qualification/sec_offline_test_support.py": {
+      "operation": "A",
+      "originating_pr_number": 317,
+      "originating_commit": "bb4609512e9210a659f6e14514a0bfea924b7f11",
+      "governing_requirement": "Issue #165: bounded resumable ingestion, exact phase delivery, custody and offline qualification",
+      "sha256": "fd215a0c26171526bd26e03e3c130f058e1fb535af09443063cc9fb4a1ebdc57",
+      "size_bytes": 3420
     }
   },
   "qualification_framework_files": {
@@ -53,18 +325,18 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "d668ef5eae9d41ec51fe1b43206df7b60792bfe31103fb827a3c3cc9b3eae8eb",
-      "size_bytes": 58226,
+      "sha256": "9f902df640ae5a35e7601794219605355f698e2bb3dba6740f66666450371983",
+      "size_bytes": 58236,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "5f2404e0110196f4420b5912a8c54a7796f3a76bc4803de57cd918f73b6c23d7",
-      "size_bytes": 4089,
+      "sha256": "4f6119c9cb0e9d139bbd982fa21098765a1bdd55e382cfbf932424dc85a3d3d6",
+      "size_bytes": 6480,
       "description": "Release qualification module: rq03_backend_regression.py"
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "sha256": "141ed87266fb744754c3c939d2b02156e924f98b7ba7efc3abfbe89342340ed4",
-      "size_bytes": 8672,
+      "sha256": "2cd3e3fe47d1a2a31abedbd8b01703b1b680c58bc53666c4e12d47f5586d0e4c",
+      "size_bytes": 10003,
       "description": "Release qualification module: rq04_frontend_regression.py"
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
@@ -141,6 +413,11 @@
       "sha256": "f3adc96bc7cb72d7822d6eb78248db828790c4153d70c6e74b7204281b877246",
       "size_bytes": 10113,
       "description": "Release qualification module: test_synthetic_merge_reproduction.py"
+    },
+    ".github/workflows/release-qualification.yml": {
+      "description": "Hosted release runtime aligned with frontend CI Node 24; all qualification steps preserved",
+      "sha256": "09c648995962beb4aebfa3c61fc5b09963be2eb0299f3c18e744f94a758d8ab1",
+      "size_bytes": 4773
     }
   }
 }
