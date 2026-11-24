@@ -1,9 +1,9 @@
 {
-  "release_candidate_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
+  "release_candidate_commit": "94f5fae4e6c3fb955dc235cf4bbbd1364bade242",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 51,
+  "total_files": 62,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-DYNAMIC-ASSET-DISCOVERY-323",
+  "directive": "ARX-DYNAMIC-DISCOVERY-RISK-GATE-324",
   "files": {
     ".github/workflows/asset-discovery.yml": {
       "operation": "A",
@@ -79,11 +79,11 @@
     },
     "api/routes/analytics.py": {
       "operation": "M",
-      "originating_pr_number": 319,
+      "originating_pr_number": 324,
       "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
-      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
-      "sha256": "22190ac61520cc32e47d07b44bf232ab7d2033828b116db7623fd3be9838cae6",
-      "size_bytes": 95999
+      "governing_requirement": "TASK-OPEN-03 / PR #324 + PR #323: Cornish-Fisher gate integration with dynamic asset discovery",
+      "sha256": "c411ec36084469b80000cbb66e275807101b6c1b3ac6fdc03417af23b360ad38",
+      "size_bytes": 97681
     },
     "data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_companyfacts.json": {
       "operation": "A",
@@ -207,11 +207,11 @@
     },
     "frontend/lib/api.ts": {
       "operation": "M",
-      "originating_pr_number": 319,
+      "originating_pr_number": 324,
       "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
-      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
-      "sha256": "741d2e0a9ec37899f7008ee3e14927365dd85dac8a3a6c8478b59aab57e6b535",
-      "size_bytes": 196577
+      "governing_requirement": "TASK-OPEN-03 / PR #324 + PR #323: Cornish-Fisher factor scores null-safety and dynamic asset discovery types",
+      "sha256": "e516788253ffc8ba6d1d1da85d93a3e0124e8fcfb0ecdb35a84e53e5b8cd7b15",
+      "size_bytes": 196930
     },
     "frontend/lib/assetDiscovery.ts": {
       "operation": "A",
@@ -412,6 +412,94 @@
       "governing_requirement": "PR #323: behavioral tests for decoupled listing identity and sec filing coverage",
       "sha256": "a4003d97aaf4e8c3201c8b3c77d09c6f5aadcb6dc8270ca3b00e1ebce5826495",
       "size_bytes": 7683
+    },
+    "analyst_dashboard/analyzers/advanced_risk_analyzer.py": {
+      "operation": "M",
+      "sha256": "d5d5fc8ff86da46272cd5f4ad1a5aa5fc8454b16bf7fc6da51891a96a98986e1",
+      "size_bytes": 33262,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "analyst_dashboard/analyzers/self_healing_engine.py": {
+      "operation": "M",
+      "sha256": "7709829d4af1592ad126f0ff5d5f261aaca9a1932f6a6089f739f73c0b350c4a",
+      "size_bytes": 4673,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "api/routes/regimes.py": {
+      "operation": "M",
+      "sha256": "0dea43c7f0c9a3599eabf0cde82c94ad26ff0bb185b67d3793ae5db090d3ea09",
+      "size_bytes": 14402,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "docs/scoring-semantics.md": {
+      "operation": "M",
+      "sha256": "ce7b2cec1cec1156271d0159610ad7b60941b81abb64e733f7d7af60bb065c1f",
+      "size_bytes": 9494,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/app/stock/page.tsx": {
+      "operation": "M",
+      "sha256": "09532537431cab9fd4b0cd7b5bdff60793ef442f3d62d9133fee536ebb96ec7d",
+      "size_bytes": 19668,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/AssetFactorRadar.tsx": {
+      "operation": "M",
+      "sha256": "be72dea5f8cb26c896635ff8644851f9e357dcdac260b3e12f334a618f71988d",
+      "size_bytes": 10583,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/DayTraderPositionSizer.tsx": {
+      "operation": "M",
+      "sha256": "e46123bc8af1cfc2b11ac4e1dfaba2dc5b7df33c6f52ca15551956030d4b99fc",
+      "size_bytes": 23941,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/RiskMetricsCard.tsx": {
+      "operation": "M",
+      "sha256": "2d0ff0ea80f2162423a8dc437392d7b1922cab3af43de0e154c7386a71cbd3d6",
+      "size_bytes": 11768,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "frontend/components/__tests__/RiskMetricsAndSizingBehavior.test.tsx": {
+      "operation": "A",
+      "sha256": "6c2bdce0d10fe107bfb31a8c1963a75e7b53f57857c1c30e8e959a53eaadb4c6",
+      "size_bytes": 8563,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "tests/test_category_b_analytics.py": {
+      "operation": "M",
+      "sha256": "7ade743cb33afa3a8e6659152ba8741dcf80ffa8c381dd17d0fb0e8bec7d4ec2",
+      "size_bytes": 2048,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+    },
+    "tests/test_cornish_fisher_sufficiency_gate.py": {
+      "operation": "A",
+      "sha256": "1dc1208879abcf3d84aab566b85ea4a71d708fea57f480afe073d3be5bc41e9e",
+      "size_bytes": 22657,
+      "originating_pr_number": 324,
+      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
+      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
     }
   },
   "qualification_framework_files": {
@@ -421,19 +509,19 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "bad93b4a4e68bc7e839059a0b44d1c3c6b55929e5be15facfcd5f65e62da3986",
-      "size_bytes": 58241,
-      "description": "Release qualification module: rq02_diff_integrity.py"
+      "description": "Hardened diff integrity validation with approved PR list including PR #324",
+      "sha256": "a28c914726b5e20201357e12843ec33b861818faaba709cd5511fcac97ca5eb2",
+      "size_bytes": 58246
     },
     "scripts/release/rq03_backend_regression.py": {
-      "sha256": "07ba823fc22bd7266d8a5006e258d03cd825255677ecf0a71fb8f660b529b2e1",
-      "size_bytes": 4140,
-      "description": "Release qualification module: rq03_backend_regression.py"
+      "description": "Backend regression runner including Cornish-Fisher test suite",
+      "sha256": "e22fad47a981850eacfa8f394058053e5b2e8266a66834bb323ecafa3b906b4d",
+      "size_bytes": 4197
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "sha256": "141ed87266fb744754c3c939d2b02156e924f98b7ba7efc3abfbe89342340ed4",
-      "size_bytes": 8672,
-      "description": "Release qualification module: rq04_frontend_regression.py"
+      "description": "Frontend regression runner including RiskMetricsAndSizingBehavior test suite",
+      "sha256": "2cd3e3fe47d1a2a31abedbd8b01703b1b680c58bc53666c4e12d47f5586d0e4c",
+      "size_bytes": 10003
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
       "sha256": "f3f1039896aa258834f24144d69c5b42552df7b5173a09f09833ff46b6e3be0a",
@@ -514,8 +602,13 @@
       "sha256": "850d87883ff90d5afd9fc51104c9f3fbd35939023b456c48dca471e23d84014c",
       "size_bytes": 19670,
       "description": "Release qualification module: rq_receipt_utils.py"
+    },
+    ".github/workflows/release-qualification.yml": {
+      "description": "Hosted release runtime aligned with frontend CI Node 24; all qualification steps preserved",
+      "sha256": "09c648995962beb4aebfa3c61fc5b09963be2eb0299f3c18e744f94a758d8ab1",
+      "size_bytes": 4773
     }
   },
-  "candidate_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486",
+  "candidate_commit_sha": "94f5fae4e6c3fb955dc235cf4bbbd1364bade242",
   "target_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486"
 }
