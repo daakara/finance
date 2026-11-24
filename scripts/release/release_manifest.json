@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+  "release_candidate_commit": "f232457ac80d18a7a855192a595e1f69ef090fe9",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
   "total_files": 49,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -82,8 +82,8 @@
       "originating_pr_number": 319,
       "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
       "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
-      "sha256": "febf76bb4017199434119687d0d3f724173cae9242488b3f868fda4c2c9bdc8b",
-      "size_bytes": 94795
+      "sha256": "22190ac61520cc32e47d07b44bf232ab7d2033828b116db7623fd3be9838cae6",
+      "size_bytes": 95999
     },
     "data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_companyfacts.json": {
       "operation": "A",
@@ -210,8 +210,8 @@
       "originating_pr_number": 319,
       "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
       "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
-      "sha256": "80e1dc1c3ca9557f8928133d5639b8e4cd5924dee31f1e5b47108d88ad862401",
-      "size_bytes": 195419
+      "sha256": "0d5806a02cd7165dd4422fd7d9d8cf199f22631aedb8a5471d4e7ee468a37ef5",
+      "size_bytes": 196087
     },
     "frontend/lib/assetDiscovery.ts": {
       "operation": "A",
@@ -370,8 +370,8 @@
       "originating_pr_number": 323,
       "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
       "governing_requirement": "PR #323: clear asset analytics on selection change and render explicit unavailable state on 404",
-      "sha256": "316d9d8aea780c2bcdb82cd81c29679528b3383de99a1161e5df5cef985d4094",
-      "size_bytes": 54285
+      "sha256": "c3db7e1ab0ee55b45aad60a86ab84a89d6944de56a593e1733f10c80651be6b7",
+      "size_bytes": 57409
     },
     "frontend/components/discovery/DiscoveryLandingView.tsx": {
       "operation": "M",
@@ -394,8 +394,8 @@
       "originating_pr_number": 323,
       "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
       "governing_requirement": "PR #323: behavioral tests for 404 unavailable and insufficient history handling",
-      "sha256": "a1679947bcdeb5e9838ecb6afa8a20e468c1a499a94a9d3307284d3832157216",
-      "size_bytes": 2822
+      "sha256": "bd5ab02ad5d416f3371d6b8030a552202212cd51f7138f84eec6e6fc45928f94",
+      "size_bytes": 4670
     }
   },
   "qualification_framework_files": {
