@@ -1268,7 +1268,7 @@ def get_asset_analytics(
         technicals = compute_intraday_technicals(hist)
 
         # Advanced Risk Analytics (VaR 95%, Modified VaR, Sortino, Calmar, Max Drawdown)
-        risk_output = risk_analyzer.analyze_comprehensive_risk(price_data=hist)
+        risk_output = risk_analyzer.analyze_comprehensive_risk(price_data=hist, is_crypto=is_crypto_sym)
         adv_metrics = risk_output.get("advanced_metrics", {})
 
         # Compute Fundamental Factor / DNA Scores & Piotroski F-Score (cached to avoid redundant multi-second scrapes)

@@ -13,8 +13,26 @@ logger = logging.getLogger(__name__)
 
 REQUIRED_CORNISH_FISHER_OBSERVATIONS = 30
 
+_EXCHANGE_CALENDARS: Dict[str, Any] = {}
 
-def extract_valid_returns(price_data: Any) -> pd.Series:
+
+def get_exchange_calendar(exchange: str = "XNYS") -> Optional[Any]:
+    """Cached accessor for exchange calendar instance."""
+    if exchange not in _EXCHANGE_CALENDARS:
+        try:
+            import exchange_calendars as xcals
+            _EXCHANGE_CALENDARS[exchange] = xcals.get_calendar(exchange)
+        except Exception as e:
+            logger.debug(f"exchange_calendars {exchange} fallback: {e}")
+            _EXCHANGE_CALENDARS[exchange] = None
+    return _EXCHANGE_CALENDARS.get(exchange)
+
+
+def extract_valid_returns(
+    price_data: Any,
+    exchange: Optional[str] = "XNYS",
+    is_crypto: bool = False,
+) -> pd.Series:
     """Extract valid finite 1-session daily return observations from price data.
 
     Invariants (Directive TASK-OPEN-03):
@@ -22,7 +40,15 @@ def extract_valid_returns(price_data: Any) -> pd.Series:
     2. Consecutive session requirement: Never forward-fill missing prices or bridge
        missing sessions. A missing or non-positive price at session t suppresses returns
        at both session t and session t+1.
-    3. Output contains only valid, finite returns.
+    3. Authoritative exchange calendar and timezone alignment:
+       - When price data has a date/datetime index, the series is aligned against the
+         asset's authoritative exchange calendar (e.g. XNYS for US equities/ETFs, or
+         24/7 daily calendar for crypto).
+       - Omitted trading dates (missing entirely from input) are exposed as explicit NaNs,
+         preventing multi-session price jumps from being counted as 1-session returns.
+       - Valid transitions across weekends and exchange holidays (e.g. Friday to Monday,
+         or Friday to Tuesday across MLK Day) are preserved as consecutive 1-session returns.
+    4. Output contains only valid, finite returns.
     """
     if price_data is None:
         return pd.Series(dtype=float)
@@ -42,10 +68,71 @@ def extract_valid_returns(price_data: Any) -> pd.Series:
         except Exception:
             return pd.Series(dtype=float)
 
+    if len(prices) == 0:
+        return pd.Series(dtype=float)
+
     numeric_prices = pd.to_numeric(prices, errors="coerce")
     # Strictly positive and finite prices
     valid_prices = numeric_prices.where((numeric_prices > 0) & np.isfinite(numeric_prices))
 
+    # Check for datetime-like index
+    dt_index = None
+    if isinstance(valid_prices.index, pd.DatetimeIndex):
+        dt_index = valid_prices.index
+    elif isinstance(valid_prices.index, pd.Index) and not isinstance(valid_prices.index, (pd.RangeIndex, pd.MultiIndex)):
+        try:
+            parsed = pd.to_datetime(valid_prices.index, errors="coerce")
+            if parsed.notna().sum() >= max(2, int(len(valid_prices) * 0.8)):
+                dt_index = parsed
+        except Exception:
+            dt_index = None
+
+    if dt_index is not None and len(dt_index) >= 2:
+        cal = None if is_crypto else (get_exchange_calendar(exchange) if exchange else None)
+        try:
+            if is_crypto or (exchange is None and cal is None):
+                # 24/7/365 daily calendar for crypto
+                if dt_index.tz is not None:
+                    local_dates = dt_index.tz_convert("UTC").normalize().tz_localize(None)
+                else:
+                    local_dates = dt_index.normalize()
+
+                p = valid_prices.copy()
+                p.index = local_dates
+                p = p[~p.index.duplicated(keep="last")]
+
+                min_date = local_dates.min()
+                max_date = local_dates.max()
+                if min_date != max_date:
+                    full_days = pd.date_range(min_date, max_date, freq="D")
+                    aligned_prices = p.reindex(full_days)
+                    rets = aligned_prices.pct_change(fill_method=None)
+                    valid_rets = rets[np.isfinite(rets)]
+                    return valid_rets
+            elif cal is not None:
+                # Authoritative Exchange Calendar (e.g. XNYS for US equities/ETFs)
+                if dt_index.tz is not None:
+                    local_dates = dt_index.tz_convert(cal.tz).normalize().tz_localize(None)
+                else:
+                    local_dates = dt_index.normalize()
+
+                p = valid_prices.copy()
+                p.index = local_dates
+                p = p[~p.index.duplicated(keep="last")]
+
+                start_str = str(local_dates.min().date())
+                end_str = str(local_dates.max().date())
+                sessions = cal.sessions_in_range(start_str, end_str)
+                if len(sessions) > 0:
+                    sessions_idx = pd.to_datetime(sessions.date)
+                    aligned_prices = p.reindex(sessions_idx)
+                    rets = aligned_prices.pct_change(fill_method=None)
+                    valid_rets = rets[np.isfinite(rets)]
+                    return valid_rets
+        except Exception as cal_err:
+            logger.debug(f"Calendar session alignment fallback: {cal_err}")
+
+    # Fallback / Sequential Index without calendar
     # CRITICAL: Without forward-fill (fill_method=None), pct_change produces NaN at index t
     # if either valid_prices[t-1] is NaN or valid_prices[t] is NaN.
     # It NEVER forward-fills missing prices and NEVER bridges missing sessions.
@@ -57,11 +144,16 @@ def extract_valid_returns(price_data: Any) -> pd.Series:
 class AdvancedRiskAnalyzer:
     """Advanced risk analysis capabilities for professional-grade insights"""
     
-    def analyze_comprehensive_risk(self, price_data: Any, 
-                                 benchmark_data: Optional[Any] = None) -> Dict[str, Any]:
+    def analyze_comprehensive_risk(
+        self,
+        price_data: Any, 
+        benchmark_data: Optional[Any] = None,
+        exchange: str = "XNYS",
+        is_crypto: bool = False,
+    ) -> Dict[str, Any]:
         """Perform comprehensive risk analysis with Cornish-Fisher sufficiency gating."""
         try:
-            valid_returns = extract_valid_returns(price_data)
+            valid_returns = extract_valid_returns(price_data, exchange=exchange, is_crypto=is_crypto)
             adv_metrics = self._calculate_advanced_risk_metrics(valid_returns)
             cf_state = adv_metrics.get("cornish_fisher", {
                 "status": "UNAVAILABLE",
@@ -91,7 +183,7 @@ class AdvancedRiskAnalyzer:
             }
             
             if benchmark_data is not None:
-                benchmark_returns = extract_valid_returns(benchmark_data)
+                benchmark_returns = extract_valid_returns(benchmark_data, exchange=exchange, is_crypto=is_crypto)
                 if hasattr(self, "_analyze_relative_risk"):
                     risk_analysis['relative_risk'] = self._analyze_relative_risk(
                         valid_returns, benchmark_returns
