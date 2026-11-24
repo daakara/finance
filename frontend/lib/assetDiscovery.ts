@@ -16,7 +16,10 @@ export function resolveDiscoveredSymbol(query: string, results: DiscoveredAsset[
   const exact = results.find(asset => asset.symbol === q);
   if (exact) return exact.symbol;
   const names = results.filter(asset => asset.name.toUpperCase().startsWith(q));
-  return names.length === 1 ? names[0].symbol : null;
+  if (names.length === 1) return names[0].symbol;
+  const equities = names.filter(asset => asset.type === "US_EQUITY" || asset.type === "EQUITY");
+  if (equities.length === 1) return equities[0].symbol;
+  return null;
 }
 
 export function normalizeDiscoveryResults(payload: unknown): DiscoveredAsset[] {

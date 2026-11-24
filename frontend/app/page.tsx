@@ -509,7 +509,7 @@ function TerminalContent() {
 
               {/* Ingestion Failure / Explicit Retry State OR Adaptive Multi-Tier Terminal Engine */}
               {error && !data ? (
-                error.toLowerCase().includes("not found") || error.toLowerCase().includes("unavailable or not found") ? (
+                error.toLowerCase().includes("not found") || error.toLowerCase().includes("unavailable") || error.toLowerCase().includes("no valid price action") ? (
                   <div data-testid="asset-not-found-state" className="p-6 bg-[#0b1019] border border-cyan-800/80 rounded-2xl text-slate-200 font-sans space-y-4 animate-fade-in shadow-2xl">
                     <div className="flex items-start gap-3.5">
                       <div className="p-2.5 rounded-xl bg-cyan-950 border border-cyan-800 text-cyan-400 shrink-0">

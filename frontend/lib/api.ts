@@ -1882,7 +1882,10 @@ export async function fetchAssetAnalytics(
 
   // If backend explicitly returned 404 and direct lookup found no candles, reject as not found
   if (isNotFound) {
-    throw new AssetNotFoundError(upper, notFoundDetail || `Asset unavailable or not found: "${upper}" is not recognized on exchange tape or market data feeds.`);
+    const message = notFoundDetail && notFoundDetail.toLowerCase().includes("not found")
+      ? notFoundDetail
+      : `Asset unavailable or not found: ${notFoundDetail || `"${upper}" is not recognized on exchange tape or market data feeds.`}`;
+    throw new AssetNotFoundError(upper, message);
   }
 
   // 3. Fallback when providers are unavailable: current-price fields MUST remain unavailable
