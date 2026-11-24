@@ -37,6 +37,7 @@ from analyst_dashboard.data.alpaca_fetcher import AlpacaMarketFetcher
 from analyst_dashboard.data.market_price_state import resolve_dual_price_state, MarketPriceState
 from analyst_dashboard.security_master import get_security_master_service
 from api.routes.screener import CONFIRMED_CORPORATE_ACTIONS
+from api.routes.smart_money import sec_fetcher
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -215,12 +216,13 @@ def _build_smart_money_confluence_inputs(
     security_type: str = "COMMON_STOCK",
     include_curated: bool = False,
     evaluation_date: Optional[str] = None,
+    live_sec: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Build authoritative smart money confluence inputs with strict epistemic honesty.
     Evaluates Options Flow, SEC Form 4 Insider Transactions, and Congressional STOCK Act Disclosures.
     When feeds are unobserved, held under HOLD_SEC_001, or ineligible for scoring,
-    returns None to trigger fail-closed dynamic pillar reweighting in the frozen ConfluenceEngine.
+    returns decoupled disclosure evidence while keeping scoring held in the frozen ConfluenceEngine.
     """
     clean_sym = sym.upper().replace("-USD", "").strip() if sym else ""
     if evaluation_date is not None:
@@ -239,6 +241,7 @@ def _build_smart_money_confluence_inputs(
         asset_class=asset_class,
         security_type=security_type,
         include_curated=include_curated,
+        live_sec=live_sec,
     )
     if not res.get("pillar_eligibility") or res.get("reweight_required"):
         return None
@@ -258,6 +261,114 @@ def _build_smart_money_confluence_inputs(
         "insider_buy_count_90d": sum(1 for t in sec_records if "PURCHASE" in (t.get("transaction_type") or "").upper() or t.get("transaction_code") == "P"),
         "insider_sell_count_90d": sum(1 for t in sec_records if "SALE" in (t.get("transaction_type") or "").upper() or t.get("transaction_code") == "S"),
     }
+
+
+def format_sec_confluence_pillar(
+    confluence_output: Dict[str, Any],
+    smart_data: Optional[Dict[str, Any]] = None,
+    live_sec: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Format and enrich the SMART_MONEY_FLOW pillar in confluence_output to decouple
+    Form 4 disclosure availability from held scoring eligibility for presentation.
+    Preserves the frozen mathematical score (0.0), status ('unavailable'),
+    and dynamic re-weighting computed by the frozen ConfluenceEngine.
+    """
+    if not confluence_output or "pillars" not in confluence_output:
+        return confluence_output
+
+    target_pillar = None
+    for p in confluence_output.get("pillars", []):
+        if p.get("pillar") == "SMART_MONEY_FLOW":
+            target_pillar = p
+            break
+
+    if not target_pillar:
+        return confluence_output
+
+    is_held = False
+    if smart_data and (smart_data.get("scoring_held") or smart_data.get("is_pipeline_held")):
+        is_held = True
+    elif live_sec and live_sec.get("is_pipeline_held"):
+        is_held = True
+
+    if not is_held:
+        return confluence_output
+
+    f_count = int(smart_data.get("filings_count", 0)) if smart_data else 0
+    if f_count == 0 and live_sec and live_sec.get("items"):
+        f_count = len(live_sec["items"])
+
+    f_latest = smart_data.get("latest_filing_date") if smart_data else None
+    if not f_latest and live_sec and live_sec.get("items"):
+        f_latest = live_sec["items"][0].get("filing_date")
+
+    raw_coverage = (live_sec.get("coverage_status") if live_sec else None)
+    issuer_support = raw_coverage if raw_coverage in ("SUPPORTED_SEC_ISSUER", "UNSUPPORTED_ISSUER") else None
+    cov_status = (
+        (live_sec.get("historical_coverage_status") if live_sec else None)
+        or (raw_coverage if raw_coverage in ("COMPLETE", "PARTIAL", "DEGRADED", "FAILED", "UNKNOWN") else None)
+        or (smart_data.get("subdomains", {}).get("sec_form_4", {}).get("coverage_status") if (smart_data and isinstance(smart_data.get("subdomains"), dict)) else None)
+        or (smart_data.get("sec_coverage_status") if smart_data else None)
+        or "UNKNOWN"
+    )
+    if cov_status not in ("COMPLETE", "PARTIAL", "DEGRADED", "FAILED", "UNKNOWN"):
+        cov_status = "UNKNOWN"
+    coverage_label = "not verified" if cov_status == "UNKNOWN" else cov_status
+
+    sec_status = live_sec.get("status", "") if live_sec else ""
+    is_err = bool(smart_data and smart_data.get("is_repo_error")) or sec_status in (
+        "BACKEND_STORAGE_ERROR",
+        "CONFIGURATION_BLOCKED",
+        "TRANSPORT_INCOMPLETE",
+        "STRUCTURALLY_INVALID",
+        "ERROR",
+        "UPSTREAM_SERVER_ERROR",
+    )
+    is_ver_empty = bool(smart_data and smart_data.get("is_verified_empty")) or (cov_status == "COMPLETE" and sec_status == "AVAILABLE_NO_RESULTS")
+    is_inc_cov = bool(smart_data and smart_data.get("is_incomplete_coverage")) or (cov_status != "COMPLETE" and f_count == 0)
+
+    target_pillar["scoringEligibility"] = "Not assessed — ingestion-only trial."
+    target_pillar["filingsAvailable"] = bool(f_count > 0 and not is_err)
+    target_pillar["filingsCount"] = f_count
+    target_pillar["latestFilingDate"] = f_latest
+    target_pillar["coverageStatus"] = cov_status
+    target_pillar["issuerSupportStatus"] = issuer_support
+
+    if is_err:
+        target_pillar["detail"] = "Evidence could not be loaded."
+        target_pillar["plainDetail"] = "SEC EDGAR Form 4 repository evidence could not be loaded."
+    elif f_count > 0:
+        if cov_status in ("COMPLETE", "CERTIFIED"):
+            target_pillar["detail"] = f"{f_count} SEC Form 4 filings stored. Historical coverage certified. Scoring not assessed — ingestion-only trial."
+            target_pillar["plainDetail"] = f"{f_count} SEC Form 4 filings stored. Historical coverage certified. Scoring not assessed — ingestion-only trial."
+        else:
+            target_pillar["detail"] = f"{f_count} SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
+            target_pillar["plainDetail"] = f"{f_count} SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial."
+    elif is_ver_empty:
+        target_pillar["detail"] = "Verified no activity. Not assessed — ingestion-only trial."
+        target_pillar["plainDetail"] = "Verified complete search: 0 open-market Form 4 filings. Scoring not assessed — ingestion-only trial."
+    elif is_inc_cov or f_count == 0:
+        target_pillar["detail"] = "Coverage incomplete. Not assessed — ingestion-only trial."
+        target_pillar["plainDetail"] = "SEC filings coverage incomplete. Scoring not assessed — ingestion-only trial."
+    else:
+        target_pillar["detail"] = "Evidence could not be loaded."
+        target_pillar["plainDetail"] = "SEC EDGAR Form 4 repository evidence could not be loaded."
+
+    # Synchronize reasons and plainReasons in confluence_output
+    old_unavailable_detail = "Verified smart money regulatory filings unavailable. Dynamic re-weighting applied."
+    if "reasons" in confluence_output:
+        confluence_output["reasons"] = [
+            target_pillar["detail"] if r == old_unavailable_detail else r
+            for r in confluence_output["reasons"]
+        ]
+    if "plainReasons" in confluence_output:
+        confluence_output["plainReasons"] = [
+            target_pillar["plainDetail"] if r == old_unavailable_detail else r
+            for r in confluence_output["plainReasons"]
+        ]
+
+    return confluence_output
 
 
 def _build_tactical_setup(
@@ -1013,7 +1124,18 @@ def validate_and_prune_daily_history(
     meta["pruned_trailing_count"] = pruned_count
 
     if len(work_df) < 15:
-        meta["reason"] = f"INSUFFICIENT_BARS_AFTER_PRUNING: {len(work_df)} bars (min 15 required)"
+        bars_count = len(work_df)
+        first_d = None
+        last_d = None
+        if bars_count > 0:
+            first_idx = work_df.index[0]
+            last_idx = work_df.index[-1]
+            first_d = first_idx.strftime("%Y-%m-%d") if hasattr(first_idx, "strftime") else str(first_idx)[:10]
+            last_d = last_idx.strftime("%Y-%m-%d") if hasattr(last_idx, "strftime") else str(last_idx)[:10]
+        meta["reason"] = f"INSUFFICIENT_BARS_AFTER_PRUNING: {bars_count} bars (min 15 required)"
+        meta["bars_count"] = bars_count
+        meta["first_date"] = first_d
+        meta["last_date"] = last_d
         return None, meta
 
     for idx, row in work_df.iterrows():
@@ -1159,6 +1281,15 @@ def get_asset_analytics(
             if hist is None:
                 if prune_meta.get("reason") and "INTERIOR_CORRUPTION" in prune_meta["reason"]:
                     raise HTTPException(status_code=503, detail="Interior corruption detected in market price history")
+                if prune_meta.get("reason") and "INSUFFICIENT_BARS" in prune_meta["reason"]:
+                    bars_count = prune_meta.get("bars_count", 0)
+                    first_d = prune_meta.get("first_date")
+                    last_d = prune_meta.get("last_date")
+                    date_range = f" (observed {first_d} to {last_d})" if (first_d and last_d) else ""
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"Asset {upper_sym} has only {bars_count} completed daily sessions on record{date_range}. Minimum 15 daily sessions required for multi-factor analytics.",
+                    )
                 raise HTTPException(status_code=404, detail=f"No valid price action data found for symbol {symbol}")
 
         else:
@@ -1504,18 +1635,34 @@ def get_asset_analytics(
                 "classification_authority": "ARX_SERVER_SECURITY_MASTER",
             }
 
+        # Smart Money Feeds: Query read-only Form 4 repository without triggering egress or database writes
+        sec_envelope = None
+        try:
+            sec_envelope = sec_fetcher.get_recent_filings_envelope(upper_sym)
+        except Exception as e:
+            logger.warning(f"Failed to query read-only Form 4 repository for {upper_sym}: {e}")
+            sec_envelope = {
+                "status": "BACKEND_STORAGE_ERROR",
+                "error_detail": str(e),
+                "items": None,
+                "coverage_status": "UNKNOWN",
+                "is_pipeline_held": True,
+            }
+
         # Smart Money Feeds (Enforce Epistemic Honesty: Stale curated data does not trigger live buy signals)
         smart_data = smart_money_engine.assess_symbol(
             symbol=upper_sym,
             asset_class=asset_class_val,
             security_type=sec_type_val,
             include_curated=False,
+            live_sec=sec_envelope,
         )
         conf_smart_inputs = _build_smart_money_confluence_inputs(
             upper_sym,
             asset_class=asset_class_val,
             security_type=sec_type_val,
             include_curated=False,
+            live_sec=sec_envelope,
         )
 
         # Macro inputs: Strictly authentic FRED observations; never fabricated fallbacks
@@ -1548,6 +1695,13 @@ def get_asset_analytics(
             macro_data=macro_inputs,
             fundamental_provenance=fund_prov,
             asset_class=resolved_asset_class,
+        )
+
+        # Enrich smart money confluence presentation while preserving frozen mathematical score
+        confluence_output = format_sec_confluence_pillar(
+            confluence_output=confluence_output,
+            smart_data=smart_data,
+            live_sec=sec_envelope,
         )
 
         # Canonical Decision Trace (Single source of truth for actionability & explainability)
@@ -1806,6 +1960,8 @@ def get_asset_analytics(
                     "sec_form4": (smart_data.get("subdomains", {}).get("sec_form_4") if smart_data else None) or {"status": "PIPELINE_PENDING"},
                     "congressional_disclosures": (smart_data.get("subdomains", {}).get("congressional_stock_act") if smart_data else None) or {"status": "PIPELINE_PENDING"},
                 },
+                "filingsCount": smart_data.get("filings_count", 0) if smart_data else 0,
+                "parsedTransactionsCount": smart_data.get("parsed_transactions_count", 0) if smart_data else 0,
                 "congressTrades": smart_data.get("congress_trades", []) if smart_data else [],
                 "optionsFlow": smart_data.get("options_flow", []) if smart_data else [],
                 "secInsiderTrades": smart_data.get("sec_insider_trades", []) if smart_data else [],

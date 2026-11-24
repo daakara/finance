@@ -657,3 +657,61 @@ Under Directive ARX-MW-004H, the Product Owner formally ratified the **Model E+ 
 - **Draft PR #128 Remote Ref:** `3fff68108593f304275cdf18b696c8697f5b8257` (Retained as open, unmerged research reference).
 - **Market Dataset Reconciliation:** Bounded market store DB expanded from `ab31fdffa...` (4,714,496 bytes) to `00c0690ef...` (5,705,728 bytes) due exclusively to the creation of 5 empty schema tables (`asset_catalyst_registry`, `asset_factor_snapshots`, `asset_ohlcv_provenance`, `insider_disclosures`, `sqlite_sequence`), while the primary `asset_ohlcv_daily` table maintains 100% bitwise row identity across all 40,310 daily candle rows (content hash: `27934736360afd0fbd266c20c3663191a0a46426bd2ecc4494f96ae43805f41e`).
 - **Research Governance Boundary:** Market-wide discovery contracts are non-executable and quarantined under `/poc-market-wide`. Production Radar integration, automated scanner scheduling, commercial/SEC egress, financial sizing/execution, and Sprint 5 remain strictly unauthorized.
+
+---
+
+## 19. Dynamic Asset Discovery & Tri-State Security Lifecycle (PR #323 / Candidate 6419213f)
+
+### 19.1 Dynamic Discovery & Reference Directory Proxy
+Under PR #323, the platform introduced dynamic company-name and ticker resolution across all discovery entry points (`DiscoveryLandingView`, `UniversalOmniSearch`, and the Command Palette):
+- **Edge Search Endpoint:** Cloudflare Functions edge proxy `/api/assets/search` queries the provider reference directory with authenticated caching, bounded refresh, and exponential backoff.
+- **Submission Gating:** Form submission (Enter key or search button) is strictly gated while discovery queries are in-flight, preventing accidental raw-string submission.
+- **Provider Match Prioritization:** When provider matches exist, the resolved ticker is selected automatically, and arbitrary custom-ticker launch buttons (e.g. "Launch ANTHROPIC") are suppressed to prevent invalid asset dispatch.
+- **Provider Fault Isolation:** Upstream outages return `503 SERVICE_UNAVAILABLE`; provider errors are never collapsed into an empty result array.
+
+### 19.2 The Epistemic Tri-State Security Lifecycle
+To eliminate misleading diagnostics and unverified assertions, securities transition through three authoritative states:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ STATE 1: UNINDEXED OR UNKNOWN INSTRUMENT                               │
+│ • Symbol absent from Security Master and unresolvable via provider.     │
+│ • HTTP 404 Not Found (`TICKER_NOT_FOUND`).                             │
+│ • UI renders `asset-not-found-state` with clear recovery guidance.     │
+│ • Stale tape diagnostics and synthetic 0/100 scoring suppressed.       │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Active Listing Verified in SecMaster
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ STATE 2: RECOGNIZED LIMITED-HISTORY INSTRUMENT                         │
+│ • Active exchange listing confirmed in Security Master.                │
+│ • Trading history < 15 complete daily sessions.                        │
+│ • HTTP 422 Unprocessable Entity (`INSUFFICIENT_HISTORY`).               │
+│ • UI renders `insufficient-history-state` with exact observation range.│
+│ • Listing Identity: Verified | SEC Filing Coverage: Not verified.      │
+│ • Missing indicators remain UNAVAILABLE (never numerical zero).        │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Trading Sessions ≥ 15 (Baseline) & ≥ 50
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ STATE 3: QUANTITATIVE TAPE OBSERVABLE (HTTP 200)                       │
+│ • Completed daily exchange sessions ≥ 15 (validate_and_prune).         │
+│ • Daily candlestick series and intraday VWAP observable.               │
+│ • Downstream models evaluate per individual input requirements:        │
+│   - 50 sessions for 50 SMA & swing trade setups (optimal_execution.py) │
+│   - 200+ sessions for 200 SMA & Minervini Stage 2 (classifier.py)      │
+│ • Non-conflation: Session count does NOT confer scoring eligibility    │
+│   (held under ARX_CONFLUENCE_INTEGRITY_HOLD) or live execution         │
+│   clearance (strictly held under HOLD_EXEC_001).                       │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### 19.3 Decoupling Listing Identity from SEC Regulatory Evidence
+In accordance with invariant `ARX_INV_001` and `ARX_INV_003`:
+1. **Listing Identity (`Verified`):** Confirms an active equity listing on a recognized US exchange in the Security Master.
+2. **SEC Filing Coverage (`Not verified`):** Defaults strictly to unverified unless backed by verified Form 4 / Form 13F metadata in the persistence store.
+3. **Non-Conflation Guarantee:** An active listing identity **never** implies filing completeness, insider ownership verification, or quantitative scoring eligibility.
+4. **The Cardinal Separation Principle:**
+   $$\boxed{\text{Listing Identity} \ne \text{SEC Filing Completeness} \ne \text{Scoring Eligibility} \ne \text{Execution Clearance}}$$
+   Sufficient session counts never automatically establish analytical, scoring, or execution readiness. Live execution code remains permanently disabled under `HOLD_EXEC_001`.
+

@@ -31,6 +31,7 @@ This document defines the strict HTTP API interface between the FastAPI Python b
 | `GET` | `/api/macro/ribbon` | Telemetry for the persistent 36px Market Command Ribbon | 60s |
 | `GET` | `/api/discovery/baskets` | Curated institutional candidate baskets for zero-state Discovery | 300s |
 | `GET` | `/api/workstation/{ticker}` | Consolidated Stage 1–5 decision payload for an individual asset | 15s / Pinned |
+| `GET` | `/api/assets/search` | Dynamic company-name and ticker resolution proxy | 300s / Edge |
 | `GET` | `/api/governance/status` | Model freeze verification, cryptographic hashes, Phase 26 flags | 3600s |
 | `POST` | `/api/telemetry/events` | High-resolution, anonymized telemetry ingestion (TTC, TTFMI) | No-Cache |
 
@@ -279,12 +280,49 @@ The primary atomic decision bundle driving Stages 1–5 in the Ticker Workspace.
 }
 ```
 
-#### Error States
-- `404 Not Found`: Ticker symbol is unknown or unindexed.
+#### Error States & Epistemic Boundaries
+- `404 Not Found` (`TICKER_NOT_FOUND`): Symbol is unknown or unindexed in the Security Master.
+  - Client enters `asset-not-found-state` (`data-testid="asset-not-found-state"`).
+  - Stale-tape diagnostics and synthetic 0/100 scoring are strictly suppressed.
+  - Client displays actionable recovery guidance (verifying exchange listing / ticker spelling).
   ```json
-  { "error": "TICKER_NOT_FOUND", "message": "Symbol 'XYZ' is not supported in the active investment universe." }
+  {
+    "error": "TICKER_NOT_FOUND",
+    "message": "Symbol 'XYZ' is not supported in the active investment universe."
+  }
   ```
-- `503 Service Unavailable`: Upstream data offline and no cached store available.
+
+- `422 Unprocessable Entity` (`INSUFFICIENT_HISTORY`): Symbol is a recognized exchange-listed equity in the Security Master, but possesses fewer than 15 complete daily sessions required for baseline modeling (`validate_and_prune_daily_history`).
+  - Client enters `insufficient-history-state` (`data-testid="insufficient-history-state"`).
+  - Returns structured observation telemetry so the UI can explain exact data bounds:
+  ```json
+  {
+    "detail": "Insufficient trading history for quantitative evaluation.",
+    "symbol": "ANT",
+    "sessions_observed": 5,
+    "minimum_sessions_required": 15,
+    "observation_start": "2026-11-18",
+    "observation_end": "2026-11-22",
+    "status": "INSUFFICIENT_HISTORY"
+  }
+  ```
+
+#### Limited-Trading-History Presentation Contract
+When an asset is in `INSUFFICIENT_HISTORY` state, presentation surfaces must adhere to the following decoupled capability contract:
+1. **Listing Identity**: `Verified` (if exchange-listed in Security Master) vs `Not verified`.
+2. **SEC Filing Coverage**: `Not verified` (strictly defaults to unverified; active listing does NOT imply filing completeness, insider ownership verification, or scoring eligibility).
+3. **Indicator History Progression & Implementation Realities**: 15 sessions is the baseline modeling gate, *not* an automatic readiness date for every indicator:
+   - `15 daily sessions`: Enforced runtime gate (`validate_and_prune_daily_history` in `api/routes/analytics.py:1121`). Minimum input count for daily decision analytics.
+   - `20 daily sessions`: Smoothing heuristic for 20 EMA / 20 ADV (`api/routes/analytics.py:143`, `optimal_execution.py:194`). Unenforced runtime gate (`pandas.ewm` initializes from $N \ge 1$).
+   - `30 daily sessions`: Statistical confidence standard (`ARX_INV_013` sample size $N \ge 30$). Runtime gate in `advanced_risk_analyzer.py` is unresolved; calculation proceeds on available returns.
+   - `50 daily sessions`: Enforced runtime gate for 50 SMA (`api/routes/analytics.py:156`) and swing trade level generation (`optimal_execution.py:137`). `ConfluenceEngine` itself does not enforce a 50-session cutoff.
+   - `200+ daily sessions`: Enforced mathematical requirement for 200 SMA (200 bars), 22-session slope (222 bars), and 52-week metrics (up to 252 bars) in Minervini Stage 2 trend evaluation (`classifier.py:82-90`, `predicate_registry.py:132,163`).
+4. **The Cardinal Separation Principle**:
+   $$\text{Listing Identity} \ne \text{SEC Filing Completeness} \ne \text{Scoring Eligibility} \ne \text{Execution Clearance}$$
+   Meeting price-history thresholds never confers automatic analytical readiness, scoring eligibility (held under `ARX_CONFLUENCE_INTEGRITY_HOLD`), or live execution clearance (permanently held under `HOLD_EXEC_001`).
+5. **Epistemic Zero-Invariance (`ARX_INV_001`)**: Missing indicators or factor scores must be presented as `UNAVAILABLE` or `N/A`, never as numerical `0` or `0/100`.
+
+- `503 Service Unavailable`: Upstream market feeds offline and no verified cached store available.
   ```json
   { "error": "DATA_SOURCE_UNAVAILABLE", "message": "Market feeds temporarily unreachable. Please retry shortly." }
   ```
@@ -317,6 +355,47 @@ Ingests non-PII, client-side performance and decision events.
 ```json
 { "status": "QUEUED" }
 ```
+
+---
+
+### 3.5 `GET /api/assets/search`
+
+Cloudflare Functions edge proxy providing authenticated, bounded dynamic search and symbol resolution by company name and ticker symbol across `DiscoveryLandingView`, `UniversalOmniSearch`, and the Command Palette.
+
+#### Query Parameters
+- `q` (required, string, min length 1): Search query (ticker symbol or company name prefix/substring).
+- `limit` (optional, integer, default: `10`, max: `25`): Maximum number of candidate instruments to return.
+
+#### Headers
+- `Accept: application/json`
+
+#### Response (200 OK)
+```json
+{
+  "query": "anthropic",
+  "results": [
+    {
+      "symbol": "ANT",
+      "name": "Anthropic PBC",
+      "exchange": "NASDAQ",
+      "asset_class": "us_equity",
+      "status": "active",
+      "tradable": true,
+      "marginable": false,
+      "shortable": false,
+      "fractionable": false
+    }
+  ],
+  "count": 1,
+  "cached": true,
+  "generatedAt": "2026-11-24T05:30:00Z"
+}
+```
+
+#### Client Interaction Invariants
+1. **Submission Gating**: While an asset discovery request is in-flight, form submission (Enter key or search button) is strictly disabled to prevent raw-query submission.
+2. **Provider Match Prioritization**: When provider matches exist, the resolved ticker is selected. Arbitrary custom-ticker launch buttons (e.g. "Launch ANTHROPIC") are suppressed to prevent invalid asset dispatch.
+3. **Provider Unavailability**: If the upstream directory proxy fails, the endpoint returns `503 SERVICE_UNAVAILABLE`. Provider failures are propagated explicitly and are never collapsed into an empty result array.
 
 ---
 

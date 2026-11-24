@@ -123,3 +123,40 @@ This specification formally establishes the mathematical foundations, data requi
 | **Interpretation** | • `80–99`: Mild Downside Tail Risk (Low skewness, low kurtosis)<br>• `60–79`: Moderate Volatility Exposure<br>• `40–59`: Severe Fat-Tail Exposure (High negative skew / kurtosis leptokurtic distribution) |
 | **Minimum Data** | Minimum 30 closed daily returns. |
 | **Missing-Data Behavior** | Defaults to neutral baseline (65) when kurtosis cannot be reliably computed. |
+
+---
+
+## 8. Data Readiness, Modeling Gates & Presentation Decoupling
+
+### 8.1 The 15 Daily Sessions Baseline Modeling Gate
+ARX Terminal enforces a strict entry gate for all quantitative evaluations:
+- **Mathematical Function:** `validate_and_prune_daily_history` (`api/routes/analytics.py`).
+- **Invariant Requirement:** Quantitative evaluation algorithms cannot commence with fewer than **15 complete daily sessions**.
+- **Fail-Closed Behavior:** Any recognized equity with $<15$ sessions is rejected with `HTTP 422 Unprocessable Entity` (`status: "INSUFFICIENT_HISTORY"`).
+- **Epistemic Rationale:** Any moving averages, volatility metrics, or factor weights computed on $<15$ sessions produce uncalibrated noise and violate `ARX_INV_011` (Strict Burn-In).
+
+### 8.2 Progression of Indicator History Requirements & Implementation Realities
+The 15-session gate is a baseline runtime prerequisite, **not an automatic activation date** for every quantitative indicator or model. Individual indicators, models, and statistical invariants enforce distinct mathematical inputs and burn-in characteristics:
+
+| Indicator / Metric | Horizon Prerequisite | Implementation Reality & Code Reference | Enforcement Type |
+| :--- | :--- | :--- | :--- |
+| **Baseline Modeling Gate** | $\ge 15$ closed daily bars | `api/routes/analytics.py:1121` (`validate_and_prune_daily_history` checks `len(work_df) < 15`). Fails closed with HTTP 422 `INSUFFICIENT_HISTORY`. Also `optimal_execution.py:166` (`len(close) < 15` for Day Trader). | **Enforced Runtime Gate** |
+| **20 EMA / 20-Day ADV** | $\ge 20$ closed daily bars (mathematical burn-in) | `api/routes/analytics.py:143` and `optimal_execution.py:194` use `close.ewm(span=20, adjust=False).mean()`. Note: `pandas.ewm` initializes from observation 1 ($N \ge 1$); smoothing stability requires ~20 bars, but code does not fail closed on $<20$ bars. | **Smoothing Heuristic** (Unenforced runtime gate) |
+| **Tail Risk (MVaR 95%)** | $\ge 30$ closed returns (sample confidence) | `analyst_dashboard/analyzers/advanced_risk_analyzer.py:50-120` computes skew, kurtosis, and MVaR on whatever returns pass the 15-day gate. $N \ge 30$ is an invariant standard (`ARX_INV_013`), but runtime code lacks an explicit `len(returns) < 30` cutoff. | **Statistical Standard** (`ARX_INV_013`; runtime gate unresolved) |
+| **50 SMA & Swing Levels** | $\ge 50$ closed daily bars | `api/routes/analytics.py:156` checks `len(close) >= 50` for `latest_sma_50`. `optimal_execution.py:137` checks `len(close) < 50` to suppress swing trade levels (`Trend Evidence Incomplete (< 50 Sessions)`). `ConfluenceEngine` itself does NOT enforce a 50-session cutoff. | **Enforced Runtime Gate** (for 50 SMA & Swing Levels) |
+| **200 SMA & Minervini VCP** | $\ge 200$ bars (200 SMA), 222 bars (slope), up to 252 bars (52w high/low) | `analyst_dashboard/vcp/classifier.py:82-90` and `predicate_registry.py:132,163` (`PRED_HISTORY_200_SESSIONS`, `PRED_MINERVINI_STAGE_2`). Requires 200 bars for 200 SMA, 222 bars for 22-day slope, and 252 bars for 52-week metrics. Fails closed if inputs are None. | **Enforced Mathematical Gate** |
+
+### 8.3 The Cardinal Separation Principle
+$$\boxed{\text{Listing Identity} \ne \text{SEC Filing Completeness} \ne \text{Scoring Eligibility} \ne \text{Execution Clearance}}$$
+
+Sufficient historical price bars **never** establish automatic analytical, scoring, or execution readiness:
+1. **Listing Identity (`Verified` / `Not verified`):** Attests exclusively that the instrument is an active US exchange-listed equity in the Security Master (`/api/v1/market/instruments/{symbol}`).
+2. **SEC Filing Completeness (`Verified` / `Not verified`):** Attests verified Form 4 / Form 13F metadata in PostgreSQL; strictly defaults to `Not verified` in the absence of verified records. An active listing identity **never** implies filing completeness or insider ownership verification.
+3. **Scoring Eligibility:** Confluence scoring requires verified multi-pillar evidence (technicals, fundamentals, corporate filings, macro) and remains held under `ARX_CONFLUENCE_INTEGRITY_HOLD`. Price history alone never activates scoring conviction.
+4. **Execution Clearance:** All live capital commitment and order routing is permanently disabled under `HOLD_EXEC_001`. Having 15, 50, 200, or 252 sessions **never** clears an asset for live execution; all trade paths route to simulated order models with fail-closed sizing (`INV-28`).
+
+### 8.4 Presentation Decoupling & Zero-Invariance
+1. **Listing Identity (`resolveListingIdentity`):** Renders `Listing Identity: Verified` when confirmed as an active US exchange-listed equity.
+2. **SEC Filing Coverage (`resolveSecFilingCoverage`):** Renders `SEC Filing Coverage: Verified` only when supported by verified Form 4 / Form 13F metadata; otherwise `Not verified`.
+3. **Zero-Invariance (`ARX_INV_001`):** Missing indicators, unassessed factors, or uncalibrated risk metrics must never default to `0.0`, `0`, or `0/100`. Missing metrics must be explicitly presented as `UNAVAILABLE` or `N/A`.
+

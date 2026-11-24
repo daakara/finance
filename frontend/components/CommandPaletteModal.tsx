@@ -9,6 +9,8 @@ import { TradeSetupSpec } from "../lib/simulation/governorSizingEngine";
 import { CANONICAL_HUBS } from "../lib/canonicalNav";
 import MiniSparkline from "./MiniSparkline";
 import { toggleTerminalTheme } from "../lib/terminalTheme";
+import { useAssetDiscovery } from "../hooks/useAssetDiscovery";
+import { resolveDiscoveredSymbol } from "../lib/assetDiscovery";
 
 interface CommandItem {
   id: string;
@@ -35,6 +37,7 @@ export default function CommandPaletteModal({
   onSelectSymbol,
 }: CommandPaletteModalProps) {
   const [query, setQuery] = useState("");
+  const discovery = useAssetDiscovery(query, isOpen && !query.startsWith("/"));
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [tacticalSetups, setTacticalSetups] = useState<TradeSetupSpec[]>([]);
   const [setupsLoading, setSetupsLoading] = useState(false);
@@ -306,8 +309,21 @@ export default function CommandPaletteModal({
       });
     }
 
+    // Provider suggestions do not depend on catalog membership or price history.
+    discovery.results.forEach((asset) => {
+      items.push({ id: `discovered-${asset.symbol}`, category: "ASSET",
+        title: `${asset.symbol} — ${asset.name}`,
+        subtitle: `${asset.exchange} · Provider match · Analysis availability checked when opened`,
+        badge: asset.type, icon: "📊", action: () => {
+          if (onSelectSymbol) onSelectSymbol(asset.symbol);
+          else router.push(`/?symbol=${encodeURIComponent(asset.symbol)}`);
+          onClose();
+        } });
+    });
+
     // 4. Assets from Master Catalog
     Object.values(MASTER_ASSET_CATALOG).forEach((asset) => {
+      if (discovery.results.some(match => match.symbol === asset.symbol)) return;
       const reg = SpotPriceRegistry.get(asset.symbol);
       const snap = getPersistedMarketSnapshot(asset.symbol);
       const effectivePrice = (reg?.price && reg.price > 0)
@@ -361,7 +377,7 @@ export default function CommandPaletteModal({
     });
 
     return items;
-  }, [router, onClose, onSelectSymbol, tacticalSetups, setupsLoading, setupsError]);
+  }, [router, onClose, onSelectSymbol, tacticalSetups, setupsLoading, setupsError, discovery.results]);
 
   // Filter commands by query with dynamic ticker navigation support
   const filteredCommands = useMemo(() => {
@@ -380,10 +396,22 @@ export default function CommandPaletteModal({
           (cmd.keywords && cmd.keywords.some((k) => k.toLowerCase().includes(qLower)))
         );
       });
+
+      // If query uniquely resolves to a discovered symbol, prioritize that match at the top
+      const resolvedSym = resolveDiscoveredSymbol(cleanQuery, discovery.results);
+      if (resolvedSym) {
+        const resolvedId = `discovered-${resolvedSym}`;
+        const matchIdx = base.findIndex(b => b.id === resolvedId);
+        if (matchIdx > 0) {
+          const matchItem = base[matchIdx];
+          base = [matchItem, ...base.slice(0, matchIdx), ...base.slice(matchIdx + 1)];
+        }
+      }
     }
 
-    // If query looks like a ticker symbol, prepend explicit direct routes honoring the ticker parameter
-    if (isTickerQuery && !base.some((b) => b.id === `ticket-${q.toLowerCase()}`)) {
+    // If query looks like a ticker symbol and discovery is not pending, prepend explicit direct routes
+    if (isTickerQuery && discovery.status !== "LOADING" && !discovery.results.some(asset => asset.symbol !== q && asset.name.toUpperCase().startsWith(q))
+        && !base.some((b) => b.id === `ticket-${q.toLowerCase()}`)) {
       const dynamicTickerCommands: CommandItem[] = [
         {
           id: `dynamic-setup-${q.toLowerCase()}`,
@@ -414,7 +442,7 @@ export default function CommandPaletteModal({
     }
 
     return base;
-  }, [allCommands, query, router, onClose]);
+  }, [allCommands, query, router, onClose, discovery.results, discovery.status]);
 
   // Reset selected index if results change
   useEffect(() => {
@@ -432,6 +460,7 @@ export default function CommandPaletteModal({
         setSelectedIndex((prev) => (prev - 1 + filteredCommands.length) % (filteredCommands.length || 1));
       } else if (e.key === "Enter") {
         e.preventDefault();
+        if (discovery.status === "LOADING") return; // Prevent submission while discovery is pending
         if (filteredCommands[selectedIndex]) {
           filteredCommands[selectedIndex].action();
         }
@@ -456,7 +485,7 @@ export default function CommandPaletteModal({
         }
       }
     },
-    [filteredCommands, selectedIndex, onClose]
+    [filteredCommands, selectedIndex, onClose, discovery.status]
   );
 
   // Scroll active item into view

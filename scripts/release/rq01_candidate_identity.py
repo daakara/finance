@@ -46,7 +46,7 @@ def main():
         except Exception:
             pass
 
-    expected_base = args.base or manifest_data.get("base_anchor_commit") or "9f9cdb9eb7d724c8ea22573826e76cabd1d2944f"
+    expected_base = args.base or manifest_data.get("base_anchor_commit") or "2eccc64a2cb3c649ad4d584a942285a6406d1ce0"
     expected_candidate = args.expected_candidate or manifest_data.get("release_candidate_commit")
 
     print("=== [RQ-01] CANDIDATE IDENTITY & ANCESTRY CHECK ===")
