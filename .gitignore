@@ -44,6 +44,18 @@ data/*
 !data/__init__.py
 !analyst_dashboard/data/
 !analyst_dashboard/data/paper_trading_ledger.json
+# Unignore NVDA Sourced Fundamentals raw evidence & custody manifest
+!data/research/
+data/research/*
+!data/research/sourced_fundamentals/
+data/research/sourced_fundamentals/*
+!data/research/sourced_fundamentals/raw/
+data/research/sourced_fundamentals/raw/*
+!data/research/sourced_fundamentals/raw/CIK0001045810/
+data/research/sourced_fundamentals/raw/CIK0001045810/*
+!data/research/sourced_fundamentals/raw/CIK0001045810/manifest.json
+!data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_submissions.json
+!data/research/sourced_fundamentals/raw/CIK0001045810/CIK0001045810_companyfacts.json
 *.csv
 *.xlsx
 *.db

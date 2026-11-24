@@ -121,7 +121,17 @@ def resolve_identity_contract() -> tuple:
         return False, {}, f"Execution commit SHA '{execution_sha}' is not a valid 40-character hex SHA"
 
     # Context 1: Pull Request Event (Hosted GitHub Actions or simulated PR environment)
-    if event_name == "pull_request" or (event_path and os.path.exists(event_path)):
+    is_pr_event = (event_name == "pull_request")
+    if not is_pr_event and event_name == "local_execution" and event_path and os.path.exists(event_path):
+        try:
+            with open(event_path, "r", encoding="utf-8") as f:
+                _ev = json.load(f)
+            if isinstance(_ev, dict) and "pull_request" in _ev:
+                is_pr_event = True
+        except Exception:
+            pass
+
+    if is_pr_event:
         if not event_path or not os.path.exists(event_path):
             return False, {}, f"pull_request event requires valid GITHUB_EVENT_PATH, but file was not found: '{event_path}'"
 
@@ -218,10 +228,10 @@ def resolve_identity_contract() -> tuple:
     # Context 2: Local Execution / Testing Context
     elif event_name in ("local_execution", "workflow_dispatch", "push"):
         source_sha = os.environ.get("ARX_PR_HEAD_SHA") or execution_sha
-        base_sha = os.environ.get("ARX_PR_BASE_SHA") or "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c"
+        base_sha = os.environ.get("ARX_PR_BASE_SHA") or "2eccc64a2cb3c649ad4d584a942285a6406d1ce0"
         raw_pr = os.environ.get("ARX_PR_NUMBER")
         pr_number = int(raw_pr) if raw_pr else None
-        target_branch = os.environ.get("ARX_TARGET_BRANCH") or os.environ.get("GITHUB_REF_NAME") or "release/production"
+        target_branch = os.environ.get("ARX_TARGET_BRANCH") or "release/production"
 
         if not SHA40_REGEX.match(source_sha):
             return False, {}, f"Source SHA '{source_sha}' is not a valid 40-character hex SHA"

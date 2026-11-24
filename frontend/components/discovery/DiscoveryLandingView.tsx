@@ -5,6 +5,9 @@ import Link from "next/link";
 import { Search, Compass, TrendingUp, ShieldCheck, Activity, BarChart2, ArrowRight } from "lucide-react";
 import { FredMacroData } from "../../lib/institutionalFeeds";
 import { resolveFreshCachedVix } from "../../lib/preflightEvaluator";
+import { useAssetDiscovery } from "../../hooks/useAssetDiscovery";
+import { resolveDiscoveredSymbol, DISCOVERY_SYMBOL, type DiscoveredAsset } from "../../lib/assetDiscovery";
+import { resolveAssetAlias } from "../../lib/assetRegistry";
 import IntentHero from "../IntentHero";
 import WeeklyConfluenceSpotlight from "../WeeklyConfluenceSpotlight";
 
@@ -33,12 +36,30 @@ export default function DiscoveryLandingView({
   const [searchInput, setSearchInput] = useState("");
   const freshVix = resolveFreshCachedVix();
 
+  const cleanQ = searchInput.trim().toUpperCase();
+  const aliasMatch = resolveAssetAlias(cleanQ);
+  const discovery = useAssetDiscovery(searchInput, Boolean(searchInput.trim()));
+
+  const handleSelectTicker = (sym: string) => {
+    const cleanSym = sym.trim().toUpperCase();
+    if (!cleanSym) return;
+    onSelectSymbol(cleanSym);
+    setSearchInput("");
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const clean = searchInput.trim().toUpperCase();
-    if (clean) {
-      onSelectSymbol(clean);
-      setSearchInput("");
+    if (discovery.status === "LOADING" && !aliasMatch) return;
+    if (cleanQ) {
+      if (aliasMatch) {
+        handleSelectTicker(aliasMatch.canonicalTicker);
+      } else if (resolveDiscoveredSymbol(cleanQ, discovery.results)) {
+        handleSelectTicker(resolveDiscoveredSymbol(cleanQ, discovery.results)!);
+      } else if (discovery.results.length > 0) {
+        return; // Ambiguous company matches require explicit selection.
+      } else if (DISCOVERY_SYMBOL.test(cleanQ)) {
+        handleSelectTicker(cleanQ);
+      }
     }
   };
 
@@ -87,13 +108,69 @@ export default function DiscoveryLandingView({
             <div className="absolute right-1.5 flex items-center gap-1.5">
               <button
                 type="submit"
-                disabled={!searchInput.trim()}
-                className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:hover:bg-cyan-500 text-slate-950 font-bold text-xs transition-all cursor-pointer min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+                disabled={!cleanQ || (discovery.status === "LOADING" && !aliasMatch)}
+                aria-label={`Submit search for ${cleanQ || "asset"}`}
+                className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:hover:bg-cyan-500 disabled:cursor-not-allowed text-slate-950 font-bold text-xs transition-all cursor-pointer min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
               >
                 Analyze
               </button>
             </div>
           </div>
+
+          {cleanQ.length >= 2 && (
+            <div aria-live="polite" className="mt-2 px-1 text-xs font-mono text-slate-300">
+              {discovery.status === "LOADING" && "Searching listed assets…"}
+              {discovery.status === "UNAVAILABLE" && "Live search unavailable. Saved matches and direct ticker lookup remain available."}
+              {discovery.status === "AVAILABLE" && discovery.results.length === 0 && "No provider matches. You can still look up a ticker directly."}
+            </div>
+          )}
+
+          {aliasMatch && (
+            <div className="mt-2 p-3 rounded-xl bg-cyan-950/70 border border-cyan-500/70 flex items-center justify-between">
+              <div className="text-xs">
+                <span className="text-cyan-300 font-bold">Did you mean: </span>
+                <span className="text-white font-semibold">{aliasMatch.companyName} ({aliasMatch.canonicalTicker})</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSelectTicker(aliasMatch.canonicalTicker)}
+                className="px-3 py-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold rounded-lg transition-transform active:scale-95 cursor-pointer"
+              >
+                Analyze {aliasMatch.canonicalTicker} →
+              </button>
+            </div>
+          )}
+
+          {discovery.results.length > 0 && (
+            <div className="mt-2 p-2 bg-[#0b1019] border border-cyan-800/80 rounded-xl space-y-1.5 shadow-xl">
+              <div className="px-2 py-1 text-[11px] font-mono text-slate-400 border-b border-[#1b2537] flex items-center justify-between">
+                <span>Live US-listed asset matches</span>
+                <span className="text-cyan-400 text-[10px]">Analysis availability checked when opened</span>
+              </div>
+              <div className="space-y-1 max-h-56 overflow-y-auto pr-1" role="listbox">
+                {discovery.results.map((item) => (
+                  <button
+                    key={`landing-discovery-${item.symbol}`}
+                    type="button"
+                    onClick={() => handleSelectTicker(item.symbol)}
+                    className="w-full text-left p-2.5 rounded-lg bg-[#070a10] hover:bg-[#131b29] border border-[#1b2537] hover:border-cyan-500/80 transition-all flex items-center justify-between group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-black text-cyan-300 group-hover:text-cyan-200">{item.symbol}</span>
+                        <span className="text-xs text-white group-hover:text-cyan-100 font-medium">{item.name}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">{item.exchange} · {item.type} · Provider match</span>
+                    </div>
+                    <span className="text-xs text-cyan-400 font-bold group-hover:translate-x-1 transition-transform">
+                      Analyze →
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mt-2.5 text-xs font-mono text-slate-400 px-1">
             <span>Tip: Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 font-bold border border-slate-700">/</kbd> anywhere to open Universal OmniSearch</span>
             <button

@@ -131,7 +131,7 @@ def compute_evidence_hash(data: Dict[str, Any]) -> str:
         return hashlib.sha256(str(data).encode("utf-8")).hexdigest()
 
 
-def evaluate_factor_provenance(
+def _evaluate_factor_provenance(
     factor_snap: Optional[Dict[str, Any]],
     symbol: str,
     asset_class: str = "EQUITY",
@@ -304,6 +304,43 @@ def evaluate_factor_provenance(
         "isVerified": False,
         "isSynthetic": False,
         "isStale": False,
-        "disqualificationReason": f"Fundamental factor data for {clean_sym} is unverified by an authorized regulator or exchange source.",
+        "disqualificationReason": (f"Financial evidence not integrated for {clean_sym}: runtime factor estimates lack filing-backed source and date lineage." if source_raw == "live_runtime" else f"Financial input verification incomplete for {clean_sym}: source or evidence date validation failed."),
         "profileLabel": "Unverified Fundamental Disclosures",
     }
+
+
+def evaluate_factor_provenance(
+    factor_snap: Optional[Dict[str, Any]],
+    symbol: str,
+    asset_class: str = "EQUITY",
+    max_staleness_days: int = 450,
+) -> Dict[str, Any]:
+    """Preserve scoring policy while exposing its evidence limits explicitly.
+
+    VERIFIED here remains the legacy source/date metadata classification. This
+    diagnostic does not authenticate documents or upgrade runtime estimates.
+    """
+    result = _evaluate_factor_provenance(factor_snap, symbol, asset_class, max_staleness_days)
+    if result["evidenceStatus"] == EvidenceStatus.NOT_APPLICABLE.value:
+        result.update(freshnessStatus="NOT_APPLICABLE", verificationBasis="EXEMPTION",
+                      filingAuthenticationStatus="NOT_APPLICABLE", missingEvidenceFields=[])
+        return result
+    row = factor_snap if isinstance(factor_snap, dict) else {}
+    missing = [key for key in ("filing_date", "period_end", "acceptance_datetime", "available_from")
+               if not row.get(key)]
+    evidence_date = row.get("filing_date") or row.get("as_of_date") or row.get("available_from")
+    freshness = "UNKNOWN"
+    if evidence_date:
+        try:
+            date_value = datetime.strptime(str(evidence_date)[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            age_days = (datetime.now(timezone.utc) - date_value).days
+            freshness = "INVALID_FUTURE_DATE" if age_days < 0 else ("STALE" if age_days > max_staleness_days else "WITHIN_AGE_LIMIT")
+        except (TypeError, ValueError, OverflowError):
+            freshness = "INVALID_DATE"
+    result.update(
+        freshnessStatus=freshness,
+        verificationBasis="SOURCE_AND_DATE_METADATA" if result["isVerified"] else "INSUFFICIENT_METADATA",
+        filingAuthenticationStatus="NOT_CHECKED",
+        missingEvidenceFields=missing,
+    )
+    return result

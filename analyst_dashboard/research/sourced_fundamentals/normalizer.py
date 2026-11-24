@@ -275,6 +275,12 @@ class SecFactNormalizer:
 
         return best_concept, best_items
 
+    def _resolve_acceptance_time(self, accn: Optional[str]) -> Optional[str]:
+        """Resolves acceptanceDateTime directly from retained submissions JSON for an accession."""
+        if not accn or not hasattr(self, "_accession_map") or not self._accession_map:
+            return None
+        return self._accession_map.get(str(accn).strip())
+
     def _extract_instant_fact(
         self,
         us_gaap: Dict[str, Any],
@@ -995,6 +1001,14 @@ class SecFactNormalizer:
 
         # Identify latest 10-K and 10-Q from submissions
         recent = submissions_dict.get("filings", {}).get("recent", {})
+
+        # Build accession map to resolve acceptance timestamps directly from retained submissions
+        accession_map: Dict[str, str] = {}
+        for accn, acc_dt in zip(recent.get("accessionNumber", []), recent.get("acceptanceDateTime", [])):
+            if accn and acc_dt:
+                accession_map[str(accn).strip()] = str(acc_dt).strip()
+        self._accession_map = accession_map
+
         forms = recent.get("form", [])
         filing_dates = recent.get("filingDate", [])
         report_dates = recent.get("reportDate", [])
@@ -1309,6 +1323,12 @@ class SecFactNormalizer:
             us_gaap, COMMON_SHARES_CONCEPTS, "common_shares_outstanding", latest_period_end, unit_name="shares", as_of_date=as_of_date
         )
         facts["common_shares_outstanding"] = cshares_fact
+
+        # Resolve acceptance timestamps directly from retained submissions JSON
+        # Keep unmatched accessions unresolved (None)
+        for f_key, fact in facts.items():
+            if fact.accession_number and not fact.acceptance_time:
+                fact.acceptance_time = accession_map.get(str(fact.accession_number).strip())
 
         fiscal_year_end = submissions_dict.get("fiscalYearEnd", "1231")
         primary_exchange = submissions_dict.get("exchanges", ["UNKNOWN"])[0] if submissions_dict.get("exchanges") else "UNKNOWN"
