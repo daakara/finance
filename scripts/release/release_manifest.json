@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "838616a53e8a6f680525496f6068800fb490613f",
+  "release_candidate_commit": "0c4477d5b84d7bb5888d4dd1963f2cf9941f9a44",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
   "total_files": 71,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -586,9 +586,9 @@
       "size_bytes": 58251
     },
     "scripts/release/rq03_backend_regression.py": {
-      "description": "Backend regression runner including Cornish-Fisher and Radar behavioral test suites",
-      "sha256": "5daa26fe779a91dee3d33f39cd33a90573b1116e8a7bc2e044bd664737d1c7b1",
-      "size_bytes": 4598
+      "description": "Backend regression runner including Cornish-Fisher and Radar behavioral test suites (ccxt-dependent contract test run on hosted CI only)",
+      "sha256": "b16db9e548fc1a247259f1c423d8beba7a2e00e305bfa89cddf350abe199c59a",
+      "size_bytes": 4703
     },
     "scripts/release/rq04_frontend_regression.py": {
       "description": "Frontend regression runner including Sizing, RiskMetrics, and Radar operational truth suites",
@@ -681,6 +681,6 @@
       "size_bytes": 4773
     }
   },
-  "candidate_commit_sha": "838616a53e8a6f680525496f6068800fb490613f",
+  "candidate_commit_sha": "0c4477d5b84d7bb5888d4dd1963f2cf9941f9a44",
   "target_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486"
 }
