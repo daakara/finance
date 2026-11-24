@@ -210,16 +210,16 @@
       "originating_pr_number": 319,
       "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
       "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
-      "sha256": "171b11e3ab90351d0c04dc79f614378e80c3fe9f05fb93c7b65d254f2d327d88",
-      "size_bytes": 195285
+      "sha256": "80e1dc1c3ca9557f8928133d5639b8e4cd5924dee31f1e5b47108d88ad862401",
+      "size_bytes": 195419
     },
     "frontend/lib/assetDiscovery.ts": {
       "operation": "A",
       "originating_pr_number": 323,
       "originating_commit": "47b6e1546867e9c9419b8b96be28cbbe1445a82c",
       "governing_requirement": "PR #323: discover new US listings from existing authenticated reference directory without history or scoring prerequisites",
-      "sha256": "4b2496fe7ac85c0e80f39d2c43e90990d651bb683dd8f546b955d809651ded4b",
-      "size_bytes": 2623
+      "sha256": "6bc4d21c38c3fa76b74ce041c4b49b2798efc169e0a7334037c288f2b86130f5",
+      "size_bytes": 2787
     },
     "frontend/lib/evidenceDomains.ts": {
       "operation": "M",
@@ -370,8 +370,8 @@
       "originating_pr_number": 323,
       "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
       "governing_requirement": "PR #323: clear asset analytics on selection change and render explicit unavailable state on 404",
-      "sha256": "fd324b814a3dbdbb517933e9c77ffd40ee34828ddb073ca93350ec1f050b1f26",
-      "size_bytes": 54241
+      "sha256": "316d9d8aea780c2bcdb82cd81c29679528b3383de99a1161e5df5cef985d4094",
+      "size_bytes": 54285
     },
     "frontend/components/discovery/DiscoveryLandingView.tsx": {
       "operation": "M",
@@ -499,5 +499,7 @@
       "size_bytes": 19670,
       "description": "Release qualification module: rq_receipt_utils.py"
     }
-  }
+  },
+  "candidate_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486",
+  "target_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486"
 }
