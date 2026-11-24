@@ -1277,9 +1277,24 @@ export class AssetNotFoundError extends Error {
 export class InsufficientHistoryError extends Error {
   readonly status = 422;
   readonly code = "INSUFFICIENT_HISTORY";
-  constructor(symbol: string, message?: string) {
+  readonly symbol: string;
+  readonly instrument?: CanonicalInstrumentEnvelope | null;
+  readonly coverageCertified?: boolean | null;
+  readonly coverageStatus?: string | null;
+
+  constructor(
+    symbol: string,
+    message?: string,
+    instrument?: CanonicalInstrumentEnvelope | null,
+    coverageStatus?: string | null,
+    coverageCertified?: boolean | null
+  ) {
     super(message || `Asset "${symbol}" has insufficient trading history on record.`);
     this.name = "InsufficientHistoryError";
+    this.symbol = symbol;
+    this.instrument = instrument;
+    this.coverageStatus = coverageStatus;
+    this.coverageCertified = coverageCertified;
   }
 }
 
@@ -1887,7 +1902,8 @@ export async function fetchAssetAnalytics(
       if (canonical && canonical.listing_status === "ACTIVE" && canonical.classification_status === "VERIFIED") {
         throw new InsufficientHistoryError(
           upper,
-          `Asset "${upper}" is a recognized ${canonical.primary_exchange || "exchange-listed"} ${canonical.security_type || "security"}, but has insufficient completed daily trading sessions on record (minimum 15 daily sessions required for multi-factor analytics).`
+          `Asset "${upper}" is a recognized ${canonical.primary_exchange || "exchange-listed"} ${canonical.security_type || "security"}, but has insufficient completed daily trading sessions on record (minimum 15 daily sessions required for multi-factor analytics).`,
+          canonical
         );
       }
     } catch (e) {

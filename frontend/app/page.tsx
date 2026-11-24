@@ -35,7 +35,8 @@ import EtfRiskProfileCard from "../components/EtfRiskProfileCard";
 import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry, AssetNotFoundError, InsufficientHistoryError } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 import { resolveAssetAlias } from "../lib/assetRegistry";
-import { isETF, resolveCapabilities } from "../lib/assetTypeUtils";
+import { isETF, resolveCapabilities, type CanonicalInstrumentEnvelope } from "../lib/assetTypeUtils";
+import { resolveLimitedHistoryCapabilities, formatLimitedHistoryExplanation } from "../lib/limitedHistoryPresentation";
 import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import TerminalSsrShell from "../components/TerminalSsrShell";
@@ -76,6 +77,8 @@ function TerminalContent() {
   const analysisRequestIdRef = useRef(0);
   const [loading, setLoading] = useState<boolean>(Boolean(urlSymbol));
   const [error, setError] = useState<string | null>(null);
+  const [errorInstrument, setErrorInstrument] = useState<CanonicalInstrumentEnvelope | null>(null);
+  const [errorCoverage, setErrorCoverage] = useState<{ certified?: boolean | null; status?: string | null } | null>(null);
   const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(
@@ -186,6 +189,8 @@ function TerminalContent() {
     setSelectedSymbol(clean);
     setData(null);
     setError(null);
+    setErrorInstrument(null);
+    setErrorCoverage(null);
     setLoading(true);
     trackSymbolSearch(clean, "OmniSearch");
     if (isETF(clean)) {
@@ -209,12 +214,16 @@ function TerminalContent() {
         setSelectedSymbol(clean);
         setData(null);
         setError(null);
+        setErrorInstrument(null);
+        setErrorCoverage(null);
         setLoading(true);
       } else {
         setHasExplicitSymbol(false);
         setSelectedSymbol("");
         setData(null);
         setError(null);
+        setErrorInstrument(null);
+        setErrorCoverage(null);
         setLoading(false);
       }
     };
@@ -335,6 +344,13 @@ function TerminalContent() {
         if (isMounted && requestId === analysisRequestIdRef.current) {
           setData(null);
           setError(err instanceof Error ? err.message : `Failed to load asset analytics for ${selectedSymbol}`);
+          if (err instanceof InsufficientHistoryError) {
+            setErrorInstrument(err.instrument || null);
+            setErrorCoverage({ certified: err.coverageCertified, status: err.coverageStatus });
+          } else {
+            setErrorInstrument(null);
+            setErrorCoverage(null);
+          }
         }
       } finally {
         if (isMounted && !abortController.signal.aborted && requestId === analysisRequestIdRef.current) {
@@ -523,43 +539,26 @@ function TerminalContent() {
                           Insufficient History on Record for {selectedSymbol}
                         </h2>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                          {error}. A minimum of 15 completed daily trading sessions is required by ARX quantitative invariants before multi-factor scoring, volatility bands, and tactical setups can be computed.
+                          {formatLimitedHistoryExplanation(selectedSymbol, error)}
                         </p>
                       </div>
                     </div>
 
                     {/* Breakdown of Analytical Capabilities */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 font-mono text-xs">
-                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Multi-Factor Confluence</span>
-                        <span className="text-amber-400 font-bold block">UNAVAILABLE</span>
-                        <span className="text-[10px] text-slate-400 block">Requires 15+ completed daily sessions (min sample)</span>
-                      </div>
-                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Technical Momentum & RSI</span>
-                        <span className="text-amber-400 font-bold block">UNAVAILABLE</span>
-                        <span className="text-[10px] text-slate-400 block">Requires 14-period Wilder smoothing</span>
-                      </div>
-                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Cornish-Fisher Tail VaR</span>
-                        <span className="text-amber-400 font-bold block">UNAVAILABLE</span>
-                        <span className="text-[10px] text-slate-400 block">Requires skewness & kurtosis empirical distribution</span>
-                      </div>
-                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Minervini VCP Setups</span>
-                        <span className="text-amber-400 font-bold block">UNAVAILABLE</span>
-                        <span className="text-[10px] text-slate-400 block">Requires 20 EMA & 50 SMA baseline</span>
-                      </div>
-                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Corporate Ownership & Filings</span>
-                        <span className="text-slate-300 font-bold block">ACTIVE LISTING</span>
-                        <span className="text-[10px] text-slate-400 block">Security verified in Security Master</span>
-                      </div>
-                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Execution Clearance</span>
-                        <span className="text-rose-400 font-bold block">INELIGIBLE</span>
-                        <span className="text-[10px] text-slate-400 block">Discovery does not grant execution clearance</span>
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 font-mono text-xs">
+                      {resolveLimitedHistoryCapabilities({
+                        symbol: selectedSymbol,
+                        error,
+                        instrument: errorInstrument,
+                        coverageCertified: errorCoverage?.certified,
+                        coverageStatus: errorCoverage?.status,
+                      }).map((cap) => (
+                        <div key={cap.id} className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
+                          <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{cap.name}</span>
+                          <span className={`${cap.statusColor} font-bold block`}>{cap.status}</span>
+                          <span className="text-[10px] text-slate-400 block">{cap.requirement}</span>
+                        </div>
+                      ))}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-[#1b2537]">
@@ -577,6 +576,8 @@ function TerminalContent() {
                           setHasExplicitSymbol(false);
                           setData(null);
                           setError(null);
+                          setErrorInstrument(null);
+                          setErrorCoverage(null);
                           if (typeof window !== "undefined") {
                             const url = new URL(window.location.href);
                             url.searchParams.delete("symbol");
@@ -634,6 +635,8 @@ function TerminalContent() {
                           setHasExplicitSymbol(false);
                           setData(null);
                           setError(null);
+                          setErrorInstrument(null);
+                          setErrorCoverage(null);
                           if (typeof window !== "undefined") {
                             const url = new URL(window.location.href);
                             url.searchParams.delete("symbol");
