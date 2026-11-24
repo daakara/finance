@@ -319,3 +319,37 @@ AUTOMATIC_SUCCESSOR_EXECUTION =
 
 *Epistemic Boundary Ratification*:
 The execution surface represented by `OptimalEntryExitCard` is formally frozen as **COMMON_STOCK_ONLY**. The platform strictly prohibits defaulting unverified or UNKNOWN instruments into stock execution. Progression to supporting valid uncatalogued equities such as PLSE must proceed through a dedicated implementation gate that establishes authoritative server-side security-type classification, preserving all fail-closed boundaries. Automatic successor execution is halted.
+
+---
+
+## 10. Tri-State Asset UX Contract & Limited-History Presentation Architecture
+
+### 10.1 The Three Authoritative UI States
+To ensure epistemic truthfulness and prevent user confusion, the frontend adheres to three distinct operational states:
+
+1. **State 1 — Asset Unavailable / Not Found (`asset-not-found-state`):**
+   - **DOM Identifier:** `data-testid="asset-not-found-state"`.
+   - **Trigger:** HTTP 404 from analytics or security master.
+   - **Visual Presentation:** Clean empty slate with explicit message: *"Asset unavailable or not found. Check ticker spelling or verify active US equity listing."*
+   - **Anti-Slop Guarantees:** Stale-tape diagnostics, synthetic 0/100 scores, and inherited prior-symbol data are strictly suppressed. Recovery actions allow instant navigation back to discovery.
+
+2. **State 2 — Recognized Listing with Limited History (`insufficient-history-state`):**
+   - **DOM Identifier:** `data-testid="insufficient-history-state"`.
+   - **Trigger:** HTTP 422 from analytics (or Security Master active listing with $<15$ daily trading sessions).
+   - **Decoupled Capability Disclosures:**
+     - **Listing Identity:** `Verified` (confirmed via Security Master active exchange listing).
+     - **SEC Filing Coverage:** `Not verified` (strictly defaults to unverified without Form 4/13F coverage metadata; active listing never implies filing completeness or insider ownership verification).
+   - **Modeling Gate Disclosure:** Explains clearly that 15 completed daily trading sessions is the baseline gate before quantitative modeling commences.
+   - **Observation Bounds:** Displays exact start/end dates and session count (e.g. *"5 completed daily sessions observed (2026-11-18 to 2026-11-22)"*).
+   - **Zero-Invariance:** Missing indicators are displayed as `UNAVAILABLE` or `N/A`, never as numerical `0` or `0/100`.
+
+3. **State 3 — Seasoned Quantitative Workstation:**
+   - **Trigger:** HTTP 200 with full session history ($\ge 50$ bars).
+   - **Visual Presentation:** Dual-horizon charts, Minervini VCP setups, multi-pillar Confluence score, and execution corridor.
+
+### 10.2 Dynamic Discovery Search Interaction Contract
+Across `DiscoveryLandingView`, `UniversalOmniSearch`, and the Command Palette:
+- **Pending Submission Gate:** Form submission (Enter key and search button) is strictly disabled while a discovery request is in-flight.
+- **Ambiguity & Match Prioritization:** When company-name queries return provider matches (e.g. "Anthropic" $\to$ `ANT`), the resolved equity match is prioritized. Arbitrary custom-symbol launch buttons for that query string are hidden to prevent uncatalogued dispatch.
+- **Provider Fault Tolerance:** When provider search fails, an explicit `503` alert is surfaced; provider errors never masquerade as zero results.
+

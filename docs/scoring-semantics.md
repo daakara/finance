@@ -123,3 +123,39 @@ This specification formally establishes the mathematical foundations, data requi
 | **Interpretation** | • `80–99`: Mild Downside Tail Risk (Low skewness, low kurtosis)<br>• `60–79`: Moderate Volatility Exposure<br>• `40–59`: Severe Fat-Tail Exposure (High negative skew / kurtosis leptokurtic distribution) |
 | **Minimum Data** | Minimum 30 closed daily returns. |
 | **Missing-Data Behavior** | Defaults to neutral baseline (65) when kurtosis cannot be reliably computed. |
+
+---
+
+## 8. Data Readiness, Modeling Gates & Presentation Decoupling
+
+### 8.1 The 15 Daily Sessions Baseline Modeling Gate
+ARX Terminal enforces a strict entry gate for all quantitative evaluations:
+- **Mathematical Function:** `validate_and_prune_daily_history` (`api/routes/analytics.py`).
+- **Invariant Requirement:** Quantitative evaluation algorithms cannot commence with fewer than **15 complete daily sessions**.
+- **Fail-Closed Behavior:** Any recognized equity with $<15$ sessions is rejected with `HTTP 422 Unprocessable Entity` (`status: "INSUFFICIENT_HISTORY"`).
+- **Epistemic Rationale:** Any moving averages, volatility metrics, or factor weights computed on $<15$ sessions produce uncalibrated noise and violate `ARX_INV_011` (Strict Burn-In).
+
+### 8.2 Progression of Indicator History Requirements
+The 15-session gate is a baseline prerequisite, **not an automatic activation date** for every quantitative indicator. Individual indicators enforce their own immutable historical data horizons:
+
+| Indicator / Metric | Horizon Prerequisite | Missing-Data Behavior & Invariant |
+| :--- | :--- | :--- |
+| **Baseline Modeling Gate** | $\ge 15$ closed daily bars | HTTP 422 `INSUFFICIENT_HISTORY` (`asset-not-found-state` suppressed). |
+| **20 EMA / 20-Day ADV** | $\ge 20$ closed daily bars | Marked `UNAVAILABLE`. Cannot compute exponential smoothing. |
+| **Tail Risk (MVaR 95%)** | $\ge 30$ closed daily bars | Returns neutral baseline (65) with explicit `kurtosis_uncalibrated` flag. |
+| **50 SMA & Confluence** | $\ge 50$ closed daily bars | Confluence scoring suppressed; returns explicit unseasoned disclosure. |
+| **200 SMA & Minervini VCP** | $\ge 200$ closed daily bars | Stage 2 trend qualification fails closed; VCP setups suppressed. |
+
+### 8.3 Decoupling of Security Master Listing from SEC Disclosures
+To prevent conflating exchange listing identity with regulatory filing completeness, the presentation layer strictly decouples asset capabilities:
+
+1. **Listing Identity (`resolveListingIdentity`):**
+   - Verified strictly against the server-authoritative Security Master (`/api/v1/market/instruments/{symbol}`).
+   - Renders `Listing Identity: Verified` when confirmed as an active US exchange-listed equity.
+2. **SEC Filing Coverage (`resolveSecFilingCoverage`):**
+   - Renders `SEC Filing Coverage: Verified` only when supported by verified Form 4 / Form 13F metadata in the persistence layer.
+   - Strictly defaults to `SEC Filing Coverage: Not verified` in the absence of verified disclosure records.
+   - **Non-Conflation Rule:** An active listing identity **never** implies filing completeness, insider ownership verification, or scoring eligibility.
+3. **Zero-Invariance (`ARX_INV_001`):**
+   - Missing indicators or factor scores for newly listed or limited-history assets must never default to `0.0`, `0`, or `0/100`. Missing metrics must be explicitly presented as `UNAVAILABLE` or `N/A`.
+

@@ -1,10 +1,10 @@
 # ARX Terminal — Operational Holds Register & Governance Enforcement Matrix
 
-**Document ID:** `GOV-REG-HOLDS-2026-11-17`  
-**Effective Date:** 2026-11-17  
-**Authoritative Baseline:** `release/production` @ SHA `7a0f76763a15ddb4191883e751f50ea73bfaa680`  
+**Document ID:** `GOV-REG-HOLDS-2026-11-24`  
+**Effective Date:** 2026-11-24  
+**Authoritative Baseline:** Cloudflare Pages `f96c89d2-08e8-410e-a23c-e3c684f9f76c` | Candidate `6419213f56695cbc0a5fa6dc08b10e0496f37afa`  
 **Classification:** Canonical Governance Register  
-**Supersedes:** `GOV-REG-HOLDS-2026-11-14` and historical hold tables in dated sprint registers
+**Supersedes:** `GOV-REG-HOLDS-2026-11-17` and historical hold tables in dated sprint registers
 
 ---
 
@@ -48,19 +48,20 @@ As of November 17, 2026, exactly **six (6) operational holds** remain active acr
 - **Simulated Execution:** The client-side sizing calculator strictly requires `telemetry_verified` broker equity. LocalStorage overrides are quarantined.
 
 ### 3.3 Release Qualification (RQ) Gate Enforcement
-The release qualification suite (`run_release_ci_suite.py`) executes 12 mandatory gates (RQ-01..12) on every PR targeting `release/production`:
-- **RQ-01:** Git tree cleanliness & branch parity.
-- **RQ-02:** Release qualification admission & integrity.
-- **RQ-03:** Domain invariant audit (all 28 invariants verified).
-- **RQ-04:** Frontend type-check & test coverage.
-- **RQ-05:** Backend unit & integration test coverage (100% pass required).
-- **RQ-06:** Security vulnerability audit & Bandit scan.
-- **RQ-07:** Performance & latency SLA verification (<150ms).
-- **RQ-08:** Schema migration & database parity.
-- **RQ-09:** Cloudflare Pages build & bundle integrity.
-- **RQ-10:** Operational hold preservation check.
-- **RQ-11:** Adversarial boundary attack tests (11/11 controls).
-- **RQ-12:** Gate H tamper-resistance verification (12/12 controls).
+The release qualification suite (`run_release_ci_suite.py`) executes 13 mandatory controls (RQ-01..13) on every candidate targeting release qualification:
+- **RQ-01:** Candidate Identity & ancestry validation.
+- **RQ-02:** Release Diff Integrity & manifest containment.
+- **RQ-03:** Backend Regression test suite (100% pass required).
+- **RQ-04:** Frontend Regression & type-check suite.
+- **RQ-05:** Cross-Engine Invariants verification.
+- **RQ-06:** Governance & Backlog Invariants validation.
+- **RQ-07:** Deployment Safety & environment verification.
+- **RQ-08:** Artifact Provenance & immutable hash check.
+- **RQ-09:** Compatibility Suite & runtime contracts.
+- **RQ-10:** Configuration Integrity verification.
+- **RQ-11:** Rollback Readiness & clean rollback paths.
+- **RQ-13:** Financial Integrity & zero-invariance validation.
+- **RQ-12:** Qualification Summary & cryptographic stage aggregation.
 
 ---
 

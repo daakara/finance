@@ -1,6 +1,6 @@
 # 📈 ARX Terminal | Institutional Financial Intelligence & Research Platform
 
-> **Current operational reconciliation (2026-11-17, production SHA `7a0f76763a15ddb4191883e751f50ea73bfaa680`):** See [Active work register](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md), [Integrated status addendum](docs/ARX_STATUS_ADDENDUM_2026_11_17.md), and [Operational holds register](docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md). Release qualification and surgical post-launch releases through PR #302 (Catalyst card ticker sync, sector labels, FRED macro contract, SEC Form 4 presentation truth, v2.5.3 engine manifest, Radar evidence adapter, Pre-Flight freshness safeguards, Confluence drawer presentation, quote provenance & sizing authorization, and canonical second profit target) are merged and deployed to production. The one-shot SEC Form 4 pilot and supervised NVDA backfill under Issue #165 are complete; production database holds 16 of 16 accessions in the frozen NVDA backfill baseline. Production worker is in fail-closed STANDBY (`ARX_SEC_EGRESS_ROLE=DISABLED`) with 0 held locks and 0 active queue rows. Pre-Flight quote provenance and sizing authorization ([PR #300](https://github.com/daakara/finance/pull/300)), Confluence drawer presentation ([PR #299](https://github.com/daakara/finance/pull/299)), and canonical second profit target ([PR #302](https://github.com/daakara/finance/pull/302)) are deployed and production verified. All six operational holds (`HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD`, `PHASE_A3_UX_HOLD`) remain strictly active.
+> **Current operational reconciliation (2026-11-24, production Cloudflare Pages `f96c89d2-08e8-410e-a23c-e3c684f9f76c`, release candidate `6419213f56695cbc0a5fa6dc08b10e0496f37afa`):** See [Active work register (2026-11-24)](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_24.md), [Integrated status addendum](docs/ARX_STATUS_ADDENDUM_2026_11_17.md), and [Operational holds register](docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md). Release qualification and surgical post-launch releases through PR #302, PR #303 (DEF-CAT-001 earnings schedule), PR #304 (atomic ingestion & historical PIT snapshots), PR #305 (issuer-bound historical coverage & amendment-effect classification), PR #318 (NVDA acquisition tooling & offline fundamentals reader), PR #319 (decoupled SEC Form 4 presentation from held scoring), PR #323 (Dynamic Company-Name Asset Discovery, Provider Failure Handling, and Company-Name Search), and candidate `6419213f` (Decoupling Listing Identity from SEC Filing Evidence in Limited History) are merged/deployed and production-verified. The one-shot SEC Form 4 pilot and supervised NVDA backfill under Issue #165 are complete; production database holds 16 of 16 accessions in the frozen NVDA backfill baseline. Production worker is in fail-closed STANDBY (`ARX_SEC_EGRESS_ROLE=DISABLED`) with 0 held locks and 0 active queue rows. All six operational holds (`HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD`, `PHASE_A3_UX_HOLD`) remain strictly active.
 
 
 A professional-grade quantitative intelligence platform featuring real-time market surveillance, Mark Minervini Volatility Contraction Pattern (VCP) setup detection, dual-horizon candlestick geometry, multi-pillar Confluence scoring, and Cornish-Fisher Modified Value-at-Risk modeling.
@@ -40,7 +40,7 @@ The ARX Terminal documentation estate is consolidated into a canonical hierarchy
 | :--- | :--- | :--- |
 | **Canonical Sprint Roadmap (2026-11-17)** | [`ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md`](docs/planning/ARX_CANONICAL_SPRINT_ROADMAP_2026_11_17.md) | Six-sprint execution plan (Sprint 0–5), capacity model, dependency graph, and Sprint 1 active packet. |
 | **Operational Holds Register** | [`ARX_OPERATIONAL_HOLDS_REGISTER.md`](docs/governance/ARX_OPERATIONAL_HOLDS_REGISTER.md) | Authoritative matrix of 6 active fail-closed platform holds, live enforcement, and exit criteria. |
-| **Active Work Register (2026-11-17)** | [`ARX_ACTIVE_WORK_REGISTER_2026_11_17.md`](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md) | Authoritative inventory, deduplication, and status across all open issues, open PRs, and merged releases. |
+| **Active Work Register (2026-11-24)** | [`ARX_ACTIVE_WORK_REGISTER_2026_11_24.md`](docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_24.md) | Authoritative inventory, deduplication, and status across all open issues, open PRs, and merged releases. |
 | **Integrated Status Addendum (2026-11-17)** | [`ARX_STATUS_ADDENDUM_2026_11_17.md`](docs/ARX_STATUS_ADDENDUM_2026_11_17.md) | Single source of operational truth across Smart Money, Radar, Confluence, Pre-Flight, UX, and DR. |
 | **Integrated Project Status (2026-10-29)** | [`ARX_MASTER_PROJECT_STATUS_2026_10_29.md`](docs/ARX_MASTER_PROJECT_STATUS_2026_10_29.md) | Historical master status across research, UX, engines, engineering, and hosting status. |
 | **Documentation Master Inventory** | [`ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md`](docs/planning/ARX_DOCUMENTATION_MASTER_INVENTORY_2026_10_29.md) | Comprehensive audit and 8-tier authority classification of all 1,478 repository documents. |
@@ -48,7 +48,7 @@ The ARX Terminal documentation estate is consolidated into a canonical hierarchy
 | **Market-Wide Discovery Research** | [`ARX_MARKET_WIDE_RESEARCH_DECISION_AND_EVIDENCE_REGISTER.md`](docs/research/ARX_MARKET_WIDE_RESEARCH_DECISION_AND_EVIDENCE_REGISTER.md) | MW-004 research reconciliation, Model E+ ratification, candidate freeze, and scoring repair. |
 | **Synthesis E V3 UX Architecture** | [`ARX_UX_V3_APPROVAL_IMPLEMENTATION_AND_RELEASE_STATUS.md`](docs/ux/ARX_UX_V3_APPROVAL_IMPLEMENTATION_AND_RELEASE_STATUS.md) | Three-mode terminal (Guided/Standard/Quant), Paper Light theme, accessibility, and PR #131. |
 | **Sprint 1–4 Obligations & Holds** | [`ARX_SPRINT1_4_OBLIGATION_AND_HOLD_REGISTER.md`](docs/planning/ARX_SPRINT1_4_OBLIGATION_AND_HOLD_REGISTER.md) | Deduplicated historical findings, 14 platform security holds, and administrative closure. |
-| **CI/CD & Deployment Authority** | [`ARX_CI_RELEASE_AND_DEPLOYMENT_AUTHORITY_MATRIX.md`](docs/releases/ARX_CI_RELEASE_AND_DEPLOYMENT_AUTHORITY_MATRIX.md) | Release Qualification Suite (RQ-01..12), GitHub rulesets `25187391` & `26024894`, hosting boundaries. |
+| **CI/CD & Deployment Authority** | [`ARX_CI_RELEASE_AND_DEPLOYMENT_AUTHORITY_MATRIX.md`](docs/releases/ARX_CI_RELEASE_AND_DEPLOYMENT_AUTHORITY_MATRIX.md) | Release Qualification Suite (RQ-01..13), GitHub rulesets `25187391` & `26024894`, hosting boundaries. |
 | **PR & Integration Register** | [`ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md`](docs/planning/ARX_PR_AND_INTEGRATION_STATUS_REGISTER.md) | Exhaustive register of all open and merged PRs, commit SHAs, and combined candidate D4. |
 | **Conflict & Correction Log** | [`ARX_DOCUMENTATION_CONFLICT_AND_CORRECTION_LOG.md`](docs/planning/ARX_DOCUMENTATION_CONFLICT_AND_CORRECTION_LOG.md) | Authoritative resolutions for historical contradictions, stale SHAs, and superseded findings. |
 | **Evidence Traceability Matrix** | [`ARX_DOCUMENTATION_EVIDENCE_TRACEABILITY_MATRIX.csv`](docs/planning/ARX_DOCUMENTATION_EVIDENCE_TRACEABILITY_MATRIX.csv) | Machine-readable claim-to-source mapping covering core architectural facts. |
@@ -63,16 +63,26 @@ The ARX Terminal documentation estate is consolidated into a canonical hierarchy
 ARX Terminal is an institutional financial intelligence and discretionary trading workstation engineered for quantitative portfolio managers, research analysts, and risk officers. It synthesizes disparate technical, fundamental, setup, and macroeconomic data into a coherent, evidence-grounded research cockpit.
 
 ### Core Operational Capabilities
-1. **Interactive Dual-Horizon Candlestick Engine:**
+1. **Dynamic Company-Name Asset Discovery & Resolution (PR #323):**
+   - Real-time symbol and company-name resolution across Homepage search (`DiscoveryLandingView`), Universal OmniSearch (`UniversalOmniSearch`), and the Command Palette.
+   - Resolves company names (e.g. "Anthropic" $\to$ `ANT`, "Apple" $\to$ `AAPL`) directly against provider reference directories via Cloudflare Functions proxy (`/api/assets/search`) with authenticated caching and exponential backoff.
+   - Raw query submission is strictly gated while discovery is in-flight, preventing accidental raw-string submission.
+   - Arbitrary custom-ticker launch buttons are suppressed when provider matches exist.
+2. **Epistemic Tri-State Asset Handling & Decoupled Limited-History Presentation:**
+   - *State 1 (Unindexed / Unknown):* Explicit `asset-not-found-state` (HTTP 404) with clear recovery actions. Suppresses misleading stale-tape diagnostics and eliminates synthetic 0/100 scoring.
+   - *State 2 (Recognized Limited History):* Explicit `insufficient-history-state` (HTTP 422) disclosing the exact observation date range and available trading session count.
+   - *Decoupled Capability Disclosures:* Decouples `Listing Identity: Verified` (Security Master active listing) from `SEC Filing Coverage: Not verified` (defaults strictly to unverified without Form 4/13F coverage metadata). Active listing status never implies filing completeness, insider ownership verification, or scoring eligibility.
+   - *15-Session Baseline Modeling Gate:* Clarifies that 15 daily bars is the minimum gate before quantitative evaluation commences (`validate_and_prune_daily_history`), while individual indicators enforce their own requirements (20 EMA/ADV, 30 MVaR, 50 SMA/Confluence, 200 SMA/Trend Template). Missing evidence is never rendered as a numerical zero (`ARX_INV_001`).
+3. **Interactive Dual-Horizon Candlestick Engine:**
    - *Intraday Scalp View:* 1m, 5m, 15m, 1h timeframes overlaid with Volume-Weighted Average Price (VWAP).
    - *Macro Horizon View:* 1M, 6M, 1Y, 3Y, 5Y timeframes overlaid with 20 Exponential Moving Average (20 EMA).
-2. **Minervini Volatility Contraction Pattern (VCP) Detection:**
+4. **Minervini Volatility Contraction Pattern (VCP) Detection:**
    - Algorithmic stage detection (Stage 2 uptrend prerequisite, progressive contraction count, volume dry-up).
-3. **Multi-Pillar Confluence Scoring:**
+5. **Multi-Pillar Confluence Scoring:**
    - Synthesizes Technicals ($35\%$), Fundamentals ($30\%$), Setups/VCP ($20\%$), and Macro ($15\%$) into a calibrated 0–100 score.
-4. **Governed Position Sizing & Portfolio Provenance (PR #129):**
+6. **Governed Position Sizing & Portfolio Provenance (PR #129, PR #300):**
    - Fail-closed sizing calculator enforcing verified account equity. LocalStorage overrides strictly quarantined.
-5. **Synthesis E V3 Three-Mode Terminal (PR #131):**
+7. **Synthesis E V3 Three-Mode Terminal (PR #131):**
    - Guided Mode (Executive Summary), Standard Mode (Active Swing Trading), and Quant Mode (Factor Sensitivities).
 
 ### Experimental & Operationally Restricted Capabilities
