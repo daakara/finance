@@ -1,204 +1,24 @@
-# ARX SEC Historical Replay Qualification Report & Finalized Receipt (PR #317)
-**Trial Anchor:** `ARX-TRIAL-2026-NVDA-AAPL-001`  
-**PR Reference:** [daakara/finance#317](https://github.com/daakara/finance/pull/317) on `codex/sec-expansion-preparation`  
-**Base Anchor Commit:** `2eccc64a2cb3c649ad4d584a942285a6406d1ce0` (`origin/release/production`)  
-**Tested Replay Qualification Commit:** `83c08333bfd6049c8f5332f5dd0d428febcb2bf2`  
-**Report Governance Commit:** `c2456597551d50b4d06579236af238fc99e814fd`  
-**Dedicated Worktree:** `/Users/iDavid/Projects/finance-sec-expansion` (APFS isolated)  
-**Execution Environment:** Isolated PostgreSQL (`pgserver`), Loopback Guard (`sec_offline_test_support`)
+# ARX SEC Ingestion PR #317 — Authoritative Release Preflight & Governance Evidence Receipt
+
+**Issue Reference:** Issue #165 — Bounded Resumable Ingestion & Exact Phase Delivery  
+**Candidate Commit SHA:** `f25c10849773c2c234de6f4399a1410b1e18d72a`  
+**Passing Hosted Qualification:** GitHub Actions Run ID [`45011651092`](https://github.com/daakara/finance/actions/runs/45011651092) (All 13 gates PASS)  
+**Production Release Baseline:** `2eccc64a2cb3c649ad4d584a942285a6406d1ce0`  
+**Rollout Packet Reference:** [ARX_SEC_INGESTION_10_ROLLOUT_PACKET_317.md](file:///Users/iDavid/Projects/finance-sec-expansion/docs/releases/ARX_SEC_INGESTION_10_ROLLOUT_PACKET_317.md)  
+**Preflight Timestamp:** `2026-11-22T13:47:40Z` (Local: `2026-11-22T14:47:40+01:00`)  
 
 ---
 
-## 1. Test Reconciliation & Exact Execution Commands
+## 1. Exhaustive Deployed Queue Eligibility Audit (`sm_run_requests`)
 
-### Commit Association
-- **Tested Commit (Offline Replay Qualified):** `83c08333bfd6049c8f5332f5dd0d428febcb2bf2`
-- **Report-Only Commit:** `c2456597551d50b4d06579236af238fc99e814fd`
-- **Candidate PR Head (Hosted Qualified):** `f25c10849773c2c234de6f4399a1410b1e18d72a`
-- **Passing Hosted Qualification Run:** GitHub Actions Run ID [`45011651092`](https://github.com/daakara/finance/actions/runs/45011651092) (All 13 gates PASS)
+*Direct authenticated read-only SQL executed against production PostgreSQL 16.15 database `finance_smart_money`:*
 
-### Complete Combined Pytest Command
-```bash
-PYTHONPATH=tools/qualification:tests:. python3 -m pytest -p sec_offline_test_support \
-  tests/test_sec_archived_replay_preparation.py \
-  tests/test_sec_bounded_resumable_ingestion.py \
-  tests/test_sec_resume_safety_regressions.py \
-  tests/test_sec_expanded_delivery.py \
-  tests/test_sec_historical_replay_qualification.py
+```sql
+SELECT status, count(*) FROM sm_run_requests GROUP BY status;
+-- Total Rows: 6 (4 COMPLETED, 2 FAILED)
 ```
-- **Combined Test Run Result on Commit `83c08333`:** **65 collected, 65 passed, 0 failed, 0 skipped** in **49.90s**.
 
-### Resolution of 60-vs-65 Discrepancy & Module Timings
-The earlier "60 tests" count was a manual arithmetic undercount where `tests/test_sec_expanded_delivery.py` was miscounted as 15 tests instead of 20. Individual module timings from standalone runs:
-
-| Module | Collected | Passed | Failed | Skipped | Timing (Standalone Run) | Scope |
-| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| `tests/test_sec_archived_replay_preparation.py` | 5 | 5 | 0 | 0 | 4.00s | Parser invariants, AAPL fixture SHA digest |
-| `tests/test_sec_bounded_resumable_ingestion.py` | 9 | 9 | 0 | 0 | 8.55s | Cohort unit fencing, budget reservations |
-| `tests/test_sec_resume_safety_regressions.py` | 22 | 22 | 0 | 0 | 30.67s | Fenced commits, process crash resumption |
-| `tests/test_sec_expanded_delivery.py` | 20 | 20 | 0 | 0 | 6.43s | Narrow delivery windows, dispatch guards |
-| `tests/test_sec_historical_replay_qualification.py` | 9 | 9 | 0 | 0 | 10.18s | Replay persistence, codes, dates, restart |
-| **Combined Single-Invocation Run** | **65** | **65** | **0** | **0** | **49.90s** | Full offline qualification suite |
-
----
-
-## 2. Recomputed SHA-256 Hashes and Fixture Byte Custody
-
-SHA-256 digests were recomputed directly from the actual bytes of all fixtures:
-
-### 2.1 Authentic Source Bytes
-- **Path:** `tests/fixtures/sec_edgar/AAPL_0001140361-26-044773.xml`
-- **File Size:** 7,375 bytes
-- **SHA-256 Digest:** `eadd8fccc8161b484c2727d79e75a1d37b5303a625b9a22b13c36dd8f34e1ce9`
-- **Accession / CIK:** `0001140361-26-044773` | Apple Inc. (`0000320193`)
-- **Filing Date / Acceptance:** `2026-11-18` | `2026-11-18T23:30:10Z` (Period: `2026-11-16`)
-- **Contents:** 2 non-derivative sales (Code S: 36,792 shares @ $352.26, 53,208 shares @ $353.43), 1 non-derivative gift (Code G: 50,000 shares @ $0.00).
-- **Custody Provenance:** Archived replay with pinned hash (`eadd8fccc8161b484c2727d79e75a1d37b5303a625b9a22b13c36dd8f34e1ce9`); original acquisition authenticity remains `NOT_CHECKED`.
-- **Scope Limit:** **Authentic replay demonstrated for one AAPL filing only.** Historical interval coverage remains `PARTIAL` and `NOT_CERTIFIED`.
-
-### 2.2 Synthetic Fixtures (In-Memory XML Payloads)
-- **NVDA Synthetic Base (`0002152188-26-000005`, Form 4):** 1,043 bytes | SHA-256: `3309cb26c3f93acaa3b878158bcb15467d38aadc182f06f02d6210e6b9aad3ce`
-- **NVDA Synthetic Amendment (`0002152188-26-000007`, Form 4/A):** 1,055 bytes | SHA-256: `54446210035f6a68436b34b83acb7f57b82ed40c33d3a8aeb40d4972572ee35a`
-- **Multi-Transaction Synthetic (`0000320193-26-000099`, Form 4):** 3,505 bytes | SHA-256: `5ba3f194b009e03209cf93b6f76fa5911897502f36b32ef54e5b17c99ecb7d9b`
-
-### 2.3 Mocked Metadata
-- Pipeline transport envelopes mock SEC EDGAR responses (`source_url="archive://tests/fixtures/sec_edgar/AAPL_0001140361-26-044773.xml"`, `document_type="4"`) without external network wire calls.
-
----
-
-## 3. Strict Separation of Governance, Leases, and Deployment
-
-### 3.1 Continuous Authorization Requirements vs. Live Values Inspected
-Continuous authorization enforces a strict separation between policy definition and runtime execution state:
-
-#### A. Authoritative Authorization Policy Requirements (Specification)
-- **Grant ID (`ARX_CONTINUOUS_AUTH_ID`):** Exactly 32 lowercase hexadecimal characters.
-- **Scope (`ARX_CONTINUOUS_AUTH_SCOPE`):** Restricted strictly to `RECURRING_2_ISSUER_FORM4_TRIAL` or `RECURRING_10_ISSUER_FORM4_INGESTION_ONLY`.
-- **Issuer Binding:** Strictly bound to governed issuers: AAPL (`0000320193`) and NVDA (`0001045810`).
-- **Release SHA Binding:** Bound strictly to currently deployed production release SHA (`2eccc64a2cb3c649ad4d584a942285a6406d1ce0`).
-- **Timestamps:** ISO 8601 UTC Z-terminated timestamps with maximum 24-hour validity window.
-- **Ingestion-Only Flag (`ARX_SMART_MONEY_INGESTION_ONLY`):** Strictly `true`.
-
-#### B. Actual Live Values Inspected & Current Runtime State
-Direct authenticated read-only inspection of Railway production environment (`11cad5e1-358e-430e-84fc-189953cff48a`), service `smart-money-worker` (`380acddd-8f0b-49cf-99db-59ecbf1a7aae`):
-
-| Variable / Control | Current Deployed Value | Policy Assessment |
-| :--- | :--- | :--- |
-| `ARX_SEC_EGRESS_ROLE` | `DISABLED` | Satisfies fail-closed egress invariant |
-| `ARX_CONTINUOUS_INGESTION_AUTHORIZED` | `false` | Satisfies deauthorization invariant |
-| `ARX_CONTINUOUS_AUTH_SCOPE` | `RECURRING_2_ISSUER_FORM4_TRIAL` | Matches original 2-issuer trial profile |
-| `ARX_RELEASE_SHA` | `2eccc64a2cb3c649ad4d584a942285a6406d1ce0` | Deployed production baseline intact |
-| `ARX_CONTINUOUS_AUTH_RELEASE_SHA` | `868d7afcd528006c2323e6b79b5a17f2f20f677c` | Bound to prior release; mismatch with deployed |
-| `ARX_CONTINUOUS_AUTH_EXPIRES_AT` | `2026-11-21T08:03:31Z` | **EXPIRED** (Clean deauthorized state) |
-| `ARX_SMART_MONEY_INGESTION_ONLY` | `true` | Preserves non-scoring containment |
-| `ARX_INGESTION_SCHEDULE_ENABLED` | `None` (unset / false) | Worker scheduler disabled |
-| `ARX_INGESTION_PHASE_ID` | `None` (unset) | No active phase armed |
-| `ARX_CONTINUOUS_AUTH_ID` | `dc58b2...25b1` (32 hex) | Historical expired token |
-
-- **Candidate Test Context:** Replay qualification executes in an offline test harness (`sec_offline_test_support`) where authorization tokens are synthetic and scoped solely to local test memory.
-- **Candidate Invariant:** Candidate commits (`83c08333`, `c2456597`, `f25c1084`, and current PR head) are undeployed candidate commits on PR #317 and are **NEVER** bound to an active production grant. Production remains strictly on `2eccc64a2cb3c649ad4d584a942285a6406d1ce0`.
-
-### 3.2 Worker Lease & Queue Checks (PostgreSQL Runtime Layer)
-Separated from governance authorization; manages process concurrency:
-- **Table:** `sm_run_requests`
-- **Lease Integrity:** Active lease token matching worker identity, `lease_expires_at > NOW()`, fenced worker execution.
-- **Queue State:** Transitions `PENDING` -> `RUNNING` -> `COMPLETED` / `FAILED`.
-- **Advisory Locks:** PostgreSQL `pg_locks` inspected for zero orphaned advisory locks.
-
-### 3.3 Separation of Candidate Qualification from Production Deployment
-- **Candidate Status:** Commits `83c08333`, `c2456597`, and the current PR head are **undeployed qualification candidates** on PR #317.
-- **Deployment Invariant:** Deployed production remains anchored at `2eccc64a2cb3c649ad4d584a942285a6406d1ce0`.
-- **Non-Bypassable Rule:** Never bind an active production authorization grant to undeployed candidate SHAs.
-
----
-
-## 4. Production Baseline vs. Candidate PR #317 Behavior
-
-| Dimension | Deployed Production (`2eccc64a`) | Candidate PR #317 (`83c08333` / candidate head) |
-| :--- | :--- | :--- |
-| **Execution Model** | Monolithic batch in Step 6. All issuers fetched together before parsing. | Bounded-cohort execution. Commits each issuer unit atomically (`_parse_and_reconcile_transaction`). |
-| **Partial Failure Containment** | **Progress Lost:** Upstream failure on NVDA aborts batch before Step 7; 0 rows committed for earlier fetched issuers (AAPL). | **Progress Preserved:** AAPL unit is committed in PostgreSQL before NVDA is attempted. NVDA failure leaves AAPL intact. |
-| **Restart / Resumption** | **Duplicate Wire Requests:** Re-queries all issuers on restart. No completed-unit check before wire egress. | **Completed Units Skipped:** Checks `get_completed_unit_receipt`. Completed AAPL is skipped with zero wire requests. |
-| **Budget Pre-Deduction** | Untracked until wire failure returns. | Budget is reserved before transmission; failed wire attempts increment `failed_transmissions` with zero leakage. |
-| **Reconciliation Invariant** | Basic status flags. | Strict arithmetic invariant enforced: `discovered == processed + failed + deferred`. |
-
----
-
-## 5. Day 1 Latency Failures & Live SLA Reality
-
-- **Preservation of Open Risk:** Historical Day 1 latency failures remain preserved as open operational risks.
-- **Offline vs Live Reality:** The offline replay duration (49.90s over loopback against local `pgserver`) **does NOT prove compliance with the mandatory <=60-second live cycle deadline**. Live wire egress, SEC EDGAR 10 req/s rate limits, and remote TLS handshakes can introduce non-deterministic latency.
-
----
-
-## 6. Preflight Recoverability vs. Post-Cycle Backups
-
-The temporal order of backup evidence is strictly enforced:
-1. **Preflight Recoverability Evidence (Prerequisite):** A fresh preflight backup accompanied by verified evidence of a successful isolated restore (`restore_verifier` PASS on isolated test server), not merely restore feasibility, is required **before** dispatch.
-2. **Post-Cycle Backup Evidence (Post-Execution):** Post-cycle backups can only be created and assessed **after** cycle execution completes (`_step9_post_backup`).
-
----
-
-## 7. Hosted Qualification Status & Independent Failure Diagnosis
-
-### Discovered CI Results for PR #317 Branches
-- **Commit `83c08333bfd6049c8f5332f5dd0d428febcb2bf2`:**
-  - `SM-ACT-020 Continuous Authorization Guard` (Run `45005770826`): **SUCCESS**
-  - `SM-ACT-020 Worker Lock Health Regression` (Run `45005770825`): **SUCCESS**
-  - `Release Qualification Suite` (Run `45005770852`): **FAILED** at RQ-02 and RQ-03.
-- **Commit `c2456597551d50b4d06579236af238fc99e814fd`:**
-  - `SM-ACT-020 Continuous Authorization Guard` (Run `45006682569`): **SUCCESS**
-  - `SM-ACT-020 Isolated Owner Lock Health` (Run `45006682573`): **SUCCESS**
-  - `Cloudflare Pages`: **SUCCESS**
-  - `Release Qualification Suite` (Run `45006682611`): **FAILED** at RQ-02 and RQ-03.
-
-### Independent Root Cause Diagnosis
-1. **RQ-02 (Release Diff Integrity):**
-   - *Failure:* `FAIL: Detected 2 unapproved files in diff: docs/reports/SEC_HISTORICAL_REPLAY_QUALIFICATION_2026_11_22.md, tests/test_sec_historical_replay_qualification.py`.
-   - *Root Cause:* The release manifest (`scripts/release/release_manifest.json`) was anchored to commit `bb460951` and lacked registration entries for the two new qualification files.
-   - *Remediation:* Register both files with cryptographic SHA-256 and byte sizes in `scripts/release/release_manifest.json` under originating PR 317.
-2. **RQ-03 (Backend Regression Suite):**
-   - *Failure:* `FAILED tests/test_fred_sec_presentation_integrity.py::test_macro_contract_inverted_yield_curve_defensive_multiplier - assert False is True`.
-   - *Root Cause (Independent of Manifest):* In `tests/test_fred_sec_presentation_integrity.py`, line 82 omitted `ref_date=datetime.date(2026, 11, 15)`, falling back to `datetime.date.today()` (`2026-11-22`). Because mock FRED observations were dated `2026-11-14` (8 days old), they breached the FRED 7-day observation freshness policy, asserting `is_live=False`.
-   - *Remediation:* Explicitly anchor `ref_date=datetime.date(2026, 11, 15)` in the test, eliminating non-deterministic wall-clock drift staleness. Register the modified test file in `scripts/release/release_manifest.json`.
-
----
-
-## 8. Four Separate Readiness Verdicts
-
-1. **Processing Readiness: `READY_OFFLINE_QUALIFIED`**  
-   Unit-resumable bounded cohort logic, PostgreSQL persistence, duplicate idempotency, amendment dependency tracking, and receipt reconciliation pass 65/65 offline tests.
-2. **Historical Coverage: `PARTIAL_COVERAGE_ONLY` (NOT_CERTIFIED)**  
-   Authentic replay is demonstrated for **one AAPL filing only** (`0001140361-26-044773`). Authentic NVDA Form 4/4A and authentic derivative exercise fixtures remain absent.
-3. **Live Scheduling: `BLOCKED`**  
-   Live execution is blocked awaiting operator satisfaction of the 5 operational prerequisites. Unscheduled production execution is strictly prohibited.
-4. **Scoring & Publication Readiness: `HELD`**  
-   Pipeline runs under strict `ingestion_only=True`. Radar scoring and snapshot advancement remain prohibited. Active snapshot remains immutable at `SNAP_SM_1792939989_48f30db6`.
-
----
-
-## 9. Form 4 Acquisition Proposal (Deferred)
-
-The proposal to acquire missing authentic Form 4 documents remains **DEFERRED**.
-- **Important Distinction:** The separate "GO" for NVDA submissions and companyfacts API endpoints does **NOT** authorize Form 4 downloads.
-- When authorized, acquisition will reuse existing repository archives first, enforce a <=5 requests/second limit, cap requests at 4 total, and avoid promising Form 4/A presence.
-
----
-
-## 10. Completed Sunday Preflight Evidence & Governance Verification Receipt
-
-*Executed Sunday Nov 22, 2026 under authenticated operator access without mutating production configuration, queue state, or database records.*
-
-### 10.1 Exact Inspection Timestamps & Target Scope
-- **SQL Audit Timestamp:** `2026-11-22T13:47:40Z` (Local: `2026-11-22T14:47:40+01:00`)
-- **Restore Verification Timestamp:** `2026-11-22T13:47:40Z` (Duration: 0.904s)
-- **Target Database:** Production PostgreSQL 16.15 (`finance_smart_money`) via proxy `crossover.proxy.rlwy.net:17685` (Read-Only)
-- **Backup Custody Source:** Cloudflare R2 `s3://arx-smart-money-backups/production` (Read-Only)
-- **Restore Verification Target:** Ephemeral local PostgreSQL 16.2 socket (`pgserver`). Zero production restore, zero R2 writes.
-
-### 10.2 Exhaustive Deployed Queue Eligibility Audit (`sm_run_requests`)
-
-*Direct authenticated read-only SQL evaluation of all active, pending, leased, retryable, and terminal invariants:*
+### Complete Category Breakdown Across All Deployed Eligibility Invariants
 
 | Category / Rule | SQL Condition Evaluated | Count | State Assessment |
 | :--- | :--- | :---: | :--- |
@@ -211,14 +31,18 @@ The proposal to acquire missing authentic Form 4 documents remains **DEFERRED**.
 | **Null Retry Timestamps** | `status = 'RETRY_ELIGIBLE' AND next_attempt_at IS NULL` | **0** | Clean |
 | **Active Lease Tokens Held** | `lease_token IS NOT NULL AND status NOT IN ('COMPLETED', 'FAILED')` | **0** | Clean |
 | **Non-Terminal Failures** | `status = 'FAILED' AND attempt_count < max_attempts` | **0** | Clean |
-| **Terminal Failures** | `status = 'FAILED' AND attempt_count >= max_attempts` | **2** | Historical terminal failures (`7873e2a9`, `5de6e1b3`) |
-| **Terminal Completed Jobs** | `status = 'COMPLETED'` | **4** | Historical completed jobs (`abae9bd6`, `fc90cef2`, `ed340c5c`, `4b386b60`) |
+| **Terminal Failures** | `status = 'FAILED' AND attempt_count >= max_attempts` | **2** | Historical terminal records (`7873e2a9`, `5de6e1b3`) |
+| **Terminal Completed Jobs** | `status = 'COMPLETED'` | **4** | Completed trial slot jobs (`abae9bd6`, `fc90cef2`, `ed340c5c`, `4b386b60`) |
 | **Unhandled / Unknown Statuses** | `status NOT IN ('PENDING', 'RUNNING', 'RETRY_ELIGIBLE', 'FAILED', 'COMPLETED')` | **0** | Clean |
-| **Active Owner Advisory Locks** | `pg_locks.locktype = 'advisory' AND ((classid::bigint << 32) \| objid) = 401007311509093371` | **0** | **UNHELD (0 total advisory locks in pg_locks)** |
+| **Active Owner Advisory Locks** | `pg_locks.locktype = 'advisory' AND ((classid::bigint << 32) \| objid) = 401007311509093371` | **0** | **UNHELD (0 total advisory locks)** |
 
-### 10.3 Cryptographic Validation of Baseline & Snapshot
+---
 
-#### A. Active Snapshot `SNAP_SM_1792939989_48f30db6`
+## 2. Cryptographic Validation of Baseline & Snapshot Contents
+
+*Evaluated directly from database storage without inferring immutability from timestamps or row counts:*
+
+### 2.1 Active Snapshot `SNAP_SM_1792939989_48f30db6`
 - **Scanner ID / Universe:** `SMART_MONEY` / `SMART_MONEY_US_EQUITIES` (Size: 10, Matched: 10)
 - **Publication Decision:** `PUBLISH` (Generated: `2026-10-25T14:53:08.136422Z`, Published: `2026-10-25T14:53:08.944349Z`)
 - **Implementation Release SHA:** `b9588f95188ab7e204474773f67dacbc9f6afb1f`
@@ -226,12 +50,12 @@ The proposal to acquire missing authentic Form 4 documents remains **DEFERRED**.
 - **Results Payload Digest:** SHA-256 `c3dc95f4b3240d9be872b1b32857c2ff789b7d2c571547807eb654cb59b952fd` (2,091 bytes)
 - **Provenance Payload Digest:** SHA-256 `0952cf7f615adc6fb503297d150cb96523e669624eba0f50239b81921c995889` (227 bytes)
 - **Freshness Payload Digest:** SHA-256 `cad649069fd68809e5cdd31676573694eb02abfa2cfe7577bd4ea4442a8d8d50` (271 bytes)
-- **Subsequent Published Snapshots:** **0** (Snapshot pointer remains strictly immutable)
+- **Subsequent Published Snapshots:** **0** (Active snapshot pointer remains strictly frozen)
 
-#### B. Frozen NVDA Baseline (16 Form 4 Filings)
+### 2.2 Frozen NVDA Baseline (16 Form 4 Filings)
 Every individual raw XML filing payload in `form4_raw_filings` was recomputed directly from `xml_content` and matched against its database `content_hash`:
 
-| Accession Number | Filing Date | Accepted Datetime | Recorded SHA-256 Digest | Recomputed XML Match |
+| Accession Number | Filing Date | Accepted Datetime | Recorded SHA-256 Digest | XML Recomputed Match |
 | :--- | :---: | :---: | :---: | :---: |
 | `0001347842-26-000015` | `2026-08-24` | `2026-08-24T21:32:04+00:00` | `55fb0a5b2692762de621421e0726267b8eb3f9c2e8b66bf17874fdb8c5a741d1` | **MATCH (True)** |
 | `0001199039-26-000012` | `2026-09-02` | `2026-09-02T22:10:34+00:00` | `d22cd5d85d32dbf39d62d7d6e599089411c4c11191642ab3618ab8c2dbcb7d33` | **MATCH (True)** |
@@ -250,22 +74,25 @@ Every individual raw XML filing payload in `form4_raw_filings` was recomputed di
 | `0002152188-26-000007` | `2026-10-13` | `2026-10-13T21:09:29+00:00` | `2ac0f16ab6661c9ccd85c35f476657b9dbdc4b4109b15607709522e45de92f56` | **MATCH (True)** |
 | `0001197647-26-000013` | `2026-11-06` | `2026-11-06T21:12:02+00:00` | `1488ef1a14107224ff366fa9164f2ec6c9e2b709c236206b8e8da43e3d95295d` | **MATCH (True)** |
 
-- **Integrity Result:** **16/16 verified exactly.**
+- **Integrity Score:** **16/16 verified exactly.**
 - **Aggregate NVDA Baseline Digest (Ordered SHA-256 Concat):**  
   `c6c246f7a18315399160e1c6e8db540fcce9152672ac75c54ac481e9781faee2`
 - **Baseline Trusted Reference Status Reconciled:** Because no static offline reference file of these digests was previously checked into git, this result is formally characterized as **current database internal integrity verification** (each row's payload verified against its internal database column hash), rather than confirmation against an external pre-recorded trusted reference.
 
-### 10.4 Automated Restore Verifier Output (`BackupRestoreVerifier`)
+---
 
-*Executed against ephemeral local PostgreSQL 16.2 (`pgserver`) socket via `BackupRestoreVerifier` using read-only R2 credentials:*
+## 3. Automated Restore Verifier Execution (Disposable PostgreSQL)
 
+*Executed via `BackupRestoreVerifier` using read-only Cloudflare R2 storage credentials against an ephemeral PostgreSQL 16.2 local socket target spawned via `pgserver` (Target: `/private/var/folders/.../arx_disposable_pg_target_...`). Zero production restore or R2 writes.*
+
+### 3.1 Retrieved Backup Identity & Manifest Metadata
 - **Backup ID:** `sm-backup-20261122T120306Z-a1179f0e`
 - **Creation Timestamps:** Started `2026-11-22T12:03:06.951650Z` | Completed `2026-11-22T12:03:09.304078Z`
 - **Artifact Size & Cryptographic Hash:** 87,270 bytes | SHA-256 `cb63fe7a39f0fde755699d8a28200ca382eb4bbdfd0e2a914449467c3c15ed5f`
 - **Source Release SHA:** `2eccc64a2cb3c649ad4d584a942285a6406d1ce0`
 - **Remote Custody:** Cloudflare R2 (`s3://arx-smart-money-backups/production`)
 
-#### Full Verifier Output:
+### 3.2 Formal Isolated Restore Receipt
 ```json
 {
   "verification_scope": "ISOLATED_RESTORE_STRUCTURE_AND_APPLICATION_READ",
@@ -313,57 +140,88 @@ Every individual raw XML filing payload in `form4_raw_filings` was recomputed di
 }
 ```
 
-#### Explicit Scope Limits & Remaining NOT_CHECKED Fields:
-1. `source_data_parity_verified: false` (**NOT_CHECKED**): Row counts are verified; row-by-row table digest parity with production was not evaluated.
-2. `roles_and_grants_verified: false` (**NOT_CHECKED**): Cluster globals omitted from backup (`include_globals=false`); roles/grants recovery not evaluated.
-3. `trigger_behavior_verified: false` (**NOT_CHECKED**): Trigger definitions verified; active mutation fault injection not performed.
+### 3.3 Explicitly Bound Scope Limits (Marked NOT_CHECKED)
+Per the authoritative verification contract:
+1. `source_data_parity_verified: false` (**NOT_CHECKED**): Row counts are verified; row-by-row digest parity between production and target was not established.
+2. `roles_and_grants_verified: false` (**NOT_CHECKED**): Routine logical backups omit cluster globals (`include_globals=false`); role/grant recovery was not tested.
+3. `trigger_behavior_verified: false` (**NOT_CHECKED**): Trigger presence, definition, and attachment to `abort_immutable_record` were verified; active destructive mutation simulation was not performed.
 
-### 10.5 Strict Backup Age Governance Policy
-- **Monday Dispatch Requirement:** Monday trial dispatch strictly requires a fresh backup whose source age is $\le 12$ hours at dispatch time.
-- **Sunday Evidence Boundary:** Sunday verification on `sm-backup-20261122T120306Z-a1179f0e` proves recoverability and toolchain integrity, but **does not establish Monday dispatch readiness**.
-- **Scheduled Backups Reused:** Monday preflight must reuse scheduled backups; do not create an additional manual backup job or renew authorization automatically.
+---
 
-### 10.6 Correct Shutdown Wording & Boundary Enforcement
-- **Shutdown Invariant:** **Authorized execution must end no later than `2026-11-25T02:35:00Z`, with shutdown independently verified after that boundary.**
-- **Enforcement:** Expiry of the authorization grant alone does not prove `DISABLED` configuration, queue cleanup, or lock release; independent operator verification must confirm role `DISABLED`/`STANDBY`, authorization revoked, owner lock `401007311509093371` unheld, and no active/retryable queue.
-
-### 10.7 Preservation of Production Release 2eccc64a & Three-Track Separation
+## 4. Strict Separation of Three Operational Tracks
 
 ```
-Track 1: Standby Software Release (PR #317 Candidate f25c1084)
-  └─ Qualified for merge review; deploy strictly in DISABLED/STANDBY.
-  └─ Invariant: DO NOT DEPLOY DURING AN ARMED RELEASE-BOUND TRIAL.
-  └─ Repository Guard: Keep PR #317 unmerged where merging could trigger automatic deployment.
-
-Track 2: Monday/Tuesday Original Trial (ARX-TRIAL-2026-NVDA-AAPL-001)
-  └─ Bound strictly to production release 2eccc64a and 2 issuers (AAPL/NVDA).
-  └─ Preflight Window: Monday Nov 23 at 08:30 Europe/Berlin (07:30 UTC).
-  └─ Backup Freshness: MANDATORY fresh backup source age <= 12 hours at dispatch.
-  └─ Shutdown Fence: Authorized execution must end no later than 2026-11-25T02:35:00Z,
-     with shutdown independently verified after that boundary.
-
-Track 3: Later Expanded-Phase Activation (10 Issuers)
-  └─ Prerequisite: Complete independent verified teardown of Track 2 after 2026-11-25T02:35:00Z.
-  └─ Requires operator ratification of dates (2026-11-25, 2026-11-27) & daily grants.
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ TRACK 1: STANDBY SOFTWARE RELEASE (PR #317 Candidate f25c1084 / 27dd7086)              │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ • Preconditions:                                                                       │
+│   1. Hosted qualification 100% passing (Run 45011651092).                              │
+│   2. Owner approval to transition PR #317 from draft and merge to release/production. │
+│   3. Railway worker deployed strictly in DISABLED / STANDBY configuration:             │
+│      - ARX_SEC_EGRESS_ROLE = DISABLED                                                  │
+│      - ARX_CONTINUOUS_INGESTION_AUTHORIZED = false                                     │
+│      - ARX_INGESTION_SCHEDULE_ENABLED = false / unset                                  │
+│      - ARX_SMART_MONEY_INGESTION_ONLY = true                                           │
+│      - ARX_CONTINUOUS_AUTH_ID = expired / unset                                         │
+│ • Scheduling Invariant: DO NOT DEPLOY DURING AN ARMED RELEASE-BOUND TRIAL.             │
+│   Deployment must occur before arming or after trial completion.                       │
+│ • Repository Guard: Keep PR #317 unmerged where merging could trigger automatic        │
+│   deployment.                                                                          │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │
+                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ TRACK 2: MONDAY/TUESDAY ORIGINAL-TRIAL AUTHORIZATION (ARX-TRIAL-2026-NVDA-AAPL-001)    │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ • Scope: Strictly 2 issuers — AAPL (0000320193) and NVDA (0001045810).                 │
+│ • Immutable Release Binding: Bound strictly to release SHA 2eccc64a2cb3c649ad4d584a942.│
+│ • Preflight Window: Monday Nov 23 at 08:30 Europe/Berlin (07:30 UTC).                  │
+│ • Monday Preflight Task: Use Monday’s existing preflight task to verify actual         │
+│   authorization, queue/lock/quota state, baseline and a qualifying fresh backup with   │
+│   successful isolated restore evidence. Reuse scheduled backups; do not create an      │
+│   additional backup job or renew authorization automatically.                          │
+│ • Backup Freshness Rule: MANDATORY backup source age <= 12 hours at dispatch.          │
+│   Sunday verification does NOT establish Monday readiness. A fresh preflight backup    │
+│   and restore verification pass must be conducted Monday morning prior to arming.      │
+│ • Shutdown Boundary: Authorized execution must end no later than 2026-11-25T02:35:00Z, │
+│   with shutdown independently verified after that boundary.                            │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │
+                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ TRACK 3: LATER EXPANDED-PHASE ACTIVATION (10-Issuer Profile)                           │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ • Prerequisite: Independent verified teardown of Track 2 after 2026-11-25T02:35:00Z.   │
+│ • Operator Ratification: Formal confirmation of rollout packet parameters:             │
+│   - Phase ID: ARX-SEC-INGESTION-10-20261125-001                                        │
+│   - Ratified NY Dates: 2026-11-25, 2026-11-27 (Windows: 09:15–09:20 America/New_York)  │
+│   - Allowlist: 10 governed CIKs (NVDA, AAPL, MSFT, AMZN, GOOGL, META, TSLA, BRK-B,     │
+│     JPM, V)                                                                            │
+│   - Ceilings: <=40 req/cycle, <=4/issuer, <=5 req/s, <=60s execution                   │
+│ • Arming: Fresh daily grant ID (<=24h), fresh backup (<=12h), and schedule enabled     │
+│   strictly for approved windows. Immediate return to deauthorized standby thereafter.  │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 10.8 Release-Review Decision
+---
 
-#### Verdict: **`READY_FOR_STANDBY_RELEASE_REVIEW`**
+## 5. Executive Release Decision
+
+### Verdict: **`READY_FOR_STANDBY_RELEASE_REVIEW`**
 *(Operational Code & Runtime Preflight Complete; Production Deployment Remains Gated / Blocked)*
 
-#### Exact Remaining Conditions for Release:
-1. **Standby Release Review:** Owner review of PR #317 for transition from draft to ready-to-merge on `release/production`. Keep PR #317 unmerged where merging could trigger automatic deployment.
-2. **Trial Preservation:** Do not deploy candidate code while Monday/Tuesday’s release-bound trial (`ARX-TRIAL-2026-NVDA-AAPL-001` on `2eccc64a`) is armed or executing.
-3. **Monday Preflight & Fresh Backup:** Conduct Monday preflight; backup source age must be $\le 12$ hours at dispatch time on Monday morning.
+### Exact Remaining Conditions for Release:
+1. **Standby Release Review:** Owner review of PR #317 to approve transition from draft to ready-for-merge on `release/production`. Keep PR #317 unmerged where merging could trigger automatic deployment.
+2. **Trial Preservation:** Preserve production release `2eccc64a` for the remaining original trial. Do not deploy candidate code while Monday/Tuesday’s release-bound trial (`ARX-TRIAL-2026-NVDA-AAPL-001` on `2eccc64a`) is armed or executing.
+3. **Monday Preflight & Fresh Backup:** Use Monday’s existing preflight task to verify actual authorization, queue/lock/quota state, baseline and a qualifying fresh backup with successful isolated restore evidence. Backup source age must be $\le 12$ hours at dispatch time on Monday morning. Reuse scheduled backups; do not create an additional backup job or renew authorization automatically.
 4. **Shutdown Boundary Verification:** Authorized execution must end no later than `2026-11-25T02:35:00Z`, with shutdown independently verified after that boundary.
 5. **Expanded Phase Gating:** Expanded 10-issuer phase activation remains gated pending original-trial teardown after `2026-11-25T02:35:00Z` and explicit operator ratification of rollout parameters.
 
 ---
 
-## 11. ARX Issue #165 — Offline NVDA Form 4 Evidence Reconciliation & Window Audit
+## 6. ARX Issue #165 — Offline NVDA Form 4 Evidence Reconciliation & Window Audit
 
-### 11.1 Baseline Inventory & Cryptographic Parity (16 Filings)
+### 6.1 Baseline Inventory & Cryptographic Parity (16 Filings)
 Recomputed SHA-256 digests directly from `xml_content.encode("utf-8")` across all 16 frozen filings in `form4_raw_filings` (exported to `data/research/nvda_form4_frozen_baseline_export.json`):
 
 | # | Accession Number | Filing Date | Accepted Datetime (UTC) | Reporting Owner (CIK) | XML Size (bytes) | SHA-256 Digest | Match |
@@ -393,7 +251,7 @@ Recomputed SHA-256 digests directly from `xml_content.encode("utf-8")` across al
 
 ---
 
-### 11.2 Derivation of the 36 Parsed Transactions & Code Distribution
+### 6.2 Derivation of the 36 Parsed Transactions & Code Distribution
 
 Each XML document was parsed with `Form4XmlParser.parse_filing`, deriving transaction lines into non-derivative and derivative tables:
 
@@ -423,18 +281,18 @@ Each XML document was parsed with `Form4XmlParser.parse_filing`, deriving transa
 - Explicit `<remarks>` element states:  
   `"The Reporting Person retired from his role of Executive Vice President, Worldwide Field Operations effective August 24, 2026 and is no longer subject to Section 16."`
 - The filing is an administrative retirement notification (exit notice from Section 16 insider reporting obligations) rather than a transaction report.
-- The parser disposition is correctly set to `FETCHED_NO_RELEVANT_TRANSACTIONS`, confirming that the zero-transaction parse is legally and structurally authentic.
+- The parser disposition is correctly set to `FETCHED_NO_RELEVANT_TRANSACTIONS`, confirming that the zero-transaction parse is structurally authentic and verified under Section 16 rules.
 
 #### B. Disclosed Transaction Code Inventory
-- **Code S (Open Market Sale):** 25 transactions ($70\%$ of total) across Mark Stevens, Timothy Teter, and Colette Kress.
+- **Code S (Sale):** 25 transactions ($70\%$ of total) across Mark Stevens, Timothy Teter, and Colette Kress.
 - **Code F (Tax Withholding):** 5 transactions ($14\%$) across Jen-Hsun Huang, Scott Gawel, Debora Shoquist, Colette Kress, and Timothy Teter.
 - **Code G (Bona Fide Gift):** 4 transactions ($11\%$) across Tench Coxe and Jen-Hsun Huang.
 - **Code A (Equity Grant / RSU Award):** 2 transactions ($5\%$) across Nicholas Parker (base grant + amendment).
-- **Code P (Open Market Purchase):** **0 transactions** ($0\%$). No code-P transactions were found in the retained baseline.
+- **Code P (Purchase):** **0 transactions** ($0\%$). No code-P transactions were found in the retained baseline.
 
 ---
 
-### 11.3 Form 4/A Amendment Validation & Deduplication Analysis
+### 6.3 Form 4/A Amendment Validation & Deduplication Analysis
 
 #### A. Amendment Document Evidence & Scope Classification
 - **Amendment Filing:** `0002152188-26-000007` (Form 4/A, filed `2026-10-13`, accepted `2026-10-13T21:09:29Z`).
@@ -459,7 +317,7 @@ Each XML document was parsed with `Form4XmlParser.parse_filing`, deriving transa
 
 ---
 
-### 11.4 Submissions Index Comparison (August 26 – November 23, 2026)
+### 6.4 Submissions Index Comparison (August 26 – November 23, 2026)
 
 Reconciled against retained external catalog `CIK0001045810_submissions.json` (SHA-256 `8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045`), retrieved `2026-11-22T08:53:12Z`:
 
@@ -494,7 +352,7 @@ Reconciled against retained external catalog `CIK0001045810_submissions.json` (S
 
 ---
 
-### 11.5 Epistemic Labeling & Critical Scope Limits
+### 6.5 Epistemic Labeling & Critical Scope Limits
 
 1. **Source Freshness Boundary:**  
    The retained submissions catalog was retrieved on `2026-11-22T08:53:12Z`. **A November 22 retrieval cannot certify completeness through November 23.** Any Form 4 filed during Monday November 23 trading hours (or Sunday evening post-retrieval) cannot be proven absent from historical evidence alone.
@@ -509,7 +367,7 @@ Reconciled against retained external catalog `CIK0001045810_submissions.json` (S
 
 ---
 
-### 11.6 Summary of Reconciliation Findings & Smallest Remaining Action
+### 6.6 Summary of Reconciliation Findings & Smallest Remaining Action
 
 | Dimension | Previous Status / Finding | Reconciled Finding | Authoritative Evidence |
 | :--- | :--- | :--- | :--- |
@@ -525,4 +383,207 @@ Reconciled against retained external catalog `CIK0001045810_submissions.json` (S
 #### Review and Candidate Disposition:
 Review candidate PR #317 against offline qualification evidence. Candidate code remains strictly offline, non-deployable, with `HOLD_SEC_001=ACTIVE` remaining active. Zero production database writes, zero live SEC HTTP wire requests, zero schedule activations, zero grant renewals, and zero hold mutations.
 
-*Zero production writes, zero SEC wire requests, zero schedule activations, zero hold changes, and zero credentials modified.*
+---
+
+## 7. ARX Issue #165 — Finalized Bounded NVDA Historical SEC Form 4 Coverage Qualification Assessment
+
+**Assessment Finalization Timestamp:** `2026-11-24T10:30:43Z` (Local: `2026-11-24T11:30:43+01:00`)  
+**Database As-Of Timestamp:** `2026-11-24T10:28:40Z`  
+**Issuer Under Audit:** NVIDIA CORP (`NVDA` / CIK `0001045810` / SIC `3674`)  
+**Parallel Production Trial:** `ARX-TRIAL-2026-NVDA-AAPL-001` (Running deployment `bba68cfb`, commit `2eccc64a`)  
+**Associated Machine-Readable Artifact:** [nvda_historical_coverage_reconciliation_165.json](file:///Users/iDavid/.gemini/antigravity/brain/e53e772b-2682-4ca8-a2bd-008123fee60e/nvda_historical_coverage_reconciliation_165.json)
+
+---
+
+### 7.0 Corrections & Superseded Claims Ledger
+
+To ensure absolute audit clarity and preserve evidence provenance, three prior reporting claims have been formally reconciled against authoritative read-only SQL and retained repository fixtures:
+
+1. **Catalog Completeness Technical Standard Reconciled:**
+   - *Superseded Claim:* Preliminary draft stated that the retained submissions catalog could not prove the absence of Form 4 filings through November 19 because the latest Form 4 in the catalog was dated November 06.
+   - *Authoritative Finding:* Under SEC EDGAR filing architecture and the governing validation contract (`validate_submissions_catalog_evidence` §8), an authoritative, validated submissions catalog is technically capable of supporting the absence of Form 4 filings within any interval it contiguously spans (establishing technical evidence, not a legal opinion). For the closed window `[2026-08-26, 2026-11-19T21:45:59Z]`, the catalog contiguously spans the period, and all 15 in-window Form 4/A accessions are fully accounted for with zero gaps. The latest Form 4 date alone neither proves nor disproves completeness. However, for the full trial operational interval `[2026-08-26, 2026-11-24]`, the catalog fails the governing validation requirement because it was retrieved on `2026-11-22T08:53:12Z` (latest filing: `2026-11-19T21:45:59Z`), which pre-dates the trial end date and pre-dates forward filing `0001696841-26-000016` (accepted `2026-11-23T21:54:28Z`). Thus, `PARTIAL_UNCERTIFIED` is retained for the operational span without forcing premature certification or unjustified rejection.
+2. **AAPL Stored Count Discrepancy Reconciled (Elimination of Subtraction Artifact):**
+   - *Superseded Claim:* Earlier report version stated 38 AAPL raw filings and 104 AAPL transactions by subtracting NVDA from total database rows ($55 - 17 = 38$; $152 - 48 = 104$).
+   - *Authoritative Finding:* Direct authenticated read-only SQL grouping by `(ticker, cik)` on live database `finance_smart_money` at `2026-11-24T10:28:40Z` confirms AAPL has **exactly 6 raw filings** and **18 parsed transactions** (100% agreement with earlier baseline audits). The remaining 32 raw filings and 86 parsed transactions belong to 11 other historical governed issuers (GOOGL: 4/29, TSLA: 4/14, META: 4/12, MSFT: 4/7, V: 3/9, BRK-B: 3/5, AMZN: 4/4, JPM: 3/3, ACLS: 1/1, LLY: 1/1, VRTX: 1/1). Total database state is exactly 55 raw filings and 152 parsed transactions ($17 + 6 + 32 = 55$; $48 + 18 + 86 = 152$).
+3. **Transaction Terminology & Execution Venue Distinction Standardized:**
+   - *Superseded Claim:* Transaction Code S was labeled broadly as "open-market sale" based on trading plan and pricing footnote text.
+   - *Authoritative Finding:* Transaction Code S is strictly labeled as **"Sale"** per official SEC Form 4 specifications. Rule 10b5-1 trading plan adoption and weighted-average pricing disclosures are tracked as separate transaction attributes. Full ElementTree XML search across all 17 NVDA filings confirms the phrase "open market" appears **0 times** in `<footnotes>` and `<remarks>`. The designation "open-market sale" is therefore suppressed, as execution venue is unspecified in filing narrative.
+
+---
+
+### 7.1 Clarified Certification Basis & Temporal Invariants
+
+The historical coverage qualification is governed strictly by the codebase authority in `analyst_dashboard.smart_money.storage.postgres_repository:validate_submissions_catalog_evidence` and `analyst_dashboard.smart_money.reconciliation_engine:FilingReconciliationEngine`:
+
+1. **Governing Form Types:** Strictly `Form 4`, `Form 4/A`, and `Form 4A` (Section 16(a) insider ownership reporting). Non-Section 16 forms (e.g. Form 144, 8-K, 13F-HR, 10-Q) are cataloged by the SEC but are explicitly excluded from insider transaction coverage.
+2. **Interval Boundaries, Cutoff & Timezone Standards:**
+   - **Calendar Dates:** Evaluated as `YYYY-MM-DD` under the official SEC EDGAR filing calendar.
+   - **Acceptance Timestamps:** Evaluated as ISO-8601 UTC timestamps (`acceptanceDateTime`).
+   - **Closed Baseline Window:** `[2026-08-26, 2026-11-19T21:45:59Z]` (bounded by contiguous catalog evidence).
+   - **Extended Operational Span:** `[2026-08-26, 2026-11-24T09:50:00Z]` (operational trial span inclusive of forward trial accretion).
+3. **Binding Completeness to Provenance, Acquisition Time & Schema:**
+   - Completeness must be bound strictly to retained catalog provenance, raw-byte SHA-256 custody, acquisition timestamp, issuer identity, schema validation, pagination coverage, and governing validation rules.
+   - A complete authoritative catalog is technically capable of supporting the absence of Form 4 filings within the interval it contiguously covers (establishing technical evidence, not a legal opinion).
+   - **The latest Form 4 date alone neither proves nor disproves completeness:** A later Form 144 entry alone does not prove index completeness. Rather, absence of unlisted Form 4 filings within the covered interval is established by the validated catalog and its governing coverage rules under `validate_submissions_catalog_evidence` §8—specifically, its verified schema, contiguous accession sequence, and verified pagination coverage spanning `[2026-08-26, 2026-11-19T21:45:59Z]`. Where a catalog satisfies these technical invariants, it establishes that zero unindexed Form 4 filings occurred during the covered span.
+4. **Governing Validation Contract (`validate_submissions_catalog_evidence` §8):**
+   - To certify an interval $[T_{\text{start}}, T_{\text{end}}]$, the catalog retrieval timestamp $T_{\text{acquire}}$ must satisfy $T_{\text{acquire}} \ge T_{\text{end}}$, and the catalog's latest accession must be $\ge T_{\text{end}}$ or explicitly bounded by a verified subsequent filing or contemporaneous SEC index verification.
+   - For $[2026-08-26, 2026-11-19T21:45:59Z]$, this condition is satisfied: 15 of 15 Form 4/A accessions are accounted for, and zero unindexed Form 4s exist in the catalog.
+   - For $[2026-08-26, 2026-11-24]$, this condition is **unmet**: the catalog was retrieved at `2026-11-22T08:53:12Z` (latest filing `2026-11-19T21:45:59Z`), which pre-dates the trial window end and fails interval traversal for the post-Nov 19 period.
+
+---
+
+### 7.2 Audit of Reusable Trial Evidence & Submissions Retention Gap
+
+A read-only architectural and database audit was performed to determine whether natural production trial runs retain submissions response bytes:
+
+1. **Natural Trial Execution Audit (`canary_runner.py` / `continuous_pipeline.py`):**
+   - The worker queries `https://data.sec.gov/submissions/CIK{cik}.json` in memory during each scheduled cycle.
+   - It enumerates new accessions, downloads primary XML documents, and persists the raw XML into `form4_raw_filings` with its SHA-256 hash.
+   - **Submissions Catalog Response Bytes Are NOT Retained:** The worker does **not** persist the raw submissions response bytes, acquisition timestamp, source URL, or catalog SHA-256 into PostgreSQL or durable disk storage.
+   - In `sm_reconciliation_receipts`, the record for overnight Slot 4 (`3138ccbe-335d-4a51-aa10-a4b971f1ba45`) logs `"accession_inventory": ["0001696841-26-000016"]` and `"reasons": ["TRIAL_INTERVAL_PARTIAL_COVERAGE"]`, confirming that the parent catalog was not captured as a durable custody artifact.
+2. **Single Reusable Retained Submissions Catalog:**
+   - The **only** retained submissions catalog available in repository evidence is `tests/fixtures/sec_edgar/CIK0001045810_submissions.json` (SHA-256 `8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045`), retrieved on `2026-11-22T08:53:12.691561+00:00`.
+   - **Issuer Identity Verified:** CIK `0001045810`, ticker `NVDA`, company name `NVIDIA CORP`.
+   - **Schema & Pagination Verified:** Schema matches SEC specifications. `filings.files` lists `CIK0001045810-submissions-001.json` (`1998-03-06` to `2020-09-16`). Because all 2026 filings are $\ge 2020-09-18$, pagination coverage in `filings.recent` is 100% self-contained.
+3. **Single Newly Ingested Filing Non-Proof Rule:**
+   - Natural trial Slot 4 ingested forward accession `0001696841-26-000016` (Timothy S. Teter, accepted `2026-11-23T21:54:28Z`, SHA-256 `c7ee40386d6a142d3c644acc348ce994aaf1f57a1ce8207fa40e0b9148f73077`).
+   - Ingesting this single filing proves that Teter filed on November 23, but **does not prove interval completeness** between November 06 and November 24.
+
+---
+
+### 7.3 Exhaustive Accession Accounting & Corrected Transaction Terminology
+
+All transaction lines have been re-classified under official SEC Form 4 terminology:
+- **Transaction Code S is strictly labeled as "Sale".**
+- **Trading plan adoption (Rule 10b5-1) and weighted-average pricing disclosures are recorded as separate transaction attributes.**
+- **The phrase "open-market sale" is suppressed:** An exhaustive text search across all `<footnotes>` and `<remarks>` of all 17 NVDA filings confirms that "open market" appears **0 times**. Execution venue is unspecified in filing narrative.
+- Raw transaction counts are strictly distinguished from amendment-adjusted effective counts.
+
+| # | Accession Number | Form | Filing Date | Acceptance Datetime (UTC) | Reporting Owner (CIK) | SHA-256 Match | Stored Raw Txs | Corrected Terminology & Attributes | Accounting Disposition |
+| - | :--- | :---: | :---: | :---: | :--- | :---: | :---: | :--- | :--- |
+| 1 | `0001347842-26-000015` | `4` | `2026-08-24` | `2026-08-24T21:32:04Z` | Ajay K. Puri (`0001347842`) | **MATCH** | 0 | None (Holdings only) | Pre-window baseline member; verified Section 16 retirement exit notice |
+| 2 | `0001199039-26-000012` | `4` | `2026-09-02` | `2026-09-02T22:10:34Z` | Mark A. Stevens (`0001199039`) | **MATCH** | 7 | 7× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 7 sales accounted & parsed |
+| 3 | `0001696841-26-000010` | `4` | `2026-09-02` | `2026-09-02T22:07:18Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 3 | 3× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 3 sales accounted & parsed |
+| 4 | `0001197647-26-000009` | `4` | `2026-09-04` | `2026-09-04T21:00:35Z` | Tench Coxe (`0001197647`) | **MATCH** | 1 | 1× Bona Fide Gift (Code G) [10b5-1: Yes, WtdAvg: No, Venue: Unspecified] | In-window baseline filing; 1 gift accounted & parsed |
+| 5 | `0001199039-26-000014` | `4` | `2026-09-08` | `2026-09-08T21:09:19Z` | Mark A. Stevens (`0001199039`) | **MATCH** | 7 | 7× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 7 sales accounted & parsed |
+| 6 | `0002152188-26-000005` | `4` | `2026-09-11` | `2026-09-11T21:04:47Z` | Nicholas P. Parker (`0002152188`) | **MATCH** | 1 | 1× Equity Grant / Award (Code A) [172,507 sh; 10b5-1: No] | In-window baseline base filing; superseded by Form 4/A |
+| 7 | `0001197649-26-000012` | `4` | `2026-09-18` | `2026-09-18T21:10:59Z` | Jen-Hsun Huang (`0001197649`) | **MATCH** | 2 | 1× Tax Withholding (Code F), 1× Gift (Code G) [10b5-1: No] | In-window baseline filing; 2 transactions accounted & parsed |
+| 8 | `0001243821-26-000007` | `4` | `2026-09-18` | `2026-09-18T21:15:34Z` | Scott Gawel (`0001243821`) | **MATCH** | 1 | 1× Tax Withholding (Code F) [10b5-1: No] | In-window baseline filing; 1 transaction accounted & parsed |
+| 9 | `0001283854-26-000010` | `4` | `2026-09-18` | `2026-09-18T21:14:45Z` | Debora Shoquist (`0001283854`) | **MATCH** | 1 | 1× Tax Withholding (Code F) [10b5-1: No] | In-window baseline filing; 1 transaction accounted & parsed |
+| 10 | `0001588670-26-000014` | `4` | `2026-09-18` | `2026-09-18T21:12:42Z` | Colette Kress (`0001588670`) | **MATCH** | 4 | 1× Tax Withholding (Code F), 3× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes] | In-window baseline filing; 4 transactions accounted & parsed |
+| 11 | `0001696841-26-000012` | `4` | `2026-09-18` | `2026-09-18T21:13:29Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 1 | 1× Tax Withholding (Code F) [10b5-1: No] | In-window baseline filing; 1 transaction accounted & parsed |
+| 12 | `0001199039-26-000016` | `4` | `2026-09-22` | `2026-09-22T20:56:23Z` | Mark A. Stevens (`0001199039`) | **MATCH** | 2 | 2× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 2 sales accounted & parsed |
+| 13 | `0001696841-26-000014` | `4` | `2026-09-23` | `2026-09-23T20:56:28Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 3 | 3× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 3 sales accounted & parsed |
+| 14 | `0001197647-26-000011` | `4` | `2026-10-09` | `2026-10-09T21:04:09Z` | Tench Coxe (`0001197647`) | **MATCH** | 1 | 1× Bona Fide Gift (Code G) [10b5-1: Yes, WtdAvg: No, Venue: Unspecified] | In-window baseline filing; 1 gift accounted & parsed |
+| 15 | `0002152188-26-000007` | `4/A` | `2026-10-13` | `2026-10-13T21:09:29Z` | Nicholas P. Parker (`0002152188`) | **MATCH** | 1 | 1× Equity Grant / Award (Code A) [160,418 sh; 10b5-1: No] | In-window amendment; `SCOPE_PARTIAL_CORRECTION` replaces base |
+| 16 | `0001197647-26-000013` | `4` | `2026-11-06` | `2026-11-06T21:12:02Z` | Tench Coxe (`0001197647`) | **MATCH** | 1 | 1× Bona Fide Gift (Code G) [10b5-1: Yes, WtdAvg: No, Venue: Unspecified] | In-window baseline filing; 1 gift accounted & parsed |
+| 17 | `0001696841-26-000016` | `4` | `2026-11-23` | `2026-11-23T21:54:28Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 12 | 12× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | Forward trial accretion; 12 sales from Slot 4 accounted & parsed |
+| — | `0001310264-26-000008` | `4` | `2026-08-12` | `2026-08-12T21:13:10Z` | John O. Brennan (`0001310264`) | *Catalog* | — | Sale / Tax Withholding | Out-of-window pre-Aug 26; properly excluded, not a gap |
+| — | `0001197647-26-000007` | `4` | `2026-08-07` | `2026-08-07T20:47:24Z` | Tench Coxe (`0001197647`) | *Catalog* | — | Bona Fide Gift | Out-of-window pre-Aug 26; properly excluded, not a gap |
+
+---
+
+### 7.4 Quantitative Parity: Raw vs Effective Amended Transactions & Multi-Issuer Reconciliation
+
+1. **Frozen Baseline Counts (16 NVDA Filings):**
+   - **Stored Raw Rows in `form4_parsed_transactions`:** Exactly **36 rows** (all 36 non-derivative, 0 derivative).
+   - **Transaction Code Breakdown (Raw):**
+     - Sale (Code S): 25
+     - Tax Withholding (Code F): 5
+     - Bona Fide Gift (Code G): 4
+     - Equity Grant / Award (Code A): 2 (1 base + 1 amendment)
+     - Purchase (Code P): 0
+   - **Point-in-Time Effective Amended Counts (`get_bulk_transactions_as_of`):**
+     - Before amendment boundary (`2026-10-13T21:09:28Z`): **34 effective transactions** (base grant active with 172,507 shares).
+     - At amendment boundary (`2026-10-13T21:09:29Z`): **34 effective transactions** (amendment replaces base with 160,418 shares; $34 - 1 + 1 = 34$).
+     - After all baseline filings available (`2026-11-06T21:12:02Z`): **35 effective transactions** (November 6 gift added; base remains superseded).
+2. **Forward Accretion Counts (`0001696841-26-000016`):**
+   - **Stored Raw Rows:** Exactly **12 rows** (all 12 non-derivative Sale / Code S).
+   - **Effective Amended Transactions:** Exactly **12 effective transactions** (no amendment supersession).
+3. **Total Database State (NVDA — 17 Filings):**
+   - **Total Raw Filings:** **17 rows** (16 baseline + 1 forward).
+   - **Total Stored Raw Transactions:** **48 rows** (36 baseline + 12 forward).
+   - **Total Effective Amended Transactions:** **47 transactions** (35 baseline effective + 12 forward effective).
+   - **Cumulative Transaction Codes:**
+     - Sale (Code S): 37 (25 baseline + 12 forward)
+     - Tax Withholding (Code F): 5
+     - Bona Fide Gift (Code G): 4
+     - Equity Grant / Award (Code A): 2 raw (1 effective after supersession)
+     - Purchase (Code P): 0
+4. **Exhaustive Multi-Issuer Database Inventory (`2026-11-24T10:28:40Z`):**
+   Direct authenticated read-only SQL grouping on `form4_raw_filings` and `form4_parsed_transactions` confirms that rows are distributed across all 13 governed issuers, completely resolving the earlier subtraction artifact:
+
+| Issuer Ticker | Issuer CIK | Raw Filings (Baseline / Forward) | Stored Parsed Transactions | Notes |
+| :--- | :--- | :---: | :---: | :--- |
+| **NVDA** | `0001045810` | **17** (16 baseline + 1 forward) | **48** (36 baseline + 12 forward) | 47 effective transactions after Form 4/A supersession |
+| **AAPL** | `0000320193` | **6** (6 baseline + 0 forward) | **18** (18 baseline + 0 forward) | 14 non-derivative + 4 derivative (100% baseline parity) |
+| **ACLS** | `0001113232` | 1 | 1 | Historical governed issuer baseline |
+| **AMZN** | `0001018724` | 4 | 4 | Historical governed issuer baseline |
+| **BRK-B** | `0001067983` | 3 | 5 | Historical governed issuer baseline |
+| **GOOGL** | `0001652044` | 4 | 29 | Historical governed issuer baseline |
+| **JPM** | `0000019617` | 3 | 3 | Historical governed issuer baseline |
+| **LLY** | `0000059478` | 1 | 1 | Historical governed issuer baseline |
+| **META** | `0001326801` | 4 | 12 | Historical governed issuer baseline |
+| **MSFT** | `0000789019` | 4 | 7 | Historical governed issuer baseline |
+| **TSLA** | `0001318605` | 4 | 14 | Historical governed issuer baseline |
+| **V** | `0001403161` | 3 | 9 | Historical governed issuer baseline |
+| **VRTX** | `0000875320` | 1 | 1 | Historical governed issuer baseline |
+| **Total All Issuers** | — | **55** | **152** | Exact database parity ($17 + 6 + 32 = 55$; $48 + 18 + 86 = 152$) |
+
+   - **Resolution of Subtraction Artifact:** The earlier reported figure of 38 AAPL filings was an erroneous subtraction artifact ($55 \text{ total filings} - 17 \text{ NVDA} = 38$), and the reported 104 AAPL transactions was similarly derived ($152 \text{ total transactions} - 48 \text{ NVDA} = 104$). In truth, AAPL has **exactly 6 raw filings and 18 parsed transactions**, while the remaining 32 filings and 86 transactions belong to the other 11 historical governed issuers shown above.
+   - Availability Records: **55 rows** (100% 1-to-1 availability ledger linkage).
+   - Open Source Gaps (`sm_source_gaps`): **0 open gaps**.
+   - Unresolved Amendments: **0 unresolved amendments**.
+
+---
+
+### 7.5 UI / Radar Guardrails & Scoring Hold Verification
+
+Direct SQL inspection of live PostgreSQL database `finance_smart_money` at `crossover.proxy.rlwy.net:17685` confirms that stored filings do not imply certified coverage or active scoring:
+
+1. **Active Scanner Snapshot Pointer:**  
+   `scanner_active_snapshots` contains exactly 1 row pointing to `SNAP_SM_1792939989_48f30db6` (Coverage: `PARTIAL`, generated `2026-10-25T14:53:08Z`).
+2. **Subsequent Published Snapshots:**  
+   `scanner_snapshots` contains **0 newer snapshots**. The snapshot pointer remains strictly frozen.
+3. **Reconciliation Receipts Distribution:**  
+   `sm_reconciliation_receipts` contains 11 `PARTIAL` receipts (all recent trial executions) and 1 historical `COMPLETE` receipt (`1c224d5b-f45b-4202-9a42-a815c56c22fc` from the October 25 release).
+4. **Radar Adapter Fail-Closed Invariant:**  
+   In `analyst_dashboard.smart_money.radar_adapter:543`, `if is_governed_issuer and not has_complete_coverage_receipt:` triggers an immediate fail-closed rejection. Because no complete coverage receipt exists for the current observation window, Radar scoring remains strictly suppressed.
+5. **Operational Holds:**  
+   `HOLD_SEC_001` remains **`ACTIVE`**. Scoring publication remains **`HELD`**. Live trading remains **`HELD`**.
+
+---
+
+### 7.6 Authoritative Certification Verdict & Evidentiary Limits
+
+#### Formal Coverage Verdict:
+$$\boxed{\textbf{PARTIAL\_UNCERTIFIED}}$$
+
+#### Basis for Retaining PARTIAL_UNCERTIFIED:
+The verdict for the historical interval is maintained as **`PARTIAL_UNCERTIFIED`** across the full operational period:
+1. **Authoritative Submissions Catalog Coverage for Closed Window:**  
+   Retained catalog `tests/fixtures/sec_edgar/CIK0001045810_submissions.json` (SHA-256 `8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045`), retrieved `2026-11-22T08:53:12Z`, is complete and authoritative for `[2026-08-26, 2026-11-19T21:45:59Z]`. All 15 in-window Form 4/A accessions match the database with zero omissions, and the catalog confirms zero unlisted Form 4 filings occurred during that window.
+2. **Precise Unmet Condition for Full Operational Span (`validate_submissions_catalog_evidence` §8):**  
+   For the extended operational interval `[2026-08-26, 2026-11-24]`, the retained catalog cannot satisfy Section 8 interval traversal because it pre-dates November 23/24, ending at `2026-11-19T21:45:59Z`.
+3. **Trial Evidence Retention Gap:**  
+   While the natural production trial run ingested forward accession `0001696841-26-000016` (accepted `2026-11-23T21:54:28Z`), it did not retain the parent submissions catalog response bytes, acquisition timestamp, source URL, or catalog SHA-256 custody.
+4. **Non-Proof of Negative by Ingestion:**  
+   Ingesting one forward filing proves that Timothy S. Teter filed on November 23, but does not prove that other NVDA insider filings did not occur between November 06 and November 24.
+5. **Epistemic Discipline:**  
+   `PARTIAL_UNCERTIFIED` is retained wherever evidence is insufficient. It is neither prematurely certified as complete nor improperly rejected as defective. Production coverage remains **`PARTIAL`**, uncertified for Radar scoring, snapshot publishing, or trading.
+
+---
+
+### 7.7 Single Contingent Post-Trial Step
+
+**Zero egress applies strictly to this offline audit assessment; the active authorized trial (`ARX-TRIAL-2026-NVDA-AAPL-001`) remains permitted to execute its scheduled SEC requests under its existing lease.** Following natural trial completion and grant expiry at `2026-11-25T02:35:00Z`:
+
+1. **Post-Trial Status Check:**  
+   Because submissions catalog retention during natural trial cycles is already established to be absent from worker execution, repeated searches of backups for index bytes are bypassed.
+2. **Bounded Submissions Acquisition Proposal (Strictly Post-Trial):**  
+   Following verified trial shutdown and grant expiry (`2026-11-25T02:35:00Z`), if no suitable retained catalog covering through November 24 has become available, execute the bounded acquisition proposal under separate explicit authorization:
+   - **Target Resource:** `https://data.sec.gov/submissions/CIK0001045810.json`
+   - **Pacing & Limits:** Single HTTP GET request executed through `SecRateLimiter` ($\le 4.0\text{ req/sec}$, verified User-Agent).
+   - **Execution Status:** **PROPOSED ONLY — NOT EXECUTED.** Requires separate explicit authorization after verified trial shutdown.
+
+*Zero audit-driven egress requests, zero production database writes, zero grant modifications, zero worker restarts or deployments, zero coverage-flag or scoring changes, and holds remain untouched. The authorized trial worker continues running under its active grant.*
