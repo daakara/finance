@@ -201,3 +201,10 @@ All six operational holds remain in active, fail-closed enforcement across the r
 | **3** | **Security Hardening (Issue #203 / TD-07):** Hash-Pinned Lockfile | Generate cryptographically pinned `requirements.lock` from clean Python virtualenv on an isolated branch. | Sprint P4 Security |
 | **4** | **Architectural Cleanup (Issue #204 / TD-08):** Options Fallback | Remove fabricated `"2026-04-01"` fallback in `frontend/app/page.tsx:100` and replace with explicit omission indicator. | Sprint P4 Architecture |
 | **5** | **Post-Trial Bounded Catalog Acquisition Proposal** | Prepare bounded, rate-limited submissions catalog acquisition proposal for NVDA post-trial shutdown. | Human Owner Authorization |
+
+
+### PR #324 qualification repair (2026-11-24)
+
+Hosted run [45405765635](https://github.com/daakara/finance/actions/runs/45405765635) is preserved as **RELEASE_QUALIFICATION_BLOCKED**: RQ-02 lacked the cumulative PR #324 file inventory and RQ-04 encountered Node 18 / jsdom ESM incompatibility. The repair registers the complete diff from production base `2eccc64a`, including inherited PR #317 code/evidence and qualification-framework digests, aligns the release runner with frontend CI's Node 24, and enrolls the Cornish–Fisher backend suite in RQ-03. No tests, frozen authority, failure aggregation or admission assertions are removed.
+
+Status remains **IMPLEMENTED / QUALIFICATION PENDING**, not release-qualified until a successful final-source hosted run is observed. PR #324 has a Cloudflare preview; it is **not deployed to production**. This correction does not merge or activate the inherited SEC expansion, change production, or disturb the independently authorized AAPL/NVDA trial.
