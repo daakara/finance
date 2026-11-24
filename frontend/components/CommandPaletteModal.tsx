@@ -10,6 +10,7 @@ import { CANONICAL_HUBS } from "../lib/canonicalNav";
 import MiniSparkline from "./MiniSparkline";
 import { toggleTerminalTheme } from "../lib/terminalTheme";
 import { useAssetDiscovery } from "../hooks/useAssetDiscovery";
+import { resolveDiscoveredSymbol } from "../lib/assetDiscovery";
 
 interface CommandItem {
   id: string;
@@ -395,10 +396,21 @@ export default function CommandPaletteModal({
           (cmd.keywords && cmd.keywords.some((k) => k.toLowerCase().includes(qLower)))
         );
       });
+
+      // If query uniquely resolves to a discovered symbol, prioritize that match at the top
+      const resolvedSym = resolveDiscoveredSymbol(cleanQuery, discovery.results);
+      if (resolvedSym) {
+        const resolvedId = `discovered-${resolvedSym}`;
+        const matchIdx = base.findIndex(b => b.id === resolvedId);
+        if (matchIdx > 0) {
+          const matchItem = base[matchIdx];
+          base = [matchItem, ...base.slice(0, matchIdx), ...base.slice(matchIdx + 1)];
+        }
+      }
     }
 
-    // If query looks like a ticker symbol, prepend explicit direct routes honoring the ticker parameter
-    if (isTickerQuery && !discovery.results.some(asset => asset.symbol !== q && asset.name.toUpperCase().startsWith(q))
+    // If query looks like a ticker symbol and discovery is not pending, prepend explicit direct routes
+    if (isTickerQuery && discovery.status !== "LOADING" && !discovery.results.some(asset => asset.symbol !== q && asset.name.toUpperCase().startsWith(q))
         && !base.some((b) => b.id === `ticket-${q.toLowerCase()}`)) {
       const dynamicTickerCommands: CommandItem[] = [
         {
@@ -430,7 +442,7 @@ export default function CommandPaletteModal({
     }
 
     return base;
-  }, [allCommands, query, router, onClose, discovery.results]);
+  }, [allCommands, query, router, onClose, discovery.results, discovery.status]);
 
   // Reset selected index if results change
   useEffect(() => {
@@ -448,6 +460,7 @@ export default function CommandPaletteModal({
         setSelectedIndex((prev) => (prev - 1 + filteredCommands.length) % (filteredCommands.length || 1));
       } else if (e.key === "Enter") {
         e.preventDefault();
+        if (discovery.status === "LOADING") return; // Prevent submission while discovery is pending
         if (filteredCommands[selectedIndex]) {
           filteredCommands[selectedIndex].action();
         }
@@ -472,7 +485,7 @@ export default function CommandPaletteModal({
         }
       }
     },
-    [filteredCommands, selectedIndex, onClose]
+    [filteredCommands, selectedIndex, onClose, discovery.status]
   );
 
   // Scroll active item into view

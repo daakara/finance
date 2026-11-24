@@ -45,9 +45,10 @@ export function generateQuantitativeInsight(
       : (typeof freshnessStatusOrInfo === "string" ? { status: freshnessStatusOrInfo } : undefined);
   const effectiveFreshnessStatus = effectiveFreshness?.status;
   const isStale =
-    effectiveFreshnessStatus === "STALE_HISTORICAL" ||
-    effectiveFreshnessStatus === "STALE" ||
-    (effectiveFreshness?.stalenessDays !== undefined && effectiveFreshness.stalenessDays > 4);
+    effectiveFreshnessStatus !== "UNAVAILABLE" &&
+    (effectiveFreshnessStatus === "STALE_HISTORICAL" ||
+      effectiveFreshnessStatus === "STALE" ||
+      (effectiveFreshness?.stalenessDays !== undefined && effectiveFreshness.stalenessDays > 4));
 
   const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
   const safePrice = isPriceValid ? currentPrice : 0;

@@ -209,8 +209,9 @@ export default function UniversalOmniSearch() {
               {cleanQ && (
                 <button
                   type="submit"
+                  disabled={discovery.status === "LOADING" && !aliasMatch}
                   aria-label={`Submit search for ${cleanQ}`}
-                  className="absolute right-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-transform active:scale-95 shadow cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                  className="absolute right-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:hover:bg-cyan-600 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-transform active:scale-95 shadow cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
                 >
                   Go ↵
                 </button>
@@ -268,7 +269,7 @@ export default function UniversalOmniSearch() {
                 </button>
               )}
 
-              {cleanQ && !aliasMatch && DISCOVERY_SYMBOL.test(cleanQ) && (
+              {cleanQ && !aliasMatch && discovery.status !== "LOADING" && discovery.results.length === 0 && DISCOVERY_SYMBOL.test(cleanQ) && (
                 <button
                   type="button"
                   onClick={() => handleSelectTicker(cleanQ)}
