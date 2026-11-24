@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "f232457ac80d18a7a855192a595e1f69ef090fe9",
+  "release_candidate_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 49,
+  "total_files": 51,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-DYNAMIC-ASSET-DISCOVERY-323",
   "files": {
@@ -208,10 +208,10 @@
     "frontend/lib/api.ts": {
       "operation": "M",
       "originating_pr_number": 319,
-      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
       "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
-      "sha256": "0d5806a02cd7165dd4422fd7d9d8cf199f22631aedb8a5471d4e7ee468a37ef5",
-      "size_bytes": 196087
+      "sha256": "741d2e0a9ec37899f7008ee3e14927365dd85dac8a3a6c8478b59aab57e6b535",
+      "size_bytes": 196577
     },
     "frontend/lib/assetDiscovery.ts": {
       "operation": "A",
@@ -368,10 +368,10 @@
     "frontend/app/page.tsx": {
       "operation": "M",
       "originating_pr_number": 323,
-      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
+      "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
       "governing_requirement": "PR #323: clear asset analytics on selection change and render explicit unavailable state on 404",
-      "sha256": "c3db7e1ab0ee55b45aad60a86ab84a89d6944de56a593e1733f10c80651be6b7",
-      "size_bytes": 57409
+      "sha256": "b12f31faa5cc258d61ec146b77ca157995745302bc4d37872fbd641e2607ed20",
+      "size_bytes": 56369
     },
     "frontend/components/discovery/DiscoveryLandingView.tsx": {
       "operation": "M",
@@ -396,6 +396,22 @@
       "governing_requirement": "PR #323: behavioral tests for 404 unavailable and insufficient history handling",
       "sha256": "bd5ab02ad5d416f3371d6b8030a552202212cd51f7138f84eec6e6fc45928f94",
       "size_bytes": 4670
+    },
+    "frontend/lib/limitedHistoryPresentation.ts": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
+      "governing_requirement": "PR #323: decouple listing identity from sec filing coverage in limited history presentation",
+      "sha256": "44d03c420fb295ef8edb884fcb9e99355023f551cd60e5c97525e3703d08901f",
+      "size_bytes": 5630
+    },
+    "frontend/lib/__tests__/limitedHistoryPresentation.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 323,
+      "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
+      "governing_requirement": "PR #323: behavioral tests for decoupled listing identity and sec filing coverage",
+      "sha256": "a4003d97aaf4e8c3201c8b3c77d09c6f5aadcb6dc8270ca3b00e1ebce5826495",
+      "size_bytes": 7683
     }
   },
   "qualification_framework_files": {
