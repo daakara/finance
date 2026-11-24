@@ -32,6 +32,14 @@ from analyst_dashboard.analyzers.scanner_runner import (
 def _clear_radar_cache():
     with _RADAR_CACHE_LOCK:
         _RADAR_RUN_CACHE.clear()
+    screener_mod._STAGE_CLASSIFICATION_CACHE.clear()
+
+
+@pytest.fixture(autouse=True)
+def _reset_radar_caches():
+    _clear_radar_cache()
+    yield
+    _clear_radar_cache()
 
 
 def test_loop_state_does_not_leak_across_candidates(published_screener_universe, monkeypatch):
@@ -334,7 +342,7 @@ def test_observed_date_and_primary_opportunity_count_reconcile(published_screene
         },
     )
 
-    # AAPL is STAGE_2 IN_BUY_ZONE; MSFT is STAGE_1 IN_BUY_ZONE
+    # AAPL is STAGE_2 IN_BUY_ZONE (served); MSFT is STAGE_1 IN_BUY_ZONE (not served in STAGE_2_PRIMARY)
     monkeypatch.setattr(
         screener_mod,
         "compute_canonical_stage_classification",
@@ -348,12 +356,15 @@ def test_observed_date_and_primary_opportunity_count_reconcile(published_screene
     assert data["status"] in ("SUCCESS", "PARTIAL")
     assert [c["symbol"] for c in data["candidates"]] == ["AAPL"]
 
+    # Gate 4: Served dates and counts must derive from actual served rows (only AAPL on 2026-11-23)
     pop = data["population"]
     assert pop["marketDataAsOf"] == "2026-11-23"
-    assert pop["marketDataOldestAsOf"] == "2026-11-06"
-    assert pop["marketDataMixedDates"] is True
+    assert pop["marketDataOldestAsOf"] == "2026-11-23"
+    assert pop["marketDataMixedDates"] is False
     assert pop["marketDataLatestCount"] == 1
-    assert pop["marketDataLaggingCount"] == 1
+    assert pop["marketDataLaggingCount"] == 0
+    assert pop["universeMarketDataOldestAsOf"] == "2026-11-06"
+    assert pop["universeMarketDataMixedDates"] is True
     assert data["evidence"]["provenance"]["observed_date"] == "2026-11-23"
 
     # Primary view currentOpportunityCount matches ONLY Stage 2 primary opportunities (1), not Stage 1 + Stage 2 (2)
@@ -361,3 +372,188 @@ def test_observed_date_and_primary_opportunity_count_reconcile(published_screene
     assert pop["diagnosticOpportunityCount"] == 2
     assert data["candidates"][0]["isActionable"] is False
     assert data["candidates"][0]["canSizeTrade"] is False
+
+
+def test_real_classifier_row_isolation_and_served_mixed_date_and_empty_truth(published_screener_universe, monkeypatch):
+    """
+    Gate 1 & Gate 4 behavioral verification without mocking VCPClassifier or OptimalExecutionEngine:
+    1. Valid Stage-2 + VALUE_GARP + VCP + SMART_MONEY + ETF-like verified row before invalid/short-history/errored/Stage-4 rows
+       must leak zero eligibility, categories, stageClassification, stopLoss, or provenance onto subsequent rows.
+    2. Served-row mixed close dates report exact min/max/counts across served rows; genuine empty VCP reports None dates and 0 opportunities.
+    """
+    from datetime import date, timedelta
+
+    _clear_radar_cache()
+    monkeypatch.setattr(
+        published_screener_universe,
+        "get_scannable_membership",
+        lambda _bid: ["AAPL", "NVDA", "CPRX", "NOPRX", "CERRX", "SHORTX", "STAGE4X"],
+    )
+    monkeypatch.setattr(
+        screener_mod.screener,
+        "evaluate_candidates",
+        lambda syms: [
+            (
+                {
+                    "ticker": "AAPL",
+                    "company_name": "Apple Inc.",
+                    "composite_score": 88,
+                    "expert_model": "Peter Lynch GARP Compounder",
+                    "peg_ratio": 0.95,
+                    "roic_pct": 32.0,
+                    "gross_margin_pct": 46.0,
+                }
+                if s == "AAPL"
+                else {"ticker": s, "company_name": s}
+            )
+            for s in syms
+        ],
+    )
+
+    def build_bars(start_price: float, step: float, count: int, end_date_str: str):
+        end_dt = date.fromisoformat(end_date_str)
+        out = []
+        for i in range(count):
+            dt = end_dt - timedelta(days=count - 1 - i)
+            p = max(5.0, start_price + i * step)
+            out.append({
+                "time": dt.isoformat(),
+                "open": p - 0.5,
+                "high": p + 1.0,
+                "low": p - 1.0,
+                "close": p,
+                "volume": 1_500_000,
+            })
+        return out
+
+    aapl_bars = build_bars(100.0, 0.4, 252, "2026-11-23")
+    nvda_bars = build_bars(90.0, 0.35, 252, "2026-11-06")
+    stage4_bars = build_bars(260.0, -0.65, 252, "2026-11-20")
+    short_bars = build_bars(50.0, 0.2, 12, "2026-11-20")
+
+    def real_price(sym: str):
+        if sym == "NOPRX":
+            return None
+        if sym == "NVDA":
+            return {"currentPrice": nvda_bars[-1]["close"], "date": "2026-11-06"}
+        if sym == "AAPL":
+            return {"currentPrice": aapl_bars[-1]["close"], "date": "2026-11-23"}
+        if sym in ("CPRX", "CERRX", "SHORTX", "STAGE4X"):
+            return {"currentPrice": 50.0, "date": "2026-11-20"}
+        return None
+
+    def real_candles(sym: str, limit: int = 252):
+        if sym == "CERRX":
+            raise RuntimeError("Simulated candle read exception after latest price succeeded")
+        if sym == "AAPL":
+            return aapl_bars[-limit:]
+        if sym == "NVDA":
+            return nvda_bars[-limit:]
+        if sym == "STAGE4X":
+            return stage4_bars[-limit:]
+        if sym == "SHORTX":
+            return short_bars[-limit:]
+        return []
+
+    monkeypatch.setattr(screener_mod.market_db, "get_latest_price", real_price)
+    monkeypatch.setattr(screener_mod.market_db, "get_daily_candles", real_candles)
+    monkeypatch.setattr(
+        screener_mod.market_db,
+        "get_factor_snapshot",
+        lambda sym: (
+            {
+                "quality_score": 90.0,
+                "growth_score": 84.0,
+                "valuation_score": 72.0,
+                "roic": 32.0,
+                "peg": 0.95,
+                "source": "sec_edgar",
+                "as_of_date": "2026-11-20",
+                "filing_date": "2026-11-20",
+                "period_end": "2026-09-30",
+                "acceptance_datetime": "2026-11-20T21:00:00Z",
+                "available_from": "2026-11-20",
+            }
+            if sym == "AAPL"
+            else None
+        ),
+    )
+
+    resp = Response()
+    with patch.object(
+        screener_mod.vcp_scanner_runner,
+        "get_active_or_latest_snapshot",
+        return_value={"status": "AVAILABLE", "matched_count": 1, "snapshot_id": "vcp-1", "results": [{"symbol": "AAPL"}], "universe": {"eligible_universe_count": 7}, "freshness": {"status": "LIVE", "data_as_of": "2026-11-23"}},
+    ):
+        _clear_radar_cache()
+        diag = run_screener_get(resp, filter_type="all", view="diagnostic")
+        assert diag["status"] == "PARTIAL"
+        assert [pe["ticker"] for pe in (diag.get("partialErrors") or [])] == ["CERRX"]
+
+        by_sym = {c["symbol"]: c for c in diag["candidates"]}
+        assert by_sym["AAPL"]["stageClassification"] == "STAGE_2"
+        assert "VALUE_GARP" in by_sym["AAPL"]["categories"]
+        assert "VCP" in by_sym["AAPL"]["categories"]
+        assert by_sym["AAPL"]["fundamentalProvenance"]["isVerified"] is True
+        assert by_sym["AAPL"]["stopLoss"] is not None
+
+        for bad_sym, expected_status in (
+            ("CPRX", "DELISTED_SECURITY"),
+            ("NOPRX", "UNVERIFIED_ASSET"),
+            ("CERRX", "UNVERIFIED_ASSET"),
+            ("SHORTX", "INSUFFICIENT_HISTORY"),
+        ):
+            row = by_sym[bad_sym]
+            assert row["executionStatus"] == expected_status
+            assert row["screeningEligible"] is False
+            assert row["stageClassification"] == "STAGE_UNRESOLVED"
+            assert row["stageProvenance"]["isVcpQualified"] is False
+            assert row["fundamentalProvenance"]["isVerified"] is False
+            assert row["categories"] == []
+            assert row["categoryEvidence"] == {}
+            assert row["stopLoss"] is None
+            assert row["atr14"] == "N/A"
+            assert row["isActionable"] is False
+
+        assert by_sym["STAGE4X"]["stageClassification"] != "STAGE_2"
+        assert by_sym["STAGE4X"]["categories"] == []
+        assert by_sym["STAGE4X"]["fundamentalProvenance"]["isVerified"] is False
+
+        # Primary view serves ONLY AAPL and NVDA (Stage 2 rows spanning 2026-11-06..2026-11-23)
+        _clear_radar_cache()
+        primary = run_screener_get(resp, filter_type="all")
+        served_syms = [c["symbol"] for c in primary["candidates"]]
+        assert set(served_syms) == {"AAPL", "NVDA"}
+        assert primary["population"]["marketDataAsOf"] == "2026-11-23"
+        assert primary["population"]["marketDataOldestAsOf"] == "2026-11-06"
+        assert primary["population"]["marketDataMixedDates"] is True
+        assert primary["population"]["marketDataLatestCount"] == 1
+        assert primary["population"]["marketDataLaggingCount"] == 1
+
+        # Filtered value_garp serves ONLY AAPL (2026-11-23) -> not polluted by NVDA 2026-11-06
+        _clear_radar_cache()
+        vg = run_screener_get(resp, filter_type="value_garp")
+        assert [c["symbol"] for c in vg["candidates"]] == ["AAPL"]
+        assert vg["population"]["marketDataAsOf"] == "2026-11-23"
+        assert vg["population"]["marketDataOldestAsOf"] == "2026-11-23"
+        assert vg["population"]["marketDataMixedDates"] is False
+        assert vg["evidence"]["provenance"]["observed_date"] == "2026-11-23"
+
+    # Genuine empty VCP scan serves 0 rows -> must NOT carry AAPL/NVDA close dates or opportunities
+    with patch.object(
+        screener_mod.vcp_scanner_runner,
+        "get_active_or_latest_snapshot",
+        return_value={"status": "AVAILABLE", "matched_count": 0, "snapshot_id": "vcp-0", "results": [], "universe": {"eligible_universe_count": 7}, "freshness": {"status": "LIVE", "data_as_of": "2026-11-23"}},
+    ):
+        _clear_radar_cache()
+        vcp_empty = run_screener_get(resp, filter_type="vcp")
+        assert vcp_empty["status"] == "PARTIAL"
+        assert [pe["ticker"] for pe in (vcp_empty.get("partialErrors") or [])] == ["CERRX"]
+        assert vcp_empty["datasetState"] == "GENUINELY_EMPTY"
+        assert vcp_empty["gemsFound"] == 0
+        assert vcp_empty["population"]["currentOpportunityCount"] == 0
+        assert vcp_empty["population"]["marketDataAsOf"] is None
+        assert vcp_empty["population"]["marketDataOldestAsOf"] is None
+        assert vcp_empty["population"]["marketDataMixedDates"] is False
+        assert vcp_empty["evidence"]["provenance"]["observed_date"] is None
+

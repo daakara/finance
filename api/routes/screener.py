@@ -1801,18 +1801,18 @@ def run_screener_get(
         if is_error_filter or is_pipeline_pending_filter:
             filtered = []
 
-        # Derive actual observed price dates from served evidence (never wall-clock gmtime)
-        candidate_price_dates = [c["priceDate"] for c in mapped_candidates if c.get("priceDate")]
-        latest_price_date = max(candidate_price_dates) if candidate_price_dates else None
-        oldest_price_date = min(candidate_price_dates) if candidate_price_dates else None
-        distinct_price_dates = sorted(set(candidate_price_dates))
-        latest_date_count = sum(1 for d in candidate_price_dates if d == latest_price_date) if latest_price_date else 0
-        lagging_date_count = len(candidate_price_dates) - latest_date_count
+        # Derive actual observed price dates from served rows (never unserved rows or wall-clock gmtime)
+        universe_price_dates = [c["priceDate"] for c in mapped_candidates if c.get("priceDate")]
+        universe_latest_date = max(universe_price_dates) if universe_price_dates else None
+        universe_oldest_date = min(universe_price_dates) if universe_price_dates else None
+        universe_distinct_dates = sorted(set(universe_price_dates))
 
         displayed_price_dates = [c["priceDate"] for c in filtered if c.get("priceDate")]
-        displayed_latest_date = max(displayed_price_dates) if displayed_price_dates else None
-        displayed_oldest_date = min(displayed_price_dates) if displayed_price_dates else None
-        displayed_distinct_dates = sorted(set(displayed_price_dates))
+        latest_price_date = max(displayed_price_dates) if displayed_price_dates else None
+        oldest_price_date = min(displayed_price_dates) if displayed_price_dates else None
+        distinct_price_dates = sorted(set(displayed_price_dates))
+        latest_date_count = sum(1 for d in displayed_price_dates if d == latest_price_date) if latest_price_date else 0
+        lagging_date_count = len(displayed_price_dates) - latest_date_count
 
         radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         radar_evidence = MarketEvidence(
@@ -1837,7 +1837,10 @@ def run_screener_get(
         # Derive canonical candidate population model per ARX Closure Model v2 Gate B
         reference_count = len(active_universe)
         active_candidates = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable]
-        opportunity_candidates = [c for c in eligibility_pool if c.get("screeningEligible")]
+        opportunity_candidates = [
+            c for c in filtered if c.get("executionStatus") not in non_tradable and c.get("screeningEligible")
+        ]
+        stage2_primary_opportunities = [c for c in eligibility_pool if c.get("screeningEligible")]
         diagnostic_opportunity_candidates = [c for c in active_candidates if c.get("screeningEligible")]
         delisted_candidates = [c for c in mapped_candidates if c["executionStatus"] == "DELISTED_SECURITY"]
         unverified_candidates = [c for c in mapped_candidates if c["executionStatus"] == "UNVERIFIED_ASSET"]
@@ -1846,6 +1849,7 @@ def run_screener_get(
             "referenceUniverseCount": reference_count,
             "activeScreeningCount": len(active_candidates),
             "currentOpportunityCount": len(opportunity_candidates),
+            "stage2PrimaryOpportunityCount": len(stage2_primary_opportunities),
             "diagnosticOpportunityCount": len(diagnostic_opportunity_candidates),
             "stage2OpportunityCount": sum(1 for c in mapped_candidates if c.get("stageClassification") == "STAGE_2"),
             "stage1RecordCount": sum(1 for c in mapped_candidates if c.get("stageClassification") == "STAGE_1"),
@@ -1862,9 +1866,12 @@ def run_screener_get(
             "marketDataMixedDates": len(distinct_price_dates) > 1,
             "marketDataLatestCount": latest_date_count,
             "marketDataLaggingCount": lagging_date_count,
-            "displayedDataAsOf": displayed_latest_date,
-            "displayedDataOldestAsOf": displayed_oldest_date,
-            "displayedDataMixedDates": len(displayed_distinct_dates) > 1,
+            "displayedDataAsOf": latest_price_date,
+            "displayedDataOldestAsOf": oldest_price_date,
+            "displayedDataMixedDates": len(distinct_price_dates) > 1,
+            "universeMarketDataAsOf": universe_latest_date,
+            "universeMarketDataOldestAsOf": universe_oldest_date,
+            "universeMarketDataMixedDates": len(universe_distinct_dates) > 1,
         }
 
         # Derive canonical dataset and scan status

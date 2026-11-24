@@ -1189,23 +1189,27 @@ function RadarContent() {
                   VCP snapshot: <span className="text-[var(--text-1)] font-semibold">{capabilities.VCP?.dataAsOf || initialSnapshot?.dataAsOf}</span>
                 </span>
               )}
-              {(population?.marketDataAsOf || allAssets[0]?.priceDate) && (
-                <span
-                  className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]"
-                  title={
-                    population?.marketDataMixedDates
-                      ? `Served daily closes span ${population.marketDataOldestAsOf} through ${population.marketDataAsOf} (${population.marketDataLatestCount ?? '?'} on latest close, ${population.marketDataLaggingCount ?? '?'} on prior sessions).`
-                      : 'Latest served daily close observation across evaluated candidates'
-                  }
-                >
-                  Tape obs:{' '}
-                  <span className="text-[var(--text-1)] font-semibold">
-                    {population?.marketDataMixedDates && population?.marketDataOldestAsOf
-                      ? `${population.marketDataOldestAsOf}..${population.marketDataAsOf}`
-                      : (population?.marketDataAsOf || allAssets[0]?.priceDate)}
+              {(() => {
+                const tapeLatest = population?.displayedDataAsOf ?? population?.marketDataAsOf ?? allAssets[0]?.priceDate;
+                const tapeOldest = population?.displayedDataOldestAsOf ?? population?.marketDataOldestAsOf;
+                const tapeMixed = population?.displayedDataMixedDates ?? population?.marketDataMixedDates;
+                if (!tapeLatest) return null;
+                return (
+                  <span
+                    className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]"
+                    title={
+                      tapeMixed
+                        ? `Served daily closes span ${tapeOldest} through ${tapeLatest} (${population?.marketDataLatestCount ?? '?'} on latest close, ${population?.marketDataLaggingCount ?? '?'} on prior sessions).`
+                        : 'Latest served daily close observation across displayed candidates'
+                    }
+                  >
+                    Tape obs:{' '}
+                    <span className="text-[var(--text-1)] font-semibold">
+                      {tapeMixed && tapeOldest ? `${tapeOldest}..${tapeLatest}` : tapeLatest}
+                    </span>
                   </span>
-                </span>
-              )}
+                );
+              })()}
             </div>
 
             {/* Discovery Policy Badge */}
@@ -1268,7 +1272,11 @@ function RadarContent() {
                   tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
                   onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
                   onClick={() => handleCategoryFilterSelect('VALUE_GARP', 'tab-radar-filter-value_garp')}
-                  title={`${categoryMeta.VALUE_GARP.count ?? 0} Value / GARP matches from ${capabilities.VALUE_GARP?.catalogAssetCount ?? 43}-asset curated reference catalog evaluated across ${population?.referenceUniverseCount ?? allAssets.length} universe assets.`}
+                  title={
+                    categoryMeta.VALUE_GARP.count === null
+                      ? 'Value / GARP screening count unavailable while market tape is unreachable.'
+                      : `${categoryMeta.VALUE_GARP.count} Value / GARP matches from ${capabilities.VALUE_GARP?.catalogAssetCount ?? 43}-asset curated reference catalog evaluated across ${population?.referenceUniverseCount ?? allAssets.length} universe assets.`
+                  }
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'VALUE_GARP'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
@@ -1544,7 +1552,9 @@ function RadarContent() {
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-[var(--text-2)]">
-                {filteredAssets.length} Value / GARP Matches · {capabilities.VALUE_GARP?.catalogAssetCount ?? 43}-Asset Reference Catalog across {population?.referenceUniverseCount ?? allAssets.length} Universe Assets
+                {fetchError && allAssets.length === 0
+                  ? 'Value / GARP Data Unavailable · Market Tape Error'
+                  : `${filteredAssets.length} Value / GARP Matches · ${capabilities.VALUE_GARP?.catalogAssetCount ?? 43}-Asset Reference Catalog across ${population?.referenceUniverseCount ?? allAssets.length} Universe Assets`}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -1552,7 +1562,9 @@ function RadarContent() {
                 className="px-2 py-0.5 rounded text-[10px] bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-strong)]"
                 title="Curated Value/GARP model criteria cover cataloged assets; remaining universe equities report UNASSESSED_INSUFFICIENT_EVIDENCE until full fundamental ingestion is authorized."
               >
-                STAGE 2 POOL ({allAssets.length} STAGE 2 / {population?.referenceUniverseCount ?? allAssets.length} UNIVERSE)
+                {fetchError && allAssets.length === 0
+                  ? 'STAGE 2 POOL · DATA UNAVAILABLE'
+                  : `STAGE 2 POOL (${allAssets.length} STAGE 2 / ${population?.referenceUniverseCount ?? allAssets.length} UNIVERSE)`}
               </span>
             </div>
           </div>
@@ -1582,6 +1594,14 @@ function RadarContent() {
                   const authMatches = typeof capabilities.VCP?.matchedCount === 'number' && !capabilities.VCP?.isRollback
                     ? capabilities.VCP.matchedCount
                     : null;
+
+                  if (fetchError || categoryMeta.VCP.status === 'ERROR') {
+                    return (
+                      <span className="text-rose-300">
+                        Scanner Error ({fetchError ? 'TAPE_FETCH_ERROR' : (capabilities.VCP?.reason || 'STORAGE_ERROR')}) · Coverage Unavailable
+                      </span>
+                    );
+                  }
 
                   if (capabilities.VCP?.universeScreening === 'AVAILABLE' && authMatches !== null) {
                     if (filteredAssets.length !== authMatches) {
@@ -1748,11 +1768,27 @@ function RadarContent() {
                   <span className="font-bold text-cyan-400">🐋 Smart Money</span>
                   <span className="text-slate-600">•</span>
                   <span className="text-[var(--text-2)]">
-                    Scope: <strong className="text-white">{capabilities.SMART_MONEY?.populationDenominator || 0} Evaluated Issuers</strong>
+                    Scope:{' '}
+                    <strong className="text-white">
+                      {typeof capabilities.SMART_MONEY?.populationDenominator === 'number'
+                        ? `${capabilities.SMART_MONEY.populationDenominator} Evaluated Issuers`
+                        : 'Evaluated Scope Pending'}
+                    </strong>
                   </span>
                   <span className="text-slate-600">•</span>
                   <span className="text-[var(--text-2)]">
-                    <strong className="text-white">{capabilities.SMART_MONEY?.displayedStage2IntersectionCount ?? categoryMeta.SMART_MONEY.count ?? 0}</strong> Stage 2 matches ({capabilities.SMART_MONEY?.matchedCount ?? 0} raw snapshot matches)
+                    <strong className="text-white">
+                      {typeof capabilities.SMART_MONEY?.displayedStage2IntersectionCount === 'number'
+                        ? capabilities.SMART_MONEY.displayedStage2IntersectionCount
+                        : typeof categoryMeta.SMART_MONEY.count === 'number'
+                        ? categoryMeta.SMART_MONEY.count
+                        : 'Unavailable'}
+                    </strong>{' '}
+                    Stage 2 matches (
+                    {typeof capabilities.SMART_MONEY?.matchedCount === 'number'
+                      ? `${capabilities.SMART_MONEY.matchedCount} raw snapshot matches`
+                      : 'raw count unavailable'}
+                    )
                   </span>
                   {capabilities.SMART_MONEY?.snapshotId && (
                     <>
