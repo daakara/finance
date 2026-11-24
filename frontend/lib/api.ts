@@ -1880,8 +1880,20 @@ export async function fetchAssetAnalytics(
     }
   }
 
-  // If backend explicitly returned 404 and direct lookup found no candles, reject as not found
+  // If backend explicitly returned 404 and direct lookup found no candles, check security master before declaring unknown
   if (isNotFound) {
+    try {
+      const canonical = await fetchCanonicalInstrument(upper);
+      if (canonical && canonical.listing_status === "ACTIVE" && canonical.classification_status === "VERIFIED") {
+        throw new InsufficientHistoryError(
+          upper,
+          `Asset "${upper}" is a recognized ${canonical.primary_exchange || "exchange-listed"} ${canonical.security_type || "security"}, but has insufficient completed daily trading sessions on record (minimum 15 daily sessions required for multi-factor analytics).`
+        );
+      }
+    } catch (e) {
+      if (e instanceof InsufficientHistoryError) throw e;
+    }
+
     const message = notFoundDetail && notFoundDetail.toLowerCase().includes("not found")
       ? notFoundDetail
       : `Asset unavailable or not found: ${notFoundDetail || `"${upper}" is not recognized on exchange tape or market data feeds.`}`;
@@ -1912,7 +1924,7 @@ export async function fetchCanonicalInstrument(
     });
     if (!res.ok) return null;
     const body = await res.json();
-    return body?.instrument || null;
+    return body?.instrument || (body?.symbol ? body : null);
   } catch {
     return null;
   }

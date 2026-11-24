@@ -509,7 +509,87 @@ function TerminalContent() {
 
               {/* Ingestion Failure / Explicit Retry State OR Adaptive Multi-Tier Terminal Engine */}
               {error && !data ? (
-                error.toLowerCase().includes("not found") || error.toLowerCase().includes("unavailable") || error.toLowerCase().includes("no valid price action") ? (
+                error.toLowerCase().includes("insufficient") ? (
+                  <div data-testid="insufficient-history-state" className="p-6 bg-[#0b1019] border border-amber-800/80 rounded-2xl text-slate-200 font-sans space-y-5 animate-fade-in shadow-2xl">
+                    <div className="flex items-start gap-3.5">
+                      <div className="p-2.5 rounded-xl bg-amber-950 border border-amber-800 text-amber-400 shrink-0">
+                        <Activity className="w-5 h-5" aria-hidden="true" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded bg-amber-950/80 border border-amber-700/60 text-[10px] font-mono font-bold text-amber-300">
+                          <span>RECOGNIZED ASSET · LIMITED TRADING HISTORY</span>
+                        </div>
+                        <h2 className="text-base sm:text-lg font-bold text-white">
+                          Insufficient History on Record for {selectedSymbol}
+                        </h2>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {error}. A minimum of 15 completed daily trading sessions is required by ARX quantitative invariants before multi-factor scoring, volatility bands, and tactical setups can be computed.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Breakdown of Analytical Capabilities */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 font-mono text-xs">
+                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Multi-Factor Confluence</span>
+                        <span className="text-amber-400 font-bold block">UNAVAILABLE</span>
+                        <span className="text-[10px] text-slate-400 block">Requires 15+ completed daily sessions (min sample)</span>
+                      </div>
+                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Technical Momentum & RSI</span>
+                        <span className="text-amber-400 font-bold block">UNAVAILABLE</span>
+                        <span className="text-[10px] text-slate-400 block">Requires 14-period Wilder smoothing</span>
+                      </div>
+                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Cornish-Fisher Tail VaR</span>
+                        <span className="text-amber-400 font-bold block">UNAVAILABLE</span>
+                        <span className="text-[10px] text-slate-400 block">Requires skewness & kurtosis empirical distribution</span>
+                      </div>
+                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Minervini VCP Setups</span>
+                        <span className="text-amber-400 font-bold block">UNAVAILABLE</span>
+                        <span className="text-[10px] text-slate-400 block">Requires 20 EMA & 50 SMA baseline</span>
+                      </div>
+                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Corporate Ownership & Filings</span>
+                        <span className="text-slate-300 font-bold block">ACTIVE LISTING</span>
+                        <span className="text-[10px] text-slate-400 block">Security verified in Security Master</span>
+                      </div>
+                      <div className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Execution Clearance</span>
+                        <span className="text-rose-400 font-bold block">INELIGIBLE</span>
+                        <span className="text-[10px] text-slate-400 block">Discovery does not grant execution clearance</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-[#1b2537]">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSymbol("NVDA")}
+                        className="px-3.5 py-2 bg-[#121927] hover:bg-[#1b2537] border border-[#24334a] text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Analyze Benchmark Candidate (NVDA)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSymbol("");
+                          setHasExplicitSymbol(false);
+                          setData(null);
+                          setError(null);
+                          if (typeof window !== "undefined") {
+                            const url = new URL(window.location.href);
+                            url.searchParams.delete("symbol");
+                            window.history.pushState({}, "", url.toString());
+                          }
+                        }}
+                        className="px-3.5 py-2 bg-[#121927] hover:bg-[#1b2537] border border-[#24334a] text-slate-400 hover:text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                      >
+                        ← Back to Market Discovery
+                      </button>
+                    </div>
+                  </div>
+                ) : error.toLowerCase().includes("not found") || error.toLowerCase().includes("unavailable") || error.toLowerCase().includes("no valid price action") ? (
                   <div data-testid="asset-not-found-state" className="p-6 bg-[#0b1019] border border-cyan-800/80 rounded-2xl text-slate-200 font-sans space-y-4 animate-fade-in shadow-2xl">
                     <div className="flex items-start gap-3.5">
                       <div className="p-2.5 rounded-xl bg-cyan-950 border border-cyan-800 text-cyan-400 shrink-0">
@@ -546,51 +626,6 @@ function TerminalContent() {
                         className="px-3.5 py-2 bg-[#121927] hover:bg-[#1b2537] border border-[#24334a] text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
                       >
                         Analyze NVDA
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedSymbol("");
-                          setHasExplicitSymbol(false);
-                          setData(null);
-                          setError(null);
-                          if (typeof window !== "undefined") {
-                            const url = new URL(window.location.href);
-                            url.searchParams.delete("symbol");
-                            window.history.pushState({}, "", url.toString());
-                          }
-                        }}
-                        className="px-3.5 py-2 bg-[#121927] hover:bg-[#1b2537] border border-[#24334a] text-slate-400 hover:text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
-                      >
-                        ← Back to Market Discovery
-                      </button>
-                    </div>
-                  </div>
-                ) : error.toLowerCase().includes("insufficient") ? (
-                  <div data-testid="insufficient-history-state" className="p-6 bg-[#0b1019] border border-amber-800/80 rounded-2xl text-slate-200 font-sans space-y-4 animate-fade-in shadow-2xl">
-                    <div className="flex items-start gap-3.5">
-                      <div className="p-2.5 rounded-xl bg-amber-950 border border-amber-800 text-amber-400 shrink-0">
-                        <Activity className="w-5 h-5" aria-hidden="true" />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded bg-amber-950/80 border border-amber-700/60 text-[10px] font-mono font-bold text-amber-300">
-                          <span>LIMITED TRADING HISTORY</span>
-                        </div>
-                        <h2 className="text-base sm:text-lg font-bold text-white">
-                          Insufficient History on Record for {selectedSymbol}
-                        </h2>
-                        <p className="text-xs text-slate-300 leading-relaxed">
-                          {error}. A minimum of 15 completed daily trading sessions is required to compute multi-factor confluence scores, volatility envelopes, and tactical setups.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-[#1b2537]">
-                      <button
-                        type="button"
-                        onClick={() => handleSelectSymbol("NVDA")}
-                        className="px-3.5 py-2 bg-[#121927] hover:bg-[#1b2537] border border-[#24334a] text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
-                      >
-                        Analyze Benchmark Candidate (NVDA)
                       </button>
                       <button
                         type="button"

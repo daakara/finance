@@ -1124,7 +1124,18 @@ def validate_and_prune_daily_history(
     meta["pruned_trailing_count"] = pruned_count
 
     if len(work_df) < 15:
-        meta["reason"] = f"INSUFFICIENT_BARS_AFTER_PRUNING: {len(work_df)} bars (min 15 required)"
+        bars_count = len(work_df)
+        first_d = None
+        last_d = None
+        if bars_count > 0:
+            first_idx = work_df.index[0]
+            last_idx = work_df.index[-1]
+            first_d = first_idx.strftime("%Y-%m-%d") if hasattr(first_idx, "strftime") else str(first_idx)[:10]
+            last_d = last_idx.strftime("%Y-%m-%d") if hasattr(last_idx, "strftime") else str(last_idx)[:10]
+        meta["reason"] = f"INSUFFICIENT_BARS_AFTER_PRUNING: {bars_count} bars (min 15 required)"
+        meta["bars_count"] = bars_count
+        meta["first_date"] = first_d
+        meta["last_date"] = last_d
         return None, meta
 
     for idx, row in work_df.iterrows():
@@ -1270,6 +1281,15 @@ def get_asset_analytics(
             if hist is None:
                 if prune_meta.get("reason") and "INTERIOR_CORRUPTION" in prune_meta["reason"]:
                     raise HTTPException(status_code=503, detail="Interior corruption detected in market price history")
+                if prune_meta.get("reason") and "INSUFFICIENT_BARS" in prune_meta["reason"]:
+                    bars_count = prune_meta.get("bars_count", 0)
+                    first_d = prune_meta.get("first_date")
+                    last_d = prune_meta.get("last_date")
+                    date_range = f" (observed {first_d} to {last_d})" if (first_d and last_d) else ""
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"Asset {upper_sym} has only {bars_count} completed daily sessions on record{date_range}. Minimum 15 daily sessions required for multi-factor analytics.",
+                    )
                 raise HTTPException(status_code=404, detail=f"No valid price action data found for symbol {symbol}")
 
         else:

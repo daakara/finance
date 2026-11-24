@@ -16,10 +16,17 @@ describe("analytics 404 and unavailable asset handling", () => {
     vi.unstubAllGlobals();
   });
 
-  it("throws AssetNotFoundError when backend returns 404 and direct market data has no candles", async () => {
+  it("throws AssetNotFoundError when backend returns 404 and asset is unverified in security master", async () => {
     const mockFetch = vi.fn().mockImplementation((url: string) => {
       if (url.includes("/analytics/")) {
-        return Promise.resolve(new Response(JSON.stringify({ detail: "Asset ANTHROPIC is not recognized on exchange tape" }), { status: 404 }));
+        return Promise.resolve(new Response(JSON.stringify({ detail: "No valid price action data found for symbol ANTHROPIC" }), { status: 404 }));
+      }
+      if (url.includes("/market/instruments/")) {
+        return Promise.resolve(new Response(JSON.stringify({
+          symbol: "ANTHROPIC",
+          listing_status: "UNVERIFIED",
+          execution_eligibility: "FAIL_CLOSED"
+        }), { status: 200 }));
       }
       return Promise.resolve(new Response(JSON.stringify({ chart: { result: null, error: { code: "Not Found" } } }), { status: 404 }));
     });
@@ -28,16 +35,54 @@ describe("analytics 404 and unavailable asset handling", () => {
     await expect(fetchAssetAnalytics("ANTHROPIC", "1y", "1d")).rejects.toThrow(AssetNotFoundError);
   });
 
-  it("throws InsufficientHistoryError when backend returns 422", async () => {
+  it("throws InsufficientHistoryError when backend returns 404 but asset is ACTIVE in security master", async () => {
     const mockFetch = vi.fn().mockImplementation((url: string) => {
       if (url.includes("/analytics/")) {
-        return Promise.resolve(new Response(JSON.stringify({ detail: "Asset NEWIPO has only 5 sessions on record. Minimum 15 daily sessions required." }), { status: 422 }));
+        return Promise.resolve(new Response(JSON.stringify({ detail: "No valid price action data found for symbol ANT" }), { status: 404 }));
+      }
+      if (url.includes("/market/instruments/")) {
+        return Promise.resolve(new Response(JSON.stringify({
+          symbol: "ANT",
+          primary_exchange: "NASDAQ",
+          security_type: "COMMON_STOCK",
+          listing_status: "ACTIVE",
+          classification_status: "VERIFIED",
+          execution_eligibility: "STOCK_EXECUTION"
+        }), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify({ chart: { result: null, error: { code: "Not Found" } } }), { status: 404 }));
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    try {
+      await fetchAssetAnalytics("ANT", "1y", "1d");
+      expect.fail("Should have thrown InsufficientHistoryError");
+    } catch (err: any) {
+      expect(err).toBeInstanceOf(InsufficientHistoryError);
+      expect(err.message).toContain("insufficient");
+      expect(err.message).toContain("ANT");
+      expect(err.message).toContain("NASDAQ");
+    }
+  });
+
+  it("throws InsufficientHistoryError when backend returns 422 with session counts", async () => {
+    const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/analytics/")) {
+        return Promise.resolve(new Response(JSON.stringify({
+          detail: "Asset ANT has only 3 daily sessions on record (observed 2026-11-19 to 2026-11-23). Minimum 15 daily sessions required."
+        }), { status: 422 }));
       }
       return Promise.resolve(new Response(null, { status: 500 }));
     });
     vi.stubGlobal("fetch", mockFetch);
 
-    await expect(fetchAssetAnalytics("NEWIPO", "1y", "1d")).rejects.toThrow(InsufficientHistoryError);
+    try {
+      await fetchAssetAnalytics("ANT", "1y", "1d");
+      expect.fail("Should have thrown InsufficientHistoryError");
+    } catch (err: any) {
+      expect(err).toBeInstanceOf(InsufficientHistoryError);
+      expect(err.message).toContain("only 3 daily sessions");
+    }
   });
 
   it("does not fabricate stalenessDays: 999 on fallback analytics", () => {
