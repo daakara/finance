@@ -1,9 +1,9 @@
 {
-  "release_candidate_commit": "94f5fae4e6c3fb955dc235cf4bbbd1364bade242",
+  "release_candidate_commit": "885e149f13d61e4b8bf28a1fedc862b96bdba2fb",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 62,
+  "total_files": 63,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-DYNAMIC-DISCOVERY-RISK-GATE-324",
+  "directive": "ARX-EXCHANGE-CALENDARS-COMPAT-326",
   "files": {
     ".github/workflows/asset-discovery.yml": {
       "operation": "A",
@@ -279,11 +279,11 @@
     },
     "requirements.txt": {
       "operation": "M",
-      "originating_pr_number": 319,
-      "originating_commit": "ac2d3c8f46a6e69ca55a5f367f7e3bbfd08a9ff6",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Cap sentry-sdk below 3.0.0 to prevent breaking change in worker exception capture",
-      "sha256": "514e6161fb66b25a3b6d2c29cb973c30a3171634fc0da27b31b7b8b3cbb28d28",
-      "size_bytes": 472
+      "originating_pr_number": 326,
+      "originating_commit": "9e8a3f480d1a7b17607720f8600b8769153d7e01",
+      "governing_requirement": "PR #326: require exchange_calendars>=4.13.1,<5.0.0 for ARCX and pandas 3 compatibility",
+      "sha256": "6c82b3584954ec2afe84ff9262b015097b85805a234947f200120b6869f33e48",
+      "size_bytes": 480
     },
     "scripts/research/acquire_nvda_fundamentals.py": {
       "operation": "A",
@@ -494,12 +494,20 @@
       "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
     },
     "tests/test_cornish_fisher_sufficiency_gate.py": {
-      "operation": "A",
-      "sha256": "1dc1208879abcf3d84aab566b85ea4a71d708fea57f480afe073d3be5bc41e9e",
-      "size_bytes": 22657,
-      "originating_pr_number": 324,
-      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
-      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+      "operation": "M",
+      "originating_pr_number": 326,
+      "originating_commit": "9e8a3f480d1a7b17607720f8600b8769153d7e01",
+      "governing_requirement": "PR #326: verify dependency declarations exclude incompatible calendars and resolve XNYS/XNAS/ARCX/BATS",
+      "sha256": "fd67d74189cf7b18813c799c49ac8e212389282a27c07031c0d6cc2db441b6e4",
+      "size_bytes": 24376
+    },
+    "pyproject.toml": {
+      "operation": "M",
+      "originating_pr_number": 326,
+      "originating_commit": "9e8a3f480d1a7b17607720f8600b8769153d7e01",
+      "governing_requirement": "PR #326: align pyproject.toml exchange_calendars>=4.13.1,<5.0.0",
+      "sha256": "f07270fa93fdcaaf8446bcbf723aa883e4aef2e0d721bd0828775d55f9e7aeeb",
+      "size_bytes": 1301
     }
   },
   "qualification_framework_files": {
@@ -509,9 +517,9 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "description": "Hardened diff integrity validation with approved PR list including PR #324",
-      "sha256": "a28c914726b5e20201357e12843ec33b861818faaba709cd5511fcac97ca5eb2",
-      "size_bytes": 58246
+      "description": "Hardened diff integrity validation with approved PR list including PR #326",
+      "sha256": "63600d264f9c84b92a53fbee9df18b105c7152d028d15ca6af5ae4065600a29b",
+      "size_bytes": 58251
     },
     "scripts/release/rq03_backend_regression.py": {
       "description": "Backend regression runner including Cornish-Fisher test suite",
@@ -609,6 +617,6 @@
       "size_bytes": 4773
     }
   },
-  "candidate_commit_sha": "94f5fae4e6c3fb955dc235cf4bbbd1364bade242",
+  "candidate_commit_sha": "885e149f13d61e4b8bf28a1fedc862b96bdba2fb",
   "target_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486"
 }
