@@ -2,19 +2,19 @@
   "control_id": "RQ-09",
   "name": "Four-Way Cross-Platform Compatibility",
   "status": "PASS",
-  "start_time": "2026-11-24T05:21:29.449167+00:00",
-  "end_time": "2026-11-24T05:21:30.039005+00:00",
-  "duration_sec": 0.565,
-  "candidate_sha": "b5ab90e6957e51570ef1a0e18088ef7b6667a8a2",
-  "source_sha": "b5ab90e6957e51570ef1a0e18088ef7b6667a8a2",
-  "execution_sha": "b5ab90e6957e51570ef1a0e18088ef7b6667a8a2",
+  "start_time": "2026-11-24T06:03:21.096694+00:00",
+  "end_time": "2026-11-24T06:03:21.767931+00:00",
+  "duration_sec": 0.642,
+  "candidate_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+  "source_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+  "execution_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "b5ab90e6957e51570ef1a0e18088ef7b6667a8a2",
-    "execution_sha": "b5ab90e6957e51570ef1a0e18088ef7b6667a8a2",
+    "source_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+    "execution_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
     "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -139,7 +139,7 @@
   ],
   "evidence_digests": {
     "frontend/tests/fourWayCompatibilityHarness.ts": "e8030ac45a2eabaa876e8c681b51aa86ff0827f2ec4527b09de235d8e3d1a468",
-    "scripts/release/rq_compatibility_results.json": "e733f463f10e8dfcee62c38baad4aa9291ef9c49c6a9e503615fc33c4e12c2c6"
+    "scripts/release/rq_compatibility_results.json": "8a59c69ab4ff362acf99562916141eb3a27a3715fee2fed04490353145b715b7"
   },
   "errors": [],
   "metadata": {
@@ -152,5 +152,5 @@
     "harness_version": "2.2.0-D074A4",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "d7cc4f446fa728977311d20996e3ec3a961b3a7c4ce92d74c689c0ad17f66b67"
+  "receipt_digest": "c0e91d97d7e8ec6b34c7635a12d68f9791c2bb89079c0d24d727a16f2d9136dc"
 }
