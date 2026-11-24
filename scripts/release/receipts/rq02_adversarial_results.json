@@ -1,8 +1,8 @@
 {
   "suite": "RQ-02 Adversarial Falsification Suite (ARX-036-D12A)",
-  "candidate_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
-  "candidate_tree": "343d8eb198dd6d611a5125ac5d1ed961b0651c88",
-  "timestamp": "2026-11-22T23:23:57.323397+00:00",
+  "candidate_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
+  "candidate_tree": "a09c9e17d696e593847e35e126346ebea129a21e",
+  "timestamp": "2026-11-24T02:07:19.685186+00:00",
   "execution_context": {
     "is_ci": false,
     "github_run_id": null,
@@ -28,7 +28,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  [UNAPPROVED (A)] analyst_dashboard/research/sourced_fundamentals/offline_reader.py"
+        "  [UNAPPROVED (A)] .github/workflows/asset-discovery.yml"
       ]
     },
     {
@@ -64,7 +64,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate d3c611c46ac9c09b0dbae8e2574bb85640defbd3 does not match manifest candidate 0000000000000000000000000000000000000000"
+        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 89880c6b079e693c79caea24e4d7605673fc80e2 does not match manifest candidate 0000000000000000000000000000000000000000"
       ]
     },
     {
@@ -82,7 +82,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - DIRTY_WORKING_TREE_MISMATCH: Candidate file '.gitignore' has uncommitted modifications (M)"
+        "  - DIRTY_WORKING_TREE_MISMATCH: Candidate file '.github/workflows/asset-discovery.yml' has uncommitted modifications (M)"
       ]
     },
     {
@@ -100,7 +100,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "FAIL: DUPLICATE_MANIFEST_ENTRY: DUPLICATE_MANIFEST_ENTRY: Duplicate key '.gitignore' detected in manifest JSON."
+        "FAIL: DUPLICATE_MANIFEST_ENTRY: DUPLICATE_MANIFEST_ENTRY: Duplicate key '.github/workflows/asset-discovery.yml' detected in manifest JSON."
       ]
     },
     {
@@ -109,7 +109,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "FAIL: UNAPPROVED_PR_ATTRIBUTION: File .gitignore attributed to unapproved or missing PR (999)"
+        "FAIL: UNAPPROVED_PR_ATTRIBUTION: File .github/workflows/asset-discovery.yml attributed to unapproved or missing PR (999)"
       ]
     }
   ]

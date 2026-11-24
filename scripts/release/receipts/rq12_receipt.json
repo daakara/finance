@@ -2,19 +2,19 @@
   "control_id": "RQ-12",
   "name": "Qualification Summary Aggregation",
   "status": "PASS",
-  "start_time": "2026-11-22T23:29:44.681578+00:00",
-  "end_time": "2026-11-22T23:29:44.755933+00:00",
-  "duration_sec": 0.073,
-  "candidate_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
-  "source_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
-  "execution_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+  "start_time": "2026-11-24T02:09:04.212984+00:00",
+  "end_time": "2026-11-24T02:09:04.288147+00:00",
+  "duration_sec": 0.074,
+  "candidate_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
+  "source_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
+  "execution_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
-    "execution_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+    "source_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
+    "execution_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
     "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -38,7 +38,7 @@
     "scripts/release/release_qualification_summary.json"
   ],
   "evidence_digests": {
-    "scripts/release/release_qualification_summary.json": "f9205f6213d658e9167c92d0bd6cf92c505f46bb5313382d9dff612776a2e7cf"
+    "scripts/release/release_qualification_summary.json": "5f285afa140fb91bf4ef226c2c9e6d8edd1ec93dd16e3ab4418a41b9f1dd6abe"
   },
   "errors": [],
   "metadata": {
@@ -47,5 +47,5 @@
     "total_controls": 12,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "12ed9274795e79a1a2a79f1f3964bbe0e7823b8283a4f750b55d193b9a119e23"
+  "receipt_digest": "dc6e73d1da13a5c581fe83aae579fc5a57fd56b2a4e84c0d42e58f7273f3a5ec"
 }

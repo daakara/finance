@@ -2,19 +2,19 @@
   "control_id": "RQ-03",
   "name": "Backend Regression Suite",
   "status": "PASS",
-  "start_time": "2026-11-22T23:28:56.454228+00:00",
-  "end_time": "2026-11-22T23:29:38.390777+00:00",
-  "duration_sec": 41.892,
-  "candidate_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
-  "source_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
-  "execution_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+  "start_time": "2026-11-24T02:07:35.925392+00:00",
+  "end_time": "2026-11-24T02:08:41.319793+00:00",
+  "duration_sec": 65.346,
+  "candidate_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
+  "source_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
+  "execution_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
-    "execution_sha": "d3c611c46ac9c09b0dbae8e2574bb85640defbd3",
+    "source_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
+    "execution_sha": "89880c6b079e693c79caea24e4d7605673fc80e2",
     "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -25,7 +25,7 @@
     {
       "assertion": "All backend regression tests pass",
       "observed": {
-        "passed": 278,
+        "passed": 291,
         "failed": 0,
         "exit_code": 0
       },
@@ -33,6 +33,7 @@
     }
   ],
   "evidence_paths": [
+    "tests/test_asset_directory_discovery.py",
     "tests/test_directive_057_remediation.py",
     "tests/test_confluence_engine.py",
     "tests/test_confluence_integrity_002.py",
@@ -51,6 +52,7 @@
     "tests/test_fred_sec_presentation_integrity.py"
   ],
   "evidence_digests": {
+    "tests/test_asset_directory_discovery.py": "844aeb0a54e0594c5d8c1eea3a0c9dbbfb3d1c60117921c9db48fbcb3ff1ab85",
     "tests/test_directive_057_remediation.py": "3b9514d235f2ac1462e904444912c0bea616404de2d521a26d87a6ea7db5e348",
     "tests/test_confluence_engine.py": "aa2e9f1221270549aa48265146a52d817aadf96e4c9ada83e5e169f35e01e907",
     "tests/test_confluence_integrity_002.py": "2b6240c721255478cb2401bf763daf559144f71fc4931dcccfdca2b4d6a38675",
@@ -70,10 +72,10 @@
   },
   "errors": [],
   "metadata": {
-    "pytest_passed": 278,
+    "pytest_passed": 291,
     "pytest_failed": 0,
-    "pytest_duration": 41.891855239868164,
+    "pytest_duration": 65.34638810157776,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "c8cedcf3a4df6c8d120e4122b0fd57ae5a5af29e4d8d18e14a465b96a4eff05e"
+  "receipt_digest": "0271e16cca8e2a0885e1a1cec8742a4ca95885f242a96294acb6405d0b870b3d"
 }
