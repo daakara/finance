@@ -370,3 +370,235 @@ export function resolveRadarCandidateRationale(candidate: RadarCandidateInput): 
   };
 }
 
+export interface RadarEmptyStateCopy {
+  title: string;
+  description: string;
+  reasonCode: string | null;
+  recoveryCondition: string | null;
+}
+
+export function resolveRadarEmptyStateCopy(params: {
+  activeFilter: 'ALL' | 'VALUE_GARP' | 'VCP' | 'SMART_MONEY';
+  searchQuery: string;
+  isTickerQuery: boolean;
+  cleanQ: string;
+  ownershipFilter: string;
+  isPortfolioVerified: boolean;
+  allAssetsCount: number;
+  universeScopeLabel?: string;
+  referenceUniverseCount?: number | null;
+  capabilities: {
+    VCP?: {
+      status?: string;
+      matchedCount?: number | null;
+      populationDenominator?: number | null;
+      universeBuildId?: string | null;
+      publicationDigest?: string | null;
+      lifecycleState?: string;
+      freshnessStatus?: string;
+      isRollback?: boolean;
+      reason?: string | null;
+      recoveryCondition?: string | null;
+      dataAsOf?: string;
+    };
+    SMART_MONEY?: {
+      status?: string;
+      matchedCount?: number | null;
+      populationDenominator?: number | null;
+      universeBuildId?: string | null;
+      publicationDigest?: string | null;
+      lifecycleState?: string;
+      freshnessStatus?: string;
+      reason?: string | null;
+      recoveryCondition?: string | null;
+      dataAsOf?: string;
+    };
+  };
+  vcpStatus: string;
+  vcpCount: number | null;
+  smStatus: string;
+  smCount: number | null;
+}): RadarEmptyStateCopy {
+  const {
+    activeFilter,
+    searchQuery,
+    isTickerQuery,
+    cleanQ,
+    ownershipFilter,
+    isPortfolioVerified,
+    allAssetsCount,
+    universeScopeLabel,
+    referenceUniverseCount,
+    capabilities,
+    vcpStatus,
+    vcpCount,
+    smStatus,
+    smCount,
+  } = params;
+
+  if (searchQuery) {
+    return {
+      title: `No assets match "${searchQuery}" in current confluence scan`,
+      description: isTickerQuery
+        ? `Asset "${cleanQ}" is not in the active published universe (${allAssetsCount > 0 ? `${allAssetsCount} assets evaluated` : (universeScopeLabel || 'ARX_US_EQUITIES')}). You can scan it live across the exchange tape or review its tactical setup.`
+        : 'No confluence candidates match this search. Try searching by symbol (e.g. NVDA, CPRX, ASML, TSLA) or reset the filter.',
+      reasonCode: null,
+      recoveryCondition: null,
+    };
+  }
+
+  if (ownershipFilter === 'MY_HOLDINGS') {
+    return {
+      title: !isPortfolioVerified
+        ? 'Portfolio sync unavailable (Ownership UNKNOWN)'
+        : 'No active Radar candidates currently held in portfolio',
+      description: !isPortfolioVerified
+        ? 'The authoritative portfolio connection could not be verified. Radar renders canonically with ownership state UNKNOWN.'
+        : "None of your current portfolio positions meet the active Radar screening confluence criteria. Switch to 'All Candidates' or 'Unheld Candidates' to view market setups.",
+      reasonCode: !isPortfolioVerified ? 'PORTFOLIO_OWNERSHIP_UNKNOWN' : null,
+      recoveryCondition: !isPortfolioVerified
+        ? 'Reconnect portfolio state or clear the portfolio filter to inspect market-wide candidates.'
+        : null,
+    };
+  }
+
+  if (ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified) {
+    return {
+      title: 'Portfolio sync unavailable (Ownership UNKNOWN)',
+      description: 'Filtering for unheld candidates requires verified portfolio state. Currently running in degraded UNKNOWN mode.',
+      reasonCode: 'PORTFOLIO_OWNERSHIP_UNKNOWN',
+      recoveryCondition: 'Reconnect portfolio state or switch to All Candidates.',
+    };
+  }
+
+  if (activeFilter === 'VCP') {
+    const vcpCap = capabilities.VCP;
+    if (vcpStatus === 'ERROR') {
+      const reason = vcpCap?.reason || 'SNAPSHOT_ERROR';
+      const isEmptyUniv = reason === 'BUILD_MEMBERSHIP_EMPTY';
+      return {
+        title: isEmptyUniv
+          ? 'Minervini VCP — Universe Membership Empty'
+          : 'Minervini VCP — Scanner Snapshot Error',
+        description: isEmptyUniv
+          ? 'The scannable universe membership is currently empty (BUILD_MEMBERSHIP_EMPTY). Automated screening is withheld pending authorized universe publication. Single-asset VCP geometry is available in Analysis (/) and Setups (/setups).'
+          : `Scanner snapshot returned an error (${reason}). Missing or failed data is never represented as a zero-result scan. Single-asset VCP geometry remains available in Analysis (/) and Setups (/setups).`,
+        reasonCode: reason,
+        recoveryCondition:
+          vcpCap?.recoveryCondition ||
+          'Restore scanner snapshot store connectivity and verify active snapshot lookup succeeds.',
+      };
+    }
+
+    if (vcpStatus === 'PIPELINE_PENDING') {
+      const reason =
+        vcpCap?.reason ||
+        (vcpCap?.isRollback
+          ? 'ROLLED_BACK_PUBLICATION_POINTER'
+          : vcpCap?.freshnessStatus === 'STALE'
+          ? 'STALE_SNAPSHOT'
+          : 'NO_ACTIVE_SNAPSHOT');
+      const title = vcpCap?.isRollback
+        ? 'Minervini VCP — Publication Rolled Back (Scanner Suspended)'
+        : vcpCap?.freshnessStatus === 'STALE'
+        ? 'Minervini VCP — Historical Snapshot Stale (Pending Refresh)'
+        : 'Minervini VCP — Universe Scanner Pending';
+      const description = vcpCap?.isRollback
+        ? `Universe publication ${vcpCap.universeBuildId || ''} was rolled back. Automated scanner execution is suspended.`
+        : vcpCap?.freshnessStatus === 'STALE'
+        ? `Historical VCP snapshot${vcpCap.dataAsOf ? ` (${vcpCap.dataAsOf})` : ''} is stale and cannot certify current scanner availability.`
+        : vcpCap?.populationDenominator && vcpCap?.universeBuildId && vcpCap?.publicationDigest
+        ? `${vcpCap.populationDenominator} securities registered in universe build ${vcpCap.universeBuildId}. Automated market-wide volatility contraction screening is pending operational activation.`
+        : vcpCap?.lifecycleState === 'COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED'
+        ? 'Automated market-wide volatility contraction screening is not scheduled. Single-asset VCP geometry is available in Analysis (/) and Setups (/setups).'
+        : 'Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs.';
+      return {
+        title,
+        description,
+        reasonCode: reason,
+        recoveryCondition:
+          vcpCap?.recoveryCondition ||
+          'Commit an authoritative, verified VCP publication snapshot under the active release SHA via an authorized batch scan.',
+      };
+    }
+
+    if (vcpStatus === 'AVAILABLE' && vcpCount === 0) {
+      const evalCount =
+        typeof vcpCap?.populationDenominator === 'number' && vcpCap.populationDenominator > 0
+          ? vcpCap.populationDenominator
+          : typeof referenceUniverseCount === 'number' && referenceUniverseCount > 0
+          ? referenceUniverseCount
+          : null;
+      const evalLabel = evalCount !== null ? `${evalCount} Evaluated` : 'Published Universe Evaluated';
+      const scopePhrase = evalCount !== null ? `all ${evalCount} published equities` : 'all published equities';
+      return {
+        title: `Minervini VCP — Zero Matching Contraction Setups (${evalLabel})`,
+        description: `Across ${scopePhrase} evaluated for the current market session, zero candidates satisfied all 10 normative Minervini VCP criteria. Stage 2 trend qualification does not imply confirmed volatility contraction geometry. Single-asset VCP geometry remains available in Analysis (/) and Setups (/setups).`,
+        reasonCode: null,
+        recoveryCondition: null,
+      };
+    }
+  }
+
+  if (activeFilter === 'SMART_MONEY') {
+    const smCap = capabilities.SMART_MONEY;
+    if (smStatus === 'ERROR') {
+      const reason = smCap?.reason || 'STORAGE_ERROR';
+      return {
+        title: 'Smart Money — Scanner Snapshot Error',
+        description: `Smart Money snapshot retrieval failed (${reason}). Failed snapshot reads are never displayed as zero matches. Single-asset insider and congressional filing analysis remains available on /smart-money.`,
+        reasonCode: reason,
+        recoveryCondition:
+          smCap?.recoveryCondition ||
+          'Restore Smart Money snapshot store connectivity and verify active snapshot lookup succeeds.',
+      };
+    }
+
+    if (smStatus === 'PIPELINE_PENDING') {
+      const reason =
+        smCap?.reason ||
+        (smCap?.freshnessStatus === 'STALE' ? 'STALE_SNAPSHOT' : 'NO_ACTIVE_SMART_MONEY_SNAPSHOT');
+      const title =
+        smCap?.freshnessStatus === 'STALE'
+          ? 'Smart Money — Historical Snapshot Stale (Pending Refresh)'
+          : 'Smart Money — Universe Scanner Pending';
+      const description =
+        smCap?.freshnessStatus === 'STALE'
+          ? `Historical Smart Money Form 4 snapshot${smCap.dataAsOf ? ` (${smCap.dataAsOf})` : ''} is stale and cannot certify current availability.`
+          : reason === 'POSTGRES_READ_DISABLED'
+          ? 'Smart Money Postgres snapshot reads are disabled by operational read control. Single-asset Form 4 analysis remains available on /smart-money.'
+          : smCap?.populationDenominator && smCap?.universeBuildId && smCap?.publicationDigest
+          ? `${smCap.populationDenominator} securities registered in universe build ${smCap.universeBuildId}. Automated market-wide institutional-flow screening is pending operational activation.`
+          : 'Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.';
+      return {
+        title,
+        description,
+        reasonCode: reason,
+        recoveryCondition:
+          smCap?.recoveryCondition ||
+          'Publish a verified Smart Money Form 4 snapshot once SEC ingestion holds and authorization gates are satisfied.',
+      };
+    }
+
+    if (smStatus === 'AVAILABLE' && smCount === 0) {
+      return {
+        title: 'Smart Money — Zero Stage 2 Matches Evaluated',
+        description:
+          'Active Smart Money Form 4 snapshot evaluated cleanly with zero qualifying Stage 2 candidates for this filter view.',
+        reasonCode: null,
+        recoveryCondition: null,
+      };
+    }
+  }
+
+  return {
+    title: `No qualifying candidates currently in "${activeFilter === 'VALUE_GARP' ? 'Value / GARP' : activeFilter === 'ALL' ? 'All Confluences' : activeFilter}"`,
+    description:
+      activeFilter === 'ALL'
+        ? 'Try clearing your search query or refreshing the tape to discover active confluence setups.'
+        : 'Try switching to "All Confluences" to view all active setups.',
+    reasonCode: null,
+    recoveryCondition: null,
+  };
+}
+

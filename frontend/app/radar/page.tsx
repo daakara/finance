@@ -33,6 +33,7 @@ import {
   formatRadarExecutionStatus,
   resolveRadarScorePresentation,
   resolveRadarCandidateRationale,
+  resolveRadarEmptyStateCopy,
   RadarScoreTier,
   RadarScorePresentation,
 } from '../../lib/radarPresentation';
@@ -160,32 +161,35 @@ function RadarContent() {
         setCapabilities((prev) => {
           if (prev.VCP.status === "AVAILABLE" && prev.VCP.matchedCount !== null && prev.VCP.publicationIntegrity === "VERIFIED") return prev;
           const raw = snap.raw;
-          const isVerified = Boolean(
-            (raw?.publicationIntegrity === "VERIFIED" || raw?.publication_integrity === "VERIFIED") &&
-            (raw?.publicationIntegrityVerified === true || raw?.publication_integrity_verified === true) &&
-            snap.status === "AVAILABLE" &&
-            snap.freshnessStatus !== "STALE" &&
-            !raw?.isRollback &&
-            !raw?.is_rollback
-          );
-          return {
-            ...prev,
+          const normalized = normalizeRadarCapabilities({
             VCP: {
-              ...prev.VCP,
               status: snap.status,
               universeScreening: snap.status,
+              singleAssetAnalysis: "AVAILABLE",
               matchedCount: snap.matchedCount,
               populationDenominator: snap.populationDenominator,
-              universeBuildId: snap.universeBuildId,
-              universeId: snap.universeId,
-              dataAsOf: snap.dataAsOf,
-              generatedAt: snap.generatedAt,
-              snapshotId: snap.snapshotId,
+              universeBuildId: snap.universeBuildId || null,
+              universeId: snap.universeId || null,
+              publicationDigest: snap.publicationDigest ?? null,
+              dataAsOf: snap.dataAsOf || undefined,
+              generatedAt: snap.generatedAt || undefined,
+              snapshotId: snap.snapshotId || undefined,
               coverageStatus: snap.coverageStatus,
               freshnessStatus: snap.freshnessStatus,
-              publicationIntegrity: isVerified ? "VERIFIED" : "NOT_VERIFIED",
-              publicationIntegrityVerified: isVerified,
+              reason: snap.reason ?? null,
+              recoveryCondition: snap.recoveryCondition ?? null,
+              lifecycleState: snap.lifecycleState,
+              isRollback: snap.isRollback,
+              rollbackReason: snap.rollbackReason ?? null,
+              rationale: snap.detail ?? undefined,
+              publicationIntegrity: snap.publicationIntegrity ?? (raw?.publicationIntegrity || raw?.publication_integrity),
+              publicationIntegrityVerified:
+                snap.publicationIntegrityVerified ?? (raw?.publicationIntegrityVerified === true || raw?.publication_integrity_verified === true),
             },
+          });
+          return {
+            ...prev,
+            VCP: normalized.VCP,
           };
         });
       })
@@ -314,7 +318,7 @@ function RadarContent() {
       ALL: {
         count: fetchError ? null : allAssets.length,
         badge: fetchError ? '—' : `${allAssets.length}`,
-        status: (fetchError ? 'PIPELINE_PENDING' : 'AVAILABLE') as RadarCapabilityStatus,
+        status: (fetchError ? 'ERROR' : 'AVAILABLE') as RadarCapabilityStatus,
       },
       VALUE_GARP: {
         count: isAvailable('VALUE_GARP')
@@ -324,24 +328,38 @@ function RadarContent() {
           : null,
         badge: fetchError
           ? '—'
+          : capabilities.VALUE_GARP?.status === 'ERROR'
+          ? 'Error'
           : isAvailable('VALUE_GARP')
           ? `${typeof capabilities.VALUE_GARP?.matchedCount === 'number'
               ? capabilities.VALUE_GARP.matchedCount
               : allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length}`
           : 'Pending',
-        status: capabilities.VALUE_GARP?.status || 'AVAILABLE',
+        status: (fetchError ? 'ERROR' : (capabilities.VALUE_GARP?.status || 'AVAILABLE')) as RadarCapabilityStatus,
       },
       VCP: {
         count: isAvailable('VCP')
           ? (typeof capabilities.VCP?.matchedCount === 'number' ? capabilities.VCP.matchedCount : allAssets.filter((a) => a.categories.includes('VCP')).length)
           : null,
-        badge: isAvailable('VCP') ? `${allAssets.filter((a) => a.categories.includes('VCP')).length}` : 'Universe Scanner Pending',
-        status: capabilities.VCP?.status || 'PIPELINE_PENDING',
+        badge: fetchError
+          ? '—'
+          : capabilities.VCP?.status === 'ERROR'
+          ? 'Error'
+          : isAvailable('VCP')
+          ? `${typeof capabilities.VCP?.matchedCount === 'number' ? capabilities.VCP.matchedCount : allAssets.filter((a) => a.categories.includes('VCP')).length}`
+          : 'Universe Scanner Pending',
+        status: (fetchError ? 'ERROR' : (capabilities.VCP?.status || 'PIPELINE_PENDING')) as RadarCapabilityStatus,
       },
       SMART_MONEY: {
         count: isAvailable('SMART_MONEY') ? allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length : null,
-        badge: isAvailable('SMART_MONEY') ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}` : 'Universe Scanner Pending',
-        status: capabilities.SMART_MONEY?.status || 'PIPELINE_PENDING',
+        badge: fetchError
+          ? '—'
+          : capabilities.SMART_MONEY?.status === 'ERROR'
+          ? 'Error'
+          : isAvailable('SMART_MONEY')
+          ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}`
+          : 'Universe Scanner Pending',
+        status: (fetchError ? 'ERROR' : (capabilities.SMART_MONEY?.status || 'PIPELINE_PENDING')) as RadarCapabilityStatus,
       },
     };
   }, [allAssets, capabilities, fetchError]);
@@ -483,6 +501,42 @@ function RadarContent() {
 
     return null;
   }, [selectedAssetTicker, cleanQ, filteredAssets, searchParams, allAssets]);
+
+  const emptyStateCopy = useMemo(
+    () =>
+      resolveRadarEmptyStateCopy({
+        activeFilter,
+        searchQuery,
+        isTickerQuery,
+        cleanQ,
+        ownershipFilter,
+        isPortfolioVerified,
+        allAssetsCount: allAssets.length,
+        universeScopeLabel: population?.universeScope,
+        referenceUniverseCount: population?.referenceUniverseCount ?? null,
+        capabilities,
+        vcpStatus: categoryMeta.VCP.status,
+        vcpCount: categoryMeta.VCP.count,
+        smStatus: categoryMeta.SMART_MONEY.status,
+        smCount: categoryMeta.SMART_MONEY.count,
+      }),
+    [
+      activeFilter,
+      searchQuery,
+      isTickerQuery,
+      cleanQ,
+      ownershipFilter,
+      isPortfolioVerified,
+      allAssets.length,
+      population?.universeScope,
+      population?.referenceUniverseCount,
+      capabilities,
+      categoryMeta.VCP.status,
+      categoryMeta.VCP.count,
+      categoryMeta.SMART_MONEY.status,
+      categoryMeta.SMART_MONEY.count,
+    ]
+  );
 
   const handleOnDemandScan = async (tickerOverride?: string) => {
     const raw = tickerOverride || searchQuery;
@@ -660,15 +714,33 @@ function RadarContent() {
         {/* Loading Indicator */}
         {isLoading && (
           <div className="p-8 text-center text-[var(--text-2)] font-mono text-xs">
-            {initialSnapshot ? (
+            {initialSnapshot && initialSnapshot.status === 'AVAILABLE' && typeof initialSnapshot.populationDenominator === 'number' ? (
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold">
                   <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
                   <span>⚡ Universe Snapshot Verified</span>
                 </div>
                 <div className="text-[var(--text-muted)] text-[11px]">
-                  {initialSnapshot.populationDenominator} assets · {initialSnapshot.stage2OpportunityCount ?? 200} Stage 2 opportunities as of {initialSnapshot.dataAsOf}.
-                  Enriching multi-factor tape and trade levels...
+                  {initialSnapshot.populationDenominator} assets
+                  {typeof initialSnapshot.stage2OpportunityCount === 'number'
+                    ? ` · ${initialSnapshot.stage2OpportunityCount} Stage 2 opportunities`
+                    : ''}
+                  {initialSnapshot.dataAsOf ? ` as of ${initialSnapshot.dataAsOf}` : ''}.
+                  {' '}Enriching multi-factor tape and trade levels...
+                </div>
+              </div>
+            ) : initialSnapshot ? (
+              <div className="space-y-2">
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg border font-bold ${
+                  initialSnapshot.status === 'ERROR'
+                    ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                    : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                }`}>
+                  <span>{initialSnapshot.status === 'ERROR' ? '⚠️ Snapshot Error' : '⏳ Scanner Snapshot Pending'}</span>
+                  {initialSnapshot.reason && <span className="text-[10px] opacity-80">({initialSnapshot.reason})</span>}
+                </div>
+                <div className="text-[var(--text-muted)] text-[11px] max-w-lg mx-auto">
+                  {initialSnapshot.recoveryCondition || initialSnapshot.detail || 'Evaluating primary universe candidates...'}
                 </div>
               </div>
             ) : (
@@ -725,9 +797,9 @@ function RadarContent() {
               <p className="text-[var(--text-2)] max-w-lg mx-auto font-sans">
                 Unable to load live screening data: {fetchError}. Missing API connectivity is not represented as zero qualifying candidates (DATA UNAVAILABLE).
               </p>
-              {initialSnapshot && (
+              {initialSnapshot && initialSnapshot.status === 'AVAILABLE' && typeof initialSnapshot.populationDenominator === 'number' && typeof initialSnapshot.stage2OpportunityCount === 'number' && (
                 <p className="text-cyan-400/90 text-[11px] pt-1">
-                  Authoritative snapshot {initialSnapshot.snapshotId} confirms {initialSnapshot.populationDenominator} evaluated assets and {initialSnapshot.stage2OpportunityCount ?? 200} Stage 2 opportunities as of {initialSnapshot.dataAsOf}.
+                  Authoritative snapshot {initialSnapshot.snapshotId} confirms {initialSnapshot.populationDenominator} evaluated assets and {initialSnapshot.stage2OpportunityCount} Stage 2 opportunities{initialSnapshot.dataAsOf ? ` as of ${initialSnapshot.dataAsOf}` : ''}.
                 </p>
               )}
             </div>
@@ -1112,9 +1184,26 @@ function RadarContent() {
                       } Assets${retainedVerifiedSnapshot && fetchError ? " (Retained Snapshot)" : ""}`}
                 </span>
               </span>
-              {(capabilities.VCP?.dataAsOf || initialSnapshot?.dataAsOf || allAssets[0]?.priceDate) && (
-                <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]" title="Market data freshness timestamp">
-                  Snapshot date: <span className="text-[var(--text-1)] font-semibold">{capabilities.VCP?.dataAsOf || initialSnapshot?.dataAsOf || allAssets[0]?.priceDate}</span>
+              {(capabilities.VCP?.dataAsOf || initialSnapshot?.dataAsOf) && (
+                <span className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]" title="Authoritative VCP batch snapshot evaluation date">
+                  VCP snapshot: <span className="text-[var(--text-1)] font-semibold">{capabilities.VCP?.dataAsOf || initialSnapshot?.dataAsOf}</span>
+                </span>
+              )}
+              {(population?.marketDataAsOf || allAssets[0]?.priceDate) && (
+                <span
+                  className="text-[11px] text-[var(--text-2)] bg-[var(--surface-2)] px-2 py-0.5 rounded border border-[var(--border-subtle)]"
+                  title={
+                    population?.marketDataMixedDates
+                      ? `Served daily closes span ${population.marketDataOldestAsOf} through ${population.marketDataAsOf} (${population.marketDataLatestCount ?? '?'} on latest close, ${population.marketDataLaggingCount ?? '?'} on prior sessions).`
+                      : 'Latest served daily close observation across evaluated candidates'
+                  }
+                >
+                  Tape obs:{' '}
+                  <span className="text-[var(--text-1)] font-semibold">
+                    {population?.marketDataMixedDates && population?.marketDataOldestAsOf
+                      ? `${population.marketDataOldestAsOf}..${population.marketDataAsOf}`
+                      : (population?.marketDataAsOf || allAssets[0]?.priceDate)}
+                  </span>
                 </span>
               )}
             </div>
@@ -1130,7 +1219,6 @@ function RadarContent() {
                     : `${
                         population?.stage2OpportunityCount ??
                         initialSnapshot?.stage2OpportunityCount ??
-                        (filteredAssets.length > 0 ? filteredAssets.length : null) ??
                         "DATA UNAVAILABLE"
                       } Opportunities${retainedVerifiedSnapshot && fetchError ? " · Retained" : ""}`}
                   )
@@ -1180,7 +1268,7 @@ function RadarContent() {
                   tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
                   onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
                   onClick={() => handleCategoryFilterSelect('VALUE_GARP', 'tab-radar-filter-value_garp')}
-                  title={`${categoryMeta.VALUE_GARP.count ?? 0} Value / GARP matches identified from ${allAssets.length} candidates evaluated. Whole-market automated screening is pending deployment.`}
+                  title={`${categoryMeta.VALUE_GARP.count ?? 0} Value / GARP matches from ${capabilities.VALUE_GARP?.catalogAssetCount ?? 43}-asset curated reference catalog evaluated across ${population?.referenceUniverseCount ?? allAssets.length} universe assets.`}
                   className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeFilter === 'VALUE_GARP'
                       ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
@@ -1244,7 +1332,9 @@ function RadarContent() {
                     <span className="text-slate-500 font-normal">·</span>
                   )}
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                    categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
+                    categoryMeta.SMART_MONEY.status === 'ERROR'
+                      ? 'bg-rose-950/80 text-rose-300 border border-rose-800/80'
+                      : categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
                       ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
                       : 'bg-[var(--surface-2)] text-[var(--text-2)]'
                   }`}>
@@ -1454,12 +1544,15 @@ function RadarContent() {
               </span>
               <span className="text-slate-600">•</span>
               <span className="text-[var(--text-2)]">
-                {filteredAssets.length} Value / GARP Matches · Evaluated across published universe ({population?.referenceUniverseCount ?? allAssets.length} Assets)
+                {filteredAssets.length} Value / GARP Matches · {capabilities.VALUE_GARP?.catalogAssetCount ?? 43}-Asset Reference Catalog across {population?.referenceUniverseCount ?? allAssets.length} Universe Assets
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded text-[10px] bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-strong)]" title="Evaluated across authoritative published universe.">
-                PUBLISHED UNIVERSE ({allAssets.length} EVALUATED)
+              <span
+                className="px-2 py-0.5 rounded text-[10px] bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-strong)]"
+                title="Curated Value/GARP model criteria cover cataloged assets; remaining universe equities report UNASSESSED_INSUFFICIENT_EVIDENCE until full fundamental ingestion is authorized."
+              >
+                STAGE 2 POOL ({allAssets.length} STAGE 2 / {population?.referenceUniverseCount ?? allAssets.length} UNIVERSE)
               </span>
             </div>
           </div>
@@ -1544,9 +1637,9 @@ function RadarContent() {
                   return (
                     <span
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                      title={`VCP batch evaluation based on market data as of ${asOfStr}; live ticker quotes are updated real-time.`}
+                      title={`VCP batch evaluation based on market data as of ${asOfStr}; table prices reflect latest Daily Close observations.`}
                     >
-                      ⚠️ Prior Evaluation: {asOfStr} · Quotes Live
+                      ⚠️ Prior Evaluation: {asOfStr} · Daily Close Tape
                     </span>
                   );
                 }
@@ -1584,30 +1677,99 @@ function RadarContent() {
 
         {activeFilter === 'SMART_MONEY' && (
           <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] text-xs font-mono" data-testid="smart-money-scope-banner">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-bold text-cyan-400">🐋 Smart Money</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-[var(--text-2)]">
-                Scope: <strong className="text-white">Historical 10-Issuer Pilot</strong>
-              </span>
-              <span className="text-slate-600">•</span>
-              <span className="text-[var(--text-2)]">
-                <strong className="text-white">{capabilities.SMART_MONEY?.displayedStage2IntersectionCount ?? categoryMeta.SMART_MONEY.count ?? 5}</strong> Stage 2 matches from 10 pilot issuers · October 25, 2026 · Ingestion held
-              </span>
-              {capabilities.SMART_MONEY?.snapshotId && (
-                <>
+            {categoryMeta.SMART_MONEY.status === 'ERROR' ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-rose-400">🐋 Smart Money</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-rose-300">
+                    Scanner Error ({capabilities.SMART_MONEY?.reason || 'STORAGE_ERROR'})
+                  </span>
+                  {capabilities.SMART_MONEY?.recoveryCondition && (
+                    <>
+                      <span className="text-slate-600">•</span>
+                      <span className="text-[var(--text-2)]">{capabilities.SMART_MONEY.recoveryCondition}</span>
+                    </>
+                  )}
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/10 text-rose-300 border border-rose-500/30">
+                  ⚠️ Snapshot Read Error
+                </span>
+              </>
+            ) : categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING' ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-amber-400">🐋 Smart Money</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-amber-300">
+                    Universe Scanner Pending ({capabilities.SMART_MONEY?.reason || 'NO_ACTIVE_SMART_MONEY_SNAPSHOT'})
+                  </span>
+                  {capabilities.SMART_MONEY?.recoveryCondition && (
+                    <>
+                      <span className="text-slate-600">•</span>
+                      <span className="text-[var(--text-2)]">{capabilities.SMART_MONEY.recoveryCondition}</span>
+                    </>
+                  )}
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                  ⏳ {capabilities.SMART_MONEY?.freshnessStatus === 'STALE' ? 'Stale Snapshot' : 'Pending Activation'}
+                </span>
+              </>
+            ) : (capabilities.SMART_MONEY?.populationDenominator === 10 || capabilities.SMART_MONEY?.coverageStatus === 'PILOT_HELD') ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-cyan-400">🐋 Smart Money</span>
                   <span className="text-slate-600">•</span>
                   <span className="text-[var(--text-2)]">
-                    Snapshot: <strong className="text-[var(--text-1)]">{capabilities.SMART_MONEY.snapshotId}</strong>
+                    Scope: <strong className="text-white">Historical 10-Issuer Pilot</strong>
                   </span>
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20" title="Historical pilot evidence; broad market SEC ingestion held under HOLD_SEC_001.">
-                ⚠️ Historical Pilot · Ingestion Held (HOLD_SEC_001)
-              </span>
-            </div>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-[var(--text-2)]">
+                    <strong className="text-white">{capabilities.SMART_MONEY?.displayedStage2IntersectionCount ?? categoryMeta.SMART_MONEY.count ?? 5}</strong> Stage 2 matches from 10 pilot issuers · October 25, 2026 · Ingestion held
+                  </span>
+                  {capabilities.SMART_MONEY?.snapshotId && (
+                    <>
+                      <span className="text-slate-600">•</span>
+                      <span className="text-[var(--text-2)]">
+                        Snapshot: <strong className="text-[var(--text-1)]">{capabilities.SMART_MONEY.snapshotId}</strong>
+                      </span>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20" title="Historical pilot evidence; broad market SEC ingestion held under HOLD_SEC_001.">
+                    ⚠️ Historical Pilot · Ingestion Held (HOLD_SEC_001)
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-cyan-400">🐋 Smart Money</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-[var(--text-2)]">
+                    Scope: <strong className="text-white">{capabilities.SMART_MONEY?.populationDenominator || 0} Evaluated Issuers</strong>
+                  </span>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-[var(--text-2)]">
+                    <strong className="text-white">{capabilities.SMART_MONEY?.displayedStage2IntersectionCount ?? categoryMeta.SMART_MONEY.count ?? 0}</strong> Stage 2 matches ({capabilities.SMART_MONEY?.matchedCount ?? 0} raw snapshot matches)
+                  </span>
+                  {capabilities.SMART_MONEY?.snapshotId && (
+                    <>
+                      <span className="text-slate-600">•</span>
+                      <span className="text-[var(--text-2)]">
+                        Snapshot: <strong className="text-[var(--text-1)]">{capabilities.SMART_MONEY.snapshotId}</strong>
+                      </span>
+                    </>
+                  )}
+                </div>
+                {capabilities.SMART_MONEY?.dataAsOf && (
+                  <span className="text-[var(--text-2)]">
+                    Data As Of: <strong className="text-[var(--text-1)]">{capabilities.SMART_MONEY.dataAsOf}</strong>
+                  </span>
+                )}
+              </>
+            )}
           </div>
         )}
 
@@ -1647,59 +1809,27 @@ function RadarContent() {
                     <td colSpan={9} className="p-8 text-center text-[var(--text-2)] space-y-4 font-mono">
                       <div className="max-w-md mx-auto space-y-3">
                         <span className="text-3xl block">🔍</span>
-                        <div className="space-y-1">
+                        <div className="space-y-1.5" data-testid="radar-desktop-empty-state">
                           <p className="text-sm font-bold text-[var(--text-1)]">
-                            {searchQuery
-                              ? `No assets match "${searchQuery}" in current confluence scan`
-                              : ownershipFilter === 'MY_HOLDINGS'
-                              ? (!isPortfolioVerified
-                                  ? "Portfolio sync unavailable (Ownership UNKNOWN)"
-                                  : "No active Radar candidates currently held in portfolio")
-                              : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
-                              ? "Portfolio sync unavailable (Ownership UNKNOWN)"
-                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'ERROR'
-                              ? (capabilities.VCP?.reason === 'BUILD_MEMBERSHIP_EMPTY'
-                                  ? "Minervini VCP — Universe Membership Empty"
-                                  : "Minervini VCP — Scanner Snapshot Error")
-                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
-                              ? "Minervini VCP — Universe Scanner Pending"
-                              : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
-                              ? "Smart Money — Universe Scanner Pending"
-                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'AVAILABLE' && categoryMeta.VCP.count === 0
-                              ? "Minervini VCP — Zero Matching Contraction Setups (500 Evaluated)"
-                              : `No qualifying candidates currently in "${activeFilter === 'VALUE_GARP' ? 'Value / GARP' : activeFilter}"`}
+                            {emptyStateCopy.title}
                           </p>
                           <p className="text-xs text-[var(--text-2)] font-sans leading-relaxed">
-                            {searchQuery
-                              ? (isTickerQuery
-                                  ? `Asset "${cleanQ}" is not in the active published universe (${allAssets.length > 0 ? `${allAssets.length} assets evaluated` : "ARX_US_EQUITIES"}). You can scan it live across the exchange tape or review its tactical setup.`
-                                  : `No confluence candidates match this search. Try searching by symbol (e.g. NVDA, CPRX, ASML, TSLA) or reset the filter.`)
-                              : ownershipFilter === 'MY_HOLDINGS'
-                              ? (!isPortfolioVerified
-                                  ? "The authoritative portfolio connection could not be verified. Radar renders canonically with ownership state UNKNOWN."
-                                  : "None of your current portfolio positions meet the active Radar screening confluence criteria. Switch to 'All Candidates' or 'Unheld Candidates' to view market setups.")
-                              : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
-                              ? "Filtering for unheld candidates requires verified portfolio state. Currently running in degraded UNKNOWN mode."
-                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'ERROR'
-                              ? (capabilities.VCP?.reason === 'BUILD_MEMBERSHIP_EMPTY'
-                                  ? "The scannable universe membership is currently empty (BUILD_MEMBERSHIP_EMPTY). Automated screening is withheld pending authorized universe publication. Single-asset VCP geometry is available in Analysis (/) and Setups (/setups)."
-                                  : `Scanner snapshot returned an error (${capabilities.VCP?.reason || 'SNAPSHOT_ERROR'}). Single-asset VCP geometry remains available in Analysis (/) and Setups (/setups).`)
-                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
-                              ? (capabilities.VCP?.populationDenominator && capabilities.VCP?.universeBuildId && capabilities.VCP?.publicationDigest
-                                  ? `${capabilities.VCP.populationDenominator} securities registered in universe build ${capabilities.VCP.universeBuildId}. Automated market-wide volatility contraction screening is pending operational activation.`
-                                  : (capabilities.VCP?.lifecycleState === 'COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED'
-                                      ? "Automated market-wide volatility contraction screening is not scheduled. Single-asset VCP geometry is available in Analysis (/) and Setups (/setups)."
-                                      : "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs."))
-                              : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
-                              ? (capabilities.SMART_MONEY?.populationDenominator && capabilities.SMART_MONEY?.universeBuildId && capabilities.SMART_MONEY?.publicationDigest
-                                  ? `${capabilities.SMART_MONEY.populationDenominator} securities registered in universe build ${capabilities.SMART_MONEY.universeBuildId}. Automated market-wide institutional-flow screening is pending operational activation.`
-                                  : "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money.")
-                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'AVAILABLE' && categoryMeta.VCP.count === 0
-                              ? "Across all 500 published equities evaluated for the current market session, zero candidates satisfied all 10 normative Minervini VCP criteria. Stage 2 trend qualification does not imply confirmed volatility contraction geometry. Single-asset VCP geometry remains available in Analysis (/) and Setups (/setups)."
-                              : activeFilter === 'ALL'
-                              ? "Try clearing your search query or refreshing the tape to discover active confluence setups."
-                              : `Try switching to "All Confluences" to view all active setups.`}
+                            {emptyStateCopy.description}
                           </p>
+                          {(emptyStateCopy.reasonCode || emptyStateCopy.recoveryCondition) && (
+                            <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] text-[11px] font-sans text-[var(--text-muted)] space-y-1">
+                              {emptyStateCopy.reasonCode && (
+                                <div>
+                                  Reason: <code className="font-mono text-[var(--text-2)]">{emptyStateCopy.reasonCode}</code>
+                                </div>
+                              )}
+                              {emptyStateCopy.recoveryCondition && (
+                                <div>
+                                  Recovery: <span>{emptyStateCopy.recoveryCondition}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* VCP Explainability Diagnostic Box (Read-Only Reconstructed Evidence) */}
@@ -1728,7 +1858,7 @@ function RadarContent() {
                                   </div>
                                 )}
                                 <div className="pt-1 text-[11px] text-[var(--text-3)] flex flex-wrap items-center justify-between gap-1">
-                                  <span>Historical reconstructed evidence — {vcpExplanation.evaluationContext.asOfDate ? (new Date(vcpExplanation.evaluationContext.asOfDate + "T12:00:00Z").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })) : "November 3, 2026"}.</span>
+                                  <span>Historical reconstructed evidence — {vcpExplanation.evaluationContext.asOfDate ? (new Date(vcpExplanation.evaluationContext.asOfDate + "T12:00:00Z").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })) : "As-of Date Unverified"}.</span>
                                 </div>
                                 <div className="text-[10px] text-slate-500 italic">
                                   Not an executable trade signal.
@@ -2031,14 +2161,28 @@ function RadarContent() {
           {/* Mobile Cards View (< sm): Touch-Friendly, Responsive Cards */}
           <div className="sm:hidden" data-testid="radar-mobile-cards">
             {filteredAssets.length === 0 ? (
-              <div className="p-6 text-center text-[var(--text-2)] space-y-4 font-mono">
+              <div className="p-6 text-center text-[var(--text-2)] space-y-3 font-mono" data-testid="radar-mobile-empty-state">
                 <span className="text-3xl block">🔍</span>
                 <p className="text-sm font-bold text-[var(--text-1)]">
-                  {searchQuery ? `No assets match "${searchQuery}"` : "No qualifying candidates found"}
+                  {emptyStateCopy.title}
                 </p>
-                <p className="text-xs text-[var(--text-muted)] font-sans">
-                  Try clearing your search query or refreshing the confluence scan.
+                <p className="text-xs text-[var(--text-muted)] font-sans leading-relaxed">
+                  {emptyStateCopy.description}
                 </p>
+                {(emptyStateCopy.reasonCode || emptyStateCopy.recoveryCondition) && (
+                  <div className="pt-2 border-t border-[var(--border-subtle)] text-[11px] font-sans text-[var(--text-muted)] space-y-1">
+                    {emptyStateCopy.reasonCode && (
+                      <div>
+                        Reason: <code className="font-mono text-[var(--text-2)]">{emptyStateCopy.reasonCode}</code>
+                      </div>
+                    )}
+                    {emptyStateCopy.recoveryCondition && (
+                      <div>
+                        Recovery: <span>{emptyStateCopy.recoveryCondition}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="divide-y divide-[var(--border-subtle)]" role="feed" aria-label="Radar Confluence Candidate Cards">
@@ -2116,7 +2260,7 @@ function RadarContent() {
                             )}
                           </div>
                           <div className="text-[9px] text-[var(--text-muted)] truncate">
-                            {asset.priceBasis === 'DAILY_CLOSE' && asset.priceDate ? asset.priceDate : (asset.priceDate || 'Daily Close')}
+                            {formatPriceObservationDate(asset.priceDate, asset.priceBasis)}
                           </div>
                         </div>
 

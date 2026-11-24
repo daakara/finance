@@ -19,6 +19,7 @@ import {
   RadarCapabilities,
   CanonicalRadarCategory,
 } from "../lib/api";
+import { resolveRadarEmptyStateCopy } from "../lib/radarPresentation";
 
 console.log("===============================================================================");
 console.log("ARX RADAR CATEGORY INTEGRITY & PROVENANCE SUITE (DIRECTIVE 002)");
@@ -45,10 +46,13 @@ assert.ok(
   "Smart Money tab must render dot separator '·' between label and badge count"
 );
 
-// Tab badge must preserve dynamic Stage 2 intersection count
+// Tab badge must preserve dynamic Stage 2 intersection count when available, 'Error' on error, 'Universe Scanner Pending' on pending
 assert.ok(
-  pageSource.includes("badge: isAvailable('SMART_MONEY') ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}` : 'Universe Scanner Pending'"),
-  "Smart Money badge must reflect filtered allAssets length (5) when available"
+  pageSource.includes("capabilities.SMART_MONEY?.status === 'ERROR'") &&
+    pageSource.includes("? 'Error'") &&
+    pageSource.includes("`${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}`") &&
+    pageSource.includes(": 'Universe Scanner Pending'"),
+  "Smart Money badge must reflect filtered allAssets length when available and distinguish Error vs Pending"
 );
 
 console.log("   [PASS] Smart Money tab badge, dot separator, and tooltip verified.\n");
@@ -95,23 +99,69 @@ assert.ok(
   "VCP banner must append Stage 2 disclaimer when authentic evaluated matches equal zero"
 );
 
-// Empty state title must explicitly cite 500 evaluated
+// Empty state presentation is delegated to shared resolveRadarEmptyStateCopy for desktop and mobile parity
 assert.ok(
-  pageSource.includes('Minervini VCP \u2014 Zero Matching Contraction Setups (500 Evaluated)'),
+  pageSource.includes('resolveRadarEmptyStateCopy') &&
+    pageSource.includes('data-testid="radar-desktop-empty-state"') &&
+    pageSource.includes('data-testid="radar-mobile-empty-state"'),
+  "Desktop and mobile empty states must share resolveRadarEmptyStateCopy"
+);
+
+const vcpZero500 = resolveRadarEmptyStateCopy({
+  activeFilter: "VCP",
+  searchQuery: "",
+  isTickerQuery: false,
+  cleanQ: "",
+  ownershipFilter: "ALL",
+  isPortfolioVerified: true,
+  allAssetsCount: 194,
+  referenceUniverseCount: 500,
+  capabilities: {
+    VCP: { status: "AVAILABLE", matchedCount: 0, populationDenominator: 500 },
+  },
+  vcpStatus: "AVAILABLE",
+  vcpCount: 0,
+  smStatus: "PIPELINE_PENDING",
+  smCount: null,
+});
+
+assert.strictEqual(
+  vcpZero500.title,
+  "Minervini VCP \u2014 Zero Matching Contraction Setups (500 Evaluated)",
   "Empty state title must declare Minervini VCP — Zero Matching Contraction Setups (500 Evaluated)"
 );
 
-// Empty state description must explain 500 evaluated and 10 normative criteria
 assert.ok(
-  pageSource.includes("Across all 500 published equities evaluated for the current market session, zero candidates satisfied all 10 normative Minervini VCP criteria. Stage 2 trend qualification does not imply confirmed volatility contraction geometry."),
+  vcpZero500.description.includes(
+    "Across all 500 published equities evaluated for the current market session, zero candidates satisfied all 10 normative Minervini VCP criteria. Stage 2 trend qualification does not imply confirmed volatility contraction geometry."
+  ),
   "Empty state description must detail the 500-equity evaluation and 10 normative predicates"
 );
 
-// Pending state must continue to show pending, never an unjustified zero
-assert.ok(
-  pageSource.includes('activeFilter === \'VCP\' && categoryMeta.VCP.status === \'PIPELINE_PENDING\'\n                              ? "Minervini VCP \u2014 Universe Scanner Pending"'),
+const vcpPendingCopy = resolveRadarEmptyStateCopy({
+  activeFilter: "VCP",
+  searchQuery: "",
+  isTickerQuery: false,
+  cleanQ: "",
+  ownershipFilter: "ALL",
+  isPortfolioVerified: true,
+  allAssetsCount: 194,
+  referenceUniverseCount: 500,
+  capabilities: {
+    VCP: { status: "PIPELINE_PENDING", matchedCount: null, reason: "NO_ACTIVE_SNAPSHOT" },
+  },
+  vcpStatus: "PIPELINE_PENDING",
+  vcpCount: null,
+  smStatus: "PIPELINE_PENDING",
+  smCount: null,
+});
+
+assert.strictEqual(
+  vcpPendingCopy.title,
+  "Minervini VCP \u2014 Universe Scanner Pending",
   "VCP pending state must display Universe Scanner Pending"
 );
+assert.ok(Boolean(vcpPendingCopy.reasonCode && vcpPendingCopy.recoveryCondition), "VCP pending state must carry reason and recovery condition");
 
 console.log("   [PASS] VCP evaluated zero and disclaimer invariants verified.\n");
 
