@@ -32,9 +32,20 @@ export interface IssuerEvidenceSummary {
   cik: string;
   company_name: string;
   state: EvidenceState;
+  /**
+   * The exact observed_at timestamp from the SEC submissions catalog poll.
+   * This represents the actual poll time.
+   */
+  observed_at: string | null;
+  /**
+   * The bounded coverage cutoff timestamp accounted through by the worker.
+   */
+  cutoff: string | null;
+  /**
+   * Backwards-compatible alias for observed_at/cutoff.
+   */
   last_polled_at: string | null;
   interval_start: string | null;
-  cutoff: string | null;
   accounted_through: string | null;
   previous_watermark: string | null;
   catalog_sha256: string | null;
@@ -49,13 +60,22 @@ export interface IssuerEvidenceSummary {
   artifact_id: string | null;
   receipt_sha256: string | null;
   receipt_id: string | null;
+  slot_id?: string | null;
+  is_prior_slot?: boolean;
+  prior_slot_id?: string | null;
   is_older_receipt?: boolean;
   read_error_message?: string;
 }
 
 export interface RawIssuerReceipt {
+  cycle_id?: string;
+  slot_id?: string;
+  grant_sha256?: string;
   ticker: string;
   cik: string;
+  request_url?: string;
+  response_url?: string;
+  observed_at?: string;
   interval_start: string;
   cutoff: string;
   artifact_id: string;
@@ -77,24 +97,55 @@ export interface RawIssuerReceipt {
   sha256: string;
 }
 
-export interface CohortReconciliationReceipt {
-  receipt_id: string;
+export interface CohortEvidencePayload {
+  version?: number;
   trial_id: string;
-  created_at: string;
-  interval_start: string;
-  interval_end: string;
-  coverage_status: 'PARTIAL' | 'COMPLETE' | string;
-  reconciliation_hash: string;
+  slot_id?: string;
+  universe_id?: string;
   release_sha: string;
-  failure_reasons: {
-    trial_id: string;
-    cohort_evidence: {
-      trial_id: string;
-      universe_id: string;
-      release_sha: string;
-      issuers: Record<string, RawIssuerReceipt>;
-    };
+  issuers: Record<string, RawIssuerReceipt>;
+}
+
+export interface CohortReconciliationReceipt {
+  receipt_id?: string;
+  trial_id?: string;
+  slot_id?: string;
+  created_at?: string;
+  interval_start?: string;
+  interval_end?: string;
+  coverage_status?: 'PARTIAL' | 'COMPLETE' | string;
+  reconciliation_hash?: string;
+  release_sha?: string;
+  cohort_evidence?: CohortEvidencePayload;
+  failure_reasons?: {
+    trial_id?: string;
+    cohort_evidence?: CohortEvidencePayload;
+    [key: string]: any;
   };
+  issuers?: Record<string, RawIssuerReceipt>;
+  [key: string]: any;
+}
+
+export interface IndependentlyReconciledIssuerExport {
+  ticker: string;
+  cik: string;
+  expected_count?: number;
+  accounted_count?: number;
+  missing_count?: number;
+  gaps?: string[];
+  cutoff?: string;
+  accounted_through?: string;
+  state?: EvidenceState;
+  verified?: boolean;
+}
+
+export interface IndependentlyReconciledExport {
+  export_id?: string;
+  trial_id: string;
+  slot_id?: string;
+  reconciled_at?: string;
+  reconciled_by?: string;
+  issuers: Record<string, IndependentlyReconciledIssuerExport>;
 }
 
 export interface CohortValidationDiscrepancy {
@@ -110,5 +161,25 @@ export interface ReceiptValidationReport {
   validated_at: string;
   is_valid: boolean;
   issuer_count: number;
+  discrepancies: CohortValidationDiscrepancy[];
+}
+
+export interface WorkerReceiptValidation {
+  is_valid_format: boolean;
+  trial_id: string | null;
+  trial_id_matches: boolean;
+  slot_id: string | null;
+  is_prior_slot: boolean;
+  prior_slot_id: string | null;
+  release_sha: string | null;
+  release_sha_matches: boolean;
+  issuers_matched: boolean;
+  issuer_count: number;
+  missing_issuers: string[];
+  mismatched_issuers: string[];
+  receipt_fields_valid: boolean;
+  validation_errors: string[];
+  reconciliation_status: 'RECONCILIATION_PENDING' | 'RECONCILED' | 'RECONCILIATION_DISCREPANCY';
+  reconciliation_label: string;
   discrepancies: CohortValidationDiscrepancy[];
 }
