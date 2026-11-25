@@ -114,11 +114,14 @@ export type CheckStatus =
   | "ERROR"
   | "PROVISIONAL";
 
+export type CheckOutcomeCategory = "PASS" | "FAIL" | "UNAVAILABLE";
+
 export interface PreFlightCheckItem {
   id: "CHK-1" | "CHK-2" | "CHK-3" | "CHK-4" | "CHK-5";
   tag: string;
   name: string;
   status: CheckStatus;
+  outcomeCategory?: CheckOutcomeCategory;
   displayStatus?: string;
   badgeClass: string;
   passed: boolean;
@@ -136,7 +139,11 @@ export interface PreFlightEvaluationResult {
     PreFlightCheckItem,
     PreFlightCheckItem
   ];
+  totalCount: number;
   passedCount: number;
+  failedCount: number;
+  unavailableCount: number;
+  availableCount: number;
   convictionPct: number;
   isActionableGranted: boolean;
   canSizeTradeGranted: boolean;
@@ -502,14 +509,21 @@ export function evaluatePreFlightChecks(
     tag: "CHK-1 R:R",
     name: isPlain ? "1. Reward vs. Risk" : "1. Reward vs. Risk (Asymmetric Payoff)",
     status: chk1Status,
+    outcomeCategory: isRRPassed
+      ? "PASS"
+      : !hasExecutionLevels || !isRRValid
+      ? "UNAVAILABLE"
+      : "FAIL",
     displayStatus: chk1DisplayStatus,
     badgeClass: isRRPassed
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+      : !hasExecutionLevels || !isRRValid
+      ? "bg-slate-900 text-slate-300 border-slate-700"
       : "bg-rose-950/80 text-rose-300 border-rose-700/80",
     passed: isRRPassed,
     summary: chk1Summary,
     detail: chk1Detail,
-    icon: isRRPassed ? "✓" : "✕",
+    icon: isRRPassed ? "✓" : !hasExecutionLevels || !isRRValid ? "⚪" : "✕",
   };
 
   // ── Check 2: Technical Trend Alignment & Stage Discipline ───────────────
@@ -531,6 +545,11 @@ export function evaluatePreFlightChecks(
     tag: "CHK-2 STRUCTURE",
     name: isPlain ? "2. Trend & Moving Averages" : "2. Technical Structure",
     status: chk2Status,
+    outcomeCategory: isTrendPassed
+      ? "PASS"
+      : !isStage4 && safeEntryMin === null
+      ? "UNAVAILABLE"
+      : "FAIL",
     badgeClass: isTrendPassed
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
       : isStage4
@@ -654,6 +673,11 @@ export function evaluatePreFlightChecks(
     tag: "CHK-3 CAPITAL",
     name: isPlain ? "3. Capital Health & Squeeze Risk" : "3. Structural Capital Risk",
     status: chk3Status,
+    outcomeCategory: isCapitalRiskPassed
+      ? "PASS"
+      : isCapitalRiskFailed
+      ? "FAIL"
+      : "UNAVAILABLE",
     badgeClass: isCapitalRiskPassed
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
       : isCapitalRiskFailed
@@ -766,7 +790,7 @@ export function evaluatePreFlightChecks(
     : resolvedCatalystState === "ERROR"
     ? "Technical error retrieving corporate earnings schedule."
     : catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
-    ? `Historical Event Elapsed (${catalystEvidence.eventDate || "prior"}). Forward calendar unverified; runway uncertified.`
+    ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}): event elapsed. Forward 7-day calendar unverified (not an imminent hazard); runway uncertified.`
     : "Earnings calendar coverage unavailable: Event runway cannot be certified.";
 
   const chk4Item: PreFlightCheckItem = {
@@ -774,6 +798,11 @@ export function evaluatePreFlightChecks(
     tag: "CHK-4 CATALYST",
     name: isPlain ? "4. News Event Safety" : "4. Catalyst Hazard Buffer",
     status: chk4Status,
+    outcomeCategory: resolvedCatalystState === "PASS"
+      ? "PASS"
+      : resolvedCatalystState === "WARN"
+      ? "FAIL"
+      : "UNAVAILABLE",
     badgeClass: resolvedCatalystState === "PASS"
       ? (isCatalystConfirmed
           ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
@@ -823,15 +852,22 @@ export function evaluatePreFlightChecks(
     tag: "CHK-5 MACRO",
     name: isPlain ? "5. Overall Market Weather" : "5. Macro Regime Guard",
     status: chk5Status,
+    outcomeCategory: isMacroPassed
+      ? "PASS"
+      : isVixValid
+      ? "FAIL"
+      : "UNAVAILABLE",
     badgeClass: isMacroPassed
       ? (isVixElevated
           ? "bg-amber-950/80 text-amber-300 border-amber-700/80"
           : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80")
-      : "bg-rose-950/80 text-rose-300 border-rose-700/80",
+      : isVixValid
+      ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
+      : "bg-slate-900 text-slate-300 border-slate-700",
     passed: isMacroPassed,
     summary: chk5Summary,
     detail: chk5Detail,
-    icon: isMacroPassed ? (isVixElevated ? "⚠️" : "✓") : "⚠️",
+    icon: isMacroPassed ? (isVixElevated ? "⚠️" : "✓") : isVixValid ? "⚠️" : "⚪",
   };
 
   const checks: [
@@ -842,8 +878,13 @@ export function evaluatePreFlightChecks(
     PreFlightCheckItem
   ] = [chk1Item, chk2Item, chk3Item, chk4Item, chk5Item];
 
-  const passedCount = checks.filter((c) => c.passed).length;
-  const convictionPct = isPriceValid ? Math.round((passedCount / 5) * 100) : 0;
+  const totalCount = checks.length;
+  const passedCount = checks.filter((c) => c.outcomeCategory === "PASS").length;
+  const unavailableCount = checks.filter((c) => c.outcomeCategory === "UNAVAILABLE").length;
+  const failedCount = checks.filter((c) => c.outcomeCategory === "FAIL").length;
+  const availableCount = totalCount - unavailableCount;
+  // Never shrink the denominator when evidence is unavailable; keep total fixed at 5.
+  const convictionPct = isPriceValid ? Math.round((passedCount / totalCount) * 100) : 0;
   const isActionableGranted = isActionable === true;
 
   const mandatoryChecksVerified =
@@ -1130,7 +1171,11 @@ export function evaluatePreFlightChecks(
   return {
     symbol,
     checks,
+    totalCount,
     passedCount,
+    failedCount,
+    unavailableCount,
+    availableCount,
     convictionPct,
     isActionableGranted,
     mandatoryChecksVerified,

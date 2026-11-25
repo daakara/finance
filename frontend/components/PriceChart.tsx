@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createChart, IChartApi, ISeriesApi, IPriceLine, LineStyle, Time, LogicalRange } from "lightweight-charts";
 import { CandleData, OptimalExecutionPlan } from "../lib/api";
+import {
+  AnyChartTradeMarker,
+  ChartTradeMarker,
+  groupTradeMarkersForChart,
+} from "../lib/tradeMarkers";
 
 export interface SanitizedCandle {
   time: string | number;
@@ -185,12 +190,7 @@ export interface PriceChartProps {
   smartMoneyHeadline?: string;
   catalystHeadline?: string;
   loading?: boolean;
-  tradeMarkers?: Array<{
-    date: string;
-    label: string;
-    type?: "CONGRESS" | "INSIDER" | "OPTIONS";
-    amount?: string;
-  }>;
+  tradeMarkers?: AnyChartTradeMarker[];
   technicals?: {
     vwap?: number | null;
     rsi_14?: number;
@@ -252,6 +252,11 @@ export default function PriceChart({
 
   const [initEpoch, setInitEpoch] = useState<number>(0);
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [isCompactViewport, setIsCompactViewport] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.innerWidth < 640 : false
+  );
+  const [showActivityMarkers, setShowActivityMarkers] = useState<boolean>(true);
+  const [isActivityDetailsOpen, setIsActivityDetailsOpen] = useState<boolean>(false);
   const [chartTelemetry, setChartTelemetry] = useState<{
     candlesAvailable: boolean;
     seriesInitialized: boolean;
@@ -352,6 +357,7 @@ export default function PriceChart({
         lineStyle: LineStyle.Solid,
         title: isIntraday ? "VWAP" : "20 EMA",
         priceLineVisible: false,
+        lastValueVisible: !isCompactViewport,
       });
 
       candlestickSeriesRef.current = candleSeries;
@@ -367,6 +373,9 @@ export default function PriceChart({
           for (const entry of entries) {
             const w = entry.contentRect.width;
             const h = entry.contentRect.height;
+            setIsCompactViewport(
+              w < 540 || (typeof window !== "undefined" && window.innerWidth < 640)
+            );
             if (chartRef.current && w > 0 && h > 0) {
               chartRef.current.applyOptions({
                 width: w,
@@ -562,56 +571,18 @@ export default function PriceChart({
           overlayLineSeriesRef.current.setData(emaPoints);
         }
 
-        // Attach Deep Trade Timestamp Markers (Guarded & Chronologically Sorted)
+        // Attach Grouped, Provenance-Accurate Trade Markers (or Clear when toggled off)
         if (candlestickSeriesRef.current) {
-          if (tradeMarkers && tradeMarkers.length > 0) {
-            const markers: any[] = [];
+          if (showActivityMarkers && tradeMarkers && tradeMarkers.length > 0) {
             const candleTimes = uniqueCandles.map((c) => c.time);
-
-            tradeMarkers.forEach((tm) => {
-              if (!tm.date) return;
-              const targetDateStr = tm.date.split("T")[0];
-
-              let matchedTime = candleTimes.find((ct) => {
-                if (typeof ct === "string") return ct === targetDateStr;
-                return false;
-              });
-
-              if (!matchedTime && candleTimes.length > 0) {
-                const targetMs = new Date(targetDateStr).getTime();
-                let closest = candleTimes[0];
-                let minDiff = Infinity;
-                for (const ct of candleTimes) {
-                  const ctMs = typeof ct === "number" ? (ct > 20000000000 ? ct : ct * 1000) : new Date(ct).getTime();
-                  const diff = Math.abs(ctMs - targetMs);
-                  if (diff < minDiff) {
-                    minDiff = diff;
-                    closest = ct;
-                  }
-                }
-                if (minDiff <= 14 * 24 * 60 * 60 * 1000) {
-                  matchedTime = closest;
-                }
-              }
-
-              if (matchedTime) {
-                const isCongress = tm.type === "CONGRESS";
-                const isOptions = tm.type === "OPTIONS";
-                markers.push({
-                  time: matchedTime as Time,
-                  position: isCongress ? "aboveBar" : "belowBar",
-                  color: isCongress ? "#06b6d4" : isOptions ? "#f59e0b" : "#10b981",
-                  shape: isCongress ? "arrowDown" : "arrowUp",
-                  text: `${tm.label}${tm.amount ? ` (${tm.amount})` : ""}`,
-                });
-              }
-            });
-
-            markers.sort((a, b) => {
-              const tA = typeof a.time === "number" ? a.time : new Date(a.time + "T00:00:00Z").getTime();
-              const tB = typeof b.time === "number" ? b.time : new Date(b.time + "T00:00:00Z").getTime();
-              return tA - tB;
-            });
+            const grouped = groupTradeMarkersForChart(tradeMarkers, candleTimes, isCompactViewport);
+            const markers = grouped.map((g) => ({
+              time: g.time as Time,
+              position: g.position,
+              color: g.color,
+              shape: g.shape,
+              text: g.text,
+            }));
 
             try {
               candlestickSeriesRef.current.setMarkers(markers);
@@ -664,7 +635,16 @@ export default function PriceChart({
         overlayAssigned: false,
       }));
     }
-  }, [candles, isIntraday, interval, symbol, tradeMarkers, initEpoch]);
+  }, [candles, isIntraday, interval, symbol, tradeMarkers, showActivityMarkers, isCompactViewport, initEpoch]);
+
+  // Keep overlay series label visibility aligned with viewport size
+  useEffect(() => {
+    try {
+      overlayLineSeriesRef.current?.applyOptions({
+        lastValueVisible: !isCompactViewport,
+      });
+    } catch {}
+  }, [isCompactViewport]);
 
   // 3. Execution Level Overlays & Label Collision Prevention
   useEffect(() => {
@@ -681,6 +661,7 @@ export default function PriceChart({
     if (!optimalExecution) return;
 
     const lines: IPriceLine[] = [];
+    const showInlineAxisLabels = !isCompactViewport;
 
     // Collision detection: Check if Entry Min and Entry Max are tight (<0.75% apart)
     const entryMin = optimalExecution.optimal_entry_min;
@@ -699,8 +680,10 @@ export default function PriceChart({
             color: "#06b6d4",
             lineWidth: 2,
             lineStyle: LineStyle.Dashed,
-            axisLabelVisible: true,
-            title: entryMin === entryMax ? `Entry: $${entryMin.toFixed(2)}` : `Entry: $${entryMin.toFixed(2)}-$${entryMax.toFixed(2)}`,
+            axisLabelVisible: showInlineAxisLabels,
+            title: showInlineAxisLabels
+              ? (entryMin === entryMax ? `Entry: $${entryMin.toFixed(2)}` : `Entry: $${entryMin.toFixed(2)}-$${entryMax.toFixed(2)}`)
+              : "",
           })
         );
       } else {
@@ -710,16 +693,16 @@ export default function PriceChart({
             color: "#06b6d4",
             lineWidth: 2,
             lineStyle: LineStyle.Dashed,
-            axisLabelVisible: true,
-            title: "Entry Min",
+            axisLabelVisible: showInlineAxisLabels,
+            title: showInlineAxisLabels ? "Entry Min" : "",
           }),
           candlestickSeriesRef.current.createPriceLine({
             price: entryMax,
             color: "#06b6d4",
             lineWidth: 2,
             lineStyle: LineStyle.Dashed,
-            axisLabelVisible: true,
-            title: "Entry Max",
+            axisLabelVisible: showInlineAxisLabels,
+            title: showInlineAxisLabels ? "Entry Max" : "",
           })
         );
       }
@@ -730,8 +713,8 @@ export default function PriceChart({
           color: "#06b6d4",
           lineWidth: 2,
           lineStyle: LineStyle.Dashed,
-          axisLabelVisible: true,
-          title: "Entry Min",
+          axisLabelVisible: showInlineAxisLabels,
+          title: showInlineAxisLabels ? "Entry Min" : "",
         })
       );
     } else if (hasEntryMax) {
@@ -741,8 +724,8 @@ export default function PriceChart({
           color: "#06b6d4",
           lineWidth: 2,
           lineStyle: LineStyle.Dashed,
-          axisLabelVisible: true,
-          title: "Entry Max",
+          axisLabelVisible: showInlineAxisLabels,
+          title: showInlineAxisLabels ? "Entry Max" : "",
         })
       );
     }
@@ -756,8 +739,8 @@ export default function PriceChart({
           color: isStopActive ? "#f43f5e" : "#94a3b8",
           lineWidth: isStopActive ? 2 : 1,
           lineStyle: isStopActive ? LineStyle.Solid : LineStyle.Dotted,
-          axisLabelVisible: true,
-          title: isStopActive ? "Stop Loss" : "Invalidation Floor",
+          axisLabelVisible: showInlineAxisLabels,
+          title: showInlineAxisLabels ? (isStopActive ? "Stop Loss" : "Invalidation Floor") : "",
         })
       );
     }
@@ -770,8 +753,8 @@ export default function PriceChart({
           color: "#10b981",
           lineWidth: 2,
           lineStyle: LineStyle.Dashed,
-          axisLabelVisible: true,
-          title: "Target 1",
+          axisLabelVisible: showInlineAxisLabels,
+          title: showInlineAxisLabels ? "Target 1" : "",
         })
       );
     }
@@ -787,8 +770,8 @@ export default function PriceChart({
           color: "#059669",
           lineWidth: 2,
           lineStyle: LineStyle.Dashed,
-          axisLabelVisible: tDiffPct >= 0.0075,
-          title: "Target 2",
+          axisLabelVisible: showInlineAxisLabels && tDiffPct >= 0.0075,
+          title: showInlineAxisLabels ? "Target 2" : "",
         })
       );
     }
@@ -803,7 +786,7 @@ export default function PriceChart({
       });
       priceLinesRef.current = [];
     };
-  }, [optimalExecution]);
+  }, [optimalExecution, isCompactViewport]);
 
   // Calculate dynamic period return based on active candle dataset
   let dynamicPeriodReturn = priceChangePct;
@@ -854,7 +837,7 @@ export default function PriceChart({
                   {marketPriceState?.liveFreshness === "REALTIME" ? "● LIVE SPOT" : "DELAYED SPOT"}
                 </span>
                 {typeof (analysisReferencePrice ?? currentPrice) === "number" && (
-                  <span className="text-[11px] font-mono text-slate-400 border-l border-slate-700 pl-1.5 ml-0.5" title="Completed session baseline for technical indicators">
+                  <span className="text-[11px] font-mono text-slate-400 sm:border-l sm:border-slate-700 sm:pl-1.5 sm:ml-0.5" title="Completed session baseline for technical indicators">
                     Analysis Ref: ${(analysisReferencePrice ?? currentPrice)!.toFixed(2)} (Prior Close)
                   </span>
                 )}
@@ -953,61 +936,63 @@ export default function PriceChart({
             </div>
           )}
 
-          {/* Timeframe Interval Controls: Intraday Scalp vs Swing Bar Resolution */}
-          <div role="group" aria-label="Candlestick chart interval" className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
-            <span className="text-[10px] text-slate-500 font-bold px-1 hidden md:inline">
-              {userRole === "DAY_TRADER" ? "⚡ Scalp:" : "🏛️ Resolution:"}
-            </span>
+          {/* Timeframe Interval Controls: Separated Candle Resolution & History Range (Zero Horizontal Clip) */}
+          <div role="group" aria-label="Candlestick chart interval" className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto max-w-full">
+            <div className="flex flex-wrap items-center gap-1 bg-[#090d14] p-1 rounded-lg border border-[#243044] max-w-full">
+              <span className="text-[10px] text-slate-400 font-bold px-1.5 uppercase tracking-wide">
+                {userRole === "DAY_TRADER" ? "Scalp" : "Candle"}
+              </span>
 
-            {userRole === "DAY_TRADER" ? (
-              DAY_TRADER_INTERVALS.map((item) => (
-                <button
-                  type="button"
-                  key={item.value}
-                  onClick={() => handleIntervalClick(item.value)}
-                  aria-pressed={interval === item.value}
-                  aria-label={`Set intraday interval to ${item.label} (${item.desc})`}
-                  title={item.desc}
-                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
-                    interval === item.value
-                      ? "bg-amber-500 text-slate-950 shadow-sm font-extrabold"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))
-            ) : (
-              SWING_INTERVALS.map((item) => {
-                const isSelected = interval === item.value ||
-                  (item.label === "1D" && (interval === "1y_hist" || interval === "1d")) ||
-                  (item.label === "1W" && (interval === "3y_hist" || interval === "1wk")) ||
-                  (item.label === "1M" && (interval === "5y_hist" || interval === "1mo"));
-                return (
+              {userRole === "DAY_TRADER" ? (
+                DAY_TRADER_INTERVALS.map((item) => (
                   <button
                     type="button"
                     key={item.value}
                     onClick={() => handleIntervalClick(item.value)}
-                    aria-pressed={isSelected}
-                    aria-label={`Set candle resolution to ${item.label} (${item.desc})`}
+                    aria-pressed={interval === item.value}
+                    aria-label={`Set intraday interval to ${item.label} (${item.desc})`}
                     title={item.desc}
-                    className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                      isSelected
-                        ? "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
+                    className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
+                      interval === item.value
+                        ? "bg-amber-500 text-slate-950 shadow-sm font-extrabold"
                         : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                     }`}
                   >
                     {item.label}
                   </button>
-                );
-              })
-            )}
+                ))
+              ) : (
+                SWING_INTERVALS.map((item) => {
+                  const isSelected = interval === item.value ||
+                    (item.label === "1D" && (interval === "1y_hist" || interval === "1d")) ||
+                    (item.label === "1W" && (interval === "3y_hist" || interval === "1wk")) ||
+                    (item.label === "1M" && (interval === "5y_hist" || interval === "1mo"));
+                  return (
+                    <button
+                      type="button"
+                      key={item.value}
+                      onClick={() => handleIntervalClick(item.value)}
+                      aria-pressed={isSelected}
+                      aria-label={`Set candle resolution to ${item.label} (${item.desc})`}
+                      title={item.desc}
+                      className={`px-2 sm:px-2.5 py-1 min-h-[36px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                        isSelected
+                          ? "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })
+              )}
+            </div>
 
-            {/* In Swing Mode: Separated Visible History Range Presets */}
+            {/* In Swing Mode: Explicitly Labeled Visible History Range Presets + Fit */}
             {userRole === "LONG_TERM" && (
-              <div className="flex items-center space-x-1 pl-1 border-l border-slate-700">
-                <span className="text-[10px] text-slate-500 font-bold px-1 hidden lg:inline">
-                  Range:
+              <div className="flex flex-wrap items-center gap-1 bg-[#090d14] p-1 rounded-lg border border-[#243044] max-w-full">
+                <span className="text-[10px] text-slate-400 font-bold px-1.5 uppercase tracking-wide">
+                  Range
                 </span>
                 {SWING_RANGES.map((rng) => (
                   <button
@@ -1017,7 +1002,7 @@ export default function PriceChart({
                     aria-pressed={interval === rng.value}
                     aria-label={`Set visible history range to ${rng.label} (${rng.desc})`}
                     title={rng.desc}
-                    className={`px-2 py-1 min-h-[30px] rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                    className={`px-2 py-1 min-h-[36px] sm:min-h-[30px] rounded text-[11px] font-bold transition-colors cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                       interval === rng.value
                         ? "bg-slate-700 text-cyan-300 font-extrabold"
                         : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -1026,19 +1011,29 @@ export default function PriceChart({
                     {rng.label}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={handleResetView}
+                  title="Reset View to Fit Content"
+                  aria-label="Reset chart zoom to fit content"
+                  className="px-2 py-1 min-h-[36px] sm:min-h-[30px] rounded text-xs text-slate-300 hover:text-white hover:bg-[#162030] transition-colors border-l border-slate-700/80 cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                >
+                  ⛶ Fit
+                </button>
               </div>
             )}
 
-            {/* Viewport Reset / Fit View Button */}
-            <button
-              type="button"
-              onClick={handleResetView}
-              title="Reset View to Fit Content"
-              aria-label="Reset chart zoom to fit content"
-              className="px-2 py-1 min-h-[30px] rounded text-xs text-slate-400 hover:text-slate-200 hover:bg-[#162030] transition-colors ml-1 border-l border-slate-700/80 cursor-pointer"
-            >
-              ⛶ Fit
-            </button>
+            {userRole === "DAY_TRADER" && (
+              <button
+                type="button"
+                onClick={handleResetView}
+                title="Reset View to Fit Content"
+                aria-label="Reset chart zoom to fit content"
+                className="px-2.5 py-1 min-h-[36px] sm:min-h-[30px] rounded-lg bg-[#090d14] border border-[#243044] text-xs text-slate-300 hover:text-white hover:bg-[#162030] transition-colors cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+              >
+                ⛶ Fit
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1126,6 +1121,146 @@ export default function PriceChart({
           </div>
         )}
       </div>
+
+      {/* Compact Levels Legend & Interactive Activity Controls (Keeps Candles Readable on Mobile) */}
+      {(optimalExecution || (tradeMarkers && tradeMarkers.length > 0)) && (
+        <div
+          data-testid="chart-levels-legend"
+          className="mt-2.5 pt-2.5 border-t border-[#1b2434] space-y-2 text-[11px] font-mono"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {optimalExecution && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                {typeof optimalExecution.optimal_entry_min === "number" && optimalExecution.optimal_entry_min > 0 && (
+                  <span className="inline-flex items-center gap-1 text-cyan-300">
+                    <span className="w-2 h-0.5 bg-cyan-400 inline-block" aria-hidden="true" />
+                    <span>
+                      Entry:{" "}
+                      <strong className="tabular-nums">
+                        ${optimalExecution.optimal_entry_min.toFixed(2)}
+                        {typeof optimalExecution.optimal_entry_max === "number" &&
+                        optimalExecution.optimal_entry_max > 0 &&
+                        optimalExecution.optimal_entry_max !== optimalExecution.optimal_entry_min
+                          ? `–$${optimalExecution.optimal_entry_max.toFixed(2)}`
+                          : ""}
+                      </strong>
+                    </span>
+                  </span>
+                )}
+                {typeof optimalExecution.stop_loss === "number" && optimalExecution.stop_loss > 0 && (
+                  <span className={`inline-flex items-center gap-1 ${optimalExecution.execution_stop_visible !== false ? "text-rose-300" : "text-slate-300"}`}>
+                    <span className={`w-2 h-0.5 inline-block ${optimalExecution.execution_stop_visible !== false ? "bg-rose-400" : "bg-slate-400"}`} aria-hidden="true" />
+                    <span>
+                      {optimalExecution.execution_stop_visible !== false ? "Stop:" : "Invalidation:"}{" "}
+                      <strong className="tabular-nums">${optimalExecution.stop_loss.toFixed(2)}</strong>
+                    </span>
+                  </span>
+                )}
+                {typeof optimalExecution.take_profit_1 === "number" && optimalExecution.take_profit_1 > 0 && (
+                  <span className="inline-flex items-center gap-1 text-emerald-300">
+                    <span className="w-2 h-0.5 bg-emerald-400 inline-block" aria-hidden="true" />
+                    <span>
+                      T1: <strong className="tabular-nums">${optimalExecution.take_profit_1.toFixed(2)}</strong>
+                    </span>
+                  </span>
+                )}
+                {typeof optimalExecution.take_profit_2 === "number" && optimalExecution.take_profit_2 > 0 && (
+                  <span className="inline-flex items-center gap-1 text-emerald-400">
+                    <span className="w-2 h-0.5 bg-emerald-500 inline-block" aria-hidden="true" />
+                    <span>
+                      T2: <strong className="tabular-nums">${optimalExecution.take_profit_2.toFixed(2)}</strong>
+                    </span>
+                  </span>
+                )}
+                {typeof technicals?.ema_20 === "number" && technicals.ema_20 > 0 && !isIntraday && (
+                  <span className="inline-flex items-center gap-1 text-sky-300">
+                    <span className="w-2 h-0.5 bg-sky-400 inline-block" aria-hidden="true" />
+                    <span>
+                      20 EMA: <strong className="tabular-nums">${technicals.ema_20.toFixed(2)}</strong>
+                    </span>
+                  </span>
+                )}
+              </div>
+            )}
+
+            {tradeMarkers && tradeMarkers.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  data-testid="chart-markers-toggle-btn"
+                  aria-pressed={showActivityMarkers}
+                  onClick={() => setShowActivityMarkers((prev) => !prev)}
+                  className={`px-2 py-1 min-h-[36px] sm:min-h-[28px] rounded border text-[10px] font-bold transition-colors cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    showActivityMarkers
+                      ? "bg-cyan-950/70 text-cyan-300 border-cyan-700/70"
+                      : "bg-[#090d14] text-slate-400 border-[#243044] hover:text-slate-200"
+                  }`}
+                >
+                  {showActivityMarkers ? "Markers: On" : "Markers: Off"}
+                </button>
+                <button
+                  type="button"
+                  data-testid="chart-activity-details-btn"
+                  aria-expanded={isActivityDetailsOpen}
+                  aria-controls="chart-activity-details-panel"
+                  onClick={() => setIsActivityDetailsOpen((prev) => !prev)}
+                  className="px-2 py-1 min-h-[36px] sm:min-h-[28px] rounded border bg-[#090d14] text-slate-300 border-[#243044] hover:text-white text-[10px] font-bold transition-colors cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                >
+                  Activity ({tradeMarkers.length}) {isActivityDetailsOpen ? "▲" : "▾"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {isActivityDetailsOpen && tradeMarkers && tradeMarkers.length > 0 && (
+            <div
+              id="chart-activity-details-panel"
+              data-testid="chart-activity-details-panel"
+              className="p-2.5 rounded-lg bg-[#090d14] border border-[#243044] space-y-1.5 max-h-48 overflow-y-auto"
+            >
+              {tradeMarkers.map((tm, idx) => {
+                const isRich = "category" in tm;
+                const rich = tm as ChartTradeMarker;
+                const key = isRich ? rich.id : `${tm.date}-${idx}`;
+                const badgeColor = isRich
+                  ? rich.direction === "BUY"
+                    ? "bg-emerald-950/80 text-emerald-300 border-emerald-800/80"
+                    : rich.direction === "SELL"
+                    ? "bg-rose-950/80 text-rose-300 border-rose-800/80"
+                    : "bg-slate-800/90 text-slate-300 border-slate-700"
+                  : "bg-slate-800/90 text-slate-300 border-slate-700";
+
+                return (
+                  <div
+                    key={key}
+                    className="flex flex-wrap items-center justify-between gap-2 py-1 border-b border-[#162030] last:border-b-0 text-[11px]"
+                  >
+                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                      <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold border ${badgeColor}`}>
+                        {tm.label}
+                      </span>
+                      {isRich && rich.actor && (
+                        <span className="text-slate-200 font-sans truncate max-w-[180px] sm:max-w-none">
+                          {rich.actor}
+                        </span>
+                      )}
+                      {isRich && (
+                        <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-[#141c2b] text-slate-400 border border-[#243044]">
+                          {rich.provenanceLabel}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-400 tabular-nums shrink-0">
+                      {tm.amount !== null && tm.amount !== undefined && <span>{String(tm.amount)}</span>}
+                      <span>{tm.date.split("T")[0]}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }
