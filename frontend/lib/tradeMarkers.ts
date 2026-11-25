@@ -117,12 +117,29 @@ const KNOWN_NEUTRAL_CODES: Record<string, ClassificationResult> = {
   Z: { category: "OTHER", direction: "NEUTRAL", shortCode: "Z", label: "Voting Trust (Code Z)" },
 };
 
-function hasExplicitOpenMarketEvidence(record: Record<string, any>, upperType: string): boolean {
+function hasVerifiedOpenMarketVenue(record: Record<string, any>): boolean {
+  const venue = String(record.execution_venue ?? record.executionVenue ?? "")
+    .trim()
+    .toUpperCase();
+  if (!venue || venue.includes("UNSPECIFIED") || venue.includes("UNKNOWN") || venue.includes("NONE")) {
+    return false;
+  }
+  return venue.includes("OPEN_MARKET") || venue.includes("OPEN MARKET");
+}
+
+function hasExplicitOpenMarketPurchaseEvidence(record: Record<string, any>): boolean {
   return Boolean(
     record.is_open_market_purchase_evidence === true ||
     record.isOpenMarketPurchaseEvidence === true ||
-    upperType.includes("OPEN MARKET") ||
-    String(record.execution_venue ?? record.executionVenue ?? "").toUpperCase().includes("OPEN_MARKET")
+    hasVerifiedOpenMarketVenue(record)
+  );
+}
+
+function hasExplicitOpenMarketSaleEvidence(record: Record<string, any>): boolean {
+  return Boolean(
+    record.is_open_market_sale_evidence === true ||
+    record.isOpenMarketSaleEvidence === true ||
+    hasVerifiedOpenMarketVenue(record)
   );
 }
 
@@ -172,7 +189,7 @@ export function classifyForm4Transaction(record: Record<string, any>): Classific
     if (upperType.includes("GRANT") || upperType.includes("AWARD")) {
       return KNOWN_NEUTRAL_CODES.A;
     }
-    const openMarket = hasExplicitOpenMarketEvidence(record, upperType);
+    const openMarket = hasExplicitOpenMarketPurchaseEvidence(record);
     return {
       category: "PURCHASE",
       direction: "BUY",
@@ -182,7 +199,7 @@ export function classifyForm4Transaction(record: Record<string, any>): Classific
   }
 
   if (rawCode === "S") {
-    const openMarket = upperType.includes("OPEN MARKET");
+    const openMarket = hasExplicitOpenMarketSaleEvidence(record);
     return {
       category: "SALE",
       direction: "SELL",
@@ -230,11 +247,11 @@ export function classifyForm4Transaction(record: Record<string, any>): Classific
       category: "SALE",
       direction: "SELL",
       shortCode: "S",
-      label: upperType.includes("OPEN MARKET") ? "Open Market Sale" : "Sale",
+      label: hasExplicitOpenMarketSaleEvidence(record) ? "Open Market Sale" : "Sale",
     };
   }
   if (record.is_buy === true || record.isBuy === true || upperType.includes("PURCHASE") || upperType.includes("BUY")) {
-    const openMarket = hasExplicitOpenMarketEvidence(record, upperType);
+    const openMarket = hasExplicitOpenMarketPurchaseEvidence(record);
     return {
       category: "PURCHASE",
       direction: "BUY",

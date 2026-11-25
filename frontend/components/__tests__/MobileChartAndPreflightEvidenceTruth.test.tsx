@@ -81,6 +81,17 @@ describe("Gate 1: Trade-Marker Classification, Venue Claims & Date Provenance Tr
       direction: "BUY",
       label: "Open Market Purchase",
     });
+    expect(
+      classifyForm4Transaction({
+        transaction_code: "P",
+        transaction_type: "Open Market Purchase (Code P)",
+        is_open_market_purchase_evidence: false,
+      })
+    ).toMatchObject({
+      category: "PURCHASE",
+      direction: "BUY",
+      label: "Purchase",
+    });
     expect(classifyForm4Transaction({ transaction_code: "S" })).toMatchObject({
       category: "SALE",
       direction: "SELL",
@@ -90,6 +101,17 @@ describe("Gate 1: Trade-Marker Classification, Venue Claims & Date Provenance Tr
       classifyForm4Transaction({
         transaction_code: "S",
         transaction_type: "Open Market Sale (Code S)",
+        is_open_market_purchase_evidence: false,
+      })
+    ).toMatchObject({
+      category: "SALE",
+      direction: "SELL",
+      label: "Sale",
+    });
+    expect(
+      classifyForm4Transaction({
+        transaction_code: "S",
+        execution_venue: "OPEN_MARKET",
       })
     ).toMatchObject({
       category: "SALE",
@@ -238,6 +260,102 @@ describe("Gate 1: Trade-Marker Classification, Venue Claims & Date Provenance Tr
       provenance: "CURATED_SAMPLE",
       provenanceLabel: "Curated Sample",
     });
+  });
+
+  it("renders 'Sale' (not 'Open Market Sale') for retained NVDA accession 0001696841-26-000016 and preserves transaction date, provenance & grouped details", () => {
+    const retained0001696841 = {
+      form: "4",
+      filing_date: "2026-11-23",
+      report_date: "2026-11-23",
+      acceptance_datetime: "2026-11-23T21:54:28Z",
+      available_from: "2026-11-23T21:54:28Z",
+      description: "Form 4 Insider Filing",
+      accession_number: "0001696841-26-000016",
+      sec_url: "https://www.sec.gov/Archives/edgar/data/1045810/000169684126000016/wk-form4_1795470863.xml",
+      is_amendment: false,
+      xml_hash: "c7ee40386d6a142d3c644acc348ce994aaf1f57a1ce8207fa40e0b9148f73077",
+      is_superseded: false,
+      has_parsed_transaction: true,
+      transaction_count: 12,
+      is_mixed: false,
+      insider_name: "Teter Timothy S.",
+      insider_role: "EVP, General Counsel and Sec",
+      transaction_type: "Open Market Sale (Code S)",
+      transaction_code: "S",
+      transaction_date: "2026-11-19",
+      shares_traded: 30000.0,
+      total_value_usd: 4542781.48,
+      price_per_share: 151.426,
+      is_buy: false,
+      is_sell: true,
+      is_effective: true,
+      effective_status: "EFFECTIVE",
+      transactions: [
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:0", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 1434.0, price_per_share: 146.0298, total_value_usd: 209406.73, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:1", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 4217.0, price_per_share: 147.2413, total_value_usd: 620916.56, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:2", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 4860.0, price_per_share: 148.4804, total_value_usd: 721614.74, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:3", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 2760.0, price_per_share: 149.3466, total_value_usd: 412196.62, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:4", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 1160.0, price_per_share: 150.4106, total_value_usd: 174476.3, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:5", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 930.0, price_per_share: 151.7508, total_value_usd: 141128.24, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:6", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 4104.0, price_per_share: 152.6977, total_value_usd: 626671.36, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:7", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 2971.0, price_per_share: 153.3654, total_value_usd: 455648.6, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:8", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 1459.0, price_per_share: 154.5982, total_value_usd: 225558.77, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:9", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 2312.0, price_per_share: 155.5607, total_value_usd: 359656.34, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:10", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 2383.0, price_per_share: 156.7099, total_value_usd: 373439.69, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+        { transaction_id: "0001696841-26-000016:0001696841:NON_DERIVATIVE:11", accession_number: "0001696841-26-000016", transaction_date: "2026-11-19", transaction_code: "S", transaction_type: "Open Market Sale (Code S)", shares: 1410.0, price_per_share: 157.4947, total_value_usd: 222067.53, reporting_owner_name: "Teter Timothy S.", reporting_owner_role: "EVP, General Counsel and Sec", is_sell: true, is_open_market_purchase_evidence: false, is_effective: true, effective_status: "EFFECTIVE" },
+      ],
+    };
+
+    const markers = buildChartTradeMarkers({
+      subdomains: {
+        sec_form_4: {
+          status: "PIPELINE_HELD",
+          is_live: false,
+          provenance: "SEC EDGAR Form 4 Feed",
+        },
+      },
+      secForm4Trades: [retained0001696841],
+    });
+
+    expect(markers.length).toBe(12);
+    for (const m of markers) {
+      expect(m.label).toBe("Sale");
+      expect(m.label).not.toContain("Open Market");
+      expect(m.date).toBe("2026-11-19");
+      expect(m.dateSource).toBe("TRANSACTION_DATE");
+      expect(m.filingDate).toBe("2026-11-23");
+      expect(m.accessionNumber).toBe("0001696841-26-000016");
+      expect(m.provenance).toBe("RETAINED_SEC_EVIDENCE");
+      expect(m.provenanceLabel).toBe("Retained SEC Form 4");
+      expect(m.actor).toBe("Teter Timothy S.");
+    }
+
+    const groupedDesktop = groupTradeMarkersForChart(markers, ["2026-11-19"], false);
+    expect(groupedDesktop.length).toBe(1);
+    expect(groupedDesktop[0].count).toBe(12);
+    expect(groupedDesktop[0].text).toBe("S ×12");
+    expect(groupedDesktop[0].items.length).toBe(12);
+
+    render(
+      <PriceChart
+        symbol="NVDA"
+        candles={[
+          { time: "2026-11-19", open: 155, high: 158, low: 146, close: 153, volume: 1000000 },
+        ]}
+        userRole="LONG_TERM"
+        interval="1y_hist"
+        onIntervalChange={vi.fn()}
+        tradeMarkers={markers}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("chart-activity-details-btn"));
+    const panel = screen.getByTestId("chart-activity-details-panel");
+    expect(panel.textContent).not.toContain("Open Market Sale");
+    expect(within(panel).getAllByText("Sale").length).toBe(12);
+    expect(within(panel).getAllByText("Retained SEC Form 4").length).toBe(12);
+    expect(within(panel).getAllByText("0001696841-26-000016").length).toBe(12);
+    expect(within(panel).getAllByText("Tx 2026-11-19").length).toBe(12);
   });
 });
 
