@@ -771,14 +771,29 @@
   },
   "reconciliation_verdict_and_single_post_trial_step": {
     "production_coverage_verdict": "PARTIAL_UNCERTIFIED",
-    "operational_verdict": "ACQUISITION_AUTHORIZATION_REQUIRED",
-    "verdict_rationale": "Production coverage remains PARTIAL_UNCERTIFIED across assessment interval [2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z). While the retained catalog authoritatively validates zero unindexed Form 4 filings for the closed window [2026-08-26, 2026-11-19T21:45:59Z] based on schema and coverage rules, a coverage gap exists for [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z). The trial worker ingested 0001696841-26-000016 without retaining submissions catalog response bytes. An affirmative diagnostic acquisition of CIK0001045810.json is required to close the gap.",
+    "operational_verdict": "ACQUIRED_AND_RECONCILED",
+    "verdict_rationale": "Single authorized diagnostic request AUTH-NVDA-DIAG-20261125-001 executed on 2026-11-25T09:21:36Z returning HTTP 200 (160,578 bytes, SHA-256 7c07b0a81346ce337884f26d353cd752ad7db6b380e980f73f7c60297a51ad63). Offline catalog audit validates issuer identity (CIK 0001045810, NVDA), unbroken contiguous coverage back to 2020-09-18, and zero overlapping historical pagination files for [2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z). Exactly 16 Form 4/4-A filings are present in the interval, matching 100% of retained baseline (15 in-window) and forward trial accretion (1 in-window, 0001696841-26-000016) records. Zero unindexed Form 4 filings exist in the post-Nov 19 gap. Production coverage remains PARTIAL_UNCERTIFIED and operational holds remain active.",
     "execution_prompt": "python3 scripts/acquire_nvda_submissions_diagnostic.py --auth-id \"AUTH-NVDA-DIAG-20261125-001\" --user-agent \"ARXTerminal Research Akara.david26@gmail.com\" --output-dir \"data/sec_coverage_evidence/CIK0001045810\"",
     "durable_authorization_id": "AUTH-NVDA-DIAG-20261125-001",
-    "remaining_gaps": [
-      "Post-Nov 19 submissions index coverage gap: [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)",
-      "Absence of durable submissions catalog response bytes from trial Slot 4 execution"
-    ],
+    "acquisition_execution": {
+      "status": "COMPLETED",
+      "attempt_count": 1,
+      "http_status": 200,
+      "byte_count": 160578,
+      "sha256": "7c07b0a81346ce337884f26d353cd752ad7db6b380e980f73f7c60297a51ad63",
+      "acquisition_timestamp_utc": "2026-11-25T09:21:36.476417+00:00",
+      "raw_artifact_path": "data/sec_coverage_evidence/CIK0001045810/CIK0001045810_submissions_20261125T092136.476417+0000.json",
+      "receipt_path": "data/sec_coverage_evidence/CIK0001045810/acquisition_receipt_20261125T092136.476417+0000.json",
+      "claim_path": "data/sec_coverage_evidence/CIK0001045810/auth_claims/AUTH-NVDA-DIAG-20261125-001.claim",
+      "contiguous_span": {
+        "earliest": "2020-09-18",
+        "latest": "2026-11-23"
+      },
+      "in_interval_forms_4_and_4a_count": 16,
+      "missing_accessions_count": 0,
+      "overlapping_pagination_files_count": 0
+    },
+    "remaining_gaps": [],
     "certification_distinction": "Assessment completion establishes the mathematical reconciliation of known retained records; operational certification requires unbroken authoritative catalog coverage spanning the entire interval to certify zero missing filings.",
     "governance_boundaries": {
       "verification_status": "INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC",
@@ -895,11 +910,34 @@
     }
   },
   "gate_3_conditional_acquisition_proposal": {
-    "status": "PROPOSED_ONLY_NOT_EXECUTED",
-    "verdict": "ACQUISITION_AUTHORIZATION_REQUIRED",
+    "status": "EXECUTED",
+    "verdict": "ACQUIRED_AND_RECONCILED",
     "target_resource": "https://data.sec.gov/submissions/CIK0001045810.json",
     "method": "Single HTTP GET via SecRateLimiter (pacing <= 5.0 req/sec)",
     "durable_authorization_id": "AUTH-NVDA-DIAG-20261125-001",
+    "execution_summary": {
+      "attempt_count": 1,
+      "http_status": 200,
+      "byte_count": 160578,
+      "sha256": "7c07b0a81346ce337884f26d353cd752ad7db6b380e980f73f7c60297a51ad63",
+      "acquisition_timestamp_utc": "2026-11-25T09:21:36.476417+00:00",
+      "raw_artifact_path": "data/sec_coverage_evidence/CIK0001045810/CIK0001045810_submissions_20261125T092136.476417+0000.json",
+      "receipt_path": "data/sec_coverage_evidence/CIK0001045810/acquisition_receipt_20261125T092136.476417+0000.json",
+      "claim_path": "data/sec_coverage_evidence/CIK0001045810/auth_claims/AUTH-NVDA-DIAG-20261125-001.claim",
+      "validation_result": {
+        "issuer_identity_verified": true,
+        "schema_verified": true,
+        "pagination_verified": true,
+        "interval_coverage_verified": true,
+        "contiguous_span": {
+          "earliest": "2020-09-18",
+          "latest": "2026-11-23"
+        },
+        "in_interval_forms_4_and_4a_count": 16,
+        "missing_accessions_count": 0,
+        "overlapping_pagination_files_count": 0
+      }
+    },
     "execution_constraints": {
       "max_http_requests": 1,
       "automatic_retries": 0,
