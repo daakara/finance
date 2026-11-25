@@ -52,7 +52,11 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
   const {
     symbol,
     checks,
+    totalCount,
     passedCount,
+    failedCount,
+    unavailableCount,
+    availableCount,
     convictionPct,
     isActionableGranted,
     isCleared,
@@ -184,6 +188,26 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
 
       {/* ── 2. Five Mandatory Clearance-Check Badges Row ───────────────── */}
       <div
+        data-testid="inline-preflight-counts"
+        className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono bg-[var(--surface-2)] px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)]"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-emerald-300 font-bold">{passedCount}/{totalCount} Pass</span>
+          <span className="text-slate-600" aria-hidden="true">·</span>
+          <span className={failedCount > 0 ? "text-rose-300 font-bold" : "text-[var(--text-2)]"}>
+            {failedCount} Fail
+          </span>
+          <span className="text-slate-600" aria-hidden="true">·</span>
+          <span className={unavailableCount > 0 ? "text-slate-200 font-bold" : "text-[var(--text-2)]"}>
+            {unavailableCount} Unavailable
+          </span>
+        </div>
+        <span data-testid="inline-evidence-availability" className="text-[10.5px] text-[var(--text-2)]">
+          Evidence: {availableCount}/{totalCount} available
+        </span>
+      </div>
+
+      <div
         id="preflight-badges-row"
         data-testid="preflight-badges-row"
         role="list"
@@ -192,6 +216,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
       >
         {checks.map((chk: PreFlightCheckItem, index: number) => {
           const isCheckPassed = chk.passed;
+          const isCheckUnavailable = chk.outcomeCategory === "UNAVAILABLE" || chk.status === "UNAVAILABLE" || chk.status === "ERROR";
           return (
             <div
               key={chk.id}
@@ -200,6 +225,8 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
               className={`p-2 rounded-lg border flex flex-col justify-between gap-1 transition-colors ${
                 isCheckPassed
                   ? "bg-[var(--status-positive-bg)] border-emerald-900/40"
+                  : isCheckUnavailable
+                  ? "bg-slate-900/60 border-slate-700/80"
                   : chk.status === "HAZARD" || chk.status === "FAIL" || chk.status === "CAPITAL RISK"
                   ? "bg-[var(--status-negative-bg)] border-rose-900/50"
                   : "bg-[var(--status-caution-bg)] border-amber-900/40"
