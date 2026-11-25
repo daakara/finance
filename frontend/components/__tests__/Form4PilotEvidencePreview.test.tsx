@@ -502,6 +502,177 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
     });
   });
 
+  describe('Closeout Rehearsal: Loading Approved Exports & Comparing All 10 Rows', () => {
+    const slot1Receipt = {
+      receipt_id: 'rcpt-pilot-165-slot1-approved',
+      trial_id: QUALIFIED_TRIAL_ID,
+      slot_id: '2026-11-30:SLOT_1:0915',
+      release_sha: QUALIFIED_RELEASE_SHA,
+      cohort_evidence: {
+        version: 1,
+        trial_id: QUALIFIED_TRIAL_ID,
+        slot_id: '2026-11-30:SLOT_1:0915',
+        release_sha: QUALIFIED_RELEASE_SHA,
+        issuers: Object.fromEntries(
+          Object.entries(COHORT_CIKS).map(([ticker, cik]) => [
+            ticker,
+            {
+              ticker,
+              cik,
+              observed_at: '2026-11-30T14:21:00Z',
+              interval_start: '2026-11-30T14:00:00Z',
+              cutoff: '2026-11-30T14:20:00Z',
+              artifact_id: `evt-audit-${ticker.toLowerCase()}`,
+              catalog_sha256: `cat-sha-${ticker}`,
+              catalog_gaps: [],
+              inventory:
+                ticker === 'NVDA'
+                  ? [
+                      {
+                        accession: '0001045810-26-000001',
+                        form: '4',
+                        filing_date: '2026-11-30',
+                        accepted_at: '2026-11-30T14:05:00Z',
+                        primary_document: 'owner.xml',
+                        disposition: 'INGESTED',
+                        source_sha256: 'sha-nvda-1',
+                      },
+                    ]
+                  : [],
+              gaps: [],
+              previous_watermark: '2026-11-30T14:00:00Z',
+              accounted_through: '2026-11-30T14:20:00Z',
+              status: 'CATALOG_ACCOUNTED',
+              sha256: `sha-rcpt-${ticker}`,
+            },
+          ]),
+        ),
+      },
+    };
+
+    const matchingIndependentExport: IndependentlyReconciledExport = {
+      export_id: 'exp-pilot-165-slot1-approved',
+      receipt_id: 'rcpt-pilot-165-slot1-approved',
+      trial_id: QUALIFIED_TRIAL_ID,
+      slot_id: '2026-11-30:SLOT_1:0915',
+      reconciled_at: '2026-11-30T14:25:00Z',
+      reconciled_by: 'arx-independent-evidence-reconciler',
+      issuers: Object.fromEntries(
+        Object.entries(COHORT_CIKS).map(([ticker, cik]) => [
+          ticker,
+          {
+            ticker,
+            cik,
+            accounted_count: ticker === 'NVDA' ? 1 : 0,
+            newly_ingested_count: ticker === 'NVDA' ? 1 : 0,
+            gaps: [],
+            accounted_through: '2026-11-30T14:20:00Z',
+            state: ticker === 'NVDA' ? 'FILINGS_FOUND' : 'POLLED_QUIET',
+            verified: true,
+          },
+        ]),
+      ),
+    };
+
+    it('loads approved exports locally, compares all 10 rows with zero discrepancies, and shows reconciled status', () => {
+      render(<Form4PilotEvidencePreview />);
+
+      // Switch to Import Worker Receipt
+      fireEvent.click(screen.getByRole('button', { name: /Import Worker Receipt/i }));
+
+      // Fill Worker Receipt JSON
+      const receiptInput = screen.getByPlaceholderText(/Paste raw sm_reconciliation_receipts JSON row/i);
+      fireEvent.change(receiptInput, { target: { value: JSON.stringify(slot1Receipt) } });
+
+      // Fill Independent Reconciled Export JSON
+      const exportInput = screen.getByPlaceholderText(/Paste independently reconciled export to verify counts and gaps/i);
+      fireEvent.change(exportInput, { target: { value: JSON.stringify(matchingIndependentExport) } });
+
+      // Click Validate & Import
+      fireEvent.click(screen.getByRole('button', { name: /Validate & Import Receipt/i }));
+
+      // Verify Reconciled verdict
+      expect(screen.getByText(/PASSED QUALIFICATION FORMAT/i)).toBeDefined();
+      expect(screen.getByText(/Imported — reconciled against independent export/i)).toBeDefined();
+
+      // Verify all 10 issuers are displayed in the evidence table/cards
+      for (const ticker of Object.keys(COHORT_CIKS)) {
+        expect(screen.getAllByText(ticker).length).toBeGreaterThan(0);
+      }
+    });
+
+    it('records and renders discrepancies with the affected issuer and field when counts mismatch', () => {
+      render(<Form4PilotEvidencePreview />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Import Worker Receipt/i }));
+
+      // Tamper independent export: NVDA expected accounted_count = 5 instead of 1
+      const tamperedExport: IndependentlyReconciledExport = {
+        ...matchingIndependentExport,
+        issuers: {
+          ...matchingIndependentExport.issuers,
+          NVDA: {
+            ...matchingIndependentExport.issuers.NVDA,
+            accounted_count: 5,
+          },
+        },
+      };
+
+      const receiptInput = screen.getByPlaceholderText(/Paste raw sm_reconciliation_receipts JSON row/i);
+      fireEvent.change(receiptInput, { target: { value: JSON.stringify(slot1Receipt) } });
+
+      const exportInput = screen.getByPlaceholderText(/Paste independently reconciled export to verify counts and gaps/i);
+      fireEvent.change(exportInput, { target: { value: JSON.stringify(tamperedExport) } });
+
+      fireEvent.click(screen.getByRole('button', { name: /Validate & Import Receipt/i }));
+
+      // Status must show discrepancy
+      expect(screen.getByText(/Imported — reconciliation discrepancies detected/i)).toBeDefined();
+      expect(screen.getByText(/Reconciliation Discrepancies vs Independent Export:/i)).toBeDefined();
+
+      // Specifically records affected issuer NVDA and field accounted_count
+      expect(screen.getAllByText(/NVDA/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/accounted_count/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText('5').length).toBeGreaterThan(0); // expected
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0); // actual
+    });
+
+    it('marks export as pending when an issuer has unestablished (null or undefined) comparison fields', () => {
+      render(<Form4PilotEvidencePreview />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Import Worker Receipt/i }));
+
+      // Incomplete export where META comparison fields could not be independently established
+      const incompleteExport: IndependentlyReconciledExport = {
+        ...matchingIndependentExport,
+        issuers: {
+          ...matchingIndependentExport.issuers,
+          META: {
+            ticker: 'META',
+            cik: COHORT_CIKS.META,
+            accounted_count: undefined,
+            newly_ingested_count: undefined,
+            gaps: undefined,
+            accounted_through: undefined,
+          },
+        },
+      };
+
+      const receiptInput = screen.getByPlaceholderText(/Paste raw sm_reconciliation_receipts JSON row/i);
+      fireEvent.change(receiptInput, { target: { value: JSON.stringify(slot1Receipt) } });
+
+      const exportInput = screen.getByPlaceholderText(/Paste independently reconciled export to verify counts and gaps/i);
+      fireEvent.change(exportInput, { target: { value: JSON.stringify(incompleteExport) } });
+
+      fireEvent.click(screen.getByRole('button', { name: /Validate & Import Receipt/i }));
+
+      // Must remain pending
+      expect(screen.getAllByText(/Imported — reconciliation pending/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/issuers missing comparison fields/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/META/i).length).toBeGreaterThan(0);
+    });
+  });
+
   describe('Local Preview & Operator Authentication Gate', () => {
     it('enforces operator authentication on hosted non-local environments', () => {
       const originalLocation = window.location;

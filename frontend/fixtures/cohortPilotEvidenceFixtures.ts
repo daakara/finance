@@ -841,7 +841,7 @@ export function validateWorkerReceiptFormat(
       if (!indep) {
         missingInExport.push(ticker);
       } else {
-        const missingFields = requiredComparisonFields.filter((f) => (indep as any)[f] === undefined);
+        const missingFields = requiredComparisonFields.filter((f) => (indep as any)[f] === undefined || (indep as any)[f] === null);
         if (missingFields.length > 0) {
           issuersWithMissingFields.push(`${ticker} (missing ${missingFields.join(', ')})`);
         }
