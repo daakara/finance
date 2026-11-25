@@ -258,7 +258,6 @@ def main():
         "observed": {"exit_code": res_mc.returncode if res_mc is not None else None},
         "passed": res_mc is not None and res_mc.returncode == 0,
     })
-    })
 
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"

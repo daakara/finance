@@ -640,8 +640,8 @@
     },
     "scripts/release/rq04_frontend_regression.py": {
       "description": "Frontend regression runner including typecheck, sizing, Spotlight, CDNS, SEC Form 4, Radar, Risk Metrics, and Mobile Chart & Preflight Truth suites",
-      "sha256": "412ab98a36da9b1bcd8eb0f8a744f08332a54fdfc7485e4835b8080a220fc7cb",
-      "size_bytes": 14487
+      "sha256": "36d22b18a7c8ccb8ca051a51381e4b00c43756953c79044b66d2a2500785362a",
+      "size_bytes": 14480
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
       "sha256": "f3f1039896aa258834f24144d69c5b42552df7b5173a09f09833ff46b6e3be0a",
