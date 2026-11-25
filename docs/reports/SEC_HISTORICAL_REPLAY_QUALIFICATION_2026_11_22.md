@@ -387,203 +387,183 @@ Review candidate PR #317 against offline qualification evidence. Candidate code 
 
 ## 7. ARX Issue #165 — Finalized Bounded NVDA Historical SEC Form 4 Coverage Qualification Assessment
 
-**Assessment Finalization Timestamp:** `2026-11-24T10:30:43Z` (Local: `2026-11-24T11:30:43+01:00`)  
-**Database As-Of Timestamp:** `2026-11-24T10:28:40Z`  
+**Assessment Finalization Timestamp:** `2026-11-25T08:00:00Z` (Local: `2026-11-25T09:00:00+01:00`)  
+**Database As-Of Timestamp:** `2026-11-25T06:15:00Z`  
 **Issuer Under Audit:** NVIDIA CORP (`NVDA` / CIK `0001045810` / SIC `3674`)  
-**Parallel Production Trial:** `ARX-TRIAL-2026-NVDA-AAPL-001` (Running deployment `bba68cfb`, commit `2eccc64a`)  
-**Associated Machine-Readable Artifact:** [nvda_historical_coverage_reconciliation_165.json](file:///Users/iDavid/.gemini/antigravity/brain/e53e772b-2682-4ca8-a2bd-008123fee60e/nvda_historical_coverage_reconciliation_165.json)
+**Parallel Production Trial:** `ARX-TRIAL-2026-NVDA-AAPL-001` (Trial completed; deauthorized; fail-closed standby verified)  
+**Associated Machine-Readable Artifact:** [nvda_historical_coverage_reconciliation_165.json](file:///Users/iDavid/Projects/finance-clean/data/research/nvda_historical_coverage_reconciliation_165.json)
 
 ---
 
 ### 7.0 Corrections & Superseded Claims Ledger
 
-To ensure absolute audit clarity and preserve evidence provenance, three prior reporting claims have been formally reconciled against authoritative read-only SQL and retained repository fixtures:
+To ensure absolute audit clarity and preserve evidence provenance, four reporting dimensions have been formally reconciled against authoritative read-only SQL, Railway container telemetry, and retained repository fixtures:
 
-1. **Catalog Completeness Technical Standard Reconciled:**
+1. **Gate 1 Closeout Terminology Reconciliation:**
+   - **Trial Rate Ceiling:** Recorded strictly as **<= 5 requests/sec** (enforced by application software `RateLimiter(max_per_second=5.0)`).
+   - **Historical Rate Telemetry Status:** Peak <= 1 req/sec is formally withdrawn because container logs record slot-level batch execution bounds rather than microsecond-level HTTP transmission emissions. Per-request transmission rate telemetry is marked **`NOT_CHECKED`**, with compliance verified via software limiter controls.
+   - **Duration Terminology Correction:** "SQL Lease Duration" is renamed to **"Run-request duration"** (`completed_at - claimed_at` in `sm_run_requests`), reflecting the database transaction lease from task claim to completion commit.
+   - **Decoupled Duration Metric Sources:**
+     - *Run-request duration (`sm_run_requests`):* Ranged from 3.021s to 4.641s (mean 3.816s across all 12 slots).
+     - *Container log cycle duration (Railway stdout):* Measured from worker process log start to completion (e.g. Day 2 Slot 1: 6.342s from `14:36:26.278Z` to `14:36:32.620Z`).
+     - *Audit event cycle duration (`sm_audit_events`):* Measured from worker dispatch initiation to final audit emission commit (e.g. Day 2 Slot 1: 6.471s).
+   - **Historical Day 1 Latency Breaches Retained:** Slots 2, 3, and 4 on November 20 (70.107s, 76.095s, 77.033s against the <= 60.0s ceiling) are permanently retained. Root cause: synchronous Step 10 backup retention sweeps checking 55+ legacy manifests sequentially over WAN (remediated in PR #315; Days 2 & 3 all passed sub-10s).
+2. **Catalog Completeness Technical Standard Reconciled:**
    - *Superseded Claim:* Preliminary draft stated that the retained submissions catalog could not prove the absence of Form 4 filings through November 19 because the latest Form 4 in the catalog was dated November 06.
-   - *Authoritative Finding:* Under SEC EDGAR filing architecture and the governing validation contract (`validate_submissions_catalog_evidence` §8), an authoritative, validated submissions catalog is technically capable of supporting the absence of Form 4 filings within any interval it contiguously spans (establishing technical evidence, not a legal opinion). For the closed window `[2026-08-26, 2026-11-19T21:45:59Z]`, the catalog contiguously spans the period, and all 15 in-window Form 4/A accessions are fully accounted for with zero gaps. The latest Form 4 date alone neither proves nor disproves completeness. However, for the full trial operational interval `[2026-08-26, 2026-11-24]`, the catalog fails the governing validation requirement because it was retrieved on `2026-11-22T08:53:12Z` (latest filing: `2026-11-19T21:45:59Z`), which pre-dates the trial end date and pre-dates forward filing `0001696841-26-000016` (accepted `2026-11-23T21:54:28Z`). Thus, `PARTIAL_UNCERTIFIED` is retained for the operational span without forcing premature certification or unjustified rejection.
-2. **AAPL Stored Count Discrepancy Reconciled (Elimination of Subtraction Artifact):**
-   - *Superseded Claim:* Earlier report version stated 38 AAPL raw filings and 104 AAPL transactions by subtracting NVDA from total database rows ($55 - 17 = 38$; $152 - 48 = 104$).
-   - *Authoritative Finding:* Direct authenticated read-only SQL grouping by `(ticker, cik)` on live database `finance_smart_money` at `2026-11-24T10:28:40Z` confirms AAPL has **exactly 6 raw filings** and **18 parsed transactions** (100% agreement with earlier baseline audits). The remaining 32 raw filings and 86 parsed transactions belong to 11 other historical governed issuers (GOOGL: 4/29, TSLA: 4/14, META: 4/12, MSFT: 4/7, V: 3/9, BRK-B: 3/5, AMZN: 4/4, JPM: 3/3, ACLS: 1/1, LLY: 1/1, VRTX: 1/1). Total database state is exactly 55 raw filings and 152 parsed transactions ($17 + 6 + 32 = 55$; $48 + 18 + 86 = 152$).
-3. **Transaction Terminology & Execution Venue Distinction Standardized:**
+   - *Authoritative Finding:* Under SEC EDGAR filing architecture and the governing validation contract (`validate_submissions_catalog_evidence` §8), an authoritative, validated submissions catalog is technically capable of supporting the absence of Form 4 filings within any interval it contiguously spans (establishing technical evidence, not a legal opinion). For the closed window `[2026-08-26, 2026-11-19T21:45:59Z]`, the catalog contiguously spans the period, and all 15 in-window Form 4/A accessions are fully accounted for with zero gaps. The latest Form 4 date alone neither proves nor disproves completeness. However, for the full assessment interval `[2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z)`, the catalog fails the governing validation requirement because it was retrieved on `2026-11-22T08:53:12Z` (latest filing: `2026-11-19T21:45:59Z`), which pre-dates the window end and pre-dates forward filing `0001696841-26-000016` (accepted `2026-11-23T21:54:28Z`). Thus, `PARTIAL_UNCERTIFIED` is retained without forcing premature certification or unjustified rejection.
+3. **AAPL Stored Count Discrepancy Reconciled (Elimination of Subtraction Artifact):**
+   - *Superseded Claim:* Earlier report version stated 38 AAPL raw filings and 104 AAPL transactions by subtracting NVDA from total database rows (55 - 17 = 38; 152 - 48 = 104).
+   - *Authoritative Finding:* Direct authenticated read-only SQL grouping by `(ticker, cik)` on live database `finance_smart_money` at `2026-11-24T10:28:40Z` confirms AAPL has **exactly 6 raw filings** and **18 parsed transactions** (100% agreement with earlier baseline audits). The remaining 32 raw filings and 86 parsed transactions belong to 11 other historical governed issuers (GOOGL: 4/29, TSLA: 4/14, META: 4/12, MSFT: 4/7, V: 3/9, BRK-B: 3/5, AMZN: 4/4, JPM: 3/3, ACLS: 1/1, LLY: 1/1, VRTX: 1/1). Total database state is exactly 55 raw filings and 152 parsed transactions (17 + 6 + 32 = 55; 48 + 18 + 86 = 152).
+4. **Transaction Terminology & Execution Venue Distinction Standardized:**
    - *Superseded Claim:* Transaction Code S was labeled broadly as "open-market sale" based on trading plan and pricing footnote text.
    - *Authoritative Finding:* Transaction Code S is strictly labeled as **"Sale"** per official SEC Form 4 specifications. Rule 10b5-1 trading plan adoption and weighted-average pricing disclosures are tracked as separate transaction attributes. Full ElementTree XML search across all 17 NVDA filings confirms the phrase "open market" appears **0 times** in `<footnotes>` and `<remarks>`. The designation "open-market sale" is therefore suppressed, as execution venue is unspecified in filing narrative.
 
 ---
 
-### 7.1 Clarified Certification Basis & Temporal Invariants
+### 7.1 Gate 2: Assessment Interval & Remaining Coverage Gap
 
 The historical coverage qualification is governed strictly by the codebase authority in `analyst_dashboard.smart_money.storage.postgres_repository:validate_submissions_catalog_evidence` and `analyst_dashboard.smart_money.reconciliation_engine:FilingReconciliationEngine`:
 
-1. **Governing Form Types:** Strictly `Form 4`, `Form 4/A`, and `Form 4A` (Section 16(a) insider ownership reporting). Non-Section 16 forms (e.g. Form 144, 8-K, 13F-HR, 10-Q) are cataloged by the SEC but are explicitly excluded from insider transaction coverage.
-2. **Interval Boundaries, Cutoff & Timezone Standards:**
-   - **Calendar Dates:** Evaluated as `YYYY-MM-DD` under the official SEC EDGAR filing calendar.
-   - **Acceptance Timestamps:** Evaluated as ISO-8601 UTC timestamps (`acceptanceDateTime`).
-   - **Closed Baseline Window:** `[2026-08-26, 2026-11-19T21:45:59Z]` (bounded by contiguous catalog evidence).
-   - **Extended Operational Span:** `[2026-08-26, 2026-11-24T09:50:00Z]` (operational trial span inclusive of forward trial accretion).
-3. **Binding Completeness to Provenance, Acquisition Time & Schema:**
-   - Completeness must be bound strictly to retained catalog provenance, raw-byte SHA-256 custody, acquisition timestamp, issuer identity, schema validation, pagination coverage, and governing validation rules.
-   - A complete authoritative catalog is technically capable of supporting the absence of Form 4 filings within the interval it contiguously covers (establishing technical evidence, not a legal opinion).
-   - **The latest Form 4 date alone neither proves nor disproves completeness:** A later Form 144 entry alone does not prove index completeness. Rather, absence of unlisted Form 4 filings within the covered interval is established by the validated catalog and its governing coverage rules under `validate_submissions_catalog_evidence` §8—specifically, its verified schema, contiguous accession sequence, and verified pagination coverage spanning `[2026-08-26, 2026-11-19T21:45:59Z]`. Where a catalog satisfies these technical invariants, it establishes that zero unindexed Form 4 filings occurred during the covered span.
-4. **Governing Validation Contract (`validate_submissions_catalog_evidence` §8):**
-   - To certify an interval $[T_{\text{start}}, T_{\text{end}}]$, the catalog retrieval timestamp $T_{\text{acquire}}$ must satisfy $T_{\text{acquire}} \ge T_{\text{end}}$, and the catalog's latest accession must be $\ge T_{\text{end}}$ or explicitly bounded by a verified subsequent filing or contemporaneous SEC index verification.
-   - For $[2026-08-26, 2026-11-19T21:45:59Z]$, this condition is satisfied: 15 of 15 Form 4/A accessions are accounted for, and zero unindexed Form 4s exist in the catalog.
-   - For $[2026-08-26, 2026-11-24]$, this condition is **unmet**: the catalog was retrieved at `2026-11-22T08:53:12Z` (latest filing `2026-11-19T21:45:59Z`), which pre-dates the trial window end and fails interval traversal for the post-Nov 19 period.
+1. **Explicit Assessment Interval:**
+   $$\boxed{[\text{2026-08-26T00:00:00Z},\ \text{2026-11-25T00:00:00Z})}$$
+2. **Current Teardown Verification:**
+   - Authorization remains **`false`** (`ARX_CONTINUOUS_INGESTION_AUTHORIZED=false`).
+   - Role remains **`DISABLED`** (`ARX_SEC_EGRESS_ROLE=DISABLED`).
+   - Owner advisory locks in PostgreSQL: **0 rows** (owner lock `401007311509093371` absent).
+   - Queue state in `sm_run_requests`: **0 active or retryable rows** (clean queue).
+3. **Known Retained Catalog Audit:**
+   - Location checked: `tests/fixtures/sec_edgar/CIK0001045810_submissions.json`.
+   - Size & SHA-256: 160,255 bytes | SHA-256 `8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045`.
+   - Retrieval timestamp: `2026-11-22T08:53:12.691561+00:00`.
+   - Issuer identity: CIK `0001045810`, ticker `NVDA`, company name `NVIDIA CORP`.
+   - Schema & pagination: Validated. `filings.files` points to historical archive prior to 2020; all 2026 filings are 100% self-contained in `filings.recent`.
+   - **Identified Coverage Gap:** The retained catalog terminates at `2026-11-19T21:45:59Z`. For the interval `[2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)`, no retained submissions catalog exists in repository or database storage.
+   - **Backup Search Policy:** Repeated searching of production backups is bypassed; read-only inspection has already conclusively documented that natural trial runs do not retain submissions catalog response bytes.
 
 ---
 
 ### 7.2 Audit of Reusable Trial Evidence & Submissions Retention Gap
 
-A read-only architectural and database audit was performed to determine whether natural production trial runs retain submissions response bytes:
+A read-only architectural and database audit confirms:
 
-1. **Natural Trial Execution Audit (`canary_runner.py` / `continuous_pipeline.py`):**
-   - The worker queries `https://data.sec.gov/submissions/CIK{cik}.json` in memory during each scheduled cycle.
-   - It enumerates new accessions, downloads primary XML documents, and persists the raw XML into `form4_raw_filings` with its SHA-256 hash.
-   - **Submissions Catalog Response Bytes Are NOT Retained:** The worker does **not** persist the raw submissions response bytes, acquisition timestamp, source URL, or catalog SHA-256 into PostgreSQL or durable disk storage.
-   - In `sm_reconciliation_receipts`, the record for overnight Slot 4 (`3138ccbe-335d-4a51-aa10-a4b971f1ba45`) logs `"accession_inventory": ["0001696841-26-000016"]` and `"reasons": ["TRIAL_INTERVAL_PARTIAL_COVERAGE"]`, confirming that the parent catalog was not captured as a durable custody artifact.
-2. **Single Reusable Retained Submissions Catalog:**
-   - The **only** retained submissions catalog available in repository evidence is `tests/fixtures/sec_edgar/CIK0001045810_submissions.json` (SHA-256 `8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045`), retrieved on `2026-11-22T08:53:12.691561+00:00`.
-   - **Issuer Identity Verified:** CIK `0001045810`, ticker `NVDA`, company name `NVIDIA CORP`.
-   - **Schema & Pagination Verified:** Schema matches SEC specifications. `filings.files` lists `CIK0001045810-submissions-001.json` (`1998-03-06` to `2020-09-16`). Because all 2026 filings are $\ge 2020-09-18$, pagination coverage in `filings.recent` is 100% self-contained.
+1. **Natural Trial Execution Gap:**
+   - The trial worker queries `https://data.sec.gov/submissions/CIK{cik}.json` in volatile container memory during scheduled cycles.
+   - It enumerates new accessions and persists primary Form 4 XML into `form4_raw_filings` with its SHA-256 hash.
+   - **Parent Submissions Catalog Response Bytes Are NOT Retained:** The worker does not write catalog response bytes, retrieval timestamps, source URLs, or catalog SHA-256 to PostgreSQL or R2.
+2. **Single Retained Catalog Limitation:**
+   - The only retained catalog fixture in the repository is `tests/fixtures/sec_edgar/CIK0001045810_submissions.json` (ending November 19).
 3. **Single Newly Ingested Filing Non-Proof Rule:**
-   - Natural trial Slot 4 ingested forward accession `0001696841-26-000016` (Timothy S. Teter, accepted `2026-11-23T21:54:28Z`, SHA-256 `c7ee40386d6a142d3c644acc348ce994aaf1f57a1ce8207fa40e0b9148f73077`).
-   - Ingesting this single filing proves that Teter filed on November 23, but **does not prove interval completeness** between November 06 and November 24.
+   - Trial Slot 4 ingested forward accession `0001696841-26-000016` (Timothy S. Teter, accepted `2026-11-23T21:54:28Z`).
+   - Ingesting this single filing proves that Teter filed on November 23, but **does not prove interval completeness** between November 06 and November 25.
 
 ---
 
-### 7.3 Exhaustive Accession Accounting & Corrected Transaction Terminology
+### 7.3 Gate 4: Offline Accession Reconciliation & Transaction Accounting
 
-All transaction lines have been re-classified under official SEC Form 4 terminology:
-- **Transaction Code S is strictly labeled as "Sale".**
-- **Trading plan adoption (Rule 10b5-1) and weighted-average pricing disclosures are recorded as separate transaction attributes.**
-- **The phrase "open-market sale" is suppressed:** An exhaustive text search across all `<footnotes>` and `<remarks>` of all 17 NVDA filings confirms that "open market" appears **0 times**. Execution venue is unspecified in filing narrative.
-- Raw transaction counts are strictly distinguished from amendment-adjusted effective counts.
+All Forms 4 and 4-A accessions within the assessment interval `[2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z)` are reconciled below, separating the immutable 16-filing baseline from forward trial additions:
 
 | # | Accession Number | Form | Filing Date | Acceptance Datetime (UTC) | Reporting Owner (CIK) | SHA-256 Match | Stored Raw Txs | Corrected Terminology & Attributes | Accounting Disposition |
-| - | :--- | :---: | :---: | :---: | :--- | :---: | :---: | :--- | :--- |
+| - | :--- | :---: | :---: | :---: | :--- | :---: | :---: | :---: | :--- | :--- |
 | 1 | `0001347842-26-000015` | `4` | `2026-08-24` | `2026-08-24T21:32:04Z` | Ajay K. Puri (`0001347842`) | **MATCH** | 0 | None (Holdings only) | Pre-window baseline member; verified Section 16 retirement exit notice |
-| 2 | `0001199039-26-000012` | `4` | `2026-09-02` | `2026-09-02T22:10:34Z` | Mark A. Stevens (`0001199039`) | **MATCH** | 7 | 7× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 7 sales accounted & parsed |
-| 3 | `0001696841-26-000010` | `4` | `2026-09-02` | `2026-09-02T22:07:18Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 3 | 3× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 3 sales accounted & parsed |
-| 4 | `0001197647-26-000009` | `4` | `2026-09-04` | `2026-09-04T21:00:35Z` | Tench Coxe (`0001197647`) | **MATCH** | 1 | 1× Bona Fide Gift (Code G) [10b5-1: Yes, WtdAvg: No, Venue: Unspecified] | In-window baseline filing; 1 gift accounted & parsed |
-| 5 | `0001199039-26-000014` | `4` | `2026-09-08` | `2026-09-08T21:09:19Z` | Mark A. Stevens (`0001199039`) | **MATCH** | 7 | 7× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 7 sales accounted & parsed |
-| 6 | `0002152188-26-000005` | `4` | `2026-09-11` | `2026-09-11T21:04:47Z` | Nicholas P. Parker (`0002152188`) | **MATCH** | 1 | 1× Equity Grant / Award (Code A) [172,507 sh; 10b5-1: No] | In-window baseline base filing; superseded by Form 4/A |
-| 7 | `0001197649-26-000012` | `4` | `2026-09-18` | `2026-09-18T21:10:59Z` | Jen-Hsun Huang (`0001197649`) | **MATCH** | 2 | 1× Tax Withholding (Code F), 1× Gift (Code G) [10b5-1: No] | In-window baseline filing; 2 transactions accounted & parsed |
-| 8 | `0001243821-26-000007` | `4` | `2026-09-18` | `2026-09-18T21:15:34Z` | Scott Gawel (`0001243821`) | **MATCH** | 1 | 1× Tax Withholding (Code F) [10b5-1: No] | In-window baseline filing; 1 transaction accounted & parsed |
-| 9 | `0001283854-26-000010` | `4` | `2026-09-18` | `2026-09-18T21:14:45Z` | Debora Shoquist (`0001283854`) | **MATCH** | 1 | 1× Tax Withholding (Code F) [10b5-1: No] | In-window baseline filing; 1 transaction accounted & parsed |
-| 10 | `0001588670-26-000014` | `4` | `2026-09-18` | `2026-09-18T21:12:42Z` | Colette Kress (`0001588670`) | **MATCH** | 4 | 1× Tax Withholding (Code F), 3× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes] | In-window baseline filing; 4 transactions accounted & parsed |
-| 11 | `0001696841-26-000012` | `4` | `2026-09-18` | `2026-09-18T21:13:29Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 1 | 1× Tax Withholding (Code F) [10b5-1: No] | In-window baseline filing; 1 transaction accounted & parsed |
-| 12 | `0001199039-26-000016` | `4` | `2026-09-22` | `2026-09-22T20:56:23Z` | Mark A. Stevens (`0001199039`) | **MATCH** | 2 | 2× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 2 sales accounted & parsed |
-| 13 | `0001696841-26-000014` | `4` | `2026-09-23` | `2026-09-23T20:56:28Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 3 | 3× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 3 sales accounted & parsed |
-| 14 | `0001197647-26-000011` | `4` | `2026-10-09` | `2026-10-09T21:04:09Z` | Tench Coxe (`0001197647`) | **MATCH** | 1 | 1× Bona Fide Gift (Code G) [10b5-1: Yes, WtdAvg: No, Venue: Unspecified] | In-window baseline filing; 1 gift accounted & parsed |
-| 15 | `0002152188-26-000007` | `4/A` | `2026-10-13` | `2026-10-13T21:09:29Z` | Nicholas P. Parker (`0002152188`) | **MATCH** | 1 | 1× Equity Grant / Award (Code A) [160,418 sh; 10b5-1: No] | In-window amendment; `SCOPE_PARTIAL_CORRECTION` replaces base |
-| 16 | `0001197647-26-000013` | `4` | `2026-11-06` | `2026-11-06T21:12:02Z` | Tench Coxe (`0001197647`) | **MATCH** | 1 | 1× Bona Fide Gift (Code G) [10b5-1: Yes, WtdAvg: No, Venue: Unspecified] | In-window baseline filing; 1 gift accounted & parsed |
-| 17 | `0001696841-26-000016` | `4` | `2026-11-23` | `2026-11-23T21:54:28Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 12 | 12× Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | Forward trial accretion; 12 sales from Slot 4 accounted & parsed |
-| — | `0001310264-26-000008` | `4` | `2026-08-12` | `2026-08-12T21:13:10Z` | John O. Brennan (`0001310264`) | *Catalog* | — | Sale / Tax Withholding | Out-of-window pre-Aug 26; properly excluded, not a gap |
-| — | `0001197647-26-000007` | `4` | `2026-08-07` | `2026-08-07T20:47:24Z` | Tench Coxe (`0001197647`) | *Catalog* | — | Bona Fide Gift | Out-of-window pre-Aug 26; properly excluded, not a gap |
+| 2 | `0001199039-26-000012` | `4` | `2026-09-02` | `2026-09-02T22:10:34Z` | Mark A. Stevens (`0001199039`) | **MATCH** | 7 | 7x Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 7 sales accounted & parsed |
+| 3 | `0001696841-26-000010` | `4` | `2026-09-02` | `2026-09-02T22:07:18Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 3 | 3x Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 3 sales accounted & parsed |
+| 4 | `0001197647-26-000009` | `4` | `2026-09-04` | `2026-09-04T21:00:35Z` | Tench Coxe (`0001197647`) | **MATCH** | 1 | 1x Bona Fide Gift (Code G) [10b5-1: Yes, WtdAvg: No, Venue: Unspecified] | In-window baseline filing; 1 gift accounted & parsed |
+| 5 | `0001199039-26-000014` | `4` | `2026-09-08` | `2026-09-08T21:09:19Z` | Mark A. Stevens (`0001199039`) | **MATCH** | 7 | 7x Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 7 sales accounted & parsed |
+| 6 | `0002152188-26-000005` | `4` | `2026-09-11` | `2026-09-11T21:04:47Z` | Nicholas P. Parker (`0002152188`) | **MATCH** | 1 | 1x Equity Grant / Award (Code A) [172,507 sh; 10b5-1: No] | In-window baseline base filing; superseded by Form 4/A |
+| 7 | `0001197649-26-000012` | `4` | `2026-09-18` | `2026-09-18T21:10:59Z` | Jen-Hsun Huang (`0001197649`) | **MATCH** | 2 | 1x Tax Withholding (Code F), 1x Gift (Code G) [10b5-1: No] | In-window baseline filing; 2 transactions accounted & parsed |
+| 8 | `0001243821-26-000007` | `4` | `2026-09-18` | `2026-09-18T21:15:34Z` | Scott Gawel (`0001243821`) | **MATCH** | 1 | 1x Tax Withholding (Code F) [10b5-1: No] | In-window baseline filing; 1 transaction accounted & parsed |
+| 9 | `0001283854-26-000010` | `4` | `2026-09-18` | `2026-09-18T21:14:45Z` | Debora Shoquist (`0001283854`) | **MATCH** | 1 | 1x Tax Withholding (Code F) [10b5-1: No] | In-window baseline filing; 1 transaction accounted & parsed |
+| 10 | `0001588670-26-000014` | `4` | `2026-09-18` | `2026-09-18T21:12:42Z` | Colette Kress (`0001588670`) | **MATCH** | 4 | 1x Tax Withholding (Code F), 3x Sale (Code S) [10b5-1: Yes, WtdAvg: Yes] | In-window baseline filing; 4 transactions accounted & parsed |
+| 11 | `0001696841-26-000012` | `4` | `2026-09-18` | `2026-09-18T21:13:29Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 1 | 1x Tax Withholding (Code F) [10b5-1: No] | In-window baseline filing; 1 transaction accounted & parsed |
+| 12 | `0001199039-26-000016` | `4` | `2026-09-22` | `2026-09-22T20:56:23Z` | Mark A. Stevens (`0001199039`) | **MATCH** | 2 | 2x Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 2 sales accounted & parsed |
+| 13 | `0001696841-26-000014` | `4` | `2026-09-23` | `2026-09-23T20:56:28Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 3 | 3x Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | In-window baseline filing; 3 sales accounted & parsed |
+| 14 | `0001197647-26-000011` | `4` | `2026-10-09` | `2026-10-09T21:04:09Z` | Tench Coxe (`0001197647`) | **MATCH** | 1 | 1x Bona Fide Gift (Code G) [10b5-1: Yes, WtdAvg: No, Venue: Unspecified] | In-window baseline filing; 1 gift accounted & parsed |
+| 15 | `0002152188-26-000007` | `4/A` | `2026-10-13` | `2026-10-13T21:09:29Z` | Nicholas P. Parker (`0002152188`) | **MATCH** | 1 | 1x Equity Grant / Award (Code A) [160,418 sh; 10b5-1: No] | In-window amendment; `SCOPE_PARTIAL_CORRECTION` replaces base |
+| 16 | `0001197647-26-000013` | `4` | `2026-11-06` | `2026-11-06T21:12:02Z` | Tench Coxe (`0001197647`) | **MATCH** | 1 | 1x Bona Fide Gift (Code G) [10b5-1: Yes, WtdAvg: No, Venue: Unspecified] | In-window baseline filing; 1 gift accounted & parsed |
+| 17 | `0001696841-26-000016` | `4` | `2026-11-23` | `2026-11-23T21:54:28Z` | Timothy S. Teter (`0001696841`) | **MATCH** | 12 | 12x Sale (Code S) [10b5-1: Yes, WtdAvg: Yes, Venue: Unspecified] | Forward trial accretion; 12 sales from Slot 4 accounted & parsed |
+
+#### Forward Trial Addition Details:
+- **Accession Number:** `0001696841-26-000016`
+- **Filing Date:** `2026-11-23`
+- **Acceptance Datetime (UTC):** `2026-11-23T21:54:28Z`
+- **Period of Report (Reporting Date):** `2026-11-19`
+- **Reporting Owner:** Timothy S. Teter (CIK `0001696841`)
+- **Relationship:** Officer (Executive Vice President and General Counsel)
+- **Transaction Codes:** 12x Sale (Code S) under Rule 10b5-1 trading plan, weighted average price disclosures; execution venue unspecified in narrative.
+- **Disposition:** Discovered and ingested during trial Slot 4 (`52e3acb1-e682-4302-84b4-2f40f030d78f`), persisted with SHA-256 `c7ee40386d6a142d3c644acc348ce994aaf1f57a1ce8207fa40e0b9148f73077`, yielding 12 raw and effective transactions.
 
 ---
 
 ### 7.4 Quantitative Parity: Raw vs Effective Amended Transactions & Multi-Issuer Reconciliation
 
-1. **Frozen Baseline Counts (16 NVDA Filings):**
-   - **Stored Raw Rows in `form4_parsed_transactions`:** Exactly **36 rows** (all 36 non-derivative, 0 derivative).
-   - **Transaction Code Breakdown (Raw):**
-     - Sale (Code S): 25
-     - Tax Withholding (Code F): 5
-     - Bona Fide Gift (Code G): 4
-     - Equity Grant / Award (Code A): 2 (1 base + 1 amendment)
-     - Purchase (Code P): 0
-   - **Point-in-Time Effective Amended Counts (`get_bulk_transactions_as_of`):**
-     - Before amendment boundary (`2026-10-13T21:09:28Z`): **34 effective transactions** (base grant active with 172,507 shares).
-     - At amendment boundary (`2026-10-13T21:09:29Z`): **34 effective transactions** (amendment replaces base with 160,418 shares; $34 - 1 + 1 = 34$).
-     - After all baseline filings available (`2026-11-06T21:12:02Z`): **35 effective transactions** (November 6 gift added; base remains superseded).
-2. **Forward Accretion Counts (`0001696841-26-000016`):**
-   - **Stored Raw Rows:** Exactly **12 rows** (all 12 non-derivative Sale / Code S).
-   - **Effective Amended Transactions:** Exactly **12 effective transactions** (no amendment supersession).
-3. **Total Database State (NVDA — 17 Filings):**
+1. **Frozen Baseline Set (16 NVDA Filings):**
+   - **Stored Raw Transactions:** Exactly **36 rows** in `form4_parsed_transactions` (25 S, 5 F, 4 G, 2 A).
+   - **Zero-Transaction Filing:** `0001347842-26-000015` (Ajay K. Puri, filed `2026-08-24`) contains 0 transactions (Section 16 retirement exit notice).
+   - **Amendment Effect:** `0002152188-26-000007` (Form 4/A) supersedes base `0002152188-26-000005` (Code A grant shares corrected from 172,507 to 160,418).
+   - **Net Effective Transactions:** Exactly **35 effective transactions** after amendment supersession.
+2. **Forward Addition Set (1 NVDA Filing):**
+   - **Stored Raw Transactions:** Exactly **12 rows** (all 12 Code S).
+   - **Net Effective Transactions:** Exactly **12 effective transactions**.
+3. **Combined Sets Reconciled (17 NVDA Filings):**
    - **Total Raw Filings:** **17 rows** (16 baseline + 1 forward).
    - **Total Stored Raw Transactions:** **48 rows** (36 baseline + 12 forward).
-   - **Total Effective Amended Transactions:** **47 transactions** (35 baseline effective + 12 forward effective).
-   - **Cumulative Transaction Codes:**
-     - Sale (Code S): 37 (25 baseline + 12 forward)
-     - Tax Withholding (Code F): 5
-     - Bona Fide Gift (Code G): 4
-     - Equity Grant / Award (Code A): 2 raw (1 effective after supersession)
-     - Purchase (Code P): 0
-4. **Exhaustive Multi-Issuer Database Inventory (`2026-11-24T10:28:40Z`):**
-   Direct authenticated read-only SQL grouping on `form4_raw_filings` and `form4_parsed_transactions` confirms that rows are distributed across all 13 governed issuers, completely resolving the earlier subtraction artifact:
-
-| Issuer Ticker | Issuer CIK | Raw Filings (Baseline / Forward) | Stored Parsed Transactions | Notes |
-| :--- | :--- | :---: | :---: | :--- |
-| **NVDA** | `0001045810` | **17** (16 baseline + 1 forward) | **48** (36 baseline + 12 forward) | 47 effective transactions after Form 4/A supersession |
-| **AAPL** | `0000320193` | **6** (6 baseline + 0 forward) | **18** (18 baseline + 0 forward) | 14 non-derivative + 4 derivative (100% baseline parity) |
-| **ACLS** | `0001113232` | 1 | 1 | Historical governed issuer baseline |
-| **AMZN** | `0001018724` | 4 | 4 | Historical governed issuer baseline |
-| **BRK-B** | `0001067983` | 3 | 5 | Historical governed issuer baseline |
-| **GOOGL** | `0001652044` | 4 | 29 | Historical governed issuer baseline |
-| **JPM** | `0000019617` | 3 | 3 | Historical governed issuer baseline |
-| **LLY** | `0000059478` | 1 | 1 | Historical governed issuer baseline |
-| **META** | `0001326801` | 4 | 12 | Historical governed issuer baseline |
-| **MSFT** | `0000789019` | 4 | 7 | Historical governed issuer baseline |
-| **TSLA** | `0001318605` | 4 | 14 | Historical governed issuer baseline |
-| **V** | `0001403161` | 3 | 9 | Historical governed issuer baseline |
-| **VRTX** | `0000875320` | 1 | 1 | Historical governed issuer baseline |
-| **Total All Issuers** | — | **55** | **152** | Exact database parity ($17 + 6 + 32 = 55$; $48 + 18 + 86 = 152$) |
-
-   - **Resolution of Subtraction Artifact:** The earlier reported figure of 38 AAPL filings was an erroneous subtraction artifact ($55 \text{ total filings} - 17 \text{ NVDA} = 38$), and the reported 104 AAPL transactions was similarly derived ($152 \text{ total transactions} - 48 \text{ NVDA} = 104$). In truth, AAPL has **exactly 6 raw filings and 18 parsed transactions**, while the remaining 32 filings and 86 transactions belong to the other 11 historical governed issuers shown above.
-   - Availability Records: **55 rows** (100% 1-to-1 availability ledger linkage).
-   - Open Source Gaps (`sm_source_gaps`): **0 open gaps**.
-   - Unresolved Amendments: **0 unresolved amendments**.
+   - **Total Effective Transactions:** **47 transactions** (35 baseline effective + 12 forward effective).
+   - **Cumulative Transaction Codes:** 37 Sale (Code S), 5 Tax Withholding (Code F), 4 Bona Fide Gift (Code G), 2 Equity Grant (Code A raw, 1 effective after Form 4/A supersession), 0 Purchase (Code P).
+4. **Authoritative Anti-Inference Rules Enforced:**
+   - **Matching Counts Non-Inference:** Completeness is strictly NOT inferred from matching baseline or forward counts.
+   - **Latest Filing Date Non-Inference:** Completeness is strictly NOT inferred from the presence of a filing on November 23.
+   - **`sm_source_gaps` Non-Inference:** Completeness is strictly NOT inferred from the absence of rows in `sm_source_gaps`.
+5. **Multi-Issuer Database Inventory (`finance_smart_money` at `2026-11-24T10:28:40Z`):**
+   All 55 raw filings and 152 parsed transactions across all 13 governed issuers are fully accounted for, eliminating the earlier AAPL subtraction artifact (55 total - 17 NVDA = 38; 152 total - 48 NVDA = 104). AAPL has exactly 6 filings and 18 transactions; the remaining 32 filings and 86 transactions belong to the other 11 historical governed issuers (GOOGL: 4/29, TSLA: 4/14, META: 4/12, MSFT: 4/7, V: 3/9, BRK-B: 3/5, AMZN: 4/4, JPM: 3/3, ACLS: 1/1, LLY: 1/1, VRTX: 1/1).
 
 ---
 
 ### 7.5 UI / Radar Guardrails & Scoring Hold Verification
 
-Direct SQL inspection of live PostgreSQL database `finance_smart_money` at `crossover.proxy.rlwy.net:17685` confirms that stored filings do not imply certified coverage or active scoring:
-
-1. **Active Scanner Snapshot Pointer:**  
-   `scanner_active_snapshots` contains exactly 1 row pointing to `SNAP_SM_1792939989_48f30db6` (Coverage: `PARTIAL`, generated `2026-10-25T14:53:08Z`).
-2. **Subsequent Published Snapshots:**  
-   `scanner_snapshots` contains **0 newer snapshots**. The snapshot pointer remains strictly frozen.
-3. **Reconciliation Receipts Distribution:**  
-   `sm_reconciliation_receipts` contains 11 `PARTIAL` receipts (all recent trial executions) and 1 historical `COMPLETE` receipt (`1c224d5b-f45b-4202-9a42-a815c56c22fc` from the October 25 release).
-4. **Radar Adapter Fail-Closed Invariant:**  
-   In `analyst_dashboard.smart_money.radar_adapter:543`, `if is_governed_issuer and not has_complete_coverage_receipt:` triggers an immediate fail-closed rejection. Because no complete coverage receipt exists for the current observation window, Radar scoring remains strictly suppressed.
-5. **Operational Holds:**  
-   `HOLD_SEC_001` remains **`ACTIVE`**. Scoring publication remains **`HELD`**. Live trading remains **`HELD`**.
+Direct read-only SQL inspection confirms that offline reconciliation does not compromise live system state:
+1. **Active Snapshot:** `scanner_active_snapshots` points strictly to `SNAP_SM_1792939989_48f30db6` (`PARTIAL` coverage, published `2026-10-25T14:53:08Z`).
+2. **Subsequent Published Snapshots:** **0 newer snapshots**. Pointer remains frozen.
+3. **Reconciliation Receipts:** 11 `PARTIAL` receipts, 1 historical `COMPLETE` receipt (`1c224d5b`).
+4. **Radar Adapter Fail-Closed Invariant:** `analyst_dashboard.smart_money.radar_adapter` suppresses factor scoring for governed issuers lacking a current `COMPLETE` coverage receipt.
+5. **Operational Holds Maintained:** `HOLD_SEC_001` (Active), `HOLD_SCAN_001` (Active), `HOLD_EXEC_001` (Active), `PHASE_3_HOLD` (Active), and `ARX_CONFLUENCE_INTEGRITY_HOLD` (Active).
 
 ---
 
-### 7.6 Authoritative Certification Verdict & Evidentiary Limits
+### 7.6 Gate 3: Conditional Acquisition Proposal
 
-#### Formal Coverage Verdict:
-$$\boxed{\textbf{PARTIAL\_UNCERTIFIED}}$$
+Because no retained submissions catalog covers the remaining interval `[2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)`, a single diagnostic acquisition is prepared—but **NOT executed**:
 
-#### Basis for Retaining PARTIAL_UNCERTIFIED:
-The verdict for the historical interval is maintained as **`PARTIAL_UNCERTIFIED`** across the full operational period:
-1. **Authoritative Submissions Catalog Coverage for Closed Window:**  
-   Retained catalog `tests/fixtures/sec_edgar/CIK0001045810_submissions.json` (SHA-256 `8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045`), retrieved `2026-11-22T08:53:12Z`, is complete and authoritative for `[2026-08-26, 2026-11-19T21:45:59Z]`. All 15 in-window Form 4/A accessions match the database with zero omissions, and the catalog confirms zero unlisted Form 4 filings occurred during that window.
-2. **Precise Unmet Condition for Full Operational Span (`validate_submissions_catalog_evidence` §8):**  
-   For the extended operational interval `[2026-08-26, 2026-11-24]`, the retained catalog cannot satisfy Section 8 interval traversal because it pre-dates November 23/24, ending at `2026-11-19T21:45:59Z`.
-3. **Trial Evidence Retention Gap:**  
-   While the natural production trial run ingested forward accession `0001696841-26-000016` (accepted `2026-11-23T21:54:28Z`), it did not retain the parent submissions catalog response bytes, acquisition timestamp, source URL, or catalog SHA-256 custody.
-4. **Non-Proof of Negative by Ingestion:**  
-   Ingesting one forward filing proves that Timothy S. Teter filed on November 23, but does not prove that other NVDA insider filings did not occur between November 06 and November 24.
-5. **Epistemic Discipline:**  
-   `PARTIAL_UNCERTIFIED` is retained wherever evidence is insufficient. It is neither prematurely certified as complete nor improperly rejected as defective. Production coverage remains **`PARTIAL`**, uncertified for Radar scoring, snapshot publishing, or trading.
+- **Target Resource:** `GET https://data.sec.gov/submissions/CIK0001045810.json`
+- **Execution Constraints:**
+  1. **Maximum HTTP Requests:** Exactly 1 request. Zero automatic retries; zero automatic redirects.
+  2. **SEC User-Agent Header:** Formatted strictly per SEC EDGAR requirements: `ARXTerminal Research Akara.david26@gmail.com`.
+  3. **Rate Limiter Pacing:** Governed by existing `RateLimiter` controls at <= 5.0 req/sec.
+  4. **Authorization & Budget:** Governed by a separate diagnostic authorization and egress budget. Never reuses the exhausted/expired trial allowance.
+  5. **Verifiable Storage Retention:** Retain exact raw response bytes, request URL, UTC acquisition timestamp, HTTP status, byte count, and response SHA-256 in verifiable storage before any downstream processing.
+  6. **Downstream Isolation:** Zero Form 4/4-A XML downloads, zero filing parsing, and zero database ingestion.
+  7. **Governance Hold Invariance:** Coverage flag remains `PARTIAL_UNCERTIFIED`; zero factor scoring activation, zero snapshot publication, zero live trade execution.
 
 ---
 
-### 7.7 Single Contingent Post-Trial Step
+### 7.7 Deliverable & Operational Verdict
 
-**Zero egress applies strictly to this offline audit assessment; the active authorized trial (`ARX-TRIAL-2026-NVDA-AAPL-001`) remains permitted to execute its scheduled SEC requests under its existing lease.** Following natural trial completion and grant expiry at `2026-11-25T02:35:00Z`:
+$$\boxed{\mathbf{VERDICT:\ ACQUISITION\_AUTHORIZATION\_REQUIRED}}$$
 
-1. **Post-Trial Status Check:**  
-   Because submissions catalog retention during natural trial cycles is already established to be absent from worker execution, repeated searches of backups for index bytes are bypassed.
-2. **Bounded Submissions Acquisition Proposal (Strictly Post-Trial):**  
-   Following verified trial shutdown and grant expiry (`2026-11-25T02:35:00Z`), if no suitable retained catalog covering through November 24 has become available, execute the bounded acquisition proposal under separate explicit authorization:
-   - **Target Resource:** `https://data.sec.gov/submissions/CIK0001045810.json`
-   - **Pacing & Limits:** Single HTTP GET request executed through `SecRateLimiter` ($\le 4.0\text{ req/sec}$, verified User-Agent).
-   - **Execution Status:** **PROPOSED ONLY — NOT EXECUTED.** Requires separate explicit authorization after verified trial shutdown.
+#### Exact Execution Prompt:
+```bash
+GET https://data.sec.gov/submissions/CIK0001045810.json --max-requests 1 --no-retry --no-redirect --user-agent 'ARXTerminal Research Akara.david26@gmail.com' --rate-limit-per-sec 5.0 --output-raw-storage 'data/research/sourced_fundamentals/raw/CIK0001045810/submissions_20261125.json' --record-sha256 --no-xml-egress --no-db-write
+```
 
-*Zero audit-driven egress requests, zero production database writes, zero grant modifications, zero worker restarts or deployments, zero coverage-flag or scoring changes, and holds remain untouched. The authorized trial worker continues running under its active grant.*
+#### Exact Gaps Preventing a Definitive Verdict:
+1. **Submissions Catalog Coverage Gap:** Retained catalog `CIK0001045810_submissions.json` terminates on `2026-11-19T21:45:59Z`, leaving `[2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)` without contiguous index evidence.
+2. **Trial Submissions Non-Retention:** The completed trial worker did not persist submissions catalog response bytes during Slot 4 execution.
+
+#### Distinction Between Assessment Completion & Operational Certification:
+- **Assessment Completion:** The mathematical and cryptographic reconciliation of all known retained filings and parsed transactions across baseline and forward accretion sets is 100% complete.
+- **Operational Certification:** Requires unbroken, verified submissions catalog coverage spanning the entire assessment window to certify that zero unindexed Form 4/4-A filings occurred. Without contiguous catalog evidence covering through `2026-11-25T00:00:00Z`, operational certification cannot be granted.
+
+#### Preserved Production State:
+- **Active Snapshot:** `SNAP_SM_1792939989_48f30db6` (unmodified).
+- **Analytical Baseline:** 16 filings / 36 raw transactions / 35 effective transactions (strictly immutable).
+- **Production Coverage Status:** **`PARTIAL_UNCERTIFIED`** (preserved).
+- **Operational Holds:** `HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD` (all strictly active).

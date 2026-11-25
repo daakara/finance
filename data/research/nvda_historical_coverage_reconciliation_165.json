@@ -44,7 +44,7 @@
     "governing_validation_contract": "analyst_dashboard.smart_money.storage.postgres_repository:validate_submissions_catalog_evidence",
     "covered_interval_status": {
       "closed_interval_20260826_to_20261119": {
-        "interval_start": "2026-08-26",
+        "interval_start": "2026-08-26T00:00:00Z",
         "interval_end": "2026-11-19T21:45:59Z",
         "eligible_form4_accessions_in_catalog": 15,
         "accounted_in_baseline": 15,
@@ -54,11 +54,12 @@
         "absence_of_unlisted_filings_supported": true,
         "completeness_basis": "Derived from validated submissions catalog schema, contiguous accession ordering, and Section 8 coverage rules (not from presence of non-Form-4 filings alone)."
       },
-      "operational_trial_interval_20260826_to_20261124": {
-        "interval_start": "2026-08-26",
-        "interval_end": "2026-11-24T09:50:00Z",
+      "assessment_interval_20260826_to_20261125": {
+        "interval_start": "2026-08-26T00:00:00Z",
+        "interval_end": "2026-11-25T00:00:00Z",
+        "interval_notation": "[2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z)",
         "status": "UNMET_INTERVAL_CONDITION",
-        "precise_unmet_condition": "Catalog retrieval timestamp (2026-11-22T08:53:12Z) and latest recorded filing (2026-11-19T21:45:59Z) pre-date the trial end date (2026-11-24) and pre-date forward filing 0001696841-26-000016 (accepted 2026-11-23T21:54:28Z). Fails Section 8 interval traversal requirement for the post-Nov 19 operational period."
+        "precise_unmet_condition": "Catalog retrieval timestamp (2026-11-22T08:53:12Z) and latest recorded filing (2026-11-19T21:45:59Z) pre-date assessment window cutoff (2026-11-25T00:00:00Z) and forward filing 0001696841-26-000016 (accepted 2026-11-23T21:54:28Z). Fails Section 8 interval traversal requirement for [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)."
       }
     }
   },
@@ -104,7 +105,10 @@
       "is_weighted_average_price": true,
       "execution_venue_stated_as_open_market": false,
       "execution_venue_note": "Open market not explicitly stated in filing narrative"
-    }
+    },
+    "reporting_owner_relationship": "Officer (Executive Vice President and General Counsel)",
+    "period_of_report": "2026-11-19",
+    "effective_transactions_count": 12
   },
   "issuer_storage_breakdown_as_of_20261124": {
     "as_of_timestamp_utc": "2026-11-24T10:28:40Z",
@@ -767,18 +771,161 @@
   },
   "reconciliation_verdict_and_single_post_trial_step": {
     "production_coverage_verdict": "PARTIAL_UNCERTIFIED",
-    "verdict_rationale": "Production coverage remains PARTIAL_UNCERTIFIED across the operational period. While the retained catalog authoritatively validates zero unindexed Form 4 filings for the closed window [2026-08-26, 2026-11-19T21:45:59Z] based on schema and coverage rules, evidence is insufficient for the full operational span through 2026-11-24. The catalog pre-dates November 23/24, and the natural trial cycle ingested 0001696841-26-000016 without retaining submissions catalog response bytes.",
-    "egress_boundary_note": "Zero egress applies strictly to this offline audit assessment; the running authorized trial (ARX-TRIAL-2026-NVDA-AAPL-001) may continue making scheduled SEC requests under its active lease.",
-    "single_post_trial_step": {
-      "action": "Execute bounded submissions catalog acquisition post-trial if no suitable retained catalog has become available.",
-      "execution_timing": "Strictly post-trial after verified trial shutdown and authorization expiry (2026-11-25T02:35:00Z).",
-      "backup_search_policy": "Repeated backup searching is bypassed since catalog retention during natural trial execution is already confirmed absent.",
-      "bounded_acquisition_proposal": {
-        "status": "PROPOSED_ONLY_NOT_EXECUTED",
-        "target_resource": "https://data.sec.gov/submissions/CIK0001045810.json",
-        "method": "Single HTTP GET via SecRateLimiter (pacing <= 4.0 req/sec)",
-        "trigger_condition": "Executed ONLY after verified trial shutdown completes if no suitable retained catalog has become available."
+    "operational_verdict": "ACQUISITION_AUTHORIZATION_REQUIRED",
+    "verdict_rationale": "Production coverage remains PARTIAL_UNCERTIFIED across assessment interval [2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z). While the retained catalog authoritatively validates zero unindexed Form 4 filings for the closed window [2026-08-26, 2026-11-19T21:45:59Z] based on schema and coverage rules, a coverage gap exists for [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z). The trial worker ingested 0001696841-26-000016 without retaining submissions catalog response bytes. An affirmative diagnostic acquisition of CIK0001045810.json is required to close the gap.",
+    "execution_prompt": "GET https://data.sec.gov/submissions/CIK0001045810.json --max-requests 1 --no-retry --no-redirect --user-agent 'ARXTerminal Research Akara.david26@gmail.com' --rate-limit-per-sec 5.0 --output-raw-storage 'data/research/sourced_fundamentals/raw/CIK0001045810/submissions_20261125.json' --record-sha256 --no-xml-egress --no-db-write",
+    "remaining_gaps": [
+      "Post-Nov 19 submissions index coverage gap: [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)",
+      "Absence of durable submissions catalog response bytes from trial Slot 4 execution"
+    ],
+    "certification_distinction": "Assessment completion establishes the mathematical reconciliation of known retained records; operational certification requires unbroken authoritative catalog coverage spanning the entire interval to certify zero missing filings.",
+    "preserved_state": {
+      "active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+      "coverage_status": "PARTIAL_UNCERTIFIED",
+      "immutable_baseline": "16 filings / 36 raw transactions / 35 effective transactions",
+      "operational_holds": [
+        "HOLD_SEC_001",
+        "HOLD_SCAN_001",
+        "HOLD_EXEC_001",
+        "PHASE_3_HOLD",
+        "ARX_CONFLUENCE_INTEGRITY_HOLD"
+      ]
+    }
+  },
+  "gate_1_closeout_terminology_reconciliation": {
+    "trial_rate_ceiling": "<= 5 requests/sec",
+    "rate_limiter_implementation": "RateLimiter(max_per_second=5.0)",
+    "historical_rate_telemetry_status": "NOT_CHECKED",
+    "historical_rate_explanation": "Peak <= 1 req/sec is formally withdrawn because container logs record slot-level batch bounds, not microsecond-level network emissions for individual HTTP transmissions. Per-request transmission rate telemetry is therefore recorded as NOT_CHECKED, with compliance enforced by the software RateLimiter(max_per_second=5.0).",
+    "duration_terminology_correction": {
+      "previous_term": "SQL Lease Duration",
+      "corrected_term": "Run-request duration",
+      "definition": "Database-side transaction lease duration from task claim to completion commit (completed_at - claimed_at in sm_run_requests)"
+    },
+    "duration_metric_sources_and_reconciliation": {
+      "run_request_duration": {
+        "source": "PostgreSQL sm_run_requests (completed_at - claimed_at)",
+        "range_seconds": "3.021s to 4.641s",
+        "mean_seconds": 3.816
+      },
+      "container_log_cycle_duration": {
+        "source": "Railway worker stdout timestamps (dispatch initiation to slot completion log)",
+        "example_d2_s1": "6.342s (14:36:26.278Z to 14:36:32.620Z)"
+      },
+      "audit_event_cycle_duration": {
+        "source": "PostgreSQL sm_audit_events payload cycle_duration_seconds",
+        "example_d2_s1": "6.471s (worker dispatch loop to final audit commit)"
       }
+    },
+    "historical_day1_latency_breaches_retained": [
+      {
+        "slot": "D1-S2 (2026-11-20:SLOT_2:1300)",
+        "observed_full_cycle_sec": 70.107,
+        "ceiling_sec": 60.0,
+        "root_cause": "Synchronous Step 10 backup retention sweeps checking 55+ legacy manifests sequentially over WAN"
+      },
+      {
+        "slot": "D1-S3 (2026-11-20:SLOT_3:1630)",
+        "observed_full_cycle_sec": 76.095,
+        "ceiling_sec": 60.0,
+        "root_cause": "Synchronous Step 10 backup retention sweeps checking 55+ legacy manifests sequentially over WAN"
+      },
+      {
+        "slot": "D1-S4 (2026-11-20:SLOT_4:2030)",
+        "observed_full_cycle_sec": 77.033,
+        "ceiling_sec": 60.0,
+        "root_cause": "Synchronous Step 10 backup retention sweeps checking 55+ legacy manifests sequentially over WAN"
+      }
+    ]
+  },
+  "gate_2_teardown_and_coverage_gap": {
+    "current_teardown_verification": {
+      "authorization": false,
+      "role": "DISABLED",
+      "railway_env_readback": {
+        "ARX_CONTINUOUS_INGESTION_AUTHORIZED": "false",
+        "ARX_SEC_EGRESS_ROLE": "DISABLED"
+      },
+      "owner_advisory_lock_count": 0,
+      "owner_lock_id_401007311509093371_held": false,
+      "active_or_retryable_queue_rows": 0,
+      "verification_mode": "AUTHENTICATED_READ_ONLY_SQL_VERIFIED"
+    },
+    "assessment_interval": {
+      "start_utc": "2026-08-26T00:00:00Z",
+      "end_utc": "2026-11-25T00:00:00Z",
+      "interval_format": "[2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z)"
+    },
+    "retained_catalog_audit": {
+      "catalog_file": "tests/fixtures/sec_edgar/CIK0001045810_submissions.json",
+      "sha256": "8dd44fbc9bc7fd47f0b16155e66cd22445345d0f9706f316e9e55d7ce4f48045",
+      "size_bytes": 160255,
+      "retrieval_timestamp_utc": "2026-11-22T08:53:12.691561+00:00",
+      "latest_filing_in_catalog": "2026-11-19T21:45:59Z",
+      "provenance_verified": true,
+      "schema_verified": true,
+      "pagination_verified": true,
+      "pagination_details": "CIK0001045810-submissions-001.json spans 1998-03-06 to 2020-09-16; all 2026 filings are 100% self-contained in recent catalog.",
+      "gap_identified": true,
+      "coverage_gap_interval": "[2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)",
+      "backup_search_policy": "Bypassed; natural trial catalog non-retention is already established and documented."
+    }
+  },
+  "gate_3_conditional_acquisition_proposal": {
+    "status": "PROPOSED_ONLY_NOT_EXECUTED",
+    "verdict": "ACQUISITION_AUTHORIZATION_REQUIRED",
+    "target_resource": "https://data.sec.gov/submissions/CIK0001045810.json",
+    "method": "Single HTTP GET via SecRateLimiter (pacing <= 5.0 req/sec)",
+    "execution_constraints": {
+      "max_http_requests": 1,
+      "automatic_retries": 0,
+      "automatic_redirects": false,
+      "user_agent": "ARXTerminal Research Akara.david26@gmail.com",
+      "rate_limiter_pacing": "<= 5.0 requests/sec",
+      "budget_authorization": "Separate diagnostic authorization and egress budget required; trial allowance is exhausted and expired",
+      "storage_retention_contract": "Retain exact raw response bytes, request URL, UTC acquisition timestamp, HTTP status, byte count, and response SHA-256 in verifiable storage before downstream processing",
+      "downstream_restrictions": "Zero Form 4/4-A XML downloads, zero filing parsing, zero database ingestion",
+      "scoring_and_publishing_restrictions": "Coverage flag remains PARTIAL_UNCERTIFIED; zero snapshot publishing, zero factor scoring activation"
+    },
+    "execution_prompt": "GET https://data.sec.gov/submissions/CIK0001045810.json --max-requests 1 --no-retry --no-redirect --user-agent 'ARXTerminal Research Akara.david26@gmail.com' --rate-limit-per-sec 5.0 --output-raw-storage 'data/research/sourced_fundamentals/raw/CIK0001045810/submissions_20261125.json' --record-sha256 --no-xml-egress --no-db-write"
+  },
+  "gate_4_offline_reconciliation_summary": {
+    "assessment_interval": "[2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z)",
+    "baseline_reconciliation": {
+      "raw_filings_count": 16,
+      "raw_transactions_count": 36,
+      "amendments_count": 1,
+      "amendment_details": "0002152188-26-000007 amending 0002152188-26-000005 (PARTIAL_CORRECTION, share count 172,507 -> 160,418)",
+      "zero_transaction_filings_count": 1,
+      "zero_transaction_filing_details": "0001347842-26-000015 (Ajay K. Puri, filed 2026-08-24, Section 16 retirement exit notice)",
+      "net_effective_transactions_count": 35
+    },
+    "forward_additions_reconciliation": {
+      "forward_filings_count": 1,
+      "filings": [
+        {
+          "accession_number": "0001696841-26-000016",
+          "filing_date": "2026-11-23",
+          "acceptance_datetime_utc": "2026-11-23T21:54:28+00:00",
+          "period_of_report": "2026-11-19",
+          "reporting_owner_name": "Teter Timothy S.",
+          "reporting_owner_relationship": "Officer (Executive Vice President and General Counsel)",
+          "transaction_codes": "12x Sale (Code S)",
+          "disposition": "Ingested during Slot 4 (52e3acb1-e682-4302-84b4-2f40f030d78f), parsed 12 transactions",
+          "stored_raw_transactions": 12,
+          "effective_transactions": 12
+        }
+      ]
+    },
+    "combined_reconciliation": {
+      "total_raw_filings": 17,
+      "total_stored_raw_transactions": 48,
+      "total_effective_transactions": 47
+    },
+    "anti_inference_declarations": {
+      "matching_counts_non_inference": "Completeness is NOT inferred from matching counts of baseline or forward filings.",
+      "latest_filing_date_non_inference": "Completeness is NOT inferred from latest filing date or acceptance timestamp.",
+      "sm_source_gaps_non_inference": "Completeness is NOT inferred from the absence of rows in sm_source_gaps table."
     }
   }
 }
