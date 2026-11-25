@@ -7,6 +7,8 @@ import {
   SYNTHETIC_COHORT_RECEIPT,
   QUALIFIED_RELEASE_SHA,
   QUALIFIED_TRIAL_ID,
+  WORKER_COHORT_PILOT_SLOTS,
+  DEFAULT_PILOT_SLOT,
   COHORT_CIKS,
   parseReceiptToSummaries,
   validateWorkerReceiptFormat,
@@ -36,15 +38,19 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
     it('displays issuer observed_at timestamp as poll time and cutoff separately', () => {
       render(<Form4PilotEvidencePreview />);
 
-      // Check header columns
       expect(screen.getAllByText(/Poll Time \(observed_at\)/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/Coverage Cutoff/i).length).toBeGreaterThan(0);
 
-      // For NVDA in synthetic fixture:
-      // observed_at is 2026-11-30T14:20:15Z -> 14:20:15 UTC
-      // cutoff is 2026-11-30T14:20:00Z -> 14:20:00 UTC
       expect(screen.getAllByText('14:20:15 UTC').length).toBeGreaterThan(0);
       expect(screen.getAllByText('14:20:00 UTC').length).toBeGreaterThan(0);
+    });
+
+    it('renders worker dated slot IDs in the active slot selector', () => {
+      render(<Form4PilotEvidencePreview />);
+
+      WORKER_COHORT_PILOT_SLOTS.forEach((slotId) => {
+        expect(screen.getByRole('button', { name: slotId })).toBeDefined();
+      });
     });
   });
 
@@ -57,7 +63,8 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
 
       const tslaSummary = SYNTHETIC_ISSUER_SUMMARIES.find((s) => s.ticker === 'TSLA');
       expect(tslaSummary?.state).toBe('NOT_POLLED');
-      expect(tslaSummary?.new_filings_count).toBeNull();
+      expect(tslaSummary?.newly_ingested_count).toBeNull();
+      expect(tslaSummary?.accounted_count).toBeNull();
       expect(tslaSummary?.observed_at).toBeNull();
       expect(tslaSummary?.cutoff).toBeNull();
     });
@@ -70,7 +77,8 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
 
       const aaplSummary = SYNTHETIC_ISSUER_SUMMARIES.find((s) => s.ticker === 'AAPL');
       expect(aaplSummary?.state).toBe('POLLED_QUIET');
-      expect(aaplSummary?.new_filings_count).toBe(0);
+      expect(aaplSummary?.newly_ingested_count).toBe(0);
+      expect(aaplSummary?.accounted_count).toBe(0);
       expect(aaplSummary?.gaps.length).toBe(0);
     });
 
@@ -82,7 +90,8 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
 
       const nvdaSummary = SYNTHETIC_ISSUER_SUMMARIES.find((s) => s.ticker === 'NVDA');
       expect(nvdaSummary?.state).toBe('FILINGS_FOUND');
-      expect(nvdaSummary?.new_filings_count).toBe(2);
+      expect(nvdaSummary?.newly_ingested_count).toBe(2);
+      expect(nvdaSummary?.accounted_count).toBe(2);
       expect(nvdaSummary?.form4_count).toBe(1);
       expect(nvdaSummary?.form4a_count).toBe(1);
 
@@ -116,12 +125,13 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
 
       const brkbSummary = SYNTHETIC_ISSUER_SUMMARIES.find((s) => s.ticker === 'BRK-B');
       expect(brkbSummary?.state).toBe('READ_ERROR');
-      expect(brkbSummary?.new_filings_count).toBeNull();
+      expect(brkbSummary?.accounted_count).toBeNull();
+      expect(brkbSummary?.newly_ingested_count).toBeNull();
       expect(brkbSummary?.read_error_message).toContain('SEC Catalog Retained Hash Mismatch');
     });
   });
 
-  describe('Historical & Prior Slot Timestamp Presentation', () => {
+  describe('Historical & Dated Slot Timestamp Presentation', () => {
     it('presents older historical receipt with Historical Poll indicator', () => {
       render(<Form4PilotEvidencePreview />);
 
@@ -132,29 +142,29 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
       expect(historicalBadges.length).toBeGreaterThan(0);
     });
 
-    it('uses slot_id to identify a prior-slot receipt when viewing subsequent slot', () => {
-      // Create a receipt from SLOT-1
+    it('uses dated slot_id to identify a prior-slot receipt when viewing subsequent slot', () => {
+      // Create a receipt from SLOT 1
       const priorSlotReceipt = {
         ...SYNTHETIC_COHORT_RECEIPT,
-        slot_id: 'SLOT-1',
+        slot_id: '2026-11-30:SLOT_1:0915',
         failure_reasons: {
           ...SYNTHETIC_COHORT_RECEIPT.failure_reasons,
           cohort_evidence: {
             ...SYNTHETIC_COHORT_RECEIPT.failure_reasons.cohort_evidence,
-            slot_id: 'SLOT-1',
+            slot_id: '2026-11-30:SLOT_1:0915',
           },
         },
       };
 
-      // Set active slot to SLOT-2
-      const validation = validateWorkerReceiptFormat(priorSlotReceipt, 'SLOT-2');
+      // Set active slot to SLOT 2
+      const validation = validateWorkerReceiptFormat(priorSlotReceipt, '2026-11-30:SLOT_2:1300');
       expect(validation.is_prior_slot).toBe(true);
-      expect(validation.prior_slot_id).toBe('SLOT-1');
+      expect(validation.prior_slot_id).toBe('2026-11-30:SLOT_1:0915');
 
-      const summaries = parseReceiptToSummaries(priorSlotReceipt, undefined, 'SLOT-2');
+      const summaries = parseReceiptToSummaries(priorSlotReceipt, undefined, '2026-11-30:SLOT_2:1300');
       const nvda = summaries.find((s) => s.ticker === 'NVDA');
       expect(nvda?.is_prior_slot).toBe(true);
-      expect(nvda?.slot_id).toBe('SLOT-1');
+      expect(nvda?.slot_id).toBe('2026-11-30:SLOT_1:0915');
     });
 
     it('expands detail inspection drawer when clicking Inspect', () => {
@@ -194,8 +204,8 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
 
     it('validates receipt against synthetic expectations using validateReceiptAgainstExpected', () => {
       const expected = {
-        NVDA: { state: 'POLLED_QUIET' as const, new_filings_count: 0 },
-        AAPL: { state: 'POLLED_QUIET' as const, new_filings_count: 0 },
+        NVDA: { state: 'POLLED_QUIET' as const, newly_ingested_count: 0 },
+        AAPL: { state: 'POLLED_QUIET' as const, newly_ingested_count: 0 },
       };
 
       const report = validateReceiptAgainstExpected(SYNTHETIC_COHORT_RECEIPT, expected);
@@ -208,258 +218,125 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
     });
   });
 
-  describe('Imported Worker Receipts & Independent Reconciliation', () => {
-    // 1. Valid import that differs from every synthetic expectation
-    it('imports a valid real worker receipt differing from synthetic expectations and marks it pending reconciliation', () => {
-      // Build valid receipt for 10 issuers with distinct counts (e.g. 5 filings for NVDA, 3 for AAPL, 0 for MSFT)
-      const distinctReceipt: CohortReconciliationReceipt = {
-        receipt_id: 'rcpt-pilot-165-live-slot1-001',
+  describe('Imported Worker Receipts, Rejection Guard & Worker Accounting', () => {
+    // 1. Worker Accounting Alignment: Accounted = INGESTED + ALREADY_ACCOUNTED; Newly Ingested = INGESTED
+    it('handles later-slot receipt containing ALREADY_ACCOUNTED rows with accurate worker accounting', () => {
+      const laterSlotReceipt: CohortReconciliationReceipt = {
+        receipt_id: 'rcpt-pilot-165-live-slot2',
         trial_id: QUALIFIED_TRIAL_ID,
-        slot_id: 'SLOT-1',
-        created_at: '2026-11-30T14:26:00Z',
-        interval_start: '2026-11-30T14:00:00Z',
-        interval_end: '2026-11-30T14:25:00Z',
-        coverage_status: 'PARTIAL',
-        reconciliation_hash: 'feedface00112233445566778899aabbccddeeff00112233445566778899aabb',
+        slot_id: '2026-11-30:SLOT_2:1300',
         release_sha: QUALIFIED_RELEASE_SHA,
         cohort_evidence: {
           trial_id: QUALIFIED_TRIAL_ID,
-          slot_id: 'SLOT-1',
+          slot_id: '2026-11-30:SLOT_2:1300',
           release_sha: QUALIFIED_RELEASE_SHA,
           issuers: {
             NVDA: {
               ticker: 'NVDA',
               cik: COHORT_CIKS.NVDA,
-              observed_at: '2026-11-30T14:22:00Z',
+              observed_at: '2026-11-30T18:05:00Z',
               interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-audit-live-nvda',
-              catalog_sha256: 'aa00112233445566778899aabbccddeeffaa00112233445566778899aabbccdd',
+              cutoff: '2026-11-30T18:00:00Z',
+              artifact_id: 'evt-slot2-nvda',
+              catalog_sha256: 'hash-slot2-nvda',
               catalog_gaps: [],
               inventory: [
+                // Accession from slot 1 is ALREADY_ACCOUNTED
                 {
-                  accession: '0001045810-26-000101',
+                  accession: '0001045810-26-000045',
                   form: '4',
                   filing_date: '2026-11-30',
-                  accepted_at: '2026-11-30T14:05:00Z',
-                  primary_document: 'form4_1.xml',
-                  disposition: 'INGESTED',
-                  source_sha256: '1111111111111111111111111111111111111111111111111111111111111111',
+                  accepted_at: '2026-11-30T14:04:12Z',
+                  primary_document: 'form4.xml',
+                  disposition: 'ALREADY_ACCOUNTED',
+                  source_sha256: 'hash1',
                 },
+                // New accession in slot 2 is INGESTED
                 {
-                  accession: '0001045810-26-000102',
+                  accession: '0001045810-26-000099',
                   form: '4',
                   filing_date: '2026-11-30',
-                  accepted_at: '2026-11-30T14:06:00Z',
-                  primary_document: 'form4_2.xml',
+                  accepted_at: '2026-11-30T17:45:00Z',
+                  primary_document: 'form4_new.xml',
                   disposition: 'INGESTED',
-                  source_sha256: '2222222222222222222222222222222222222222222222222222222222222222',
-                },
-                {
-                  accession: '0001045810-26-000103',
-                  form: '4/A',
-                  filing_date: '2026-11-30',
-                  accepted_at: '2026-11-30T14:07:00Z',
-                  primary_document: 'form4a_3.xml',
-                  disposition: 'INGESTED',
-                  source_sha256: '3333333333333333333333333333333333333333333333333333333333333333',
+                  source_sha256: 'hash2',
                 },
               ],
               gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
+              previous_watermark: '2026-11-30T14:20:00Z',
+              accounted_through: '2026-11-30T18:00:00Z',
               status: 'CATALOG_ACCOUNTED',
-              sha256: 'deadbeef11223344556677889900aabbccddeeff11223344556677889900aabb',
+              sha256: 'sha-slot2-nvda',
             },
             AAPL: {
               ticker: 'AAPL',
               cik: COHORT_CIKS.AAPL,
-              observed_at: '2026-11-30T14:22:10Z',
+              observed_at: '2026-11-30T18:05:10Z',
               interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-audit-live-aapl',
-              catalog_sha256: 'bb00112233445566778899aabbccddeeffaa00112233445566778899aabbccdd',
+              cutoff: '2026-11-30T18:00:00Z',
+              artifact_id: 'evt-slot2-aapl',
+              catalog_sha256: 'hash-slot2-aapl',
               catalog_gaps: [],
-              inventory: [],
+              inventory: [
+                // Only ALREADY_ACCOUNTED accession from slot 1
+                {
+                  accession: '0000320193-26-000010',
+                  form: '4',
+                  filing_date: '2026-11-30',
+                  accepted_at: '2026-11-30T14:05:00Z',
+                  primary_document: 'aapl.xml',
+                  disposition: 'ALREADY_ACCOUNTED',
+                  source_sha256: 'hash3',
+                },
+              ],
               gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
+              previous_watermark: '2026-11-30T14:20:00Z',
+              accounted_through: '2026-11-30T18:00:00Z',
               status: 'CATALOG_ACCOUNTED',
-              sha256: 'deadbeef11223344556677889900aabbccddeeff11223344556677889900aacc',
-            },
-            MSFT: {
-              ticker: 'MSFT',
-              cik: COHORT_CIKS.MSFT,
-              observed_at: '2026-11-30T14:22:20Z',
-              interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-audit-live-msft',
-              catalog_sha256: 'cc00112233445566778899aabbccddeeffaa00112233445566778899aabbccdd',
-              catalog_gaps: [],
-              inventory: [],
-              gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
-              status: 'CATALOG_ACCOUNTED',
-              sha256: 'deadbeef11223344556677889900aabbccddeeff11223344556677889900aadd',
-            },
-            AMZN: {
-              ticker: 'AMZN',
-              cik: COHORT_CIKS.AMZN,
-              observed_at: '2026-11-30T14:22:30Z',
-              interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-audit-live-amzn',
-              catalog_sha256: 'dd00112233445566778899aabbccddeeffaa00112233445566778899aabbccdd',
-              catalog_gaps: [],
-              inventory: [],
-              gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
-              status: 'CATALOG_ACCOUNTED',
-              sha256: 'deadbeef11223344556677889900aabbccddeeff11223344556677889900aaee',
-            },
-            GOOGL: {
-              ticker: 'GOOGL',
-              cik: COHORT_CIKS.GOOGL,
-              observed_at: '2026-11-30T14:22:40Z',
-              interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-audit-live-googl',
-              catalog_sha256: 'ee00112233445566778899aabbccddeeffaa00112233445566778899aabbccdd',
-              catalog_gaps: [],
-              inventory: [],
-              gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
-              status: 'CATALOG_ACCOUNTED',
-              sha256: 'deadbeef11223344556677889900aabbccddeeff11223344556677889900aaff',
-            },
-            META: {
-              ticker: 'META',
-              cik: COHORT_CIKS.META,
-              observed_at: '2026-11-30T14:22:50Z',
-              interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-audit-live-meta',
-              catalog_sha256: 'ff00112233445566778899aabbccddeeffaa00112233445566778899aabbccdd',
-              catalog_gaps: [],
-              inventory: [],
-              gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
-              status: 'CATALOG_ACCOUNTED',
-              sha256: 'deadbeef11223344556677889900aabbccddeeff11223344556677889900aa11',
-            },
-            TSLA: {
-              ticker: 'TSLA',
-              cik: COHORT_CIKS.TSLA,
-              observed_at: '2026-11-30T14:23:00Z',
-              interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-audit-live-tsla',
-              catalog_sha256: '1100112233445566778899aabbccddeeffaa00112233445566778899aabbccdd',
-              catalog_gaps: [],
-              inventory: [],
-              gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
-              status: 'CATALOG_ACCOUNTED',
-              sha256: 'deadbeef11223344556677889900aabbccddeeff11223344556677889900aa22',
-            },
-            'BRK-B': {
-              ticker: 'BRK-B',
-              cik: COHORT_CIKS['BRK-B'],
-              observed_at: '2026-11-30T14:23:10Z',
-              interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-audit-live-brkb',
-              catalog_sha256: '2200112233445566778899aabbccddeeffaa00112233445566778899aabbccdd',
-              catalog_gaps: [],
-              inventory: [],
-              gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
-              status: 'CATALOG_ACCOUNTED',
-              sha256: 'deadbeef11223344556677889900aabbccddeeff11223344556677889900aa33',
-            },
-            JPM: {
-              ticker: 'JPM',
-              cik: COHORT_CIKS.JPM,
-              observed_at: '2026-11-30T14:23:20Z',
-              interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-audit-live-jpm',
-              catalog_sha256: '3300112233445566778899aabbccddeeffaa00112233445566778899aabbccdd',
-              catalog_gaps: [],
-              inventory: [],
-              gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
-              status: 'CATALOG_ACCOUNTED',
-              sha256: 'deadbeef11223344556677889900aabbccddeeff11223344556677889900aa44',
-            },
-            V: {
-              ticker: 'V',
-              cik: COHORT_CIKS.V,
-              observed_at: '2026-11-30T14:23:30Z',
-              interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-audit-live-v',
-              catalog_sha256: '4400112233445566778899aabbccddeeffaa00112233445566778899aabbccdd',
-              catalog_gaps: [],
-              inventory: [],
-              gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
-              status: 'CATALOG_ACCOUNTED',
-              sha256: 'deadbeef11223344556677889900aabbccddeeff11223344556677889900aa55',
+              sha256: 'sha-slot2-aapl',
             },
           },
         },
       };
 
-      // Format validation without independent export -> RECONCILIATION_PENDING
-      const validation = validateWorkerReceiptFormat(distinctReceipt, 'SLOT-1', null);
-      expect(validation.is_valid_format).toBe(true);
-      expect(validation.reconciliation_status).toBe('RECONCILIATION_PENDING');
-      expect(validation.reconciliation_label).toBe('Imported — reconciliation pending');
-      expect(validation.validation_errors.length).toBe(0);
+      const summaries = parseReceiptToSummaries(laterSlotReceipt);
+      const nvda = summaries.find((s) => s.ticker === 'NVDA');
+      const aapl = summaries.find((s) => s.ticker === 'AAPL');
 
-      // Render in UI
+      // NVDA has 1 INGESTED + 1 ALREADY_ACCOUNTED -> Accounted = 2, Newly Ingested = 1
+      expect(nvda?.accounted_count).toBe(2);
+      expect(nvda?.newly_ingested_count).toBe(1);
+      expect(nvda?.already_accounted_count).toBe(1);
+      expect(nvda?.state).toBe('FILINGS_FOUND');
+
+      // AAPL has 0 INGESTED + 1 ALREADY_ACCOUNTED -> Accounted = 1, Newly Ingested = 0 -> POLLED_QUIET
+      expect(aapl?.accounted_count).toBe(1);
+      expect(aapl?.newly_ingested_count).toBe(0);
+      expect(aapl?.already_accounted_count).toBe(1);
+      expect(aapl?.state).toBe('POLLED_QUIET');
+    });
+
+    // 2. Reject invalid trial, release, slot ID, or issuer/CIK BEFORE changing displayed results
+    it('rejects an invalid trial, release, slot ID, or issuer/CIK before changing displayed results and retains prior receipt', () => {
       render(<Form4PilotEvidencePreview />);
 
       // Switch to Import Worker Receipt
       const importModeBtn = screen.getByRole('button', { name: /Import Worker Receipt/i });
       fireEvent.click(importModeBtn);
 
-      const textarea = screen.getByPlaceholderText(/Paste raw sm_reconciliation_receipts JSON row/i);
-      fireEvent.change(textarea, { target: { value: JSON.stringify(distinctReceipt) } });
+      // Verify NVDA is currently displayed with 2 filings from synthetic initial state
+      expect(screen.getAllByText('NVDA').length).toBeGreaterThan(0);
 
-      const importBtn = screen.getByRole('button', { name: /Validate & Import Receipt/i });
-      fireEvent.click(importBtn);
-
-      // Verify the badge shows "Imported — reconciliation pending"
-      expect(screen.getAllByText('Imported — reconciliation pending').length).toBeGreaterThan(0);
-      expect(screen.getByText('PASSED QUALIFICATION FORMAT')).toBeDefined();
-
-      // Check NVDA has 3 filings
-      const parsed = parseReceiptToSummaries(distinctReceipt);
-      const nvda = parsed.find((p) => p.ticker === 'NVDA');
-      expect(nvda?.new_filings_count).toBe(3);
-    });
-
-    // 2. Reconciliation against an independently reconciled export
-    it('compares counts and gaps against an independently reconciled export when available', () => {
-      const receipt: CohortReconciliationReceipt = {
-        receipt_id: 'rcpt-test-reconcile-001',
+      // Construct receipt with INVALID RELEASE SHA
+      const badReleaseReceipt = {
+        receipt_id: 'rcpt-bad-release',
         trial_id: QUALIFIED_TRIAL_ID,
-        slot_id: 'SLOT-1',
-        release_sha: QUALIFIED_RELEASE_SHA,
+        slot_id: '2026-11-30:SLOT_1:0915',
+        release_sha: 'invalid_sha_000000000000000000000000000000',
         cohort_evidence: {
           trial_id: QUALIFIED_TRIAL_ID,
-          slot_id: 'SLOT-1',
-          release_sha: QUALIFIED_RELEASE_SHA,
+          slot_id: '2026-11-30:SLOT_1:0915',
+          release_sha: 'invalid_sha_000000000000000000000000000000',
           issuers: {
             NVDA: {
               ticker: 'NVDA',
@@ -480,112 +357,148 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
         },
       };
 
-      const matchingExport: IndependentlyReconciledExport = {
-        export_id: 'indep-export-001',
-        trial_id: QUALIFIED_TRIAL_ID,
-        issuers: {
-          NVDA: {
-            ticker: 'NVDA',
-            cik: COHORT_CIKS.NVDA,
-            expected_count: 0,
-            accounted_count: 0,
-            missing_count: 0,
-            gaps: [],
-          },
-        },
-      };
-
-      const matchValidation = validateWorkerReceiptFormat(receipt, 'SLOT-1', matchingExport);
-      expect(matchValidation.reconciliation_status).toBe('RECONCILED');
-      expect(matchValidation.reconciliation_label).toBe('Imported — reconciled against independent export');
-      expect(matchValidation.discrepancies.length).toBe(0);
-
-      // Now test mismatch: export expected 2 filings, but receipt had 0
-      const mismatchExport: IndependentlyReconciledExport = {
-        export_id: 'indep-export-002',
-        trial_id: QUALIFIED_TRIAL_ID,
-        issuers: {
-          NVDA: {
-            ticker: 'NVDA',
-            cik: COHORT_CIKS.NVDA,
-            expected_count: 2,
-            accounted_count: 2,
-            missing_count: 0,
-            gaps: [],
-          },
-        },
-      };
-
-      const mismatchValidation = validateWorkerReceiptFormat(receipt, 'SLOT-1', mismatchExport);
-      expect(mismatchValidation.reconciliation_status).toBe('RECONCILIATION_DISCREPANCY');
-      expect(mismatchValidation.reconciliation_label).toBe('Imported — reconciliation discrepancies detected');
-      expect(mismatchValidation.discrepancies.length).toBeGreaterThan(0);
-      expect(mismatchValidation.discrepancies[0].field).toBe('expected_count');
-    });
-
-    // 3. Mismatched release SHA or issuer/CIK
-    it('detects and flags release SHA and issuer CIK mismatches', () => {
-      const badReleaseReceipt = {
-        receipt_id: 'rcpt-bad-release',
-        trial_id: QUALIFIED_TRIAL_ID,
-        slot_id: 'SLOT-1',
-        release_sha: 'badc0dedbadc0dedbadc0dedbadc0dedbadc0ded', // Mismatch!
-        cohort_evidence: {
-          trial_id: QUALIFIED_TRIAL_ID,
-          slot_id: 'SLOT-1',
-          release_sha: 'badc0dedbadc0dedbadc0dedbadc0dedbadc0ded',
-          issuers: {
-            AAPL: {
-              ticker: 'AAPL',
-              cik: '0000999999', // Mismatched CIK! Expected 0000320193
-              interval_start: '2026-11-30T14:00:00Z',
-              cutoff: '2026-11-30T14:20:00Z',
-              artifact_id: 'evt-aapl',
-              catalog_sha256: 'hash-aapl',
-              catalog_gaps: [],
-              inventory: [],
-              gaps: [],
-              previous_watermark: '2026-11-30T14:00:00Z',
-              accounted_through: '2026-11-30T14:20:00Z',
-              status: 'CATALOG_ACCOUNTED',
-              sha256: 'sha-aapl',
-            },
-          },
-        },
-      };
-
-      const validation = validateWorkerReceiptFormat(badReleaseReceipt, 'SLOT-1');
-      expect(validation.is_valid_format).toBe(false);
-      expect(validation.release_sha_matches).toBe(false);
-      expect(validation.validation_errors.some((e) => e.includes('Release SHA mismatch'))).toBe(true);
-      expect(validation.validation_errors.some((e) => e.includes('Mismatched CIK for AAPL'))).toBe(true);
-    });
-
-    // 4. Malformed import preserves previous receipt and identifies still-visible results
-    it('preserves still-visible results from previous receipt when a new import fails', () => {
-      render(<Form4PilotEvidencePreview />);
-
-      // Switch to Import Worker Receipt
-      const importModeBtn = screen.getByRole('button', { name: /Import Worker Receipt/i });
-      fireEvent.click(importModeBtn);
-
-      // Verify initial state renders NVDA
-      expect(screen.getAllByText('NVDA').length).toBeGreaterThan(0);
-
-      // Enter malformed JSON
       const textarea = screen.getByPlaceholderText(/Paste raw sm_reconciliation_receipts JSON row/i);
-      fireEvent.change(textarea, { target: { value: '{"corrupted": json structure' } });
+      fireEvent.change(textarea, { target: { value: JSON.stringify(badReleaseReceipt) } });
 
       const importBtn = screen.getByRole('button', { name: /Validate & Import Receipt/i });
       fireEvent.click(importBtn);
 
-      // Check that Previous Receipt Retained banner is rendered
-      expect(screen.getByText('Previous Receipt Retained')).toBeDefined();
-      expect(screen.getByText(/The latest import attempt failed/i)).toBeDefined();
-      expect(screen.getByText(/Currently displaying results from previously loaded receipt/i)).toBeDefined();
+      // Check rejection alert is displayed
+      expect(screen.getByText('Rejected Import — Previous Receipt Retained')).toBeDefined();
+      expect(screen.getAllByText(/Release SHA mismatch/i).length).toBeGreaterThan(0);
 
-      // Ensure NVDA is still visible and not wiped out!
+      // Ensure displayed results were NOT changed (NVDA still has initial 2 filings, not 0 from bad receipt)
       expect(screen.getAllByText('NVDA').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('14:20:15 UTC').length).toBeGreaterThan(0); // From retained receipt
+    });
+
+    it('rejects an invalid slot ID format before changing displayed results', () => {
+      const badSlotReceipt = {
+        ...SYNTHETIC_COHORT_RECEIPT,
+        slot_id: 'INVALID_SLOT_123',
+        failure_reasons: {
+          cohort_evidence: {
+            ...SYNTHETIC_COHORT_RECEIPT.failure_reasons.cohort_evidence,
+            slot_id: 'INVALID_SLOT_123',
+          },
+        },
+      };
+
+      const validation = validateWorkerReceiptFormat(badSlotReceipt);
+      expect(validation.is_valid_format).toBe(false);
+      expect(validation.slot_id_valid).toBe(false);
+      expect(validation.validation_errors.some((e) => e.includes('Invalid or missing dated slot ID'))).toBe(true);
+    });
+
+    // 3. Incomplete or mismatched independent export
+    it('keeps reconciliation pending when independent export is incomplete or missing comparison fields', () => {
+      // Build 10-issuer valid receipt
+      const validReceipt: CohortReconciliationReceipt = {
+        receipt_id: 'rcpt-reconcile-test-001',
+        trial_id: QUALIFIED_TRIAL_ID,
+        slot_id: '2026-11-30:SLOT_1:0915',
+        release_sha: QUALIFIED_RELEASE_SHA,
+        cohort_evidence: {
+          trial_id: QUALIFIED_TRIAL_ID,
+          slot_id: '2026-11-30:SLOT_1:0915',
+          release_sha: QUALIFIED_RELEASE_SHA,
+          issuers: Object.fromEntries(
+            Object.entries(COHORT_CIKS).map(([ticker, cik]) => [
+              ticker,
+              {
+                ticker,
+                cik,
+                interval_start: '2026-11-30T14:00:00Z',
+                cutoff: '2026-11-30T14:20:00Z',
+                artifact_id: `evt-${ticker}`,
+                catalog_sha256: `hash-${ticker}`,
+                catalog_gaps: [],
+                inventory: [],
+                gaps: [],
+                previous_watermark: '2026-11-30T14:00:00Z',
+                accounted_through: '2026-11-30T14:20:00Z',
+                status: 'CATALOG_ACCOUNTED',
+                sha256: `sha-${ticker}`,
+              },
+            ]),
+          ),
+        },
+      };
+
+      // Incomplete export: only has 3 of 10 issuers
+      const incompleteExport: IndependentlyReconciledExport = {
+        receipt_id: 'rcpt-reconcile-test-001',
+        trial_id: QUALIFIED_TRIAL_ID,
+        slot_id: '2026-11-30:SLOT_1:0915',
+        issuers: {
+          NVDA: { ticker: 'NVDA', cik: COHORT_CIKS.NVDA, accounted_count: 0, newly_ingested_count: 0, gaps: [], accounted_through: '2026-11-30T14:20:00Z' },
+          AAPL: { ticker: 'AAPL', cik: COHORT_CIKS.AAPL, accounted_count: 0, newly_ingested_count: 0, gaps: [], accounted_through: '2026-11-30T14:20:00Z' },
+          MSFT: { ticker: 'MSFT', cik: COHORT_CIKS.MSFT, accounted_count: 0, newly_ingested_count: 0, gaps: [], accounted_through: '2026-11-30T14:20:00Z' },
+        },
+      };
+
+      const validation = validateWorkerReceiptFormat(validReceipt, '2026-11-30:SLOT_1:0915', incompleteExport);
+      expect(validation.reconciliation_status).toBe('RECONCILIATION_PENDING');
+      expect(validation.reconciliation_label).toContain('reconciliation pending (missing issuers');
+
+      // Export missing comparison fields (e.g. missing accounted_through)
+      const missingFieldsExport: IndependentlyReconciledExport = {
+        receipt_id: 'rcpt-reconcile-test-001',
+        trial_id: QUALIFIED_TRIAL_ID,
+        slot_id: '2026-11-30:SLOT_1:0915',
+        issuers: Object.fromEntries(
+          Object.entries(COHORT_CIKS).map(([ticker, cik]) => [
+            ticker,
+            {
+              ticker,
+              cik,
+              accounted_count: 0,
+              newly_ingested_count: 0,
+              gaps: [],
+              // Missing accounted_through!
+            },
+          ]),
+        ),
+      };
+
+      const fieldValidation = validateWorkerReceiptFormat(validReceipt, '2026-11-30:SLOT_1:0915', missingFieldsExport);
+      expect(fieldValidation.reconciliation_status).toBe('RECONCILIATION_PENDING');
+      expect(fieldValidation.reconciliation_label).toContain('missing comparison fields');
+
+      // Export bound to wrong slot ID
+      const wrongSlotExport: IndependentlyReconciledExport = {
+        receipt_id: 'rcpt-reconcile-test-001',
+        trial_id: QUALIFIED_TRIAL_ID,
+        slot_id: '2026-11-30:SLOT_2:1300', // Mismatched slot!
+        issuers: Object.fromEntries(
+          Object.entries(COHORT_CIKS).map(([ticker, cik]) => [
+            ticker,
+            { ticker, cik, accounted_count: 0, newly_ingested_count: 0, gaps: [], accounted_through: '2026-11-30T14:20:00Z' },
+          ]),
+        ),
+      };
+
+      const wrongSlotValidation = validateWorkerReceiptFormat(validReceipt, '2026-11-30:SLOT_1:0915', wrongSlotExport);
+      expect(wrongSlotValidation.reconciliation_status).toBe('RECONCILIATION_DISCREPANCY');
+      expect(wrongSlotValidation.reconciliation_label).toContain('export binding mismatch');
+
+      // Complete, bound export for all 10 issuers with matching fields -> RECONCILED!
+      const completeMatchingExport: IndependentlyReconciledExport = {
+        receipt_id: 'rcpt-reconcile-test-001',
+        trial_id: QUALIFIED_TRIAL_ID,
+        slot_id: '2026-11-30:SLOT_1:0915',
+        issuers: Object.fromEntries(
+          Object.entries(COHORT_CIKS).map(([ticker, cik]) => [
+            ticker,
+            { ticker, cik, accounted_count: 0, newly_ingested_count: 0, gaps: [], accounted_through: '2026-11-30T14:20:00Z' },
+          ]),
+        ),
+      };
+
+      const completeValidation = validateWorkerReceiptFormat(validReceipt, '2026-11-30:SLOT_1:0915', completeMatchingExport);
+      expect(completeValidation.reconciliation_status).toBe('RECONCILED');
+      expect(completeValidation.reconciliation_label).toBe('Imported — reconciled against independent export');
+      expect(completeValidation.discrepancies.length).toBe(0);
     });
   });
 

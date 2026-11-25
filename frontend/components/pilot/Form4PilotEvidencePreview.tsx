@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   IssuerEvidenceSummary,
   EvidenceState,
-  CohortAccessionItem,
   WorkerReceiptValidation,
   IndependentlyReconciledExport,
 } from '../../types/cohortPilotEvidence';
@@ -13,10 +12,11 @@ import {
   SYNTHETIC_COHORT_RECEIPT,
   QUALIFIED_RELEASE_SHA,
   QUALIFIED_TRIAL_ID,
+  WORKER_COHORT_PILOT_SLOTS,
+  DEFAULT_PILOT_SLOT,
   buildSecEdgarUrl,
   parseReceiptToSummaries,
   validateWorkerReceiptFormat,
-  validateReceiptAgainstExpected,
   extractCohortEvidence,
 } from '../../fixtures/cohortPilotEvidenceFixtures';
 
@@ -33,7 +33,7 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
   className = '',
   isPrivateMode = true,
   isOperatorAuthenticated,
-  defaultActiveSlot = 'SLOT-1',
+  defaultActiveSlot = DEFAULT_PILOT_SLOT,
 }) => {
   const [summaries, setSummaries] = useState<IssuerEvidenceSummary[]>(initialSummaries);
   const [selectedStateFilter, setSelectedStateFilter] = useState<string>('ALL');
@@ -51,20 +51,20 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
   const [workerValidation, setWorkerValidation] = useState<WorkerReceiptValidation | null>(null);
   const [customReceiptError, setCustomReceiptError] = useState<string | null>(null);
 
-  // Retained state for failed import handling
+  // Retained state for rejected / failed import handling
   const [lastSuccessfulReceiptMeta, setLastSuccessfulReceiptMeta] = useState<{
     receiptId: string;
     slotId: string;
     source: 'SYNTHETIC' | 'IMPORTED';
   } | null>({
     receiptId: 'rcpt-pilot-165-20261130-slot1',
-    slotId: 'SLOT-1',
+    slotId: DEFAULT_PILOT_SLOT,
     source: 'SYNTHETIC',
   });
   const [failedImportError, setFailedImportError] = useState<string | null>(null);
 
-  // Check environment for local operator preview enforcement:
-  // Allowed locally (localhost/127.0.0.1/dev/test) unless hosted environment enforces operator auth
+  // Operator preview enforcement:
+  // Strictly local (localhost/127.0.0.1/dev/test) unless hosted environment enforces operator auth
   const isEnvironmentAuthorized = useMemo(() => {
     if (isOperatorAuthenticated === false) {
       return false;
@@ -110,9 +110,10 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
     setWorkerValidation(null);
     setCustomReceiptError(null);
     setFailedImportError(null);
+    setActiveSlotId(DEFAULT_PILOT_SLOT);
     setLastSuccessfulReceiptMeta({
       receiptId: 'rcpt-pilot-165-20261130-slot1',
-      slotId: 'SLOT-1',
+      slotId: DEFAULT_PILOT_SLOT,
       source: 'SYNTHETIC',
     });
   };
@@ -144,18 +145,18 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
         }
       }
 
-      // Validate actual worker receipt format, trial, slot, release SHA, issuer/CIK pairs, and receipt fields
+      // 1. Validate worker receipt format, trial, slot, release SHA, issuer/CIK pairs, and fields
       const validation = validateWorkerReceiptFormat(parsed, activeSlotId, independentExport);
       setWorkerValidation(validation);
 
-      if (!validation.is_valid_format && validation.validation_errors.length > 0) {
-        // If malformed structure completely prevents parsing issuers
-        if (validation.issuer_count === 0) {
-          throw new Error(validation.validation_errors.join('; '));
-        }
+      // CRITICAL REQUIREMENT 1:
+      // Reject an invalid trial, release, slot ID, issuer/CIK pair, or malformed receipt BEFORE changing displayed results!
+      // Keep last valid receipt visible with clear error for rejected import!
+      if (!validation.is_valid_format) {
+        throw new Error(`Import Rejected: ${validation.validation_errors.join('; ')}`);
       }
 
-      // Parse into summaries
+      // 2. Only after validation succeeds do we update summaries!
       const parsedSummaries = parseReceiptToSummaries(parsed, undefined, activeSlotId);
       setSummaries(parsedSummaries);
       setDataSource('IMPORTED');
@@ -170,7 +171,7 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
       const errMsg = err.message || 'Failed to parse receipt JSON';
       setCustomReceiptError(errMsg);
       setFailedImportError(errMsg);
-      // NOTE: Still-visible results are NOT wiped out, they remain belonging to last successful receipt
+      // NOTE: Last valid receipt results are NOT touched!
     }
   };
 
@@ -286,9 +287,9 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
 
         {/* Slot Selector & Mode Bar */}
         <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 font-mono">
+          <div className="flex flex-wrap items-center gap-2 font-mono">
             <span className="text-slate-400 font-semibold">Active Expected Slot:</span>
-            {(['SLOT-1', 'SLOT-2', 'SLOT-3'] as const).map((slot) => (
+            {WORKER_COHORT_PILOT_SLOTS.map((slot) => (
               <button
                 key={slot}
                 type="button"
@@ -333,19 +334,19 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Failed Import Warning with Retained Previous State Alert */}
+        {/* Rejected / Failed Import Warning with Retained Previous State Alert */}
         {failedImportError && (
           <div className="mt-4 p-3 bg-amber-950/80 border border-amber-600/90 rounded-md text-amber-200 text-xs flex items-start gap-2.5">
             <span className="text-amber-400 font-bold text-sm leading-none mt-0.5">&#9888;</span>
             <div>
-              <div className="font-bold text-amber-100">Previous Receipt Retained</div>
+              <div className="font-bold text-amber-100">Rejected Import — Previous Receipt Retained</div>
               <div className="text-amber-300 mt-0.5">
-                The latest import attempt failed: <span className="font-mono text-amber-200">{failedImportError}</span>.
+                The import was rejected and displayed results were not changed: <span className="font-mono text-amber-200">{failedImportError}</span>.
               </div>
               <div className="text-amber-400/90 text-[11px] mt-1 font-mono">
-                Currently displaying results from previously loaded receipt:{' '}
-                <span className="font-semibold">{lastSuccessfulReceiptMeta?.receiptId || 'initial-receipt'}</span>{' '}
-                (Slot: {lastSuccessfulReceiptMeta?.slotId || 'SLOT-1'}, Source: {lastSuccessfulReceiptMeta?.source}).
+                Currently displaying verified results from previously loaded receipt:{' '}
+                <span className="font-semibold text-white">{lastSuccessfulReceiptMeta?.receiptId || 'initial-receipt'}</span>{' '}
+                (Slot: {lastSuccessfulReceiptMeta?.slotId || DEFAULT_PILOT_SLOT}, Source: {lastSuccessfulReceiptMeta?.source}).
               </div>
             </div>
           </div>
@@ -356,7 +357,7 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
           <div className="mt-4 p-4 bg-slate-950 border border-slate-800 rounded-md space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                Import Issue #165 Worker Receipt & Reconciled Export
+                Import Issue #165 Worker Receipt & Independent Reconciled Export
               </h2>
               <div className="flex items-center gap-2">
                 <button
@@ -391,7 +392,7 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
                 <textarea
                   value={independentExportJson}
                   onChange={(e) => setIndependentExportJson(e.target.value)}
-                  placeholder="Paste independently reconciled export to verify counts and gaps, or leave empty to keep 'Imported — reconciliation pending'..."
+                  placeholder="Paste independently reconciled export to verify counts and gaps. If omitted or incomplete, receipt stays pending..."
                   rows={5}
                   className="w-full p-2.5 text-xs font-mono bg-slate-900 border border-slate-700 rounded text-slate-200 placeholder-slate-600 focus:outline-none focus:border-purple-500"
                 />
@@ -420,7 +421,7 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
                         : 'bg-rose-950 text-rose-400 border border-rose-800'
                     }`}
                   >
-                    {workerValidation.is_valid_format ? 'PASSED QUALIFICATION FORMAT' : 'FORMAT DISCREPANCY'}
+                    {workerValidation.is_valid_format ? 'PASSED QUALIFICATION FORMAT' : 'FORMAT DISCREPANCY / REJECTED'}
                   </span>
                 </div>
 
@@ -439,8 +440,8 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
                   </div>
                   <div className="p-1.5 bg-slate-950 rounded border border-slate-800">
                     <span className="text-slate-500 block text-[9px] uppercase">Slot ID</span>
-                    <span className={workerValidation.is_prior_slot ? 'text-amber-400 font-bold' : 'text-slate-300'}>
-                      {workerValidation.slot_id || 'N/A'}{' '}
+                    <span className={workerValidation.slot_id_valid ? (workerValidation.is_prior_slot ? 'text-amber-400 font-bold' : 'text-slate-300') : 'text-rose-400 font-bold'}>
+                      {workerValidation.slot_id || 'INVALID'}{' '}
                       {workerValidation.is_prior_slot && `(Prior Slot)`}
                     </span>
                   </div>
@@ -575,7 +576,7 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
               <th className="py-3 px-4">Poll Time (observed_at)</th>
               <th className="py-3 px-4">Coverage Cutoff</th>
               <th className="py-3 px-4">Accounted To</th>
-              <th className="py-3 px-4 text-center">New Filings (4 / 4-A)</th>
+              <th className="py-3 px-4 text-center">Filings (New / Accounted)</th>
               <th className="py-3 px-4 text-center">Deferred / Gaps</th>
               <th className="py-3 px-4 text-right">Action</th>
             </tr>
@@ -599,7 +600,7 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
                         <span className="font-bold text-white text-sm">{summary.ticker}</span>
                         {summary.is_prior_slot && (
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-950 text-amber-300 border border-amber-800">
-                            Prior Slot ({summary.slot_id || 'SLOT-1'})
+                            Prior Slot ({summary.slot_id || DEFAULT_PILOT_SLOT})
                           </span>
                         )}
                         {summary.is_older_receipt && !summary.is_prior_slot && (
@@ -656,16 +657,23 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
                       )}
                     </td>
 
-                    {/* New Filings */}
+                    {/* Filings: Newly Ingested / Accounted Total */}
                     <td className="py-3 px-4 text-center font-mono">
-                      {summary.new_filings_count !== null ? (
-                        <div className="inline-flex items-center gap-1 font-bold">
-                          <span className={summary.new_filings_count > 0 ? 'text-blue-400' : 'text-slate-400'}>
-                            {summary.new_filings_count}
-                          </span>
-                          <span className="text-slate-500 text-[10px] font-normal">
-                            ({summary.form4_count || 0} / {summary.form4a_count || 0})
-                          </span>
+                      {summary.accounted_count !== null ? (
+                        <div>
+                          <div className="inline-flex items-center gap-1 font-bold">
+                            <span className={summary.newly_ingested_count && summary.newly_ingested_count > 0 ? 'text-blue-400' : 'text-slate-400'}>
+                              New: {summary.newly_ingested_count ?? 0}
+                            </span>
+                            <span className="text-slate-600">|</span>
+                            <span className="text-emerald-400 font-semibold">
+                              Acc: {summary.accounted_count ?? 0}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-500">
+                            (4: {summary.form4_count || 0} / 4A: {summary.form4a_count || 0}
+                            {summary.already_accounted_count ? ` &bull; ${summary.already_accounted_count} prior` : ''})
+                          </div>
                         </div>
                       ) : (
                         <span className="text-slate-600 font-bold">—</span>
@@ -759,6 +767,8 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
                                         className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                                           item.disposition === 'INGESTED'
                                             ? 'bg-blue-950 text-blue-300 border border-blue-800'
+                                            : item.disposition === 'ALREADY_ACCOUNTED'
+                                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                                             : item.disposition === 'DEFERRED'
                                             ? 'bg-amber-950 text-amber-300 border border-amber-800'
                                             : 'bg-slate-800 text-slate-400'
@@ -815,7 +825,7 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
                     <span className="text-base font-bold text-white font-mono">{summary.ticker}</span>
                     {summary.is_prior_slot && (
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-950 text-amber-300 border border-amber-800">
-                        Prior Slot ({summary.slot_id || 'SLOT-1'})
+                        Prior Slot ({summary.slot_id || DEFAULT_PILOT_SLOT})
                       </span>
                     )}
                     {summary.is_older_receipt && !summary.is_prior_slot && (
@@ -858,10 +868,12 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[10px] uppercase font-semibold">
-                    New Filings
+                    New / Accounted
                   </span>
                   <span className="text-slate-200 font-bold">
-                    {summary.new_filings_count !== null ? summary.new_filings_count : '—'}
+                    {summary.accounted_count !== null
+                      ? `${summary.newly_ingested_count ?? 0} new / ${summary.accounted_count} acc`
+                      : '—'}
                   </span>
                 </div>
                 <div>
@@ -915,6 +927,8 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
                               className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${
                                 item.disposition === 'INGESTED'
                                   ? 'bg-blue-950 text-blue-300 border border-blue-800'
+                                  : item.disposition === 'ALREADY_ACCOUNTED'
+                                  ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                                   : 'bg-slate-800 text-slate-400'
                               }`}
                             >
@@ -949,7 +963,7 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
           Universe: <span className="text-slate-400">UB-US-EQUITIES-20261025-001</span> (10 Mega-Caps)
         </div>
         <div>
-          Rehearsal Horizon: <span className="text-slate-400">Monday, 30 November 2026</span>
+          Rehearsal Horizon: <span className="text-slate-400">Monday, 30 November 2026</span> (Strictly Local)
         </div>
       </div>
     </div>

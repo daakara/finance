@@ -25,6 +25,23 @@ export const QUALIFIED_RELEASE_SHA = '1063a10fed1ed312feadeb671980a642e757e601';
 export const QUALIFIED_TRIAL_ID = 'ARX-TRIAL-10-ISSUER-001';
 export const QUALIFIED_UNIVERSE = 'UB-US-EQUITIES-20261025-001';
 
+/**
+ * Worker's authoritative dated slot IDs on Monday, 30 November 2026.
+ * Format: YYYY-MM-DD:SLOT_{1-3}:{HHMM} (NY local time 09:15, 13:00, 16:30 -> CET 15:15, 19:00, 22:30).
+ */
+export const WORKER_COHORT_PILOT_SLOTS = [
+  '2026-11-30:SLOT_1:0915',
+  '2026-11-30:SLOT_2:1300',
+  '2026-11-30:SLOT_3:1630',
+] as const;
+
+export const DEFAULT_PILOT_SLOT = '2026-11-30:SLOT_1:0915';
+
+export function isValidWorkerSlotId(slotId: string | null | undefined): boolean {
+  if (!slotId || typeof slotId !== 'string') return false;
+  return /^\d{4}-\d{2}-\d{2}:SLOT_[1-3]:\d{4}$/.test(slotId);
+}
+
 export const COHORT_CIKS: Record<string, string> = {
   NVDA: '0001045810',
   AAPL: '0000320193',
@@ -126,21 +143,21 @@ export function extractCohortEvidence(raw: any): {
  */
 export const SYNTHETIC_COHORT_RECEIPT: CohortReconciliationReceipt = {
   receipt_id: 'rcpt-pilot-165-20261130-slot1',
-  trial_id: 'ARX-TRIAL-10-ISSUER-001',
-  slot_id: 'SLOT-1',
+  trial_id: QUALIFIED_TRIAL_ID,
+  slot_id: DEFAULT_PILOT_SLOT,
   created_at: '2026-11-30T14:26:00Z',
   interval_start: '2026-11-30T14:00:00Z',
   interval_end: '2026-11-30T14:25:00Z',
   coverage_status: 'PARTIAL',
   reconciliation_hash: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
-  release_sha: '1063a10fed1ed312feadeb671980a642e757e601',
+  release_sha: QUALIFIED_RELEASE_SHA,
   failure_reasons: {
-    trial_id: 'ARX-TRIAL-10-ISSUER-001',
+    trial_id: QUALIFIED_TRIAL_ID,
     cohort_evidence: {
-      trial_id: 'ARX-TRIAL-10-ISSUER-001',
-      slot_id: 'SLOT-1',
-      universe_id: 'UB-US-EQUITIES-20261025-001',
-      release_sha: '1063a10fed1ed312feadeb671980a642e757e601',
+      trial_id: QUALIFIED_TRIAL_ID,
+      slot_id: DEFAULT_PILOT_SLOT,
+      universe_id: QUALIFIED_UNIVERSE,
+      release_sha: QUALIFIED_RELEASE_SHA,
       issuers: {
         NVDA: {
           ticker: 'NVDA',
@@ -215,7 +232,7 @@ export const SYNTHETIC_COHORT_RECEIPT: CohortReconciliationReceipt = {
           ],
           gaps: ['DEFERRED:0000789019-26-000088'],
           previous_watermark: '2026-11-30T14:00:00Z',
-          accounted_through: '2026-11-30T14:00:00Z', // held at previous watermark due to gap
+          accounted_through: '2026-11-30T14:00:00Z',
           status: 'PARTIAL',
           sha256: 'f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7',
         },
@@ -248,7 +265,7 @@ export const SYNTHETIC_COHORT_RECEIPT: CohortReconciliationReceipt = {
         GOOGL: {
           ticker: 'GOOGL',
           cik: '0001652044',
-          observed_at: '2026-11-30T09:22:10Z', // historical earlier timestamp
+          observed_at: '2026-11-30T09:22:10Z',
           interval_start: '2026-11-30T09:00:00Z',
           cutoff: '2026-11-30T09:20:00Z',
           artifact_id: 'evt-audit-1795600000-googl',
@@ -277,7 +294,6 @@ export const SYNTHETIC_COHORT_RECEIPT: CohortReconciliationReceipt = {
           status: 'PARTIAL',
           sha256: '5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f',
         },
-        // TSLA is deliberately omitted from receipt to simulate NOT_POLLED
         'BRK-B': {
           ticker: 'BRK-B',
           cik: '0001067983',
@@ -348,6 +364,9 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     previous_watermark: '2026-11-30T14:00:00Z',
     catalog_sha256: 'a1b2c3d4e5f60718293a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e',
     catalog_gaps: [],
+    accounted_count: 2,
+    newly_ingested_count: 2,
+    already_accounted_count: 0,
     new_filings_count: 2,
     form4_count: 1,
     form4a_count: 1,
@@ -377,7 +396,7 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     artifact_id: 'evt-audit-1795620716-nvda',
     receipt_sha256: 'b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5',
     receipt_id: 'rcpt-pilot-165-20261130-slot1',
-    slot_id: 'SLOT-1',
+    slot_id: DEFAULT_PILOT_SLOT,
     is_older_receipt: false,
   },
   {
@@ -393,6 +412,9 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     previous_watermark: '2026-11-30T14:00:00Z',
     catalog_sha256: 'c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4',
     catalog_gaps: [],
+    accounted_count: 0,
+    newly_ingested_count: 0,
+    already_accounted_count: 0,
     new_filings_count: 0,
     form4_count: 0,
     form4a_count: 0,
@@ -403,7 +425,7 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     artifact_id: 'evt-audit-1795620716-aapl',
     receipt_sha256: 'd5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6',
     receipt_id: 'rcpt-pilot-165-20261130-slot1',
-    slot_id: 'SLOT-1',
+    slot_id: DEFAULT_PILOT_SLOT,
     is_older_receipt: false,
   },
   {
@@ -419,6 +441,9 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     previous_watermark: '2026-11-30T14:00:00Z',
     catalog_sha256: 'e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6',
     catalog_gaps: [],
+    accounted_count: 0,
+    newly_ingested_count: 0,
+    already_accounted_count: 0,
     new_filings_count: 0,
     form4_count: 0,
     form4a_count: 0,
@@ -439,7 +464,7 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     artifact_id: 'evt-audit-1795620716-msft',
     receipt_sha256: 'f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7',
     receipt_id: 'rcpt-pilot-165-20261130-slot1',
-    slot_id: 'SLOT-1',
+    slot_id: DEFAULT_PILOT_SLOT,
     is_older_receipt: false,
   },
   {
@@ -455,6 +480,9 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     previous_watermark: '2026-11-30T14:00:00Z',
     catalog_sha256: '0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b',
     catalog_gaps: [],
+    accounted_count: 0,
+    newly_ingested_count: 0,
+    already_accounted_count: 0,
     new_filings_count: 0,
     form4_count: 0,
     form4a_count: 0,
@@ -475,7 +503,7 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     artifact_id: 'evt-audit-1795620716-amzn',
     receipt_sha256: '1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
     receipt_id: 'rcpt-pilot-165-20261130-slot1',
-    slot_id: 'SLOT-1',
+    slot_id: DEFAULT_PILOT_SLOT,
     is_older_receipt: false,
   },
   {
@@ -491,6 +519,9 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     previous_watermark: '2026-11-30T09:00:00Z',
     catalog_sha256: '2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c',
     catalog_gaps: [],
+    accounted_count: 0,
+    newly_ingested_count: 0,
+    already_accounted_count: 0,
     new_filings_count: 0,
     form4_count: 0,
     form4a_count: 0,
@@ -501,8 +532,8 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     artifact_id: 'evt-audit-1795600000-googl',
     receipt_sha256: '3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d',
     receipt_id: 'rcpt-pilot-165-20261130-slot1',
-    slot_id: 'SLOT-1',
-    is_older_receipt: true, // Marked historical for demonstration
+    slot_id: DEFAULT_PILOT_SLOT,
+    is_older_receipt: true,
   },
   {
     ticker: 'META',
@@ -517,6 +548,9 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     previous_watermark: '2026-11-30T14:00:00Z',
     catalog_sha256: '4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e',
     catalog_gaps: ['HISTORICAL_PAGE_MAY_OVERLAP'],
+    accounted_count: 0,
+    newly_ingested_count: 0,
+    already_accounted_count: 0,
     new_filings_count: 0,
     form4_count: 0,
     form4a_count: 0,
@@ -527,7 +561,7 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     artifact_id: 'evt-audit-1795620716-meta',
     receipt_sha256: '5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f',
     receipt_id: 'rcpt-pilot-165-20261130-slot1',
-    slot_id: 'SLOT-1',
+    slot_id: DEFAULT_PILOT_SLOT,
     is_older_receipt: false,
   },
   {
@@ -543,7 +577,10 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     previous_watermark: null,
     catalog_sha256: null,
     catalog_gaps: [],
-    new_filings_count: null, // Strictly null
+    accounted_count: null,
+    newly_ingested_count: null,
+    already_accounted_count: null,
+    new_filings_count: null,
     form4_count: null,
     form4a_count: null,
     deferred_count: null,
@@ -569,7 +606,10 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     previous_watermark: '2026-11-30T14:00:00Z',
     catalog_sha256: 'corrupted-sha256-hash',
     catalog_gaps: [],
-    new_filings_count: null, // Strictly null on READ_ERROR
+    accounted_count: null,
+    newly_ingested_count: null,
+    already_accounted_count: null,
+    new_filings_count: null,
     form4_count: null,
     form4a_count: null,
     deferred_count: null,
@@ -579,7 +619,7 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     artifact_id: 'evt-audit-1795620716-brkb',
     receipt_sha256: '6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a',
     receipt_id: 'rcpt-pilot-165-20261130-slot1',
-    slot_id: 'SLOT-1',
+    slot_id: DEFAULT_PILOT_SLOT,
     is_older_receipt: false,
     read_error_message: 'SEC Catalog Retained Hash Mismatch: expected sha256 digest does not match audit payload.',
   },
@@ -596,6 +636,9 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     previous_watermark: '2026-11-30T14:00:00Z',
     catalog_sha256: '7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b',
     catalog_gaps: [],
+    accounted_count: 0,
+    newly_ingested_count: 0,
+    already_accounted_count: 0,
     new_filings_count: 0,
     form4_count: 0,
     form4a_count: 0,
@@ -606,7 +649,7 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     artifact_id: 'evt-audit-1795620716-jpm',
     receipt_sha256: '8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c',
     receipt_id: 'rcpt-pilot-165-20261130-slot1',
-    slot_id: 'SLOT-1',
+    slot_id: DEFAULT_PILOT_SLOT,
     is_older_receipt: false,
   },
   {
@@ -622,6 +665,9 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     previous_watermark: '2026-11-30T14:00:00Z',
     catalog_sha256: '9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d',
     catalog_gaps: [],
+    accounted_count: 0,
+    newly_ingested_count: 0,
+    already_accounted_count: 0,
     new_filings_count: 0,
     form4_count: 0,
     form4a_count: 0,
@@ -632,7 +678,7 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
     artifact_id: 'evt-audit-1795620716-v',
     receipt_sha256: '0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e',
     receipt_id: 'rcpt-pilot-165-20261130-slot1',
-    slot_id: 'SLOT-1',
+    slot_id: DEFAULT_PILOT_SLOT,
     is_older_receipt: false,
   },
 ];
@@ -640,8 +686,8 @@ export const SYNTHETIC_ISSUER_SUMMARIES: IssuerEvidenceSummary[] = [
 /**
  * Validates the actual worker receipt format, trial, slot, release SHA,
  * issuer/CIK pairs, and required receipt fields.
- * If independent export is available, compares counts and gaps.
- * If not, labels the receipt "Imported — reconciliation pending".
+ * If independent export is available, verifies binding and checks all 10 issuers.
+ * Incomplete export stays pending.
  */
 export function validateWorkerReceiptFormat(
   rawInput: any,
@@ -650,6 +696,7 @@ export function validateWorkerReceiptFormat(
 ): WorkerReceiptValidation {
   const errors: string[] = [];
   const discrepancies: CohortValidationDiscrepancy[] = [];
+  const reconciliationReasons: string[] = [];
 
   const { evidence, receiptId, releaseSha, trialId, slotId } = extractCohortEvidence(rawInput);
 
@@ -659,6 +706,7 @@ export function validateWorkerReceiptFormat(
       trial_id: null,
       trial_id_matches: false,
       slot_id: null,
+      slot_id_valid: false,
       is_prior_slot: false,
       prior_slot_id: null,
       release_sha: null,
@@ -671,6 +719,7 @@ export function validateWorkerReceiptFormat(
       validation_errors: ['Malformed receipt: missing cohort evidence or issuers object.'],
       reconciliation_status: 'RECONCILIATION_DISCREPANCY',
       reconciliation_label: 'Imported — malformed format',
+      reconciliation_reasons: ['Malformed receipt structure'],
       discrepancies: [],
     };
   }
@@ -691,8 +740,16 @@ export function validateWorkerReceiptFormat(
     );
   }
 
-  // 3. Slot ID & Prior Slot identification
+  // 3. Dated Slot ID validation
   const effectiveSlotId = slotId || evidence.slot_id || rawInput.slot_id || null;
+  const slotIdValid = isValidWorkerSlotId(effectiveSlotId);
+  if (!slotIdValid) {
+    errors.push(
+      `Invalid or missing dated slot ID: expected format YYYY-MM-DD:SLOT_{1-3}:{HHMM}, got '${effectiveSlotId || 'MISSING'}'`,
+    );
+  }
+
+  // Prior Slot identification
   let isPriorSlot = false;
   let priorSlotId: string | null = null;
   if (effectiveSlotId && activeSlotId && effectiveSlotId !== activeSlotId) {
@@ -743,80 +800,125 @@ export function validateWorkerReceiptFormat(
     }
   }
 
-  const isValidFormat = trialIdMatches && releaseShaMatches && issuersMatched && receiptFieldsValid;
+  const isValidFormat = trialIdMatches && releaseShaMatches && slotIdValid && issuersMatched && receiptFieldsValid;
 
-  // 6. Reconciliation comparison
+  // 6. Reconciliation comparison against Independent Export
   let reconciliationStatus: 'RECONCILIATION_PENDING' | 'RECONCILED' | 'RECONCILIATION_DISCREPANCY' =
     'RECONCILIATION_PENDING';
   let reconciliationLabel = 'Imported — reconciliation pending';
 
-  if (independentExport && independentExport.issuers) {
-    for (const [ticker, issuer] of Object.entries(issuers)) {
-      const indep = independentExport.issuers[ticker];
+  if (independentExport) {
+    let bindingError = false;
+
+    // Check binding: export must match receipt_id and slot_id if declared
+    if (independentExport.receipt_id && receiptId && independentExport.receipt_id !== receiptId) {
+      bindingError = true;
+      const msg = `Export binding mismatch: receipt_id '${independentExport.receipt_id}' does not match '${receiptId}'`;
+      errors.push(msg);
+      reconciliationReasons.push(msg);
+    }
+    if (independentExport.slot_id && effectiveSlotId && independentExport.slot_id !== effectiveSlotId) {
+      bindingError = true;
+      const msg = `Export binding mismatch: slot_id '${independentExport.slot_id}' does not match '${effectiveSlotId}'`;
+      errors.push(msg);
+      reconciliationReasons.push(msg);
+    }
+    if (independentExport.trial_id && effectiveTrialId && independentExport.trial_id !== effectiveTrialId) {
+      bindingError = true;
+      const msg = `Export binding mismatch: trial_id '${independentExport.trial_id}' does not match '${effectiveTrialId}'`;
+      errors.push(msg);
+      reconciliationReasons.push(msg);
+    }
+
+    // Check that export contains required fields for ALL TEN issuers
+    const exportIssuers = independentExport.issuers || {};
+    const missingInExport: string[] = [];
+    const requiredComparisonFields = ['accounted_count', 'newly_ingested_count', 'gaps', 'accounted_through'];
+    const issuersWithMissingFields: string[] = [];
+
+    for (const ticker of Object.keys(COHORT_CIKS)) {
+      const indep = exportIssuers[ticker];
       if (!indep) {
-        discrepancies.push({
-          ticker,
-          field: 'issuer_in_independent_export',
-          expected: 'PRESENT',
-          actual: 'MISSING',
-          severity: 'ERROR',
-        });
-        continue;
-      }
-
-      // Calculate actual counts from inventory
-      const inventory = issuer.inventory || [];
-      const actualIngested = inventory.filter((i) => i.disposition === 'INGESTED').length;
-      const actualDeferred = inventory.filter((i) => i.disposition === 'DEFERRED').length;
-      const actualGaps = issuer.gaps || [];
-
-      if (indep.expected_count !== undefined && indep.expected_count !== inventory.length) {
-        discrepancies.push({
-          ticker,
-          field: 'expected_count',
-          expected: indep.expected_count,
-          actual: inventory.length,
-          severity: 'ERROR',
-        });
-      }
-
-      if (indep.accounted_count !== undefined && indep.accounted_count !== actualIngested) {
-        discrepancies.push({
-          ticker,
-          field: 'accounted_count',
-          expected: indep.accounted_count,
-          actual: actualIngested,
-          severity: 'ERROR',
-        });
-      }
-
-      if (indep.missing_count !== undefined && indep.missing_count !== actualDeferred) {
-        discrepancies.push({
-          ticker,
-          field: 'missing_count',
-          expected: indep.missing_count,
-          actual: actualDeferred,
-          severity: 'ERROR',
-        });
-      }
-
-      if (indep.gaps && JSON.stringify(indep.gaps.sort()) !== JSON.stringify(actualGaps.sort())) {
-        discrepancies.push({
-          ticker,
-          field: 'gaps',
-          expected: indep.gaps,
-          actual: actualGaps,
-          severity: 'ERROR',
-        });
+        missingInExport.push(ticker);
+      } else {
+        const missingFields = requiredComparisonFields.filter((f) => (indep as any)[f] === undefined);
+        if (missingFields.length > 0) {
+          issuersWithMissingFields.push(`${ticker} (missing ${missingFields.join(', ')})`);
+        }
       }
     }
 
-    if (discrepancies.length === 0) {
-      reconciliationStatus = 'RECONCILED';
-      reconciliationLabel = 'Imported — reconciled against independent export';
-    } else {
+    if (bindingError) {
       reconciliationStatus = 'RECONCILIATION_DISCREPANCY';
-      reconciliationLabel = 'Imported — reconciliation discrepancies detected';
+      reconciliationLabel = 'Imported — export binding mismatch';
+    } else if (missingInExport.length > 0 || issuersWithMissingFields.length > 0) {
+      // Incomplete export stays pending!
+      reconciliationStatus = 'RECONCILIATION_PENDING';
+      const detail =
+        missingInExport.length > 0
+          ? `missing issuers [${missingInExport.join(', ')}]`
+          : `issuers missing comparison fields [${issuersWithMissingFields.join(', ')}]`;
+      reconciliationLabel = `Imported — reconciliation pending (${detail})`;
+      reconciliationReasons.push(`Incomplete export: ${detail}`);
+    } else {
+      // All ten issuers present with required comparison fields -> Compare!
+      for (const [ticker, issuer] of Object.entries(issuers)) {
+        const indep = exportIssuers[ticker];
+        const inventory = issuer.inventory || [];
+        const actualNewlyIngested = inventory.filter((i) => i.disposition === 'INGESTED').length;
+        const actualAccounted = inventory.filter(
+          (i) => i.disposition === 'INGESTED' || i.disposition === 'ALREADY_ACCOUNTED',
+        ).length;
+        const actualGaps = issuer.gaps || [];
+
+        if (indep.accounted_count !== undefined && indep.accounted_count !== actualAccounted) {
+          discrepancies.push({
+            ticker,
+            field: 'accounted_count',
+            expected: indep.accounted_count,
+            actual: actualAccounted,
+            severity: 'ERROR',
+          });
+        }
+
+        if (indep.newly_ingested_count !== undefined && indep.newly_ingested_count !== actualNewlyIngested) {
+          discrepancies.push({
+            ticker,
+            field: 'newly_ingested_count',
+            expected: indep.newly_ingested_count,
+            actual: actualNewlyIngested,
+            severity: 'ERROR',
+          });
+        }
+
+        if (indep.gaps && JSON.stringify(indep.gaps.sort()) !== JSON.stringify(actualGaps.sort())) {
+          discrepancies.push({
+            ticker,
+            field: 'gaps',
+            expected: indep.gaps,
+            actual: actualGaps,
+            severity: 'ERROR',
+          });
+        }
+
+        if (indep.accounted_through && issuer.accounted_through && indep.accounted_through !== issuer.accounted_through) {
+          discrepancies.push({
+            ticker,
+            field: 'accounted_through',
+            expected: indep.accounted_through,
+            actual: issuer.accounted_through,
+            severity: 'ERROR',
+          });
+        }
+      }
+
+      if (discrepancies.length === 0) {
+        reconciliationStatus = 'RECONCILED';
+        reconciliationLabel = 'Imported — reconciled against independent export';
+      } else {
+        reconciliationStatus = 'RECONCILIATION_DISCREPANCY';
+        reconciliationLabel = 'Imported — reconciliation discrepancies detected';
+      }
     }
   }
 
@@ -825,6 +927,7 @@ export function validateWorkerReceiptFormat(
     trial_id: effectiveTrialId || null,
     trial_id_matches: trialIdMatches,
     slot_id: effectiveSlotId,
+    slot_id_valid: slotIdValid,
     is_prior_slot: isPriorSlot,
     prior_slot_id: priorSlotId,
     release_sha: effectiveReleaseSha || null,
@@ -837,6 +940,7 @@ export function validateWorkerReceiptFormat(
     validation_errors: errors,
     reconciliation_status: reconciliationStatus,
     reconciliation_label: reconciliationLabel,
+    reconciliation_reasons: reconciliationReasons,
     discrepancies,
   };
 }
@@ -844,6 +948,7 @@ export function validateWorkerReceiptFormat(
 /**
  * Parses raw reconciliation receipt JSON into 10-issuer summary objects.
  * Populates observed_at as the poll time, and displays cutoff separately.
+ * Accurately aligns accounting: Accounted = INGESTED + ALREADY_ACCOUNTED; Newly Ingested = INGESTED.
  * Retains distinct evidence states: verified zero, not polled, incomplete evidence, read error.
  */
 export function parseReceiptToSummaries(
@@ -874,6 +979,9 @@ export function parseReceiptToSummaries(
         previous_watermark: null,
         catalog_sha256: null,
         catalog_gaps: [],
+        accounted_count: null,
+        newly_ingested_count: null,
+        already_accounted_count: null,
         new_filings_count: null, // Strictly null
         form4_count: null,
         form4a_count: null,
@@ -906,6 +1014,9 @@ export function parseReceiptToSummaries(
         previous_watermark: raw.previous_watermark || null,
         catalog_sha256: raw.catalog_sha256 || null,
         catalog_gaps: raw.catalog_gaps || [],
+        accounted_count: null,
+        newly_ingested_count: null,
+        already_accounted_count: null,
         new_filings_count: null, // Strictly null
         form4_count: null,
         form4a_count: null,
@@ -928,25 +1039,35 @@ export function parseReceiptToSummaries(
     const gaps = raw.gaps || [];
     const catalogGaps = raw.catalog_gaps || [];
 
-    const ingested = inventory.filter((item) => item.disposition === 'INGESTED');
+    // Worker accounting alignment:
+    // Accounted = INGESTED + ALREADY_ACCOUNTED
+    // Newly Ingested = INGESTED
+    const newlyIngested = inventory.filter((item) => item.disposition === 'INGESTED');
+    const alreadyAccounted = inventory.filter((item) => item.disposition === 'ALREADY_ACCOUNTED');
+    const accounted = inventory.filter(
+      (item) => item.disposition === 'INGESTED' || item.disposition === 'ALREADY_ACCOUNTED',
+    );
     const deferred = inventory.filter((item) => item.disposition === 'DEFERRED');
     const unresolved = inventory.filter((item) => item.disposition === 'AMENDMENT_UNRESOLVED');
 
-    const form4Count = ingested.filter((i) => i.form === '4').length;
-    const form4aCount = ingested.filter((i) => i.form === '4/A').length;
-    const newFilingsCount = ingested.length;
+    const form4Count = newlyIngested.filter((i) => i.form === '4').length;
+    const form4aCount = newlyIngested.filter((i) => i.form === '4/A').length;
+    const newlyIngestedCount = newlyIngested.length;
+    const alreadyAccountedCount = alreadyAccounted.length;
+    const accountedCount = accounted.length;
 
     // Distinct evidence states
     let state: IssuerEvidenceSummary['state'];
     if (gaps.length > 0 || catalogGaps.length > 0 || raw.status === 'PARTIAL') {
       state = 'INCOMPLETE';
-    } else if (newFilingsCount > 0) {
+    } else if (newlyIngestedCount > 0) {
       state = 'FILINGS_FOUND';
     } else {
+      // Verified zero new filings across retained catalog interval
       state = 'POLLED_QUIET';
     }
 
-    // Historical poll check: if cutoff/observed_at is >2 hours before reference time
+    // Historical poll check
     let isOlder = false;
     const compareTimeStr = raw.observed_at || raw.cutoff;
     if (compareTimeStr) {
@@ -970,7 +1091,10 @@ export function parseReceiptToSummaries(
       previous_watermark: raw.previous_watermark || null,
       catalog_sha256: raw.catalog_sha256 || null,
       catalog_gaps: catalogGaps,
-      new_filings_count: newFilingsCount,
+      accounted_count: accountedCount,
+      newly_ingested_count: newlyIngestedCount,
+      already_accounted_count: alreadyAccountedCount,
+      new_filings_count: newlyIngestedCount,
       form4_count: form4Count,
       form4a_count: form4aCount,
       deferred_count: deferred.length,
@@ -1029,7 +1153,15 @@ export function validateReceiptAgainstExpected(
       });
     }
 
-    if (exp.new_filings_count !== undefined && exp.new_filings_count !== actual.new_filings_count) {
+    if (exp.newly_ingested_count !== undefined && exp.newly_ingested_count !== actual.newly_ingested_count) {
+      discrepancies.push({
+        ticker: actual.ticker,
+        field: 'newly_ingested_count',
+        expected: exp.newly_ingested_count,
+        actual: actual.newly_ingested_count,
+        severity: 'ERROR',
+      });
+    } else if (exp.new_filings_count !== undefined && exp.new_filings_count !== actual.new_filings_count) {
       discrepancies.push({
         ticker: actual.ticker,
         field: 'new_filings_count',

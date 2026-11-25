@@ -50,7 +50,15 @@ export interface IssuerEvidenceSummary {
   previous_watermark: string | null;
   catalog_sha256: string | null;
   catalog_gaps: string[];
-  new_filings_count: number | null; // null on READ_ERROR or NOT_POLLED
+  /**
+   * Accounting alignment with worker:
+   * Accounted = INGESTED + ALREADY_ACCOUNTED
+   * Newly Ingested = INGESTED
+   */
+  accounted_count: number | null;
+  newly_ingested_count: number | null;
+  already_accounted_count: number | null;
+  new_filings_count: number | null; // Alias to newly_ingested_count
   form4_count: number | null;
   form4a_count: number | null;
   deferred_count: number | null;
@@ -129,9 +137,8 @@ export interface CohortReconciliationReceipt {
 export interface IndependentlyReconciledIssuerExport {
   ticker: string;
   cik: string;
-  expected_count?: number;
-  accounted_count?: number;
-  missing_count?: number;
+  accounted_count?: number; // INGESTED + ALREADY_ACCOUNTED
+  newly_ingested_count?: number; // INGESTED
   gaps?: string[];
   cutoff?: string;
   accounted_through?: string;
@@ -141,7 +148,8 @@ export interface IndependentlyReconciledIssuerExport {
 
 export interface IndependentlyReconciledExport {
   export_id?: string;
-  trial_id: string;
+  receipt_id?: string;
+  trial_id?: string;
   slot_id?: string;
   reconciled_at?: string;
   reconciled_by?: string;
@@ -169,6 +177,7 @@ export interface WorkerReceiptValidation {
   trial_id: string | null;
   trial_id_matches: boolean;
   slot_id: string | null;
+  slot_id_valid: boolean;
   is_prior_slot: boolean;
   prior_slot_id: string | null;
   release_sha: string | null;
@@ -181,5 +190,6 @@ export interface WorkerReceiptValidation {
   validation_errors: string[];
   reconciliation_status: 'RECONCILIATION_PENDING' | 'RECONCILED' | 'RECONCILIATION_DISCREPANCY';
   reconciliation_label: string;
+  reconciliation_reasons: string[];
   discrepancies: CohortValidationDiscrepancy[];
 }
