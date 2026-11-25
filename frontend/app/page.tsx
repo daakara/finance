@@ -19,6 +19,7 @@ import CatalystForecastCard from "../components/CatalystForecastCard";
 import InstitutionalFeeds from "../components/InstitutionalFeeds";
 import CompositeConvictionCard from "../components/CompositeConvictionCard";
 import { FredMacroData, SecForm4Trade, fetchFredMacroRegime, fetchSecForm4Insiders } from "../lib/institutionalFeeds";
+import { buildChartTradeMarkers } from "../lib/tradeMarkers";
 import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import DataSourceBadge from "../components/DataSourceBadge";
@@ -89,28 +90,7 @@ function TerminalContent() {
   const [macroData, setMacroData] = useState<FredMacroData | null>(null);
   const [insiderTrades, setInsiderTrades] = useState<SecForm4Trade[]>([]);
   const capabilities = useMemo(() => resolveCapabilities(data, data?.optimalExecution), [data]);
-  const tradeMarkers = useMemo(() => {
-    return [
-      ...(data?.smartMoney?.congressTrades?.map((ct) => ({
-        date: ct.transaction_date || (ct as any).date || ct.filing_date,
-        label: `🏛️ ${ct.politician?.split(" ")?.slice(-1)[0] || "Congress"} ${ct.transaction_type || (ct as any).type || "Buy"}`,
-        type: "CONGRESS" as const,
-        amount: ct.amount_range,
-      })) || []),
-      ...(((data?.smartMoney as any)?.secForm4Trades || (data?.smartMoney as any)?.secInsiderTrades || [])?.map((st: any) => ({
-        date: st.filingDate || st.date || st.filing_date,
-        label: `💼 ${st.insiderRole || "Insider"} Buy`,
-        type: "INSIDER" as const,
-        amount: st.transactionValue || st.shares,
-      })) || []),
-      ...(data?.smartMoney?.optionsFlow?.map((op) => ({
-        date: (op as any).date || (op as any).timestamp || "2026-04-01",
-        label: `⚡ ${op.type || "Call Sweep"}`,
-        type: "OPTIONS" as const,
-        amount: op.premium,
-      })) || []),
-    ].filter((m) => m.date);
-  }, [data?.smartMoney]);
+  const tradeMarkers = useMemo(() => buildChartTradeMarkers(data?.smartMoney), [data?.smartMoney]);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const [isPreflightModalOpen, setIsPreflightModalOpen] = useState<boolean>(false);
   const [isPreflightDrawerExpanded, setIsPreflightDrawerExpanded] = useState<boolean>(false);

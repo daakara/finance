@@ -1,7 +1,7 @@
 {
   "release_candidate_commit": "0c4477d5b84d7bb5888d4dd1963f2cf9941f9a44",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 71,
+  "total_files": 77,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-S4-RADAR-001",
   "files": {
@@ -239,11 +239,11 @@
     },
     "frontend/lib/preflightEvaluator.ts": {
       "operation": "M",
-      "originating_pr_number": 319,
-      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Prioritize Stage 4 structural distribution blocker ahead of sizing prohibition",
-      "sha256": "57723434d787323a796af6708d8007afba97691df2e6f94ed3b572ba459821d8",
-      "size_bytes": 49389
+      "sha256": "81a14097533beeab943f2d0921047126d1109a90007a8ec51a7d5d187c114230",
+      "size_bytes": 51544,
+      "originating_pr_number": 328,
+      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
+      "governing_requirement": "PR #328: enforce PASS + FAIL + UNAVAILABLE = 5 accounting invariant on fixed 5-check denominator"
     },
     "frontend/package.json": {
       "operation": "M",
@@ -367,11 +367,11 @@
     },
     "frontend/app/page.tsx": {
       "operation": "M",
-      "originating_pr_number": 323,
-      "originating_commit": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
-      "governing_requirement": "PR #323: clear asset analytics on selection change and render explicit unavailable state on 404",
-      "sha256": "b12f31faa5cc258d61ec146b77ca157995745302bc4d37872fbd641e2607ed20",
-      "size_bytes": 56369
+      "sha256": "dc2e5273f619854561dbdc5e17660281987a59d6c4f22d4462d06924ea6e1134",
+      "size_bytes": 55467,
+      "originating_pr_number": 328,
+      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
+      "governing_requirement": "PR #328: build truthful provenance-aware Form 4/Congress/Options chart markers without fabricated dates"
     },
     "frontend/components/discovery/DiscoveryLandingView.tsx": {
       "operation": "M",
@@ -572,6 +572,54 @@
       "originating_pr_number": 327,
       "originating_commit": "0d4e3461f1fcc372ba443c36d9343f6cb766a1d2",
       "governing_requirement": "ARX-S4-RADAR-001 / PR #327: Radar operational truth, candidate isolation, served-row date bounds, and pending state remediation"
+    },
+    "frontend/app/globals.css": {
+      "operation": "M",
+      "sha256": "cc653dae5cfd4d40ce490f73d1fadd1e4c333a10a624650a2cbfa29ede884e5e",
+      "size_bytes": 18033,
+      "originating_pr_number": 328,
+      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
+      "governing_requirement": "PR #328: preserve sticky safe-area navbar on mobile WebKit via overflow-x: clip"
+    },
+    "frontend/components/PreFlightChecklistModal.tsx": {
+      "operation": "M",
+      "sha256": "dbd040256309fdf79b4424c3aabd4e740fb385d0351617cac7767d40d3977e17",
+      "size_bytes": 40996,
+      "originating_pr_number": 328,
+      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
+      "governing_requirement": "PR #328: display separate Pass/Fail/Unavailable counts and evidence availability on fixed 5-check denominator"
+    },
+    "frontend/components/PreFlightReadinessBar.tsx": {
+      "operation": "M",
+      "sha256": "99931a2879174411674cf19c176c9d8be8046d685f73677a86cca8ccb427cdd9",
+      "size_bytes": 15084,
+      "originating_pr_number": 328,
+      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
+      "governing_requirement": "PR #328: separate Pass/Fail/Unavailable counts and neutral UNAVAILABLE pill styling"
+    },
+    "frontend/components/PriceChart.tsx": {
+      "operation": "M",
+      "sha256": "56cae61ac1d71773378adafa5e862a91994d663addd918b98cdb44f5b6a04e0e",
+      "size_bytes": 56095,
+      "originating_pr_number": 328,
+      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
+      "governing_requirement": "PR #328: grouped mobile-clean markers, compact levels legend, separated Candle/Range controls, accessible Activity drawer"
+    },
+    "frontend/lib/tradeMarkers.ts": {
+      "operation": "A",
+      "sha256": "5e2f242f61a7712c584c6277d45f306e917c2565a23c70d3dd380a95985595b0",
+      "size_bytes": 26437,
+      "originating_pr_number": 328,
+      "originating_commit": "1ae7eaa766e66debf691f38b7075b1fb7c63da73",
+      "governing_requirement": "PR #328: canonical Form 4 transaction classifier, open-market evidence guard, date provenance, and marker grouping"
+    },
+    "frontend/components/__tests__/MobileChartAndPreflightEvidenceTruth.test.tsx": {
+      "operation": "A",
+      "sha256": "52b1e36a5c5b6476080d431d4695bcdb93183c8eb903c4b3370728b4c08094c3",
+      "size_bytes": 24810,
+      "originating_pr_number": 328,
+      "originating_commit": "1ae7eaa766e66debf691f38b7075b1fb7c63da73",
+      "governing_requirement": "PR #328: focused behavioral regression suite for Form 4 labels, mobile chart readability, and preflight accounting"
     }
   },
   "qualification_framework_files": {
@@ -581,9 +629,9 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "description": "Hardened diff integrity validation with approved PR list including PR #327",
-      "sha256": "7eed3e889b902e60732baf31f259e94e2a4fe74f854c6321e4eb2b2d66ac7a69",
-      "size_bytes": 58251
+      "description": "Hardened diff integrity validation with approved PR list including PR #327 and PR #328",
+      "sha256": "7c5dd1dcc24e94df91b37764734b10cdbea829f6c164b7e39b42a0cddb177577",
+      "size_bytes": 58256
     },
     "scripts/release/rq03_backend_regression.py": {
       "description": "Backend regression runner including Cornish-Fisher and Radar behavioral test suites (ccxt-dependent contract test run on hosted CI only)",
@@ -591,9 +639,9 @@
       "size_bytes": 4703
     },
     "scripts/release/rq04_frontend_regression.py": {
-      "description": "Frontend regression runner including Sizing, RiskMetrics, and Radar operational truth suites",
-      "sha256": "6f7af6859705783f24de21aa37153228dd5c5f8bc41d3f1e59650f2c5a67129f",
-      "size_bytes": 13028
+      "description": "Frontend regression runner including typecheck, sizing, Spotlight, CDNS, SEC Form 4, Radar, Risk Metrics, and Mobile Chart & Preflight Truth suites",
+      "sha256": "412ab98a36da9b1bcd8eb0f8a744f08332a54fdfc7485e4835b8080a220fc7cb",
+      "size_bytes": 14487
     },
     "scripts/release/rq05_cross_engine_invariants.py": {
       "sha256": "f3f1039896aa258834f24144d69c5b42552df7b5173a09f09833ff46b6e3be0a",

@@ -238,6 +238,28 @@ def main():
         "passed": res_radar_copy.returncode == 0,
     })
 
+    # 9. Mobile Chart Readability, Trade-Marker Truth & Preflight Accounting Suite (PR #328)
+    print("Running Mobile Chart & Preflight Evidence Truth qualification tests...")
+    mc_cmd = [vitest_bin, "run", "components/__tests__/MobileChartAndPreflightEvidenceTruth.test.tsx"]
+    if not os.path.isfile(vitest_bin):
+        errors.append("Local Vitest binary missing: npm ci must provision pinned test dependencies")
+        res_mc = None
+    else:
+        res_mc = subprocess.run(
+            mc_cmd, cwd=FRONTEND_DIR,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="ignore",
+        )
+        print(res_mc.stdout)
+        if res_mc.returncode != 0:
+            errors.append(f"Mobile chart & preflight truth tests failed with exit code {res_mc.returncode}")
+    assertions.append({
+        "assertion": "Mobile chart readability, trade-marker truth, and preflight accounting suite passes",
+        "observed": {"exit_code": res_mc.returncode if res_mc is not None else None},
+        "passed": res_mc is not None and res_mc.returncode == 0,
+    })
+    })
+
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"
     ok, identity, err = resolve_identity_contract()
@@ -265,6 +287,12 @@ def main():
         "frontend/components/AssetFactorRadar.tsx",
         "frontend/components/DayTraderPositionSizer.tsx",
         "frontend/components/__tests__/RiskMetricsAndSizingBehavior.test.tsx",
+        "frontend/lib/tradeMarkers.ts",
+        "frontend/components/PriceChart.tsx",
+        "frontend/lib/preflightEvaluator.ts",
+        "frontend/components/PreFlightReadinessBar.tsx",
+        "frontend/components/PreFlightChecklistModal.tsx",
+        "frontend/components/__tests__/MobileChartAndPreflightEvidenceTruth.test.tsx",
     ]
 
     receipt = create_stage_receipt(
