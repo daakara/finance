@@ -2,11 +2,11 @@
 
 **Governing Authority:** Owner Authorized under decree recorded in Step 11823 / Register Commit `27de416b`.  
 **Trial Identifier:** `ARX-TRIAL-10-ISSUER-001`  
-**Authorized Grant ID:** `c5986d3f8980fed2ef2f153306536b21`  
+**Authorized Grant ID:** `c5986d3f8980fed2ef2f153306536b21` (`ARX_CONTINUOUS_AUTH_ID`)  
 **Release Candidate SHA:** `1063a10fed1ed312feadeb671980a642e757e601`  
 **Tracking Task / Container:** `SEC-COV-FOLLOWUP` / GitHub Issue #165  
-**Designated Operator & Supervision:** David Akara (`daakara`)  
-**Automated Schedule Sidecar:** `arx-issue-165-cohort-pilot` (`CRON_TZ=Europe/Berlin 0 15 30 11 *`)  
+**Sole Manual Arming Operator:** David Akara (`daakara`)  
+**Arming Path:** Single manual operator arming path (`SEC-COV-FOLLOWUP` / Issue #165); recurring cron triggers strictly prohibited and removed.  
 
 ---
 
@@ -17,7 +17,7 @@ The pilot is strictly bounded to Monday, 30 November 2026. Prior to window open 
 | Milestone / Window | Europe/Berlin (CET) | America/New_York (EST) | UTC | Requirement / Action |
 | :--- | :--- | :--- | :--- | :--- |
 | **Preflight & Backup Pass** | 14:00–15:00 | 08:00–09:00 | 13:00–14:00 | Fresh off-host backup; verify SHA, DBs, unheld lock, snapshot |
-| **Grant Validity Window Opens** | 15:00 | 09:00 | 14:00 | Arm worker if and only if all preflight gates PASS |
+| **Grant Validity Window Opens** | 15:00 | 09:00 | 14:00 | Arm worker if and only if all preflight gates PASS & operator present |
 | **Slot 1 Window** | 15:15–15:25 | 09:15–09:25 | 14:15–14:25 | Single attempt; 40-req upfront reserve; cap 4/issuer, 40 total |
 | **Slot 2 Window** | 19:00–19:10 | 13:00–13:10 | 18:00–18:10 | Single attempt; 40-req upfront reserve; cap 4/issuer, 40 total |
 | **Slot 3 Window** | 22:30–22:40 | 16:30–16:40 | 21:30–21:40 | Single attempt; 40-req upfront reserve; cap 4/issuer, 40 total |
@@ -55,9 +55,11 @@ SMART_MONEY_COHORT_PILOT_DATABASE_URL=postgresql://smart_money_ingestion:...@pos
 
 ## 3. Arming Handoff & Pre-Flight Protocol (Before 15:00 CET)
 
-### Arming Ownership
-- **Operator Ownership**: Explicit manual operator supervision by David Akara (`daakara`), responsible for verifying preflight, monitoring each slot, and executing emergency revocation or final disablement.
-- **Automated Sidecar Handoff**: `arx-issue-165-cohort-pilot` (task container `SEC-COV-FOLLOWUP`) scheduled at `CRON_TZ=Europe/Berlin 0 15 30 11 *` to initiate the session.
+### Single Arming Path & Manual Operator Ownership
+- **Sole Arming Operator:** David Akara (`daakara`) is the sole manual arming operator under tracking task ID `SEC-COV-FOLLOWUP` (GitHub Issue #165).
+- **Zero Recurring Trigger Guarantee:** Exactly ONE arming path exists. All recurring cron triggers (including any annual sidecar definitions) are deleted and prohibited. There is no automated or recurring schedule trigger.
+- **Preflight Timing:** Complete and record the fresh off-host pilot backup and all preflight checks before 15:00 CET on Monday, 30 November 2026.
+- **Arming Verification:** At arming time (at or after 15:00 CET / 14:00 UTC), verify the preflight receipt and active operator presence. If either the preflight receipt or operator presence is missing, leave the worker disabled (`ARX_SEC_EGRESS_ROLE=DISABLED`, `ARX_CONTINUOUS_INGESTION_AUTHORIZED=false`) and report `HOLD`.
 
 ### Preflight Gates (Must complete before 15:00 CET / 14:00 UTC)
 1. **Fresh Off-Host Backup**:
@@ -73,10 +75,10 @@ SMART_MONEY_COHORT_PILOT_DATABASE_URL=postgresql://smart_money_ingestion:...@pos
 5. **Frozen Snapshot**:
    - Confirm active canonical snapshot remains frozen at `SNAP_SM_1792939989_48f30db6`.
 6. **Operator Coverage**:
-   - Confirm operator David Akara (`daakara`) is present and actively monitoring through 22:41 CET.
+   - Confirm sole operator David Akara (`daakara`) is present and actively monitoring through 22:41 CET.
 
 > [!CAUTION]
-> **Fail-Closed Gate Rule**: If ANY check fails or supervision is unavailable, leave the worker in `DISABLED` standby (`ARX_SEC_EGRESS_ROLE=DISABLED`, `ARX_CONTINUOUS_INGESTION_AUTHORIZED=false`) and report `HOLD`.
+> **Fail-Closed Gate Rule**: If ANY check fails, the preflight receipt is missing, or operator presence cannot be verified, leave the worker in `DISABLED` standby (`ARX_SEC_EGRESS_ROLE=DISABLED`, `ARX_CONTINUOUS_INGESTION_AUTHORIZED=false`) and report `HOLD`.
 
 ---
 
