@@ -474,13 +474,108 @@ def export_slot_evidence(
             conn.close()
 
 
+class ComparisonReport:
+    """Structured report of reconciliation comparison between worker receipt and independent export."""
+
+    def __init__(
+        self,
+        status: str,  # "RECONCILED", "PENDING", "DISCREPANCY"
+        discrepancies: List[Dict[str, Any]],
+        pending_fields: List[Dict[str, Any]],
+        binding_errors: List[Dict[str, Any]],
+    ):
+        self.status = status
+        self.discrepancies = discrepancies
+        self.pending_fields = pending_fields
+        self.binding_errors = binding_errors
+
+    @property
+    def is_reconciled(self) -> bool:
+        return self.status == "RECONCILED"
+
+    @property
+    def is_pending(self) -> bool:
+        return self.status == "PENDING"
+
+    @property
+    def is_discrepancy(self) -> bool:
+        return self.status == "DISCREPANCY"
+
+    def format_cli_output(self) -> str:
+        lines = []
+        if self.status == "RECONCILED":
+            lines.append("RECONCILED: All 10 cohort issuer rows match on trial, receipt, and dated slot.")
+            lines.append("Zero discrepancies detected across all comparison fields.")
+        elif self.status == "PENDING":
+            lines.append("PENDING: Reconciliation cannot be established because evidence is pending or incomplete.")
+            lines.append(f"Pending fields ({len(self.pending_fields)}):")
+            for p in self.pending_fields:
+                lines.append(f"  - [{p['ticker']}] field '{p['field']}' is pending / null")
+        elif self.status == "DISCREPANCY":
+            lines.append("DISCREPANCY: Export identities differ or known values disagree.")
+            if self.binding_errors:
+                lines.append(f"Identity / Binding Errors ({len(self.binding_errors)}):")
+                for err in self.binding_errors:
+                    lines.append(
+                        f"  - [{err['ticker']}] field '{err['field']}': expected {err['expected']!r}, actual {err['actual']!r}"
+                    )
+            if self.discrepancies:
+                lines.append(f"Value Discrepancies ({len(self.discrepancies)}):")
+                for d in self.discrepancies:
+                    lines.append(
+                        f"  - [{d['ticker']}] field '{d['field']}': expected {d['expected']!r}, actual {d['actual']!r}"
+                    )
+            if self.pending_fields:
+                lines.append(f"Pending Fields Reported Alongside Discrepancies ({len(self.pending_fields)}):")
+                for p in self.pending_fields:
+                    lines.append(f"  - [{p['ticker']}] field '{p['field']}' is pending / null")
+
+        return "\n".join(lines)
+
+    # For sequence-like backwards compatibility:
+    def __iter__(self):
+        all_items = self.binding_errors + self.discrepancies
+        return iter(all_items)
+
+    def __len__(self):
+        return len(self.binding_errors) + len(self.discrepancies)
+
+    def __getitem__(self, item):
+        all_items = self.binding_errors + self.discrepancies
+        return all_items[item]
+
+    def __eq__(self, other):
+        all_items = self.binding_errors + self.discrepancies
+        if isinstance(other, list):
+            return all_items == other
+        if isinstance(other, ComparisonReport):
+            return (
+                self.status == other.status
+                and self.discrepancies == other.discrepancies
+                and self.pending_fields == other.pending_fields
+                and self.binding_errors == other.binding_errors
+            )
+        return False
+
+    def __repr__(self):
+        return (
+            f"<ComparisonReport status={self.status} "
+            f"discrepancies={len(self.discrepancies)} binding_errors={len(self.binding_errors)} "
+            f"pending={len(self.pending_fields)}>"
+        )
+
+
 def reconcile_and_compare_local(
     stored_receipt: Dict[str, Any],
     independent_export: Dict[str, Any],
-) -> List[Dict[str, Any]]:
+) -> ComparisonReport:
     """
     Compares all ten cohort issuer rows between the stored receipt and independent reconciliation.
-    Records discrepancies with the affected issuer, field, expected, and actual values.
+    Adheres strictly to the ARX Issue #165 qualification contract:
+    - RECONCILED: only when identities match and all 10 issuers have complete, matching comparison fields.
+    - PENDING: when any required issuer or comparison field is missing or null.
+    - DISCREPANCY: when export identities differ or a known value disagrees.
+      Reports pending fields alongside discrepancies when both occur.
     """
     cohort_evidence = (
         stored_receipt.get("cohort_evidence")
@@ -488,7 +583,81 @@ def reconcile_and_compare_local(
     )
     worker_issuers = cohort_evidence.get("issuers", {})
     export_issuers = independent_export.get("issuers", {})
+
+    binding_errors: List[Dict[str, Any]] = []
     discrepancies: List[Dict[str, Any]] = []
+    pending_fields: List[Dict[str, Any]] = []
+
+    # 1. Identity / Binding checks (trial_id, receipt_id, slot_id)
+    worker_trial_id = (
+        stored_receipt.get("trial_id")
+        or stored_receipt.get("failure_reasons", {}).get("cohort_evidence", {}).get("trial_id")
+        or stored_receipt.get("failure_reasons", {}).get("trial_id")
+    )
+    worker_receipt_id = stored_receipt.get("receipt_id")
+    worker_slot_id = (
+        stored_receipt.get("slot_id")
+        or stored_receipt.get("failure_reasons", {}).get("cohort_evidence", {}).get("slot_id")
+        or stored_receipt.get("failure_reasons", {}).get("slot_id")
+    )
+
+    export_trial_id = independent_export.get("trial_id")
+    export_receipt_id = independent_export.get("receipt_id")
+    export_slot_id = independent_export.get("slot_id")
+
+    if export_trial_id is not None and worker_trial_id is not None and export_trial_id != worker_trial_id:
+        binding_errors.append({
+            "ticker": "GLOBAL",
+            "field": "trial_id",
+            "expected": export_trial_id,
+            "actual": worker_trial_id,
+            "severity": "ERROR",
+        })
+    elif export_trial_id is None and worker_trial_id is not None:
+        binding_errors.append({
+            "ticker": "GLOBAL",
+            "field": "trial_id",
+            "expected": None,
+            "actual": worker_trial_id,
+            "severity": "ERROR",
+        })
+
+    if export_receipt_id is not None and worker_receipt_id is not None and export_receipt_id != worker_receipt_id:
+        binding_errors.append({
+            "ticker": "GLOBAL",
+            "field": "receipt_id",
+            "expected": export_receipt_id,
+            "actual": worker_receipt_id,
+            "severity": "ERROR",
+        })
+    elif export_receipt_id is None and worker_receipt_id is not None:
+        binding_errors.append({
+            "ticker": "GLOBAL",
+            "field": "receipt_id",
+            "expected": None,
+            "actual": worker_receipt_id,
+            "severity": "ERROR",
+        })
+
+    if export_slot_id is not None and worker_slot_id is not None and export_slot_id != worker_slot_id:
+        binding_errors.append({
+            "ticker": "GLOBAL",
+            "field": "slot_id",
+            "expected": export_slot_id,
+            "actual": worker_slot_id,
+            "severity": "ERROR",
+        })
+    elif export_slot_id is None and worker_slot_id is not None:
+        binding_errors.append({
+            "ticker": "GLOBAL",
+            "field": "slot_id",
+            "expected": None,
+            "actual": worker_slot_id,
+            "severity": "ERROR",
+        })
+
+    # 2. Check all ten cohort issuers and comparison fields
+    required_fields = ("accounted_count", "newly_ingested_count", "gaps", "accounted_through")
 
     for ticker in COHORT_CIKS:
         w_iss = worker_issuers.get(ticker)
@@ -497,7 +666,7 @@ def reconcile_and_compare_local(
         if not w_iss:
             discrepancies.append({
                 "ticker": ticker,
-                "field": "receipt_presence",
+                "field": "worker_evidence_presence",
                 "expected": "present",
                 "actual": "missing in worker receipt",
                 "severity": "ERROR",
@@ -505,13 +674,12 @@ def reconcile_and_compare_local(
             continue
 
         if not indep:
-            discrepancies.append({
-                "ticker": ticker,
-                "field": "export_presence",
-                "expected": "present",
-                "actual": "missing in independent export",
-                "severity": "ERROR",
-            })
+            for f in required_fields:
+                pending_fields.append({
+                    "ticker": ticker,
+                    "field": f,
+                    "reason": "missing issuer in independent export",
+                })
             continue
 
         inventory = w_iss.get("inventory", [])
@@ -520,64 +688,133 @@ def reconcile_and_compare_local(
         actual_gaps = sorted(w_iss.get("gaps", []))
         actual_accounted_through = w_iss.get("accounted_through")
 
-        # Compare accounted_count
-        if indep.get("accounted_count") is not None and indep["accounted_count"] != actual_accounted:
+        # Field 1: accounted_count
+        exp_accounted = indep.get("accounted_count")
+        if exp_accounted is None:
+            pending_fields.append({
+                "ticker": ticker,
+                "field": "accounted_count",
+                "reason": "null or missing",
+            })
+        elif exp_accounted != actual_accounted:
             discrepancies.append({
                 "ticker": ticker,
                 "field": "accounted_count",
-                "expected": indep["accounted_count"],
+                "expected": exp_accounted,
                 "actual": actual_accounted,
                 "severity": "ERROR",
             })
 
-        # Compare newly_ingested_count
-        if indep.get("newly_ingested_count") is not None and indep["newly_ingested_count"] != actual_newly_ingested:
+        # Field 2: newly_ingested_count
+        exp_newly_ingested = indep.get("newly_ingested_count")
+        if exp_newly_ingested is None:
+            pending_fields.append({
+                "ticker": ticker,
+                "field": "newly_ingested_count",
+                "reason": "null or missing",
+            })
+        elif exp_newly_ingested != actual_newly_ingested:
             discrepancies.append({
                 "ticker": ticker,
                 "field": "newly_ingested_count",
-                "expected": indep["newly_ingested_count"],
+                "expected": exp_newly_ingested,
                 "actual": actual_newly_ingested,
                 "severity": "ERROR",
             })
 
-        # Compare gaps
-        indep_gaps = sorted(indep.get("gaps") or [])
-        if indep.get("gaps") is not None and indep_gaps != actual_gaps:
-            discrepancies.append({
+        # Field 3: gaps
+        exp_gaps = indep.get("gaps")
+        if exp_gaps is None:
+            pending_fields.append({
                 "ticker": ticker,
                 "field": "gaps",
-                "expected": indep_gaps,
-                "actual": actual_gaps,
-                "severity": "ERROR",
+                "reason": "null or missing",
             })
+        else:
+            sorted_exp_gaps = sorted(exp_gaps)
+            if sorted_exp_gaps != actual_gaps:
+                discrepancies.append({
+                    "ticker": ticker,
+                    "field": "gaps",
+                    "expected": sorted_exp_gaps,
+                    "actual": actual_gaps,
+                    "severity": "ERROR",
+                })
 
-        # Compare accounted_through
-        if (
-            indep.get("accounted_through") is not None
-            and actual_accounted_through is not None
-            and indep["accounted_through"] != actual_accounted_through
+        # Field 4: accounted_through
+        exp_accounted_through = indep.get("accounted_through")
+        if exp_accounted_through is None or exp_accounted_through == "":
+            pending_fields.append({
+                "ticker": ticker,
+                "field": "accounted_through",
+                "reason": "null or missing",
+            })
+        elif (
+            actual_accounted_through is not None
+            and exp_accounted_through != actual_accounted_through
         ):
             discrepancies.append({
                 "ticker": ticker,
                 "field": "accounted_through",
-                "expected": indep["accounted_through"],
+                "expected": exp_accounted_through,
                 "actual": actual_accounted_through,
                 "severity": "ERROR",
             })
 
-    return discrepancies
+    # Status verdict determination
+    if binding_errors or discrepancies:
+        status = "DISCREPANCY"
+    elif pending_fields:
+        status = "PENDING"
+    else:
+        status = "RECONCILED"
+
+    return ComparisonReport(
+        status=status,
+        discrepancies=discrepancies,
+        pending_fields=pending_fields,
+        binding_errors=binding_errors,
+    )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Read-only Issue #165 worker receipt and independent reconciliation exporter."
     )
-    parser.add_argument("--slot-id", required=True, help="Dated slot ID (e.g. 2026-11-30:SLOT_1:0915)")
+    parser.add_argument("--slot-id", help="Dated slot ID (e.g. 2026-11-30:SLOT_1:0915)")
     parser.add_argument("--trial-id", default=DEFAULT_TRIAL_ID, help="Trial ID (default ARX-TRIAL-10-ISSUER-001)")
     parser.add_argument("--dsn", default=os.getenv("SMART_MONEY_COHORT_PILOT_DATABASE_URL"), help="PostgreSQL DSN")
     parser.add_argument("--output-dir", default="exports", help="Directory for JSON export files")
     parser.add_argument("--compare", action="store_true", help="Run local discrepancy comparison across all 10 issuers")
+    parser.add_argument("--receipt-file", help="Path to stored worker receipt JSON file for offline comparison")
+    parser.add_argument("--export-file", help="Path to independent reconciliation JSON file for offline comparison")
     args = parser.parse_args()
+
+    # Offline file comparison mode
+    if args.receipt_file and args.export_file:
+        try:
+            with open(args.receipt_file, "r", encoding="utf-8") as f:
+                stored_receipt = json.load(f)
+            with open(args.export_file, "r", encoding="utf-8") as f:
+                independent_export = json.load(f)
+
+            report = reconcile_and_compare_local(stored_receipt, independent_export)
+            print(report.format_cli_output())
+
+            if report.is_discrepancy:
+                return 2
+            elif report.is_pending:
+                return 3
+            else:
+                return 0
+        except Exception as exc:
+            print(f"Comparison failed: {exc}", file=sys.stderr)
+            return 1
+
+    # Live or database export mode
+    if not args.slot_id:
+        print("Error: --slot-id is required for database export mode (or specify --receipt-file and --export-file).", file=sys.stderr)
+        return 1
 
     if not args.dsn:
         print("Error: PostgreSQL DSN not provided and SMART_MONEY_COHORT_PILOT_DATABASE_URL is unset.", file=sys.stderr)
@@ -595,14 +832,15 @@ def main() -> int:
         print(f"Export ID: {independent_export.get('export_id')}")
 
         if args.compare:
-            discrepancies = reconcile_and_compare_local(stored_receipt, independent_export)
-            if discrepancies:
-                print(f"\nWARNING: {len(discrepancies)} discrepancies detected:")
-                for d in discrepancies:
-                    print(f"  - [{d['ticker']}] field '{d['field']}': expected {d['expected']}, actual {d['actual']}")
+            report = reconcile_and_compare_local(stored_receipt, independent_export)
+            print(f"\n{report.format_cli_output()}")
+
+            if report.is_discrepancy:
                 return 2
+            elif report.is_pending:
+                return 3
             else:
-                print("\nSUCCESS: All 10 cohort issuer rows reconciled with ZERO discrepancies.")
+                return 0
 
         return 0
 

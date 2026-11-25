@@ -479,6 +479,25 @@ export const Form4PilotEvidencePreview: React.FC<Props> = ({
                     </ul>
                   </div>
                 )}
+
+                {/* Pending Fields (rendered when pending, or reported alongside discrepancies) */}
+                {workerValidation.pending_fields && workerValidation.pending_fields.length > 0 && (
+                  <div className="p-2 bg-slate-950/80 border border-amber-900/60 rounded text-amber-300 text-[11px] space-y-1">
+                    <div className="font-bold text-amber-200">
+                      {workerValidation.discrepancies.length > 0
+                        ? 'Pending Fields Reported Alongside Discrepancies:'
+                        : 'Pending Comparison Fields:'}
+                    </div>
+                    <ul className="list-disc list-inside">
+                      {workerValidation.pending_fields.map((p, i) => (
+                        <li key={i}>
+                          <span className="font-semibold text-white">{p.ticker}</span>: field{' '}
+                          <code className="text-amber-100">{p.field}</code> is pending / null
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </div>

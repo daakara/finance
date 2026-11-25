@@ -192,4 +192,5 @@ export interface WorkerReceiptValidation {
   reconciliation_label: string;
   reconciliation_reasons: string[];
   discrepancies: CohortValidationDiscrepancy[];
+  pending_fields?: Array<{ ticker: string; field: string }>;
 }

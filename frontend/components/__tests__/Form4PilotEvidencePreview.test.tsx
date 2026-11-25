@@ -671,6 +671,50 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
       expect(screen.getAllByText(/issuers missing comparison fields/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/META/i).length).toBeGreaterThan(0);
     });
+
+    it('reports pending fields alongside discrepancies when both occur', () => {
+      render(<Form4PilotEvidencePreview />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Import Worker Receipt/i }));
+
+      // NVDA has discrepancy (accounted_count = 5 vs actual 1), and META has pending null field
+      const hybridExport: IndependentlyReconciledExport = {
+        ...matchingIndependentExport,
+        issuers: {
+          ...matchingIndependentExport.issuers,
+          NVDA: {
+            ...matchingIndependentExport.issuers.NVDA,
+            accounted_count: 5,
+          },
+          META: {
+            ticker: 'META',
+            cik: COHORT_CIKS.META,
+            accounted_count: undefined,
+            newly_ingested_count: 0,
+            gaps: [],
+            accounted_through: '2026-11-30T14:20:00Z',
+          },
+        },
+      };
+
+      const receiptInput = screen.getByPlaceholderText(/Paste raw sm_reconciliation_receipts JSON row/i);
+      fireEvent.change(receiptInput, { target: { value: JSON.stringify(slot1Receipt) } });
+
+      const exportInput = screen.getByPlaceholderText(/Paste independently reconciled export to verify counts and gaps/i);
+      fireEvent.change(exportInput, { target: { value: JSON.stringify(hybridExport) } });
+
+      fireEvent.click(screen.getByRole('button', { name: /Validate & Import Receipt/i }));
+
+      // Status must show discrepancy
+      expect(screen.getByText(/Imported — reconciliation discrepancies detected/i)).toBeDefined();
+      expect(screen.getByText(/Reconciliation Discrepancies vs Independent Export:/i)).toBeDefined();
+      expect(screen.getAllByText(/NVDA/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/accounted_count/i).length).toBeGreaterThan(0);
+
+      // Pending fields must also be reported alongside discrepancies!
+      expect(screen.getByText(/Pending Fields Reported Alongside Discrepancies:/i)).toBeDefined();
+      expect(screen.getAllByText(/META/i).length).toBeGreaterThan(0);
+    });
   });
 
   describe('Local Preview & Operator Authentication Gate', () => {

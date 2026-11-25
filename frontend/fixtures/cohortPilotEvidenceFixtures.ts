@@ -806,6 +806,7 @@ export function validateWorkerReceiptFormat(
   let reconciliationStatus: 'RECONCILIATION_PENDING' | 'RECONCILED' | 'RECONCILIATION_DISCREPANCY' =
     'RECONCILIATION_PENDING';
   let reconciliationLabel = 'Imported — reconciliation pending';
+  const pendingFields: Array<{ ticker: string; field: string }> = [];
 
   if (independentExport) {
     let bindingError = false;
@@ -816,18 +817,39 @@ export function validateWorkerReceiptFormat(
       const msg = `Export binding mismatch: receipt_id '${independentExport.receipt_id}' does not match '${receiptId}'`;
       errors.push(msg);
       reconciliationReasons.push(msg);
+      discrepancies.push({
+        ticker: 'GLOBAL',
+        field: 'receipt_id',
+        expected: independentExport.receipt_id,
+        actual: receiptId,
+        severity: 'ERROR',
+      });
     }
     if (independentExport.slot_id && effectiveSlotId && independentExport.slot_id !== effectiveSlotId) {
       bindingError = true;
       const msg = `Export binding mismatch: slot_id '${independentExport.slot_id}' does not match '${effectiveSlotId}'`;
       errors.push(msg);
       reconciliationReasons.push(msg);
+      discrepancies.push({
+        ticker: 'GLOBAL',
+        field: 'slot_id',
+        expected: independentExport.slot_id,
+        actual: effectiveSlotId,
+        severity: 'ERROR',
+      });
     }
     if (independentExport.trial_id && effectiveTrialId && independentExport.trial_id !== effectiveTrialId) {
       bindingError = true;
       const msg = `Export binding mismatch: trial_id '${independentExport.trial_id}' does not match '${effectiveTrialId}'`;
       errors.push(msg);
       reconciliationReasons.push(msg);
+      discrepancies.push({
+        ticker: 'GLOBAL',
+        field: 'trial_id',
+        expected: independentExport.trial_id,
+        actual: effectiveTrialId,
+        severity: 'ERROR',
+      });
     }
 
     // Check that export contains required fields for ALL TEN issuers
@@ -840,58 +862,54 @@ export function validateWorkerReceiptFormat(
       const indep = exportIssuers[ticker];
       if (!indep) {
         missingInExport.push(ticker);
+        requiredComparisonFields.forEach((f) => pendingFields.push({ ticker, field: f }));
       } else {
-        const missingFields = requiredComparisonFields.filter((f) => (indep as any)[f] === undefined || (indep as any)[f] === null);
+        const missingFields = requiredComparisonFields.filter(
+          (f) => (indep as any)[f] === undefined || (indep as any)[f] === null || (f === 'accounted_through' && (indep as any)[f] === ''),
+        );
         if (missingFields.length > 0) {
           issuersWithMissingFields.push(`${ticker} (missing ${missingFields.join(', ')})`);
+          missingFields.forEach((f) => pendingFields.push({ ticker, field: f }));
         }
       }
     }
 
-    if (bindingError) {
-      reconciliationStatus = 'RECONCILIATION_DISCREPANCY';
-      reconciliationLabel = 'Imported — export binding mismatch';
-    } else if (missingInExport.length > 0 || issuersWithMissingFields.length > 0) {
-      // Incomplete export stays pending!
-      reconciliationStatus = 'RECONCILIATION_PENDING';
-      const detail =
-        missingInExport.length > 0
-          ? `missing issuers [${missingInExport.join(', ')}]`
-          : `issuers missing comparison fields [${issuersWithMissingFields.join(', ')}]`;
-      reconciliationLabel = `Imported — reconciliation pending (${detail})`;
-      reconciliationReasons.push(`Incomplete export: ${detail}`);
-    } else {
-      // All ten issuers present with required comparison fields -> Compare!
-      for (const [ticker, issuer] of Object.entries(issuers)) {
-        const indep = exportIssuers[ticker];
-        const inventory = issuer.inventory || [];
-        const actualNewlyIngested = inventory.filter((i) => i.disposition === 'INGESTED').length;
-        const actualAccounted = inventory.filter(
-          (i) => i.disposition === 'INGESTED' || i.disposition === 'ALREADY_ACCOUNTED',
-        ).length;
-        const actualGaps = issuer.gaps || [];
+    // Always compare present fields across all issuers (even when some fields are pending)
+    for (const [ticker, issuer] of Object.entries(issuers)) {
+      const indep = exportIssuers[ticker];
+      if (!indep) continue;
 
-        if (indep.accounted_count !== undefined && indep.accounted_count !== actualAccounted) {
-          discrepancies.push({
-            ticker,
-            field: 'accounted_count',
-            expected: indep.accounted_count,
-            actual: actualAccounted,
-            severity: 'ERROR',
-          });
-        }
+      const inventory = issuer.inventory || [];
+      const actualNewlyIngested = inventory.filter((i) => i.disposition === 'INGESTED').length;
+      const actualAccounted = inventory.filter(
+        (i) => i.disposition === 'INGESTED' || i.disposition === 'ALREADY_ACCOUNTED',
+      ).length;
+      const actualGaps = issuer.gaps || [];
 
-        if (indep.newly_ingested_count !== undefined && indep.newly_ingested_count !== actualNewlyIngested) {
-          discrepancies.push({
-            ticker,
-            field: 'newly_ingested_count',
-            expected: indep.newly_ingested_count,
-            actual: actualNewlyIngested,
-            severity: 'ERROR',
-          });
-        }
+      if (indep.accounted_count !== undefined && indep.accounted_count !== null && indep.accounted_count !== actualAccounted) {
+        discrepancies.push({
+          ticker,
+          field: 'accounted_count',
+          expected: indep.accounted_count,
+          actual: actualAccounted,
+          severity: 'ERROR',
+        });
+      }
 
-        if (indep.gaps && JSON.stringify(indep.gaps.sort()) !== JSON.stringify(actualGaps.sort())) {
+      if (indep.newly_ingested_count !== undefined && indep.newly_ingested_count !== null && indep.newly_ingested_count !== actualNewlyIngested) {
+        discrepancies.push({
+          ticker,
+          field: 'newly_ingested_count',
+          expected: indep.newly_ingested_count,
+          actual: actualNewlyIngested,
+          severity: 'ERROR',
+        });
+      }
+
+      if (indep.gaps !== undefined && indep.gaps !== null) {
+        const indepSorted = [...indep.gaps].sort();
+        const actualSorted = [...actualGaps].sort();
+        if (JSON.stringify(indepSorted) !== JSON.stringify(actualSorted)) {
           discrepancies.push({
             ticker,
             field: 'gaps',
@@ -900,25 +918,46 @@ export function validateWorkerReceiptFormat(
             severity: 'ERROR',
           });
         }
-
-        if (indep.accounted_through && issuer.accounted_through && indep.accounted_through !== issuer.accounted_through) {
-          discrepancies.push({
-            ticker,
-            field: 'accounted_through',
-            expected: indep.accounted_through,
-            actual: issuer.accounted_through,
-            severity: 'ERROR',
-          });
-        }
       }
 
-      if (discrepancies.length === 0) {
-        reconciliationStatus = 'RECONCILED';
-        reconciliationLabel = 'Imported — reconciled against independent export';
-      } else {
-        reconciliationStatus = 'RECONCILIATION_DISCREPANCY';
-        reconciliationLabel = 'Imported — reconciliation discrepancies detected';
+      if (
+        indep.accounted_through !== undefined &&
+        indep.accounted_through !== null &&
+        indep.accounted_through !== '' &&
+        issuer.accounted_through &&
+        indep.accounted_through !== issuer.accounted_through
+      ) {
+        discrepancies.push({
+          ticker,
+          field: 'accounted_through',
+          expected: indep.accounted_through,
+          actual: issuer.accounted_through,
+          severity: 'ERROR',
+        });
       }
+    }
+
+    if (bindingError || discrepancies.length > 0) {
+      reconciliationStatus = 'RECONCILIATION_DISCREPANCY';
+      reconciliationLabel = bindingError
+        ? 'Imported — export binding mismatch'
+        : 'Imported — reconciliation discrepancies detected';
+      if (pendingFields.length > 0) {
+        reconciliationReasons.push(
+          `Pending fields reported alongside discrepancies: ${pendingFields.map((p) => `${p.ticker}.${p.field}`).join(', ')}`,
+        );
+      }
+    } else if (pendingFields.length > 0) {
+      reconciliationStatus = 'RECONCILIATION_PENDING';
+      const detail =
+        missingInExport.length > 0
+          ? `missing issuers [${missingInExport.join(', ')}]`
+          : `issuers missing comparison fields [${issuersWithMissingFields.join(', ')}]`;
+      reconciliationLabel = `Imported — reconciliation pending (${detail})`;
+      reconciliationReasons.push(`Incomplete export: ${detail}`);
+    } else {
+      reconciliationStatus = 'RECONCILED';
+      reconciliationLabel = 'Imported — reconciled against independent export';
     }
   }
 
@@ -942,6 +981,7 @@ export function validateWorkerReceiptFormat(
     reconciliation_label: reconciliationLabel,
     reconciliation_reasons: reconciliationReasons,
     discrepancies,
+    pending_fields: pendingFields,
   };
 }
 

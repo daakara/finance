@@ -447,23 +447,301 @@ def test_local_closeout_records_discrepancy_details():
 
     stored_receipt = {
         "receipt_id": "rcpt-001",
+        "trial_id": DEFAULT_TRIAL_ID,
         "slot_id": "2026-11-30:SLOT_1:0915",
         "cohort_evidence": {
+            "trial_id": DEFAULT_TRIAL_ID,
+            "slot_id": "2026-11-30:SLOT_1:0915",
             "issuers": worker_issuers,
         },
     }
 
     independent_export = {
         "receipt_id": "rcpt-001",
+        "trial_id": DEFAULT_TRIAL_ID,
         "slot_id": "2026-11-30:SLOT_1:0915",
         "issuers": export_issuers,
     }
 
-    discrepancies = reconcile_and_compare_local(stored_receipt, independent_export)
-    assert len(discrepancies) == 1
-    d = discrepancies[0]
+    report = reconcile_and_compare_local(stored_receipt, independent_export)
+    assert report.status == "DISCREPANCY"
+    assert report.is_discrepancy is True
+    assert len(report.discrepancies) == 1
+    d = report.discrepancies[0]
     assert d["ticker"] == "NVDA"
     assert d["field"] == "accounted_count"
     assert d["expected"] == 2
     assert d["actual"] == 1
     assert d["severity"] == "ERROR"
+
+
+def test_compare_scenario_1_complete_match_reconciled():
+    """SCENARIO 1: RECONCILED only when both exports match on trial, receipt, and dated slot, and all 10 issuers have complete, matching comparison fields."""
+    worker_issuers = {}
+    export_issuers = {}
+
+    for ticker, cik in COHORT_CIKS.items():
+        inv = [{"disposition": "INGESTED", "accession": "acc-1"}] if ticker == "NVDA" else []
+        worker_issuers[ticker] = {
+            "ticker": ticker,
+            "cik": cik,
+            "inventory": inv,
+            "gaps": [],
+            "accounted_through": "2026-11-30T14:20:00Z",
+        }
+        export_issuers[ticker] = {
+            "ticker": ticker,
+            "cik": cik,
+            "accounted_count": 1 if ticker == "NVDA" else 0,
+            "newly_ingested_count": 1 if ticker == "NVDA" else 0,
+            "gaps": [],
+            "accounted_through": "2026-11-30T14:20:00Z",
+        }
+
+    stored_receipt = {
+        "receipt_id": "rcpt-complete-match",
+        "trial_id": DEFAULT_TRIAL_ID,
+        "slot_id": "2026-11-30:SLOT_1:0915",
+        "cohort_evidence": {
+            "trial_id": DEFAULT_TRIAL_ID,
+            "slot_id": "2026-11-30:SLOT_1:0915",
+            "issuers": worker_issuers,
+        },
+    }
+
+    independent_export = {
+        "receipt_id": "rcpt-complete-match",
+        "trial_id": DEFAULT_TRIAL_ID,
+        "slot_id": "2026-11-30:SLOT_1:0915",
+        "issuers": export_issuers,
+    }
+
+    report = reconcile_and_compare_local(stored_receipt, independent_export)
+    assert report.status == "RECONCILED"
+    assert report.is_reconciled is True
+    assert len(report.discrepancies) == 0
+    assert len(report.pending_fields) == 0
+    cli_output = report.format_cli_output()
+    assert "RECONCILED: All 10 cohort issuer rows match" in cli_output
+    assert "Zero discrepancies detected" in cli_output
+
+
+def test_compare_scenario_2_missing_or_null_evidence_pending():
+    """SCENARIO 2: PENDING when a required issuer or comparison field is missing or null. Prints affected issuer and field."""
+    worker_issuers = {}
+    export_issuers = {}
+
+    for ticker, cik in COHORT_CIKS.items():
+        worker_issuers[ticker] = {
+            "ticker": ticker,
+            "cik": cik,
+            "inventory": [],
+            "gaps": [],
+            "accounted_through": "2026-11-30T14:20:00Z",
+        }
+        if ticker == "META":
+            # META has null / missing accounted_count and gaps
+            export_issuers[ticker] = {
+                "ticker": ticker,
+                "cik": cik,
+                "accounted_count": None,
+                "newly_ingested_count": 0,
+                "gaps": None,
+                "accounted_through": "2026-11-30T14:20:00Z",
+            }
+        elif ticker == "TSLA":
+            # TSLA missing entirely from export_issuers
+            continue
+        else:
+            export_issuers[ticker] = {
+                "ticker": ticker,
+                "cik": cik,
+                "accounted_count": 0,
+                "newly_ingested_count": 0,
+                "gaps": [],
+                "accounted_through": "2026-11-30T14:20:00Z",
+            }
+
+    stored_receipt = {
+        "receipt_id": "rcpt-pending-test",
+        "trial_id": DEFAULT_TRIAL_ID,
+        "slot_id": "2026-11-30:SLOT_1:0915",
+        "cohort_evidence": {
+            "trial_id": DEFAULT_TRIAL_ID,
+            "slot_id": "2026-11-30:SLOT_1:0915",
+            "issuers": worker_issuers,
+        },
+    }
+
+    independent_export = {
+        "receipt_id": "rcpt-pending-test",
+        "trial_id": DEFAULT_TRIAL_ID,
+        "slot_id": "2026-11-30:SLOT_1:0915",
+        "issuers": export_issuers,
+    }
+
+    report = reconcile_and_compare_local(stored_receipt, independent_export)
+    assert report.status == "PENDING"
+    assert report.is_pending is True
+    assert len(report.discrepancies) == 0
+    assert len(report.pending_fields) > 0
+
+    cli_output = report.format_cli_output()
+    assert "PENDING: Reconciliation cannot be established" in cli_output
+    assert "[META] field 'accounted_count' is pending / null" in cli_output
+    assert "[META] field 'gaps' is pending / null" in cli_output
+    assert "[TSLA] field 'accounted_count' is pending / null" in cli_output
+
+
+def test_compare_scenario_3_mismatched_binding_discrepancy():
+    """SCENARIO 3: DISCREPANCY when export identities differ (slot_id, receipt_id, or trial_id). Prints field, expected, and actual."""
+    worker_issuers = {ticker: {"ticker": ticker, "inventory": [], "gaps": [], "accounted_through": "2026-11-30T14:20:00Z"} for ticker in COHORT_CIKS}
+    export_issuers = {ticker: {"ticker": ticker, "accounted_count": 0, "newly_ingested_count": 0, "gaps": [], "accounted_through": "2026-11-30T14:20:00Z"} for ticker in COHORT_CIKS}
+
+    stored_receipt = {
+        "receipt_id": "rcpt-slot-1",
+        "trial_id": DEFAULT_TRIAL_ID,
+        "slot_id": "2026-11-30:SLOT_1:0915",
+        "cohort_evidence": {
+            "trial_id": DEFAULT_TRIAL_ID,
+            "slot_id": "2026-11-30:SLOT_1:0915",
+            "issuers": worker_issuers,
+        },
+    }
+
+    # Export declared with wrong slot_id
+    independent_export = {
+        "receipt_id": "rcpt-slot-1",
+        "trial_id": DEFAULT_TRIAL_ID,
+        "slot_id": "2026-11-30:SLOT_2:1300",
+        "issuers": export_issuers,
+    }
+
+    report = reconcile_and_compare_local(stored_receipt, independent_export)
+    assert report.status == "DISCREPANCY"
+    assert report.is_discrepancy is True
+    assert len(report.binding_errors) == 1
+    err = report.binding_errors[0]
+    assert err["field"] == "slot_id"
+    assert err["expected"] == "2026-11-30:SLOT_2:1300"
+    assert err["actual"] == "2026-11-30:SLOT_1:0915"
+
+    cli_output = report.format_cli_output()
+    assert "DISCREPANCY: Export identities differ" in cli_output
+    assert "field 'slot_id': expected '2026-11-30:SLOT_2:1300', actual '2026-11-30:SLOT_1:0915'" in cli_output
+
+
+def test_compare_scenario_4_known_discrepancy_alongside_pending_evidence():
+    """SCENARIO 4: DISCREPANCY when a known value disagrees, and reports pending fields alongside discrepancies when both occur."""
+    worker_issuers = {}
+    export_issuers = {}
+
+    for ticker, cik in COHORT_CIKS.items():
+        inv = [{"disposition": "INGESTED", "accession": "acc-1"}] if ticker == "NVDA" else []
+        worker_issuers[ticker] = {
+            "ticker": ticker,
+            "cik": cik,
+            "inventory": inv,
+            "gaps": [],
+            "accounted_through": "2026-11-30T14:20:00Z",
+        }
+
+        if ticker == "NVDA":
+            # Discrepancy on NVDA: expected accounted_count = 5 vs actual 1
+            export_issuers[ticker] = {
+                "ticker": ticker,
+                "cik": cik,
+                "accounted_count": 5,
+                "newly_ingested_count": 1,
+                "gaps": [],
+                "accounted_through": "2026-11-30T14:20:00Z",
+            }
+        elif ticker == "META":
+            # Pending on META: accounted_count is None
+            export_issuers[ticker] = {
+                "ticker": ticker,
+                "cik": cik,
+                "accounted_count": None,
+                "newly_ingested_count": 0,
+                "gaps": [],
+                "accounted_through": "2026-11-30T14:20:00Z",
+            }
+        else:
+            export_issuers[ticker] = {
+                "ticker": ticker,
+                "cik": cik,
+                "accounted_count": 0,
+                "newly_ingested_count": 0,
+                "gaps": [],
+                "accounted_through": "2026-11-30T14:20:00Z",
+            }
+
+    stored_receipt = {
+        "receipt_id": "rcpt-hybrid-test",
+        "trial_id": DEFAULT_TRIAL_ID,
+        "slot_id": "2026-11-30:SLOT_1:0915",
+        "cohort_evidence": {
+            "trial_id": DEFAULT_TRIAL_ID,
+            "slot_id": "2026-11-30:SLOT_1:0915",
+            "issuers": worker_issuers,
+        },
+    }
+
+    independent_export = {
+        "receipt_id": "rcpt-hybrid-test",
+        "trial_id": DEFAULT_TRIAL_ID,
+        "slot_id": "2026-11-30:SLOT_1:0915",
+        "issuers": export_issuers,
+    }
+
+    report = reconcile_and_compare_local(stored_receipt, independent_export)
+    assert report.status == "DISCREPANCY"
+    assert report.is_discrepancy is True
+    assert len(report.discrepancies) == 1
+    assert len(report.pending_fields) == 1
+
+    cli_output = report.format_cli_output()
+    assert "DISCREPANCY: Export identities differ or known values disagree" in cli_output
+    assert "[NVDA] field 'accounted_count': expected 5, actual 1" in cli_output
+    assert "Pending Fields Reported Alongside Discrepancies" in cli_output
+    assert "[META] field 'accounted_count' is pending / null" in cli_output
+
+
+def test_rehearsal_export_cli_and_preview_parity():
+    """Verify that export -> CLI comparison -> local preview produces identical RECONCILED results."""
+    from scripts.export_pilot_receipt_and_reconciliation import main as cli_main
+    import sys
+
+    db = MockEvidenceDb()
+    setup_worker_shaped_slot_1(db)
+    cur = db.get_cursor()
+
+    slot_id = "2026-11-30:SLOT_1:0915"
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        stored_receipt, independent_export = export_slot_evidence(
+            dsn_or_cur=cur,
+            slot_id=slot_id,
+            output_dir=tmpdir,
+            trial_id=DEFAULT_TRIAL_ID,
+        )
+
+        slot_slug = slot_id.replace(":", "_").replace("-", "")
+        receipt_file = os.path.join(tmpdir, f"receipt_{slot_slug}.json")
+        indep_file = os.path.join(tmpdir, f"independent_reconciliation_{slot_slug}.json")
+
+        # 1. Test CLI comparison via Python API
+        report = reconcile_and_compare_local(stored_receipt, independent_export)
+        assert report.status == "RECONCILED"
+        assert report.is_reconciled is True
+        assert len(report.discrepancies) == 0
+        assert len(report.pending_fields) == 0
+
+        # 2. Test CLI execution via main()
+        old_argv = sys.argv
+        sys.argv = ["export_pilot_receipt_and_reconciliation.py", "--compare", "--receipt-file", receipt_file, "--export-file", indep_file]
+        try:
+            exit_code = cli_main()
+            assert exit_code == 0
+        finally:
+            sys.argv = old_argv
