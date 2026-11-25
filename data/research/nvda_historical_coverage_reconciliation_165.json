@@ -795,6 +795,96 @@
     },
     "remaining_gaps": [],
     "certification_distinction": "Assessment completion establishes the mathematical reconciliation of known retained records; operational certification requires unbroken authoritative catalog coverage spanning the entire interval to certify zero missing filings.",
+    "validator_assumptions_and_epistemic_bounds": {
+      "cutoff_timing_non_equivalence": "Acquisition timestamp (2026-11-25T09:21:36Z) post-dating the interval cutoff (2026-11-25T00:00:00Z) provides strong empirical point-in-time evidence but is NOT equated with an unconditional guarantee of absolute index completeness.",
+      "source_freshness_and_dissemination_assumptions": [
+        "SEC EDGAR operating hours accept filings until 22:00 Eastern Time (03:00 UTC). Assessment interval closed at 2026-11-25T00:00:00Z (19:00 ET on Nov 24).",
+        "Filings accepted between 17:30 and 22:00 ET on Nov 24 disseminate the same evening; retrieval occurred at 04:21 ET (09:21 UTC) on Nov 25 (>6 hours post-operating close), allowing normal dissemination windows to settle.",
+        "Assumes standard SEC EDGAR index publication pipeline without upstream silent indexing stalls."
+      ],
+      "scope_bounds": "Strictly applies to Form 4 and Form 4/A for CIK 0001045810 within [2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z). No claim of global, permanent, or uncertified completeness is made."
+    },
+    "distinct_conclusions": {
+      "acquisition": {
+        "status": "COMPLETED",
+        "authorization_id": "AUTH-NVDA-DIAG-20261125-001",
+        "token_status": "DURABLY_CONSUMED_ON_DISK",
+        "re_invocation_protection": "FAILS_CLOSED_WITHOUT_EGRESS",
+        "http_status": 200,
+        "byte_count": 160578,
+        "sha256": "7c07b0a81346ce337884f26d353cd752ad7db6b380e980f73f7c60297a51ad63"
+      },
+      "nvda_defined_interval_reconciliation": {
+        "interval": "[2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z)",
+        "status": "SUPPORTED_TO_EXTENT_VALIDATED",
+        "in_window_filings_count": 16,
+        "total_retained_filings_count": 17,
+        "total_retained_filings_breakdown": "16 in-window (15 baseline + 1 forward addition 0001696841-26-000016) + 1 pre-window baseline exit notice 0001347842-26-000015",
+        "stored_raw_transactions_count": 48,
+        "net_effective_transactions_count": 47,
+        "net_effective_transactions_breakdown": "35 baseline effective (after Form 4/A 0002152188-26-000007 superseding grant share count) + 12 forward effective (Teter 0001696841-26-000016)",
+        "missing_accessions_count": 0,
+        "unindexed_filings_in_post_nov19_gap": 0
+      },
+      "production_coverage_status": {
+        "status": "PARTIAL_UNCERTIFIED",
+        "change_applied": "NONE_UNCHANGED",
+        "operational_certification_granted": false
+      },
+      "aapl_and_governed_issuers_coverage": {
+        "aapl_coverage_status": "SEPARATELY_ASSESSED_UNCHANGED",
+        "aapl_stored_filings": 6,
+        "aapl_stored_transactions": 18,
+        "aapl_post_trial_submissions_catalog": "NOT_CHECKED",
+        "factor_scoring_readiness": "NOT_CHECKED_HELD",
+        "snapshot_publication_readiness": "NOT_CHECKED_HELD"
+      },
+      "production_state_assertions": {
+        "freshly_verified": [
+          "Local submissions catalog bytes (160,578 bytes, SHA-256 7c07b0a81346ce337884f26d353cd752ad7db6b380e980f73f7c60297a51ad63)",
+          "Persistent receipt hash (3,150 bytes, SHA-256 e975e13a92a57b7bfdd3a9c2de56108506dbd15613bf3ba5bce4eea4c184d83e)",
+          "On-disk authorization claim consumption (AUTH-NVDA-DIAG-20261125-001.claim)",
+          "Zero unindexed Form 4/4-A filings in [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)"
+        ],
+        "intended_unchanged_boundaries": [
+          "Production database writes performed: 0",
+          "Worker activation: false (deauthorized, STANDBY)",
+          "Active snapshot pointer: SNAP_SM_1792939989_48f30db6",
+          "Operational holds active: HOLD_SEC_001, HOLD_SCAN_001, HOLD_EXEC_001, PHASE_3_HOLD, ARX_CONFLUENCE_INTEGRITY_HOLD"
+        ]
+      }
+    },
+    "issue_165_acceptance_criteria_and_subtask_closure": {
+      "issue_status": "CLOSED",
+      "closure_summary": "All Issue #165 subtasks satisfied; multi-issuer expansion and operational certification explicitly transferred to linked open workstreams.",
+      "subtasks": {
+        "subtask_1_trial_monitoring_and_post_expiry_shutdown": {
+          "status": "SATISFIED_AND_CLOSED",
+          "details": "Railway worker deauthorized (ARX_CONTINUOUS_INGESTION_AUTHORIZED=false, ARX_SEC_EGRESS_ROLE=DISABLED), 0 locks, 0 active queue rows, 12 slots reconciled."
+        },
+        "subtask_2_nvda_historical_coverage_gap_identification": {
+          "status": "SATISFIED_AND_CLOSED",
+          "details": "Identified post-Nov 19 submissions index gap [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z) resulting from natural trial non-retention."
+        },
+        "subtask_3_bounded_diagnostic_acquisition_preparation": {
+          "status": "SATISFIED_AND_CLOSED",
+          "details": "Authored acquire_nvda_submissions_diagnostic.py with atomic disk claim, 1 GET max, 0 retries, 0 redirects, and 17 offline test cases passing."
+        },
+        "subtask_4_diagnostic_execution_and_catalog_custody": {
+          "status": "SATISFIED_AND_CLOSED",
+          "details": "Executed under AUTH-NVDA-DIAG-20261125-001; exact raw bytes (160,578 bytes, SHA-256 7c07b0a8...) retained in data/sec_coverage_evidence/CIK0001045810/."
+        },
+        "subtask_5_nvda_historical_coverage_reconciliation": {
+          "status": "SATISFIED_AND_CLOSED",
+          "details": "Reconciled all 16 in-window Form 4/4-A filings (15 baseline + 1 forward), 48 raw transactions, and 47 effective transactions across [2026-08-26, 2026-11-25)."
+        }
+      },
+      "transferred_open_work": {
+        "multi_issuer_expansion_aapl_and_cohort": "Governed by PR #317 (codex/sec-expansion-preparation) and ARX_SEC_10_ISSUER_INGESTION_PREPARATION_2026_11_21.md.",
+        "operational_certification_and_factor_scoring_activation": "Governed by Phase 3 governance unblocking under HOLD_SEC_001 and ARX_CONFLUENCE_INTEGRITY_HOLD.",
+        "market_opportunity_radar_live_scanning": "Governed by TASK-OPEN-02 (Issue #166)."
+      }
+    },
     "governance_boundaries": {
       "verification_status": "INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC",
       "boundary_notes": "Diagnostic acquisition executes in isolated process with zero database egress; production snapshot and hold enforcement are intended governance boundaries preserved by contract and not independently verified against live production state in this offline run. Fixture tests do not establish live production state.",

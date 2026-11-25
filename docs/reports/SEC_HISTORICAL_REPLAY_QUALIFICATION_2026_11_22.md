@@ -554,21 +554,49 @@ Under authorized directive `AUTH-NVDA-DIAG-20261125-001`, a single diagnostic HT
      - Unindexed Form 4/4-A filings in `[2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)`: **0** (the only filing in the post-Nov 19 window is `0001696841-26-000016`, alongside an unrelated Form 8-K `0001045810-26-000090`).
   6. **Downstream Isolation:** Zero Form 4 XML secondary downloads attempted; zero database writes performed; worker remained deauthorized.
 
+#### 7.6.1 Validator Coverage & Source-Freshness Assumptions:
+1. **Timing After Cutoff Non-Equivalence Principle:** Acquisition timestamp (`2026-11-25T09:21:36Z`) post-dating the interval cutoff (`2026-11-25T00:00:00Z`) provides strong empirical point-in-time evidence, but is **NOT equated with an unconditional guarantee of absolute index completeness**.
+2. **EDGAR Dissemination & Operating Hours Latency:** SEC EDGAR operating hours accept filings until 22:00 Eastern Time (03:00 UTC). The assessment interval closed at `2026-11-25T00:00:00Z` (19:00 ET on Nov 24). Filings submitted between 17:30 and 22:00 ET on Nov 24 disseminate the same evening. Acquisition at 04:21 ET (09:21 UTC) on Nov 25 (>6 hours post-operating close) allows standard dissemination pipelines to settle, but assumes no anomalous upstream EDGAR index publication stalls.
+3. **Form-Type Scope Limitation:** Validation is strictly bounded to Form 4 and Form 4/A filings for CIK `0001045810` (NVDA) within the closed assessment window `[2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z)`.
+4. **Non-Generalization:** **No claim of global, permanent, or uncertified completeness** is made for filings outside this interval, other issuers, or other form types.
+
 ---
 
 ### 7.7 Deliverable & Operational Verdict
 
 $$\boxed{\mathbf{VERDICT:\ ACQUIRED\_AND\_RECONCILED}}$$
 
-#### Operational Findings & Reconciliation Conclusion:
-1. **Catalog Evidence Acquired:** Bounded diagnostic acquisition under `AUTH-NVDA-DIAG-20261125-001` successfully retrieved and verified the authoritative SEC EDGAR catalog bytes covering the assessment interval `[2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z)`.
-2. **Coverage Gap Fully Resolved:** The post-Nov 19 gap is authoritatively proven to contain zero missing or unindexed Form 4/4-A filings. The 16 accounted filings completely represent all Section 16 insider transactions for NVIDIA Corp across the entire 91-day window.
-3. **Assessment Completion Status:** Mathematical, transaction, and cryptographic reconciliation is 100% complete across all 17 NVDA filings (16 baseline + 1 forward), 48 raw transactions, and 47 effective transactions.
+#### Distinct Conclusions:
+1. **Acquisition:** Completed. Authorization token `AUTH-NVDA-DIAG-20261125-001` is durably consumed on disk; re-invocation fails closed without wire egress.
+2. **NVDA Defined-Interval Reconciliation:** Supported only to the extent validated by the retained catalog bytes and existing filing fixtures:
+   - **In-Window Filings:** Exactly **16 filings** in `[2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z)` (15 baseline + 1 forward addition `0001696841-26-000016`).
+   - **Total Retained Filings:** Exactly **17 filings** (16 in-window + 1 pre-window baseline exit notice `0001347842-26-000015`, Ajay K. Puri, filed `2026-08-24`, 0 transactions).
+   - **Stored Raw Transactions:** Exactly **48 rows** (36 baseline + 12 forward).
+   - **Net Effective Transactions:** Exactly **47 transactions** (35 baseline effective after Form 4/A `0002152188-26-000007` share correction + 12 forward effective).
+   - **Coverage Gap Status:** Closed for the defined interval; 0 missing accessions, 0 unindexed Form 4/4-A filings in `[2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)`.
+3. **Production Coverage Status:** **`PARTIAL_UNCERTIFIED`** (strictly unchanged; no operational certification or automated factor scoring activation applied).
+4. **AAPL Coverage & Governance Readiness:**
+   - **AAPL Submissions Coverage:** **`NOT_CHECKED`** (AAPL CIK `0000320193` was not queried in this diagnostic; existing database holds 6 filings / 18 transactions).
+   - **Factor Scoring & Snapshot Publishing Readiness:** **`NOT_CHECKED / HELD`** under `HOLD_SEC_001` and radar fail-closed policies.
+5. **Production-State Assertions Distinction:**
+   - *Freshly Verified:* Local submissions catalog bytes (160,578 bytes, SHA-256 `7c07b0a8...`), receipt hash (SHA-256 `e975e13a...`), atomic disk claim consumption, and offline accession reconciliation.
+   - *Intended Unchanged Boundaries:* Production database writes (0), worker state (deauthorized, STANDBY), active snapshot pointer (`SNAP_SM_1792939989_48f30db6`), and all operational holds (`HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD`).
 
-#### Preserved Production State (Intended Governance Boundaries):
-- **Verification Status:** `INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC` (Offline/fixture tests do not alter live production state).
-- **Active Snapshot:** `SNAP_SM_1792939989_48f30db6` (unmodified intended pointer).
-- **Analytical Baseline:** 16 filings / 36 raw transactions / 35 effective transactions (strictly immutable).
-- **Production Coverage Status:** **`PARTIAL_UNCERTIFIED`** (strictly preserved; no automated operational promotion applied).
-- **Operational Holds:** `HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD` (all strictly active intended boundaries).
-- **Production Side Effects:** Exactly 0 database writes, 0 worker activations, 0 schedule renewals, 0 live executions.
+---
+
+### 7.8 Issue #165 Subtask Closure Review & Transferred Workstreams
+
+| Issue #165 Subtask | Scope & Description | Status | Disposition & Evidence |
+| :--- | :--- | :---: | :--- |
+| **Subtask 1** | Trial Execution, Passive Monitoring & Post-Expiry Shutdown | **CLOSED** | Continuous ingestion deauthorized (`ARX_CONTINUOUS_INGESTION_AUTHORIZED=false`), role `DISABLED`, 0 locks, 0 active queue rows. All 12 slots reconciled across Nov 20, 23, and 24. |
+| **Subtask 2** | NVDA Historical Coverage Gap Identification | **CLOSED** | Retained catalog terminus (`2026-11-19T21:45:59Z`) identified and catalog non-retention by trial worker documented. |
+| **Subtask 3** | Bounded Diagnostic Acquisition Script Preparation | **CLOSED** | `scripts/acquire_nvda_submissions_diagnostic.py` implemented with atomic disk claim, single GET ceiling, 0 retries, 0 redirects, and 17 offline test cases passing. |
+| **Subtask 4** | Authorized Diagnostic Execution & Evidence Retention | **CLOSED** | Executed under `AUTH-NVDA-DIAG-20261125-001`. Raw bytes (160,578 B, SHA-256 `7c07b0a8...`) and receipt retained in `data/sec_coverage_evidence/CIK0001045810/`. |
+| **Subtask 5** | Defined-Interval NVDA Coverage Reconciliation | **CLOSED** | 16 in-window filings, 48 raw transactions, and 47 effective transactions reconciled across `[2026-08-26, 2026-11-25)`. |
+
+$$\boxed{\mathbf{ISSUE\ \#165:\ SATISFIED\ \&\ CLOSED}}$$
+
+#### Transferred Open Workstreams:
+- **Multi-Issuer Expansion (AAPL & 10-Issuer Cohort):** Transferred to **PR #317** (`codex/sec-expansion-preparation`) and `docs/planning/ARX_SEC_10_ISSUER_INGESTION_PREPARATION_2026_11_21.md`.
+- **Operational Certification & Scoring Activation:** Transferred to Phase 3 governance unblocking under `HOLD_SEC_001` and `ARX_CONFLUENCE_INTEGRITY_HOLD`.
+- **Market Opportunity Radar Live Scanning:** Governed by `TASK-OPEN-02` (Issue #166).
