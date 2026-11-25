@@ -401,11 +401,11 @@ To ensure absolute audit clarity and preserve evidence provenance, four reportin
 
 1. **Gate 1 Closeout Terminology Reconciliation:**
    - **Trial Rate Ceiling:** Recorded strictly as **<= 5 requests/sec** (enforced by application software `RateLimiter(max_per_second=5.0)`).
-   - **Historical Rate Telemetry Status:** Peak <= 1 req/sec is formally withdrawn because container logs record slot-level batch execution bounds rather than microsecond-level HTTP transmission emissions. Per-request transmission rate telemetry is marked **`NOT_CHECKED`**, with compliance verified via software limiter controls.
-   - **Duration Terminology Correction:** "SQL Lease Duration" is renamed to **"Run-request duration"** (`completed_at - claimed_at` in `sm_run_requests`), reflecting the database transaction lease from task claim to completion commit.
+   - **Historical Rate Telemetry Status:** Peak <= 1 req/sec is formally withdrawn because container logs record slot-level batch execution bounds rather than microsecond-level HTTP transmission emissions. Per-request transmission rate telemetry is marked **`NOT_CHECKED`**. Offline limiter verification confirms that the application software RateLimiter(max_per_second=5.0) enforces <= 5.0 req/s pacing in code, but historical wire-rate compliance was unobserved in production container telemetry.
+   - **Duration Terminology Correction:** "SQL Lease Duration" is renamed to **"Run-request duration"** (`completed_at - claimed_at` in `sm_run_requests`), reflecting the total task execution duration recorded by PostgreSQL timestamps, not a database transaction lease or row lock holding period.
    - **Decoupled Duration Metric Sources:**
-     - *Run-request duration (`sm_run_requests`):* Ranged from 3.021s to 4.641s (mean 3.816s across all 12 slots).
-     - *Container log cycle duration (Railway stdout):* Measured from worker process log start to completion (e.g. Day 2 Slot 1: 6.342s from `14:36:26.278Z` to `14:36:32.620Z`).
+     - *Run-request duration (`sm_run_requests`):* Total task execution duration recorded by PostgreSQL (`completed_at - claimed_at`), ranging from 3.021s to 4.641s (mean: 3.816s across all 12 slots), distinct from a database transaction lease.
+     - *Container log cycle duration (Railway stdout):* Measured from worker process log start to completion: **6.342s (2026-11-23T14:36:29.286Z → 2026-11-23T14:36:35.628Z)**.
      - *Audit event cycle duration (`sm_audit_events`):* Measured from worker dispatch initiation to final audit emission commit (e.g. Day 2 Slot 1: 6.471s).
    - **Historical Day 1 Latency Breaches Retained:** Slots 2, 3, and 4 on November 20 (70.107s, 76.095s, 77.033s against the <= 60.0s ceiling) are permanently retained. Root cause: synchronous Step 10 backup retention sweeps checking 55+ legacy manifests sequentially over WAN (remediated in PR #315; Days 2 & 3 all passed sub-10s).
 2. **Catalog Completeness Technical Standard Reconciled:**
@@ -551,7 +551,7 @@ $$\boxed{\mathbf{VERDICT:\ ACQUISITION\_AUTHORIZATION\_REQUIRED}}$$
 
 #### Exact Execution Prompt:
 ```bash
-GET https://data.sec.gov/submissions/CIK0001045810.json --max-requests 1 --no-retry --no-redirect --user-agent 'ARXTerminal Research Akara.david26@gmail.com' --rate-limit-per-sec 5.0 --output-raw-storage 'data/research/sourced_fundamentals/raw/CIK0001045810/submissions_20261125.json' --record-sha256 --no-xml-egress --no-db-write
+python3 scripts/acquire_nvda_submissions_diagnostic.py --user-agent "ARXTerminal Research Akara.david26@gmail.com" --output-dir "data/sec_coverage_evidence/CIK0001045810"
 ```
 
 #### Exact Gaps Preventing a Definitive Verdict:

@@ -773,7 +773,7 @@
     "production_coverage_verdict": "PARTIAL_UNCERTIFIED",
     "operational_verdict": "ACQUISITION_AUTHORIZATION_REQUIRED",
     "verdict_rationale": "Production coverage remains PARTIAL_UNCERTIFIED across assessment interval [2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z). While the retained catalog authoritatively validates zero unindexed Form 4 filings for the closed window [2026-08-26, 2026-11-19T21:45:59Z] based on schema and coverage rules, a coverage gap exists for [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z). The trial worker ingested 0001696841-26-000016 without retaining submissions catalog response bytes. An affirmative diagnostic acquisition of CIK0001045810.json is required to close the gap.",
-    "execution_prompt": "GET https://data.sec.gov/submissions/CIK0001045810.json --max-requests 1 --no-retry --no-redirect --user-agent 'ARXTerminal Research Akara.david26@gmail.com' --rate-limit-per-sec 5.0 --output-raw-storage 'data/research/sourced_fundamentals/raw/CIK0001045810/submissions_20261125.json' --record-sha256 --no-xml-egress --no-db-write",
+    "execution_prompt": "python3 scripts/acquire_nvda_submissions_diagnostic.py --user-agent \"ARXTerminal Research Akara.david26@gmail.com\" --output-dir \"data/sec_coverage_evidence/CIK0001045810\"",
     "remaining_gaps": [
       "Post-Nov 19 submissions index coverage gap: [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)",
       "Absence of durable submissions catalog response bytes from trial Slot 4 execution"
@@ -796,21 +796,22 @@
     "trial_rate_ceiling": "<= 5 requests/sec",
     "rate_limiter_implementation": "RateLimiter(max_per_second=5.0)",
     "historical_rate_telemetry_status": "NOT_CHECKED",
-    "historical_rate_explanation": "Peak <= 1 req/sec is formally withdrawn because container logs record slot-level batch bounds, not microsecond-level network emissions for individual HTTP transmissions. Per-request transmission rate telemetry is therefore recorded as NOT_CHECKED, with compliance enforced by the software RateLimiter(max_per_second=5.0).",
+    "historical_rate_explanation": "Historical wire-rate telemetry is marked NOT_CHECKED because production container stdout recorded slot-level batch execution bounds, not microsecond-level network emissions for individual HTTP transmissions. Offline limiter verification confirms that the RateLimiter(max_per_second=5.0) implementation enforces <= 5.0 req/s pacing in code, but historical wire-rate compliance was unobserved in production container telemetry.",
     "duration_terminology_correction": {
       "previous_term": "SQL Lease Duration",
       "corrected_term": "Run-request duration",
-      "definition": "Database-side transaction lease duration from task claim to completion commit (completed_at - claimed_at in sm_run_requests)"
+      "definition": "Run-request duration: total task execution duration recorded by PostgreSQL timestamps (completed_at - claimed_at in sm_run_requests), distinct from a database transaction lease or row lock holding period."
     },
     "duration_metric_sources_and_reconciliation": {
       "run_request_duration": {
         "source": "PostgreSQL sm_run_requests (completed_at - claimed_at)",
+        "description": "Run-request duration representing task execution interval, not a database transaction lease",
         "range_seconds": "3.021s to 4.641s",
         "mean_seconds": 3.816
       },
       "container_log_cycle_duration": {
         "source": "Railway worker stdout timestamps (dispatch initiation to slot completion log)",
-        "example_d2_s1": "6.342s (14:36:26.278Z to 14:36:32.620Z)"
+        "example_d2_s1": "6.342s (2026-11-23T14:36:29.286Z \u2192 2026-11-23T14:36:35.628Z)"
       },
       "audit_event_cycle_duration": {
         "source": "PostgreSQL sm_audit_events payload cycle_duration_seconds",
@@ -836,7 +837,12 @@
         "ceiling_sec": 60.0,
         "root_cause": "Synchronous Step 10 backup retention sweeps checking 55+ legacy manifests sequentially over WAN"
       }
-    ]
+    ],
+    "container_log_boundaries": {
+      "day2_slot1_window": "2026-11-23T14:36:29.286Z \u2192 2026-11-23T14:36:35.628Z",
+      "duration_seconds": 6.342,
+      "source": "Railway container process stdout log timestamps"
+    }
   },
   "gate_2_teardown_and_coverage_gap": {
     "current_teardown_verification": {
@@ -887,7 +893,8 @@
       "downstream_restrictions": "Zero Form 4/4-A XML downloads, zero filing parsing, zero database ingestion",
       "scoring_and_publishing_restrictions": "Coverage flag remains PARTIAL_UNCERTIFIED; zero snapshot publishing, zero factor scoring activation"
     },
-    "execution_prompt": "GET https://data.sec.gov/submissions/CIK0001045810.json --max-requests 1 --no-retry --no-redirect --user-agent 'ARXTerminal Research Akara.david26@gmail.com' --rate-limit-per-sec 5.0 --output-raw-storage 'data/research/sourced_fundamentals/raw/CIK0001045810/submissions_20261125.json' --record-sha256 --no-xml-egress --no-db-write"
+    "execution_prompt": "python3 scripts/acquire_nvda_submissions_diagnostic.py --user-agent \"ARXTerminal Research Akara.david26@gmail.com\" --output-dir \"data/sec_coverage_evidence/CIK0001045810\"",
+    "execution_script": "scripts/acquire_nvda_submissions_diagnostic.py"
   },
   "gate_4_offline_reconciliation_summary": {
     "assessment_interval": "[2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z)",
