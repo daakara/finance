@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
+  "release_candidate_commit": "1ae7eaa766e66debf691f38b7075b1fb7c63da73",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
   "total_files": 68,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -535,18 +535,18 @@
     },
     "frontend/lib/tradeMarkers.ts": {
       "operation": "A",
-      "sha256": "bf5368aa60d8096d5b166b9a592d53ac1a55de53faa2004a4c2799cb0b4210ba",
-      "size_bytes": 25908,
+      "sha256": "5e2f242f61a7712c584c6277d45f306e917c2565a23c70d3dd380a95985595b0",
+      "size_bytes": 26437,
       "originating_pr_number": 328,
-      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
+      "originating_commit": "1ae7eaa766e66debf691f38b7075b1fb7c63da73",
       "governing_requirement": "PR #328: canonical Form 4 transaction classifier, open-market evidence guard, date provenance, and marker grouping"
     },
     "frontend/components/__tests__/MobileChartAndPreflightEvidenceTruth.test.tsx": {
       "operation": "A",
-      "sha256": "01a13de85c098290fb5d27c326a4b3513a656d8e01e3f09bbd9f83e73c29ded3",
-      "size_bytes": 15095,
+      "sha256": "52b1e36a5c5b6476080d431d4695bcdb93183c8eb903c4b3370728b4c08094c3",
+      "size_bytes": 24810,
       "originating_pr_number": 328,
-      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
+      "originating_commit": "1ae7eaa766e66debf691f38b7075b1fb7c63da73",
       "governing_requirement": "PR #328: focused behavioral regression suite for Form 4 labels, mobile chart readability, and preflight accounting"
     }
   },
