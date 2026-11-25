@@ -715,6 +715,56 @@ describe('Form4PilotEvidencePreview Component & Worker Receipt Validation', () =
       expect(screen.getByText(/Pending Fields Reported Alongside Discrepancies:/i)).toBeDefined();
       expect(screen.getAllByText(/META/i).length).toBeGreaterThan(0);
     });
+
+    it('verifies walkthrough rehearsal with worker-shaped offline files across all 3 scenarios', () => {
+      const fs = require('fs');
+      const path = require('path');
+
+      const fixtureDir = path.resolve(__dirname, '../../../rehearsal_fixtures');
+      const receiptA = fs.readFileSync(path.join(fixtureDir, 'scenario_a_receipt.json'), 'utf-8');
+      const exportA = fs.readFileSync(path.join(fixtureDir, 'scenario_a_export.json'), 'utf-8');
+      const receiptB = fs.readFileSync(path.join(fixtureDir, 'scenario_b_receipt.json'), 'utf-8');
+      const exportB = fs.readFileSync(path.join(fixtureDir, 'scenario_b_export.json'), 'utf-8');
+      const receiptC = fs.readFileSync(path.join(fixtureDir, 'scenario_c_receipt.json'), 'utf-8');
+      const exportC = fs.readFileSync(path.join(fixtureDir, 'scenario_c_export.json'), 'utf-8');
+
+      // Scenario A: Complete export -> RECONCILED
+      const { unmount: unmountA } = render(<Form4PilotEvidencePreview />);
+      fireEvent.click(screen.getByRole('button', { name: /Import Worker Receipt/i }));
+      fireEvent.change(screen.getByPlaceholderText(/Paste raw sm_reconciliation_receipts JSON row/i), { target: { value: receiptA } });
+      fireEvent.change(screen.getByPlaceholderText(/Paste independently reconciled export to verify counts and gaps/i), { target: { value: exportA } });
+      fireEvent.click(screen.getByRole('button', { name: /Validate & Import Receipt/i }));
+
+      expect(screen.getByText(/PASSED QUALIFICATION FORMAT/i)).toBeDefined();
+      expect(screen.getByText(/Imported — reconciled against independent export/i)).toBeDefined();
+      unmountA();
+
+      // Scenario B: Missing evidence -> PENDING
+      const { unmount: unmountB } = render(<Form4PilotEvidencePreview />);
+      fireEvent.click(screen.getByRole('button', { name: /Import Worker Receipt/i }));
+      fireEvent.change(screen.getByPlaceholderText(/Paste raw sm_reconciliation_receipts JSON row/i), { target: { value: receiptB } });
+      fireEvent.change(screen.getByPlaceholderText(/Paste independently reconciled export to verify counts and gaps/i), { target: { value: exportB } });
+      fireEvent.click(screen.getByRole('button', { name: /Validate & Import Receipt/i }));
+
+      expect(screen.getAllByText(/Imported — reconciliation pending/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/issuers missing comparison fields/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/META/i).length).toBeGreaterThan(0);
+      unmountB();
+
+      // Scenario C: Known mismatch with pending fields -> DISCREPANCY + PENDING reported alongside
+      render(<Form4PilotEvidencePreview />);
+      fireEvent.click(screen.getByRole('button', { name: /Import Worker Receipt/i }));
+      fireEvent.change(screen.getByPlaceholderText(/Paste raw sm_reconciliation_receipts JSON row/i), { target: { value: receiptC } });
+      fireEvent.change(screen.getByPlaceholderText(/Paste independently reconciled export to verify counts and gaps/i), { target: { value: exportC } });
+      fireEvent.click(screen.getByRole('button', { name: /Validate & Import Receipt/i }));
+
+      expect(screen.getByText(/Imported — reconciliation discrepancies detected/i)).toBeDefined();
+      expect(screen.getByText(/Reconciliation Discrepancies vs Independent Export:/i)).toBeDefined();
+      expect(screen.getAllByText(/NVDA/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/accounted_count/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Pending Fields Reported Alongside Discrepancies:/i)).toBeDefined();
+      expect(screen.getAllByText(/META/i).length).toBeGreaterThan(0);
+    });
   });
 
   describe('Local Preview & Operator Authentication Gate', () => {

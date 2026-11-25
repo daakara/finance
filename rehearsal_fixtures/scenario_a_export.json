@@ -1,0 +1,110 @@
+{
+  "export_id": "exp-rehearsal-scenario-a",
+  "issuers": {
+    "AAPL": {
+      "accounted_count": 0,
+      "accounted_through": "2026-11-30T14:20:00Z",
+      "cik": "0000320193",
+      "gaps": [],
+      "newly_ingested_count": 0,
+      "state": "POLLED_QUIET",
+      "ticker": "AAPL",
+      "verified": true
+    },
+    "AMZN": {
+      "accounted_count": 0,
+      "accounted_through": "2026-11-30T14:20:00Z",
+      "cik": "0001018724",
+      "gaps": [],
+      "newly_ingested_count": 0,
+      "state": "POLLED_QUIET",
+      "ticker": "AMZN",
+      "verified": true
+    },
+    "BRK-B": {
+      "accounted_count": 0,
+      "accounted_through": "2026-11-30T14:20:00Z",
+      "cik": "0001067983",
+      "gaps": [],
+      "newly_ingested_count": 0,
+      "state": "POLLED_QUIET",
+      "ticker": "BRK-B",
+      "verified": true
+    },
+    "GOOGL": {
+      "accounted_count": 0,
+      "accounted_through": "2026-11-30T14:20:00Z",
+      "cik": "0001652044",
+      "gaps": [],
+      "newly_ingested_count": 0,
+      "state": "POLLED_QUIET",
+      "ticker": "GOOGL",
+      "verified": true
+    },
+    "JPM": {
+      "accounted_count": 0,
+      "accounted_through": "2026-11-30T14:20:00Z",
+      "cik": "0000019617",
+      "gaps": [],
+      "newly_ingested_count": 0,
+      "state": "POLLED_QUIET",
+      "ticker": "JPM",
+      "verified": true
+    },
+    "META": {
+      "accounted_count": 0,
+      "accounted_through": "2026-11-30T14:20:00Z",
+      "cik": "0001326801",
+      "gaps": [],
+      "newly_ingested_count": 0,
+      "state": "POLLED_QUIET",
+      "ticker": "META",
+      "verified": true
+    },
+    "MSFT": {
+      "accounted_count": 0,
+      "accounted_through": "2026-11-30T14:20:00Z",
+      "cik": "0000789019",
+      "gaps": [],
+      "newly_ingested_count": 0,
+      "state": "POLLED_QUIET",
+      "ticker": "MSFT",
+      "verified": true
+    },
+    "NVDA": {
+      "accounted_count": 1,
+      "accounted_through": "2026-11-30T14:20:00Z",
+      "cik": "0001045810",
+      "gaps": [],
+      "newly_ingested_count": 1,
+      "state": "FILINGS_FOUND",
+      "ticker": "NVDA",
+      "verified": true
+    },
+    "TSLA": {
+      "accounted_count": 0,
+      "accounted_through": "2026-11-30T14:20:00Z",
+      "cik": "0001318605",
+      "gaps": [],
+      "newly_ingested_count": 0,
+      "state": "POLLED_QUIET",
+      "ticker": "TSLA",
+      "verified": true
+    },
+    "V": {
+      "accounted_count": 0,
+      "accounted_through": "2026-11-30T14:20:00Z",
+      "cik": "0001403161",
+      "gaps": [],
+      "newly_ingested_count": 0,
+      "state": "POLLED_QUIET",
+      "ticker": "V",
+      "verified": true
+    }
+  },
+  "receipt_id": "rcpt-rehearsal-scenario-a",
+  "reconciled_at": "2026-11-30T14:25:00Z",
+  "reconciled_by": "operator-rehearsal",
+  "slot_id": "2026-11-30:SLOT_1:0915",
+  "trial_id": "ARX-TRIAL-10-ISSUER-001"
+}
