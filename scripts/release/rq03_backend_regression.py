@@ -24,6 +24,14 @@ def main():
 
     print("=== [RQ-03] BACKEND REGRESSION SUITE ===")
     test_files = [
+        "tests/test_arx_s4_radar_001_operational_truth.py",
+        "tests/test_radar_coverage_disclosure_semantics.py",
+        "tests/test_scanner_coverage_metadata_integrity.py",
+        "tests/test_radar_population_conservation.py",
+        "tests/test_radar_category_integrity_002.py",
+        "tests/test_scanner_truthfulness_remediation.py",
+        # test_smart_money_radar_contract.py requires ccxt (external API dependency);
+        # run in CI where pip install -r requirements.txt provides it.
         "tests/test_cornish_fisher_sufficiency_gate.py",
         "tests/test_asset_directory_discovery.py",
         "tests/test_directive_057_remediation.py",

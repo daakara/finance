@@ -2,19 +2,19 @@
   "control_id": "RQ-05",
   "name": "Cross-Engine Invariants",
   "status": "PASS",
-  "start_time": "2026-11-24T06:03:19.948794+00:00",
-  "end_time": "2026-11-24T06:03:19.982259+00:00",
+  "start_time": "2026-11-25T10:18:24.377030+00:00",
+  "end_time": "2026-11-25T10:18:24.401228+00:00",
   "duration_sec": 0.009,
-  "candidate_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
-  "source_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
-  "execution_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+  "candidate_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "source_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "execution_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
-    "execution_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+    "source_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+    "execution_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
     "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -43,11 +43,11 @@
   "evidence_digests": {
     "analyst_dashboard/analyzers/confluence_engine.py": "544851fadf3e8c5e0ae3a4390cb7c94ef223c1d4aacf9e7c735ee1eda8404ce2",
     "frontend/components/PositionSizerModal.tsx": "356d5c6a8b50c5783a079f24ad41bcfa2012e245681af435232d224a0513462f",
-    "frontend/components/DayTraderPositionSizer.tsx": "42da126c220577bcefe78a1e218998e988b390334c33f0e0c292f4a3723bb534"
+    "frontend/components/DayTraderPositionSizer.tsx": "e46123bc8af1cfc2b11ac4e1dfaba2dc5b7df33c6f52ca15551956030d4b99fc"
   },
   "errors": [],
   "metadata": {
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "1d44a7491bbb7a10ff5c9e5d058c6caba53a8b25aa418b1d46130930fc6aab58"
+  "receipt_digest": "6086c2fafce669f8a114420de49043b4e582f7ad7696a5da392d6dad30038377"
 }

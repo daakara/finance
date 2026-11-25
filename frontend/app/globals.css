@@ -79,8 +79,9 @@
 
 html,
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
+  scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 4rem);
 }
 
 body {

@@ -2,19 +2,19 @@
   "control_id": "RQ-01",
   "name": "Candidate Identity & Lineage",
   "status": "PASS",
-  "start_time": "2026-11-24T06:01:46.717992+00:00",
-  "end_time": "2026-11-24T06:01:46.906869+00:00",
-  "duration_sec": 0.189,
-  "candidate_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
-  "source_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
-  "execution_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+  "start_time": "2026-11-25T10:16:55.289292+00:00",
+  "end_time": "2026-11-25T10:16:55.407132+00:00",
+  "duration_sec": 0.117,
+  "candidate_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "source_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "execution_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
-    "execution_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+    "source_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+    "execution_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
     "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -24,7 +24,7 @@
   "assertions": [
     {
       "assertion": "HEAD is valid 40-char hex SHA",
-      "observed": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+      "observed": "504501971e1efe669a0ef65c38e92723171f84e5",
       "passed": true
     },
     {
@@ -45,8 +45,8 @@
     {
       "assertion": "Candidate SHA incorporates authorized candidate",
       "observed": {
-        "candidate_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
-        "expected": "6419213f56695cbc0a5fa6dc08b10e0496f37afa",
+        "candidate_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+        "expected": "2f402be15a2540ab74300607fff9b70551ea886f",
         "ancestor": true
       },
       "passed": true
@@ -56,13 +56,13 @@
     ".github/workflows/release-qualification.yml"
   ],
   "evidence_digests": {
-    ".github/workflows/release-qualification.yml": "1ee5cb46b349c2b8cd7fd209cc969c8f7d5d949ba86c5fc6e4c178c8b7722d4e"
+    ".github/workflows/release-qualification.yml": "09c648995962beb4aebfa3c61fc5b09963be2eb0299f3c18e744f94a758d8ab1"
   },
   "errors": [],
   "metadata": {
     "is_merge_commit": false,
-    "checked_out_head": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+    "checked_out_head": "504501971e1efe669a0ef65c38e92723171f84e5",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "19b2d7974370a16fbc029d35cef8132fdc6f2166d9180d74c033ab1dccb2d9f1"
+  "receipt_digest": "11aa8122796f20b110e12efbf9b1ed9004ba92258d2509281f3b7729af0313fb"
 }

@@ -839,9 +839,11 @@ export interface RadarCapabilityDetail {
   singleAssetAnalysis: RadarCapabilityStatus;
   rationale?: string;
   reason?: string | null;
+  recoveryCondition?: string | null;
   coverageStatus?: string | null;
   catalogType?: "CURATED_REFERENCE_CATALOG" | string | null;
   countAuthority?: "DYNAMIC_CATALOG" | "PUBLICATION_SNAPSHOT" | string | null;
+  catalogAssetCount?: number | null;
   sortingSemantics?: string | null;
   matchedCount?: number | null;
   displayedStage2IntersectionCount?: number | null;
@@ -884,6 +886,8 @@ export const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
     status: "PIPELINE_PENDING",
     universeScreening: "PIPELINE_PENDING",
     singleAssetAnalysis: "AVAILABLE",
+    reason: "NO_ACTIVE_SNAPSHOT",
+    recoveryCondition: "Commit an authoritative, verified VCP publication snapshot under the active release SHA via an authorized batch scan.",
     rationale: "Single-asset volatility contraction geometry active on /setups and /analytics; universe-level batch scanning pipeline is pending deployment.",
     matchedCount: null,
     populationDenominator: null,
@@ -896,6 +900,8 @@ export const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
     status: "PIPELINE_PENDING",
     universeScreening: "PIPELINE_PENDING",
     singleAssetAnalysis: "AVAILABLE",
+    reason: "NO_ACTIVE_SMART_MONEY_SNAPSHOT",
+    recoveryCondition: "Publish a verified Smart Money Form 4 snapshot once SEC ingestion holds and authorization gates are satisfied.",
     rationale: "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
     matchedCount: null,
     displayedStage2IntersectionCount: null,
@@ -1013,9 +1019,11 @@ export function normalizeRadarCapabilities(
         singleAssetAnalysis: "AVAILABLE",
         catalogType: raw.catalogType || DEFAULT_RADAR_CAPABILITIES[cat].catalogType || null,
         countAuthority: raw.countAuthority || DEFAULT_RADAR_CAPABILITIES[cat].countAuthority || null,
+        catalogAssetCount: typeof raw.catalogAssetCount === "number" ? raw.catalogAssetCount : null,
         sortingSemantics: raw.sortingSemantics || DEFAULT_RADAR_CAPABILITIES[cat].sortingSemantics || null,
         matchedCount: null,
         displayedStage2IntersectionCount: null,
+        coverageStatus: raw.coverageStatus || "ROLLED_BACK",
         populationDenominator: typeof raw.populationDenominator === "number" ? raw.populationDenominator : null,
         universeBuildId: raw.universeBuildId ?? null,
         universeId: raw.universeId ?? null,
@@ -1024,6 +1032,10 @@ export function normalizeRadarCapabilities(
         rollbackReason: raw.rollbackReason ?? null,
         membershipStatus: raw.membershipStatus ?? "UNAVAILABLE",
         lifecycleState: raw.lifecycleState ?? "STALE_OR_ROLLED_BACK_PUBLICATION",
+        reason: raw.reason ?? "ROLLED_BACK_PUBLICATION_POINTER",
+        recoveryCondition:
+          raw.recoveryCondition ??
+          "Clear the rollback pointer condition and commit a new verified universe publication.",
         rationale: raw.rationale ?? `Publication build '${raw.universeBuildId}' was rolled back. Scanner execution is suspended.`,
         publicationIntegrity: "ROLLBACK",
         publicationIntegrityVerified: false,
@@ -1059,9 +1071,14 @@ export function normalizeRadarCapabilities(
 
     // Defense in depth: an old count is not current evidence even if a
     // downstream backend mistakenly advertises AVAILABLE.
-    const isStaleSnapshot = raw.freshnessStatus === "STALE";
+    const isStaleSnapshot =
+      raw.freshnessStatus === "STALE" ||
+      (raw.status as string) === "STALE" ||
+      (raw.universeScreening as string) === "STALE";
+    const isErrorState = raw.status === "ERROR" || raw.universeScreening === "ERROR";
     const isAvailable =
       !isStaleSnapshot &&
+      !isErrorState &&
       (raw.universeScreening === "AVAILABLE" || raw.status === "AVAILABLE") &&
       !hasMalformedMatchedCount &&
       (hasValidMatchedCount || isCuratedCatalog);
@@ -1078,21 +1095,65 @@ export function normalizeRadarCapabilities(
       pubIntegrity = "ROLLBACK";
     }
 
+    const resolvedStatus: RadarCapabilityStatus = isAvailable
+      ? "AVAILABLE"
+      : isErrorState
+      ? "ERROR"
+      : isStaleSnapshot || raw.status === "AVAILABLE"
+      ? "PIPELINE_PENDING"
+      : (raw.status || DEFAULT_RADAR_CAPABILITIES[cat].status);
+
+    const resolvedScreening: RadarCapabilityStatus = isAvailable
+      ? "AVAILABLE"
+      : isErrorState
+      ? "ERROR"
+      : isStaleSnapshot || raw.universeScreening === "AVAILABLE"
+      ? "PIPELINE_PENDING"
+      : (raw.universeScreening || DEFAULT_RADAR_CAPABILITIES[cat].universeScreening);
+
+    const resolvedReason = isStaleSnapshot
+      ? (raw.reason && raw.reason !== "NO_ACTIVE_SNAPSHOT" ? raw.reason : "STALE_SNAPSHOT")
+      : hasMalformedMatchedCount
+      ? (raw.reason ?? "SNAPSHOT_OUTPUT_INCOMPLETE")
+      : (raw.reason ?? (resolvedStatus === "PIPELINE_PENDING" ? (cat === "SMART_MONEY" ? "NO_ACTIVE_SMART_MONEY_SNAPSHOT" : "NO_ACTIVE_SNAPSHOT") : null));
+
+    const resolvedRecoveryCondition =
+      raw.recoveryCondition ??
+      (isStaleSnapshot
+        ? "Refresh market OHLCV data and publish a current-session verified scanner snapshot."
+        : isErrorState
+        ? "Restore scanner snapshot store access and verify snapshot retrieval succeeds."
+        : hasMalformedMatchedCount
+        ? "Complete scanner evaluation with a valid non-negative integer match count before claiming operational availability."
+        : resolvedStatus === "PIPELINE_PENDING"
+        ? (cat === "SMART_MONEY"
+            ? "Publish a verified Smart Money Form 4 snapshot once SEC ingestion holds and authorization gates are satisfied."
+            : "Commit an authoritative, verified VCP publication snapshot under the active release SHA via an authorized batch scan.")
+        : null);
+
     result[cat] = {
-      status: isAvailable ? "AVAILABLE" : (raw.status === "AVAILABLE" ? "PIPELINE_PENDING" : (raw.status || DEFAULT_RADAR_CAPABILITIES[cat].status)),
-      universeScreening: isAvailable ? "AVAILABLE" : (raw.universeScreening === "AVAILABLE" ? "PIPELINE_PENDING" : (raw.universeScreening || DEFAULT_RADAR_CAPABILITIES[cat].universeScreening)),
+      status: resolvedStatus,
+      universeScreening: resolvedScreening,
       singleAssetAnalysis: raw.singleAssetAnalysis || DEFAULT_RADAR_CAPABILITIES[cat].singleAssetAnalysis,
       catalogType: raw.catalogType || DEFAULT_RADAR_CAPABILITIES[cat].catalogType || null,
       countAuthority: raw.countAuthority || (isCuratedCatalog ? "DYNAMIC_CATALOG" : "PUBLICATION_SNAPSHOT"),
+      catalogAssetCount: typeof raw.catalogAssetCount === "number" ? raw.catalogAssetCount : null,
       sortingSemantics: raw.sortingSemantics || DEFAULT_RADAR_CAPABILITIES[cat].sortingSemantics || null,
       rationale: raw.rationale || DEFAULT_RADAR_CAPABILITIES[cat].rationale,
-      matchedCount: isStaleSnapshot ? null : (hasValidMatchedCount ? raw.matchedCount : null),
-      displayedStage2IntersectionCount: typeof raw.displayedStage2IntersectionCount === "number" ? raw.displayedStage2IntersectionCount : null,
-      coverageStatus: raw.coverageStatus || null,
+      reason: resolvedReason,
+      recoveryCondition: resolvedRecoveryCondition,
+      matchedCount: isStaleSnapshot || isErrorState || !isAvailable ? null : (hasValidMatchedCount ? raw.matchedCount : null),
+      displayedStage2IntersectionCount:
+        isStaleSnapshot || isErrorState || !isAvailable
+          ? null
+          : typeof raw.displayedStage2IntersectionCount === "number"
+          ? raw.displayedStage2IntersectionCount
+          : null,
+      coverageStatus: isStaleSnapshot ? "STALE" : (raw.coverageStatus || null),
       dataAsOf: raw.dataAsOf,
       generatedAt: raw.generatedAt,
       snapshotId: raw.snapshotId,
-      freshnessStatus: raw.freshnessStatus,
+      freshnessStatus: isStaleSnapshot ? "STALE" : raw.freshnessStatus,
       subsignal: raw.subsignal,
       populationDenominator: typeof raw.populationDenominator === "number" ? raw.populationDenominator : null,
       universeBuildId: raw.universeBuildId ?? null,
@@ -1101,7 +1162,7 @@ export function normalizeRadarCapabilities(
       isRollback: false,
       rollbackReason: null,
       membershipStatus: raw.membershipStatus ?? "AVAILABLE",
-      lifecycleState: isStaleSnapshot ? "STALE_SNAPSHOT" : raw.lifecycleState,
+      lifecycleState: isStaleSnapshot ? "STALE_SNAPSHOT" : (isErrorState ? "ERROR" : raw.lifecycleState),
       publicationIntegrity: pubIntegrity,
       publicationIntegrityVerified: pubIntegrity === "VERIFIED",
     };
@@ -1156,6 +1217,7 @@ export interface CandidatePopulationModel {
   referenceUniverseCount: number;
   activeScreeningCount: number;
   currentOpportunityCount: number;
+  diagnosticOpportunityCount?: number;
   delistedRecordCount: number;
   unverifiedRecordCount: number;
   universeScope?: string;
@@ -1166,6 +1228,14 @@ export interface CandidatePopulationModel {
   stage4RecordCount?: number;
   stageUnresolvedRecordCount?: number;
   marketDataAsOf?: string | null;
+  marketDataOldestAsOf?: string | null;
+  marketDataDistinctDateCount?: number;
+  marketDataMixedDates?: boolean;
+  marketDataLatestCount?: number;
+  marketDataLaggingCount?: number;
+  displayedDataAsOf?: string | null;
+  displayedDataOldestAsOf?: string | null;
+  displayedDataMixedDates?: boolean;
 }
 
 export interface ScreenerResponse {
@@ -1179,6 +1249,9 @@ export interface ScreenerResponse {
   scanState?: string;
   datasetState?: string;
   partialErrors?: unknown[];
+  filterCapabilityStatus?: string | null;
+  filterReason?: string | null;
+  filterRecoveryCondition?: string | null;
   activeUniverseId?: string;
   universeScope?: string;
   activeUniverseBuildId?: string | null;
@@ -1186,6 +1259,8 @@ export interface ScreenerResponse {
   nonStage2DiagnosticCount?: number;
   totalEvaluated?: number;
   marketDataAsOf?: string | null;
+  marketDataOldestAsOf?: string | null;
+  marketDataMixedDates?: boolean;
   marketDataTimestamp?: string | null;
   activeView?: string;
 }
@@ -2088,7 +2163,9 @@ export function normalizeRadarEnvelopeState(data: any): {
     if (
       rawStatus === "PARTIAL" &&
       rawScanState === "PARTIAL" &&
-      (rawDatasetState === "CANDIDATES_AVAILABLE" || rawDatasetState === "GENUINELY_EMPTY")
+      (rawDatasetState === "CANDIDATES_AVAILABLE" ||
+        rawDatasetState === "GENUINELY_EMPTY" ||
+        rawDatasetState === "PIPELINE_PENDING")
     ) {
       return {
         normalizedStatus: "PARTIAL",
@@ -2102,7 +2179,9 @@ export function normalizeRadarEnvelopeState(data: any): {
     if (
       rawStatus === "SUCCESS" &&
       rawScanState === "COMPLETED" &&
-      (rawDatasetState === "CANDIDATES_AVAILABLE" || rawDatasetState === "GENUINELY_EMPTY") &&
+      (rawDatasetState === "CANDIDATES_AVAILABLE" ||
+        rawDatasetState === "GENUINELY_EMPTY" ||
+        rawDatasetState === "PIPELINE_PENDING") &&
       !rawError
     ) {
       return {
@@ -2219,16 +2298,25 @@ export interface RadarSnapshotSummary {
   scannerId: string;
   status: RadarCapabilityStatus;
   snapshotId: string;
-  matchedCount: number;
+  matchedCount: number | null;
   dataAsOf: string;
   generatedAt: string;
-  populationDenominator: number;
+  populationDenominator: number | null;
   universeBuildId: string;
   universeId: string;
-  scannedSuccessfullyCount: number;
+  scannedSuccessfullyCount: number | null;
   stage2OpportunityCount?: number;
   coverageStatus: string;
   freshnessStatus: string;
+  reason?: string | null;
+  recoveryCondition?: string | null;
+  detail?: string | null;
+  isRollback?: boolean;
+  rollbackReason?: string | null;
+  lifecycleState?: string;
+  publicationDigest?: string | null;
+  publicationIntegrity?: PublicationIntegrityStatus;
+  publicationIntegrityVerified?: boolean;
   raw?: any;
 }
 
@@ -2236,6 +2324,7 @@ export interface RadarSnapshotSummary {
  * Fast, authoritative published-snapshot read for initial Radar display (<300ms).
  * Reuses active snapshot metadata (universe size, Stage 2 opportunities, market data freshness,
  * and provenance) without waiting for full 500-candidate multi-factor evaluation.
+ * Never fabricates 500, 0, COMPLETE, or LIVE when snapshot state is pending/error/stale.
  */
 export async function fetchRadarSnapshot(options?: {
   signal?: AbortSignal;
@@ -2259,12 +2348,35 @@ export async function fetchRadarSnapshot(options?: {
     if (!data || typeof data !== "object") return null;
 
     const snapshotId = data.snapshot_id || data.snapshot?.snapshot_id || "";
-    const status: RadarCapabilityStatus = data.status || "AVAILABLE";
-    const popDenom =
-      data.coverage?.scanned_successfully_count ||
-      data.snapshot?.universe_size ||
-      data.universe?.source_population_count ||
-      500;
+    const isRollback = Boolean(data.is_rollback || data.isRollback);
+    const freshnessRaw = typeof data.freshness?.status === "string" ? data.freshness.status : undefined;
+    const isStale = data.status === "STALE" || freshnessRaw === "STALE";
+    const isError = data.status === "ERROR";
+
+    const rawPopDenom =
+      typeof data.coverage?.scanned_successfully_count === "number" && data.coverage.scanned_successfully_count > 0
+        ? data.coverage.scanned_successfully_count
+        : typeof data.universe?.eligible_universe_count === "number" && data.universe.eligible_universe_count > 0
+        ? data.universe.eligible_universe_count
+        : typeof data.universe?.source_population_count === "number" && data.universe.source_population_count > 0
+        ? data.universe.source_population_count
+        : typeof data.snapshot?.universe_size === "number" && !isError && data.status === "AVAILABLE"
+        ? data.snapshot.universe_size
+        : null;
+
+    const rawMatched =
+      typeof data.matched_count === "number" &&
+      Number.isInteger(data.matched_count) &&
+      data.matched_count >= 0
+        ? data.matched_count
+        : null;
+
+    const status: RadarCapabilityStatus = isError
+      ? "ERROR"
+      : isRollback || isStale || data.status !== "AVAILABLE" || rawMatched === null
+      ? "PIPELINE_PENDING"
+      : "AVAILABLE";
+
     const buildId =
       data.universe?.universe_build_id ||
       data.provenance?.universe_metadata?.universe_build_id ||
@@ -2274,24 +2386,72 @@ export async function fetchRadarSnapshot(options?: {
       data.universe?.scope_class ||
       "ARX_US_EQUITIES";
     const stage2Count =
-      typeof data.coverage?.stage_2_opportunity_count === "number"
+      status === "AVAILABLE" && typeof data.coverage?.stage_2_opportunity_count === "number"
         ? data.coverage.stage_2_opportunity_count
         : undefined;
+
+    const rawScanned =
+      typeof data.coverage?.scanned_successfully_count === "number"
+        ? data.coverage.scanned_successfully_count
+        : status === "AVAILABLE"
+        ? rawPopDenom
+        : 0;
+
+    const coverageStatus =
+      typeof data.coverage?.coverage_status === "string" && data.coverage.coverage_status
+        ? data.coverage.coverage_status
+        : isRollback
+        ? "ROLLED_BACK"
+        : isError
+        ? "UNAVAILABLE"
+        : isStale
+        ? "STALE"
+        : status === "AVAILABLE"
+        ? "COMPLETE"
+        : "PENDING";
+
+    const freshnessStatus = isStale
+      ? "STALE"
+      : freshnessRaw || (status === "AVAILABLE" ? "LIVE" : "UNKNOWN");
+
+    let publicationIntegrity: PublicationIntegrityStatus =
+      status === "PIPELINE_PENDING" ? "PENDING" : "NOT_VERIFIED";
+    if (isRollback || data.publication_integrity === "ROLLBACK" || data.publicationIntegrity === "ROLLBACK") {
+      publicationIntegrity = "ROLLBACK";
+    } else if (
+      status === "AVAILABLE" &&
+      !isStale &&
+      (data.publicationIntegrity === "VERIFIED" || data.publication_integrity === "VERIFIED") &&
+      (data.publicationIntegrityVerified === true || data.publication_integrity_verified === true)
+    ) {
+      publicationIntegrity = "VERIFIED";
+    } else if (data.publication_integrity === "PENDING" || data.publicationIntegrity === "PENDING") {
+      publicationIntegrity = "PENDING";
+    }
 
     return {
       scannerId: data.scanner_id || "MINERVINI_VCP",
       status,
       snapshotId,
-      matchedCount: typeof data.matched_count === "number" ? data.matched_count : 0,
+      matchedCount: status === "AVAILABLE" ? rawMatched : null,
       dataAsOf: data.data_as_of || data.freshness?.data_as_of || "",
       generatedAt: data.generated_at || data.freshness?.generated_at || "",
-      populationDenominator: popDenom,
+      populationDenominator: rawPopDenom,
       universeBuildId: buildId,
       universeId: univId,
-      scannedSuccessfullyCount: data.coverage?.scanned_successfully_count || popDenom,
+      scannedSuccessfullyCount: rawScanned,
       stage2OpportunityCount: stage2Count,
-      coverageStatus: data.coverage?.coverage_status || "COMPLETE",
-      freshnessStatus: data.freshness?.status || "LIVE",
+      coverageStatus,
+      freshnessStatus,
+      reason: isStale ? "STALE_SNAPSHOT" : (data.reason ?? data.coverage?.failure_reason ?? null),
+      recoveryCondition: data.recovery_condition ?? data.recoveryCondition ?? null,
+      detail: data.detail ?? data.freshness?.rationale ?? null,
+      isRollback,
+      rollbackReason: data.rollback_reason ?? data.rollbackReason ?? null,
+      lifecycleState: data.lifecycle_state ?? data.lifecycleState ?? (isStale ? "STALE_SNAPSHOT" : undefined),
+      publicationDigest: data.universe?.membership_hash ?? data.publication_digest ?? null,
+      publicationIntegrity,
+      publicationIntegrityVerified: publicationIntegrity === "VERIFIED",
       raw: data,
     };
   } catch (err) {
@@ -2404,6 +2564,9 @@ export async function fetchScreenerGems(
         scanState: stateNorm.scanState,
         datasetState: stateNorm.datasetState,
         partialErrors: Array.isArray(data.partialErrors) ? data.partialErrors : undefined,
+        filterCapabilityStatus: (data as any)?.filterCapabilityStatus ?? null,
+        filterReason: (data as any)?.filterReason ?? null,
+        filterRecoveryCondition: (data as any)?.filterRecoveryCondition ?? null,
         error: stateNorm.normalizedError,
         activeUniverseId: (data as any)?.activeUniverseId,
         universeScope: (data as any)?.universeScope,
@@ -2412,6 +2575,8 @@ export async function fetchScreenerGems(
         nonStage2DiagnosticCount: (data as any)?.nonStage2DiagnosticCount,
         totalEvaluated: (data as any)?.totalEvaluated,
         marketDataAsOf: (data as any)?.marketDataAsOf,
+        marketDataOldestAsOf: (data as any)?.marketDataOldestAsOf,
+        marketDataMixedDates: (data as any)?.marketDataMixedDates,
         marketDataTimestamp: (data as any)?.marketDataTimestamp,
         activeView: (data as any)?.activeView,
       };

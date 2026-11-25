@@ -50,6 +50,7 @@ from analyst_dashboard.analyzers.scanner_runner import (
     VCPScannerRunner,
     SmartMoneyScannerRunner,
     CURRENT_IMPLEMENTATION_RELEASE_SHA,
+    resolve_scanner_recovery_condition,
 )
 from analyst_dashboard.smart_money.storage import (
     get_smart_money_scanner_runner,
@@ -369,15 +370,26 @@ def get_radar_capabilities(
     if vcp_snapshot is None and "vcp_scanner_runner" in globals() and vcp_scanner_runner is not None:
         try:
             vcp_snapshot = vcp_scanner_runner.get_active_or_latest_snapshot()
-        except Exception:
-            pass
+        except Exception as exc:
+            vcp_snapshot = {
+                "status": "ERROR",
+                "reason": "SNAPSHOT_LOOKUP_ERROR",
+                "detail": f"VCP snapshot lookup failed: {exc}",
+            }
 
     if sm_snapshot is None:
         try:
             sm_runner = get_smart_money_scanner_runner()
             sm_snapshot = sm_runner.get_active_or_latest_snapshot()
-        except Exception:
-            pass
+        except Exception as exc:
+            sm_snapshot = {
+                "status": "ERROR",
+                "reason": "SNAPSHOT_LOOKUP_ERROR",
+                "detail": f"Smart Money snapshot lookup failed: {exc}",
+            }
+
+    if "screener" in globals() and hasattr(screener, "KNOWN_GEMS_DATA"):
+        caps["VALUE_GARP"]["catalogAssetCount"] = len(screener.KNOWN_GEMS_DATA)
 
     # Resolve publication identity & population denominator if pointer or snapshot provided
     pop_denom = None
@@ -416,6 +428,7 @@ def get_radar_capabilities(
             "membershipStatus": membership_status,
             "lifecycleState": "STALE_OR_ROLLED_BACK_PUBLICATION",
             "reason": "ROLLED_BACK_PUBLICATION_POINTER",
+            "recoveryCondition": resolve_scanner_recovery_condition("ROLLED_BACK_PUBLICATION_POINTER"),
             "rationale": f"Publication build '{build_id}' was rolled back ({rollback_reason or 'No reason specified'}). Scanner execution is suspended.",
             "publicationIntegrity": "ROLLBACK",
             "publicationIntegrityVerified": False,
@@ -476,6 +489,10 @@ def get_radar_capabilities(
                 and flag_not_discredited
             )
 
+            vcp_reason = (
+                None if is_verified
+                else ("SNAPSHOT_OUTPUT_INCOMPLETE" if not is_valid_op else "INTEGRITY_UNVERIFIED")
+            )
             caps["VCP"] = {
                 "status": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
                 "universeScreening": "AVAILABLE" if is_valid_op else "PIPELINE_PENDING",
@@ -496,6 +513,8 @@ def get_radar_capabilities(
                 "rollbackReason": None,
                 "membershipStatus": membership_status,
                 "lifecycleState": "SCANNER_OPERATIONAL" if is_valid_op else "SCANNER_OUTPUT_INCOMPLETE",
+                "reason": vcp_reason,
+                "recoveryCondition": resolve_scanner_recovery_condition(vcp_reason) if vcp_reason else None,
                 "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
                 "publicationIntegrity": "VERIFIED" if is_verified else "NOT_VERIFIED",
                 "publicationIntegrityVerified": is_verified,
@@ -516,6 +535,7 @@ def get_radar_capabilities(
                 "snapshotId": vcp_snapshot.get("snapshot_id"),
                 "freshnessStatus": freshness_info.get("status", "UNKNOWN"),
                 "reason": reason,
+                "recoveryCondition": vcp_snapshot.get("recovery_condition") or resolve_scanner_recovery_condition(reason),
                 "populationDenominator": pop_denom,
                 "universeBuildId": build_id,
                 "universeId": univ_id,
@@ -548,6 +568,7 @@ def get_radar_capabilities(
                 "snapshotId": None,
                 "freshnessStatus": "UNKNOWN",
                 "reason": fail_reason,
+                "recoveryCondition": vcp_snapshot.get("recovery_condition") or resolve_scanner_recovery_condition(fail_reason),
                 "populationDenominator": pop_denom,
                 "universeBuildId": build_id,
                 "universeId": univ_id,
@@ -589,6 +610,7 @@ def get_radar_capabilities(
                 "membershipStatus": membership_status,
                 "lifecycleState": "STALE_SNAPSHOT",
                 "reason": "STALE_SNAPSHOT",
+                "recoveryCondition": vcp_snapshot.get("recovery_condition") or resolve_scanner_recovery_condition("STALE_SNAPSHOT"),
                 "rationale": "Historical VCP scan result is stale. Refresh through an independently authorized scan before claiming current universe availability.",
                 "publicationIntegrity": "NOT_VERIFIED",
                 "publicationIntegrityVerified": False,
@@ -612,18 +634,41 @@ def get_radar_capabilities(
             "membershipStatus": "AVAILABLE",
             "lifecycleState": "COMMITTED_PUBLICATION_SCANNER_NOT_ENROLLED",
             "reason": "SCANNER_NOT_ENROLLED",
+            "recoveryCondition": resolve_scanner_recovery_condition("SCANNER_NOT_ENROLLED"),
             "rationale": f"Universe publication '{build_id}' active with {pop_denom} scannable symbols; batch scanner pipeline is pending operational activation.",
+            "publicationIntegrity": "PENDING",
+            "publicationIntegrityVerified": False,
+        }
+    else:
+        caps["VCP"] = {
+            "status": "PIPELINE_PENDING",
+            "universeScreening": "PIPELINE_PENDING",
+            "singleAssetAnalysis": "AVAILABLE",
+            "matchedCount": None,
+            "coverageStatus": "PENDING",
+            "scannedSuccessfullyCount": 0,
+            "unavailableSymbolCount": 0,
+            "populationDenominator": None,
+            "lifecycleState": "NO_COMMITTED_PUBLICATION",
+            "reason": "NO_ACTIVE_SNAPSHOT",
+            "recoveryCondition": resolve_scanner_recovery_condition("NO_ACTIVE_SNAPSHOT"),
+            "rationale": "Automated market-wide volatility contraction screening is pending an active published snapshot.",
             "publicationIntegrity": "PENDING",
             "publicationIntegrityVerified": False,
         }
 
     # Evaluate SMART_MONEY capability from authoritative snapshot
-    if sm_snapshot and sm_snapshot.get("status") == "AVAILABLE":
+    sm_fresh_obj = sm_snapshot.get("freshness", {}) if isinstance(sm_snapshot, dict) and isinstance(sm_snapshot.get("freshness"), dict) else {}
+    sm_is_stale = bool(
+        isinstance(sm_snapshot, dict)
+        and (sm_snapshot.get("status") == "STALE" or sm_fresh_obj.get("status") == "STALE")
+    )
+    if sm_snapshot and sm_snapshot.get("status") == "AVAILABLE" and not sm_is_stale:
         # Extract matched count from snapshot envelope or root
         snap_obj = sm_snapshot.get("snapshot", {}) if isinstance(sm_snapshot.get("snapshot"), dict) else {}
         u_obj = sm_snapshot.get("universe", {}) if isinstance(sm_snapshot.get("universe"), dict) else {}
         cov_obj = sm_snapshot.get("coverage", {}) if isinstance(sm_snapshot.get("coverage"), dict) else {}
-        fresh_obj = sm_snapshot.get("freshness", {}) if isinstance(sm_snapshot.get("freshness"), dict) else {}
+        fresh_obj = sm_fresh_obj
 
         raw_matched = (
             snap_obj.get("matched_count")
@@ -631,7 +676,6 @@ def get_radar_capabilities(
             else sm_snapshot.get("matched_count", cov_obj.get("matched_count"))
         )
         is_valid_count = type(raw_matched) is int and raw_matched >= 0
-        matched_cnt = raw_matched if is_valid_count else 0
 
         # Authoritative population denominator
         sm_pop_denom = (
@@ -644,35 +688,58 @@ def get_radar_capabilities(
         sm_snapshot_id = snap_obj.get("snapshot_id") or sm_snapshot.get("snapshot_id")
         data_as_of = fresh_obj.get("data_as_of") or sm_snapshot.get("data_as_of")
 
-        # Determine displayed Stage 2 intersection count
-        disp_intersection = kwargs.get("sm_stage2_intersection_count")
-        if disp_intersection is not None and isinstance(disp_intersection, int):
-            eff_intersection = max(0, disp_intersection)
+        if not is_valid_count:
+            caps["SMART_MONEY"] = {
+                "status": "PIPELINE_PENDING",
+                "universeScreening": "PIPELINE_PENDING",
+                "singleAssetAnalysis": "AVAILABLE",
+                "subsignal": "INSIDER_FORM4",
+                "matchedCount": None,
+                "populationDenominator": sm_pop_denom,
+                "displayedStage2IntersectionCount": None,
+                "dataAsOf": data_as_of,
+                "snapshotId": sm_snapshot_id,
+                "coverageStatus": "PENDING",
+                "freshnessStatus": fresh_obj.get("status", "UNKNOWN"),
+                "reason": "SNAPSHOT_OUTPUT_INCOMPLETE",
+                "recoveryCondition": resolve_scanner_recovery_condition("SNAPSHOT_OUTPUT_INCOMPLETE"),
+                "rationale": "Smart Money snapshot is missing a valid match count and cannot assert operational availability.",
+            }
         else:
-            eff_intersection = 5 if (sm_pop_denom == 10 and matched_cnt == 10) else (matched_cnt if matched_cnt is not None else 0)
+            matched_cnt = raw_matched
+            # Determine displayed Stage 2 intersection count
+            disp_intersection = kwargs.get("sm_stage2_intersection_count")
+            if disp_intersection is not None and isinstance(disp_intersection, int):
+                eff_intersection = max(0, disp_intersection)
+            else:
+                eff_intersection = 5 if (sm_pop_denom == 10 and matched_cnt == 10) else (matched_cnt if matched_cnt is not None else 0)
 
-        cov_status = "PILOT_HELD" if sm_pop_denom == 10 else cov_obj.get("coverage_status", "AVAILABLE")
-        fresh_status = "HELD" if sm_pop_denom == 10 else fresh_obj.get("status", "LIVE")
+            cov_status = "PILOT_HELD" if sm_pop_denom == 10 else cov_obj.get("coverage_status", "AVAILABLE")
+            fresh_status = "HELD" if sm_pop_denom == 10 else fresh_obj.get("status", "LIVE")
+            is_pilot_held = (sm_pop_denom == 10 or cov_status == "PILOT_HELD" or fresh_status == "HELD")
 
-        caps["SMART_MONEY"] = {
-            "status": "AVAILABLE",
-            "universeScreening": "AVAILABLE",
-            "singleAssetAnalysis": "AVAILABLE",
-            "subsignal": "INSIDER_FORM4",
-            "matchedCount": matched_cnt,
-            "populationDenominator": sm_pop_denom,
-            "displayedStage2IntersectionCount": eff_intersection,
-            "dataAsOf": data_as_of,
-            "snapshotId": sm_snapshot_id,
-            "coverageStatus": cov_status,
-            "freshnessStatus": fresh_status,
-            "rationale": (
-                f"{eff_intersection} Stage 2 matches from historical {sm_pop_denom}-issuer pilot · October 25, 2026 · Ingestion held"
-                if sm_pop_denom == 10 or cov_status == "PILOT_HELD" or fresh_status == "HELD"
-                else f"{eff_intersection} Stage 2 matches from {matched_cnt} scannable matches ({sm_pop_denom} evaluated) · SEC Form 4 insider flow"
-            ),
-        }
+            caps["SMART_MONEY"] = {
+                "status": "AVAILABLE",
+                "universeScreening": "AVAILABLE",
+                "singleAssetAnalysis": "AVAILABLE",
+                "subsignal": "INSIDER_FORM4",
+                "matchedCount": matched_cnt,
+                "populationDenominator": sm_pop_denom,
+                "displayedStage2IntersectionCount": eff_intersection,
+                "dataAsOf": data_as_of,
+                "snapshotId": sm_snapshot_id,
+                "coverageStatus": cov_status,
+                "freshnessStatus": fresh_status,
+                "reason": "INGESTION_HOLD_ACTIVE" if is_pilot_held else None,
+                "recoveryCondition": resolve_scanner_recovery_condition("INGESTION_HOLD_ACTIVE") if is_pilot_held else None,
+                "rationale": (
+                    f"{eff_intersection} Stage 2 matches from historical {sm_pop_denom}-issuer pilot · October 25, 2026 · Ingestion held"
+                    if is_pilot_held
+                    else f"{eff_intersection} Stage 2 matches from {matched_cnt} scannable matches ({sm_pop_denom} evaluated) · SEC Form 4 insider flow"
+                ),
+            }
     elif sm_snapshot and sm_snapshot.get("status") == "ERROR":
+        sm_err_reason = sm_snapshot.get("reason") or "STORAGE_ERROR"
         caps["SMART_MONEY"] = {
             "status": "ERROR",
             "universeScreening": "ERROR",
@@ -685,10 +752,40 @@ def get_radar_capabilities(
             "snapshotId": None,
             "coverageStatus": "ERROR",
             "freshnessStatus": "ERROR",
+            "reason": sm_err_reason,
+            "recoveryCondition": sm_snapshot.get("recovery_condition") or resolve_scanner_recovery_condition(sm_err_reason),
             "rationale": sm_snapshot.get("detail", "Smart Money screening pipeline error."),
+        }
+    elif sm_is_stale:
+        snap_obj = sm_snapshot.get("snapshot", {}) if isinstance(sm_snapshot.get("snapshot"), dict) else {}
+        caps["SMART_MONEY"] = {
+            "status": "PIPELINE_PENDING",
+            "universeScreening": "PIPELINE_PENDING",
+            "singleAssetAnalysis": "AVAILABLE",
+            "subsignal": "INSIDER_FORM4",
+            "matchedCount": None,
+            "populationDenominator": snap_obj.get("universe_size") or sm_snapshot.get("population_denominator", 0),
+            "displayedStage2IntersectionCount": None,
+            "dataAsOf": sm_fresh_obj.get("data_as_of") or sm_snapshot.get("data_as_of"),
+            "snapshotId": snap_obj.get("snapshot_id") or sm_snapshot.get("snapshot_id"),
+            "coverageStatus": "STALE",
+            "freshnessStatus": "STALE",
+            "reason": "STALE_SNAPSHOT",
+            "recoveryCondition": sm_snapshot.get("recovery_condition") or resolve_scanner_recovery_condition("STALE_SNAPSHOT"),
+            "rationale": "Historical Smart Money Form 4 snapshot is stale. Refresh through an authorized pipeline scan before claiming current availability.",
         }
     else:
         # Canonical baseline: PIPELINE_PENDING with matchedCount: None
+        sm_pending_reason = (
+            sm_snapshot.get("reason")
+            if isinstance(sm_snapshot, dict) and sm_snapshot.get("reason")
+            else "NO_ACTIVE_SMART_MONEY_SNAPSHOT"
+        )
+        sm_pending_recovery = (
+            sm_snapshot.get("recovery_condition")
+            if isinstance(sm_snapshot, dict) and sm_snapshot.get("recovery_condition")
+            else resolve_scanner_recovery_condition(sm_pending_reason)
+        )
         caps["SMART_MONEY"] = {
             "status": "PIPELINE_PENDING",
             "universeScreening": "PIPELINE_PENDING",
@@ -701,7 +798,13 @@ def get_radar_capabilities(
             "snapshotId": None,
             "coverageStatus": "PENDING",
             "freshnessStatus": "PENDING",
-            "rationale": RADAR_CAPABILITY_CONTRACT["SMART_MONEY"]["rationale"],
+            "reason": sm_pending_reason,
+            "recoveryCondition": sm_pending_recovery,
+            "rationale": (
+                sm_snapshot.get("detail")
+                if isinstance(sm_snapshot, dict) and sm_snapshot.get("detail")
+                else RADAR_CAPABILITY_CONTRACT["SMART_MONEY"]["rationale"]
+            ),
         }
     return caps
 
@@ -1039,14 +1142,35 @@ def run_screener_get(
     
         # Retrieve active VCP scanner snapshot for authentic category qualification
         vcp_snapshot = vcp_scanner_runner.get_active_or_latest_snapshot()
-        vcp_matched_symbols = {r["symbol"] for r in vcp_snapshot.get("results", []) if "symbol" in r}
+        vcp_freshness = vcp_snapshot.get("freshness", {}) if isinstance(vcp_snapshot, dict) else {}
+        vcp_is_stale = bool(
+            isinstance(vcp_snapshot, dict)
+            and (
+                vcp_snapshot.get("status") == "STALE"
+                or (isinstance(vcp_freshness, dict) and vcp_freshness.get("status") == "STALE")
+                or vcp_snapshot.get("is_rollback")
+            )
+        )
+        vcp_matched_symbols = (
+            {r["symbol"] for r in vcp_snapshot.get("results", []) if "symbol" in r}
+            if isinstance(vcp_snapshot, dict) and vcp_snapshot.get("status") == "AVAILABLE" and not vcp_is_stale
+            else set()
+        )
     
         # Retrieve active Smart Money scanner snapshot for authentic category qualification
         sm_runner = get_smart_money_scanner_runner()
         sm_snapshot = sm_runner.get_active_or_latest_snapshot()
+        sm_freshness = sm_snapshot.get("freshness", {}) if isinstance(sm_snapshot, dict) else {}
+        sm_is_stale = bool(
+            isinstance(sm_snapshot, dict)
+            and (
+                sm_snapshot.get("status") == "STALE"
+                or (isinstance(sm_freshness, dict) and sm_freshness.get("status") == "STALE")
+            )
+        )
         sm_matched_symbols = (
             {r["symbol"] for r in sm_snapshot.get("results", []) if "symbol" in r}
-            if sm_snapshot.get("status") == "AVAILABLE"
+            if isinstance(sm_snapshot, dict) and sm_snapshot.get("status") == "AVAILABLE" and not sm_is_stale
             else set()
         )
     
@@ -1066,6 +1190,20 @@ def run_screener_get(
             margin_val = r.get("gross_margin_pct")
             sm_adapter_res = None
             sm_evidence_state = "UNAVAILABLE"
+            smart_data = None
+            days_to_earn = r.get("days_to_earnings")
+            stage_class = "STAGE_UNRESOLVED"
+            stage_reasons = []
+            is_vcp_qual = False
+            asset_class_str = "EQUITY"
+            factor_snap = None
+            fund_prov = evaluate_factor_provenance(None, sym, asset_class=asset_class_str)
+            has_verified_funds = False
+            cat_report = None
+            confluence_res = None
+            technicals = None
+            rvol_val = "N/A"
+            short_float_val = "N/A"
     
             # Check for confirmed corporate actions (delistings / acquisitions)
             corp_action = CONFIRMED_CORPORATE_ACTIONS.get(sym)
@@ -1638,13 +1776,51 @@ def run_screener_get(
 
         filtered.sort(key=_radar_sort_key)
 
+        # Match the canonical primary Radar Stage 2 tradable population before date/status settlement
+        sm_stage2_cnt = count_smart_money_stage2_intersection(mapped_candidates, non_tradable)
+        capabilities_dict = get_radar_capabilities(
+            vcp_snapshot=vcp_snapshot,
+            sm_snapshot=sm_snapshot,
+            sm_stage2_intersection_count=sm_stage2_cnt,
+        )
+
+        # Resolve capability status for category-filtered scans so missing/failed data never masquerades as 0 matches
+        target_cap_key = (
+            "VCP" if filter_type == "vcp"
+            else ("SMART_MONEY" if filter_type == "smart_money"
+                  else ("VALUE_GARP" if filter_type == "value_garp" else None))
+        )
+        target_cap = capabilities_dict.get(target_cap_key) if target_cap_key else None
+        target_cap_status = target_cap.get("status") if isinstance(target_cap, dict) else None
+
+        is_error_filter = filter_type in ("vcp", "smart_money") and target_cap_status == "ERROR"
+        is_pipeline_pending_filter = (
+            filter_type in ("vcp", "smart_money")
+            and target_cap_status in ("PIPELINE_PENDING", "SCANNER_NOT_ENROLLED", "STALE")
+        )
+        if is_error_filter or is_pipeline_pending_filter:
+            filtered = []
+
+        # Derive actual observed price dates from served rows (never unserved rows or wall-clock gmtime)
+        universe_price_dates = [c["priceDate"] for c in mapped_candidates if c.get("priceDate")]
+        universe_latest_date = max(universe_price_dates) if universe_price_dates else None
+        universe_oldest_date = min(universe_price_dates) if universe_price_dates else None
+        universe_distinct_dates = sorted(set(universe_price_dates))
+
+        displayed_price_dates = [c["priceDate"] for c in filtered if c.get("priceDate")]
+        latest_price_date = max(displayed_price_dates) if displayed_price_dates else None
+        oldest_price_date = min(displayed_price_dates) if displayed_price_dates else None
+        distinct_price_dates = sorted(set(displayed_price_dates))
+        latest_date_count = sum(1 for d in displayed_price_dates if d == latest_price_date) if latest_price_date else 0
+        lagging_date_count = len(displayed_price_dates) - latest_date_count
+
         radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         radar_evidence = MarketEvidence(
             provenance=MarketProvenance(
                 provider=Provider.YFINANCE,
                 ingestion_source=IngestionSource.DIRECT_PROVIDER,
                 observed_at=None,
-                observed_date=time.strftime("%Y-%m-%d", time.gmtime()),
+                observed_date=latest_price_date,
                 observation_precision=ObservationPrecision.DATE,
                 observation_source=ObservationSource.DERIVED_FROM_TRADE_DATE,
                 ingested_at=radar_now,
@@ -1661,15 +1837,20 @@ def run_screener_get(
         # Derive canonical candidate population model per ARX Closure Model v2 Gate B
         reference_count = len(active_universe)
         active_candidates = [c for c in mapped_candidates if c["executionStatus"] not in non_tradable]
-        opportunity_candidates = [c for c in active_candidates if c.get("screeningEligible")]
+        opportunity_candidates = [
+            c for c in filtered if c.get("executionStatus") not in non_tradable and c.get("screeningEligible")
+        ]
+        stage2_primary_opportunities = [c for c in eligibility_pool if c.get("screeningEligible")]
+        diagnostic_opportunity_candidates = [c for c in active_candidates if c.get("screeningEligible")]
         delisted_candidates = [c for c in mapped_candidates if c["executionStatus"] == "DELISTED_SECURITY"]
         unverified_candidates = [c for c in mapped_candidates if c["executionStatus"] == "UNVERIFIED_ASSET"]
     
-        latest_price_date = max([c["priceDate"] for c in mapped_candidates if c.get("priceDate")] or [None])
         population_model = {
             "referenceUniverseCount": reference_count,
             "activeScreeningCount": len(active_candidates),
             "currentOpportunityCount": len(opportunity_candidates),
+            "stage2PrimaryOpportunityCount": len(stage2_primary_opportunities),
+            "diagnosticOpportunityCount": len(diagnostic_opportunity_candidates),
             "stage2OpportunityCount": sum(1 for c in mapped_candidates if c.get("stageClassification") == "STAGE_2"),
             "stage1RecordCount": sum(1 for c in mapped_candidates if c.get("stageClassification") == "STAGE_1"),
             "stage3RecordCount": sum(1 for c in mapped_candidates if c.get("stageClassification") == "STAGE_3"),
@@ -1680,25 +1861,29 @@ def run_screener_get(
             "universeScope": resolved_universe_id,
             "universeBuildId": resolved_build_id,
             "marketDataAsOf": latest_price_date,
+            "marketDataOldestAsOf": oldest_price_date,
+            "marketDataDistinctDateCount": len(distinct_price_dates),
+            "marketDataMixedDates": len(distinct_price_dates) > 1,
+            "marketDataLatestCount": latest_date_count,
+            "marketDataLaggingCount": lagging_date_count,
+            "displayedDataAsOf": latest_price_date,
+            "displayedDataOldestAsOf": oldest_price_date,
+            "displayedDataMixedDates": len(distinct_price_dates) > 1,
+            "universeMarketDataAsOf": universe_latest_date,
+            "universeMarketDataOldestAsOf": universe_oldest_date,
+            "universeMarketDataMixedDates": len(universe_distinct_dates) > 1,
         }
-    
-        # Match the canonical primary Radar Stage 2 tradable population.
-        # Pilot membership does not imply Stage 2 visibility.
-        sm_stage2_cnt = count_smart_money_stage2_intersection(mapped_candidates, non_tradable)
-        capabilities_dict = get_radar_capabilities(
-            vcp_snapshot=vcp_snapshot,
-            sm_snapshot=sm_snapshot,
-            sm_stage2_intersection_count=sm_stage2_cnt,
-        )
-
-        # Zero-semantics resolution for category-filtered scans
-        is_pipeline_pending_filter = (
-            (filter_type == "vcp" and capabilities_dict.get("VCP", {}).get("status") == "PIPELINE_PENDING")
-            or (filter_type == "smart_money" and capabilities_dict.get("SMART_MONEY", {}).get("status") == "PIPELINE_PENDING")
-        )
 
         # Derive canonical dataset and scan status
-        if len(partial_errors) == len(results) and len(results) > 0:
+        if is_error_filter:
+            status_val = "ERROR"
+            scan_state = "FAILED"
+            dataset_state = "SCAN_FAILED"
+            overall_error = (
+                (target_cap.get("rationale") if isinstance(target_cap, dict) else None)
+                or f"{target_cap_key} universe scanner failed ({target_cap.get('reason') if isinstance(target_cap, dict) else 'STORAGE_ERROR'})."
+            )
+        elif len(partial_errors) == len(results) and len(results) > 0:
             status_val = "ERROR"
             scan_state = "FAILED"
             dataset_state = "SCAN_FAILED"
@@ -1720,6 +1905,9 @@ def run_screener_get(
             "datasetState": dataset_state,
             "error": overall_error,
             "partialErrors": partial_errors if partial_errors else None,
+            "filterCapabilityStatus": target_cap_status,
+            "filterReason": target_cap.get("reason") if isinstance(target_cap, dict) else None,
+            "filterRecoveryCondition": target_cap.get("recoveryCondition") if isinstance(target_cap, dict) else None,
             "totalCandidates": reference_count,
             "gemsFound": len(filtered),
             "totalEvaluated": len(mapped_candidates),
@@ -1729,6 +1917,8 @@ def run_screener_get(
             "universeScope": resolved_universe_id,
             "activeUniverseBuildId": resolved_build_id,
             "marketDataAsOf": latest_price_date,
+            "marketDataOldestAsOf": oldest_price_date,
+            "marketDataMixedDates": len(distinct_price_dates) > 1,
             "marketDataTimestamp": latest_price_date,
             "activeFilter": filter_type,
             "activeView": "DIAGNOSTIC_ALL_STAGES" if (is_diagnostic_view or custom_tickers) else "STAGE_2_PRIMARY",

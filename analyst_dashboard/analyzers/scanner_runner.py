@@ -25,6 +25,32 @@ except ImportError:
 
 US_EASTERN = ZoneInfo("America/New_York")
 
+SCANNER_RECOVERY_CONDITIONS: Dict[str, str] = {
+    "NO_ACTIVE_SNAPSHOT": "Commit an authoritative, verified VCP publication snapshot under the active release SHA via an authorized batch scan.",
+    "NO_ACTIVE_SMART_MONEY_SNAPSHOT": "Publish a verified Smart Money Form 4 snapshot once SEC ingestion holds and authorization gates are satisfied.",
+    "SCANNER_NOT_ENROLLED": "Enroll and execute the batch scanner against the active universe publication build.",
+    "RELEASE_MISMATCH": "Publish a new verified scanner snapshot generated under the active implementation release SHA.",
+    "UNSUPPORTED_LEGACY_MATCHES": "Replace unverified legacy snapshot records with a deterministically verified publication.",
+    "ROLLED_BACK_PUBLICATION_POINTER": "Clear the rollback pointer condition and commit a new verified universe publication.",
+    "STALE_SNAPSHOT": "Refresh market OHLCV data and publish a current-session verified scanner snapshot.",
+    "SNAPSHOT_OUTPUT_INCOMPLETE": "Complete scanner evaluation with a valid non-negative integer match count before claiming operational availability.",
+    "INTEGRITY_UNVERIFIED": "Publish a snapshot with verified deterministic semantic fingerprint and PUBLISH decision.",
+    "STORAGE_ERROR": "Restore readable scanner snapshot storage and verify active snapshot lookup succeeds.",
+    "SNAPSHOT_LOOKUP_ERROR": "Restore scanner snapshot runner lookup availability and confirm read queries succeed.",
+    "POSTGRES_READ_DISABLED": "Re-enable ARX_SMART_MONEY_POSTGRES_READ_ENABLED and verify Postgres snapshot reads succeed.",
+    "POSTGRES_DIRECT_SCAN_UNSUPPORTED": "Submit the scan through the asynchronous worker queue rather than direct web execution.",
+    "BUILD_MEMBERSHIP_EMPTY": "Promote a universe build with scannable equity membership before running the scanner.",
+    "EMPTY_UNIVERSE": "Promote a universe build with scannable equity membership before running the scanner.",
+    "INGESTION_HOLD_ACTIVE": "Retain bounded historical pilot scope until SEC ingestion holds are formally lifted.",
+}
+
+
+def resolve_scanner_recovery_condition(reason: Optional[str]) -> str:
+    """Return an evidence-backed recovery condition for a non-operational scanner reason."""
+    if reason and reason in SCANNER_RECOVERY_CONDITIONS:
+        return SCANNER_RECOVERY_CONDITIONS[reason]
+    return "Publish an updated, verified scanner snapshot after verifying storage health and prerequisite pipeline holds."
+
 from analyst_dashboard.data.market_evidence import AdjustmentState
 
 from analyst_dashboard.vcp.sprint_3_shadow_governance import (
@@ -1062,6 +1088,7 @@ class VCPScannerRunner:
             "status": status.value,
             "reason": reason,
             "detail": detail,
+            "recovery_condition": resolve_scanner_recovery_condition(reason),
             "snapshot_id": None,
             "matched_count": None,
             "data_as_of": None,
@@ -1145,6 +1172,8 @@ class VCPScannerRunner:
             "scanner_id": rec["scanner_id"],
             "api_contract_version": rec["api_contract_version"],
             "status": status,
+            "reason": "STALE_SNAPSHOT" if status == ScannerStatus.STALE.value else None,
+            "recovery_condition": resolve_scanner_recovery_condition("STALE_SNAPSHOT") if status == ScannerStatus.STALE.value else None,
             "snapshot_id": rec.get("snapshot_id"),
             "matched_count": rec.get("matched_count"),
             "data_as_of": rec.get("data_as_of"),
@@ -1277,12 +1306,30 @@ class SmartMoneyScannerRunner:
         )
 
     @classmethod
-    def get_status_envelope(cls) -> Dict[str, Any]:
+    @classmethod
+    def get_status_envelope(
+        cls,
+        status: ScannerStatus = ScannerStatus.PIPELINE_PENDING,
+        reason: str = "NO_ACTIVE_SMART_MONEY_SNAPSHOT",
+        detail: Optional[str] = None,
+        recovery_condition: Optional[str] = None,
+        freshness_status: FreshnessStatus = FreshnessStatus.UNKNOWN,
+    ) -> Dict[str, Any]:
         now_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        effective_detail = detail or (
+            "Live market-wide institutional positioning, 13F filing aggregation, and dark pool feeds are disconnected for general universe screening. Point-in-time Form 4 screening active via /screener/smart-money/scan."
+        )
+        effective_recovery = recovery_condition or resolve_scanner_recovery_condition(reason)
+        is_error = status == ScannerStatus.ERROR
         return {
             "scanner_id": "SMART_MONEY",
             "api_contract_version": SMART_MONEY_API_CONTRACT_VERSION,
-            "status": ScannerStatus.PIPELINE_PENDING.value,
+            "status": status.value,
+            "reason": reason,
+            "detail": effective_detail,
+            "recovery_condition": effective_recovery,
+            "snapshot_id": None,
+            "matched_count": None,
             "methodology": {
                 "ruleset_version": SMART_MONEY_RULESET_VERSION,
                 "evidence_schema_version": SMART_MONEY_EVIDENCE_SCHEMA_VERSION,
@@ -1294,25 +1341,32 @@ class SmartMoneyScannerRunner:
                 "implementation_release_sha": CURRENT_IMPLEMENTATION_RELEASE_SHA,
                 "subsignal": "INSIDER_FORM4",
                 "role": "INSIDER_FORM4_POINT_IN_TIME_FLOW",
-                "source": "UNPROVISIONED_MARKET_WIDE_FEED",
+                "source": "FAIL_CLOSED_READ_CONTRACT" if is_error else "UNPROVISIONED_MARKET_WIDE_FEED",
             },
             "freshness": {
                 "policy_version": SMART_MONEY_FRESHNESS_POLICY_VERSION,
                 "generated_at": now_str,
                 "data_as_of": None,
                 "evaluated_at": now_str,
-                "status": FreshnessStatus.UNKNOWN.value,
-                "rationale": "Live market-wide institutional positioning, 13F filing aggregation, and dark pool feeds are disconnected for general universe screening. Point-in-time Form 4 screening active via /screener/smart-money/scan.",
+                "status": freshness_status.value,
+                "rationale": effective_detail,
             },
             "snapshot": {
                 "run_id": None,
                 "snapshot_id": None,
-                "universe_size": len(CANONICAL_VCP_UNIVERSE),
-                "matched_count": None,  # Invariant: matched_count is NOT_APPLICABLE when PIPELINE_PENDING
+                "universe_size": 0,
+                "matched_count": None,  # Invariant: matched_count is NOT_APPLICABLE when PIPELINE_PENDING/ERROR
             },
+            "coverage": resolve_coverage_envelope(
+                status=status.value,
+                universe_size=0,
+                matched_count=None,
+                c_meta={},
+                failure_reason_fallback=reason,
+            ),
             "publication_decision": "QUARANTINE",
-            "publication_integrity": "PENDING",
-            "publicationIntegrity": "PENDING",
+            "publication_integrity": "NOT_VERIFIED" if is_error else "PENDING",
+            "publicationIntegrity": "NOT_VERIFIED" if is_error else "PENDING",
             "publicationIntegrityVerified": False,
             "results": [],
         }
@@ -1381,28 +1435,44 @@ class SmartMoneyScannerRunner:
         """
         Retrieves the latest verified, published snapshot from ScannerSnapshotStore.
         If no published snapshot is present, returns fail-closed PIPELINE_PENDING envelope.
+        If storage lookup raises, fails closed to ERROR rather than impersonating PIPELINE_PENDING.
         Enforces Control A: Emergency web read disablement via ARX_SMART_MONEY_POSTGRES_READ_ENABLED=false.
         """
         read_enabled = os.environ.get("ARX_SMART_MONEY_POSTGRES_READ_ENABLED", "true").strip().lower()
         if read_enabled in ("false", "0", "no"):
             logger.warning("Smart Money postgres read disabled via ARX_SMART_MONEY_POSTGRES_READ_ENABLED=false (Control A)")
-            return self.get_status_envelope()
+            return self.get_status_envelope(
+                status=ScannerStatus.PIPELINE_PENDING,
+                reason="POSTGRES_READ_DISABLED",
+                detail="Smart Money Postgres snapshot reads are disabled via ARX_SMART_MONEY_POSTGRES_READ_ENABLED=false (Control A hold).",
+            )
 
-        if self.backend == "postgres":
+        try:
+            if self.backend == "postgres":
+                persisted = self.snapshot_store.get_latest_active_snapshot("SMART_MONEY")
+                if persisted is not None:
+                    return self._to_envelope(persisted)
+                return self.get_status_envelope()
+
+            if self._cached_active_snapshot is not None:
+                latest_id = self.snapshot_store.get_latest_active_snapshot_id("SMART_MONEY")
+                if latest_id == self._cached_active_snapshot.get("snapshot_id"):
+                    return self._to_envelope(self._cached_active_snapshot)
+                self._cached_active_snapshot = None
+
             persisted = self.snapshot_store.get_latest_active_snapshot("SMART_MONEY")
             if persisted is not None:
+                self._cached_active_snapshot = persisted
                 return self._to_envelope(persisted)
+
             return self.get_status_envelope()
-
-        if self._cached_active_snapshot is not None:
-            return self._to_envelope(self._cached_active_snapshot)
-
-        persisted = self.snapshot_store.get_latest_active_snapshot("SMART_MONEY")
-        if persisted is not None:
-            self._cached_active_snapshot = persisted
-            return self._to_envelope(persisted)
-
-        return self.get_status_envelope()
+        except Exception as e:
+            logger.error(f"SmartMoneyScannerRunner: snapshot store lookup failed: {e}")
+            return self.get_status_envelope(
+                status=ScannerStatus.ERROR,
+                reason="STORAGE_ERROR",
+                detail=f"Failed to access Smart Money snapshot store: {e}",
+            )
 
     def execute_market_wide_scan(
         self,

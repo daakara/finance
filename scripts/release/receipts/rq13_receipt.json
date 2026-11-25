@@ -2,19 +2,19 @@
   "control_id": "RQ-13",
   "name": "Financial Evidence & Decision Integrity",
   "status": "PASS",
-  "start_time": "2026-11-24T06:03:26.686628+00:00",
-  "end_time": "2026-11-24T06:03:26.716800+00:00",
-  "duration_sec": 0.003,
-  "candidate_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
-  "source_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
-  "execution_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+  "start_time": "2026-11-25T10:18:27.962585+00:00",
+  "end_time": "2026-11-25T10:18:27.981818+00:00",
+  "duration_sec": 0.002,
+  "candidate_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "source_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "execution_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
-    "execution_sha": "71c0cb980223ecf184e130dc68cce29168ebe87b",
+    "source_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+    "execution_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
     "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -64,12 +64,12 @@
     "analyst_dashboard/analyzers/decision_hierarchy.py": "b0d41de56c34a46000496e2cf80afdfd76a3ff19ffc18fbdd80f430050c375b3",
     "analyst_dashboard/smart_money/form4_parser.py": "68d95e24feaa72cefad219b95c421cbedb85fda06a94fc9772e8473564c07031",
     "analyst_dashboard/smart_money/form4_models.py": "c7111457655cfffb13c8614ad3f71ee5232c9a1a36a94814889c24b2f53b16e3",
-    "api/routes/screener.py": "71511d94b6467e2c6819f0a70d634f40b5fec51d75a789710ff606eb0496c2dc",
+    "api/routes/screener.py": "3e658db0d558c651e3574a10960f99758cb9e03e61cc358d89cf102e591a8183",
     "frontend/lib/insightGenerator.ts": "a1d50d4a37710f49e35b508d17bbe9a25b8a72b596aaf7ddf6fb74eb1aa117d4"
   },
   "errors": [],
   "metadata": {
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "ee96d14ad95aaf402483b4a6b322ede393bb9a8145d4d34ca1aad413732ba63d"
+  "receipt_digest": "b694bba914715e48d15de6d55fb9280f73ea25e773efff8baebb8d7cc8dba268"
 }

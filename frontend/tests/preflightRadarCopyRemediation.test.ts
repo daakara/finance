@@ -6,6 +6,7 @@ import {
   isDecisionActionable,
   isStatusActionable,
 } from "../types/decisionContract";
+import { resolveRadarEmptyStateCopy } from "../lib/radarPresentation";
 
 console.log("Starting Pre-Flight & Radar Copy Remediation Forensic Verification Suite...\n");
 
@@ -98,38 +99,86 @@ console.log("\n2. Verifying Radar page capability copy and split capability sema
 const radarPath = path.join(__dirname, "../app/radar/page.tsx");
 const radarSource = fs.readFileSync(radarPath, "utf8");
 
-// A. Badge remediation: "Universe Scanner Pending" replaces ambiguous "Pipeline Pending"
+// A. Badge remediation: "Universe Scanner Pending" replaces ambiguous "Pipeline Pending" while Error stays "Error"
 assert.ok(
-  radarSource.includes("badge: isAvailable('SMART_MONEY') ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}` : 'Universe Scanner Pending'"),
-  "Smart Money badge must be 'Universe Scanner Pending' when not available"
+  radarSource.includes("capabilities.SMART_MONEY?.status === 'ERROR'") &&
+    radarSource.includes("? 'Error'") &&
+    radarSource.includes("`${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}`") &&
+    radarSource.includes(": 'Universe Scanner Pending'"),
+  "Smart Money badge must be 'Universe Scanner Pending' on pending and 'Error' on error"
 );
 assert.ok(
-  radarSource.includes("badge: isAvailable('VCP') ? `${allAssets.filter((a) => a.categories.includes('VCP')).length}` : 'Universe Scanner Pending'"),
-  "VCP badge must be 'Universe Scanner Pending' when not available"
+  radarSource.includes("capabilities.VCP?.status === 'ERROR'") &&
+    radarSource.includes("typeof capabilities.VCP?.matchedCount === 'number' ? capabilities.VCP.matchedCount : allAssets.filter((a) => a.categories.includes('VCP')).length") &&
+    radarSource.includes(": 'Universe Scanner Pending'"),
+  "VCP badge must use authoritative matchedCount when available, 'Universe Scanner Pending' on pending, and 'Error' on error"
 );
-console.log("   [OK] Smart Money & VCP badges updated to 'Universe Scanner Pending'");
+console.log("   [OK] Smart Money & VCP badges updated to 'Universe Scanner Pending' and segregated from Error");
 
-// B. Empty State Title Remediation
+// B & C. Shared Desktop/Mobile Empty State Remediation & Split Capability Copy
 assert.ok(
-  radarSource.includes('activeFilter === \'SMART_MONEY\' && categoryMeta.SMART_MONEY.status === \'PIPELINE_PENDING\'\n                              ? "Smart Money — Universe Scanner Pending"'),
+  radarSource.includes("resolveRadarEmptyStateCopy") &&
+    radarSource.includes('data-testid="radar-desktop-empty-state"') &&
+    radarSource.includes('data-testid="radar-mobile-empty-state"'),
+  "Radar desktop & mobile empty states must use shared resolveRadarEmptyStateCopy"
+);
+
+const smPendingCopy = resolveRadarEmptyStateCopy({
+  activeFilter: "SMART_MONEY",
+  searchQuery: "",
+  isTickerQuery: false,
+  cleanQ: "",
+  ownershipFilter: "ALL",
+  isPortfolioVerified: true,
+  allAssetsCount: 194,
+  referenceUniverseCount: 500,
+  capabilities: { SMART_MONEY: { status: "PIPELINE_PENDING", reason: "NO_ACTIVE_SMART_MONEY_SNAPSHOT" } },
+  vcpStatus: "AVAILABLE",
+  vcpCount: 0,
+  smStatus: "PIPELINE_PENDING",
+  smCount: null,
+});
+assert.strictEqual(
+  smPendingCopy.title,
+  "Smart Money — Universe Scanner Pending",
   "Smart Money empty state title must be 'Smart Money — Universe Scanner Pending'"
 );
 assert.ok(
-  radarSource.includes('activeFilter === \'VCP\' && categoryMeta.VCP.status === \'PIPELINE_PENDING\'\n                              ? "Minervini VCP — Universe Scanner Pending"'),
-  "VCP empty state title must be 'Minervini VCP — Universe Scanner Pending'"
-);
-console.log("   [OK] Smart Money & VCP empty state titles verified");
-
-// C. Explanatory Body: Single-Asset Availability Communicated
-assert.ok(
-  radarSource.includes("Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money."),
+  smPendingCopy.description.includes(
+    "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money."
+  ),
   "Smart Money empty state body must explain single-asset availability on /smart-money"
 );
+assert.ok(Boolean(smPendingCopy.reasonCode && smPendingCopy.recoveryCondition), "Smart Money pending state must surface reason and recovery condition");
+
+const vcpPendingCopy = resolveRadarEmptyStateCopy({
+  activeFilter: "VCP",
+  searchQuery: "",
+  isTickerQuery: false,
+  cleanQ: "",
+  ownershipFilter: "ALL",
+  isPortfolioVerified: true,
+  allAssetsCount: 194,
+  referenceUniverseCount: 500,
+  capabilities: { VCP: { status: "PIPELINE_PENDING", reason: "NO_ACTIVE_SNAPSHOT" } },
+  vcpStatus: "PIPELINE_PENDING",
+  vcpCount: null,
+  smStatus: "PIPELINE_PENDING",
+  smCount: null,
+});
+assert.strictEqual(
+  vcpPendingCopy.title,
+  "Minervini VCP — Universe Scanner Pending",
+  "VCP empty state title must be 'Minervini VCP — Universe Scanner Pending'"
+);
 assert.ok(
-  radarSource.includes("Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs."),
+  vcpPendingCopy.description.includes(
+    "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs."
+  ),
   "VCP empty state body must explain single-asset availability in Analysis and Setups"
 );
-console.log("   [OK] Split capability model verified: single-asset availability clearly communicated");
+assert.ok(Boolean(vcpPendingCopy.reasonCode && vcpPendingCopy.recoveryCondition), "VCP pending state must surface reason and recovery condition");
+console.log("   [OK] Smart Money & VCP empty state titles, single-asset availability, and pending reason/recovery verified");
 
 // D. Tab Button Tooltips
 assert.ok(
