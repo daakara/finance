@@ -2046,10 +2046,12 @@
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/100",
         "tests/test_smart_money_worker_lifecycle_and_fencing.py",
-        "docs/governance/sprint3/SMART_MONEY_PHASE1_PRODUCTION_SAFETY_CASE.md"
+        "docs/governance/sprint3/SMART_MONEY_PHASE1_PRODUCTION_SAFETY_CASE.md",
+        "docs/reports/SEC_RECURRING_COHORT_PILOT_165.md"
       ],
       "github_issues": [
-        67
+        67,
+        165
       ],
       "github_prs": [
         100
@@ -2063,7 +2065,10 @@
         "PR-100"
       ],
       "superseded_by": null,
-      "description": "Smart Money Phase 1: Operational Readiness, Worker Fencing & Observability. Managed under SMART_MONEY workstream for SPRINT_3."
+      "description": "Smart Money Phase 1: Operational Readiness, Worker Fencing & Observability. Managed under SMART_MONEY workstream for SPRINT_3.",
+      "commit_refs": [
+        "1063a10fed1ed312feadeb671980a642e757e601"
+      ]
     },
     {
       "task_id": "ARX-S4-ARCH-002",
@@ -5251,12 +5256,17 @@
         "ARX-S3-017"
       ],
       "blocking_decision": "SMART_MONEY_INGESTION_FENCE",
-      "github_issue_refs": [],
+      "github_issue_refs": [
+        165
+      ],
       "github_pr_refs": [],
-      "commit_refs": [],
+      "commit_refs": [
+        "1063a10fed1ed312feadeb671980a642e757e601"
+      ],
       "deployment_refs": [],
       "evidence_refs": [
-        "Directive 058 Section 16"
+        "Directive 058 Section 16",
+        "docs/reports/SEC_RECURRING_COHORT_PILOT_165.md"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
