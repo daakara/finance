@@ -1,5 +1,5 @@
 {
-  "release_candidate_commit": "0c4477d5b84d7bb5888d4dd1963f2cf9941f9a44",
+  "release_candidate_commit": "2f402be15a2540ab74300607fff9b70551ea886f",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
   "total_files": 77,
   "qualification_policy_version": "2.2.0-D074A4",
@@ -729,6 +729,6 @@
       "size_bytes": 4773
     }
   },
-  "candidate_commit_sha": "0c4477d5b84d7bb5888d4dd1963f2cf9941f9a44",
+  "candidate_commit_sha": "2f402be15a2540ab74300607fff9b70551ea886f",
   "target_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486"
 }
