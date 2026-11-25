@@ -145,8 +145,8 @@
         "implementation": "PARTIAL",
         "integration": "PARTIAL",
         "verification": "PASS",
-        "repository_publication": "NOT_APPLICABLE",
-        "deployment": "NOT_APPLICABLE",
+        "repository_publication": "DRAFT_PR",
+        "deployment": "DEPLOYED_DORMANT",
         "operational_execution": "NOT_PERFORMED",
         "production_evidence": "INSUFFICIENT",
         "owner_authorization": "AUTHORIZED"
@@ -163,27 +163,42 @@
       "evidence_refs": [
         "frontend/app/radar/page.tsx",
         "api/routes/screener.py",
-        "analyst_dashboard/analyzers/scanner_runner.py"
+        "analyst_dashboard/analyzers/scanner_runner.py",
+        "ARX-PR327-PR328-INTEGRATION-QUALIFICATION-RECEIPT.md",
+        "https://github.com/daakara/finance/actions/runs/45596974737",
+        "https://github.com/daakara/finance/pull/327",
+        "https://github.com/daakara/finance/pull/328"
       ],
       "github_issues": [
         61,
         62,
         64,
-        70
+        70,
+        166,
+        230
       ],
       "github_prs": [
-        73
+        73,
+        327,
+        328
       ],
       "authorization_boundary": "DISCOVERY_ONLY",
       "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5B_OPS",
-      "carryforward_reason": "CARRYFORWARD_SPRINT5: On-demand scan and UI banner verified; continuous background scheduler daemon design carried forward to Sprint 5 decoupled from HVA01",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: PR #327+#328 UI/API operational-truth remediation is DEPLOYED_AND_VERIFIED at ab0c9845 (Run 45596974737; Railway ea3ccfba; Pages 6c0d391e), while PR #327/#328 remain OPEN/UNMERGED and continuous background scanning, authorized market-data refresh, and snapshot publication remain HELD under HOLD_SCAN_001 (Issues #166, #230).",
       "reopening_trigger": null,
       "historical_aliases": [
         "RADAR-001",
         "ARX-S4-RADAR-VCP-TRUTH"
       ],
       "superseded_by": null,
-      "description": "Investigation and remediation of Minervini VCP screening operational acceptance. Documents the authoritative distinction between: (1) reported 35-symbol internal-reference snapshot, (2) valid governed production-universe publication, (3) full US-listed market assessment, (4) current Radar availability displaying 'Universe Scanner Pending', and (5) scanner execution and activation authority. The reported internal snapshot does not establish full-market operational acceptance. Preserves PR #73 as a held implementation candidate for clean rebase in Sprint 4 Workstream 4.3, not an authorized production activation."
+      "description": "Investigation and remediation of Minervini VCP screening operational acceptance. Documents the authoritative distinction between: (1) reported 35-symbol internal-reference snapshot, (2) valid governed production-universe publication, (3) full US-listed market assessment, (4) current Radar availability displaying 'Universe Scanner Pending', and (5) scanner execution and activation authority. The reported internal snapshot does not establish full-market operational acceptance. Preserves PR #73 as a held implementation candidate for clean rebase in Sprint 4 Workstream 4.3, not an authorized production activation.",
+      "commit_refs": [
+        "ab0c9845617eff812115de7b3e5e6163f04d7f06"
+      ],
+      "deployment_refs": [
+        "Railway:ea3ccfba-658b-4993-8d70-931ca63a131a",
+        "Cloudflare:6c0d391e-176d-4eca-9aec-f5eef6dd69c5"
+      ]
     },
     {
       "task_id": "ARX-S1-001",
@@ -841,13 +856,13 @@
       "disposition": "SPRINT5_DISCOVERY",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "PARTIAL",
-        "integration": "NOT_STARTED",
-        "verification": "PENDING",
+        "implementation": "DONE",
+        "integration": "DONE",
+        "verification": "PASS",
         "repository_publication": "DRAFT_PR",
-        "deployment": "NOT_DEPLOYED",
+        "deployment": "DEPLOYED_DORMANT",
         "operational_execution": "NOT_PERFORMED",
-        "production_evidence": "NOT_APPLICABLE",
+        "production_evidence": "VERIFIED",
         "owner_authorization": "AUTHORIZED"
       },
       "acceptance_criteria": [
@@ -859,24 +874,39 @@
       ],
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/42",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "ARX-PR327-PR328-INTEGRATION-QUALIFICATION-RECEIPT.md",
+        "https://github.com/daakara/finance/actions/runs/45596974737",
+        "https://github.com/daakara/finance/pull/327",
+        "https://github.com/daakara/finance/pull/328"
       ],
       "github_issues": [
         61,
-        62
+        62,
+        166,
+        230
       ],
       "github_prs": [
-        42
+        42,
+        327,
+        328
       ],
       "authorization_boundary": "BOUNDED_DISCOVERY",
       "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5B_OPS",
-      "carryforward_reason": "CARRYFORWARD_SPRINT5: Plain-English coverage disclosure copy aligned; navigation journey state preservation across tabs carried forward to Sprint 5",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: Radar coverage disclosure (500 evaluated, historical 2026-11-06 VCP snapshot vcp-snap-1794130818-3c0eb357, mixed tape dates 2026-11-06..2026-11-24, frozen SNAP_SM_1792939989_48f30db6 pilot) is DEPLOYED_AND_VERIFIED via PR #327 (ab0c9845; Run 45596974737); PR #327 remains OPEN/UNMERGED and live scanning remains HELD under HOLD_SCAN_001.",
       "reopening_trigger": null,
       "historical_aliases": [
         "S2-09"
       ],
       "superseded_by": null,
-      "description": "Radar Coverage Disclosure & Analysis Handoff Alignment. Managed under RADAR_VCP workstream for SPRINT_2."
+      "description": "Radar Coverage Disclosure & Analysis Handoff Alignment. Managed under RADAR_VCP workstream for SPRINT_2.",
+      "commit_refs": [
+        "ab0c9845617eff812115de7b3e5e6163f04d7f06"
+      ],
+      "deployment_refs": [
+        "Railway:ea3ccfba-658b-4993-8d70-931ca63a131a",
+        "Cloudflare:6c0d391e-176d-4eca-9aec-f5eef6dd69c5"
+      ]
     },
     {
       "task_id": "ARX-S2-010",
@@ -1336,13 +1366,13 @@
       "disposition": "SPRINT5_EXECUTION",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "PARTIAL",
-        "integration": "PARTIAL",
+        "implementation": "DONE",
+        "integration": "DONE",
         "verification": "PASS",
         "repository_publication": "DRAFT_PR",
-        "deployment": "NOT_DEPLOYED",
+        "deployment": "DEPLOYED_ACTIVE",
         "operational_execution": "NOT_APPLICABLE",
-        "production_evidence": "NOT_APPLICABLE",
+        "production_evidence": "VERIFIED",
         "owner_authorization": "AUTHORIZED"
       },
       "acceptance_criteria": [
@@ -1355,24 +1385,37 @@
       "evidence_refs": [
         "https://github.com/daakara/finance/issues/61",
         "https://github.com/daakara/finance/pull/98",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "ARX-PR327-PR328-INTEGRATION-QUALIFICATION-RECEIPT.md",
+        "https://github.com/daakara/finance/actions/runs/45596974737",
+        "https://github.com/daakara/finance/pull/327",
+        "https://github.com/daakara/finance/pull/328"
       ],
       "github_issues": [
-        61
+        61,
+        230
       ],
       "github_prs": [
-        98
+        98,
+        327
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
       "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5A_UX",
-      "carryforward_reason": "CARRYFORWARD_SPRINT5: Backend error-vs-zero semantics merged in RC-A (#107); frontend UI retry affordance and error banner held on candidate/sprint4-rc-b (PR #98) awaiting Owner UX Design Acceptance",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: Fail-closed ERROR/PENDING/STALE capability semantics (matchedCount: null, HTTP 500 error distinction, UI retry guidance) DEPLOYED_AND_VERIFIED via PR #327 at ab0c9845 (Run 45596974737; Railway ea3ccfba; Pages 6c0d391e); PR #327 remains OPEN/UNMERGED.",
       "reopening_trigger": null,
       "historical_aliases": [
         "INITIATIVE-S3-RADAR-RELIABILITY-G6",
         "ISSUE-61"
       ],
       "superseded_by": null,
-      "description": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry. Managed under RADAR_VCP workstream for SPRINT_3."
+      "description": "Radar Reliability: Fail-Closed Error-versus-Zero Semantics & UI Retry. Managed under RADAR_VCP workstream for SPRINT_3.",
+      "commit_refs": [
+        "ab0c9845617eff812115de7b3e5e6163f04d7f06"
+      ],
+      "deployment_refs": [
+        "Railway:ea3ccfba-658b-4993-8d70-931ca63a131a",
+        "Cloudflare:6c0d391e-176d-4eca-9aec-f5eef6dd69c5"
+      ]
     },
     {
       "task_id": "ARX-S3-005",
@@ -1386,13 +1429,13 @@
       "disposition": "SPRINT5_EXECUTION",
       "dimensions": {
         "requirements": "DONE",
-        "implementation": "PARTIAL",
-        "integration": "PARTIAL",
+        "implementation": "DONE",
+        "integration": "DONE",
         "verification": "PASS",
         "repository_publication": "DRAFT_PR",
-        "deployment": "NOT_DEPLOYED",
+        "deployment": "DEPLOYED_ACTIVE",
         "operational_execution": "NOT_APPLICABLE",
-        "production_evidence": "NOT_APPLICABLE",
+        "production_evidence": "VERIFIED",
         "owner_authorization": "AUTHORIZED"
       },
       "acceptance_criteria": [
@@ -1405,24 +1448,37 @@
       "evidence_refs": [
         "https://github.com/daakara/finance/issues/62",
         "https://github.com/daakara/finance/pull/98",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "ARX-PR327-PR328-INTEGRATION-QUALIFICATION-RECEIPT.md",
+        "https://github.com/daakara/finance/actions/runs/45596974737",
+        "https://github.com/daakara/finance/pull/327",
+        "https://github.com/daakara/finance/pull/328"
       ],
       "github_issues": [
-        62
+        62,
+        230
       ],
       "github_prs": [
-        98
+        98,
+        327
       ],
       "authorization_boundary": "BOUNDED_ENGINEERING",
       "operational_state": "CARRYFORWARD_SPRINT5_TRACK_5A_UX",
-      "carryforward_reason": "CARRYFORWARD_SPRINT5: Backend date provenance and historical invariants merged in RC-A (#107); frontend candidate truth badge and visual affordance suppression held in PR #98 awaiting Owner UX Design Acceptance",
+      "carryforward_reason": "CARRYFORWARD_SPRINT5: Mixed priceDate bounds (marketDataOldestAsOf..marketDataAsOf), historical VCP snapshot truth (2026-11-06, 0/500), and frozen pilot eligibility badges DEPLOYED_AND_VERIFIED via PR #327 at ab0c9845 (Run 45596974737); PR #327 remains OPEN/UNMERGED.",
       "reopening_trigger": null,
       "historical_aliases": [
         "INITIATIVE-S3-RADAR-CANDIDATE-TRUTH",
         "ISSUE-62"
       ],
       "superseded_by": null,
-      "description": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance. Managed under RADAR_VCP workstream for SPRINT_3."
+      "description": "Radar Candidate Truth: Eligibility Contracts, False Affordances & Date Provenance. Managed under RADAR_VCP workstream for SPRINT_3.",
+      "commit_refs": [
+        "ab0c9845617eff812115de7b3e5e6163f04d7f06"
+      ],
+      "deployment_refs": [
+        "Railway:ea3ccfba-658b-4993-8d70-931ca63a131a",
+        "Cloudflare:6c0d391e-176d-4eca-9aec-f5eef6dd69c5"
+      ]
     },
     {
       "task_id": "ARX-S3-006",
@@ -2196,8 +2252,8 @@
       "disposition": "SPRINT5_DISCOVERY",
       "implementation_state": "PARTIAL",
       "verification_state": "PASS",
-      "repository_publication_state": "NOT_APPLICABLE",
-      "deployment_state": "NOT_APPLICABLE",
+      "repository_publication_state": "DRAFT_PR",
+      "deployment_state": "DEPLOYED_DORMANT",
       "operational_state": "NOT_PERFORMED",
       "governance_state": "AUTHORIZED",
       "acceptance_criteria": [
@@ -2214,17 +2270,30 @@
         61,
         62,
         64,
-        70
+        70,
+        166,
+        230
       ],
       "github_pr_refs": [
-        73
+        73,
+        327,
+        328
       ],
-      "commit_refs": [],
-      "deployment_refs": [],
+      "commit_refs": [
+        "ab0c9845617eff812115de7b3e5e6163f04d7f06"
+      ],
+      "deployment_refs": [
+        "Railway:ea3ccfba-658b-4993-8d70-931ca63a131a",
+        "Cloudflare:6c0d391e-176d-4eca-9aec-f5eef6dd69c5"
+      ],
       "evidence_refs": [
         "frontend/app/radar/page.tsx",
         "api/routes/screener.py",
-        "analyst_dashboard/analyzers/scanner_runner.py"
+        "analyst_dashboard/analyzers/scanner_runner.py",
+        "ARX-PR327-PR328-INTEGRATION-QUALIFICATION-RECEIPT.md",
+        "https://github.com/daakara/finance/actions/runs/45596974737",
+        "https://github.com/daakara/finance/pull/327",
+        "https://github.com/daakara/finance/pull/328"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -2878,10 +2947,10 @@
       "priority": "P1",
       "status": "READY",
       "disposition": "SPRINT5_DISCOVERY",
-      "implementation_state": "PARTIAL",
-      "verification_state": "PENDING",
+      "implementation_state": "DONE",
+      "verification_state": "PASS",
       "repository_publication_state": "DRAFT_PR",
-      "deployment_state": "NOT_DEPLOYED",
+      "deployment_state": "DEPLOYED_DORMANT",
       "operational_state": "NOT_PERFORMED",
       "governance_state": "AUTHORIZED",
       "acceptance_criteria": [
@@ -2894,16 +2963,29 @@
       "blocking_decision": null,
       "github_issue_refs": [
         61,
-        62
+        62,
+        166,
+        230
       ],
       "github_pr_refs": [
-        42
+        42,
+        327,
+        328
       ],
-      "commit_refs": [],
-      "deployment_refs": [],
+      "commit_refs": [
+        "ab0c9845617eff812115de7b3e5e6163f04d7f06"
+      ],
+      "deployment_refs": [
+        "Railway:ea3ccfba-658b-4993-8d70-931ca63a131a",
+        "Cloudflare:6c0d391e-176d-4eca-9aec-f5eef6dd69c5"
+      ],
       "evidence_refs": [
         "https://github.com/daakara/finance/pull/42",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "ARX-PR327-PR328-INTEGRATION-QUALIFICATION-RECEIPT.md",
+        "https://github.com/daakara/finance/actions/runs/45596974737",
+        "https://github.com/daakara/finance/pull/327",
+        "https://github.com/daakara/finance/pull/328"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -3358,10 +3440,10 @@
       "priority": "P0",
       "status": "READY",
       "disposition": "SPRINT5_EXECUTION",
-      "implementation_state": "PARTIAL",
+      "implementation_state": "DONE",
       "verification_state": "PASS",
       "repository_publication_state": "DRAFT_PR",
-      "deployment_state": "NOT_DEPLOYED",
+      "deployment_state": "DEPLOYED_ACTIVE",
       "operational_state": "NOT_APPLICABLE",
       "governance_state": "AUTHORIZED",
       "acceptance_criteria": [
@@ -3373,17 +3455,28 @@
       ],
       "blocking_decision": null,
       "github_issue_refs": [
-        61
+        61,
+        230
       ],
       "github_pr_refs": [
-        98
+        98,
+        327
       ],
-      "commit_refs": [],
-      "deployment_refs": [],
+      "commit_refs": [
+        "ab0c9845617eff812115de7b3e5e6163f04d7f06"
+      ],
+      "deployment_refs": [
+        "Railway:ea3ccfba-658b-4993-8d70-931ca63a131a",
+        "Cloudflare:6c0d391e-176d-4eca-9aec-f5eef6dd69c5"
+      ],
       "evidence_refs": [
         "https://github.com/daakara/finance/issues/61",
         "https://github.com/daakara/finance/pull/98",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "ARX-PR327-PR328-INTEGRATION-QUALIFICATION-RECEIPT.md",
+        "https://github.com/daakara/finance/actions/runs/45596974737",
+        "https://github.com/daakara/finance/pull/327",
+        "https://github.com/daakara/finance/pull/328"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
@@ -3405,10 +3498,10 @@
       "priority": "P1",
       "status": "READY",
       "disposition": "SPRINT5_EXECUTION",
-      "implementation_state": "PARTIAL",
+      "implementation_state": "DONE",
       "verification_state": "PASS",
       "repository_publication_state": "DRAFT_PR",
-      "deployment_state": "NOT_DEPLOYED",
+      "deployment_state": "DEPLOYED_ACTIVE",
       "operational_state": "NOT_APPLICABLE",
       "governance_state": "AUTHORIZED",
       "acceptance_criteria": [
@@ -3420,17 +3513,28 @@
       ],
       "blocking_decision": null,
       "github_issue_refs": [
-        62
+        62,
+        230
       ],
       "github_pr_refs": [
-        98
+        98,
+        327
       ],
-      "commit_refs": [],
-      "deployment_refs": [],
+      "commit_refs": [
+        "ab0c9845617eff812115de7b3e5e6163f04d7f06"
+      ],
+      "deployment_refs": [
+        "Railway:ea3ccfba-658b-4993-8d70-931ca63a131a",
+        "Cloudflare:6c0d391e-176d-4eca-9aec-f5eef6dd69c5"
+      ],
       "evidence_refs": [
         "https://github.com/daakara/finance/issues/62",
         "https://github.com/daakara/finance/pull/98",
-        "frontend/app/radar/page.tsx"
+        "frontend/app/radar/page.tsx",
+        "ARX-PR327-PR328-INTEGRATION-QUALIFICATION-RECEIPT.md",
+        "https://github.com/daakara/finance/actions/runs/45596974737",
+        "https://github.com/daakara/finance/pull/327",
+        "https://github.com/daakara/finance/pull/328"
       ],
       "evidence_hashes": {},
       "superseded_by": null,
