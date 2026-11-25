@@ -131,3 +131,21 @@ def validate_storage_configuration() -> None:
     role = get_database_role()
     if role not in VALID_ROLES:
         raise ValueError(f"INVALID_DATABASE_ROLE: '{role}' is not a valid Smart Money principal role.")
+
+
+COHORT_PILOT_DATABASE = "finance_smart_money_cohort_001"
+COHORT_PILOT_BACKUP_PREFIX = "cohort-pilot/ARX-TRIAL-10-ISSUER-001"
+
+
+def verify_cohort_database(conn, *, evidence: bool) -> None:
+    """Fence the unpublished evidence database from the canonical owner lock."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT current_database()")
+        database = cur.fetchone()[0]
+    if (database == COHORT_PILOT_DATABASE) != evidence:
+        raise RuntimeError("COHORT_PILOT_DATABASE_ISOLATION_REQUIRED")
+
+
+def verify_cohort_backup_destination(adapter) -> None:
+    if adapter.provider_name not in ("cloudflare_r2", "s3") or adapter.prefix != COHORT_PILOT_BACKUP_PREFIX:
+        raise RuntimeError("COHORT_PILOT_EXTERNAL_BACKUP_PREFIX_REQUIRED")

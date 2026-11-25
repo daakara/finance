@@ -16,6 +16,7 @@ Encapsulates the canonical 10-step daily continuous ingestion cycle:
 
 from __future__ import annotations
 
+import base64
 import os
 import sys
 import time
@@ -33,6 +34,8 @@ from analyst_dashboard.smart_money.storage.config import (
     get_database_role,
     ROLE_INGESTION,
     validate_storage_configuration,
+    verify_cohort_backup_destination,
+    verify_cohort_database,
 )
 from analyst_dashboard.smart_money.storage.postgres_connection import get_connection
 from analyst_dashboard.smart_money.continuous_authorization import (
@@ -40,6 +43,15 @@ from analyst_dashboard.smart_money.continuous_authorization import (
     resolve_release_identity,
     SCOPE_DAILY_10,
     SCOPE_TRIAL_2,
+    SCOPE_TRIAL_10,
+    COHORT_PILOT_REQUESTS_PER_ISSUER,
+    COHORT_PILOT_REQUESTS_PER_SLOT,
+    COHORT_CIKS,
+)
+from analyst_dashboard.smart_money.cohort_catalog import (
+    build_issuer_receipt,
+    evidence_sha256,
+    inventory_from_catalog,
 )
 from analyst_dashboard.smart_money.storage.postgres_coordination import (
     acquire_sec_owner_lock,
@@ -53,6 +65,7 @@ from analyst_dashboard.smart_money.storage.postgres_repository import (
 from analyst_dashboard.smart_money.smart_money_scheduler import (
     SmartMoneyTimezoneScheduler,
     TwoIssuerTrialScheduler,
+    CohortPilotScheduler,
 )
 from analyst_dashboard.smart_money.freshness_authority import NY_TZ
 from analyst_dashboard.data.sec_edgar_fetcher import (
@@ -295,6 +308,7 @@ class ContinuousOutboundSession(requests.Session):
         cancellation_token: Optional[Callable[[], bool]] = None,
         preacquired_lock_conn: Optional[Any] = None,
         cycle_deadline: Optional[float] = None,
+        cohort_send_guard: Optional[Callable[[], None]] = None,
     ):
         super().__init__()
         # Explicitly prohibit urllib3 adapter-managed retries, which would bypass
@@ -309,6 +323,7 @@ class ContinuousOutboundSession(requests.Session):
             self.rate_limiter = RateLimiter(max_per_second=5.0)
 
         self.issuers = issuers or DEFAULT_GOVERNED_ISSUERS
+        self.cohort_send_guard = cohort_send_guard
         is_trial = (
             os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE") == "RECURRING_2_ISSUER_FORM4_TRIAL"
             or (self.issuers is not None and len(self.issuers) <= 2)
@@ -424,6 +439,11 @@ class ContinuousOutboundSession(requests.Session):
         if not self.allow_test_mode:
             require_continuous_authorization(issuers=self.issuers)
 
+        if self.cohort_send_guard is not None:
+            self.cohort_send_guard()
+        elif os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE") == SCOPE_TRIAL_10:
+            raise RuntimeError("COHORT_PILOT_SEND_REQUIRES_RESERVED_SLOT")
+
         # 7. Record transmission count before wire transmission
         self.total_transmissions += 1
         self.issuer_transmissions[issuer_key] = count_for_issuer + 1
@@ -513,7 +533,13 @@ class SmartMoneyContinuousPipeline:
         self.allow_test_mode = allow_test_mode
         self.cancellation_token = cancellation_token
         self._cancelled: bool = False
+        scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
+        self.is_cohort_pilot = scope == SCOPE_TRIAL_10
         self.dsn = dsn or get_database_url()
+        if self.is_cohort_pilot:
+            self.dsn = dsn or os.environ.get("SMART_MONEY_COHORT_PILOT_DATABASE_URL")
+            if not self.dsn or (repository is not None and repository.dsn != self.dsn):
+                raise RuntimeError("COHORT_PILOT_EVIDENCE_DB_REQUIRED")
         self.storage_adapter = storage_adapter or get_backup_storage_adapter()
         self.backup_engine = backup_engine or (
             SmartMoneyBackupEngine(dsn=self.dsn, storage_adapter=self.storage_adapter)
@@ -549,24 +575,29 @@ class SmartMoneyContinuousPipeline:
             else None
         )
         self.issuers = issuers or DEFAULT_GOVERNED_ISSUERS
-        scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
-        self.is_trial_2_issuer = bool(
+        self.is_trial_2_issuer = not self.is_cohort_pilot and bool(
             scope == "RECURRING_2_ISSUER_FORM4_TRIAL"
             or (self.issuers is not None and len(self.issuers) == 2 and {i.get("ticker") for i in self.issuers} == {"NVDA", "AAPL"})
         )
         env_ingestion_only = os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower()
 
-        if self.is_trial_2_issuer:
+        self.trial_scheduler = None
+        self.cohort_reservation = None
+        self.cohort_observations = {}
+        if self.is_cohort_pilot or self.is_trial_2_issuer:
             if env_ingestion_only in ("false", "0", "no"):
                 raise RuntimeError(
-                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: ARX_SMART_MONEY_INGESTION_ONLY cannot be disabled under two-issuer trial profile."
+                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: ARX_SMART_MONEY_INGESTION_ONLY cannot be disabled under recurring trial profile."
                 )
             if ingestion_only is False:
                 raise RuntimeError(
-                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: ingestion_only=False is prohibited under two-issuer trial profile."
+                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: ingestion_only=False is prohibited under recurring trial profile."
                 )
             self.ingestion_only = True
-            self.trial_scheduler = scheduler if isinstance(scheduler, TwoIssuerTrialScheduler) else TwoIssuerTrialScheduler()
+            if self.is_cohort_pilot:
+                self.trial_scheduler = scheduler if isinstance(scheduler, CohortPilotScheduler) else CohortPilotScheduler()
+            else:
+                self.trial_scheduler = scheduler if isinstance(scheduler, TwoIssuerTrialScheduler) else TwoIssuerTrialScheduler()
             self.trial_scheduler.validate_issuers(self.issuers)
         elif ingestion_only is not None:
             self.ingestion_only = bool(ingestion_only)
@@ -584,21 +615,49 @@ class SmartMoneyContinuousPipeline:
             limiter = RateLimiter(max_per_second=5.0)
         self.rate_limiter = limiter
         max_total_reqs = 8 if (self.ingestion_only or len(self.issuers) <= 2) else 40
+        if self.is_cohort_pilot:
+            max_total_reqs = COHORT_PILOT_REQUESTS_PER_SLOT
         self.outbound_session = ContinuousOutboundSession(
             rate_limiter=self.rate_limiter,
             max_total_requests=max_total_reqs,
-            max_per_issuer_requests=4,
+            max_per_issuer_requests=COHORT_PILOT_REQUESTS_PER_ISSUER,
             issuers=self.issuers,
             allow_test_mode=self.allow_test_mode,
             cancellation_token=self.cancellation_token,
+            cohort_send_guard=self._guard_cohort_send if self.is_cohort_pilot else None,
         )
-        self.outbound_session.is_trial = self.is_trial_2_issuer
+        self.outbound_session.is_trial = self.trial_scheduler is not None
+        if self.is_cohort_pilot:
+            self.outbound_session.max_daily_requests = self.trial_scheduler.max_requests_per_day
+            self.outbound_session.max_trial_requests = self.trial_scheduler.max_requests_per_trial
         self.sec_fetcher = sec_fetcher
         self.scanner = scanner or SmartMoneyForm4Scanner()
         self.scheduler = scheduler or SmartMoneyTimezoneScheduler()
         self._preacquired_lock_conn = preacquired_lock_conn
         self._lock_conn_is_preacquired = preacquired_lock_conn is not None
         self._lock_conn = preacquired_lock_conn
+
+    def _cohort_grant_hash(self) -> str:
+        return evidence_sha256({
+            "grant_id": os.environ.get("ARX_CONTINUOUS_AUTH_ID"),
+            "release": os.environ.get("ARX_CONTINUOUS_AUTH_RELEASE_SHA"),
+            "issued_at": os.environ.get("ARX_CONTINUOUS_AUTH_ISSUED_AT"),
+            "expires_at": os.environ.get("ARX_CONTINUOUS_AUTH_EXPIRES_AT"),
+        })
+
+    def _guard_cohort_send(self) -> None:
+        if self.cohort_reservation is None or os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE") != SCOPE_TRIAL_10:
+            raise RuntimeError("COHORT_PILOT_SEND_REQUIRES_RESERVED_SLOT")
+        if self.cohort_reservation != self._cohort_grant_hash():
+            raise RuntimeError("COHORT_PILOT_GRANT_CHANGED")
+        due, slot, _ = self.trial_scheduler.evaluate_execution_eligibility()
+        if not due or slot != self.current_slot_id:
+            raise RuntimeError("COHORT_PILOT_SLOT_CLOSED")
+        if not self.allow_test_mode:
+            self._require_verified_owner_lock()
+        self._check_in_flight_authorization(step_name="COHORT_PILOT_SLOT")
+        if time.monotonic() >= self.cycle_deadline_monotonic:
+            raise RuntimeError("CYCLE_TIMEOUT_EXCEEDED")
 
     def cancel(self) -> None:
         """Sets internal cooperative cancellation flag for in-flight checks."""
@@ -629,8 +688,9 @@ class SmartMoneyContinuousPipeline:
           * force overrides NEVER bypass advisory locking, pre/post backup integrity, or snapshot atomicity.
         """
         start_time = datetime.now(timezone.utc)
+        started_monotonic = time.monotonic()
         self.cycle_deadline = time.time() + self.max_duration_sec
-        self.cycle_deadline_monotonic = time.monotonic() + self.max_duration_sec
+        self.cycle_deadline_monotonic = started_monotonic + self.max_duration_sec
         self.outbound_session.cycle_deadline = self.cycle_deadline
         self.outbound_session.deadline_monotonic = self.cycle_deadline_monotonic
         cycle_id = f"sm-cycle-{start_time.strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
@@ -659,6 +719,18 @@ class SmartMoneyContinuousPipeline:
             raise RuntimeError(
                 "TEST_TRIGGER_PROHIBITED_IN_PRODUCTION: trigger_type='TEST' is strictly prohibited outside authorized test mode."
             )
+
+        if self.is_cohort_pilot and not dry_run and (
+            force or as_of is not None or not expected_trial_slot_id
+            or trigger_type != "SCHEDULED" or not run_request_id or not lease_token
+        ):
+            raise RuntimeError("COHORT_PILOT_REQUIRES_SCHEDULED_DELIVERY")
+        if self.is_cohort_pilot:
+            self.cohort_observations.clear()
+            self.outbound_session.total_transmissions = 0
+            self.outbound_session.issuer_transmissions.clear()
+            self.outbound_session.transmission_log.clear()
+            self.cohort_cycle_id = cycle_id
 
         # Production recovery authorization evaluation
         recovery_authorized = False
@@ -735,7 +807,7 @@ class SmartMoneyContinuousPipeline:
                 recovery_scope=recovery_scope or os.environ.get("ARX_RECOVERY_SCOPE", "SINGLE_CYCLE_RECOVERY"),
             )
             if expected_trial_slot_id is not None and (
-                not self.is_trial_2_issuer
+                self.trial_scheduler is None
                 or getattr(self, "current_slot_id", None) != expected_trial_slot_id
             ):
                 should_run, sched_reason = False, "TRIAL_SLOT_DELIVERY_EXPIRED"
@@ -775,19 +847,24 @@ class SmartMoneyContinuousPipeline:
                 }
             steps_completed.append("STEP_3_DURABLE_DATE_ELIGIBILITY_VERIFIED")
 
-            if self.is_trial_2_issuer:
+            if self.trial_scheduler is not None:
                 if self.repository is None or not self.current_slot_id:
                     raise RuntimeError("TRIAL_BUDGET_RESERVATION_UNAVAILABLE")
                 reserved_slot_id = self.current_slot_id
                 reserved_ny_date = reserved_slot_id.split(":", 1)[0]
-                # A committed reservation survives SIGKILL and database rollback.
-                # Keep the full eight-request charge even after clean completion;
-                # actual transmissions remain separate telemetry, never a refund.
+                # Retain the full reservation across crashes and ingestion rollbacks.
+                grant_hash = None
+                if self.is_cohort_pilot:
+                    if not self.allow_test_mode:
+                        self._require_verified_owner_lock()
+                    grant_hash = self._cohort_grant_hash()
                 self.repository.reserve_trial_cycle_budget(
                     trial_id=self.trial_scheduler.trial_id,
                     slot_id=reserved_slot_id,
                     ny_date=reserved_ny_date,
+                    **({"grant_hash": grant_hash} if self.is_cohort_pilot else {}),
                 )
+                self.cohort_reservation = grant_hash
                 trial_budget_reserved = True
                 steps_completed.append("STEP_3_TRIAL_BUDGET_RESERVED")
 
@@ -858,6 +935,8 @@ class SmartMoneyContinuousPipeline:
 
             if status != "DEGRADED_POST_BACKUP_FAILED":
                 status = "SUCCESS"
+                if self.is_cohort_pilot and receipt_meta["material_gap_count"]:
+                    status = "DEGRADED_COVERAGE_PARTIAL"
 
         except Exception as e:
             logger.error(f"Cycle {cycle_id} failed at step {steps_completed[-1] if steps_completed else 'START'}: {e}")
@@ -876,10 +955,19 @@ class SmartMoneyContinuousPipeline:
                         status=status,
                         requests_transmitted=self.outbound_session.total_transmissions,
                         error="; ".join(errors) if errors else None,
+                        **({"metrics": {
+                            "duration_sec": round(time.monotonic() - started_monotonic, 3),
+                            "issuer_requests": self.outbound_session.issuer_transmissions,
+                            "catalogs_processed": len(self.cohort_observations),
+                            "receipt_id": receipt_id,
+                            "pre_backup_id": pre_backup_manifest.get("backup_id") if pre_backup_manifest else None,
+                            "post_backup_id": post_backup_manifest.get("backup_id") if post_backup_manifest else None,
+                        }} if self.is_cohort_pilot else {}),
                     )
                 except Exception as audit_err:
                     logger.error(f"Failed to record trial cycle audit: {audit_err}")
 
+            self.cohort_reservation = None
             # Advisory lock release in finally block
             t_cleanup_start = time.monotonic()
             self._cleanup_lock()
@@ -936,6 +1024,14 @@ class SmartMoneyContinuousPipeline:
             raise RuntimeError(
                 f"INVALID_SEC_USER_AGENT: Valid genuine User-Agent with contact email required. Active: '{ua}'."
             )
+
+        if self.is_cohort_pilot and not dry_run:
+            verify_cohort_backup_destination(self.storage_adapter)
+            if self._preacquired_lock_conn is None:
+                raise RuntimeError("COHORT_PILOT_CANONICAL_OWNER_LOCK_REQUIRED")
+            verify_cohort_database(self._preacquired_lock_conn, evidence=False)
+            with get_connection(dsn=self.dsn) as conn:
+                verify_cohort_database(conn, evidence=True)
 
         # 3. Check storage & db connectivity
         if self.dsn and not dry_run:
@@ -1068,7 +1164,7 @@ class SmartMoneyContinuousPipeline:
                 )
 
         # 2. Query durable state under lock
-        if self.is_trial_2_issuer:
+        if self.trial_scheduler is not None:
             ny_now = self.trial_scheduler.get_ny_now()
             today_ny_str = ny_now.date().isoformat()
             as_of_date = None
@@ -1088,7 +1184,7 @@ class SmartMoneyContinuousPipeline:
                     progress = self.repository.get_trial_progress(
                         trial_id=self.trial_scheduler.trial_id,
                         ny_date=today_ny_str,
-                        conn=self._lock_conn,
+                        conn=None if self.is_cohort_pilot else self._lock_conn,
                     )
                 except Exception as e:
                     raise RuntimeError(
@@ -1113,7 +1209,7 @@ class SmartMoneyContinuousPipeline:
                 )
 
             should_run, slot_id, reason = self.trial_scheduler.evaluate_execution_eligibility(
-                now=eval_dt,
+                now=eval_dt or ny_now,
                 progress=progress,
                 issuers=self.issuers,
                 force=force,
@@ -1339,7 +1435,9 @@ class SmartMoneyContinuousPipeline:
         # In-flight authorization check before starting ingestion loop
         self._check_in_flight_authorization(step_name="STEP_6_SEC_INGESTION_START")
 
-        max_total_ceiling = 8 if (self.ingestion_only or len(self.issuers) <= 2) else int(os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE", "40"))
+        max_total_ceiling = self.outbound_session.max_total_requests
+        if not self.is_cohort_pilot:
+            max_total_ceiling = 8 if (self.ingestion_only or len(self.issuers) <= 2) else int(os.environ.get("ARX_SEC_MAX_TOTAL_REQUESTS_PER_CYCLE", "40"))
         cycle_request_count = 0
 
         for issuer in self.issuers:
@@ -1358,7 +1456,7 @@ class SmartMoneyContinuousPipeline:
             self._check_in_flight_authorization(step_name=f"STEP_6_SEC_INGESTION_{ticker}")
 
             # Retrieve filings via fetcher or mock
-            if self.sec_fetcher and self.allow_test_mode:
+            if self.sec_fetcher and self.allow_test_mode and not self.is_cohort_pilot:
                 if hasattr(self.sec_fetcher, "session"):
                     self.sec_fetcher.session = self.outbound_session
                 if hasattr(self.sec_fetcher, "rate_limiter"):
@@ -1447,9 +1545,65 @@ class SmartMoneyContinuousPipeline:
         else:
             public_cutoff_utc = datetime.now(timezone.utc)
 
-        catalog = receive(f"https://data.sec.gov/submissions/CIK{str(cik).zfill(10)}.json")
+        catalog_url = f"https://data.sec.gov/submissions/CIK{str(cik).zfill(10)}.json"
+        catalog = receive(catalog_url)
         if catalog is None:
             raise RuntimeError("SEC_UPSTREAM_HTTP_ERROR: Submissions catalog not found")
+        if self.is_cohort_pilot:
+            candidates = self._cohort_document_candidates(ticker, cik, catalog, catalog_url, public_cutoff_utc)
+        else:
+            candidates = self._legacy_document_candidates(ticker, catalog, prospective_start_utc, public_cutoff_utc)
+
+        retrieved = []
+        for form, accession, filing_date, accepted_at, doc in candidates:
+            try:
+                retrieved.append(self._fetch_form4_document(
+                    receive, ticker, cik, company_name, form, accession, filing_date, accepted_at, doc,
+                ))
+            except ContinuousBudgetExceededError:
+                issuer_used = self.outbound_session.issuer_transmissions[ticker]
+                issuer_limit = min(self.outbound_session.max_per_issuer_requests, int(os.environ.get(
+                    "ARX_SEC_MAX_REQUESTS_PER_ISSUER", str(self.outbound_session.max_per_issuer_requests)
+                )))
+                if not self.is_cohort_pilot or issuer_used < issuer_limit:
+                    raise
+                break
+        return retrieved
+
+    def _cohort_document_candidates(self, ticker, cik, catalog, catalog_url, cutoff):
+        body = catalog.content
+        catalog_digest = hashlib.sha256(body).hexdigest()
+        self._guard_cohort_send()
+        observation = {
+            "cycle_id": self.cohort_cycle_id,
+            "slot_id": self.current_slot_id,
+            "grant_sha256": self.cohort_reservation,
+            "ticker": ticker,
+            "cik": cik,
+            "request_url": catalog_url,
+            "response_url": catalog.url,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "interval_start": self.trial_scheduler.issued_at.isoformat(),
+            "cutoff": cutoff.isoformat(),
+            "catalog_sha256": catalog_digest,
+        }
+        artifact_id = self.repository.save_cohort_catalog_observation(
+            self.trial_scheduler.trial_id,
+            {**observation, "body_base64": base64.b64encode(body).decode("ascii")},
+        )
+        inventory, gaps = inventory_from_catalog(body, cik, self.trial_scheduler.issued_at, cutoff)
+        watermark, known_hashes = self.repository.get_cohort_issuer_state(
+            self.trial_scheduler.trial_id, ticker, cik, [row["accession"] for row in inventory],
+        )
+        self.cohort_observations[ticker] = ({
+            **observation, "artifact_id": artifact_id, "inventory": inventory, "catalog_gaps": gaps,
+        }, known_hashes, watermark)
+        return [
+            (row["form"], row["accession"], row["filing_date"], row["accepted_at"], row["primary_document"])
+            for row in inventory if row["accession"] not in known_hashes
+        ]
+
+    def _legacy_document_candidates(self, ticker, catalog, prospective_start_utc, public_cutoff_utc):
         try:
             recent = catalog.json()["filings"]["recent"]
             forms = recent["form"]
@@ -1516,64 +1670,61 @@ class SmartMoneyContinuousPipeline:
         if len(new_indices) > 3:
             raise RuntimeError("SEC_NEW_FILINGS_EXCEED_ISSUER_BUDGET")
 
-        retrieved = []
-        for index in new_indices:
-            form = forms[index]
-            accession = accessions[index]
-            doc = primary_documents[index]
-            if not isinstance(accession, str) or not re.fullmatch(r"[0-9]{10}-[0-9]{2}-[0-9]{6}", accession):
-                raise RuntimeError("SEC_ACCESSION_INVALID")
+        return [
+            (forms[index], accessions[index], filings_dates[index], accepted_dates[index], primary_documents[index])
+            for index in new_indices
+        ]
 
-            accession_compact = accession.replace("-", "")
-            archive_root = (
-                f"https://www.sec.gov/Archives/edgar/data/"
-                f"{int(cik)}/{accession_compact}/"
-            )
-            # Safely resolve primary document URL (validates doc path, rejects traversal & host substitution)
-            resolved_doc_url = resolve_sec_primary_document_url(archive_root, doc)
-            response = receive(resolved_doc_url, allow_404=True)
-            xml = response.text if response is not None else ""
-            source_url = resolved_doc_url
+    @staticmethod
+    def _fetch_form4_document(receive, ticker, cik, company_name, form, accession, filing_date, accepted_at, doc):
+        accession_compact = accession.replace("-", "")
+        archive_root = (
+            f"https://www.sec.gov/Archives/edgar/data/"
+            f"{int(cik)}/{accession_compact}/"
+        )
+        # Safely resolve primary document URL (validates doc path, rejects traversal & host substitution)
+        resolved_doc_url = resolve_sec_primary_document_url(archive_root, doc)
+        response = receive(resolved_doc_url, allow_404=True)
+        xml = response.text if response is not None else ""
+        source_url = resolved_doc_url
 
-            # If the primary document was 404 or does not contain ownershipDocument/xml,
-            # attempt explicitly classified fallback representations:
-            # 1. Cleaned filename if nested path was provided
-            # 2. Complete submission text (.txt)
-            # Failures like 429, budget exhaustion, cancellation, auth expiry, deadline
-            # are raised immediately by receive() or OutboundSession.send() and NEVER swallowed.
-            if response is None or ("<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower()):
-                clean_doc = doc.split("/")[-1] if "/" in doc else None
-                if clean_doc and clean_doc != doc:
-                    clean_url = resolve_sec_primary_document_url(archive_root, clean_doc)
-                    clean_resp = receive(clean_url, allow_404=True)
-                    if clean_resp is not None and clean_resp.status_code == 200:
-                        c_text = clean_resp.text
-                        if "<ownershipdocument" in c_text.lower() or "<xml" in c_text.lower():
-                            xml = c_text
-                            source_url = clean_url
-                if not xml or ("<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower()):
-                    txt_url = resolve_sec_primary_document_url(archive_root, f"{accession}.txt")
-                    txt_resp = receive(txt_url)
-                    if txt_resp is not None:
-                        xml = Form4XmlParser.extract_xml_from_submission_text(txt_resp.text)
-                        source_url = txt_url
-            if not xml or "<ownershipdocument" not in xml.lower():
-                raise RuntimeError("SEC_FORM4_XML_INVALID")
+        # If the primary document was 404 or does not contain ownershipDocument/xml,
+        # attempt explicitly classified fallback representations:
+        # 1. Cleaned filename if nested path was provided
+        # 2. Complete submission text (.txt)
+        # Failures like 429, budget exhaustion, cancellation, auth expiry, deadline
+        # are raised immediately by receive() or OutboundSession.send() and NEVER swallowed.
+        if response is None or ("<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower()):
+            clean_doc = doc.split("/")[-1] if "/" in doc else None
+            if clean_doc and clean_doc != doc:
+                clean_url = resolve_sec_primary_document_url(archive_root, clean_doc)
+                clean_resp = receive(clean_url, allow_404=True)
+                if clean_resp is not None and clean_resp.status_code == 200:
+                    c_text = clean_resp.text
+                    if "<ownershipdocument" in c_text.lower() or "<xml" in c_text.lower():
+                        xml = c_text
+                        source_url = clean_url
+            if not xml or ("<ownershipdocument" not in xml.lower() and "<xml" not in xml.lower()):
+                txt_url = resolve_sec_primary_document_url(archive_root, f"{accession}.txt")
+                txt_resp = receive(txt_url)
+                if txt_resp is not None:
+                    xml = Form4XmlParser.extract_xml_from_submission_text(txt_resp.text)
+                    source_url = txt_url
+        if not xml or "<ownershipdocument" not in xml.lower():
+            raise RuntimeError("SEC_FORM4_XML_INVALID")
 
-            retrieved.append({
-                "ticker": ticker,
-                "cik": str(cik).zfill(10),
-                "company_name": company_name,
-                "accession_number": accession,
-                "filing_date": filings_dates[index],
-                "accepted_datetime": accepted_dates[index],
-                "document_type": form,
-                "xml_content": xml,
-                "source_url": source_url,
-                "content_hash": hashlib.sha256(xml.encode("utf-8")).hexdigest(),
-            })
-
-        return retrieved
+        return {
+            "ticker": ticker,
+            "cik": str(cik).zfill(10),
+            "company_name": company_name,
+            "accession_number": accession,
+            "filing_date": filing_date,
+            "accepted_datetime": accepted_at,
+            "document_type": form,
+            "xml_content": xml,
+            "source_url": source_url,
+            "content_hash": hashlib.sha256(xml.encode("utf-8")).hexdigest(),
+        }
 
     def _step7_parse_and_reconcile(
         self,
@@ -1621,6 +1772,8 @@ class SmartMoneyContinuousPipeline:
                 "FETCHED_AND_PARSED", "FETCHED_NO_RELEVANT_TRANSACTIONS"
             ):
                 raise RuntimeError("SEC_FORM4_PARSE_FAILED")
+            if self.is_cohort_pilot and parsed_filing.document_type.replace("4A", "4/A") != f["document_type"]:
+                raise RuntimeError("SEC_FORM4_DOCUMENT_TYPE_MISMATCH")
             if parsed_filing.issuer_cik != str(f.get("cik", "")).zfill(10):
                 raise RuntimeError("SEC_FORM4_ISSUER_MISMATCH")
             parsed_filings_info.append((f, xml, accession, parsed_filing))
@@ -1701,6 +1854,8 @@ class SmartMoneyContinuousPipeline:
                     else:
                         rel_status = SCOPE_AMBIGUOUS
 
+                if self.is_cohort_pilot and rel_status == SCOPE_AMBIGUOUS:
+                    unresolved_amendments.append(accession)
                 self.repository.save_amendment(
                     amendment_accession=accession, base_accession=base_acc,
                     amendment_number=1,
@@ -1726,7 +1881,7 @@ class SmartMoneyContinuousPipeline:
             coverage_status = "PARTIAL" if unresolved_amendments else "COMPLETE"
             failure_reasons = [f"UNRESOLVED_AMENDMENT:{a}" for a in unresolved_amendments]
 
-        if self.is_trial_2_issuer and hasattr(self, "trial_scheduler"):
+        if self.trial_scheduler is not None:
             cur_slot = getattr(self, "current_slot_id", None)
             failure_reasons.append({
                 "trial_id": self.trial_scheduler.trial_id,
@@ -1751,9 +1906,16 @@ class SmartMoneyContinuousPipeline:
             "source_hashes": source_hashes,
             "reconciliation_hash": reconciliation_hash,
             "release_sha": resolve_release_identity(),
-            "trial_id": getattr(self.trial_scheduler, "trial_id", None) if hasattr(self, "trial_scheduler") else None,
+            "trial_id": getattr(self.trial_scheduler, "trial_id", None),
             "slot_id": getattr(self, "current_slot_id", None),
         }
+
+        if self.is_cohort_pilot:
+            fetched_by_ticker = {}
+            for filing in raw_filings:
+                fetched_by_ticker.setdefault(filing["ticker"], {})[filing["accession_number"]] = filing["content_hash"]
+            self._add_cohort_coverage(receipt_meta, fetched_by_ticker, unresolved_amendments)
+            self._guard_cohort_send()
 
         # Pre-commit invariants verification:
         # 1. Monotonic cycle deadline check
@@ -1768,6 +1930,41 @@ class SmartMoneyContinuousPipeline:
             self.repository.save_reconciliation_receipt(receipt_meta, conn=conn)
 
         return parsed_tx_objs, receipt_meta
+
+    def _add_cohort_coverage(self, receipt, fetched_by_ticker, unresolved):
+        if self.cohort_observations.keys() != COHORT_CIKS.keys():
+            raise RuntimeError("COHORT_PILOT_ISSUER_OBSERVATIONS_INCOMPLETE")
+        issuers = {
+            ticker: build_issuer_receipt(
+                observation, stored_hashes, fetched_by_ticker.get(ticker, {}), unresolved, watermark,
+            )
+            for ticker, (observation, stored_hashes, watermark) in self.cohort_observations.items()
+        }
+        inventory = [row for issuer in issuers.values() for row in issuer["inventory"]]
+        missing = sum(row["disposition"] == "DEFERRED" for row in inventory)
+        accounted = sum(row["disposition"] in ("INGESTED", "ALREADY_ACCOUNTED") for row in inventory)
+        evidence = {
+            "version": 1,
+            "trial_id": self.trial_scheduler.trial_id,
+            "slot_id": self.current_slot_id,
+            "release_sha": receipt["release_sha"],
+            "issuers": issuers,
+        }
+        # Legacy consumers get PARTIAL and no new certified history. Poll
+        # cutoffs and per-issuer accounting checkpoints live in the evidence.
+        receipt.update(
+            interval_start=self.trial_scheduler.issued_at.isoformat(),
+            interval_end=max(issuer["cutoff"] for issuer in issuers.values()),
+            certified_watermark=self.trial_scheduler.issued_at.isoformat(),
+            expected_count=len(inventory),
+            accounted_count=accounted,
+            missing_count=missing,
+            material_gap_count=sum(len(issuer["gaps"]) for issuer in issuers.values()),
+            accession_inventory=sorted(row["accession"] for row in inventory),
+            source_hashes={row["accession"]: row["source_sha256"] for row in inventory if row["source_sha256"]},
+            cohort_evidence=evidence,
+            reconciliation_hash=evidence_sha256(evidence),
+        )
 
     @staticmethod
     def _snapshot_cutoff(as_of):
@@ -2082,8 +2279,8 @@ class SmartMoneyContinuousPipeline:
         # R2 socket timeouts are inactivity timeouts, not an absolute wall-clock
         # bound. Do not put remote retention or destructive work on the bounded
         # two-issuer trial's completion path. Maintenance retains its own policy.
-        if getattr(self, "is_trial_2_issuer", False):
-            logger.info("STEP_10_RETENTION_DEFERRED: two-issuer trial defers retention to maintenance; no storage calls made.")
+        if getattr(self, "trial_scheduler", None) is not None:
+            logger.info("STEP_10_RETENTION_DEFERRED: recurring trial defers retention to maintenance.")
             return []
         try:
             deadline = getattr(self, "cycle_deadline_monotonic", None)

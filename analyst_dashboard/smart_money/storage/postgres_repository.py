@@ -535,6 +535,50 @@ class PostgresSmartMoneyRepository:
             )
             return {row["accession_number"] for row in cur.fetchall()}
 
+    def get_cohort_issuer_state(self, trial_id: str, ticker: str, cik: str, accessions: list[str]):
+        """Read the issuer's durable checkpoint and exact eligible document hashes."""
+        with transaction(dsn=self.dsn) as cur:
+            cur.execute(
+                """SELECT failure_reasons -> 'cohort_evidence' -> 'issuers' -> %s
+                          ->> 'accounted_through' AS watermark
+                   FROM sm_reconciliation_receipts
+                   WHERE failure_reasons ->> 'trial_id' = %s
+                     AND failure_reasons -> 'cohort_evidence' -> 'issuers' -> %s
+                         ->> 'cik' = %s
+                   ORDER BY interval_end DESC, created_at DESC LIMIT 1""",
+                (ticker, trial_id, ticker, cik),
+            )
+            checkpoint = cur.fetchone()
+            cur.execute(
+                """SELECT f.accession_number, f.content_hash FROM form4_raw_filings f
+                   JOIN sm_source_availability_ledger av USING (accession_number)
+                   WHERE f.ticker = %s AND f.cik = %s AND f.accession_number = ANY(%s)
+                     AND NOT EXISTS (
+                         SELECT 1 FROM sm_amendments a
+                         WHERE a.amendment_accession = f.accession_number
+                           AND a.resolution_status NOT IN (
+                               'RESOLVED', 'FULL_REPLACEMENT', 'PARTIAL_CORRECTION',
+                               'ADDITIONAL_TRANSACTION'
+                           )
+                     )""",
+                (ticker, cik, accessions),
+            )
+            hashes = {row["accession_number"]: row["content_hash"] for row in cur.fetchall()}
+        return checkpoint["watermark"] if checkpoint else None, hashes
+
+    def save_cohort_catalog_observation(self, trial_id: str, payload: Dict[str, Any]) -> str:
+        """Keep the source artifact even when a subsequent filing transaction rolls back."""
+        from analyst_dashboard.smart_money.cohort_catalog import evidence_sha256
+
+        event_id = str(uuid.uuid4())
+        with transaction(dsn=self.dsn) as cur:
+            cur.execute(
+                """INSERT INTO sm_audit_events (event_id, event_type, subject_id, payload, event_hash)
+                   VALUES (%s, 'SEC_COHORT_CATALOG_OBSERVED', %s, %s, %s)""",
+                (event_id, trial_id, Json(payload), evidence_sha256(payload)),
+            )
+        return event_id
+
     def save_raw_filing(
         self,
         filing: Dict[str, Any],
@@ -1084,6 +1128,8 @@ class PostgresSmartMoneyRepository:
                 "trial_id": receipt.get("trial_id"),
                 "slot_id": receipt.get("slot_id"),
             }
+            if "cohort_evidence" in receipt:
+                reasons["cohort_evidence"] = receipt["cohort_evidence"]
 
         rel_sha = receipt.get("release_sha")
         if not rel_sha:
@@ -1348,30 +1394,48 @@ class PostgresSmartMoneyRepository:
             with c.cursor(cursor_factory=RealDictCursor) as cur:
                 return _exec(cur)
 
-    def reserve_trial_cycle_budget(self, trial_id: str, slot_id: str, ny_date: str) -> str:
-        """Commit one slot and eight requests before egress, without schema changes.
+    def reserve_trial_cycle_budget(
+        self, trial_id: str, slot_id: str, ny_date: str, *, grant_hash: Optional[str] = None,
+    ) -> str:
+        """Commit one slot and its full request allowance before egress.
 
         Reservations are never refunded: a killed process cannot prove how many
         requests reached SEC. An independent transaction survives ingestion rollback.
         """
         if not slot_id or not slot_id.startswith(ny_date + ":"):
             raise RuntimeError("TRIAL_BUDGET_RESERVATION_INVALID")
+        from analyst_dashboard.smart_money.continuous_authorization import (
+            COHORT_PILOT_ID, COHORT_PILOT_REQUESTS_PER_SLOT, COHORT_PILOT_SLOTS,
+        )
+        if trial_id == COHORT_PILOT_ID:
+            requests_per_slot = COHORT_PILOT_REQUESTS_PER_SLOT
+            daily_cycles = total_cycles = len(COHORT_PILOT_SLOTS)
+            daily_requests = total_requests = total_cycles * requests_per_slot
+        else:
+            requests_per_slot = 8
+            daily_cycles, total_cycles = 4, 12
+            daily_requests, total_requests = 32, 96
         # Serialize reservations for this trial, including callers outside a worker.
         key = int.from_bytes(hashlib.sha256(("TRIAL_BUDGET:" + trial_id).encode()).digest()[:8], "big") & 0x7FFFFFFFFFFFFFFF
         with get_connection(dsn=self.dsn) as c:
             with c.cursor() as cur:
                 cur.execute("SELECT pg_advisory_xact_lock(%s)", (key,))
             progress = self.get_trial_progress(trial_id, ny_date, conn=c)
+            if trial_id == COHORT_PILOT_ID and (
+                not grant_hash or (progress["cycles_trial"] and progress["grant_hashes"] != {grant_hash})
+            ):
+                raise RuntimeError("COHORT_PILOT_GRANT_CHANGED")
             if slot_id in progress["executed_slots"]:
                 raise RuntimeError("TRIAL_SLOT_ALREADY_RESERVED")
-            if (progress["cycles_today"] >= 4 or progress["cycles_trial"] >= 12
-                    or progress["requests_today"] + 8 > 32
-                    or progress["requests_trial"] + 8 > 96):
+            if (progress["cycles_today"] >= daily_cycles or progress["cycles_trial"] >= total_cycles
+                    or progress["requests_today"] + requests_per_slot > daily_requests
+                    or progress["requests_trial"] + requests_per_slot > total_requests):
                 raise RuntimeError("TRIAL_BUDGET_RESERVATION_EXCEEDED")
             event_id = self.record_trial_cycle_audit(
                 trial_id=trial_id, slot_id=slot_id, ny_date=ny_date,
                 slot_index=0, status="BUDGET_RESERVED", requests_transmitted=0,
-                requests_reserved=8, conn=c,
+                requests_reserved=requests_per_slot, conn=c,
+                metrics={"grant_sha256": grant_hash} if grant_hash else None,
             )
             c.commit()
             return event_id
@@ -1387,6 +1451,7 @@ class PostgresSmartMoneyRepository:
         error: Optional[str] = None,
         conn: Optional[PgConnection] = None,
         requests_reserved: int = 0,
+        metrics: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Records an append-only trial cycle audit event into sm_audit_events."""
         event_id = str(uuid.uuid4())
@@ -1401,6 +1466,8 @@ class PostgresSmartMoneyRepository:
             "error": error,
             "recorded_at": datetime.now(timezone.utc).isoformat(),
         }
+        if metrics is not None:
+            payload["metrics"] = metrics
         payload_json = json.dumps(payload, sort_keys=True)
         event_hash = hashlib.sha256(payload_json.encode("utf-8")).hexdigest()
 
@@ -1454,6 +1521,10 @@ class PostgresSmartMoneyRepository:
             ORDER BY created_at ASC;
         """
 
+        from analyst_dashboard.smart_money.continuous_authorization import (
+            COHORT_PILOT_ID, COHORT_PILOT_REQUESTS_PER_SLOT,
+        )
+
         def _exec(cur):
             cur.execute(query_audit, (trial_id,))
             audit_rows = cur.fetchall()
@@ -1471,7 +1542,14 @@ class PostgresSmartMoneyRepository:
                 item["charge"] = max(item["charge"], int(p.get("requests_reserved") or 0),
                                      int(p.get("requests_transmitted") or 0))
 
-            cur.execute(query_receipts)
+            if trial_id == COHORT_PILOT_ID:
+                cur.execute(
+                    """SELECT failure_reasons FROM sm_reconciliation_receipts
+                       WHERE failure_reasons ->> 'trial_id' = %s""",
+                    (trial_id,),
+                )
+            else:
+                cur.execute(query_receipts)
             receipt_rows = cur.fetchall()
             for r in receipt_rows:
                 reasons = r.get("failure_reasons")
@@ -1503,20 +1581,29 @@ class PostgresSmartMoneyRepository:
                 if r_trial_id == trial_id and slot_id:
                     # Legacy receipt-only attempts have unknown transmission
                     # totals. Charge the complete allowance conservatively.
-                    slots.setdefault(slot_id, {"ny_date": slot_id.split(":", 1)[0], "charge": 8})
+                    default_charge = COHORT_PILOT_REQUESTS_PER_SLOT if trial_id == COHORT_PILOT_ID else 8
+                    slots.setdefault(slot_id, {
+                        "ny_date": slot_id.split(":", 1)[0], "charge": default_charge,
+                    })
 
             executed_slots = set(slots)
             cycles_today = sum(p["ny_date"] == ny_date for p in slots.values())
             cycles_trial = len(slots)
             requests_today = sum(p["charge"] for p in slots.values() if p["ny_date"] == ny_date)
             requests_trial = sum(p["charge"] for p in slots.values())
-            return {
+            progress = {
                 "executed_slots": executed_slots,
                 "cycles_today": cycles_today,
                 "cycles_trial": cycles_trial,
                 "requests_today": requests_today,
                 "requests_trial": requests_trial,
             }
+            if trial_id == COHORT_PILOT_ID:
+                progress["grant_hashes"] = {
+                    (row["payload"].get("metrics") or {}).get("grant_sha256")
+                    for row in audit_rows if (row.get("payload") or {}).get("status") == "BUDGET_RESERVED"
+                }
+            return progress
 
         if conn is not None:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -2465,6 +2552,8 @@ class PostgresSmartMoneyRepository:
         worker_id: str,
         lease_duration_sec: int = 60,
         conn: Optional[PgConnection] = None,
+        *,
+        trial_slot_subject: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Atomically claims the oldest pending or retry-eligible run request non-blockingly.
@@ -2472,7 +2561,12 @@ class PostgresSmartMoneyRepository:
         Establishes an atomic lease with a unique lease token, attempt counter, and expiry.
         """
         lease_token = f"tok-{uuid.uuid4().hex[:16]}"
-        query_select = """
+        slot_clause = ""
+        params = ()
+        if trial_slot_subject is not None:
+            slot_clause = "AND request_type = 'TRIAL_SLOT_FORM4' AND requested_by_subject_hash = %s"
+            params = (trial_slot_subject,)
+        query_select = f"""
             SELECT request_id, status, attempt_count, max_attempts
             FROM sm_run_requests
             WHERE (
@@ -2480,6 +2574,7 @@ class PostgresSmartMoneyRepository:
                 AND next_attempt_at <= NOW()
             )
             AND attempt_count < max_attempts
+            {slot_clause}
             ORDER BY requested_at ASC
             FOR UPDATE SKIP LOCKED
             LIMIT 1;
@@ -2501,7 +2596,7 @@ class PostgresSmartMoneyRepository:
         """
 
         def _exec(cur):
-            cur.execute(query_select)
+            cur.execute(query_select, params or None)
             row = cur.fetchone()
             if not row:
                 return None
@@ -2561,6 +2656,8 @@ class PostgresSmartMoneyRepository:
         self,
         backoff_sec: int = 30,
         conn: Optional[PgConnection] = None,
+        *,
+        trial_slot_subjects: Optional[list[str]] = None,
     ) -> int:
         """
         Deterministic recovery mechanism for expired RUNNING requests (lease_expires_at < NOW()).
@@ -2568,17 +2665,23 @@ class PostgresSmartMoneyRepository:
         - Else: Transitions to RETRY_ELIGIBLE with backoff.
         Emits durable audit events into sm_audit_events.
         """
-        query_find = """
+        slot_clause = ""
+        params = None
+        if trial_slot_subjects is not None:
+            slot_clause = "AND request_type = 'TRIAL_SLOT_FORM4' AND requested_by_subject_hash = ANY(%s)"
+            params = (trial_slot_subjects,)
+        query_find = f"""
             SELECT request_id, attempt_count, max_attempts, lease_owner_id, lease_token
             FROM sm_run_requests
             WHERE status = 'RUNNING'
               AND lease_expires_at < NOW()
+              {slot_clause}
             ORDER BY lease_expires_at ASC
             FOR UPDATE SKIP LOCKED;
         """
 
         def _exec(cur):
-            cur.execute(query_find)
+            cur.execute(query_find, params)
             stale_rows = cur.fetchall()
             if not stale_rows:
                 return 0

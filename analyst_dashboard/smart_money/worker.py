@@ -25,6 +25,8 @@ from analyst_dashboard.smart_money.storage.config import (
     get_database_role,
     ROLE_INGESTION,
     validate_storage_configuration,
+    verify_cohort_backup_destination,
+    verify_cohort_database,
 )
 from analyst_dashboard.smart_money.storage.postgres_connection import get_connection
 from analyst_dashboard.smart_money.storage.postgres_coordination import (
@@ -60,8 +62,12 @@ from analyst_dashboard.smart_money.continuous_pipeline import (
     DEFAULT_GOVERNED_ISSUERS,
     TRIAL_2_GOVERNED_ISSUERS,
 )
-from analyst_dashboard.smart_money.continuous_authorization import require_continuous_authorization
-from analyst_dashboard.smart_money.smart_money_scheduler import TwoIssuerTrialScheduler
+from analyst_dashboard.smart_money.continuous_authorization import (
+    SCOPE_TRIAL_2,
+    SCOPE_TRIAL_10,
+    require_continuous_authorization,
+)
+from analyst_dashboard.smart_money.smart_money_scheduler import CohortPilotScheduler, TwoIssuerTrialScheduler
 import threading
 
 logger = logging.getLogger("smart_money.worker")
@@ -473,7 +479,13 @@ class SmartMoneyIngestionWorker:
         containment_gate: Optional[BackupAgeContainmentGate] = None,
         containment_policy: Optional[BackupContainmentPolicy] = None,
     ):
-        self.dsn = dsn or get_database_url()
+        scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
+        self.is_trial_2_issuer = scope == SCOPE_TRIAL_2
+        self.is_cohort_pilot = scope == SCOPE_TRIAL_10
+        self.owner_dsn = dsn or get_database_url()
+        self.dsn = self.owner_dsn
+        if self.is_cohort_pilot:
+            self.dsn = os.environ.get("SMART_MONEY_COHORT_PILOT_DATABASE_URL")
         self.containment_policy = containment_policy or BackupContainmentPolicy.from_environment()
         self.freshness_authority = BackupFreshnessAuthority(
             dsn=self.dsn,
@@ -498,19 +510,21 @@ class SmartMoneyIngestionWorker:
         self._last_stale_recovery_at = 0.0
         self._is_executing_cycle = False
         self._shutdown_requested = False
-        scope = os.environ.get("ARX_CONTINUOUS_AUTH_SCOPE", "")
-        self.is_trial_2_issuer = (scope == "RECURRING_2_ISSUER_FORM4_TRIAL")
         env_ingestion_only = os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower()
-        if self.is_trial_2_issuer:
+        if self.is_trial_2_issuer or self.is_cohort_pilot:
             if env_ingestion_only in ("false", "0", "no"):
                 raise RuntimeError(
-                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: Ingestion-only mode cannot be disabled under two-issuer trial scope."
+                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: Ingestion-only mode cannot be disabled under recurring trial scope."
                 )
             self.ingestion_only = True
         else:
             self.ingestion_only = (env_ingestion_only in ("true", "1", "yes"))
         self.governed_issuers = TRIAL_2_GOVERNED_ISSUERS if self.is_trial_2_issuer else DEFAULT_GOVERNED_ISSUERS
-        self.trial_scheduler = TwoIssuerTrialScheduler() if self.is_trial_2_issuer else None
+        self.trial_scheduler = None
+        if self.is_cohort_pilot and get_sec_egress_role() == "OWNER":
+            self.trial_scheduler = CohortPilotScheduler()
+        elif self.is_trial_2_issuer:
+            self.trial_scheduler = TwoIssuerTrialScheduler()
 
     def dispatch_trial_slot(self) -> Optional[str]:
         """Enqueue a due ingestion-only slot after live authorization and fencing.
@@ -518,16 +532,22 @@ class SmartMoneyIngestionWorker:
         Eligibility is rechecked by the pipeline when the request is consumed.
         Dispatch itself makes no SEC requests and consumes no execution budget.
         """
-        if not getattr(self, "is_trial_2_issuer", False):
+        if getattr(self, "trial_scheduler", None) is None:
             return None
         require_continuous_authorization(issuers=self.governed_issuers)
         if os.environ.get("ARX_EMERGENCY_STOP_ACTIVE", "").upper() in ("TRUE", "1", "YES"):
             raise RuntimeError("EMERGENCY_STOP_ACTIVE")
         if not self._has_verified_owner_lock():
             raise RuntimeError("TRIAL_DISPATCH_OWNER_LOCK_UNVERIFIED")
-        if not os.environ.get("ARX_TRIAL_START_DATE") or not os.environ.get("ARX_TRIAL_END_DATE"):
+        if getattr(self, "is_trial_2_issuer", False) and (
+            not os.environ.get("ARX_TRIAL_START_DATE") or not os.environ.get("ARX_TRIAL_END_DATE")
+        ):
             raise RuntimeError("TRIAL_DISPATCH_DATES_REQUIRED")
         now = self.trial_scheduler.get_ny_now()
+        if getattr(self, "is_cohort_pilot", False):
+            due, _, _ = self.trial_scheduler.evaluate_execution_eligibility(now=now)
+            if not due:
+                return None
         progress = self.repository.get_trial_progress(self.trial_scheduler.trial_id, now.date().isoformat())
         due, slot_id, reason = self.trial_scheduler.evaluate_execution_eligibility(
             now=now, progress=progress, issuers=self.governed_issuers,
@@ -567,18 +587,27 @@ class SmartMoneyIngestionWorker:
         # Require an unexpired, release- and universe-bound grant before any OWNER lock.
         require_continuous_authorization(issuers=getattr(self, "governed_issuers", DEFAULT_GOVERNED_ISSUERS))
 
-        if getattr(self, "is_trial_2_issuer", False):
+        if getattr(self, "is_cohort_pilot", False) and self.trial_scheduler is None:
+            self.trial_scheduler = CohortPilotScheduler()
+        if getattr(self, "trial_scheduler", None) is not None:
             env_ing = os.environ.get("ARX_SMART_MONEY_INGESTION_ONLY", "").strip().lower()
             if env_ing in ("false", "0", "no"):
                 self.state = WorkerHealthState.FATAL
                 raise RuntimeError(
-                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: Ingestion-only mode cannot be disabled under two-issuer trial scope."
+                    "TRIAL_INGESTION_ONLY_NON_OVERRIDABLE: Ingestion-only mode cannot be disabled under recurring trial scope."
                 )
 
         validate_storage_configuration()
         if not self.dsn:
             self.state = WorkerHealthState.FATAL
             raise RuntimeError("DATABASE_URL_REQUIRED: PostgreSQL connection string is required.")
+
+        if getattr(self, "is_cohort_pilot", False):
+            if not self.owner_dsn:
+                raise RuntimeError("COHORT_PILOT_CANONICAL_OWNER_DB_REQUIRED")
+            verify_cohort_backup_destination(self.freshness_authority.storage_adapter)
+            with get_connection(dsn=self.dsn) as conn:
+                verify_cohort_database(conn, evidence=True)
 
         # Containment authorization check in production environment
         if self.containment_policy.enabled:
@@ -637,7 +666,14 @@ class SmartMoneyIngestionWorker:
         Fails closed if another worker holds the lock after retries.
         """
         import psycopg2
-        self._owner_conn = psycopg2.connect(self.dsn)
+        self._owner_conn = psycopg2.connect(getattr(self, "owner_dsn", self.dsn))
+        if getattr(self, "is_cohort_pilot", False):
+            try:
+                verify_cohort_database(self._owner_conn, evidence=False)
+            except Exception:
+                self._owner_conn.close()
+                self._owner_conn = None
+                raise
         with self._owner_conn.cursor() as cur:
             cur.execute("SET TIME ZONE 'GMT';")
             cur.execute("SET application_name = %s;", (f"sm_worker_{self.worker_id}",))
@@ -719,6 +755,16 @@ class SmartMoneyIngestionWorker:
         except (ValueError, AttributeError):
             pass
 
+    def _recover_stale_run_requests(self) -> int:
+        if getattr(self, "is_cohort_pilot", False):
+            scheduler = self.trial_scheduler
+            subjects = [
+                self._trial_slot_subject(f"{scheduler.start_date}:SLOT_{idx}:{hour:02d}{minute:02d}")
+                for idx, (hour, minute) in enumerate(scheduler.slots, start=1)
+            ]
+            return self.repository.recover_stale_run_requests(trial_slot_subjects=subjects)
+        return self.repository.recover_stale_run_requests()
+
     def process_run_requests(self) -> int:
         """
         Checks for pending operator run requests, claims them with atomic lease,
@@ -730,7 +776,7 @@ class SmartMoneyIngestionWorker:
         now = time.time()
         if now - self._last_stale_recovery_at >= self.stale_recovery_interval_sec:
             try:
-                recovered = self.repository.recover_stale_run_requests()
+                recovered = self._recover_stale_run_requests()
                 self._last_stale_recovery_at = now
                 if recovered > 0:
                     logger.info(f"Self-healed {recovered} stale run request(s).")
@@ -741,8 +787,15 @@ class SmartMoneyIngestionWorker:
         if not self.containment_gate.check_ingestion_eligibility():
             return 0
 
+        claim_scope = {}
+        if getattr(self, "is_cohort_pilot", False):
+            scheduler = self.trial_scheduler
+            slot = scheduler.get_slot_for_time(scheduler.get_ny_now())[1]
+            if slot is None:
+                return 0
+            claim_scope = {"trial_slot_subject": self._trial_slot_subject(slot)}
         claimed = self.repository.claim_next_run_request(
-            self.worker_id, lease_duration_sec=self.lease_duration_sec
+            self.worker_id, lease_duration_sec=self.lease_duration_sec, **claim_scope
         )
         if not claimed:
             return 0
@@ -753,7 +806,7 @@ class SmartMoneyIngestionWorker:
             # A delayed job must not silently execute under a later slot's quota.
             scheduler = getattr(self, "trial_scheduler", None)
             slot_id = scheduler.get_slot_for_time(scheduler.get_ny_now())[1] if scheduler else None
-            if (not getattr(self, "is_trial_2_issuer", False) or not slot_id
+            if (not slot_id
                     or claimed.get("requested_by_subject_hash") != self._trial_slot_subject(slot_id)):
                 self.repository.complete_run_request(
                     req_id, lease_token=lease_token, status="SKIPPED_NOT_ELIGIBLE",
@@ -913,7 +966,7 @@ class SmartMoneyIngestionWorker:
 
         # Startup recovery of abandoned/stale requests
         try:
-            startup_recovered = self.repository.recover_stale_run_requests()
+            startup_recovered = self._recover_stale_run_requests()
             if startup_recovered > 0:
                 logger.info(f"Startup recovery: self-healed {startup_recovered} abandoned run request(s).")
         except Exception as e:
@@ -923,7 +976,9 @@ class SmartMoneyIngestionWorker:
 
         # Initialize automated scheduled backup thread if enabled
         self.backup_scheduler = None
-        if os.environ.get("ARX_BACKUP_ENABLED", "").strip().lower() in ("true", "1", "yes"):
+        if not getattr(self, "is_cohort_pilot", False) and (
+            os.environ.get("ARX_BACKUP_ENABLED", "").strip().lower() in ("true", "1", "yes")
+        ):
             interval_sec = int(os.environ.get("ARX_BACKUP_INTERVAL_SEC", "21600"))
             self.backup_scheduler = SmartMoneyBackupSchedulerThread(
                 interval_sec=interval_sec,
@@ -933,6 +988,7 @@ class SmartMoneyIngestionWorker:
 
         def _sig_handler(signum, frame):
             logger.info(f"Received signal {signum}. Terminating worker gracefully...")
+            self._shutdown_requested = True
             self._running = False
 
         signal.signal(signal.SIGINT, _sig_handler)

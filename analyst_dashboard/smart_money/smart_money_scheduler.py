@@ -18,6 +18,14 @@ from datetime import datetime, date, timedelta, timezone
 from dataclasses import dataclass, asdict
 from typing import Dict, Any, Optional, List, Tuple
 
+from analyst_dashboard.smart_money.continuous_authorization import (
+    COHORT_PILOT_ID,
+    COHORT_PILOT_REQUESTS_PER_SLOT,
+    COHORT_PILOT_SLOTS,
+    COHORT_PILOT_WINDOW_MINUTES,
+    cohort_pilot_grant_window,
+    validate_cohort_issuers,
+)
 from analyst_dashboard.smart_money.freshness_authority import (
     is_sec_dissemination_date,
     NY_TZ,
@@ -391,3 +399,37 @@ class TwoIssuerTrialScheduler:
         return True, slot_id, window_reason
 
 
+class CohortPilotScheduler(TwoIssuerTrialScheduler):
+    """Reuse durable slot eligibility with the separate one-day cohort profile."""
+
+    requests_per_slot = COHORT_PILOT_REQUESTS_PER_SLOT
+
+    def __init__(self):
+        self.issued_at, self.expires_at = cohort_pilot_grant_window(os.environ)
+        pilot_date = self.get_ny_now(self.issued_at).date()
+        slots = COHORT_PILOT_SLOTS
+        super().__init__(
+            trial_id=COHORT_PILOT_ID,
+            start_date=pilot_date,
+            end_date=pilot_date,
+            slots=slots,
+            window_minutes=COHORT_PILOT_WINDOW_MINUTES,
+            max_cycles_per_day=len(slots),
+            max_cycles_per_trial=len(slots),
+            max_requests_per_day=len(slots) * self.requests_per_slot,
+            max_requests_per_trial=len(slots) * self.requests_per_slot,
+        )
+
+    def validate_issuers(self, issuers):
+        validate_cohort_issuers(issuers)
+
+    def evaluate_execution_eligibility(self, now=None, progress=None, issuers=None, force=False):
+        now = self.get_ny_now(now)
+        if force or not self.issued_at <= now < self.expires_at:
+            return False, None, "COHORT_PILOT_OUTSIDE_GRANT"
+        if progress is not None and (
+            progress["requests_today"] + self.requests_per_slot > self.max_requests_per_day
+            or progress["requests_trial"] + self.requests_per_slot > self.max_requests_per_trial
+        ):
+            return False, None, "COHORT_PILOT_RESERVATION_BUDGET_EXHAUSTED"
+        return super().evaluate_execution_eligibility(now=now, progress=progress, issuers=issuers)
