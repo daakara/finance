@@ -7,6 +7,9 @@ Authoritative Acquisition Contract (Issue #165):
 - One GET Maximum: Hard rate limiter (<= 5.0 req/s), zero automatic retries, zero redirects,
   zero pagination requests, zero XML downloads.
 - Separate Diagnostic Budget: Completely decoupled from expired/exhausted trial allowances.
+- Durable Authorization ID: Consumed atomically on disk before network transmission. Reusing
+  an authorization ID fails closed before any network socket creation or rate limiter wait,
+  surviving process restarts, timeouts, crashes, and concurrent invocations.
 - Verified SEC User-Agent: Enforces SEC Fair Access format ('<EntityName> <Email>').
 - Raw Byte Storage: Retains exact response bytes before parsing, recording request URL,
   UTC acquisition time, HTTP status, byte count, and SHA-256 digest in verifiable storage.
@@ -16,8 +19,9 @@ Authoritative Acquisition Contract (Issue #165):
 - Offline Catalog Validation: Validates issuer identity (CIK 0001045810, NVDA), schema structure,
   historical pagination file overlap, and interval coverage [2026-08-26, 2026-11-25).
 - Anti-Inference Principle: Latest accession date alone is never treated as proof of completeness.
-- Zero Side Effects: Zero production database writes, zero worker activation, zero coverage-flag changes.
-  PARTIAL_UNCERTIFIED, active snapshot SNAP_SM_1792939989_48f30db6, and all operational holds remain unchanged.
+- Zero Side Effects & Intended Boundaries: Zero production database writes, zero worker activation,
+  zero coverage-flag changes. Operational holds and snapshot pointer are recorded as intended
+  governance boundaries preserved by contract (unverified by offline diagnostic scripts).
 """
 
 from __future__ import annotations
@@ -79,18 +83,38 @@ KNOWN_IN_WINDOW_ACCESSIONS: Set[str] = {
 
 
 class DiagnosticBudgetExceededError(RuntimeError):
-    """Raised when more than exactly one request is attempted during a diagnostic invocation."""
+    """Raised when more than exactly one request is attempted during a diagnostic handler instance."""
     pass
+
+
+class AuthorizationAlreadyConsumedError(RuntimeError):
+    """Raised when a durable authorization ID has already been claimed or consumed on disk."""
+    pass
+
+
+class AuthorizationMissingError(ValueError):
+    """Raised when no authorization ID is provided."""
+    pass
+
+
+def sanitize_auth_id(auth_id: str) -> str:
+    """Sanitizes authorization ID for safe filesystem claim persistence."""
+    cleaned = re.sub(r"[^A-Za-z0-9_-]", "_", auth_id.strip())
+    if not cleaned:
+        raise AuthorizationMissingError("Authorization ID cannot be empty or solely special characters.")
+    return cleaned
 
 
 class DiagnosticAcquisitionHandler:
     """
     Executes a bounded diagnostic acquisition for NVDA submissions with single-request
-    enforcement, no retries, no redirects, and verifiable artifact storage.
+    enforcement, atomic durable authorization ID claim, no retries, no redirects,
+    and verifiable artifact storage.
     """
 
     def __init__(
         self,
+        auth_id: Optional[str] = None,
         user_agent: Optional[str] = None,
         evidence_dir: Optional[Path] = None,
         timeout_sec: float = 15.0,
@@ -98,6 +122,7 @@ class DiagnosticAcquisitionHandler:
         interval_start: str = ASSESSMENT_INTERVAL_START,
         interval_end: str = ASSESSMENT_INTERVAL_END,
     ):
+        self.auth_id = (auth_id or os.getenv("ARX_DIAGNOSTIC_AUTH_ID") or "").strip()
         self.user_agent = user_agent or get_sec_user_agent() or ""
         self.evidence_dir = Path(evidence_dir or DEFAULT_EVIDENCE_DIR)
         self.timeout_sec = timeout_sec
@@ -106,12 +131,76 @@ class DiagnosticAcquisitionHandler:
         self.interval_end = interval_end
         self.attempt_count = 0
 
+    def check_authorization_available(self) -> Tuple[bool, str]:
+        """Checks whether the configured authorization ID is present and unconsumed."""
+        if not self.auth_id:
+            return False, "MISSING_AUTH_ID: A durable authorization ID (--auth-id or ARX_DIAGNOSTIC_AUTH_ID) is required."
+        try:
+            sanitized = sanitize_auth_id(self.auth_id)
+        except AuthorizationMissingError as exc:
+            return False, f"INVALID_AUTH_ID: {exc}"
+
+        claim_dir = self.evidence_dir / "auth_claims"
+        claim_path = claim_dir / f"{sanitized}.claim"
+        if claim_path.exists():
+            return (
+                False,
+                f"AUTHORIZATION_ALREADY_CONSUMED: Durable authorization ID '{self.auth_id}' "
+                f"has already been claimed/consumed at '{claim_path}'.",
+            )
+        return True, "Authorization ID available"
+
     def validate_preconditions(self) -> Tuple[bool, str]:
-        """Validate user agent and configuration prior to any network transmission."""
-        is_valid, reason = validate_sec_user_agent(self.user_agent)
+        """Validate authorization ID, user agent, and configuration prior to network transmission."""
+        auth_ok, auth_reason = self.check_authorization_available()
+        if not auth_ok:
+            return False, auth_reason
+
+        is_valid, ua_reason = validate_sec_user_agent(self.user_agent)
         if not is_valid:
-            return False, f"INVALID_USER_AGENT: {reason}"
+            return False, f"INVALID_USER_AGENT: {ua_reason}"
         return True, "Preconditions valid"
+
+    def _claim_authorization_atomically(self) -> Path:
+        """
+        Atomically claims the authorization ID on disk using os.O_CREAT | os.O_EXCL.
+        Guarantees that process restarts, crashes, timeouts, and concurrent invocations
+        fail closed with AuthorizationAlreadyConsumedError before any socket/network egress.
+        """
+        if not self.auth_id:
+            raise AuthorizationMissingError(
+                "MISSING_AUTH_ID: A durable authorization ID (--auth-id or ARX_DIAGNOSTIC_AUTH_ID) is required."
+            )
+        sanitized = sanitize_auth_id(self.auth_id)
+        claim_dir = self.evidence_dir / "auth_claims"
+        claim_dir.mkdir(parents=True, exist_ok=True)
+        claim_path = claim_dir / f"{sanitized}.claim"
+
+        try:
+            fd = os.open(str(claim_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            raise AuthorizationAlreadyConsumedError(
+                f"AUTHORIZATION_ALREADY_CONSUMED: Durable authorization ID '{self.auth_id}' "
+                f"has already been claimed/consumed at '{claim_path}'. "
+                f"Reusing authorization tokens is strictly forbidden."
+            )
+
+        try:
+            claim_record = {
+                "auth_id": self.auth_id,
+                "claimed_at_utc": datetime.now(timezone.utc).isoformat(),
+                "pid": os.getpid(),
+                "status": "CONSUMED_INTENT",
+                "target_url": TARGET_URL,
+                "target_cik": TARGET_CIK,
+                "target_ticker": TARGET_TICKER,
+            }
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(claim_record, f, indent=2)
+        except Exception:
+            raise
+
+        return claim_path
 
     def execute_single_request(
         self,
@@ -119,13 +208,26 @@ class DiagnosticAcquisitionHandler:
     ) -> Dict[str, Any]:
         """
         Executes at most one HTTP GET request against the official SEC submissions endpoint.
+        Consumes the durable authorization ID atomically on disk before network transmission.
         Returns a structured receipt dictionary.
         """
+        # 1. In-memory budget check
         if self.attempt_count >= MAX_REQUESTS_ALLOWED:
             raise DiagnosticBudgetExceededError(
                 f"DIAGNOSTIC_BUDGET_EXCEEDED: Invocations cannot exceed {MAX_REQUESTS_ALLOWED} request. "
                 f"Current attempt count: {self.attempt_count}."
             )
+
+        # 2. Precondition validation
+        valid_pre, pre_reason = self.validate_preconditions()
+        if not valid_pre:
+            # If already consumed on disk, fail closed immediately
+            if "AUTHORIZATION_ALREADY_CONSUMED" in pre_reason:
+                raise AuthorizationAlreadyConsumedError(pre_reason)
+            raise ValueError(f"PRECONDITIONS_FAILED: {pre_reason}")
+
+        # 3. Atomic on-disk authorization consumption BEFORE rate limiter or socket egress
+        claim_path = self._claim_authorization_atomically()
 
         self.attempt_count += 1
         acquisition_time_utc = datetime.now(timezone.utc).isoformat()
@@ -134,6 +236,8 @@ class DiagnosticAcquisitionHandler:
         receipt: Dict[str, Any] = {
             "title": "NVDA Submissions Catalog Diagnostic Acquisition Receipt",
             "issue_reference": "ARX Issue #165",
+            "auth_id": self.auth_id,
+            "auth_claim_path": str(claim_path.relative_to(REPO_ROOT) if claim_path.is_relative_to(REPO_ROOT) else claim_path),
             "request_url": TARGET_URL,
             "target_cik": TARGET_CIK,
             "target_ticker": TARGET_TICKER,
@@ -150,28 +254,42 @@ class DiagnosticAcquisitionHandler:
             "success": False,
             "error": None,
             "validation": None,
-            "preserved_governance_state": {
-                "production_coverage_status": "PARTIAL_UNCERTIFIED",
-                "active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
-                "database_writes_performed": 0,
-                "worker_activation": False,
-                "holds": [
+            "governance_boundaries": {
+                "verification_status": "INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC",
+                "boundary_notes": (
+                    "Diagnostic acquisition executes in isolated process with zero database egress; "
+                    "production snapshot and hold enforcement are intended governance boundaries preserved "
+                    "by contract and not independently verified against live production state in this offline run."
+                ),
+                "intended_production_coverage_status": "PARTIAL_UNCERTIFIED",
+                "intended_active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+                "intended_operational_holds": [
                     "HOLD_SEC_001",
                     "HOLD_SCAN_001",
                     "HOLD_EXEC_001",
                     "PHASE_3_HOLD",
                     "ARX_CONFLUENCE_INTEGRITY_HOLD",
                 ],
+                "database_writes_performed": 0,
+                "worker_activation": False,
+            },
+            "preserved_governance_state": {
+                "verification_status": "INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC",
+                "intended_production_coverage_status": "PARTIAL_UNCERTIFIED",
+                "intended_active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+                "intended_operational_holds": [
+                    "HOLD_SEC_001",
+                    "HOLD_SCAN_001",
+                    "HOLD_EXEC_001",
+                    "PHASE_3_HOLD",
+                    "ARX_CONFLUENCE_INTEGRITY_HOLD",
+                ],
+                "database_writes_performed": 0,
+                "worker_activation": False,
             },
         }
 
-        # 1. Precondition check
-        valid_pre, pre_reason = self.validate_preconditions()
-        if not valid_pre:
-            receipt["error"] = pre_reason
-            return self._persist_receipt(receipt, acquisition_time_utc)
-
-        # 2. Setup Session with 0 retries and rate limiter
+        # 4. Setup Session with 0 retries and rate limiter
         if session is None:
             http_session = requests.Session()
             http_session.mount("https://", HTTPAdapter(max_retries=0))
@@ -185,10 +303,10 @@ class DiagnosticAcquisitionHandler:
             "Host": "data.sec.gov",
         }
 
-        # 3. Rate limiter pacing
+        # 5. Rate limiter pacing
         self.rate_limiter.acquire()
 
-        # 4. Transmission with allow_redirects=False
+        # 6. Transmission with allow_redirects=False
         try:
             resp = http_session.get(
                 TARGET_URL,
@@ -408,6 +526,12 @@ def build_parser() -> argparse.ArgumentParser:
         description="Bounded NVDA SEC submissions diagnostic acquisition (Issue #165)."
     )
     parser.add_argument(
+        "--auth-id",
+        type=str,
+        default=None,
+        help="Durable authorization ID (e.g. AUTH-NVDA-DIAG-20261125-001). Consumed atomically before transmission.",
+    )
+    parser.add_argument(
         "--user-agent",
         type=str,
         default=None,
@@ -428,7 +552,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Validate configuration and preconditions without transmitting HTTP wire egress.",
+        help="Validate configuration, authorization ID, and preconditions without transmitting HTTP wire egress.",
     )
     return parser
 
@@ -436,6 +560,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main():
     args = build_parser().parse_args()
     handler = DiagnosticAcquisitionHandler(
+        auth_id=args.auth_id,
         user_agent=args.user_agent,
         evidence_dir=Path(args.output_dir),
         timeout_sec=args.timeout,
@@ -447,10 +572,18 @@ def main():
         sys.exit(1)
 
     if args.dry_run:
-        print("DRY_RUN_PASSED: Diagnostic preconditions, rate limiter, and storage directories verified.")
+        print("DRY_RUN_PASSED: Diagnostic preconditions, authorization availability, rate limiter, and storage verified.")
         sys.exit(0)
 
-    receipt = handler.execute_single_request()
+    try:
+        receipt = handler.execute_single_request()
+    except AuthorizationAlreadyConsumedError as exc:
+        print(f"AUTHORIZATION_REJECTED: {exc}", file=sys.stderr)
+        sys.exit(3)
+    except DiagnosticBudgetExceededError as exc:
+        print(f"BUDGET_REJECTED: {exc}", file=sys.stderr)
+        sys.exit(4)
+
     print(json.dumps(receipt, indent=2))
 
     if not receipt.get("success", False):

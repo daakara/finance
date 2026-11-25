@@ -773,13 +773,30 @@
     "production_coverage_verdict": "PARTIAL_UNCERTIFIED",
     "operational_verdict": "ACQUISITION_AUTHORIZATION_REQUIRED",
     "verdict_rationale": "Production coverage remains PARTIAL_UNCERTIFIED across assessment interval [2026-08-26T00:00:00Z, 2026-11-25T00:00:00Z). While the retained catalog authoritatively validates zero unindexed Form 4 filings for the closed window [2026-08-26, 2026-11-19T21:45:59Z] based on schema and coverage rules, a coverage gap exists for [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z). The trial worker ingested 0001696841-26-000016 without retaining submissions catalog response bytes. An affirmative diagnostic acquisition of CIK0001045810.json is required to close the gap.",
-    "execution_prompt": "python3 scripts/acquire_nvda_submissions_diagnostic.py --user-agent \"ARXTerminal Research Akara.david26@gmail.com\" --output-dir \"data/sec_coverage_evidence/CIK0001045810\"",
+    "execution_prompt": "python3 scripts/acquire_nvda_submissions_diagnostic.py --auth-id \"AUTH-NVDA-DIAG-20261125-001\" --user-agent \"ARXTerminal Research Akara.david26@gmail.com\" --output-dir \"data/sec_coverage_evidence/CIK0001045810\"",
+    "durable_authorization_id": "AUTH-NVDA-DIAG-20261125-001",
     "remaining_gaps": [
       "Post-Nov 19 submissions index coverage gap: [2026-11-19T21:45:59Z, 2026-11-25T00:00:00Z)",
       "Absence of durable submissions catalog response bytes from trial Slot 4 execution"
     ],
     "certification_distinction": "Assessment completion establishes the mathematical reconciliation of known retained records; operational certification requires unbroken authoritative catalog coverage spanning the entire interval to certify zero missing filings.",
+    "governance_boundaries": {
+      "verification_status": "INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC",
+      "boundary_notes": "Diagnostic acquisition executes in isolated process with zero database egress; production snapshot and hold enforcement are intended governance boundaries preserved by contract and not independently verified against live production state in this offline run. Fixture tests do not establish live production state.",
+      "intended_active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+      "intended_coverage_status": "PARTIAL_UNCERTIFIED",
+      "immutable_baseline": "16 filings / 36 raw transactions / 35 effective transactions",
+      "intended_operational_holds": [
+        "HOLD_SEC_001",
+        "HOLD_SCAN_001",
+        "HOLD_EXEC_001",
+        "PHASE_3_HOLD",
+        "ARX_CONFLUENCE_INTEGRITY_HOLD"
+      ]
+    },
     "preserved_state": {
+      "verification_status": "INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC",
+      "boundary_notes": "Intended boundaries preserved by contract; unverified against live production state by offline diagnostic tests.",
       "active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
       "coverage_status": "PARTIAL_UNCERTIFIED",
       "immutable_baseline": "16 filings / 36 raw transactions / 35 effective transactions",
@@ -882,18 +899,35 @@
     "verdict": "ACQUISITION_AUTHORIZATION_REQUIRED",
     "target_resource": "https://data.sec.gov/submissions/CIK0001045810.json",
     "method": "Single HTTP GET via SecRateLimiter (pacing <= 5.0 req/sec)",
+    "durable_authorization_id": "AUTH-NVDA-DIAG-20261125-001",
     "execution_constraints": {
       "max_http_requests": 1,
       "automatic_retries": 0,
       "automatic_redirects": false,
       "user_agent": "ARXTerminal Research Akara.david26@gmail.com",
       "rate_limiter_pacing": "<= 5.0 requests/sec",
+      "durable_authorization_control": "Single-request budget survives process restarts and concurrent invocations via atomic disk claim (os.O_CREAT | os.O_EXCL). Reusing authorization ID fails closed before network egress.",
       "budget_authorization": "Separate diagnostic authorization and egress budget required; trial allowance is exhausted and expired",
       "storage_retention_contract": "Retain exact raw response bytes, request URL, UTC acquisition timestamp, HTTP status, byte count, and response SHA-256 in verifiable storage before downstream processing",
       "downstream_restrictions": "Zero Form 4/4-A XML downloads, zero filing parsing, zero database ingestion",
-      "scoring_and_publishing_restrictions": "Coverage flag remains PARTIAL_UNCERTIFIED; zero snapshot publishing, zero factor scoring activation"
+      "scoring_and_publishing_restrictions": "Coverage flag remains PARTIAL_UNCERTIFIED; zero snapshot publishing, zero factor scoring activation",
+      "governance_boundaries": {
+        "verification_status": "INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC",
+        "boundary_notes": "Diagnostic acquisition executes in isolated process with zero database egress; production snapshot and hold enforcement are intended governance boundaries preserved by contract and not independently verified against live production state in this offline run. Fixture tests do not establish live production state.",
+        "intended_production_coverage_status": "PARTIAL_UNCERTIFIED",
+        "intended_active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+        "intended_operational_holds": [
+          "HOLD_SEC_001",
+          "HOLD_SCAN_001",
+          "HOLD_EXEC_001",
+          "PHASE_3_HOLD",
+          "ARX_CONFLUENCE_INTEGRITY_HOLD"
+        ],
+        "database_writes_performed": 0,
+        "worker_activation": false
+      }
     },
-    "execution_prompt": "python3 scripts/acquire_nvda_submissions_diagnostic.py --user-agent \"ARXTerminal Research Akara.david26@gmail.com\" --output-dir \"data/sec_coverage_evidence/CIK0001045810\"",
+    "execution_prompt": "python3 scripts/acquire_nvda_submissions_diagnostic.py --auth-id \"AUTH-NVDA-DIAG-20261125-001\" --user-agent \"ARXTerminal Research Akara.david26@gmail.com\" --output-dir \"data/sec_coverage_evidence/CIK0001045810\"",
     "execution_script": "scripts/acquire_nvda_submissions_diagnostic.py"
   },
   "gate_4_offline_reconciliation_summary": {

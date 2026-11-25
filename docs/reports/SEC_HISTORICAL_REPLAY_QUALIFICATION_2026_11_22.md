@@ -536,12 +536,13 @@ Because no retained submissions catalog covers the remaining interval `[2026-11-
 - **Target Resource:** `GET https://data.sec.gov/submissions/CIK0001045810.json`
 - **Execution Constraints:**
   1. **Maximum HTTP Requests:** Exactly 1 request. Zero automatic retries; zero automatic redirects.
-  2. **SEC User-Agent Header:** Formatted strictly per SEC EDGAR requirements: `ARXTerminal Research Akara.david26@gmail.com`.
-  3. **Rate Limiter Pacing:** Governed by existing `RateLimiter` controls at <= 5.0 req/sec.
-  4. **Authorization & Budget:** Governed by a separate diagnostic authorization and egress budget. Never reuses the exhausted/expired trial allowance.
-  5. **Verifiable Storage Retention:** Retain exact raw response bytes, request URL, UTC acquisition timestamp, HTTP status, byte count, and response SHA-256 in verifiable storage before any downstream processing.
-  6. **Downstream Isolation:** Zero Form 4/4-A XML downloads, zero filing parsing, and zero database ingestion.
-  7. **Governance Hold Invariance:** Coverage flag remains `PARTIAL_UNCERTIFIED`; zero factor scoring activation, zero snapshot publication, zero live trade execution.
+  2. **Durable Authorization Control:** Single-request budget survives process restarts and concurrent invocations via atomic disk claim (`os.O_CREAT | os.O_EXCL`). Reusing authorization ID (`AUTH-NVDA-DIAG-20261125-001`) fails closed before socket creation or rate limiter wait, surviving timeouts and crashes.
+  3. **SEC User-Agent Header:** Formatted strictly per SEC EDGAR requirements: `ARXTerminal Research Akara.david26@gmail.com`.
+  4. **Rate Limiter Pacing:** Governed by existing `RateLimiter` controls at <= 5.0 req/sec.
+  5. **Authorization & Budget:** Governed by a separate diagnostic authorization and egress budget. Never reuses the exhausted/expired trial allowance.
+  6. **Verifiable Storage Retention:** Retain exact raw response bytes, request URL, UTC acquisition timestamp, HTTP status, byte count, and response SHA-256 in verifiable storage before any downstream processing.
+  7. **Downstream Isolation:** Zero Form 4/4-A XML downloads, zero filing parsing, and zero database ingestion.
+  8. **Governance Hold Invariance & Intended Boundaries:** Coverage flag remains `PARTIAL_UNCERTIFIED`; zero factor scoring activation, zero snapshot publication, zero live trade execution. Production snapshot and holds are explicitly labeled as intended governance boundaries preserved by contract; offline diagnostic scripts and fixture tests do not independently establish live production state.
 
 ---
 
@@ -551,7 +552,7 @@ $$\boxed{\mathbf{VERDICT:\ ACQUISITION\_AUTHORIZATION\_REQUIRED}}$$
 
 #### Exact Execution Prompt:
 ```bash
-python3 scripts/acquire_nvda_submissions_diagnostic.py --user-agent "ARXTerminal Research Akara.david26@gmail.com" --output-dir "data/sec_coverage_evidence/CIK0001045810"
+python3 scripts/acquire_nvda_submissions_diagnostic.py --auth-id "AUTH-NVDA-DIAG-20261125-001" --user-agent "ARXTerminal Research Akara.david26@gmail.com" --output-dir "data/sec_coverage_evidence/CIK0001045810"
 ```
 
 #### Exact Gaps Preventing a Definitive Verdict:
@@ -562,8 +563,9 @@ python3 scripts/acquire_nvda_submissions_diagnostic.py --user-agent "ARXTerminal
 - **Assessment Completion:** The mathematical and cryptographic reconciliation of all known retained filings and parsed transactions across baseline and forward accretion sets is 100% complete.
 - **Operational Certification:** Requires unbroken, verified submissions catalog coverage spanning the entire assessment window to certify that zero unindexed Form 4/4-A filings occurred. Without contiguous catalog evidence covering through `2026-11-25T00:00:00Z`, operational certification cannot be granted.
 
-#### Preserved Production State:
-- **Active Snapshot:** `SNAP_SM_1792939989_48f30db6` (unmodified).
+#### Preserved Production State (Intended Governance Boundaries):
+- **Verification Status:** `INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC` (Offline/fixture tests do not establish live production state).
+- **Active Snapshot:** `SNAP_SM_1792939989_48f30db6` (unmodified intended pointer).
 - **Analytical Baseline:** 16 filings / 36 raw transactions / 35 effective transactions (strictly immutable).
 - **Production Coverage Status:** **`PARTIAL_UNCERTIFIED`** (preserved).
-- **Operational Holds:** `HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD` (all strictly active).
+- **Operational Holds:** `HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD` (all strictly active intended boundaries).
