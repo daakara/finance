@@ -1249,10 +1249,21 @@ export default function PriceChart({
                           {rich.provenanceLabel}
                         </span>
                       )}
+                      {isRich && rich.accessionNumber && (
+                        <span className="text-[9.5px] text-slate-500">
+                          {rich.accessionNumber}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 text-slate-400 tabular-nums shrink-0">
                       {tm.amount !== null && tm.amount !== undefined && <span>{String(tm.amount)}</span>}
-                      <span>{tm.date.split("T")[0]}</span>
+                      <span>
+                        {isRich
+                          ? rich.dateSource === "FILING_DATE"
+                            ? `Filed ${tm.date.split("T")[0]}`
+                            : `Tx ${tm.date.split("T")[0]}`
+                          : tm.date.split("T")[0]}
+                      </span>
                     </div>
                   </div>
                 );

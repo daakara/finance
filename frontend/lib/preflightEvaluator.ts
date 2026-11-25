@@ -508,22 +508,22 @@ export function evaluatePreFlightChecks(
     id: "CHK-1",
     tag: "CHK-1 R:R",
     name: isPlain ? "1. Reward vs. Risk" : "1. Reward vs. Risk (Asymmetric Payoff)",
-    status: chk1Status,
+    status: !isPriceValid ? "UNAVAILABLE" : chk1Status,
     outcomeCategory: isRRPassed
       ? "PASS"
-      : !hasExecutionLevels || !isRRValid
+      : !isPriceValid || !hasExecutionLevels || !isRRValid
       ? "UNAVAILABLE"
       : "FAIL",
-    displayStatus: chk1DisplayStatus,
+    displayStatus: !isPriceValid ? PREFLIGHT_CONFIG.LABEL_UNAVAILABLE : chk1DisplayStatus,
     badgeClass: isRRPassed
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
-      : !hasExecutionLevels || !isRRValid
+      : !isPriceValid || !hasExecutionLevels || !isRRValid
       ? "bg-slate-900 text-slate-300 border-slate-700"
       : "bg-rose-950/80 text-rose-300 border-rose-700/80",
     passed: isRRPassed,
-    summary: chk1Summary,
-    detail: chk1Detail,
-    icon: isRRPassed ? "✓" : !hasExecutionLevels || !isRRValid ? "⚪" : "✕",
+    summary: !isPriceValid ? "Price Unavailable" : chk1Summary,
+    detail: !isPriceValid ? "Verified spot/reference price required to evaluate risk-reward." : chk1Detail,
+    icon: isRRPassed ? "✓" : !isPriceValid || !hasExecutionLevels || !isRRValid ? "⚪" : "✕",
   };
 
   // ── Check 2: Technical Trend Alignment & Stage Discipline ───────────────
@@ -544,10 +544,10 @@ export function evaluatePreFlightChecks(
     id: "CHK-2",
     tag: "CHK-2 STRUCTURE",
     name: isPlain ? "2. Trend & Moving Averages" : "2. Technical Structure",
-    status: chk2Status,
+    status: !isPriceValid && !isStage4 ? "UNAVAILABLE" : chk2Status,
     outcomeCategory: isTrendPassed
       ? "PASS"
-      : !isStage4 && safeEntryMin === null
+      : !isStage4 && (!isPriceValid || safeEntryMin === null)
       ? "UNAVAILABLE"
       : "FAIL",
     badgeClass: isTrendPassed
@@ -753,11 +753,13 @@ export function evaluatePreFlightChecks(
 
   const isCatalystConfirmed = isEtf || catalystEvidence?.confirmationStatus === "CONFIRMED";
   const isCatalystPassed = isPriceValid && resolvedCatalystState === "PASS";
-  const chk4Status: CheckStatus = resolvedCatalystState === "PASS"
+  const effectiveCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" =
+    !isPriceValid && resolvedCatalystState === "PASS" ? "UNAVAILABLE" : resolvedCatalystState;
+  const chk4Status: CheckStatus = effectiveCatalystState === "PASS"
     ? "PASS"
-    : resolvedCatalystState === "WARN"
+    : effectiveCatalystState === "WARN"
     ? "HAZARD"
-    : resolvedCatalystState === "ERROR"
+    : effectiveCatalystState === "ERROR"
     ? "ERROR"
     : "UNAVAILABLE";
 
@@ -798,12 +800,12 @@ export function evaluatePreFlightChecks(
     tag: "CHK-4 CATALYST",
     name: isPlain ? "4. News Event Safety" : "4. Catalyst Hazard Buffer",
     status: chk4Status,
-    outcomeCategory: resolvedCatalystState === "PASS"
+    outcomeCategory: effectiveCatalystState === "PASS"
       ? "PASS"
-      : resolvedCatalystState === "WARN"
+      : effectiveCatalystState === "WARN"
       ? "FAIL"
       : "UNAVAILABLE",
-    badgeClass: resolvedCatalystState === "PASS"
+    badgeClass: effectiveCatalystState === "PASS"
       ? (isCatalystConfirmed
           ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
           : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80")
@@ -821,7 +823,7 @@ export function evaluatePreFlightChecks(
   // ── Check 5: Macro Regime Guard ──────────────────────────────────────────
   const isMacroPassed = isPriceValid && isVixValid && currentVix !== null && currentVix < 26.0;
   const isVixElevated = isMacroPassed && currentVix !== null && currentVix >= 20.0 && currentVix < 26.0;
-  const chk5Status: CheckStatus = isMacroPassed ? "PASS" : isVixValid ? "HIGH VIX" : "UNAVAILABLE";
+  const chk5Status: CheckStatus = isMacroPassed ? "PASS" : (isPriceValid && isVixValid) ? "HIGH VIX" : "UNAVAILABLE";
 
   const chk5Summary = isMacroPassed
     ? (isVixElevated
@@ -854,20 +856,20 @@ export function evaluatePreFlightChecks(
     status: chk5Status,
     outcomeCategory: isMacroPassed
       ? "PASS"
-      : isVixValid
+      : isPriceValid && isVixValid
       ? "FAIL"
       : "UNAVAILABLE",
     badgeClass: isMacroPassed
       ? (isVixElevated
           ? "bg-amber-950/80 text-amber-300 border-amber-700/80"
           : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80")
-      : isVixValid
+      : isPriceValid && isVixValid
       ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
       : "bg-slate-900 text-slate-300 border-slate-700",
     passed: isMacroPassed,
     summary: chk5Summary,
     detail: chk5Detail,
-    icon: isMacroPassed ? (isVixElevated ? "⚠️" : "✓") : isVixValid ? "⚠️" : "⚪",
+    icon: isMacroPassed ? (isVixElevated ? "⚠️" : "✓") : (isPriceValid && isVixValid) ? "⚠️" : "⚪",
   };
 
   const checks: [

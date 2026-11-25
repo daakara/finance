@@ -3,12 +3,20 @@
  *
  * Enforces Gate 1 & Gate 2 invariants:
  * - Maps SEC Form 4, Congressional STOCK Act, and Options Flow records strictly
- *   to their underlying source transactions (Purchases, Sales, Awards, Gifts,
- *   Tax Withholding, Option Exercises, Mixed, or Unparsed).
- * - Never defaults missing or non-purchase filings to "Insider Buy".
- * - Distinguishes retained SEC EDGAR filings from curated/sample records.
+ *   to their underlying source transactions:
+ *     - P -> Purchase ("Open Market Purchase" ONLY when explicitly supported by source evidence)
+ *     - S -> Sale ("Open Market Sale" ONLY when explicitly supported by source evidence)
+ *     - A -> Grant / Award
+ *     - F -> Tax Withholding
+ *     - G -> Gift (Bona Fide Gift)
+ *     - M / X / C / O -> Option Exercise / Derivative Conversion
+ *     - UNKNOWN -> Unknown Form 4 Transaction (distinct from UNPARSED)
+ *     - UNPARSED -> Form 4 Filing (Unparsed)
+ * - Never infers buying conviction or execution venue from filing presence.
+ * - Distinguishes retained SEC EDGAR evidence from curated/sample records.
+ * - Prefers transaction_date over filing_date and marks dateSource explicitly.
  * - Never fabricates dates when source timestamps are missing.
- * - Groups same-bar / same-direction events to prevent canvas label collision.
+ * - Groups same-bar / same-direction events while preserving access to every transaction & provenance.
  */
 
 export type TradeMarkerCategory =
@@ -21,6 +29,7 @@ export type TradeMarkerCategory =
   | "DISPOSITION"
   | "OTHER"
   | "MIXED"
+  | "UNKNOWN"
   | "UNPARSED"
   | "CONGRESS_PURCHASE"
   | "CONGRESS_SALE"
@@ -35,9 +44,14 @@ export type TradeMarkerProvenance =
   | "CURATED_SAMPLE"
   | "UNVERIFIED";
 
+export type TradeMarkerDateSource = "TRANSACTION_DATE" | "FILING_DATE";
+
 export interface ChartTradeMarker {
   id: string;
   date: string;
+  dateSource: TradeMarkerDateSource;
+  transactionDate?: string | null;
+  filingDate?: string | null;
   label: string;
   shortCode: string;
   type: "CONGRESS" | "INSIDER" | "OPTIONS";
@@ -83,12 +97,10 @@ interface ClassificationResult {
   label: string;
 }
 
-const CODE_CLASSIFICATIONS: Record<string, ClassificationResult> = {
-  P: { category: "PURCHASE", direction: "BUY", shortCode: "P", label: "Open Market Purchase" },
-  S: { category: "SALE", direction: "SELL", shortCode: "S", label: "Open Market Sale" },
+const KNOWN_NEUTRAL_CODES: Record<string, ClassificationResult> = {
   A: { category: "AWARD", direction: "NEUTRAL", shortCode: "A", label: "Grant / Award" },
   F: { category: "WITHHOLDING", direction: "NEUTRAL", shortCode: "F", label: "Tax Withholding" },
-  G: { category: "GIFT", direction: "NEUTRAL", shortCode: "G", label: "Bona Fide Gift" },
+  G: { category: "GIFT", direction: "NEUTRAL", shortCode: "G", label: "Gift" },
   M: { category: "EXERCISE", direction: "NEUTRAL", shortCode: "M", label: "Option Exercise" },
   X: { category: "EXERCISE", direction: "NEUTRAL", shortCode: "X", label: "Option Exercise" },
   C: { category: "EXERCISE", direction: "NEUTRAL", shortCode: "C", label: "Derivative Conversion" },
@@ -105,9 +117,18 @@ const CODE_CLASSIFICATIONS: Record<string, ClassificationResult> = {
   Z: { category: "OTHER", direction: "NEUTRAL", shortCode: "Z", label: "Voting Trust (Code Z)" },
 };
 
+function hasExplicitOpenMarketEvidence(record: Record<string, any>, upperType: string): boolean {
+  return Boolean(
+    record.is_open_market_purchase_evidence === true ||
+    record.isOpenMarketPurchaseEvidence === true ||
+    upperType.includes("OPEN MARKET") ||
+    String(record.execution_venue ?? record.executionVenue ?? "").toUpperCase().includes("OPEN_MARKET")
+  );
+}
+
 /**
  * Classifies a single SEC Form 4 record or transaction strictly from its source
- * code, explicit transaction type, and parsed metadata without assuming buys.
+ * code, explicit transaction type, and parsed metadata without assuming buys or venue.
  */
 export function classifyForm4Transaction(record: Record<string, any>): ClassificationResult {
   const isMixed = Boolean(record.is_mixed ?? record.isMixed);
@@ -137,28 +158,61 @@ export function classifyForm4Transaction(record: Record<string, any>): Classific
     };
   }
 
-  if (rawCode && CODE_CLASSIFICATIONS[rawCode]) {
-    // Guard against curated descriptions like "Purchase (Grant / Long Hold)" even if mis-tagged
-    if (rawCode === "P" && (upperType.includes("GRANT") || upperType.includes("AWARD"))) {
-      return {
-        category: "AWARD",
-        direction: "NEUTRAL",
-        shortCode: "A",
-        label: "Grant / Award",
-      };
-    }
-    return CODE_CLASSIFICATIONS[rawCode];
+  if (rawCode === "UNKNOWN" || upperType === "UNKNOWN") {
+    return {
+      category: "UNKNOWN",
+      direction: "NEUTRAL",
+      shortCode: "?",
+      label: "Unknown Form 4 Transaction",
+    };
   }
 
-  // Non-purchase codes take precedence over text substrings like "Purchase (Grant / Long Hold)"
+  if (rawCode === "P") {
+    // Guard against curated descriptions like "Purchase (Grant / Long Hold)"
+    if (upperType.includes("GRANT") || upperType.includes("AWARD")) {
+      return KNOWN_NEUTRAL_CODES.A;
+    }
+    const openMarket = hasExplicitOpenMarketEvidence(record, upperType);
+    return {
+      category: "PURCHASE",
+      direction: "BUY",
+      shortCode: "P",
+      label: openMarket ? "Open Market Purchase" : "Purchase",
+    };
+  }
+
+  if (rawCode === "S") {
+    const openMarket = upperType.includes("OPEN MARKET");
+    return {
+      category: "SALE",
+      direction: "SELL",
+      shortCode: "S",
+      label: openMarket ? "Open Market Sale" : "Sale",
+    };
+  }
+
+  if (rawCode && KNOWN_NEUTRAL_CODES[rawCode]) {
+    return KNOWN_NEUTRAL_CODES[rawCode];
+  }
+
+  if (rawCode) {
+    return {
+      category: "UNKNOWN",
+      direction: "NEUTRAL",
+      shortCode: rawCode,
+      label: `Unknown Form 4 Transaction (Code ${rawCode})`,
+    };
+  }
+
+  // Fallback on text/flags only when transaction_code is absent
   if (upperType.includes("TAX") || upperType.includes("WITHHOLD")) {
-    return CODE_CLASSIFICATIONS.F;
+    return KNOWN_NEUTRAL_CODES.F;
   }
   if (record.is_gift === true || record.isGift === true || upperType.includes("GIFT")) {
-    return CODE_CLASSIFICATIONS.G;
+    return KNOWN_NEUTRAL_CODES.G;
   }
   if (upperType.includes("GRANT") || upperType.includes("AWARD") || upperType.includes("RSU")) {
-    return CODE_CLASSIFICATIONS.A;
+    return KNOWN_NEUTRAL_CODES.A;
   }
   if (
     record.is_exercise === true ||
@@ -166,30 +220,50 @@ export function classifyForm4Transaction(record: Record<string, any>): Classific
     upperType.includes("EXERCISE") ||
     upperType.includes("CONVERSION")
   ) {
-    return CODE_CLASSIFICATIONS.M;
+    return KNOWN_NEUTRAL_CODES.M;
   }
   if (upperType.includes("DISPOSITION TO ISSUER")) {
-    return CODE_CLASSIFICATIONS.D;
+    return KNOWN_NEUTRAL_CODES.D;
   }
   if (record.is_sell === true || record.isSell === true || upperType.includes("SALE") || upperType.includes("SELL")) {
-    return CODE_CLASSIFICATIONS.S;
+    return {
+      category: "SALE",
+      direction: "SELL",
+      shortCode: "S",
+      label: upperType.includes("OPEN MARKET") ? "Open Market Sale" : "Sale",
+    };
   }
   if (record.is_buy === true || record.isBuy === true || upperType.includes("PURCHASE") || upperType.includes("BUY")) {
-    return CODE_CLASSIFICATIONS.P;
+    const openMarket = hasExplicitOpenMarketEvidence(record, upperType);
+    return {
+      category: "PURCHASE",
+      direction: "BUY",
+      shortCode: "P",
+      label: openMarket ? "Open Market Purchase" : "Purchase",
+    };
   }
   if (rawType) {
     return {
-      category: "OTHER",
+      category: "UNKNOWN",
       direction: "NEUTRAL",
-      shortCode: rawCode || "F4",
+      shortCode: "?",
       label: rawType,
+    };
+  }
+
+  if (record.has_parsed_transaction === true || record.transaction_id || record.transactionId) {
+    return {
+      category: "UNKNOWN",
+      direction: "NEUTRAL",
+      shortCode: "?",
+      label: "Unknown Form 4 Transaction",
     };
   }
 
   return {
     category: "UNPARSED",
     direction: "NEUTRAL",
-    shortCode: rawCode || "F4",
+    shortCode: "F4",
     label: "Form 4 Filing (Unparsed)",
   };
 }
@@ -233,6 +307,22 @@ function resolveSecProvenance(
   }
 
   return { provenance: "UNVERIFIED", provenanceLabel: "Unverified Source" };
+}
+
+function resolveMarkerDate(
+  txDateRaw: unknown,
+  filingDateRaw: unknown
+): { date: string; dateSource: TradeMarkerDateSource; transactionDate: string | null; filingDate: string | null } | null {
+  const txDate = typeof txDateRaw === "string" && txDateRaw.trim() ? txDateRaw.trim() : null;
+  const filingDate = typeof filingDateRaw === "string" && filingDateRaw.trim() ? filingDateRaw.trim() : null;
+
+  if (txDate) {
+    return { date: txDate, dateSource: "TRANSACTION_DATE", transactionDate: txDate, filingDate };
+  }
+  if (filingDate) {
+    return { date: filingDate, dateSource: "FILING_DATE", transactionDate: null, filingDate };
+  }
+  return null;
 }
 
 function formatSharesOrValue(shares: unknown, totalValue: unknown): string | number | null {
@@ -305,8 +395,8 @@ export function buildChartTradeMarkers(smartMoney: Record<string, any> | null | 
     String(congSub?.provenance ?? "").toLowerCase().includes("curated");
 
   congList.forEach((ct: any, idx: number) => {
-    const date = ct?.transaction_date || ct?.date || ct?.filing_date;
-    if (!date) return;
+    const resolvedDate = resolveMarkerDate(ct?.transaction_date || ct?.date, ct?.filing_date);
+    if (!resolvedDate) return;
 
     const rawTxType = String(ct.transaction_type || ct.type || "").trim();
     const upperTx = rawTxType.toUpperCase();
@@ -325,8 +415,11 @@ export function buildChartTradeMarkers(smartMoney: Record<string, any> | null | 
 
     const isItemCurated = congCurated || String(ct.id ?? "").startsWith("cong-");
     markers.push({
-      id: String(ct.id || `cong-${idx}-${date}`),
-      date: String(date),
+      id: String(ct.id || `cong-${idx}-${resolvedDate.date}`),
+      date: resolvedDate.date,
+      dateSource: resolvedDate.dateSource,
+      transactionDate: resolvedDate.transactionDate,
+      filingDate: resolvedDate.filingDate,
       label: `Congress ${actionWord}: ${lastName}`,
       shortCode,
       type: "CONGRESS",
@@ -355,19 +448,26 @@ export function buildChartTradeMarkers(smartMoney: Record<string, any> | null | 
     const { provenance, provenanceLabel } = resolveSecProvenance(filing, secSub);
     const accNum = filing.accession_number || filing.accessionNumber || null;
     const secUrl = filing.sec_url || filing.secUrl || null;
+    const filingDateFallback = filing.filing_date || filing.filingDate || filing.date || null;
     const parsedTxs = Array.isArray(filing.transactions) ? filing.transactions : [];
 
     if (parsedTxs.length > 0) {
       parsedTxs.forEach((tx: any, tIdx: number) => {
-        const txDate = tx.transaction_date || tx.transactionDate || filing.transaction_date || filing.filing_date || filing.filingDate;
-        if (!txDate) return;
+        const resolvedDate = resolveMarkerDate(
+          tx.transaction_date || tx.transactionDate || filing.transaction_date || filing.transactionDate,
+          filingDateFallback
+        );
+        if (!resolvedDate) return;
 
-        const baseCls = classifyForm4Transaction(tx);
+        const baseCls = classifyForm4Transaction({ ...tx, has_parsed_transaction: true });
         const { classification, isEffective, effectiveStatus } = resolveEffectiveClassification(baseCls, tx);
 
         markers.push({
           id: String(tx.transaction_id || tx.transactionId || `${accNum || fIdx}-${tIdx}`),
-          date: String(txDate),
+          date: resolvedDate.date,
+          dateSource: resolvedDate.dateSource,
+          transactionDate: resolvedDate.transactionDate,
+          filingDate: resolvedDate.filingDate,
           label: classification.label,
           shortCode: classification.shortCode,
           type: "INSIDER",
@@ -390,15 +490,21 @@ export function buildChartTradeMarkers(smartMoney: Record<string, any> | null | 
       return;
     }
 
-    const filingDate = filing.transaction_date || filing.transactionDate || filing.filing_date || filing.filingDate || filing.date;
-    if (!filingDate) return;
+    const resolvedDate = resolveMarkerDate(
+      filing.transaction_date || filing.transactionDate,
+      filingDateFallback
+    );
+    if (!resolvedDate) return;
 
     const baseCls = classifyForm4Transaction(filing);
     const { classification, isEffective, effectiveStatus } = resolveEffectiveClassification(baseCls, filing);
 
     markers.push({
-      id: String(filing.id || accNum || `sec-${fIdx}-${filingDate}`),
-      date: String(filingDate),
+      id: String(filing.id || accNum || `sec-${fIdx}-${resolvedDate.date}`),
+      date: resolvedDate.date,
+      dateSource: resolvedDate.dateSource,
+      transactionDate: resolvedDate.transactionDate,
+      filingDate: resolvedDate.filingDate,
       label: classification.label,
       shortCode: classification.shortCode,
       type: "INSIDER",
@@ -426,8 +532,8 @@ export function buildChartTradeMarkers(smartMoney: Record<string, any> | null | 
     String(optSub?.provenance ?? "").toLowerCase().includes("curated");
 
   optList.forEach((op: any, idx: number) => {
-    const date = op?.date || op?.timestamp;
-    if (!date) return;
+    const rawDate = op?.date || op?.timestamp;
+    if (!rawDate) return;
 
     const flowType = String(op.type || op.put_call || "Options Flow").trim();
     const sentiment = String(op.sentiment || "").toUpperCase();
@@ -435,8 +541,11 @@ export function buildChartTradeMarkers(smartMoney: Record<string, any> | null | 
     const isCall = !isPut && (flowType.toUpperCase().includes("CALL") || sentiment.includes("BULL"));
 
     markers.push({
-      id: String(op.id || `opt-${idx}-${date}`),
-      date: String(date),
+      id: String(op.id || `opt-${idx}-${rawDate}`),
+      date: String(rawDate),
+      dateSource: "TRANSACTION_DATE",
+      transactionDate: String(rawDate),
+      filingDate: null,
       label: flowType,
       shortCode: isPut ? "PUT" : isCall ? "CALL" : "OPT",
       type: "OPTIONS",
@@ -460,7 +569,7 @@ function isFullChartMarker(m: AnyChartTradeMarker): m is ChartTradeMarker {
 function inferDirectionFromLegacy(m: LegacyTradeMarkerInput): TradeMarkerDirection {
   const upper = m.label.toUpperCase();
   if (upper.includes("SALE") || upper.includes("SELL") || upper.includes("PUT")) return "SELL";
-  if (upper.includes("GIFT") || upper.includes("AWARD") || upper.includes("GRANT") || upper.includes("TAX") || upper.includes("WITHHOLD") || upper.includes("EXERCISE") || upper.includes("MIXED") || upper.includes("UNPARSED")) {
+  if (upper.includes("GIFT") || upper.includes("AWARD") || upper.includes("GRANT") || upper.includes("TAX") || upper.includes("WITHHOLD") || upper.includes("EXERCISE") || upper.includes("MIXED") || upper.includes("UNKNOWN") || upper.includes("UNPARSED")) {
     return "NEUTRAL";
   }
   if (upper.includes("PURCHASE") || upper.includes("BUY") || upper.includes("CALL")) return "BUY";
@@ -469,7 +578,7 @@ function inferDirectionFromLegacy(m: LegacyTradeMarkerInput): TradeMarkerDirecti
 
 /**
  * Aligns markers to valid candle timestamps and groups same-candle / same-direction
- * events into clean, non-overlapping Lightweight Charts markers.
+ * events into clean, non-overlapping Lightweight Charts markers while preserving full item lists.
  */
 export function groupTradeMarkersForChart(
   tradeMarkers: AnyChartTradeMarker[],
