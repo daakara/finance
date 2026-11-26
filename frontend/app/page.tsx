@@ -162,6 +162,43 @@ function TerminalContent() {
     }
   }, [selectedSymbol]);
 
+  useEffect(() => {
+    const handleOpenSec = () => {
+      setActiveTab("FUNDAMENTALS");
+      setTimeout(() => {
+        const el = document.getElementById("sec-disclosures-feed") || document.getElementById("institutional-feeds");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    };
+    window.addEventListener("arx:open-sec-disclosures", handleOpenSec);
+    return () => window.removeEventListener("arx:open-sec-disclosures", handleOpenSec);
+  }, []);
+
+  const workspaceTabs: WorkspaceTab[] = ["SMART_MONEY", "FUNDAMENTALS", "RISK_CONTAGION"];
+  const tabButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const handleTabKeyDown = (e: React.KeyboardEvent, index: number) => {
+    let nextIndex = index;
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      nextIndex = (index + 1) % workspaceTabs.length;
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      nextIndex = (index - 1 + workspaceTabs.length) % workspaceTabs.length;
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      e.preventDefault();
+      nextIndex = workspaceTabs.length - 1;
+    } else {
+      return;
+    }
+    const nextTab = workspaceTabs[nextIndex];
+    handleTabChange(nextTab, nextTab === "SMART_MONEY" ? "Smart Money" : nextTab === "FUNDAMENTALS" ? "Factors & Macro" : "Risk & Contagion");
+    tabButtonRefs.current[nextIndex]?.focus();
+  };
+
   const handleSelectSymbol = useCallback((newSym: string) => {
     const clean = newSym.trim().toUpperCase();
     if (!clean) return;
@@ -786,7 +823,19 @@ function TerminalContent() {
                 ) : (
                   <PreFlightReadinessBar
                     {...canonicalPreflightInputs}
-                    priceContext={`Readiness input: $${canonicalPreflightInputs.currentPrice.toFixed(2)}. Setup reference: ${data?.analysisReferencePrice ?? "unavailable"} (${data?.analysisReferenceSource ?? "source unavailable"}; ${data?.analysisReferenceDate ?? "timestamp unavailable"}). Market observation: ${data?.liveSpotPrice ?? "unavailable"} (${data?.liveFreshness ?? "unavailable"}; observed ${data?.liveObservedAt ?? "timestamp unavailable"}). Plan evaluation: ${data?.optimalExecution?.eval_price ?? "unavailable"}. Prices can have different observation times; no shared snapshot is certified here.`}
+                    priceContext={(() => {
+                      const formatObservedAt = (raw: string | number | undefined | null) => {
+                        if (!raw) return "timestamp unavailable";
+                        if (typeof raw === "number" || /^\d{12,14}$/.test(String(raw))) {
+                          try {
+                            const d = new Date(Number(raw));
+                            if (!isNaN(d.getTime())) return d.toISOString().replace("T", " ").slice(0, 19) + " UTC";
+                          } catch {}
+                        }
+                        return String(raw);
+                      };
+                      return `Readiness input: $${canonicalPreflightInputs.currentPrice.toFixed(2)}. Setup reference: ${data?.analysisReferencePrice ?? "unavailable"} (${data?.analysisReferenceSource ?? "source unavailable"}; ${data?.analysisReferenceDate ?? "timestamp unavailable"}). Market observation: ${data?.liveSpotPrice ?? "unavailable"} (${data?.liveFreshness ?? "unavailable"}; observed ${formatObservedAt(data?.liveObservedAt)}). Plan evaluation: ${data?.optimalExecution?.eval_price ?? "unavailable"}. Prices can have different observation times; no shared snapshot is certified here.`;
+                    })()}
                     isDrawerExpanded={isPreflightDrawerExpanded}
                     onToggleDrawer={setIsPreflightDrawerExpanded}
                     onOpenModal={() => setIsPreflightModalOpen(true)}
@@ -915,10 +964,15 @@ function TerminalContent() {
             <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-1 sm:grid-cols-3 gap-1.5 shadow-xl font-mono text-xs">
 
               <button
+                ref={(el) => { tabButtonRefs.current[0] = el; }}
+                type="button"
                 role="tab"
+                id="tab-domain-smart-money"
                 aria-selected={activeTab === "SMART_MONEY"}
+                tabIndex={activeTab === "SMART_MONEY" ? 0 : -1}
+                onKeyDown={(e) => handleTabKeyDown(e, 0)}
                 onClick={() => handleTabChange("SMART_MONEY", "Smart Money")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer ${
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                   activeTab === "SMART_MONEY"
                     ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -929,10 +983,15 @@ function TerminalContent() {
               </button>
 
               <button
+                ref={(el) => { tabButtonRefs.current[1] = el; }}
+                type="button"
                 role="tab"
+                id="tab-domain-fundamentals"
                 aria-selected={activeTab === "FUNDAMENTALS"}
+                tabIndex={activeTab === "FUNDAMENTALS" ? 0 : -1}
+                onKeyDown={(e) => handleTabKeyDown(e, 1)}
                 onClick={() => handleTabChange("FUNDAMENTALS", "Factors & Macro")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer ${
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                   activeTab === "FUNDAMENTALS"
                     ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -943,10 +1002,15 @@ function TerminalContent() {
               </button>
 
               <button
+                ref={(el) => { tabButtonRefs.current[2] = el; }}
+                type="button"
                 role="tab"
+                id="tab-domain-risk-contagion"
                 aria-selected={activeTab === "RISK_CONTAGION"}
+                tabIndex={activeTab === "RISK_CONTAGION" ? 0 : -1}
+                onKeyDown={(e) => handleTabKeyDown(e, 2)}
                 onClick={() => handleTabChange("RISK_CONTAGION", "Risk & Contagion")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer ${
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                   activeTab === "RISK_CONTAGION"
                     ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"

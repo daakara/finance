@@ -25,6 +25,10 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
     const handleOpenSec = () => {
       setActiveTab("SEC_FORM4");
     };
+    if (typeof window !== "undefined" && (window as any).__arxPendingSecForm4) {
+      (window as any).__arxPendingSecForm4 = false;
+      setActiveTab("SEC_FORM4");
+    }
     window.addEventListener("arx:open-sec-disclosures", handleOpenSec);
     return () => window.removeEventListener("arx:open-sec-disclosures", handleOpenSec);
   }, []);

@@ -197,6 +197,7 @@ export default function CompositeConvictionCard({
         confluenceBadge,
         bottomLineText,
         pillars,
+        isPending: false,
       };
     }
 
@@ -309,6 +310,7 @@ export default function CompositeConvictionCard({
       confluenceBadge: isPlain ? "Awaiting Backend Confluence" : "Evaluation Pending",
       bottomLineText: "CONFLUENCE EVALUATION PENDING: Quantitative confluence model results pending from analytical backend.",
       pillars: pendingPillars,
+      isPending: true,
     };
   }, [data, isPlain]);
 
@@ -343,12 +345,12 @@ export default function CompositeConvictionCard({
               </span>
             </div>
             <div className={`text-2xl sm:text-3xl font-black font-mono tabular-nums ${synthesis.verdictColor}`}>
-              {synthesis.score > 0 ? (
+              {synthesis.isPending ? (
+                <span className="text-sm font-bold text-[var(--text-2)]">PENDING</span>
+              ) : (
                 <>
                   {synthesis.score}<span className="text-xs text-[var(--text-muted)] font-normal">/100</span>
                 </>
-              ) : (
-                <span className="text-sm font-bold text-[var(--text-2)]">PENDING</span>
               )}
             </div>
           </div>
@@ -377,10 +379,10 @@ export default function CompositeConvictionCard({
             key={pillar.id}
             className="bg-[var(--surface-2)] border border-[var(--border-subtle)] rounded-xl p-2.5 sm:p-3.5 flex flex-col justify-between gap-2 shadow-sm"
           >
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
               <div className="flex items-center space-x-1.5 min-w-0">
                 <span className="text-sm shrink-0">{pillar.icon}</span>
-                <span className="font-bold text-[var(--text-1)] uppercase tracking-wide font-mono text-[10px] sm:text-[11px]">
+                <span className="font-bold text-[var(--text-1)] uppercase tracking-wide font-mono text-[10px] sm:text-[11px] truncate">
                   {pillar.label}
                 </span>
               </div>
@@ -409,15 +411,16 @@ export default function CompositeConvictionCard({
                     data-testid="link-sec-disclosure-drawer"
                     onClick={() => {
                       if (typeof window !== "undefined") {
+                        (window as any).__arxPendingSecForm4 = true;
                         window.dispatchEvent(new CustomEvent("arx:open-sec-disclosures", { detail: { symbol } }));
                         const feedEl = document.getElementById("sec-disclosures-feed") || document.getElementById("institutional-feeds");
                         if (feedEl) feedEl.scrollIntoView({ behavior: "smooth", block: "start" });
                       }
                     }}
-                    className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                    className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono font-semibold flex items-center gap-1 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 min-h-[36px]"
                     aria-label={`Inspect SEC Form 4 Disclosures for ${cleanSym}`}
                   >
-                    <span>Inspect SEC Form 4 Disclosures</span>
+                    <span>Inspect SEC Form 4 Feed</span>
                     <span>→</span>
                   </button>
                 </div>

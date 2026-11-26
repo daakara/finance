@@ -65,7 +65,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   const rawMVaR = metrics.Modified_VaR_95;
   const isMVaRValid = typeof rawMVaR === "number" && Number.isFinite(rawMVaR) && !Number.isNaN(rawMVaR) && rawMVaR !== 0;
 
-  const rawAtr = technicals.atr_14;
+  const rawAtr = technicals.atr_14 ?? (technicals as any).atr;
   const isAtrValid = typeof rawAtr === "number" && Number.isFinite(rawAtr) && !Number.isNaN(rawAtr) && rawAtr > 0;
 
   if (!isMVaRValid && !isAtrValid) {

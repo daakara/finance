@@ -9,7 +9,7 @@ export interface WhyInspectModalProps {
   isOpen: boolean;
   onClose: () => void;
   symbol: string;
-  setupScore: number;
+  setupScore: number | null;
   terminalState?: TerminalViewState;
   items?: FactorAttributionItem[];
   catalystToIncreaseScore?: string;
@@ -225,10 +225,10 @@ export default function WhyInspectModal({
                 </span>
               </div>
               <div className="flex items-center gap-1.5 font-mono">
-                <span className={`text-xl font-black ${effectiveScore >= 75 ? "text-emerald-400" : effectiveScore >= 55 ? "text-amber-400" : "text-rose-400"}`}>
-                  {effectiveScore}
+                <span className={`text-xl font-black ${effectiveScore != null ? (effectiveScore >= 75 ? "text-emerald-400" : effectiveScore >= 55 ? "text-amber-400" : "text-rose-400") : "text-[var(--text-2)]"}`}>
+                  {effectiveScore != null ? effectiveScore : "Pending"}
                 </span>
-                <span className="text-xs text-[var(--text-muted)]">/ 100</span>
+                {effectiveScore != null && <span className="text-xs text-[var(--text-muted)]">/ 100</span>}
               </div>
             </div>
 

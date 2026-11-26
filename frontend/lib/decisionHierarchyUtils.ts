@@ -105,7 +105,7 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
 
   // 3. Confluence Score & Risk/Reward Thresholds
   const score = insight.setupScore;
-  if (score >= 70) {
+  if (score != null && score >= 70) {
     conditions.push({
       id: "confluence_floor",
       category: "CONFLUENCE",
@@ -113,12 +113,20 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
       description: `Setup score ${score}/100 meets institutional confluence threshold (≥ 70).`,
       status: "MET",
     });
-  } else {
+  } else if (score != null) {
     conditions.push({
       id: "confluence_floor",
       category: "CONFLUENCE",
       title: "Elevate Multi-Model Confluence",
       description: `Current score ${score}/100 is below the 70/100 threshold required for high-conviction execution.`,
+      status: "UNMET",
+    });
+  } else {
+    conditions.push({
+      id: "confluence_floor",
+      category: "CONFLUENCE",
+      title: "Multi-Model Confluence Pending",
+      description: "Confluence score is currently pending or unverified from the backend engine.",
       status: "UNMET",
     });
   }
