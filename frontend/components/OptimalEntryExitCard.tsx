@@ -603,7 +603,7 @@ export default function OptimalEntryExitCard({
               >
                 <span className="text-[9px] text-[var(--text-muted)] block uppercase font-bold font-mono">
                   {isPlain
-                    ? (isSpotBelowFloor ? (isStage4 ? "Planned R:R (Post-Pivot Floor)" : "Planned R:R (Zone Floor)") : "Profit : Risk")
+                    ? (isSpotBelowFloor ? "Planned R:R (Zone Floor)" : "Profit : Risk")
                     : isSpotBelowFloor
                     ? (isStage4 ? "Planned R:R (Post-Pivot Floor)" : "Planned R:R (Zone Floor)")
                     : isStage4
