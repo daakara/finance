@@ -124,6 +124,22 @@ def test_missing_symbol_produces_missing_input_in_denominator():
         assert evals[s] is None
 
 
+def test_stale_input_explicitly_reported_as_stale_data():
+    session = "2026-11-25"
+    close = CAL.session_close(session).to_pydatetime()
+    # Series ending on 2026-10-28 (strictly prior to target session 2026-11-25)
+    stale_bars = make_test_bars(end_date="2026-10-28", n_sessions=20)
+    df = pd.DataFrame(stale_bars).set_index("date")
+    df.index = pd.to_datetime(df.index)
+
+    res = evaluate_symbol_decision("VOO", df, session, close)
+    assert res["decisionState"] == "STALE_DATA"
+    assert res["evaluationStatus"] == "RECORDED"
+    assert res["plan"] is None
+    assert "stale" in res["reason"].lower()
+    assert "2026-10-28" in res["reason"]
+
+
 # ==============================================================================
 # Gate 3: Valid 0-Setup Session (Non-Actionable Decisions Recorded)
 # ==============================================================================

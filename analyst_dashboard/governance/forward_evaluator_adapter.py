@@ -187,6 +187,17 @@ def evaluate_symbol_decision(
             "plan": None,
         }
 
+    last_bar_date = price_df.index[-1].strftime("%Y-%m-%d")
+    if last_bar_date < session_date:
+        return {
+            "decisionState": "STALE_DATA",
+            "evaluationStatus": "RECORDED",
+            "sourceTimestampUtc": as_of_close_utc.isoformat(),
+            "observedAtUtc": as_of_close_utc.isoformat(),
+            "plan": None,
+            "reason": f"Stale price series for {symbol}: last bar {last_bar_date} is prior to target session {session_date}",
+        }
+
     try:
         last_close = float(price_df["Close"].iloc[-1])
         if not (math.isfinite(last_close) and last_close > 0):
@@ -385,7 +396,9 @@ def execute_isolated_forward_evaluation(
     actionable_count = sum(1 for e in evals.values() if isinstance(e, dict) and e.get("decisionState") in ("ACTIONABLE_SETUP", "VALID_SETUP"))
     missing_count = sum(1 for e in evals.values() if e is None)
     failed_count = sum(1 for e in evals.values() if isinstance(e, dict) and e.get("error"))
+    stale_count = sum(1 for e in evals.values() if isinstance(e, dict) and e.get("decisionState") == "STALE_DATA")
     recorded_count = sum(1 for e in evals.values() if isinstance(e, dict) and not e.get("error"))
+    non_actionable_count = sum(1 for e in evals.values() if isinstance(e, dict) and not e.get("error") and e.get("decisionState") not in ("ACTIONABLE_SETUP", "VALID_SETUP", "STALE_DATA"))
 
     return {
         "status": "CAPTURED_FORWARD_SESSION",
@@ -396,7 +409,8 @@ def execute_isolated_forward_evaluation(
         "batchSha256": hashlib.sha256(raw_batch).hexdigest(),
         "totalSymbols": len(evals),
         "actionableSetups": actionable_count,
-        "nonActionableDecisions": recorded_count - actionable_count,
+        "nonActionableDecisions": non_actionable_count,
+        "staleInputs": stale_count,
         "missingInputs": missing_count,
         "failedEvaluations": failed_count,
         **capture_receipt,
