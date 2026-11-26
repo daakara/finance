@@ -216,6 +216,7 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
       >
         {checks.map((chk: PreFlightCheckItem, index: number) => {
           const isCheckPassed = chk.passed;
+          const isCheckFailed = !isCheckPassed && (chk.status === "FAIL" || chk.outcomeCategory === "FAIL" || chk.status === "HAZARD" || chk.status === "CAPITAL RISK");
           const isCheckUnavailable = chk.outcomeCategory === "UNAVAILABLE" || chk.status === "UNAVAILABLE" || chk.status === "ERROR";
           return (
             <div
@@ -223,20 +224,22 @@ export default function PreFlightReadinessBar(props: PreFlightReadinessBarProps)
               role="listitem"
               data-testid={`inline-chk-pill-${index + 1}`}
               className={`p-2 rounded-lg border flex flex-col justify-between gap-1 transition-colors ${
+                index === 4 ? "col-span-2 sm:col-span-1 lg:col-span-1" : ""
+              } ${
                 isCheckPassed
                   ? "bg-[var(--status-positive-bg)] border-emerald-900/40"
+                  : isCheckFailed
+                  ? "bg-[var(--status-negative-bg)] border-rose-900/50"
                   : isCheckUnavailable
                   ? "bg-slate-900/60 border-slate-700/80"
-                  : chk.status === "HAZARD" || chk.status === "FAIL" || chk.status === "CAPITAL RISK"
-                  ? "bg-[var(--status-negative-bg)] border-rose-900/50"
                   : "bg-[var(--status-caution-bg)] border-amber-900/40"
               }`}
             >
-              <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="font-bold text-[var(--text-2)]">{chk.tag}</span>
+              <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-mono">
+                <span className="font-bold text-[var(--text-2)] shrink-0">{chk.tag}</span>
                 <span
                   data-testid={`inline-chk-status-${index + 1}`}
-                  className={`px-1.5 py-0.5 rounded text-[9.5px] font-extrabold border ${chk.badgeClass}`}
+                  className={`px-1.5 py-0.5 rounded text-[9.5px] font-extrabold border shrink-0 ${chk.badgeClass}`}
                 >
                   {chk.displayStatus || chk.status}
                 </span>

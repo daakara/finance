@@ -58,7 +58,7 @@ export function generateQuantitativeInsight(
     ? 0
     : (confluence?.confluenceScore !== undefined
         ? Math.round(confluence.confluenceScore)
-        : (setupScore !== undefined ? setupScore : 40));
+        : (setupScore !== undefined ? setupScore : 0));
 
   // 1. Real Historical Moving Averages calculation (Strict observation windows: DISC-01, DISC-02, DISC-07)
   // SMA50 requires at least 50 valid closed daily sessions. Synthetic fallback candles are NEVER treated as market evidence.

@@ -181,7 +181,7 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
           : "h-6 sm:h-9 min-h-[24px] sm:min-h-[36px] max-h-[24px] sm:max-h-[36px]"
       } border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur z-40 overflow-x-auto no-scrollbar flex items-center transition-all duration-150`}
     >
-      <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 w-full flex items-center justify-between gap-1.5 sm:gap-4 shrink-0">
+      <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 w-full flex items-center justify-between gap-1.5 sm:gap-4 shrink-0 min-w-max sm:min-w-0">
         {/* Left: Benchmark Indexes & Yields */}
         <div className="flex items-center space-x-2 sm:space-x-5 shrink-0">
           {/* SPY (Always visible on mobile & desktop) */}

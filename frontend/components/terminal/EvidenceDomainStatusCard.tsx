@@ -72,19 +72,12 @@ export default function EvidenceDomainStatusCard({
       className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-xl overflow-hidden shadow-sm font-sans transition-colors"
     >
       {/* 🛡️ Header Summary Row (Always Visible) */}
-      <div
+      <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setIsExpanded(!isExpanded);
-          }
-        }}
         aria-expanded={isExpanded}
         aria-label="Toggle Evidence Domain Status"
-        className="w-full px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 bg-[var(--surface-2)]/60 hover:bg-[var(--surface-2)] cursor-pointer transition-colors select-none"
+        className="w-full text-left px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 bg-[var(--surface-2)]/60 hover:bg-[var(--surface-2)] cursor-pointer transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
       >
         <div className="flex items-center gap-2 sm:gap-2.5">
           <span className="text-sm shrink-0" aria-hidden="true">🛡️</span>
@@ -94,7 +87,7 @@ export default function EvidenceDomainStatusCard({
                 Evidence Domain Status
               </span>
               <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
-                ({domains.length} Domains Audited)
+                ({domains.length > 0 ? `${domains.length} Domains Audited` : "Evaluating Domains..."})
               </span>
             </div>
             <p className="text-[11px] text-[var(--text-2)] hidden md:block">
@@ -117,12 +110,18 @@ export default function EvidenceDomainStatusCard({
           )}
 
           <div className="flex items-center gap-1.5 text-[11px] font-mono">
-            <span
-              data-testid="evidence-summary-verified"
-              className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 font-semibold"
-            >
-              {verifiedCount} Verified
-            </span>
+            {domains.length === 0 ? (
+              <span className="px-2 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-700 font-semibold">
+                -- Verified
+              </span>
+            ) : (
+              <span
+                data-testid="evidence-summary-verified"
+                className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 font-semibold"
+              >
+                {verifiedCount} Verified
+              </span>
+            )}
             {blockingIssues.length > 0 ? (
               <span
                 data-testid="evidence-summary-blocking"
@@ -140,15 +139,15 @@ export default function EvidenceDomainStatusCard({
             )}
           </div>
 
-          <button
-            type="button"
-            className="text-xs font-mono font-semibold text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded bg-[var(--surface-1)] border border-cyan-800/40 hover:border-cyan-600/60 transition-colors flex items-center gap-1"
+          <span
+            aria-hidden="true"
+            className="text-xs font-mono font-semibold text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded bg-[var(--surface-1)] border border-cyan-800/40 transition-colors flex items-center gap-1 pointer-events-none"
           >
             <span>{isExpanded ? "Hide" : "Inspect"}</span>
             <span className="text-[10px]">{isExpanded ? "▲" : "▼"}</span>
-          </button>
+          </span>
         </div>
-      </div>
+      </button>
 
       {/* ⚠️ Integrated Eligibility / Limited Evidence Notice */}
       {eligibilityNotice && eligibilityNotice.overallEligibility !== "ELIGIBLE" && (

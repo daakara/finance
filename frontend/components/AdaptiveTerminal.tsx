@@ -227,69 +227,86 @@ export default function AdaptiveTerminal({
         </div>
       )}
 
-      {/* 🛡️ Consolidated Evidence Domain Status & Provenance (9 Domains) */}
-      <EvidenceDomainStatusCard
-        symbol={symbol}
-        domains={nineDomains}
-        evidenceBadge={evidenceBadge}
-        eligibilityNotice={
-          insight.terminalState.overallEligibility !== "ELIGIBLE"
-            ? {
-                overallEligibility: insight.terminalState.overallEligibility,
-                headlineExplanation: insight.terminalState.headlineExplanation,
-              }
-            : undefined
-        }
-      />
+      {/* 🛡️ Consolidated Evidence Domain Status & Provenance (9 Domains) & 3 Presentation Lenses */}
+      {(() => {
+        const resolvedEvidenceSlot = React.isValidElement(evidenceSlot)
+          ? React.cloneElement(evidenceSlot as React.ReactElement<any>, {
+              onOpenWhy: () => setIsWhyOpen(true),
+            })
+          : evidenceSlot;
 
-      {/* 3 Presentation Lenses — Unblocked Initial Assessment */}
-      {experienceMode === "GUIDED" && (
-        <GuidedTerminalView
-          insight={insight}
-          onOpenSizer={() => setIsSizerOpen(true)}
-          onOpenWhy={() => setIsWhyOpen(true)}
-          chartSlot={chartSlot}
-          planSlot={planSlot}
-          preflightSlot={preflightSlot}
-          evidenceSlot={evidenceSlot}
-          isDemo={isDemo}
-          isCleared={preflightCleared}
-          activeBlocker={activeBlocker}
-          passedCount={preflightChecksPassed}
-        />
-      )}
+        return (
+          <div className="flex flex-col space-y-4">
+            {/* Mobile: Order 2 (subordinated below primary Bottom Line & Chart) | Desktop: Order 1 (context above) */}
+            <div className="order-2 lg:order-1">
+              <EvidenceDomainStatusCard
+                symbol={symbol}
+                domains={nineDomains}
+                evidenceBadge={evidenceBadge}
+                eligibilityNotice={
+                  insight.terminalState.overallEligibility !== "ELIGIBLE"
+                    ? {
+                        overallEligibility: insight.terminalState.overallEligibility,
+                        headlineExplanation: insight.terminalState.headlineExplanation,
+                      }
+                    : undefined
+                }
+              />
+            </div>
 
-      {experienceMode === "STANDARD" && (
-        <StandardTerminalView
-          insight={insight}
-          onOpenSizer={() => setIsSizerOpen(true)}
-          onOpenWhy={() => setIsWhyOpen(true)}
-          chartSlot={chartSlot}
-          planSlot={planSlot}
-          preflightSlot={preflightSlot}
-          evidenceSlot={evidenceSlot}
-          isDemo={isDemo}
-          isCleared={preflightCleared}
-          activeBlocker={activeBlocker}
-          passedCount={preflightChecksPassed}
-        />
-      )}
+            {/* 3 Presentation Lenses — Unblocked Initial Assessment (Order 1 on mobile) */}
+            <div className="order-1 lg:order-2">
+              {experienceMode === "GUIDED" && (
+                <GuidedTerminalView
+                  insight={insight}
+                  onOpenSizer={() => setIsSizerOpen(true)}
+                  onOpenWhy={() => setIsWhyOpen(true)}
+                  chartSlot={chartSlot}
+                  planSlot={planSlot}
+                  preflightSlot={preflightSlot}
+                  evidenceSlot={resolvedEvidenceSlot}
+                  isDemo={isDemo}
+                  isCleared={preflightCleared}
+                  activeBlocker={activeBlocker}
+                  passedCount={preflightChecksPassed}
+                />
+              )}
 
-      {experienceMode === "QUANT" && (
-        <AdvancedTerminalView
-          insight={insight}
-          onOpenSizer={() => setIsSizerOpen(true)}
-          onOpenWhy={() => setIsWhyOpen(true)}
-          chartSlot={chartSlot}
-          planSlot={planSlot}
-          preflightSlot={preflightSlot}
-          evidenceSlot={evidenceSlot}
-          isDemo={isDemo}
-          isCleared={preflightCleared}
-          activeBlocker={activeBlocker}
-          passedCount={preflightChecksPassed}
-        />
-      )}
+              {experienceMode === "STANDARD" && (
+                <StandardTerminalView
+                  insight={insight}
+                  onOpenSizer={() => setIsSizerOpen(true)}
+                  onOpenWhy={() => setIsWhyOpen(true)}
+                  chartSlot={chartSlot}
+                  planSlot={planSlot}
+                  preflightSlot={preflightSlot}
+                  evidenceSlot={resolvedEvidenceSlot}
+                  isDemo={isDemo}
+                  isCleared={preflightCleared}
+                  activeBlocker={activeBlocker}
+                  passedCount={preflightChecksPassed}
+                />
+              )}
+
+              {experienceMode === "QUANT" && (
+                <AdvancedTerminalView
+                  insight={insight}
+                  onOpenSizer={() => setIsSizerOpen(true)}
+                  onOpenWhy={() => setIsWhyOpen(true)}
+                  chartSlot={chartSlot}
+                  planSlot={planSlot}
+                  preflightSlot={preflightSlot}
+                  evidenceSlot={resolvedEvidenceSlot}
+                  isDemo={isDemo}
+                  isCleared={preflightCleared}
+                  activeBlocker={activeBlocker}
+                  passedCount={preflightChecksPassed}
+                />
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 💼 Contextual Portfolio Refinement (Non-blocking Progressive Disclosure) */}
       <div className="bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-xl p-2.5 text-xs text-[var(--text-2)]">

@@ -50,7 +50,7 @@ export default function PreFlightChecklistModal({
   verdict,
 }: PreFlightChecklistModalProps) {
   const [copied, setCopied] = useState<boolean>(false);
-  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">(isDayTrader ? "PRO_QUANT" : "PLAIN_ENGLISH");
 
   const modalRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -281,8 +281,8 @@ export default function PreFlightChecklistModal({
     }
     if (catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0) {
       return isPlain
-        ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}): that event has passed. Forward 7-day calendar is unverified (not an imminent-earnings hazard), so runway cannot be certified.`
-        : `Prior earnings reported (${catalystEvidence.eventDate || "historical record"}): event elapsed. Forward 7-day calendar unverified (not an imminent hazard); runway uncertified.`;
+        ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}): that event has passed (Historical Event Elapsed). Forward 7-day calendar is unverified (not an imminent-earnings hazard), so runway cannot be certified.`
+        : `Prior earnings reported (${catalystEvidence.eventDate || "historical record"}): event elapsed (Historical Event Elapsed). Forward 7-day calendar unverified (not an imminent hazard); runway uncertified.`;
     }
     return isPlain
       ? "Earnings calendar coverage unavailable: Event runway cannot be certified."
@@ -432,33 +432,48 @@ export default function PreFlightChecklistModal({
         {/* Scrollable body — barometer + 5-point checklist */}
         <div className="overflow-y-auto flex-1 space-y-4 py-4 pr-0.5">
           {/* Actionability State Banner (Awaiting Trigger / Non-Actionable Gate) */}
-          {isActionable === false && (
-            <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-600/60 text-xs text-amber-200 flex items-start gap-2.5">
-              <span className="text-base shrink-0">⏸️</span>
-              <div className="space-y-1 w-full">
-                <strong className="font-bold text-[11px] uppercase tracking-wide block text-amber-300 font-mono">
-                  {isPlain
-                    ? "TRADE NOT CLEARED: AWAITING CONFIRMATION"
-                    : "NON-ACTIONABLE STATE: AWAITING TRIGGER CONFIRMATION"}
-                </strong>
-                <p className="text-[11px] leading-relaxed text-[var(--text-2)] font-sans">
-                  {isPlain
-                    ? `A valid setup is forming for ${symbol}, but the entry trigger has not confirmed yet. This checklist reviews setup and risk conditions; it does not bypass the required confirmation trigger.`
-                    : `Valid setup structure is present (${decisionState || "VALID_SETUP"}), but execution criteria remain incomplete. Current state: WAIT FOR TRIGGER. Sizing and execution remain locked until confirmation conditions are satisfied.`}
-                </p>
-                <details className="pt-1 text-[10px] text-[var(--text-2)] font-mono">
-                  <summary className="cursor-pointer hover:text-slate-200 select-none">
-                    Technical Provenance
-                  </summary>
-                  <div className="mt-1 pl-2 border-l border-amber-800/40 text-[10px] space-y-0.5 text-[var(--text-2)]">
-                    <div>State: {decisionState || "VALID_SETUP"}</div>
-                    <div>Actionable: false</div>
-                    <div>Authority: Canonical Decision Engine</div>
-                  </div>
-                </details>
+          {isActionable === false && (() => {
+            const isSetupInvalidated =
+              (typeof currentPrice === "number" && typeof stopLoss === "number" && currentPrice <= stopLoss) ||
+              Boolean(decisionState?.toUpperCase().includes("INVALIDAT")) ||
+              Boolean(decisionState?.toUpperCase().includes("STOP_BREACH"));
+
+            return (
+              <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-600/60 text-xs text-amber-200 flex items-start gap-2.5">
+                <span className="text-base shrink-0">⏸️</span>
+                <div className="space-y-1 w-full">
+                  <strong className="font-bold text-[11px] uppercase tracking-wide block text-amber-300 font-mono">
+                    {isPlain
+                      ? (isSetupInvalidated
+                          ? "TRADE NOT CLEARED: SETUP INVALIDATED"
+                          : "TRADE NOT CLEARED: AWAITING CONFIRMATION")
+                      : (isSetupInvalidated
+                          ? "NON-ACTIONABLE STATE: SETUP INVALIDATED (STOP BREACHED)"
+                          : "NON-ACTIONABLE STATE: AWAITING TRIGGER CONFIRMATION")}
+                  </strong>
+                  <p className="text-[11px] leading-relaxed text-[var(--text-2)] font-sans">
+                    {isPlain
+                      ? (isSetupInvalidated
+                          ? `Reference price ($${currentPrice != null ? currentPrice.toFixed(2) : "—"}) is at or below the $${stopLoss != null ? stopLoss.toFixed(2) : "—"} invalidation floor and execution gates remain unmet. Sizing and execution are blocked.`
+                          : `A valid setup is forming for ${symbol}, but the entry trigger has not confirmed yet. This checklist reviews setup and risk conditions; it does not bypass the required confirmation trigger.`)
+                      : (isSetupInvalidated
+                          ? `Setup structure is invalidated (reference price $${currentPrice != null ? currentPrice.toFixed(2) : "—"} <= stop loss $${stopLoss != null ? stopLoss.toFixed(2) : "—"}). Risk floor breached. Sizing and execution remain strictly locked.`
+                          : `Valid setup structure is present (${decisionState || "VALID_SETUP"}), but execution criteria remain incomplete. Current state: WAIT FOR TRIGGER. Sizing and execution remain locked until confirmation conditions are satisfied.`)}
+                  </p>
+                  <details className="pt-1 text-[10px] text-[var(--text-2)] font-mono">
+                    <summary className="cursor-pointer hover:text-slate-200 select-none">
+                      Technical Provenance
+                    </summary>
+                    <div className="mt-1 pl-2 border-l border-amber-800/40 text-[10px] space-y-0.5 text-[var(--text-2)]">
+                      <div>State: {decisionState || (isSetupInvalidated ? "SETUP_INVALIDATED" : "VALID_SETUP")}</div>
+                      <div>Actionable: false</div>
+                      <div>Authority: Canonical Decision Engine</div>
+                    </div>
+                  </details>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Warning banner when price or execution levels are unverified */}
           {!isPriceValid && (

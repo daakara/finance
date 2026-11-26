@@ -112,18 +112,18 @@ export function SharedAssetDeck({
           >
             {hasValidPrice ? `$${(rawPrice as number).toFixed(2)}` : "UNAVAILABLE"}
           </span>
-          {hasValidPrice && (
+          {hasValidPrice && typeof insight.changePct === "number" && !isNaN(insight.changePct) && (
             <span
               id="card-delta"
               data-testid="card-delta"
               className={`delta-text mono font-mono font-bold text-sm tabular-nums flex items-center gap-0.5 ${
-                (insight.changePct || 0) >= 0 ? "delta-up text-emerald-400" : "delta-down text-rose-400"
+                insight.changePct >= 0 ? "delta-up text-emerald-400" : "delta-down text-rose-400"
               }`}
             >
-              {(insight.changePct || 0) >= 0 ? "+" : ""}$
-              {Math.abs(((rawPrice as number) * (insight.changePct || 0)) / 100).toFixed(2)} (
-              {(insight.changePct || 0) >= 0 ? "+" : ""}
-              {(insight.changePct || 0).toFixed(2)}%)
+              {insight.changePct >= 0 ? "+" : ""}$
+              {Math.abs(((rawPrice as number) * insight.changePct) / 100).toFixed(2)} (
+              {insight.changePct >= 0 ? "+" : ""}
+              {insight.changePct.toFixed(2)}%)
             </span>
           )}
         </div>

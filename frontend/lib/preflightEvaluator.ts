@@ -504,26 +504,32 @@ export function evaluatePreFlightChecks(
     ? "FAIL"
     : PREFLIGHT_CONFIG.LABEL_BELOW_MINIMUM;
 
+  const chk1Outcome = isRRPassed
+    ? "PASS"
+    : !isLevelDirectionValid
+    ? "FAIL"
+    : !isPriceValid || !hasExecutionLevels || !isRRValid
+    ? "UNAVAILABLE"
+    : "FAIL";
+
   const chk1Item: PreFlightCheckItem = {
     id: "CHK-1",
     tag: "CHK-1 R:R",
     name: isPlain ? "1. Reward vs. Risk" : "1. Reward vs. Risk (Asymmetric Payoff)",
     status: !isPriceValid ? "UNAVAILABLE" : chk1Status,
-    outcomeCategory: isRRPassed
-      ? "PASS"
-      : !isPriceValid || !hasExecutionLevels || !isRRValid
-      ? "UNAVAILABLE"
-      : "FAIL",
+    outcomeCategory: chk1Outcome,
     displayStatus: !isPriceValid ? PREFLIGHT_CONFIG.LABEL_UNAVAILABLE : chk1DisplayStatus,
     badgeClass: isRRPassed
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+      : !isLevelDirectionValid || chk1Status === "FAIL"
+      ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
       : !isPriceValid || !hasExecutionLevels || !isRRValid
       ? "bg-slate-900 text-slate-300 border-slate-700"
       : "bg-rose-950/80 text-rose-300 border-rose-700/80",
     passed: isRRPassed,
     summary: !isPriceValid ? "Price Unavailable" : chk1Summary,
     detail: !isPriceValid ? "Verified spot/reference price required to evaluate risk-reward." : chk1Detail,
-    icon: isRRPassed ? "✓" : !isPriceValid || !hasExecutionLevels || !isRRValid ? "⚪" : "✕",
+    icon: isRRPassed ? "✓" : !isLevelDirectionValid || chk1Status === "FAIL" ? "✕" : (!isPriceValid || !hasExecutionLevels || !isRRValid ? "⚪" : "✕"),
   };
 
   // ── Check 2: Technical Trend Alignment & Stage Discipline ───────────────
@@ -792,7 +798,7 @@ export function evaluatePreFlightChecks(
     : resolvedCatalystState === "ERROR"
     ? "Technical error retrieving corporate earnings schedule."
     : catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
-    ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}): event elapsed. Forward 7-day calendar unverified (not an imminent hazard); runway uncertified.`
+    ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}): event elapsed (Historical Event Elapsed). Forward 7-day calendar unverified (not an imminent hazard); runway uncertified.`
     : "Earnings calendar coverage unavailable: Event runway cannot be certified.";
 
   const chk4Item: PreFlightCheckItem = {

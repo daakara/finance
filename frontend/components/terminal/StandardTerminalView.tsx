@@ -253,14 +253,14 @@ export default function StandardTerminalView({
                 {hasValidPrice ? (
                   <span
                     data-testid="preview-spot-price"
-                    className="text-emerald-400 font-mono font-bold text-xs sm:text-sm tabular-nums"
+                    className="text-emerald-400 font-mono font-bold text-xs sm:text-sm tabular-nums whitespace-nowrap"
                   >
                     ${(rawPrice as number).toFixed(2)}
                   </span>
                 ) : (
                   <span
                     data-testid="preview-spot-price"
-                    className="text-[var(--text-2)] font-mono text-xs font-semibold"
+                    className="text-[var(--text-2)] font-mono text-xs font-semibold whitespace-nowrap"
                   >
                     UNAVAILABLE
                   </span>
@@ -270,14 +270,14 @@ export default function StandardTerminalView({
                 <span
                   data-testid="preview-watch-zone"
                   title={`Watch Zone: ${kl.watchZone}`}
-                  className="text-[10px] font-mono text-amber-300 bg-amber-950/70 border border-amber-800/80 px-1.5 py-0.5 rounded truncate max-w-[120px]"
+                  className="text-[10px] font-mono text-amber-300 bg-amber-950/70 border border-amber-800/80 px-1.5 py-0.5 rounded truncate max-w-[110px] hidden xs:inline"
                 >
                   {kl.watchZone}
                 </span>
               ) : (
                 <span
                   data-testid="preview-watch-zone"
-                  className="text-[10px] font-mono text-[var(--text-2)] bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded"
+                  className="text-[10px] font-mono text-[var(--text-2)] bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded hidden xs:inline"
                 >
                   UNAVAILABLE
                 </span>
@@ -293,7 +293,8 @@ export default function StandardTerminalView({
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/80 font-mono text-xs font-bold min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none transition-colors touch-manipulation cursor-pointer shrink-0"
             >
               <span>📈</span>
-              <span>{isChartExpanded ? "Hide Chart ▲" : "View Candlestick Chart ▾"}</span>
+              <span className="hidden sm:inline">{isChartExpanded ? "Hide Chart ▲" : "View Candlestick Chart ▾"}</span>
+              <span className="sm:hidden">{isChartExpanded ? "Hide ▲" : "Chart ▾"}</span>
             </button>
           </div>
 
