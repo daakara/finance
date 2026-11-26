@@ -5,6 +5,7 @@ import OptimalEntryExitCard from "../OptimalEntryExitCard";
 import PreFlightChecklistModal from "../PreFlightChecklistModal";
 import EvidenceDomainStatusCard from "../terminal/EvidenceDomainStatusCard";
 import CompositeConvictionCard from "../CompositeConvictionCard";
+import StandardTerminalView from "../terminal/StandardTerminalView";
 import { SharedAssetDeck } from "../terminal/SharedAssetDeck";
 import { resolveNineEvidenceDomains } from "../../lib/evidenceDomains";
 import { evaluatePreFlightChecks } from "../../lib/preflightEvaluator";
@@ -258,8 +259,74 @@ describe("NVDA Standard Analysis UX & Truthfulness Fixes", () => {
         undefined // confluence undefined
       );
 
-      // Score must be 0 (unverified / pending), never arbitrary 40
-      expect(insight.setupScore).toBe(0);
+      // Score must be null and scoreState PENDING when unobserved, never arbitrary 40
+      expect(insight.setupScore).toBeNull();
+      expect(insight.scoreState).toBe("PENDING");
+    });
+
+    it("renders genuinely resolved zero as 0/100 and unobserved loading score as nonnumeric Pending", () => {
+      // 1. Resolved Zero Score
+      const zeroInsight = generateQuantitativeInsight(
+        "NVDA",
+        "NVIDIA Corporation",
+        149.30,
+        -1.5,
+        0, // explicitly resolved zero
+        undefined,
+        "SWING",
+        "NOT_OWNED",
+        "USER_DECLARED",
+        undefined,
+        "live",
+        { confluenceScore: 0, confluenceBadge: "UNFAVORABLE", badgeColor: "rose", bottomLine: "Zero confluence", pillars: [] }
+      );
+
+      expect(zeroInsight.setupScore).toBe(0);
+      expect(zeroInsight.scoreState).toBe("RESOLVED");
+
+      const { unmount: unmountZero } = render(
+        <StandardTerminalView insight={zeroInsight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />
+      );
+      // Genuinely resolved zero renders as 0/100
+      const desktopPill = document.getElementById("card-score-pill");
+      expect(desktopPill).not.toBeNull();
+      expect(desktopPill?.textContent).toContain("0");
+      expect(desktopPill?.textContent).toContain("/100");
+      expect(screen.queryByText(/^Pending$/i)).toBeNull();
+      unmountZero();
+
+      // 2. Pending / Unresolved Score
+      const pendingInsight = generateQuantitativeInsight(
+        "NVDA",
+        "NVIDIA Corporation",
+        149.30,
+        -1.5,
+        undefined,
+        undefined,
+        "SWING",
+        "NOT_OWNED",
+        "USER_DECLARED",
+        undefined,
+        undefined,
+        undefined
+      );
+
+      expect(pendingInsight.setupScore).toBeNull();
+      expect(pendingInsight.scoreState).toBe("PENDING");
+
+      const { unmount: unmountPending } = render(
+        <StandardTerminalView insight={pendingInsight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />
+      );
+      // Unresolved loading score renders nonnumeric Pending, NEVER 0/100
+      const pendingDesktopPill = document.getElementById("card-score-pill");
+      const pendingMobilePill = document.getElementById("card-score-pill-mobile");
+      expect(pendingDesktopPill?.textContent).toContain("Pending");
+      expect(pendingDesktopPill?.textContent).not.toContain("0/100");
+      expect(pendingMobilePill?.textContent).toContain("Pending");
+      expect(pendingMobilePill?.textContent).not.toContain("0/100");
+      expect(screen.queryAllByText(/^0\/100$/).length).toBe(0);
+      expect(screen.queryAllByText(/^0$/).length).toBe(0);
+      unmountPending();
     });
 
     it("SharedAssetDeck does not fabricate +$0.00 (+0.00%) when changePct is undefined", () => {

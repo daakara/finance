@@ -41,19 +41,19 @@ export default function StandardTerminalView({
 
   const resolvedPreflight = React.useMemo(() => {
     if (isCleared !== undefined) {
-      return { isCleared, activeBlocker: activeBlocker || null, passedCount: passedCount || 0 };
+      return { isCleared, activeBlocker: activeBlocker || null, passedCount: passedCount || 0, whatNeedsToChange: undefined };
     }
     if (React.isValidElement(preflightSlot) && (preflightSlot.props as any)) {
       const pProps = preflightSlot.props as any;
       if (typeof pProps.isCleared === "boolean") {
-        return { isCleared: pProps.isCleared, activeBlocker: pProps.activeBlocker || null, passedCount: pProps.passedCount || 0 };
+        return { isCleared: pProps.isCleared, activeBlocker: pProps.activeBlocker || null, passedCount: pProps.passedCount || 0, whatNeedsToChange: pProps.whatNeedsToChange };
       }
       try {
         const ev = evaluatePreFlightChecks(pProps);
-        return { isCleared: ev.isCleared, activeBlocker: ev.activeBlocker, passedCount: ev.passedCount };
+        return { isCleared: ev.isCleared, activeBlocker: ev.activeBlocker, passedCount: ev.passedCount, whatNeedsToChange: ev.whatNeedsToChange };
       } catch {}
     }
-    return { isCleared: undefined, activeBlocker: null, passedCount: undefined };
+    return { isCleared: undefined, activeBlocker: null, passedCount: undefined, whatNeedsToChange: undefined };
   }, [isCleared, activeBlocker, passedCount, preflightSlot]);
 
   const isStaleTape = Boolean(
@@ -86,6 +86,13 @@ export default function StandardTerminalView({
     kl.watchZone.trim().toLowerCase() !== "unavailable" &&
     (kl.entryMin != null || kl.entryMax != null || kl.watchZone.includes("$"))
   );
+
+  const isScorePending = insight.scoreState === "PENDING" || insight.setupScore === null || insight.setupScore === undefined;
+  const nextConditionText =
+    resolvedPreflight.whatNeedsToChange ||
+    (insight.standard.keyLevels.entryMin && rawPrice && (rawPrice as number) < insight.standard.keyLevels.entryMin
+      ? `Price is below the accumulation floor. Recovery above $${insight.standard.keyLevels.entryMin.toFixed(2)} required to clear setup.`
+      : undefined);
 
   return (
     <div className="space-y-4 font-sans text-[var(--text-1)] animate-fade-in">
@@ -139,12 +146,20 @@ export default function StandardTerminalView({
                     title="Setup Score: click to inspect confluence attribution"
                     className="score-pill px-3 py-1 rounded-xl bg-[var(--surface-2)] border border-cyan-500/40 text-center shadow-md cursor-pointer hover:border-cyan-400 transition-all"
                   >
-                    <span id="card-score-num" className="score-num mono font-mono font-black text-base text-cyan-400 leading-none">
-                      {insight.setupScore}
-                    </span>
-                    <span id="card-score-den" className="score-den font-mono text-xs text-[var(--text-2)]">
-                      /100
-                    </span>
+                    {isScorePending ? (
+                      <span id="card-score-pending" className="score-pending font-mono font-bold text-xs text-slate-400 leading-none">
+                        Pending
+                      </span>
+                    ) : (
+                      <>
+                        <span id="card-score-num" className="score-num mono font-mono font-black text-base text-cyan-400 leading-none">
+                          {insight.setupScore}
+                        </span>
+                        <span id="card-score-den" className="score-den font-mono text-xs text-[var(--text-2)]">
+                          /100
+                        </span>
+                      </>
+                    )}
                   </div>
                   <button
                     id="card-why-score-btn"
@@ -163,14 +178,31 @@ export default function StandardTerminalView({
               {/* 2. CANONICAL REASON (Directly Below Verdict) */}
               <div
                 data-testid="decision-reason"
-                className="text-xs text-[var(--text-2)] font-sans leading-relaxed border-t border-[var(--border-subtle)] pt-2 w-full"
+                className="text-xs text-[var(--text-2)] font-sans leading-relaxed border-t border-[var(--border-subtle)] pt-2 w-full space-y-2"
               >
-                <span className="text-[10px] text-[var(--text-2)] font-mono font-bold block uppercase mb-0.5 tracking-wider">
-                  Reason / Bottom Line:
-                </span>
-                <p id="card-verdict-summary" className="verdict-summary leading-relaxed">
-                  {insight.standard.bottomLine}
-                </p>
+                <div>
+                  <span className="text-[10px] text-[var(--text-2)] font-mono font-bold block uppercase mb-0.5 tracking-wider">
+                    Reason / Bottom Line:
+                  </span>
+                  <p id="card-verdict-summary" className="verdict-summary leading-relaxed">
+                    {insight.standard.bottomLine}
+                  </p>
+                </div>
+
+                {/* 3. NEXT CONDITION / WHAT NEEDS TO CHANGE (Immediately visible in 5-second test) */}
+                {nextConditionText && (
+                  <div
+                    data-testid="decision-next-condition"
+                    className="pt-1.5 border-t border-[var(--border-subtle)]/60 text-xs"
+                  >
+                    <span className="text-[10px] text-cyan-400 font-mono font-bold block uppercase mb-0.5 tracking-wider">
+                      Next Condition:
+                    </span>
+                    <p id="card-next-condition" className="leading-relaxed text-slate-300">
+                      {nextConditionText}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* 3. MOBILE SCORE DECK (Positioned strictly AFTER Rationale on mobile) */}
@@ -197,12 +229,20 @@ export default function StandardTerminalView({
                     title="Setup Score: click to inspect confluence attribution"
                     className="px-2.5 py-0.5 rounded-lg bg-[var(--surface-2)] border border-cyan-500/40 text-center cursor-pointer flex items-baseline gap-0.5"
                   >
-                    <span className="score-num mono font-mono font-black text-sm text-cyan-400 leading-none">
-                      {insight.setupScore}
-                    </span>
-                    <span className="score-den font-mono text-[10px] text-[var(--text-2)]">
-                      /100
-                    </span>
+                    {isScorePending ? (
+                      <span id="card-score-pending-mobile" className="score-pending font-mono font-bold text-xs text-slate-400 leading-none">
+                        Pending
+                      </span>
+                    ) : (
+                      <>
+                        <span className="score-num mono font-mono font-black text-sm text-cyan-400 leading-none">
+                          {insight.setupScore}
+                        </span>
+                        <span className="score-den font-mono text-[10px] text-[var(--text-2)]">
+                          /100
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <button
@@ -310,31 +350,33 @@ export default function StandardTerminalView({
           )}
 
           {/* 🎯 SYNTHESIS E V3: INLINE PRE-FLIGHT CLEARANCE PANEL */}
-
-                    <section className="space-y-2" aria-label="Canonical preflight readiness">{preflightSlot !== undefined ? (
-            React.isValidElement(preflightSlot) && preflightSlot.type === PreFlightReadinessBar
-          ? React.cloneElement(preflightSlot as React.ReactElement<PreFlightReadinessBarProps>, { summaryTarget: blockerTarget })
-          : preflightSlot
-          ) : (
-            <PreFlightReadinessBar summaryTarget={blockerTarget}
-              isDrawerExpanded={isPreconditionsOpen}
-              onToggleDrawer={setIsPreconditionsOpen}
-              symbol={insight.symbol}
-              currentPrice={hasValidPrice ? (rawPrice as number) : 0}
-              stopLoss={kl.stopLoss}
-              takeProfit1={kl.target1}
-              riskRewardRatio={kl.profitRiskRatio}
-              setupPattern={insight.standard.setupSummary}
-              isStage4={insight.standard.setupSummary?.toLowerCase().includes("stage 4") || (insight.advanced as any)?.is_stage4}
-              optimalEntryMin={kl.entryMin}
-              optimalEntryMax={kl.entryMax}
-              isActionable={isActionable}
-              decisionState={insight.decisionTrace?.decisionState}
-              dataSource={(insight as any).dataSource || (insight as any)._dataSource}
-              isHistorical={(insight as any).dataSource === 'historical' || (insight as any)._dataSource === 'historical'}
-              isSynthetic={Boolean((insight as any).isSynthetic || (insight as any).dataSource === 'synthetic' || (insight as any)._dataSource === 'synthetic')}
-            />
-          )}</section>
+          <section className="space-y-2" aria-label="Canonical preflight readiness">
+            {preflightSlot !== undefined ? (
+              React.isValidElement(preflightSlot)
+                ? React.cloneElement(preflightSlot as React.ReactElement<any>, { summaryTarget: blockerTarget })
+                : preflightSlot
+            ) : (
+              <PreFlightReadinessBar
+                summaryTarget={blockerTarget}
+                isDrawerExpanded={isPreconditionsOpen}
+                onToggleDrawer={setIsPreconditionsOpen}
+                symbol={insight.symbol}
+                currentPrice={hasValidPrice ? (rawPrice as number) : 0}
+                stopLoss={kl.stopLoss}
+                takeProfit1={kl.target1}
+                riskRewardRatio={kl.profitRiskRatio}
+                setupPattern={insight.standard.setupSummary}
+                isStage4={insight.standard.setupSummary?.toLowerCase().includes("stage 4") || (insight.advanced as any)?.is_stage4}
+                optimalEntryMin={kl.entryMin}
+                optimalEntryMax={kl.entryMax}
+                isActionable={isActionable}
+                decisionState={insight.decisionTrace?.decisionState}
+                dataSource={(insight as any).dataSource || (insight as any)._dataSource}
+                isHistorical={(insight as any).dataSource === 'historical' || (insight as any)._dataSource === 'historical'}
+                isSynthetic={Boolean((insight as any).isSynthetic || (insight as any).dataSource === 'synthetic' || (insight as any)._dataSource === 'synthetic')}
+              />
+            )}
+          </section>
         </div>
 
 
@@ -415,10 +457,10 @@ export default function StandardTerminalView({
                 <button
                   id="why-score-btn"
                   onClick={onOpenWhy}
-                  aria-label={`Why Score ${insight.setupScore}? Inspect Confluence Attribution`}
+                  aria-label={isScorePending ? "Inspect Confluence Attribution" : `Why Score ${insight.setupScore}? Inspect Confluence Attribution`}
                   className="text-xs text-cyan-400 hover:text-cyan-300 underline font-bold cursor-pointer py-1 px-1 min-h-[36px] inline-flex items-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
                 >
-                  Inspect Confluence Attribution (Why Score {insight.setupScore}?) →
+                  {isScorePending ? "Inspect Confluence Attribution →" : `Inspect Confluence Attribution (Why Score ${insight.setupScore}?) →`}
                 </button>
               </div>
 
@@ -427,13 +469,15 @@ export default function StandardTerminalView({
                   <div key={idx} className="space-y-1">
                     <div className="flex items-center justify-between text-xs font-mono">
                       <span className="text-[var(--text-2)]">{bar.dimension}</span>
-                      <span className="text-white font-bold">{bar.score}/100</span>
+                      <span className="text-white font-bold">{isScorePending ? "Pending" : `${bar.score}/100`}</span>
                     </div>
                     <div className="w-full h-2 bg-[var(--surface-2)] rounded-full overflow-hidden border border-[var(--border-subtle)]">
                       <div
-                        style={{ width: `${bar.score}%` }}
+                        style={{ width: isScorePending ? "0%" : `${bar.score}%` }}
                         className={`h-full rounded-full transition-all duration-500 ${
-                          bar.score >= 75
+                          isScorePending
+                            ? "bg-slate-600"
+                            : bar.score >= 75
                             ? "bg-emerald-500"
                             : bar.score >= 50
                             ? "bg-cyan-500"

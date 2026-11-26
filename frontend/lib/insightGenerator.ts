@@ -54,11 +54,23 @@ export function generateQuantitativeInsight(
   const safePrice = isPriceValid ? currentPrice : 0;
   const isFallbackFeed = dataSource === "fallback" || dataSource === "unavailable";
   const isDegradedDecision = decisionTrace?.decisionState === "UNVERIFIED" || optimalExecution?.execution_status === "UNVERIFIED_ASSET" || isFallbackFeed;
-  const finalSetupScore = isDegradedDecision
+  const hasConfluenceScore = confluence?.confluenceScore !== undefined && confluence.confluenceScore !== null;
+  const hasSetupScore = setupScore !== undefined && setupScore !== null;
+  const isScoreResolved = hasConfluenceScore || hasSetupScore;
+
+  const finalSetupScore: number | null = isDegradedDecision
     ? 0
-    : (confluence?.confluenceScore !== undefined
-        ? Math.round(confluence.confluenceScore)
-        : (setupScore !== undefined ? setupScore : 0));
+    : hasConfluenceScore
+    ? Math.round(confluence!.confluenceScore)
+    : hasSetupScore
+    ? setupScore!
+    : null;
+
+  const scoreState: "RESOLVED" | "PENDING" | "UNAVAILABLE" = isDegradedDecision
+    ? "UNAVAILABLE"
+    : isScoreResolved
+    ? "RESOLVED"
+    : "PENDING";
 
   // 1. Real Historical Moving Averages calculation (Strict observation windows: DISC-01, DISC-02, DISC-07)
   // SMA50 requires at least 50 valid closed daily sessions. Synthetic fallback candles are NEVER treated as market evidence.
@@ -681,6 +693,7 @@ export function generateQuantitativeInsight(
     price: safePrice,
     changePct,
     setupScore: finalSetupScore,
+    scoreState,
     horizon,
     assessment: terminalState.assessment,
     posture: terminalState.posture,

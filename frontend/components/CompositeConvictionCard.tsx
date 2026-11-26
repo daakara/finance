@@ -197,6 +197,7 @@ export default function CompositeConvictionCard({
         confluenceBadge,
         bottomLineText,
         pillars,
+        isPending: false,
       };
     }
 
@@ -309,6 +310,7 @@ export default function CompositeConvictionCard({
       confluenceBadge: isPlain ? "Awaiting Backend Confluence" : "Evaluation Pending",
       bottomLineText: "CONFLUENCE EVALUATION PENDING: Quantitative confluence model results pending from analytical backend.",
       pillars: pendingPillars,
+      isPending: true,
     };
   }, [data, isPlain]);
 
@@ -343,12 +345,12 @@ export default function CompositeConvictionCard({
               </span>
             </div>
             <div className={`text-2xl sm:text-3xl font-black font-mono tabular-nums ${synthesis.verdictColor}`}>
-              {synthesis.score > 0 ? (
+              {synthesis.isPending ? (
+                <span className="text-sm font-bold text-[var(--text-2)]">PENDING</span>
+              ) : (
                 <>
                   {synthesis.score}<span className="text-xs text-[var(--text-muted)] font-normal">/100</span>
                 </>
-              ) : (
-                <span className="text-sm font-bold text-[var(--text-2)]">PENDING</span>
               )}
             </div>
           </div>
