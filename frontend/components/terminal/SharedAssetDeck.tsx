@@ -25,21 +25,21 @@ export function SharedAssetDeck({
   const hasValidPrice = typeof rawPrice === "number" && !isNaN(rawPrice) && rawPrice > 0;
 
   return (
-    <div className="deck-top border-b border-[var(--border-subtle)] pb-3 space-y-2 font-sans">
-      <div className="symbol-title-group flex flex-wrap items-start justify-between gap-2">
+    <div className="deck-top border-b border-[var(--border-subtle)] pb-2 sm:pb-3 space-y-1.5 sm:space-y-2 font-sans">
+      <div className="symbol-title-group flex flex-wrap items-start justify-between gap-1.5 sm:gap-2">
         <div className="space-y-0.5">
-          <div className="symbol-row flex items-center gap-2 flex-wrap">
+          <div className="symbol-row flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <span
               id="card-symbol"
               data-testid="card-symbol"
-              className="symbol-text mono font-mono font-black text-2xl sm:text-3xl text-white tracking-tight"
+              className="symbol-text mono font-mono font-black text-xl sm:text-2xl lg:text-3xl text-white tracking-tight"
             >
               {insight.symbol || "UNAVAILABLE"}
             </span>
             <span
               id="card-exchange"
               data-testid="card-exchange"
-              className="macro-item px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]"
+              className="macro-item px-1.5 sm:px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--surface-2)] text-[var(--text-2)] border border-[var(--border-subtle)]"
             >
               {(() => {
                 const ex = insight.advanced?.exchange || (insight as any)?.exchange;
@@ -49,7 +49,7 @@ export function SharedAssetDeck({
             <span
               id="card-status-badge"
               data-testid="card-status-badge"
-              className={`status-badge px-2.5 py-0.5 rounded text-xs font-mono font-bold border ${
+              className={`status-badge px-2 py-0.5 rounded text-[11px] sm:text-xs font-mono font-bold border ${
                 isStaleTape
                   ? "badge-neutral bg-slate-900/90 text-[var(--text-2)] border-slate-600"
                   : isActionable
@@ -85,7 +85,7 @@ export function SharedAssetDeck({
         <div className="flex items-center gap-2">
           <span
             data-testid="actionability-badge"
-            className={`px-3 py-1 rounded-md text-xs font-mono font-bold border ${
+            className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-md text-xs font-mono font-bold border ${
               isStaleTape
                 ? "bg-slate-900/90 text-[var(--text-2)] border-slate-700"
                 : isActionable
@@ -103,12 +103,12 @@ export function SharedAssetDeck({
       </div>
 
       {/* Price Line & Subdeck */}
-      <div className="price-group space-y-1">
-        <div className="price-line flex items-baseline gap-3 flex-wrap">
+      <div className="price-group space-y-0.5 sm:space-y-1">
+        <div className="price-line flex items-baseline gap-2 sm:gap-3 flex-wrap">
           <span
             id="card-price"
             data-testid="card-price"
-            className="price-text mono font-mono font-black text-2xl sm:text-3xl text-white tabular-nums"
+            className="price-text mono font-mono font-black text-xl sm:text-2xl lg:text-3xl text-white tabular-nums"
           >
             {hasValidPrice ? `$${(rawPrice as number).toFixed(2)}` : "UNAVAILABLE"}
           </span>
@@ -116,7 +116,7 @@ export function SharedAssetDeck({
             <span
               id="card-delta"
               data-testid="card-delta"
-              className={`delta-text mono font-mono font-bold text-sm tabular-nums flex items-center gap-0.5 ${
+              className={`delta-text mono font-mono font-bold text-xs sm:text-sm tabular-nums flex items-center gap-0.5 ${
                 insight.changePct >= 0 ? "delta-up text-emerald-400" : "delta-down text-rose-400"
               }`}
             >
@@ -130,7 +130,7 @@ export function SharedAssetDeck({
         <div
           id="price-subdeck"
           data-testid="price-subdeck"
-          className="price-subdeck flex items-center gap-2 text-[11px] font-mono text-[var(--text-2)] flex-wrap"
+          className="price-subdeck flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono text-[var(--text-2)] flex-wrap"
           aria-label="Price Authority and Session Metadata"
         >
           <span
@@ -148,8 +148,8 @@ export function SharedAssetDeck({
           <span id="price-session" data-testid="price-session" className="price-tag">
             {isStaleTape ? "Tape Inactive" : (insight.advanced as any)?.marketSession || "Market Closed"}
           </span>
-          <span>·</span>
-          <span id="price-asof" data-testid="price-asof" className="price-tag mono" suppressHydrationWarning>
+          <span className="hidden sm:inline">·</span>
+          <span id="price-asof" data-testid="price-asof" className="price-tag mono hidden sm:inline" suppressHydrationWarning>
             {insight.terminalState?.modelProvenance?.calculatedAt
               ? `Context generated ${new Date(insight.terminalState.modelProvenance.calculatedAt)
                   .toISOString()

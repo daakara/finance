@@ -105,7 +105,7 @@ export default function StandardTerminalView({
           <article
             id="verdict-card"
             data-testid="decision-verdict"
-            className="verdict-card bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-2.5 sm:p-5 shadow-xl space-y-2 sm:space-y-3 font-sans text-[var(--text-1)]"
+            className="verdict-card bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-2 sm:p-5 shadow-xl space-y-1.5 sm:space-y-3 font-sans text-[var(--text-1)]"
             aria-label="ARX Bottom Line and Execution Decision"
           >
             {/* Ticker & Price Deck */}
@@ -119,13 +119,13 @@ export default function StandardTerminalView({
             />
 
             {/* Verdict & Score Banner */}
-            <div className="verdict-banner !flex !flex-col p-2.5 sm:p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-2 sm:space-y-2.5">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5 sm:gap-3 w-full">
-                <div className="verdict-info space-y-1 min-w-0 flex-1">
-                  <span id="card-verdict-label" className="verdict-label text-[10px] font-mono font-black text-cyan-400 uppercase tracking-widest block">
+            <div className="verdict-banner !flex !flex-col p-2 sm:p-3.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-1.5 sm:space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1.5 sm:gap-2.5 w-full">
+                <div className="verdict-info space-y-0.5 sm:space-y-1 min-w-0 flex-1">
+                  <span id="card-verdict-label" className="verdict-label text-[9px] sm:text-[10px] font-mono font-black text-cyan-400 uppercase tracking-widest block">
                     ARX BOTTOM LINE VERDICT
                   </span>
-                  <h2 id="card-verdict-title" className="verdict-title text-base sm:text-lg font-black text-white tracking-tight leading-snug break-words">
+                  <h2 id="card-verdict-title" className="verdict-title text-sm sm:text-base lg:text-lg font-black text-white tracking-tight leading-snug break-words">
                     {insight.verdictLabel}
                   </h2>
                 </div>
@@ -178,13 +178,13 @@ export default function StandardTerminalView({
               {/* 2. CANONICAL REASON (Directly Below Verdict) */}
               <div
                 data-testid="decision-reason"
-                className="text-xs text-[var(--text-2)] font-sans leading-relaxed border-t border-[var(--border-subtle)] pt-2 w-full space-y-2"
+                className="text-[11px] sm:text-xs text-[var(--text-2)] font-sans leading-snug sm:leading-relaxed border-t border-[var(--border-subtle)] pt-1.5 sm:pt-2 w-full space-y-1 sm:space-y-1.5"
               >
                 <div>
-                  <span className="text-[10px] text-[var(--text-2)] font-mono font-bold block uppercase mb-0.5 tracking-wider">
+                  <span className="text-[9px] sm:text-[10px] text-[var(--text-2)] font-mono font-bold block uppercase mb-0.5 tracking-wider">
                     Reason / Bottom Line:
                   </span>
-                  <p id="card-verdict-summary" className="verdict-summary leading-relaxed">
+                  <p id="card-verdict-summary" className="verdict-summary leading-snug sm:leading-relaxed">
                     {insight.standard.bottomLine}
                   </p>
                 </div>
@@ -193,12 +193,12 @@ export default function StandardTerminalView({
                 {nextConditionText && (
                   <div
                     data-testid="decision-next-condition"
-                    className="pt-1.5 border-t border-[var(--border-subtle)]/60 text-xs"
+                    className="pt-1 sm:pt-1.5 border-t border-[var(--border-subtle)]/60 text-[11px] sm:text-xs"
                   >
-                    <span className="text-[10px] text-cyan-400 font-mono font-bold block uppercase mb-0.5 tracking-wider">
+                    <span className="text-[9px] sm:text-[10px] text-cyan-400 font-mono font-bold block uppercase mb-0.5 tracking-wider">
                       Next Condition:
                     </span>
-                    <p id="card-next-condition" className="leading-relaxed text-slate-300">
+                    <p id="card-next-condition" className="leading-snug sm:leading-relaxed text-slate-300">
                       {nextConditionText}
                     </p>
                   </div>

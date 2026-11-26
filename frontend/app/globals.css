@@ -595,3 +595,45 @@ textarea:focus-visible {
     padding-top: max(env(safe-area-inset-top, 0px), 3.5rem);
   }
 }
+
+/* Short viewport optimization (landscape phones and compact screens) */
+@media (max-height: 500px) {
+  #market-command-ribbon, [data-testid="market-command-ribbon"] {
+    display: none !important;
+  }
+  #price-subdeck {
+    display: none !important;
+  }
+  #card-verdict-label {
+    display: none !important;
+  }
+  nav {
+    min-height: 38px !important;
+    height: 38px !important;
+  }
+  #main-content {
+    padding-top: 0.125rem !important;
+    padding-bottom: 0.125rem !important;
+  }
+  .deck-top {
+    padding-bottom: 0.125rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+  .verdict-card {
+    padding: 0.25rem 0.5rem !important;
+  }
+  .verdict-banner {
+    padding: 0.25rem 0.5rem !important;
+    margin-top: 0.125rem !important;
+  }
+  .symbol-text, .price-text {
+    font-size: 1.125rem !important;
+    line-height: 1.25rem !important;
+  }
+  [data-testid="decision-reason"], [data-testid="decision-next-condition"] {
+    padding-top: 0.125rem !important;
+    margin-top: 0.125rem !important;
+    font-size: 0.6875rem !important;
+    line-height: 0.95rem !important;
+  }
+}

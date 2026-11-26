@@ -174,6 +174,7 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
     <aside
       role="region"
       aria-label="Market Command Ribbon"
+      id="market-command-ribbon"
       data-testid="market-command-ribbon"
       className={`${
         isMobileExpanded
