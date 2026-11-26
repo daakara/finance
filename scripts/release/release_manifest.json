@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "2f402be15a2540ab74300607fff9b70551ea886f",
+  "release_candidate_commit": "a1d40848f998c896547237e789d451b268001df1",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 77,
+  "total_files": 87,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-S4-RADAR-001",
   "files": {
@@ -135,19 +135,19 @@
     },
     "frontend/components/CompositeConvictionCard.tsx": {
       "operation": "M",
-      "originating_pr_number": 319,
-      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
-      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
-      "sha256": "8132077c79dd176eee10d32ef3ba150439cdf362bffa38ad10d2eda27a1709de",
-      "size_bytes": 17481
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "e75e0b4a7b3efe58ecb8279793fff720cc127ca4502d3ede07d8c2cad8c1fcfb",
+      "size_bytes": 17679
     },
     "frontend/components/InstitutionalFeeds.tsx": {
       "operation": "M",
-      "originating_pr_number": 319,
-      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Listen for arx:open-sec-disclosures event to switch active tab to SEC_FORM4",
-      "sha256": "59e310e42ff5e74d3c0191e63329ec3c99d6117c87461877331e61788b04b3a0",
-      "size_bytes": 45537
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "38e4dc539b595b72b2ed9ab52bafab4043f1a2fd34b82cdec3fdbbe8f5419d13",
+      "size_bytes": 45709
     },
     "frontend/components/UniversalOmniSearch.tsx": {
       "operation": "M",
@@ -159,11 +159,11 @@
     },
     "frontend/components/WhyInspectModal.tsx": {
       "operation": "M",
-      "originating_pr_number": 319,
-      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
-      "governing_requirement": "Issue #165/#231: presentation-only held scoring labels and separate historical coverage from issuer support",
-      "sha256": "b27d8eeebdced87443e7f1bd19cf82867fb432097b98d5b6f54909f205e4fa1f",
-      "size_bytes": 24556
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "9603b359c32cb67f13cbf13bae44f76be3b95800262b1bd4f5590d1883e7c53e",
+      "size_bytes": 24680
     },
     "frontend/components/__tests__/AssetDiscoveryMenus.test.tsx": {
       "operation": "A",
@@ -223,11 +223,11 @@
     },
     "frontend/lib/evidenceDomains.ts": {
       "operation": "M",
-      "originating_pr_number": 319,
-      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Decouple stored filings from scoring eligibility and report uncertified interval",
-      "sha256": "d42e941a970aa536a63c1a74ff97c4faafc31564f5e8745d9b2e62f94f71dec3",
-      "size_bytes": 28788
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "485dd530de9d5a13d91dadd3434dfed588c55fa382978512c4d613b936dd4068",
+      "size_bytes": 29021
     },
     "frontend/lib/institutionalFeeds.ts": {
       "operation": "M",
@@ -239,11 +239,11 @@
     },
     "frontend/lib/preflightEvaluator.ts": {
       "operation": "M",
-      "sha256": "81a14097533beeab943f2d0921047126d1109a90007a8ec51a7d5d187c114230",
-      "size_bytes": 51544,
-      "originating_pr_number": 328,
-      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
-      "governing_requirement": "PR #328: enforce PASS + FAIL + UNAVAILABLE = 5 accounting invariant on fixed 5-check denominator"
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "2ac30a14edcfbd77a6aa7813ecd135e0a8ebd2973013d0f6a578699d33e395ce",
+      "size_bytes": 51815
     },
     "frontend/package.json": {
       "operation": "M",
@@ -367,11 +367,11 @@
     },
     "frontend/app/page.tsx": {
       "operation": "M",
-      "sha256": "dc2e5273f619854561dbdc5e17660281987a59d6c4f22d4462d06924ea6e1134",
-      "size_bytes": 55467,
-      "originating_pr_number": 328,
-      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
-      "governing_requirement": "PR #328: build truthful provenance-aware Form 4/Congress/Options chart markers without fabricated dates"
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "2dad838473f858884b4637dc70878b1109524dd4166722ee8c36518dac22cf69",
+      "size_bytes": 58609
     },
     "frontend/components/discovery/DiscoveryLandingView.tsx": {
       "operation": "M",
@@ -383,11 +383,11 @@
     },
     "frontend/lib/insightGenerator.ts": {
       "operation": "M",
-      "originating_pr_number": 323,
-      "originating_commit": "4f9912f7b66d751f8e1205322e8740ec88de231f",
-      "governing_requirement": "PR #323: do not claim stale historical tape when data is unavailable or unverified",
-      "sha256": "a1d50d4a37710f49e35b508d17bbe9a25b8a72b596aaf7ddf6fb74eb1aa117d4",
-      "size_bytes": 42410
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "7b654de0930af79ebe79d240e817ecfc16b91e79504ff91b154b2013a1db3d39",
+      "size_bytes": 42812
     },
     "frontend/lib/__tests__/analyticsUnavailableHandling.test.ts": {
       "operation": "A",
@@ -463,11 +463,11 @@
     },
     "frontend/components/DayTraderPositionSizer.tsx": {
       "operation": "M",
-      "sha256": "e46123bc8af1cfc2b11ac4e1dfaba2dc5b7df33c6f52ca15551956030d4b99fc",
-      "size_bytes": 23941,
-      "originating_pr_number": 324,
-      "originating_commit": "1132b43023f2f17d13809576c99a0c491cec2c25",
-      "governing_requirement": "TASK-OPEN-03 / PR #324: Cornish\u2013Fisher valid-return sufficiency, unavailable propagation, calendar and sizing safety, and evidence tracking"
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "c7faa38fc6e8013df2431f5a8b814660d4c59ed63ac1b20fd07b186e81dc5e1a",
+      "size_bytes": 23968
     },
     "frontend/components/RiskMetricsCard.tsx": {
       "operation": "M",
@@ -575,27 +575,27 @@
     },
     "frontend/app/globals.css": {
       "operation": "M",
-      "sha256": "cc653dae5cfd4d40ce490f73d1fadd1e4c333a10a624650a2cbfa29ede884e5e",
-      "size_bytes": 18033,
-      "originating_pr_number": 328,
-      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
-      "governing_requirement": "PR #328: preserve sticky safe-area navbar on mobile WebKit via overflow-x: clip"
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "422cbe13bc77c6ca39b62fdd82b6fe8adf3d732f8720341bc9abf751364b5db9",
+      "size_bytes": 19463
     },
     "frontend/components/PreFlightChecklistModal.tsx": {
       "operation": "M",
-      "sha256": "dbd040256309fdf79b4424c3aabd4e740fb385d0351617cac7767d40d3977e17",
-      "size_bytes": 40996,
-      "originating_pr_number": 328,
-      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
-      "governing_requirement": "PR #328: display separate Pass/Fail/Unavailable counts and evidence availability on fixed 5-check denominator"
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "b3778605c2c2a2a63cf6c396fb71f0473d688960301f76963874c129bf886971",
+      "size_bytes": 42407
     },
     "frontend/components/PreFlightReadinessBar.tsx": {
       "operation": "M",
-      "sha256": "99931a2879174411674cf19c176c9d8be8046d685f73677a86cca8ccb427cdd9",
-      "size_bytes": 15084,
-      "originating_pr_number": 328,
-      "originating_commit": "c16ee72026d92ce657126edefa7d83b9085878bc",
-      "governing_requirement": "PR #328: separate Pass/Fail/Unavailable counts and neutral UNAVAILABLE pill styling"
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "394836640061b9b2b7892d64a1ca80e07131cf593fcbefd0f9294b23d6dc23b1",
+      "size_bytes": 15314
     },
     "frontend/components/PriceChart.tsx": {
       "operation": "M",
@@ -620,6 +620,86 @@
       "originating_pr_number": 328,
       "originating_commit": "1ae7eaa766e66debf691f38b7075b1fb7c63da73",
       "governing_requirement": "PR #328: focused behavioral regression suite for Form 4 labels, mobile chart readability, and preflight accounting"
+    },
+    "frontend/components/AdaptiveTerminal.tsx": {
+      "operation": "M",
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "3a3bcfe0187470a642c6376c3d8ae40e4bc2e3f3aa36ade25e9e88ad74d12b91",
+      "size_bytes": 14308
+    },
+    "frontend/components/Navbar.tsx": {
+      "operation": "M",
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "da67c8e6b6a8be2661b314a90c3fd030b84c9b684c9440472a21414cfae94a4a",
+      "size_bytes": 40647
+    },
+    "frontend/components/OptimalEntryExitCard.tsx": {
+      "operation": "M",
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "ac93f7c8b3f2acb071cd10ba9ea4eb8922bcf7225cb1a916a4779e0702aeeece",
+      "size_bytes": 52247
+    },
+    "frontend/components/__tests__/NvdaStandardUxTruthfulness.test.tsx": {
+      "operation": "A",
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "8b182501d27e57ccbb77621ca5d89c045677ee65bc6bb4fcecdcc63e0ff33b32",
+      "size_bytes": 15116
+    },
+    "frontend/components/nav/MarketCommandRibbon.tsx": {
+      "operation": "M",
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "fe6f0c22900351cf00502d88d9a3a41cfe9d12cfb319257491912724d35a6299",
+      "size_bytes": 12670
+    },
+    "frontend/components/terminal/EvidenceDomainStatusCard.tsx": {
+      "operation": "M",
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "a37097236cb93af0be2194c1cc1e1f1a29d365e09fd2e6b0e549bcca4a2a1741",
+      "size_bytes": 14126
+    },
+    "frontend/components/terminal/SharedAssetDeck.tsx": {
+      "operation": "M",
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "e03faa8d6df11716f1da7567e3efe7ffb4bc467ed31ad7bf38144747c444aa85",
+      "size_bytes": 6862
+    },
+    "frontend/components/terminal/StandardTerminalView.tsx": {
+      "operation": "M",
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "7b5703811ce996a97798998ad1d6f90bb871697d1a81a82f16194d525ab628cd",
+      "size_bytes": 28692
+    },
+    "frontend/lib/decisionHierarchyUtils.ts": {
+      "operation": "M",
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "b70981c1f3366954b0f824132c718867810e6313b07fdb9dfca662c15dd0ccd6",
+      "size_bytes": 7483
+    },
+    "frontend/types/insight.ts": {
+      "operation": "M",
+      "originating_pr_number": 329,
+      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
+      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
+      "sha256": "5092fa1eb9c08432d5e830d9b0302ae9916e746acc5876d6920faf820e0e139d",
+      "size_bytes": 7482
     }
   },
   "qualification_framework_files": {
@@ -630,8 +710,8 @@
     },
     "scripts/release/rq02_diff_integrity.py": {
       "description": "Hardened diff integrity validation with approved PR list including PR #327 and PR #328",
-      "sha256": "7c5dd1dcc24e94df91b37764734b10cdbea829f6c164b7e39b42a0cddb177577",
-      "size_bytes": 58256
+      "sha256": "6cf87b6dfcf738ced37d75dc167a39fb05e2cf990bd6744f6fab42f789498738",
+      "size_bytes": 58261
     },
     "scripts/release/rq03_backend_regression.py": {
       "description": "Backend regression runner including Cornish-Fisher and Radar behavioral test suites (ccxt-dependent contract test run on hosted CI only)",
@@ -729,6 +809,6 @@
       "size_bytes": 4773
     }
   },
-  "candidate_commit_sha": "2f402be15a2540ab74300607fff9b70551ea886f",
+  "candidate_commit_sha": "a1d40848f998c896547237e789d451b268001df1",
   "target_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486"
 }
