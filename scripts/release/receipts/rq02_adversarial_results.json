@@ -1,8 +1,8 @@
 {
   "suite": "RQ-02 Adversarial Falsification Suite (ARX-036-D12A)",
-  "candidate_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
-  "candidate_tree": "20abe9210510b89e54e6d735af0a826d5bbe56fa",
-  "timestamp": "2026-11-23T18:22:20.603115+00:00",
+  "candidate_sha": "8cabef9cdaaf7598f36333795a6a013498742a45",
+  "candidate_tree": "9da12fa849f8bbe30db7753c5081a08fb6efeed2",
+  "timestamp": "2026-11-26T09:58:11.643006+00:00",
   "execution_context": {
     "is_ci": false,
     "github_run_id": null,
@@ -64,7 +64,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 14b36db22d0f49f8d9db35bcf6fcee78f089a9b8 does not match manifest candidate 0000000000000000000000000000000000000000"
+        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 8cabef9cdaaf7598f36333795a6a013498742a45 does not match manifest candidate 0000000000000000000000000000000000000000"
       ]
     },
     {

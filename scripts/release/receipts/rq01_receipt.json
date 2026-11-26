@@ -2,19 +2,19 @@
   "control_id": "RQ-01",
   "name": "Candidate Identity & Lineage",
   "status": "PASS",
-  "start_time": "2026-11-23T18:22:05.424372+00:00",
-  "end_time": "2026-11-23T18:22:05.600972+00:00",
-  "duration_sec": 0.175,
-  "candidate_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
-  "source_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
-  "execution_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
+  "start_time": "2026-11-26T09:57:58.232676+00:00",
+  "end_time": "2026-11-26T09:57:58.345308+00:00",
+  "duration_sec": 0.112,
+  "candidate_sha": "8cabef9cdaaf7598f36333795a6a013498742a45",
+  "source_sha": "8cabef9cdaaf7598f36333795a6a013498742a45",
+  "execution_sha": "8cabef9cdaaf7598f36333795a6a013498742a45",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
-    "execution_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
+    "source_sha": "8cabef9cdaaf7598f36333795a6a013498742a45",
+    "execution_sha": "8cabef9cdaaf7598f36333795a6a013498742a45",
     "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
@@ -24,7 +24,7 @@
   "assertions": [
     {
       "assertion": "HEAD is valid 40-char hex SHA",
-      "observed": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
+      "observed": "8cabef9cdaaf7598f36333795a6a013498742a45",
       "passed": true
     },
     {
@@ -45,8 +45,8 @@
     {
       "assertion": "Candidate SHA incorporates authorized candidate",
       "observed": {
-        "candidate_sha": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
-        "expected": "42518a05fe28faf90b948459570f6b1705815929",
+        "candidate_sha": "8cabef9cdaaf7598f36333795a6a013498742a45",
+        "expected": "4ccaf7b29e11b51110e13684f332dbeecaba77d7",
         "ancestor": true
       },
       "passed": true
@@ -61,8 +61,8 @@
   "errors": [],
   "metadata": {
     "is_merge_commit": false,
-    "checked_out_head": "14b36db22d0f49f8d9db35bcf6fcee78f089a9b8",
+    "checked_out_head": "8cabef9cdaaf7598f36333795a6a013498742a45",
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "4fe92601a8fea063f9684851de717b8eb4896d91d0fb614a8f63c231b03dc9ca"
+  "receipt_digest": "a27aeead808bfba17b45c57fa92a3ee41666e84d31c15f0db229f990e6eb524c"
 }
