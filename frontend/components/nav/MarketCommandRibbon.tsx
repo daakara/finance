@@ -179,9 +179,9 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
         isMobileExpanded
           ? "min-h-[36px] py-1"
           : "h-6 sm:h-9 min-h-[24px] sm:min-h-[36px] max-h-[24px] sm:max-h-[36px]"
-      } border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur z-40 overflow-x-auto no-scrollbar flex items-center transition-all duration-150`}
+      } border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur z-40 overflow-hidden flex items-center transition-all duration-150`}
     >
-      <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 w-full flex items-center justify-between gap-1.5 sm:gap-4 shrink-0 min-w-max sm:min-w-0">
+      <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 w-full flex items-center justify-between gap-1.5 sm:gap-4 shrink-0">
         {/* Left: Benchmark Indexes & Yields */}
         <div className="flex items-center space-x-2 sm:space-x-5 shrink-0">
           {/* SPY (Always visible on mobile & desktop) */}
@@ -200,9 +200,9 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
             </span>
           </div>
 
-          {/* QQQ - visible on desktop, or when mobile is expanded */}
+          {/* QQQ - visible on md+, or when mobile is expanded */}
           <div
-            className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}
+            className={`${isMobileExpanded ? "flex" : "hidden md:flex"} items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}
             aria-label="NASDAQ 100"
           >
             <span className="text-slate-700 select-none text-xs mr-1 sm:mr-3">|</span>
@@ -217,9 +217,9 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
             </span>
           </div>
 
-          {/* VIX - visible on desktop, or when mobile is expanded */}
+          {/* VIX - visible on lg+, or when mobile is expanded */}
           <div
-            className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}
+            className={`${isMobileExpanded ? "flex" : "hidden lg:flex"} items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}
             aria-label="CBOE Volatility Index"
           >
             <span className="text-slate-700 select-none text-xs mr-1 sm:mr-3">|</span>
@@ -234,9 +234,9 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
             </span>
           </div>
 
-          {/* 10Y Yield - visible on desktop, or when mobile is expanded */}
+          {/* 10Y Yield - visible on xl+, or when mobile is expanded */}
           <div
-            className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}
+            className={`${isMobileExpanded ? "flex" : "hidden xl:flex"} items-center gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}
             aria-label="10-Year Treasury Yield"
           >
             <span className="text-slate-700 select-none text-xs mr-1 sm:mr-3">|</span>
@@ -254,7 +254,7 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
           {isSettlementPinned && (
             <span
               data-testid="settlement-pinned-badge"
-              className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700/60 text-slate-400 text-[10px] font-mono font-medium"
+              className="hidden xl:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700/60 text-slate-400 text-[10px] font-mono font-medium"
             >
               <span className="w-1 h-1 rounded-full bg-slate-500" aria-hidden="true" />
               Settlement Pinned
@@ -265,7 +265,7 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
           {isCachedFallback && (
             <span
               data-testid="cached-snapshot-badge"
-              className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-medium"
+              className="hidden xl:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-medium"
             >
               <span className="w-1 h-1 rounded-full bg-amber-400" aria-hidden="true" />
               [Cached Market Snapshot]
@@ -277,7 +277,7 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
             role="status"
             aria-label="Market regime"
             data-testid="market-regime-badge"
-            className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded border text-[9px] sm:text-[11px] font-mono font-bold tracking-tight uppercase ${regimeBadgeClass}`}
+            className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded border text-[9px] sm:text-[11px] font-mono font-bold tracking-tight uppercase shrink-0 ${regimeBadgeClass}`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${regimeDotClass}`} aria-hidden="true" />
             <span>{regimeText}</span>

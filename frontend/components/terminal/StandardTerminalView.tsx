@@ -98,7 +98,7 @@ export default function StandardTerminalView({
           <article
             id="verdict-card"
             data-testid="decision-verdict"
-            className="verdict-card bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-3 sm:p-5 shadow-xl space-y-3 font-sans text-[var(--text-1)]"
+            className="verdict-card bg-[var(--surface-1)] border border-[var(--border-subtle)] rounded-2xl p-2.5 sm:p-5 shadow-xl space-y-2 sm:space-y-3 font-sans text-[var(--text-1)]"
             aria-label="ARX Bottom Line and Execution Decision"
           >
             {/* Ticker & Price Deck */}
@@ -112,7 +112,7 @@ export default function StandardTerminalView({
             />
 
             {/* Verdict & Score Banner */}
-            <div className="verdict-banner !flex !flex-col p-3 sm:p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-2.5">
+            <div className="verdict-banner !flex !flex-col p-2.5 sm:p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-2 sm:space-y-2.5">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5 sm:gap-3 w-full">
                 <div className="verdict-info space-y-1 min-w-0 flex-1">
                   <span id="card-verdict-label" className="verdict-label text-[10px] font-mono font-black text-cyan-400 uppercase tracking-widest block">
