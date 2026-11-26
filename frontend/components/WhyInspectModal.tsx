@@ -9,7 +9,7 @@ export interface WhyInspectModalProps {
   isOpen: boolean;
   onClose: () => void;
   symbol: string;
-  setupScore: number;
+  setupScore: number | null;
   terminalState?: TerminalViewState;
   items?: FactorAttributionItem[];
   catalystToIncreaseScore?: string;
@@ -225,10 +225,10 @@ export default function WhyInspectModal({
                 </span>
               </div>
               <div className="flex items-center gap-1.5 font-mono">
-                <span className={`text-xl font-black ${effectiveScore >= 75 ? "text-emerald-400" : effectiveScore >= 55 ? "text-amber-400" : "text-rose-400"}`}>
-                  {effectiveScore}
+                <span className={`text-xl font-black ${effectiveScore != null ? (effectiveScore >= 75 ? "text-emerald-400" : effectiveScore >= 55 ? "text-amber-400" : "text-rose-400") : "text-[var(--text-2)]"}`}>
+                  {effectiveScore != null ? effectiveScore : "Pending"}
                 </span>
-                <span className="text-xs text-[var(--text-muted)]">/ 100</span>
+                {effectiveScore != null && <span className="text-xs text-[var(--text-muted)]">/ 100</span>}
               </div>
             </div>
 
@@ -331,9 +331,15 @@ export default function WhyInspectModal({
 
             {confluence?.pillars && confluence.pillars.length > 0 ? (
               confluence.pillars.map((pillar) => {
+                const scoringHeld = pillar.pillar === "SMART_MONEY_FLOW" &&
+                  pillar.scoringEligibility === "Not assessed — ingestion-only trial." &&
+                  ["unavailable", "pipeline_held"].includes(pillar.status.toLowerCase());
                 const scoreDisplay = formatPillarScore(pillar.status, pillar.score);
                 const scoreColor = getPillarScoreColor(pillar.status, pillar.score);
-                const statusBadge = getPillarStatusBadge(pillar.status);
+                const statusBadge = {
+                  ...getPillarStatusBadge(pillar.status),
+                  ...(scoringHeld ? { label: "NOT ASSESSED" } : {}),
+                };
 
                 return (
                   <div
@@ -350,9 +356,9 @@ export default function WhyInspectModal({
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`font-mono font-black text-sm tabular-nums ${scoreColor}`}>
+                        {!scoringHeld && <span className={`font-mono font-black text-sm tabular-nums ${scoreColor}`}>
                           {scoreDisplay}
-                        </span>
+                        </span>}
                         <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${statusBadge.className}`}>
                           {statusBadge.label}
                         </span>
@@ -361,6 +367,9 @@ export default function WhyInspectModal({
 
                     {/* Factual Observation */}
                     <div className="space-y-0.5">
+                      {scoringHeld && pillar.filingsAvailable && (
+                        <p className="text-xs text-cyan-400" data-testid="sec-filings-available">Filings available</p>
+                      )}
                       <span className="text-xs text-[var(--text-2)] font-mono font-bold flex items-center gap-1">
                         <BarChart3 className="w-3.5 h-3.5 text-cyan-400 inline" aria-hidden="true" />
                         <span>Observation (Fact):</span>
@@ -380,6 +389,29 @@ export default function WhyInspectModal({
                         {getPillarModelRule(pillar.pillar)}
                       </p>
                     </div>
+
+                    {pillar.pillar === "SMART_MONEY_FLOW" && (
+                      <div className="pt-1.5 flex justify-end">
+                        <button
+                          type="button"
+                          data-testid="why-modal-sec-disclosure-link"
+                          onClick={() => {
+                            if (typeof window !== "undefined") {
+                              window.dispatchEvent(new CustomEvent("arx:open-sec-disclosures", { detail: { symbol } }));
+                              onClose();
+                              setTimeout(() => {
+                                const el = document.getElementById("sec-disclosures-feed") || document.getElementById("institutional-feeds");
+                                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                              }, 100);
+                            }
+                          }}
+                          className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono font-semibold flex items-center gap-1 cursor-pointer py-1 px-2 rounded bg-cyan-950/40 border border-cyan-800/60 transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400"
+                        >
+                          <span>Open SEC Form 4 Disclosures</span>
+                          <span>→</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })

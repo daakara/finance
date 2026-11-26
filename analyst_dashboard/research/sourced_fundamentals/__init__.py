@@ -35,6 +35,15 @@ from .valuation import (
     solve_reverse_dcf,
     generate_sensitivity_matrix,
 )
+from .offline_reader import (
+    OfflineFundamentalsReader,
+    OfflineFundamentalsResult,
+    load_offline_fundamentals,
+    protect_against_runtime_masking,
+    ManifestIntegrityError,
+    IdentityIntegrityError,
+    EvidenceProtectionError,
+)
 
 __all__ = [
     "FinancialFact",
@@ -63,4 +72,11 @@ __all__ = [
     "run_fcff_model",
     "solve_reverse_dcf",
     "generate_sensitivity_matrix",
+    "OfflineFundamentalsReader",
+    "OfflineFundamentalsResult",
+    "load_offline_fundamentals",
+    "protect_against_runtime_masking",
+    "ManifestIntegrityError",
+    "IdentityIntegrityError",
+    "EvidenceProtectionError",
 ]

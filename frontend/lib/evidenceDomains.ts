@@ -49,7 +49,7 @@ export interface EvidenceResolutionContext {
   assetClass?: string;
   securityType?: string;
   candles?: CandleData[];
-  confluence?: ConfluenceData;
+  confluence?: ConfluenceData | null;
   optimalExecution?: OptimalExecutionPlan;
   smartMoney?: {
     status?: string;
@@ -65,6 +65,13 @@ export interface EvidenceResolutionContext {
     optionsFlow?: any[];
     secForm4Trades?: any[];
     secInsiderTrades?: any[];
+    filingsCount?: number;
+    filings_count?: number;
+    parsedTransactionsCount?: number;
+    parsed_transactions_count?: number;
+    transaction_count?: number;
+    coverage_certified?: boolean;
+    coverage_status?: string;
     feeds?: {
       options_flow?: any;
       sec_form4?: any;
@@ -450,6 +457,9 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     let observationTime = (feed as any)?.observation_time || (feed as any)?.observed_at || "Trailing 90 Days";
     let applicability: DomainApplicability = "OPTIONAL";
 
+    const filingsCount = (sub as any)?.filings_count ?? (feed as any)?.filings_count ?? (smartMoney as any)?.filingsCount ?? (smartMoney as any)?.filings_count ?? (hasTrades ? trades.length : 0);
+    const isCoverageCertified = (sub as any)?.coverage_certified === true || (feed as any)?.coverage_certified === true || (sub as any)?.coverage_status === "COMPLETE" || (feed as any)?.coverage_status === "COMPLETE" || (sub as any)?.coverage_status === "CERTIFIED" || (feed as any)?.coverage_status === "CERTIFIED";
+
     if (isEtf || isCrypto) {
       status = "INAPPLICABLE";
       statusLabel = "Inapplicable";
@@ -462,22 +472,44 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
       applicability = "INAPPLICABLE";
       explanation = feed?.explanation || "Foreign Private Issuer (FPI) exempt from US SEC Form 4 filings; local regulatory disclosures apply.";
       provenance = feed?.provenance || "Home Country Regulatory Authorities";
+    } else if (isHeld) {
+      status = "UNAVAILABLE";
+      if (filingsCount > 0) {
+        statusLabel = isCoverageCertified ? "Historical Coverage Certified" : "Coverage Uncertified";
+        explanation = `${filingsCount} SEC Form 4 filings stored. Historical coverage ${isCoverageCertified ? "certified" : "not certified"}. Scoring not assessed — ingestion-only trial.`;
+        if (!isCoverageCertified) {
+          observationTime = (feed as any)?.observation_time || (feed as any)?.observed_at || "Uncertified Interval";
+        }
+      } else {
+        statusLabel = "Pipeline Pending";
+        explanation = feed?.explanation || sub?.disclosure || "SEC Form 4 continuous ingestion paused under governed operational hold (HOLD_SEC_001).";
+      }
     } else if (feed && feed.status === "VERIFIED") {
-      status = "VERIFIED";
-      statusLabel = "Verified";
-      explanation = feed.explanation || `${feed.observation_count || trades.length} Form 4 insider transactions evaluated.`;
+      const isUncertified = (feed as any)?.coverage_certified === false || (feed as any)?.coverage_status === "PARTIAL" || (feed as any)?.coverage_status === "UNKNOWN" || (feed as any)?.scoring_held === true;
+      if (isUncertified) {
+        status = "UNAVAILABLE";
+        statusLabel = "Coverage Uncertified";
+        explanation = `${filingsCount} SEC Form 4 filings stored. Historical coverage not certified. Scoring not assessed — ingestion-only trial.`;
+        observationTime = (feed as any)?.observation_time || (feed as any)?.observed_at || "Uncertified Interval";
+      } else {
+        status = "VERIFIED";
+        statusLabel = "Verified";
+        const txCount = (feed as any)?.parsed_transactions_count ?? (feed as any)?.transaction_count ?? (sub as any)?.parsed_transactions_count;
+        explanation = feed.explanation || (txCount !== undefined
+          ? `${txCount} Form 4 insider transactions evaluated.`
+          : `${feed.observation_count || trades.length} Form 4 insider transactions evaluated.`);
+      }
     } else if (hasTrades) {
       status = "VERIFIED";
       statusLabel = "Verified";
-      explanation = `${trades.length} Form 4 insider transactions evaluated.`;
+      const txCount = (sub as any)?.parsed_transactions_count ?? (feed as any)?.parsed_transactions_count;
+      explanation = txCount !== undefined
+        ? `${txCount} Form 4 insider transactions evaluated.`
+        : `${trades.length} Form 4 insider transactions evaluated.`;
     } else if (isVerifiedEmpty) {
       status = "NO_OBSERVATIONS";
       statusLabel = "No Observations";
       explanation = feed?.explanation || "Verified complete search: 0 open-market Form 4 transactions filed in trailing 90 days.";
-    } else if (isHeld) {
-      status = "UNAVAILABLE";
-      statusLabel = "Pipeline Pending";
-      explanation = feed?.explanation || sub?.disclosure || "SEC Form 4 continuous ingestion paused under governed operational hold (HOLD_SEC_001).";
     } else if (isUnavailable) {
       status = "UNAVAILABLE";
       statusLabel = "Unavailable";
@@ -575,24 +607,27 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
 
   // ── 8. Macroeconomic Regime (FRED / VIX) ──────────────────────────────────
   (() => {
-    const resolvedVix = vix ?? macroData?.vix?.value ?? macroData?.vix;
-    const isVixElevated = typeof resolvedVix === "number" && resolvedVix >= 26.0;
-    const isVixCaution = typeof resolvedVix === "number" && resolvedVix >= 20.0 && resolvedVix < 26.0;
-    const hasMacro = Boolean(macroData || (macroPillar && macroPillar.status !== "unavailable"));
+    const rawVix = vix ?? macroData?.vix?.value ?? macroData?.vix?.level ?? (typeof macroData?.vix === "number" ? macroData.vix : undefined);
+    const resolvedVix = typeof rawVix === "number" && !isNaN(rawVix) && rawVix > 0 ? rawVix : null;
+    const isVixElevated = resolvedVix !== null && resolvedVix >= 26.0;
+    const isVixCaution = resolvedVix !== null && resolvedVix >= 20.0 && resolvedVix < 26.0;
+    const hasMacro = Boolean(resolvedVix !== null || macroData || (macroPillar && macroPillar.status !== "unavailable"));
 
     let status: DomainStatus = "VERIFIED";
     let statusLabel = "Verified";
-    let explanation = `Macro regime supportive; VIX at ${typeof resolvedVix === "number" ? resolvedVix.toFixed(1) : "19.4"}.`;
+    let explanation = resolvedVix !== null
+      ? `Macro regime supportive; VIX at ${resolvedVix.toFixed(1)}.`
+      : "Macro volatility telemetry unavailable from live CBOE/FRED feed.";
 
     if (isVixElevated) {
       status = "CAUTION";
       statusLabel = "Caution (High Vol)";
-      explanation = `Elevated market volatility regime (VIX ${(resolvedVix as number).toFixed(1)} >= 26.0 institutional ceiling).`;
+      explanation = `Elevated market volatility regime (VIX ${resolvedVix.toFixed(1)} >= 26.0 institutional ceiling).`;
     } else if (isVixCaution) {
       status = "VERIFIED";
       statusLabel = "Elevated Caution";
-      explanation = `Elevated market volatility (VIX ${(resolvedVix as number).toFixed(1)}). Below 26.0 defensive cutoff, but macro caution warranted.`;
-    } else if (!hasMacro) {
+      explanation = `Elevated market volatility (VIX ${resolvedVix.toFixed(1)}). Below 26.0 defensive cutoff, but macro caution warranted.`;
+    } else if (resolvedVix === null || !hasMacro) {
       status = "UNAVAILABLE";
       statusLabel = "Unavailable";
       explanation = "Macro volatility and credit spread telemetry unassessed.";

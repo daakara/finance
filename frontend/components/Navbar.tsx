@@ -658,7 +658,7 @@ export default function Navbar({
         role="navigation"
         aria-label="Mobile Navigation Dock"
         data-testid="mobile-nav-dock"
-        className="lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#0c1017]/95 backdrop-blur-xl border-t border-[#243044] px-1 py-1 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-around font-mono text-[10px] transform-gpu"
+        className="lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#0c1017]/95 backdrop-blur-xl border-t border-[#243044] px-0.5 sm:px-1 py-1 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-around gap-0.5 font-mono text-[9px] xs:text-[10px] transform-gpu"
         style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', zIndex: 999 }}
       >
         {CANONICAL_HUBS.map((hub) => {
@@ -675,14 +675,14 @@ export default function Navbar({
               key={hub.id}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-colors min-w-[44px] sm:min-w-[48px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+              className={`flex flex-col items-center justify-center py-1 px-0.5 sm:px-1.5 rounded-xl transition-colors min-w-[40px] sm:min-w-[48px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 active
                   ? "bg-[#1b2434] text-cyan-400 font-bold"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <HubIcon className="w-4 h-4 mb-0.5 leading-none shrink-0" aria-hidden="true" />
-              <span className="text-[10px] sm:text-xs tracking-tight">{hub.label}</span>
+              <span className="text-[9px] xs:text-[10px] sm:text-xs tracking-tight truncate max-w-[50px] text-center">{hub.label}</span>
             </Link>
           );
         })}
@@ -691,14 +691,14 @@ export default function Navbar({
         <Link
           href={effectiveSymbol ? `/research/?symbol=${encodeURIComponent(effectiveSymbol)}` : "/research/"}
           aria-current={pathname === "/research" || pathname === "/research/" || pathname?.startsWith("/research/") ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-colors min-w-[44px] sm:min-w-[48px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          className={`flex flex-col items-center justify-center py-1 px-0.5 sm:px-1.5 rounded-xl transition-colors min-w-[40px] sm:min-w-[48px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
             pathname === "/research" || pathname === "/research/" || pathname?.startsWith("/research/")
               ? "bg-[#1b2434] text-cyan-400 font-bold"
               : "text-slate-400 hover:text-slate-200"
           }`}
         >
           <FileSearch className="w-4 h-4 mb-0.5 leading-none shrink-0" aria-hidden="true" />
-          <span className="text-[10px] sm:text-xs tracking-tight">Research</span>
+          <span className="text-[9px] xs:text-[10px] sm:text-xs tracking-tight truncate max-w-[50px] text-center">Research</span>
         </Link>
 
         {/* Quick Horizon Toggle on Mobile Dock */}
@@ -706,7 +706,7 @@ export default function Navbar({
           type="button"
           onClick={() => handleRoleToggle(activeRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER")}
           aria-label={`Toggle Trading Horizon: currently ${activeRole === "DAY_TRADER" ? "Day Trader" : "Long-Term Investor"}`}
-          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all active:scale-[0.96] motion-reduce:transform-none min-w-[44px] sm:min-w-[48px] min-h-[44px] border ${
+          className={`flex flex-col items-center justify-center py-1 px-0.5 sm:px-1.5 rounded-xl transition-all active:scale-[0.96] motion-reduce:transform-none min-w-[40px] sm:min-w-[48px] min-h-[44px] border ${
             activeRole === "DAY_TRADER"
               ? "bg-amber-950/40 border-amber-500/50 text-amber-400 font-bold"
               : "bg-cyan-950/40 border-cyan-500/50 text-cyan-400 font-bold"
@@ -717,7 +717,7 @@ export default function Navbar({
           ) : (
             <Landmark className="w-4 h-4 mb-0.5 text-cyan-400 shrink-0" aria-hidden="true" />
           )}
-          <span className="text-[10px] sm:text-xs tracking-tight">
+          <span className="text-[9px] xs:text-[10px] sm:text-xs tracking-tight">
             {activeRole === "DAY_TRADER" ? "Day" : "Long"}
           </span>
         </button>

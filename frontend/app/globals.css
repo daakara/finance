@@ -79,8 +79,9 @@
 
 html,
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
+  scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 4rem);
 }
 
 body {
@@ -592,5 +593,62 @@ textarea:focus-visible {
 @media (display-mode: standalone) and (max-width: 1023px) {
   [data-testid="navbar-safe-area"] {
     padding-top: max(env(safe-area-inset-top, 0px), 3.5rem);
+  }
+}
+
+/* Short viewport optimization (landscape phones and compact screens) */
+@media (max-height: 500px) {
+  body > aside {
+    padding: 0.125rem 0.5rem !important;
+    font-size: 0.625rem !important;
+    line-height: 0.75rem !important;
+  }
+  #market-command-ribbon, [data-testid="market-command-ribbon"] {
+    display: none !important;
+  }
+  #price-subdeck {
+    display: none !important;
+  }
+  #card-verdict-label {
+    display: none !important;
+  }
+  #card-name {
+    display: none !important;
+  }
+  .symbol-title-group {
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+  }
+  .deck-top {
+    padding-bottom: 0.125rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+  nav {
+    min-height: 34px !important;
+    height: 34px !important;
+  }
+  div.sticky.top-0 {
+    min-height: 34px !important;
+  }
+  #main-content {
+    padding-top: 0.125rem !important;
+    padding-bottom: 0.125rem !important;
+  }
+  .verdict-card {
+    padding: 0.25rem 0.5rem !important;
+  }
+  .verdict-banner {
+    padding: 0.25rem 0.5rem !important;
+    margin-top: 0.125rem !important;
+  }
+  .symbol-text, .price-text {
+    font-size: 1.125rem !important;
+    line-height: 1.25rem !important;
+  }
+  [data-testid="decision-reason"], [data-testid="decision-next-condition"] {
+    padding-top: 0.125rem !important;
+    margin-top: 0.125rem !important;
+    font-size: 0.6875rem !important;
+    line-height: 0.95rem !important;
   }
 }

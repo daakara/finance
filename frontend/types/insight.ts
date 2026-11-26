@@ -138,7 +138,8 @@ export interface QuantitativeInsight {
   marketSession?: string;
   price: number;
   changePct: number;
-  setupScore: number;
+  setupScore: number | null;
+  scoreState?: "RESOLVED" | "PENDING" | "UNAVAILABLE";
 
   // Horizon & Posture State
   horizon: TimeHorizon;
@@ -224,7 +225,7 @@ export interface QuantitativeInsight {
 
   // Why Score Attribution
   scoreAttribution: {
-    finalScore: number;
+    finalScore: number | null;
     items: FactorAttributionItem[];
     catalystToIncreaseScore: string;
   };

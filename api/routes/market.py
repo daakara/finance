@@ -29,6 +29,20 @@ router = APIRouter()
 SYMBOL_REGEX = re.compile(r"^[A-Z0-9.\-_]{1,16}$")
 
 
+@router.get("/assets/search")
+def search_assets(q: str = Query(..., min_length=2, max_length=80)):
+    """Reference identity suggestions only; never invokes analytics or writes SQL."""
+    from analyst_dashboard.data.asset_discovery import asset_directory_discovery, DiscoveryUnavailable
+    from fastapi.responses import JSONResponse
+    try:
+        return JSONResponse(asset_directory_discovery.search(q), headers={"Cache-Control": "public, max-age=60"})
+    except DiscoveryUnavailable:
+        return JSONResponse({"status": "UNAVAILABLE", "results": []}, status_code=503,
+                            headers={"Cache-Control": "no-store", "Retry-After": "30"})
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid asset discovery query")
+
+
 class InstrumentResponse(BaseModel):
     symbol: str
     provider_symbol: str

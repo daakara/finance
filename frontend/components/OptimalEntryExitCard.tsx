@@ -70,7 +70,7 @@ export default function OptimalEntryExitCard({
   const reviewOnly = useUxReviewOnly();
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
-  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">(userRole === "DAY_TRADER" ? "PRO_QUANT" : "PLAIN_ENGLISH");
   const [logStatus, setLogStatus] = useState<string | null>(null);
 
   const handleOpenSizer = () => {
@@ -522,71 +522,119 @@ export default function OptimalEntryExitCard({
               </span>
             )}
             {/* Corporate Event / Catalyst Status Badge */}
-            {resolvedCorporateEvent && resolvedCorporateEvent.coverage_status !== "DATA_UNAVAILABLE" ? (
-              <span
-                className={`px-2 py-0.5 rounded border inline-flex items-center gap-1 font-mono text-[10px] ${
-                  resolvedCatalystState === "WARN"
-                    ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
-                    : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
-                }`}
-                title={`Source: ${resolvedCorporateEvent.source_name || "Corporate IR"} | Confirmation: ${resolvedCorporateEvent.confirmation_status || "UNVERIFIED"} | Freshness: ${resolvedCorporateEvent.freshness_status || "LIVE"}`}
-              >
-                <span>📅</span>
-                <span>
-                  {isPlain
-                    ? (resolvedDaysToEarnings !== null && resolvedDaysToEarnings <= 1.0
-                        ? `Earnings Imminent (<=${Math.max(1, Math.round(resolvedDaysToEarnings * 24))}h)`
-                        : `Earnings ${resolvedCorporateEvent.event_date_et || "Scheduled"}`)
-                    : `Catalyst: ${resolvedCorporateEvent.event_date_et || "Earnings"}${
-                        resolvedCorporateEvent.results_release_time_et
-                          ? ` (${resolvedCorporateEvent.results_release_time_et} ET Release)`
-                          : resolvedCorporateEvent.conference_call_time_et
-                          ? ` (${resolvedCorporateEvent.conference_call_time_et} ET Call)`
-                          : resolvedCorporateEvent.event_date_et
-                          ? " (Time Unverified)"
-                          : ""
-                      }`}
+            {(() => {
+              const isElapsedEvent = resolvedDaysToEarnings !== null && resolvedDaysToEarnings < 0;
+              const isImminentEvent = resolvedDaysToEarnings !== null && resolvedDaysToEarnings >= 0 && resolvedDaysToEarnings <= 1.0;
+              const isUpcomingEvent = resolvedDaysToEarnings !== null && resolvedDaysToEarnings > 1.0;
+
+              if (resolvedCorporateEvent && resolvedCorporateEvent.coverage_status !== "DATA_UNAVAILABLE") {
+                return (
+                  <span
+                    className={`px-2 py-0.5 rounded border inline-flex items-center gap-1 font-mono text-[10px] ${
+                      isImminentEvent || resolvedCatalystState === "WARN"
+                        ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
+                        : isElapsedEvent
+                        ? "bg-slate-900/80 text-slate-300 border-slate-700/80"
+                        : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+                    }`}
+                    title={`Source: ${resolvedCorporateEvent.source_name || "Corporate IR"} | Confirmation: ${resolvedCorporateEvent.confirmation_status || "UNVERIFIED"} | Freshness: ${resolvedCorporateEvent.freshness_status || "LIVE"}`}
+                  >
+                    <span>📅</span>
+                    <span>
+                      {isPlain
+                        ? (isImminentEvent
+                            ? `Earnings Imminent (<=${Math.max(1, Math.round(resolvedDaysToEarnings * 24))}h)`
+                            : isElapsedEvent
+                            ? `Prior Earnings: ${resolvedCorporateEvent.event_date_et || "Elapsed"} (Elapsed)`
+                            : `Earnings ${resolvedCorporateEvent.event_date_et || "Scheduled"}`)
+                        : (isElapsedEvent
+                            ? `Prior Catalyst: ${resolvedCorporateEvent.event_date_et || "Earnings"} (Elapsed · Runway Uncertified)`
+                            : `Catalyst: ${resolvedCorporateEvent.event_date_et || "Earnings"}${
+                                resolvedCorporateEvent.results_release_time_et
+                                  ? ` (${resolvedCorporateEvent.results_release_time_et} ET Release)`
+                                  : resolvedCorporateEvent.conference_call_time_et
+                                  ? ` (${resolvedCorporateEvent.conference_call_time_et} ET Call)`
+                                  : resolvedCorporateEvent.event_date_et
+                                  ? " (Time Unverified)"
+                                  : ""
+                              }`)}
+                    </span>
+                    <span className="text-[9px] opacity-75 font-sans">
+                      ({resolvedCorporateEvent.confirmation_status === "CONFIRMED" ? "IR Confirmed" : "Estimate"})
+                    </span>
+                  </span>
+                );
+              }
+
+              return (
+                <span
+                  className="px-2 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-700/80 inline-flex items-center gap-1 font-mono text-[10px]"
+                  title="Corporate event schedule telemetry unavailable from primary exchange source. Pre-Flight event runway uncertified."
+                >
+                  <span>📅</span>
+                  <span>{isPlain ? "Event Runway: Unverified" : "Catalyst: Coverage Unavailable"}</span>
                 </span>
-                <span className="text-[9px] opacity-75 font-sans">
-                  ({resolvedCorporateEvent.confirmation_status === "CONFIRMED" ? "IR Confirmed" : "Estimate"})
-                </span>
-              </span>
-            ) : (
-              <span
-                className="px-2 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-700/80 inline-flex items-center gap-1 font-mono text-[10px]"
-                title="Corporate event schedule telemetry unavailable from primary exchange source. Pre-Flight event runway uncertified."
-              >
-                <span>📅</span>
-                <span>{isPlain ? "Event Runway: Unverified" : "Catalyst: Coverage Unavailable"}</span>
-              </span>
-            )}
+              );
+            })()}
             <span className="hidden sm:inline text-slate-500">•</span>
             <span className="text-slate-400 text-[11px]">{isPlain ? "Automatic risk boundaries" : "Volatility-anchored risk limits"}</span>
           </div>
         </div>
 
         {/* Reward-to-Risk Pill */}
-        <div className="flex items-center space-x-2">
-          <div className="bg-[var(--surface-2)] px-3 py-1 rounded-lg border border-[var(--border-subtle)] text-right" title={isStage4 ? "Post-Breakout Pivot Expected Reward-to-Risk Ratio" : "Reward-to-Risk ratio: Potential gain to TP1 relative to maximum risk at Stop Loss"}>
-            <span className="text-[9px] text-[var(--text-muted)] block uppercase font-bold font-mono">
-              {isPlain ? "Profit : Risk" : isStage4 ? "Post-Pivot R:R" : "Reward : Risk"}
-            </span>
-            <span className={`text-sm font-extrabold font-mono tabular-nums ${isStage4 ? "text-amber-400" : "text-emerald-400"}`}>
-              {risk_reward_ratio} : 1.0
+        {(() => {
+          const effectiveCurrentPrice = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0 ? currentPrice : current_price;
+          const isSpotBelowFloor = Boolean(
+            typeof stop_loss === "number" &&
+            typeof effectiveCurrentPrice === "number" &&
+            effectiveCurrentPrice <= stop_loss
+          );
+          return (
+            <div className="flex items-center space-x-2">
+              <div
+                className="bg-[var(--surface-2)] px-3 py-1 rounded-lg border border-[var(--border-subtle)] text-right"
+                title={
+                  isSpotBelowFloor
+                    ? `Planned Reward-to-Risk (${risk_reward_ratio}:1.0) assumes entry at zone floor ($${(optimal_entry_min || stop_loss).toFixed(2)}); trade is currently blocked at spot ($${effectiveCurrentPrice?.toFixed(2)} <= stop loss $${stop_loss.toFixed(2)}).`
+                    : isStage4
+                    ? "Post-Breakout Pivot Expected Reward-to-Risk Ratio"
+                    : "Reward-to-Risk ratio: Potential gain to TP1 relative to maximum risk at Stop Loss"
+                }
+              >
+                <span className="text-[9px] text-[var(--text-muted)] block uppercase font-bold font-mono">
+                  {isPlain
+                    ? (isSpotBelowFloor ? "Planned R:R (Zone Floor)" : "Profit : Risk")
+                    : isSpotBelowFloor
+                    ? (isStage4 ? "Planned R:R (Post-Pivot Floor)" : "Planned R:R (Zone Floor)")
+                    : isStage4
+                    ? "Post-Pivot R:R"
+                    : "Reward : Risk"}
+                </span>
+                <div className="flex items-baseline justify-end gap-1">
+                  <span className={`text-sm font-extrabold font-mono tabular-nums ${isSpotBelowFloor ? "text-amber-400" : isStage4 ? "text-amber-400" : "text-emerald-400"}`}>
+                    {risk_reward_ratio} : 1.0
+                  </span>
+                  {isSpotBelowFloor && (
+                    <span className="text-[9px] font-mono font-semibold text-amber-400 hidden sm:inline" title="Reference price is at or below invalidation stop loss">
+                      (Floor)
+                    </span>
+                  )}
+                </div>
+              </div>
+            <span
+              aria-label={`Active playbook: ${isDayTrader ? "Intraday Scalp Playbook" : "Swing/Growth Playbook"}`}
+              title="Trading playbook governed by global Trading Horizon switch"
+              className={`text-xs px-2.5 py-1 rounded-md font-semibold border hidden sm:inline-flex ${
+                isDayTrader
+                  ? "text-amber-400 bg-amber-950/40 border-amber-800/60"
+                  : "text-emerald-400 bg-emerald-950/40 border-emerald-800/60"
+              }`}
+            >
+              <span>{isDayTrader ? "⚡ Intraday Playbook" : "🏛️ Swing/Growth Playbook"}</span>
             </span>
           </div>
-          <span
-            aria-label={`Active playbook: ${isDayTrader ? "Intraday Scalp Playbook" : "Swing/Growth Playbook"}`}
-            title="Trading playbook governed by global Trading Horizon switch"
-            className={`text-xs px-2.5 py-1 rounded-md font-semibold border hidden sm:inline-flex ${
-              isDayTrader
-                ? "text-amber-400 bg-amber-950/40 border-amber-800/60"
-                : "text-emerald-400 bg-emerald-950/40 border-emerald-800/60"
-            }`}
-          >
-            <span>{isDayTrader ? "⚡ Intraday Playbook" : "🏛️ Swing/Growth Playbook"}</span>
-          </span>
-        </div>
+        );
+      })()}
       </div>
 
       {/* 🛑 Liquidity Defense Alert Banner (Shadow Observation Mode) */}

@@ -2,20 +2,20 @@
   "control_id": "RQ-04",
   "name": "Frontend Regression & Typecheck",
   "status": "PASS",
-  "start_time": "2026-11-20T01:24:39.090215+00:00",
-  "end_time": "2026-11-20T01:24:50.527591+00:00",
-  "duration_sec": 11.413,
-  "candidate_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+  "start_time": "2026-11-25T10:25:36.141694+00:00",
+  "end_time": "2026-11-25T10:25:55.385487+00:00",
+  "duration_sec": 19.215,
+  "candidate_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "source_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "execution_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "source_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+    "execution_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+    "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
     "workflow_run_attempt": 1,
@@ -50,6 +50,55 @@
         "exit_code": 0
       },
       "passed": true
+    },
+    {
+      "assertion": "SEC Form 4 Disclosure Evidence View verification suite passes",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Radar evidence, ranking & analysis-handoff qualification suite passes",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Risk metrics card and position sizer null-safety and behavioral suite passes",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Radar desktop/mobile render truth and operational state Vitest suites pass",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Radar category integrity & provenance suite passes",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Radar capability copy & error-vs-pending separation suite passes",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
+    },
+    {
+      "assertion": "Mobile chart readability, trade-marker truth, and preflight accounting suite passes",
+      "observed": {
+        "exit_code": 0
+      },
+      "passed": true
     }
   ],
   "evidence_paths": [
@@ -58,7 +107,28 @@
     "frontend/components/PositionSizerModal.tsx",
     "frontend/components/WeeklyConfluenceSpotlight.tsx",
     "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts",
-    "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts"
+    "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts",
+    "frontend/tests/secDisclosureEvidenceView.test.ts",
+    "frontend/tests/radarEvidenceRankingHandoffQualification.test.ts",
+    "frontend/components/__tests__/RadarPageRenderTruth.test.tsx",
+    "frontend/lib/__tests__/radarS4OperationalTruth.test.ts",
+    "frontend/lib/__tests__/radarPartialPresentation.test.ts",
+    "frontend/tests/radarCategoryIntegrity002.test.ts",
+    "frontend/tests/preflightRadarCopyRemediation.test.ts",
+    "frontend/lib/radarPresentation.ts",
+    "frontend/lib/radarRanking.ts",
+    "frontend/lib/decisionContext.ts",
+    "frontend/app/radar/page.tsx",
+    "frontend/components/RiskMetricsCard.tsx",
+    "frontend/components/AssetFactorRadar.tsx",
+    "frontend/components/DayTraderPositionSizer.tsx",
+    "frontend/components/__tests__/RiskMetricsAndSizingBehavior.test.tsx",
+    "frontend/lib/tradeMarkers.ts",
+    "frontend/components/PriceChart.tsx",
+    "frontend/lib/preflightEvaluator.ts",
+    "frontend/components/PreFlightReadinessBar.tsx",
+    "frontend/components/PreFlightChecklistModal.tsx",
+    "frontend/components/__tests__/MobileChartAndPreflightEvidenceTruth.test.tsx"
   ],
   "evidence_digests": {
     "frontend/tests/governorSizingEngine.test.ts": "b1677d4c11467f966ab67a3d0aac27701cc27e6a491e6399b4ef1fa9dfcab2e4",
@@ -66,7 +136,28 @@
     "frontend/components/PositionSizerModal.tsx": "356d5c6a8b50c5783a079f24ad41bcfa2012e245681af435232d224a0513462f",
     "frontend/components/WeeklyConfluenceSpotlight.tsx": "abe14b2f9e847e9fd79280acbb1c1d45834d83b14fcd5fd3acf2e9fe8c959178",
     "frontend/tests/weeklyConfluenceSpotlightDecoupling.test.ts": "124f69ebb4d86b0d5f60417c8bb0e2ec29e70d3206f2a9d2d2b4aab87e4ee844",
-    "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts": "9ab57fe7d09c9b4ec44165d9a5d464e418cb98abf0578c177cc49b3853b84147"
+    "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts": "9ab57fe7d09c9b4ec44165d9a5d464e418cb98abf0578c177cc49b3853b84147",
+    "frontend/tests/secDisclosureEvidenceView.test.ts": "b118ab9cf7046cf5194971872b16a6dfab604d44cebc174b328433681c352846",
+    "frontend/tests/radarEvidenceRankingHandoffQualification.test.ts": "769d821d71c88725566afbbbb5c2bd931882dc0cbe749e01962a1ef0cac0dd9b",
+    "frontend/components/__tests__/RadarPageRenderTruth.test.tsx": "1dd75f5aa694ff35eb6d0fff4f12be8a9e6ed6bf6445eab192f0e5d3fd540d80",
+    "frontend/lib/__tests__/radarS4OperationalTruth.test.ts": "58d5fff1e880192bb8b65933c6c39e5ac51bc7dfd7c32ccfa95415376ea63a84",
+    "frontend/lib/__tests__/radarPartialPresentation.test.ts": "138d04e02341da979e7dd2e8c1c80b84b0b2ffa19992919ccd79c1e35ad712fa",
+    "frontend/tests/radarCategoryIntegrity002.test.ts": "5bdd39b0a3d277dd58ed31ef03b3271f54f3d082f407485ea5ee0f3550f0e80f",
+    "frontend/tests/preflightRadarCopyRemediation.test.ts": "a88727ca09aa584ce3ff5271d57597c950eb062a9b1344c21cfb686d8620448d",
+    "frontend/lib/radarPresentation.ts": "1ce305a9cdb131af7ab99785563cba281547452c1898146d88327e1da5ae8d98",
+    "frontend/lib/radarRanking.ts": "e757e0d59886fa9f293bddb3c521fe4dc83df9779f32bf805b2e065b9fd7fb6e",
+    "frontend/lib/decisionContext.ts": "41ea11c5a8b7907d5cc6caa8f783f776c754ab7e68f8012ee6610456ad1749fd",
+    "frontend/app/radar/page.tsx": "74a1d4eef520e2531ac7ea7344889c3b22ed106bdd68cc025a61968d2599d9fb",
+    "frontend/components/RiskMetricsCard.tsx": "2d0ff0ea80f2162423a8dc437392d7b1922cab3af43de0e154c7386a71cbd3d6",
+    "frontend/components/AssetFactorRadar.tsx": "be72dea5f8cb26c896635ff8644851f9e357dcdac260b3e12f334a618f71988d",
+    "frontend/components/DayTraderPositionSizer.tsx": "e46123bc8af1cfc2b11ac4e1dfaba2dc5b7df33c6f52ca15551956030d4b99fc",
+    "frontend/components/__tests__/RiskMetricsAndSizingBehavior.test.tsx": "6c2bdce0d10fe107bfb31a8c1963a75e7b53f57857c1c30e8e959a53eaadb4c6",
+    "frontend/lib/tradeMarkers.ts": "5e2f242f61a7712c584c6277d45f306e917c2565a23c70d3dd380a95985595b0",
+    "frontend/components/PriceChart.tsx": "56cae61ac1d71773378adafa5e862a91994d663addd918b98cdb44f5b6a04e0e",
+    "frontend/lib/preflightEvaluator.ts": "81a14097533beeab943f2d0921047126d1109a90007a8ec51a7d5d187c114230",
+    "frontend/components/PreFlightReadinessBar.tsx": "99931a2879174411674cf19c176c9d8be8046d685f73677a86cca8ccb427cdd9",
+    "frontend/components/PreFlightChecklistModal.tsx": "dbd040256309fdf79b4424c3aabd4e740fb385d0351617cac7767d40d3977e17",
+    "frontend/components/__tests__/MobileChartAndPreflightEvidenceTruth.test.tsx": "52b1e36a5c5b6476080d431d4695bcdb93183c8eb903c4b3370728b4c08094c3"
   },
   "errors": [],
   "metadata": {
@@ -74,5 +165,5 @@
     "sizing_tests_passed": 17,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "4b5ed0f5b953925a22825b41aef5d513020bf7efd43c2a681505b8d101bf243c"
+  "receipt_digest": "98cb51fa7909dded2acee3352302cf1cd9663384137bd4aa08d8e744d6c2cf6e"
 }

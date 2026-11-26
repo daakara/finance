@@ -1,21 +1,21 @@
 {
   "control_id": "RQ-12",
   "name": "Qualification Summary Aggregation",
-  "status": "PASS",
-  "start_time": "2026-11-20T01:24:55.379542+00:00",
-  "end_time": "2026-11-20T01:24:55.425567+00:00",
-  "duration_sec": 0.046,
-  "candidate_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+  "status": "FAIL",
+  "start_time": "2026-11-25T10:18:28.138305+00:00",
+  "end_time": "2026-11-25T10:18:28.171295+00:00",
+  "duration_sec": 0.032,
+  "candidate_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "source_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "execution_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
     "event_name": "local_execution",
     "pr_number": null,
-    "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "source_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+    "execution_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+    "base_sha": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
     "target_branch": "release/production",
     "workflow_run_id": "local_run",
     "workflow_run_attempt": 1,
@@ -26,26 +26,29 @@
       "assertion": "All 11 mandatory release qualification stages passed",
       "observed": {
         "total": 12,
-        "passed": 12,
-        "failed": 0,
+        "passed": 10,
+        "failed": 1,
         "blocked": 0,
-        "missing": 0
+        "missing": 1
       },
-      "passed": true
+      "passed": false
     }
   ],
   "evidence_paths": [
     "scripts/release/release_qualification_summary.json"
   ],
   "evidence_digests": {
-    "scripts/release/release_qualification_summary.json": "8792f751a3c1f07520effa0867236672cd121d207b4a073b2dea178a897cc647"
+    "scripts/release/release_qualification_summary.json": "bfcaafd76918066258073a4f2e78b9b6776cff293111bd297aadf3956f0a6701"
   },
-  "errors": [],
+  "errors": [
+    "Stage RQ-03 failed with status FAIL",
+    "Missing receipt for mandatory stage RQ-04"
+  ],
   "metadata": {
-    "summary_verdict": "RELEASE_QUALIFIED",
-    "passed_controls": 12,
+    "summary_verdict": "RELEASE_QUALIFICATION_BLOCKED",
+    "passed_controls": 10,
     "total_controls": 12,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "af1522407f3e925bbe2defdad5157996b48e36cb84021e0742e98eb7a2103996"
+  "receipt_digest": "266a21e29718f501e736f3859b9f8d5f8997ebb8dea25d45eaf54c7ed2b32983"
 }

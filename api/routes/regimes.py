@@ -215,8 +215,10 @@ def _compute_regime_for_symbol(symbol: str = "SPY"):
     return_annual = tactical_eval["returnAnnualPct"] or 0.0
     trend_strength = tactical_eval["trendStrength"] or 0.0
 
-    # Risk metrics from AdvancedRiskAnalyzer
-    risk_output = risk_analyzer.analyze_comprehensive_risk(hist)
+    # Risk metrics from AdvancedRiskAnalyzer with verified calendar alignment
+    meta = getattr(ticker, "history_metadata", None)
+    ex_name = (meta.get("exchangeName") if isinstance(meta, dict) else None) or ("ARCX" if upper_sym in ("SPY", "QQQ", "IWM") else "XNYS")
+    risk_output = risk_analyzer.analyze_comprehensive_risk(hist, exchange=ex_name, asset_class="ETF" if upper_sym in ("SPY", "QQQ", "IWM") else "EQUITY")
     adv = risk_output.get("advanced_metrics", {})
     sortino = adv.get("Sortino_Ratio", 1.8)
 

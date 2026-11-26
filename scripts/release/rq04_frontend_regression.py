@@ -160,6 +160,105 @@ def main():
         "passed": radar_passed,
     })
 
+    # 7. Risk Metrics & Sizing Behavioral Suite (TASK-OPEN-03)
+    print("Running Risk Metrics & Sizing Behavioral qualification tests...")
+    risk_cmd = [vitest_bin, "run", "components/__tests__/RiskMetricsAndSizingBehavior.test.tsx"]
+    if not os.path.isfile(vitest_bin):
+        errors.append("Local Vitest binary missing: npm ci must provision pinned test dependencies")
+        res_risk = None
+    else:
+        res_risk = subprocess.run(
+            risk_cmd, cwd=FRONTEND_DIR,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="ignore",
+        )
+        print(res_risk.stdout)
+        if res_risk.returncode != 0:
+            errors.append(f"Risk Metrics and Sizing behavioral tests failed with exit code {res_risk.returncode}")
+    assertions.append({
+        "assertion": "Risk metrics card and position sizer null-safety and behavioral suite passes",
+        "observed": {"exit_code": res_risk.returncode if res_risk is not None else None},
+        "passed": res_risk is not None and res_risk.returncode == 0,
+    })
+
+    # 8. Radar Operational Truth & Render Behavioral Suite (ARX-S4-RADAR-001)
+    print("Running Radar Operational Truth & Render behavioral qualification tests...")
+    radar_vitest_cmd = [
+        vitest_bin,
+        "run",
+        "components/__tests__/RadarPageRenderTruth.test.tsx",
+        "lib/__tests__/radarS4OperationalTruth.test.ts",
+        "lib/__tests__/radarPartialPresentation.test.ts",
+    ]
+    if not os.path.isfile(vitest_bin):
+        errors.append("Local Vitest binary missing: npm ci must provision pinned test dependencies")
+        res_radar_vitest = None
+    else:
+        res_radar_vitest = subprocess.run(
+            radar_vitest_cmd, cwd=FRONTEND_DIR,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="ignore",
+        )
+        print(res_radar_vitest.stdout)
+        if res_radar_vitest.returncode != 0:
+            errors.append(f"Radar operational truth Vitest suite failed with exit code {res_radar_vitest.returncode}")
+    assertions.append({
+        "assertion": "Radar desktop/mobile render truth and operational state Vitest suites pass",
+        "observed": {"exit_code": res_radar_vitest.returncode if res_radar_vitest is not None else None},
+        "passed": res_radar_vitest is not None and res_radar_vitest.returncode == 0,
+    })
+
+    radar_cat_cmd = [npx_bin, "tsx", "tests/radarCategoryIntegrity002.test.ts"]
+    res_radar_cat = subprocess.run(
+        radar_cat_cmd, cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, encoding="utf-8", errors="ignore",
+    )
+    print(res_radar_cat.stdout)
+    if res_radar_cat.returncode != 0:
+        errors.append(f"Radar category integrity suite failed with exit code {res_radar_cat.returncode}")
+    assertions.append({
+        "assertion": "Radar category integrity & provenance suite passes",
+        "observed": {"exit_code": res_radar_cat.returncode},
+        "passed": res_radar_cat.returncode == 0,
+    })
+
+    radar_copy_cmd = [npx_bin, "tsx", "tests/preflightRadarCopyRemediation.test.ts"]
+    res_radar_copy = subprocess.run(
+        radar_copy_cmd, cwd=FRONTEND_DIR,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, encoding="utf-8", errors="ignore",
+    )
+    print(res_radar_copy.stdout)
+    if res_radar_copy.returncode != 0:
+        errors.append(f"Radar copy remediation suite failed with exit code {res_radar_copy.returncode}")
+    assertions.append({
+        "assertion": "Radar capability copy & error-vs-pending separation suite passes",
+        "observed": {"exit_code": res_radar_copy.returncode},
+        "passed": res_radar_copy.returncode == 0,
+    })
+
+    # 9. Mobile Chart Readability, Trade-Marker Truth & Preflight Accounting Suite (PR #328)
+    print("Running Mobile Chart & Preflight Evidence Truth qualification tests...")
+    mc_cmd = [vitest_bin, "run", "components/__tests__/MobileChartAndPreflightEvidenceTruth.test.tsx"]
+    if not os.path.isfile(vitest_bin):
+        errors.append("Local Vitest binary missing: npm ci must provision pinned test dependencies")
+        res_mc = None
+    else:
+        res_mc = subprocess.run(
+            mc_cmd, cwd=FRONTEND_DIR,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="ignore",
+        )
+        print(res_mc.stdout)
+        if res_mc.returncode != 0:
+            errors.append(f"Mobile chart & preflight truth tests failed with exit code {res_mc.returncode}")
+    assertions.append({
+        "assertion": "Mobile chart readability, trade-marker truth, and preflight accounting suite passes",
+        "observed": {"exit_code": res_mc.returncode if res_mc is not None else None},
+        "passed": res_mc is not None and res_mc.returncode == 0,
+    })
+
     duration = time.time() - t0
     status = "PASS" if len(errors) == 0 else "FAIL"
     ok, identity, err = resolve_identity_contract()
@@ -174,10 +273,25 @@ def main():
         "frontend/lib/__tests__/confluenceSpotlightSelection.test.ts",
         "frontend/tests/secDisclosureEvidenceView.test.ts",
         "frontend/tests/radarEvidenceRankingHandoffQualification.test.ts",
+        "frontend/components/__tests__/RadarPageRenderTruth.test.tsx",
+        "frontend/lib/__tests__/radarS4OperationalTruth.test.ts",
+        "frontend/lib/__tests__/radarPartialPresentation.test.ts",
+        "frontend/tests/radarCategoryIntegrity002.test.ts",
+        "frontend/tests/preflightRadarCopyRemediation.test.ts",
         "frontend/lib/radarPresentation.ts",
         "frontend/lib/radarRanking.ts",
         "frontend/lib/decisionContext.ts",
         "frontend/app/radar/page.tsx",
+        "frontend/components/RiskMetricsCard.tsx",
+        "frontend/components/AssetFactorRadar.tsx",
+        "frontend/components/DayTraderPositionSizer.tsx",
+        "frontend/components/__tests__/RiskMetricsAndSizingBehavior.test.tsx",
+        "frontend/lib/tradeMarkers.ts",
+        "frontend/components/PriceChart.tsx",
+        "frontend/lib/preflightEvaluator.ts",
+        "frontend/components/PreFlightReadinessBar.tsx",
+        "frontend/components/PreFlightChecklistModal.tsx",
+        "frontend/components/__tests__/MobileChartAndPreflightEvidenceTruth.test.tsx",
     ]
 
     receipt = create_stage_receipt(

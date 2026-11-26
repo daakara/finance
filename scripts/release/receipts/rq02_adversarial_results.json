@@ -1,8 +1,8 @@
 {
   "suite": "RQ-02 Adversarial Falsification Suite (ARX-036-D12A)",
-  "candidate_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "candidate_tree": "1ce6e943ff7f12f1d4ce959327b3896cf2de588e",
-  "timestamp": "2026-11-20T01:24:12.019514+00:00",
+  "candidate_sha": "504501971e1efe669a0ef65c38e92723171f84e5",
+  "candidate_tree": "18f179582d38187a616179537a296e5ba182b035",
+  "timestamp": "2026-11-25T10:17:19.127982+00:00",
   "execution_context": {
     "is_ci": false,
     "github_run_id": null,
@@ -28,7 +28,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  [UNAPPROVED (A)] tests/test_smart_money_provenance.py"
+        "  [UNAPPROVED (A)] .github/workflows/asset-discovery.yml"
       ]
     },
     {
@@ -37,7 +37,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  [UNAPPROVED (M)] analyst_dashboard/smart_money/canary_runner.py"
+        "  [UNAPPROVED (M)] .gitignore"
       ]
     },
     {
@@ -55,7 +55,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - Hash mismatch in analyst_dashboard/smart_money/canary_runner.py: expected 1111111111 got fb61c11de5"
+        "  - Hash mismatch in .gitignore: expected 1111111111 got f4c19ffc0f"
       ]
     },
     {
@@ -64,7 +64,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 1ce032d5c821e845f5c7e55dc89a3109ab4368b3 does not match manifest candidate 0000000000000000000000000000000000000000"
+        "  - CANDIDATE_SHA_MISMATCH: Evaluated candidate 504501971e1efe669a0ef65c38e92723171f84e5 does not match manifest candidate 0000000000000000000000000000000000000000"
       ]
     },
     {
@@ -73,7 +73,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - BASE_ANCHOR_MISMATCH: Evaluated base 6d4020ca3fef3ae07ac01204b03e0629b6a7cc79 does not match manifest base 16549be1acb9fdafef3c6b97f9115b674f9f4842"
+        "  - BASE_ANCHOR_MISMATCH: Evaluated base 6d4020ca3fef3ae07ac01204b03e0629b6a7cc79 does not match manifest base 2eccc64a2cb3c649ad4d584a942285a6406d1ce0"
       ]
     },
     {
@@ -82,7 +82,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - DIRTY_WORKING_TREE_MISMATCH: Candidate file 'analyst_dashboard/smart_money/canary_runner.py' has uncommitted modifications (M)"
+        "  - DIRTY_WORKING_TREE_MISMATCH: Candidate file '.github/workflows/asset-discovery.yml' has uncommitted modifications (M)"
       ]
     },
     {
@@ -91,7 +91,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "  - UNAUTHORIZED_QUALIFICATION_FRAMEWORK_MODIFICATION: scripts/release/rq01_candidate_identity.py expected 9999999999... got af311f7b40..."
+        "  - UNAUTHORIZED_QUALIFICATION_FRAMEWORK_MODIFICATION: scripts/release/rq01_candidate_identity.py expected 9999999999... got fbd3221802..."
       ]
     },
     {
@@ -100,7 +100,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "FAIL: DUPLICATE_MANIFEST_ENTRY: DUPLICATE_MANIFEST_ENTRY: Duplicate key 'analyst_dashboard/smart_money/canary_runner.py' detected in manifest JSON."
+        "FAIL: DUPLICATE_MANIFEST_ENTRY: DUPLICATE_MANIFEST_ENTRY: Duplicate key '.github/workflows/asset-discovery.yml' detected in manifest JSON."
       ]
     },
     {
@@ -109,7 +109,7 @@
       "actual_rc": 1,
       "passed": true,
       "error_snippet": [
-        "FAIL: UNAPPROVED_PR_ATTRIBUTION: File analyst_dashboard/smart_money/canary_runner.py attributed to unapproved or missing PR (999)"
+        "FAIL: UNAPPROVED_PR_ATTRIBUTION: File .github/workflows/asset-discovery.yml attributed to unapproved or missing PR (999)"
       ]
     }
   ]

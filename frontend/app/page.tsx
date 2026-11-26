@@ -19,6 +19,7 @@ import CatalystForecastCard from "../components/CatalystForecastCard";
 import InstitutionalFeeds from "../components/InstitutionalFeeds";
 import CompositeConvictionCard from "../components/CompositeConvictionCard";
 import { FredMacroData, SecForm4Trade, fetchFredMacroRegime, fetchSecForm4Insiders } from "../lib/institutionalFeeds";
+import { buildChartTradeMarkers } from "../lib/tradeMarkers";
 import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import DataSourceBadge from "../components/DataSourceBadge";
@@ -32,10 +33,11 @@ import PreFlightChecklistModal from "../components/PreFlightChecklistModal";
 import { evaluatePreFlightChecks } from "../lib/preflightEvaluator";
 import EtfCostOfOwnershipCard from "../components/EtfCostOfOwnershipCard";
 import EtfRiskProfileCard from "../components/EtfRiskProfileCard";
-import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../lib/api";
+import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry, AssetNotFoundError, InsufficientHistoryError } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 import { resolveAssetAlias } from "../lib/assetRegistry";
-import { isETF, resolveCapabilities } from "../lib/assetTypeUtils";
+import { isETF, resolveCapabilities, type CanonicalInstrumentEnvelope } from "../lib/assetTypeUtils";
+import { resolveLimitedHistoryCapabilities, formatLimitedHistoryExplanation } from "../lib/limitedHistoryPresentation";
 import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 import TerminalSsrShell from "../components/TerminalSsrShell";
@@ -48,7 +50,7 @@ import {
   resolvePreflightLiveFreshness,
   CachedAnalyticsEntry,
 } from "../lib/analysisCache";
-import { Target, Landmark, BarChart3, Shield } from "lucide-react";
+import { Target, Landmark, BarChart3, Shield, Search, Activity } from "lucide-react";
 
 type WorkspaceTab = "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
 
@@ -76,6 +78,8 @@ function TerminalContent() {
   const analysisRequestIdRef = useRef(0);
   const [loading, setLoading] = useState<boolean>(Boolean(urlSymbol));
   const [error, setError] = useState<string | null>(null);
+  const [errorInstrument, setErrorInstrument] = useState<CanonicalInstrumentEnvelope | null>(null);
+  const [errorCoverage, setErrorCoverage] = useState<{ certified?: boolean | null; status?: string | null } | null>(null);
   const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(
@@ -86,28 +90,7 @@ function TerminalContent() {
   const [macroData, setMacroData] = useState<FredMacroData | null>(null);
   const [insiderTrades, setInsiderTrades] = useState<SecForm4Trade[]>([]);
   const capabilities = useMemo(() => resolveCapabilities(data, data?.optimalExecution), [data]);
-  const tradeMarkers = useMemo(() => {
-    return [
-      ...(data?.smartMoney?.congressTrades?.map((ct) => ({
-        date: ct.transaction_date || (ct as any).date || ct.filing_date,
-        label: `🏛️ ${ct.politician?.split(" ")?.slice(-1)[0] || "Congress"} ${ct.transaction_type || (ct as any).type || "Buy"}`,
-        type: "CONGRESS" as const,
-        amount: ct.amount_range,
-      })) || []),
-      ...(((data?.smartMoney as any)?.secForm4Trades || (data?.smartMoney as any)?.secInsiderTrades || [])?.map((st: any) => ({
-        date: st.filingDate || st.date || st.filing_date,
-        label: `💼 ${st.insiderRole || "Insider"} Buy`,
-        type: "INSIDER" as const,
-        amount: st.transactionValue || st.shares,
-      })) || []),
-      ...(data?.smartMoney?.optionsFlow?.map((op) => ({
-        date: (op as any).date || (op as any).timestamp || "2026-04-01",
-        label: `⚡ ${op.type || "Call Sweep"}`,
-        type: "OPTIONS" as const,
-        amount: op.premium,
-      })) || []),
-    ].filter((m) => m.date);
-  }, [data?.smartMoney]);
+  const tradeMarkers = useMemo(() => buildChartTradeMarkers(data?.smartMoney), [data?.smartMoney]);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const [isPreflightModalOpen, setIsPreflightModalOpen] = useState<boolean>(false);
   const [isPreflightDrawerExpanded, setIsPreflightDrawerExpanded] = useState<boolean>(false);
@@ -179,11 +162,53 @@ function TerminalContent() {
     }
   }, [selectedSymbol]);
 
+  useEffect(() => {
+    const handleOpenSec = () => {
+      setActiveTab("FUNDAMENTALS");
+      setTimeout(() => {
+        const el = document.getElementById("sec-disclosures-feed") || document.getElementById("institutional-feeds");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    };
+    window.addEventListener("arx:open-sec-disclosures", handleOpenSec);
+    return () => window.removeEventListener("arx:open-sec-disclosures", handleOpenSec);
+  }, []);
+
+  const workspaceTabs: WorkspaceTab[] = ["SMART_MONEY", "FUNDAMENTALS", "RISK_CONTAGION"];
+  const tabButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const handleTabKeyDown = (e: React.KeyboardEvent, index: number) => {
+    let nextIndex = index;
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      nextIndex = (index + 1) % workspaceTabs.length;
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      nextIndex = (index - 1 + workspaceTabs.length) % workspaceTabs.length;
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      e.preventDefault();
+      nextIndex = workspaceTabs.length - 1;
+    } else {
+      return;
+    }
+    const nextTab = workspaceTabs[nextIndex];
+    handleTabChange(nextTab, nextTab === "SMART_MONEY" ? "Smart Money" : nextTab === "FUNDAMENTALS" ? "Factors & Macro" : "Risk & Contagion");
+    tabButtonRefs.current[nextIndex]?.focus();
+  };
+
   const handleSelectSymbol = useCallback((newSym: string) => {
     const clean = newSym.trim().toUpperCase();
     if (!clean) return;
     setHasExplicitSymbol(true);
     setSelectedSymbol(clean);
+    setData(null);
+    setError(null);
+    setErrorInstrument(null);
+    setErrorCoverage(null);
+    setLoading(true);
     trackSymbolSearch(clean, "OmniSearch");
     if (isETF(clean)) {
       emitEtfIntentAttempt(clean, "handleSelectSymbol");
@@ -204,10 +229,18 @@ function TerminalContent() {
         const clean = sym.trim().toUpperCase();
         setHasExplicitSymbol(true);
         setSelectedSymbol(clean);
+        setData(null);
+        setError(null);
+        setErrorInstrument(null);
+        setErrorCoverage(null);
+        setLoading(true);
       } else {
         setHasExplicitSymbol(false);
         setSelectedSymbol("");
         setData(null);
+        setError(null);
+        setErrorInstrument(null);
+        setErrorCoverage(null);
         setLoading(false);
       }
     };
@@ -279,6 +312,7 @@ function TerminalContent() {
 
       setLoading(true);
       setError(null);
+      setData(null);
       try {
         let period = "1y";
         let apiInterval = "1d";
@@ -325,7 +359,15 @@ function TerminalContent() {
         if (abortController.signal.aborted) return;
         console.error("Failed to load asset analytics:", err);
         if (isMounted && requestId === analysisRequestIdRef.current) {
+          setData(null);
           setError(err instanceof Error ? err.message : `Failed to load asset analytics for ${selectedSymbol}`);
+          if (err instanceof InsufficientHistoryError) {
+            setErrorInstrument(err.instrument || null);
+            setErrorCoverage({ certified: err.coverageCertified, status: err.coverageStatus });
+          } else {
+            setErrorInstrument(null);
+            setErrorCoverage(null);
+          }
         }
       } finally {
         if (isMounted && !abortController.signal.aborted && requestId === analysisRequestIdRef.current) {
@@ -500,6 +542,131 @@ function TerminalContent() {
 
               {/* Ingestion Failure / Explicit Retry State OR Adaptive Multi-Tier Terminal Engine */}
               {error && !data ? (
+                error.toLowerCase().includes("insufficient") ? (
+                  <div data-testid="insufficient-history-state" className="p-6 bg-[#0b1019] border border-amber-800/80 rounded-2xl text-slate-200 font-sans space-y-5 animate-fade-in shadow-2xl">
+                    <div className="flex items-start gap-3.5">
+                      <div className="p-2.5 rounded-xl bg-amber-950 border border-amber-800 text-amber-400 shrink-0">
+                        <Activity className="w-5 h-5" aria-hidden="true" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded bg-amber-950/80 border border-amber-700/60 text-[10px] font-mono font-bold text-amber-300">
+                          <span>RECOGNIZED ASSET · LIMITED TRADING HISTORY</span>
+                        </div>
+                        <h2 className="text-base sm:text-lg font-bold text-white">
+                          Insufficient History on Record for {selectedSymbol}
+                        </h2>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {formatLimitedHistoryExplanation(selectedSymbol, error)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Breakdown of Analytical Capabilities */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 font-mono text-xs">
+                      {resolveLimitedHistoryCapabilities({
+                        symbol: selectedSymbol,
+                        error,
+                        instrument: errorInstrument,
+                        coverageCertified: errorCoverage?.certified,
+                        coverageStatus: errorCoverage?.status,
+                      }).map((cap) => (
+                        <div key={cap.id} className="p-3 bg-[#070a10] border border-[#1b2537] rounded-xl space-y-1">
+                          <span className="text-[10px] text-slate-500 uppercase tracking-wider block">{cap.name}</span>
+                          <span className={`${cap.statusColor} font-bold block`}>{cap.status}</span>
+                          <span className="text-[10px] text-slate-400 block">{cap.requirement}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-[#1b2537]">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSymbol("NVDA")}
+                        className="px-3.5 py-2 bg-[#121927] hover:bg-[#1b2537] border border-[#24334a] text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Analyze Benchmark Candidate (NVDA)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSymbol("");
+                          setHasExplicitSymbol(false);
+                          setData(null);
+                          setError(null);
+                          setErrorInstrument(null);
+                          setErrorCoverage(null);
+                          if (typeof window !== "undefined") {
+                            const url = new URL(window.location.href);
+                            url.searchParams.delete("symbol");
+                            window.history.pushState({}, "", url.toString());
+                          }
+                        }}
+                        className="px-3.5 py-2 bg-[#121927] hover:bg-[#1b2537] border border-[#24334a] text-slate-400 hover:text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                      >
+                        ← Back to Market Discovery
+                      </button>
+                    </div>
+                  </div>
+                ) : error.toLowerCase().includes("not found") || error.toLowerCase().includes("unavailable") || error.toLowerCase().includes("no valid price action") ? (
+                  <div data-testid="asset-not-found-state" className="p-6 bg-[#0b1019] border border-cyan-800/80 rounded-2xl text-slate-200 font-sans space-y-4 animate-fade-in shadow-2xl">
+                    <div className="flex items-start gap-3.5">
+                      <div className="p-2.5 rounded-xl bg-cyan-950 border border-cyan-800 text-cyan-400 shrink-0">
+                        <Search className="w-5 h-5" aria-hidden="true" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-700/60 text-[10px] font-mono font-bold text-cyan-300">
+                          <span>UNTRACKED OR UNLISTED ASSET</span>
+                        </div>
+                        <h2 className="text-base sm:text-lg font-bold text-white">
+                          Asset unavailable or not found: {selectedSymbol}
+                        </h2>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          No exchange trade records or market listings were found for &quot;{selectedSymbol}&quot;. This asset may be unlisted, private, delisted, or not recognized by verified market data providers.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-[#1b2537]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof window !== "undefined") {
+                            window.dispatchEvent(new CustomEvent("arx:open-omni-search"));
+                          }
+                        }}
+                        className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer shadow flex items-center gap-1.5"
+                      >
+                        <Search className="w-3.5 h-3.5" />
+                        <span>Search Listed Assets (⌘K)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSymbol("NVDA")}
+                        className="px-3.5 py-2 bg-[#121927] hover:bg-[#1b2537] border border-[#24334a] text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Analyze NVDA
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSymbol("");
+                          setHasExplicitSymbol(false);
+                          setData(null);
+                          setError(null);
+                          setErrorInstrument(null);
+                          setErrorCoverage(null);
+                          if (typeof window !== "undefined") {
+                            const url = new URL(window.location.href);
+                            url.searchParams.delete("symbol");
+                            window.history.pushState({}, "", url.toString());
+                          }
+                        }}
+                        className="px-3.5 py-2 bg-[#121927] hover:bg-[#1b2537] border border-[#24334a] text-slate-400 hover:text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                      >
+                        ← Back to Market Discovery
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                 <div className="p-5 bg-rose-950/40 border border-rose-800/60 rounded-2xl text-rose-200 font-sans space-y-3 animate-fade-in shadow-xl">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">⚠️</span>
@@ -525,7 +692,10 @@ function TerminalContent() {
                             setError(null);
                           })
                           .catch((e) => {
-                            if (requestId === analysisRequestIdRef.current) setError(e instanceof Error ? e.message : "Retry failed");
+                            if (requestId === analysisRequestIdRef.current) {
+                              setData(null);
+                              setError(e instanceof Error ? e.message : "Retry failed");
+                            }
                           })
                           .finally(() => {
                             if (requestId === analysisRequestIdRef.current) setLoading(false);
@@ -550,6 +720,7 @@ function TerminalContent() {
                     </Link>
                   </div>
                 </div>
+              )
               ) : (
             /* 🎯 Adaptive Multi-Tier Terminal Engine (Guided · Standard · Advanced) */
             <AdaptiveTerminal
@@ -652,7 +823,19 @@ function TerminalContent() {
                 ) : (
                   <PreFlightReadinessBar
                     {...canonicalPreflightInputs}
-                    priceContext={`Readiness input: $${canonicalPreflightInputs.currentPrice.toFixed(2)}. Setup reference: ${data?.analysisReferencePrice ?? "unavailable"} (${data?.analysisReferenceSource ?? "source unavailable"}; ${data?.analysisReferenceDate ?? "timestamp unavailable"}). Market observation: ${data?.liveSpotPrice ?? "unavailable"} (${data?.liveFreshness ?? "unavailable"}; observed ${data?.liveObservedAt ?? "timestamp unavailable"}). Plan evaluation: ${data?.optimalExecution?.eval_price ?? "unavailable"}. Prices can have different observation times; no shared snapshot is certified here.`}
+                    priceContext={(() => {
+                      const formatObservedAt = (raw: string | number | undefined | null) => {
+                        if (!raw) return "timestamp unavailable";
+                        if (typeof raw === "number" || /^\d{12,14}$/.test(String(raw))) {
+                          try {
+                            const d = new Date(Number(raw));
+                            if (!isNaN(d.getTime())) return d.toISOString().replace("T", " ").slice(0, 19) + " UTC";
+                          } catch {}
+                        }
+                        return String(raw);
+                      };
+                      return `Readiness input: $${canonicalPreflightInputs.currentPrice.toFixed(2)}. Setup reference: ${data?.analysisReferencePrice ?? "unavailable"} (${data?.analysisReferenceSource ?? "source unavailable"}; ${data?.analysisReferenceDate ?? "timestamp unavailable"}). Market observation: ${data?.liveSpotPrice ?? "unavailable"} (${data?.liveFreshness ?? "unavailable"}; observed ${formatObservedAt(data?.liveObservedAt)}). Plan evaluation: ${data?.optimalExecution?.eval_price ?? "unavailable"}. Prices can have different observation times; no shared snapshot is certified here.`;
+                    })()}
                     isDrawerExpanded={isPreflightDrawerExpanded}
                     onToggleDrawer={setIsPreflightDrawerExpanded}
                     onOpenModal={() => setIsPreflightModalOpen(true)}
@@ -781,10 +964,15 @@ function TerminalContent() {
             <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-1 sm:grid-cols-3 gap-1.5 shadow-xl font-mono text-xs">
 
               <button
+                ref={(el) => { tabButtonRefs.current[0] = el; }}
+                type="button"
                 role="tab"
+                id="tab-domain-smart-money"
                 aria-selected={activeTab === "SMART_MONEY"}
+                tabIndex={activeTab === "SMART_MONEY" ? 0 : -1}
+                onKeyDown={(e) => handleTabKeyDown(e, 0)}
                 onClick={() => handleTabChange("SMART_MONEY", "Smart Money")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer ${
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                   activeTab === "SMART_MONEY"
                     ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -795,10 +983,15 @@ function TerminalContent() {
               </button>
 
               <button
+                ref={(el) => { tabButtonRefs.current[1] = el; }}
+                type="button"
                 role="tab"
+                id="tab-domain-fundamentals"
                 aria-selected={activeTab === "FUNDAMENTALS"}
+                tabIndex={activeTab === "FUNDAMENTALS" ? 0 : -1}
+                onKeyDown={(e) => handleTabKeyDown(e, 1)}
                 onClick={() => handleTabChange("FUNDAMENTALS", "Factors & Macro")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer ${
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                   activeTab === "FUNDAMENTALS"
                     ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -809,10 +1002,15 @@ function TerminalContent() {
               </button>
 
               <button
+                ref={(el) => { tabButtonRefs.current[2] = el; }}
+                type="button"
                 role="tab"
+                id="tab-domain-risk-contagion"
                 aria-selected={activeTab === "RISK_CONTAGION"}
+                tabIndex={activeTab === "RISK_CONTAGION" ? 0 : -1}
+                onKeyDown={(e) => handleTabKeyDown(e, 2)}
                 onClick={() => handleTabChange("RISK_CONTAGION", "Risk & Contagion")}
-                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer ${
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[44px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                   activeTab === "RISK_CONTAGION"
                     ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"

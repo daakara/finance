@@ -114,11 +114,14 @@ export type CheckStatus =
   | "ERROR"
   | "PROVISIONAL";
 
+export type CheckOutcomeCategory = "PASS" | "FAIL" | "UNAVAILABLE";
+
 export interface PreFlightCheckItem {
   id: "CHK-1" | "CHK-2" | "CHK-3" | "CHK-4" | "CHK-5";
   tag: string;
   name: string;
   status: CheckStatus;
+  outcomeCategory?: CheckOutcomeCategory;
   displayStatus?: string;
   badgeClass: string;
   passed: boolean;
@@ -136,7 +139,11 @@ export interface PreFlightEvaluationResult {
     PreFlightCheckItem,
     PreFlightCheckItem
   ];
+  totalCount: number;
   passedCount: number;
+  failedCount: number;
+  unavailableCount: number;
+  availableCount: number;
   convictionPct: number;
   isActionableGranted: boolean;
   canSizeTradeGranted: boolean;
@@ -497,19 +504,32 @@ export function evaluatePreFlightChecks(
     ? "FAIL"
     : PREFLIGHT_CONFIG.LABEL_BELOW_MINIMUM;
 
+  const chk1Outcome = isRRPassed
+    ? "PASS"
+    : !isLevelDirectionValid
+    ? "FAIL"
+    : !isPriceValid || !hasExecutionLevels || !isRRValid
+    ? "UNAVAILABLE"
+    : "FAIL";
+
   const chk1Item: PreFlightCheckItem = {
     id: "CHK-1",
     tag: "CHK-1 R:R",
     name: isPlain ? "1. Reward vs. Risk" : "1. Reward vs. Risk (Asymmetric Payoff)",
-    status: chk1Status,
-    displayStatus: chk1DisplayStatus,
+    status: !isPriceValid ? "UNAVAILABLE" : chk1Status,
+    outcomeCategory: chk1Outcome,
+    displayStatus: !isPriceValid ? PREFLIGHT_CONFIG.LABEL_UNAVAILABLE : chk1DisplayStatus,
     badgeClass: isRRPassed
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+      : !isLevelDirectionValid || chk1Status === "FAIL"
+      ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
+      : !isPriceValid || !hasExecutionLevels || !isRRValid
+      ? "bg-slate-900 text-slate-300 border-slate-700"
       : "bg-rose-950/80 text-rose-300 border-rose-700/80",
     passed: isRRPassed,
-    summary: chk1Summary,
-    detail: chk1Detail,
-    icon: isRRPassed ? "✓" : "✕",
+    summary: !isPriceValid ? "Price Unavailable" : chk1Summary,
+    detail: !isPriceValid ? "Verified spot/reference price required to evaluate risk-reward." : chk1Detail,
+    icon: isRRPassed ? "✓" : !isLevelDirectionValid || chk1Status === "FAIL" ? "✕" : (!isPriceValid || !hasExecutionLevels || !isRRValid ? "⚪" : "✕"),
   };
 
   // ── Check 2: Technical Trend Alignment & Stage Discipline ───────────────
@@ -530,7 +550,12 @@ export function evaluatePreFlightChecks(
     id: "CHK-2",
     tag: "CHK-2 STRUCTURE",
     name: isPlain ? "2. Trend & Moving Averages" : "2. Technical Structure",
-    status: chk2Status,
+    status: !isPriceValid && !isStage4 ? "UNAVAILABLE" : chk2Status,
+    outcomeCategory: isTrendPassed
+      ? "PASS"
+      : !isStage4 && (!isPriceValid || safeEntryMin === null)
+      ? "UNAVAILABLE"
+      : "FAIL",
     badgeClass: isTrendPassed
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
       : isStage4
@@ -654,6 +679,11 @@ export function evaluatePreFlightChecks(
     tag: "CHK-3 CAPITAL",
     name: isPlain ? "3. Capital Health & Squeeze Risk" : "3. Structural Capital Risk",
     status: chk3Status,
+    outcomeCategory: isCapitalRiskPassed
+      ? "PASS"
+      : isCapitalRiskFailed
+      ? "FAIL"
+      : "UNAVAILABLE",
     badgeClass: isCapitalRiskPassed
       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
       : isCapitalRiskFailed
@@ -729,11 +759,13 @@ export function evaluatePreFlightChecks(
 
   const isCatalystConfirmed = isEtf || catalystEvidence?.confirmationStatus === "CONFIRMED";
   const isCatalystPassed = isPriceValid && resolvedCatalystState === "PASS";
-  const chk4Status: CheckStatus = resolvedCatalystState === "PASS"
+  const effectiveCatalystState: "PASS" | "WARN" | "UNAVAILABLE" | "ERROR" =
+    !isPriceValid && resolvedCatalystState === "PASS" ? "UNAVAILABLE" : resolvedCatalystState;
+  const chk4Status: CheckStatus = effectiveCatalystState === "PASS"
     ? "PASS"
-    : resolvedCatalystState === "WARN"
+    : effectiveCatalystState === "WARN"
     ? "HAZARD"
-    : resolvedCatalystState === "ERROR"
+    : effectiveCatalystState === "ERROR"
     ? "ERROR"
     : "UNAVAILABLE";
 
@@ -766,7 +798,7 @@ export function evaluatePreFlightChecks(
     : resolvedCatalystState === "ERROR"
     ? "Technical error retrieving corporate earnings schedule."
     : catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
-    ? `Historical Event Elapsed (${catalystEvidence.eventDate || "prior"}). Forward calendar unverified; runway uncertified.`
+    ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}): event elapsed (Historical Event Elapsed). Forward 7-day calendar unverified (not an imminent hazard); runway uncertified.`
     : "Earnings calendar coverage unavailable: Event runway cannot be certified.";
 
   const chk4Item: PreFlightCheckItem = {
@@ -774,7 +806,12 @@ export function evaluatePreFlightChecks(
     tag: "CHK-4 CATALYST",
     name: isPlain ? "4. News Event Safety" : "4. Catalyst Hazard Buffer",
     status: chk4Status,
-    badgeClass: resolvedCatalystState === "PASS"
+    outcomeCategory: effectiveCatalystState === "PASS"
+      ? "PASS"
+      : effectiveCatalystState === "WARN"
+      ? "FAIL"
+      : "UNAVAILABLE",
+    badgeClass: effectiveCatalystState === "PASS"
       ? (isCatalystConfirmed
           ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
           : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80")
@@ -792,7 +829,7 @@ export function evaluatePreFlightChecks(
   // ── Check 5: Macro Regime Guard ──────────────────────────────────────────
   const isMacroPassed = isPriceValid && isVixValid && currentVix !== null && currentVix < 26.0;
   const isVixElevated = isMacroPassed && currentVix !== null && currentVix >= 20.0 && currentVix < 26.0;
-  const chk5Status: CheckStatus = isMacroPassed ? "PASS" : isVixValid ? "HIGH VIX" : "UNAVAILABLE";
+  const chk5Status: CheckStatus = isMacroPassed ? "PASS" : (isPriceValid && isVixValid) ? "HIGH VIX" : "UNAVAILABLE";
 
   const chk5Summary = isMacroPassed
     ? (isVixElevated
@@ -823,15 +860,22 @@ export function evaluatePreFlightChecks(
     tag: "CHK-5 MACRO",
     name: isPlain ? "5. Overall Market Weather" : "5. Macro Regime Guard",
     status: chk5Status,
+    outcomeCategory: isMacroPassed
+      ? "PASS"
+      : isPriceValid && isVixValid
+      ? "FAIL"
+      : "UNAVAILABLE",
     badgeClass: isMacroPassed
       ? (isVixElevated
           ? "bg-amber-950/80 text-amber-300 border-amber-700/80"
           : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80")
-      : "bg-rose-950/80 text-rose-300 border-rose-700/80",
+      : isPriceValid && isVixValid
+      ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
+      : "bg-slate-900 text-slate-300 border-slate-700",
     passed: isMacroPassed,
     summary: chk5Summary,
     detail: chk5Detail,
-    icon: isMacroPassed ? (isVixElevated ? "⚠️" : "✓") : "⚠️",
+    icon: isMacroPassed ? (isVixElevated ? "⚠️" : "✓") : (isPriceValid && isVixValid) ? "⚠️" : "⚪",
   };
 
   const checks: [
@@ -842,8 +886,13 @@ export function evaluatePreFlightChecks(
     PreFlightCheckItem
   ] = [chk1Item, chk2Item, chk3Item, chk4Item, chk5Item];
 
-  const passedCount = checks.filter((c) => c.passed).length;
-  const convictionPct = isPriceValid ? Math.round((passedCount / 5) * 100) : 0;
+  const totalCount = checks.length;
+  const passedCount = checks.filter((c) => c.outcomeCategory === "PASS").length;
+  const unavailableCount = checks.filter((c) => c.outcomeCategory === "UNAVAILABLE").length;
+  const failedCount = checks.filter((c) => c.outcomeCategory === "FAIL").length;
+  const availableCount = totalCount - unavailableCount;
+  // Never shrink the denominator when evidence is unavailable; keep total fixed at 5.
+  const convictionPct = isPriceValid ? Math.round((passedCount / totalCount) * 100) : 0;
   const isActionableGranted = isActionable === true;
 
   const mandatoryChecksVerified =
@@ -945,13 +994,13 @@ export function evaluatePreFlightChecks(
   // Active Blockers Resolution (collecting all active blockers for discoverability)
   const allBlockers: string[] = [];
   if (!isActionableGranted) allBlockers.push("CANONICAL SETUP NON-ACTIONABLE");
+  if (isStage4) allBlockers.push("STAGE 4 DISTRIBUTION STRUCTURE");
   if (!canSizeTradeGranted) allBlockers.push("CANONICAL SIZING PROHIBITED");
   if (!isPriceValid || !hasExecutionLevels) allBlockers.push("UNVERIFIED EXECUTION LEVELS");
   if (isPriceStale) allBlockers.push("STALE PRICE OBSERVATION");
   if (isPriceDelayed) allBlockers.push("DELAYED PRICE OBSERVATION");
   if (isPriceUnverified && !isPriceStale) allBlockers.push("UNVERIFIED PRICE PROVENANCE");
   if (!isLevelDirectionValid) allBlockers.push("INVERTED EXECUTION BOUNDARIES");
-  if (isStage4) allBlockers.push("STAGE 4 DISTRIBUTION STRUCTURE");
   if (!isRRPassed) allBlockers.push("REWARD/RISK ASYMMETRY (< 2.0:1)");
   if (!isTrendPassed) allBlockers.push("TECHNICAL STRUCTURE NOT CONFIRMED");
   if (!isCapitalRiskPassed) {
@@ -997,6 +1046,9 @@ export function evaluatePreFlightChecks(
     if (!isActionableGranted) {
       return "Wait for price action to confirm the canonical setup trigger within the accumulation corridor before sizing.";
     }
+    if (isStage4) {
+      return "Wait for post-breakout base consolidation above the 50-day moving average before accumulation.";
+    }
     if (!canSizeTradeGranted) {
       return "Execution eligibility prohibited: Position sizing cannot be authorized until canonical risk gate clears.";
     }
@@ -1016,9 +1068,6 @@ export function evaluatePreFlightChecks(
       return safeStop! >= safePrice
         ? "Establish valid stop loss below current market price to define defensive risk floor."
         : "Establish valid profit target above current market price to define prospective reward objective.";
-    }
-    if (isStage4) {
-      return "Wait for post-breakout base consolidation above the 50-day moving average before accumulation.";
     }
     if (!isRRPassed) {
       return "Wait for favorable pullback closer to stop loss to expand asymmetric reward/risk ratio (>= 2.0:1).";
@@ -1130,7 +1179,11 @@ export function evaluatePreFlightChecks(
   return {
     symbol,
     checks,
+    totalCount,
     passedCount,
+    failedCount,
+    unavailableCount,
+    availableCount,
     convictionPct,
     isActionableGranted,
     mandatoryChecksVerified,

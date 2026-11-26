@@ -9,6 +9,8 @@ import { SHARED_WATCHLIST_ITEMS } from "../lib/constants";
 import { prefetchAssetAnalytics, SpotPriceRegistry } from "../lib/api";
 import { resolveAssetAlias } from "../lib/assetRegistry";
 import { getPersistedMarketSnapshot } from "../lib/marketDatabase";
+import { useAssetDiscovery } from "../hooks/useAssetDiscovery";
+import { DISCOVERY_SYMBOL, resolveDiscoveredSymbol } from "../lib/assetDiscovery";
 
 export default function UniversalOmniSearch() {
   const router = useRouter();
@@ -81,6 +83,7 @@ export default function UniversalOmniSearch() {
 
   const cleanQ = query.trim().toUpperCase();
   const aliasMatch = resolveAssetAlias(cleanQ);
+  const discovery = useAssetDiscovery(query, isOpen);
 
   // Search matching presets + allow arbitrary ticker execution
   const matchingPresets = SHARED_WATCHLIST_ITEMS.filter((item) => {
@@ -107,10 +110,15 @@ export default function UniversalOmniSearch() {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (discovery.status === "LOADING" && !aliasMatch) return;
     if (cleanQ) {
       if (aliasMatch) {
         handleSelectTicker(aliasMatch.canonicalTicker);
-      } else {
+      } else if (resolveDiscoveredSymbol(cleanQ, discovery.results)) {
+        handleSelectTicker(resolveDiscoveredSymbol(cleanQ, discovery.results)!);
+      } else if (discovery.results.length > 0) {
+        return; // Ambiguous company matches require explicit selection.
+      } else if (DISCOVERY_SYMBOL.test(cleanQ)) {
         handleSelectTicker(cleanQ);
       }
     }
@@ -201,8 +209,9 @@ export default function UniversalOmniSearch() {
               {cleanQ && (
                 <button
                   type="submit"
+                  disabled={discovery.status === "LOADING" && !aliasMatch}
                   aria-label={`Submit search for ${cleanQ}`}
-                  className="absolute right-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-transform active:scale-95 shadow cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                  className="absolute right-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:hover:bg-cyan-600 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-transform active:scale-95 shadow cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
                 >
                   Go ↵
                 </button>
@@ -211,6 +220,27 @@ export default function UniversalOmniSearch() {
 
             {/* Live Matches / Direct Submission */}
             <div id="search-dropdown" className="overflow-y-auto space-y-2 flex-1 pr-1" role="listbox">
+              {cleanQ.length >= 2 && (
+                <div aria-live="polite" className="px-1 py-2 text-xs text-slate-300">
+                  {discovery.status === "LOADING" && "Searching listed assets…"}
+                  {discovery.status === "UNAVAILABLE" && "Live search unavailable. Saved matches and direct ticker lookup remain available."}
+                  {discovery.status === "AVAILABLE" && discovery.results.length === 0 && "No provider matches. You can still look up a ticker directly."}
+                </div>
+              )}
+              {discovery.results.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-300 px-1">Live US-listed asset matches · analysis availability checked when opened</p>
+                  {discovery.results.map((item) => (
+                    <button key={`discovery-${item.symbol}`} type="button"
+                      onClick={() => handleSelectTicker(item.symbol)}
+                      className="w-full text-left p-3 rounded-xl bg-[#0b1019] border border-cyan-700 hover:border-cyan-400 focus-visible:ring-2 focus-visible:ring-cyan-400">
+                      <span className="text-sm font-bold text-cyan-300">{item.symbol}</span>
+                      <span className="ml-3 text-sm text-white">{item.name}</span>
+                      <span className="block text-xs text-slate-400 mt-1">{item.exchange} · {item.type} · Provider match</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               {/* 💡 Intelligent Did You Mean Recommendation Card */}
               {aliasMatch && (
                 <button
@@ -239,7 +269,7 @@ export default function UniversalOmniSearch() {
                 </button>
               )}
 
-              {cleanQ && !aliasMatch && (
+              {cleanQ && !aliasMatch && discovery.status !== "LOADING" && discovery.results.length === 0 && DISCOVERY_SYMBOL.test(cleanQ) && (
                 <button
                   type="button"
                   onClick={() => handleSelectTicker(cleanQ)}

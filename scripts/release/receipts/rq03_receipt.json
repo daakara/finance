@@ -1,38 +1,46 @@
 {
   "control_id": "RQ-03",
   "name": "Backend Regression Suite",
-  "status": "PASS",
-  "start_time": "2026-11-20T01:24:18.165706+00:00",
-  "end_time": "2026-11-20T01:24:39.025637+00:00",
-  "duration_sec": 20.836,
-  "candidate_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-  "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
+  "status": "FAIL",
+  "start_time": "2026-11-25T10:28:33.595329+00:00",
+  "end_time": "2026-11-25T10:29:16.168788+00:00",
+  "duration_sec": 42.533,
+  "candidate_sha": "0000000000000000000000000000000000000000",
+  "source_sha": "0000000000000000000000000000000000000000",
+  "execution_sha": "0000000000000000000000000000000000000000",
   "target_branch": "release/production",
   "execution_context": {
     "repository": "daakara/finance",
-    "event_name": "local_execution",
+    "event_name": "unknown",
     "pr_number": null,
-    "source_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "execution_sha": "1ce032d5c821e845f5c7e55dc89a3109ab4368b3",
-    "base_sha": "ea3cc13eeeb6d3e6c250ecfd3ed6aecb4ec44d6c",
+    "source_sha": "0000000000000000000000000000000000000000",
+    "execution_sha": "0000000000000000000000000000000000000000",
+    "base_sha": "0000000000000000000000000000000000000000",
     "target_branch": "release/production",
-    "workflow_run_id": "local_run",
-    "workflow_run_attempt": 1,
+    "workflow_run_id": "local",
+    "workflow_run_attempt": "1",
     "qualification_policy_version": "2.2.0-D074A4"
   },
   "assertions": [
     {
       "assertion": "All backend regression tests pass",
       "observed": {
-        "passed": 199,
-        "failed": 0,
-        "exit_code": 0
+        "passed": 340,
+        "failed": 4,
+        "exit_code": 1
       },
-      "passed": true
+      "passed": false
     }
   ],
   "evidence_paths": [
+    "tests/test_arx_s4_radar_001_operational_truth.py",
+    "tests/test_radar_coverage_disclosure_semantics.py",
+    "tests/test_scanner_coverage_metadata_integrity.py",
+    "tests/test_radar_population_conservation.py",
+    "tests/test_radar_category_integrity_002.py",
+    "tests/test_scanner_truthfulness_remediation.py",
+    "tests/test_cornish_fisher_sufficiency_gate.py",
+    "tests/test_asset_directory_discovery.py",
     "tests/test_directive_057_remediation.py",
     "tests/test_confluence_engine.py",
     "tests/test_confluence_integrity_002.py",
@@ -40,32 +48,50 @@
     "tests/test_confluence_cross_component_parity.py",
     "tests/test_financial_correctness_authority_035.py",
     "tests/test_smart_money_backup_retention_safety.py",
+    "tests/test_smart_money_backup_retention_bounded_adversarial.py",
     "tests/test_rq10_manifest_authority_negative_cases.py",
     "tests/test_smart_money_provenance.py",
     "tests/test_smart_money_two_issuer_trial.py",
     "tests/test_sm_act_020_continuous_authorization.py",
-    "tests/test_smart_money_worker_lifecycle_and_fencing.py"
+    "tests/test_smart_money_worker_lifecycle_and_fencing.py",
+    "tests/test_sec_disclosure_postgres_integration.py",
+    "tests/test_sec_disclosure_view.py",
+    "tests/test_fred_sec_presentation_integrity.py"
   ],
   "evidence_digests": {
+    "tests/test_arx_s4_radar_001_operational_truth.py": "ec70e0c784b4fd2f4ed5685b2c288dfabd0b986df29408d07870c9961f871b4f",
+    "tests/test_radar_coverage_disclosure_semantics.py": "c873e914f47fbe290f98478c2d527fe91126ab0f2edc3a37dfa8e20c7f96f18d",
+    "tests/test_scanner_coverage_metadata_integrity.py": "ee27b166029a290d419e2b2702f8bc5a65d360c0eddfb472ed2b387f8de5f6c2",
+    "tests/test_radar_population_conservation.py": "73e95a9dee86f50bb60234924bd36cb18ce168c5c31c75eafc356bafeafc6a9b",
+    "tests/test_radar_category_integrity_002.py": "2143e4047f059f6eceb146d07afde3d9f03bbe628f599101e861a3cb8f2c6068",
+    "tests/test_scanner_truthfulness_remediation.py": "7c9a24fa9722797c284e7240b3da0d20c81f9f3b36e78e799c23854f744378a4",
+    "tests/test_cornish_fisher_sufficiency_gate.py": "1dc1208879abcf3d84aab566b85ea4a71d708fea57f480afe073d3be5bc41e9e",
+    "tests/test_asset_directory_discovery.py": "844aeb0a54e0594c5d8c1eea3a0c9dbbfb3d1c60117921c9db48fbcb3ff1ab85",
     "tests/test_directive_057_remediation.py": "3b9514d235f2ac1462e904444912c0bea616404de2d521a26d87a6ea7db5e348",
     "tests/test_confluence_engine.py": "aa2e9f1221270549aa48265146a52d817aadf96e4c9ada83e5e169f35e01e907",
     "tests/test_confluence_integrity_002.py": "2b6240c721255478cb2401bf763daf559144f71fc4931dcccfdca2b4d6a38675",
     "tests/test_confluence_provenance_wiring_003.py": "c23970f3938a30fbdf80cc5d535e65cbd3bbd590df6baddae9ee8caaed45cd18",
     "tests/test_confluence_cross_component_parity.py": "c3a8c2d6dc3b09d227681deb92a26611e77bec4504a6279daa1fca0d7ddef042",
     "tests/test_financial_correctness_authority_035.py": "514bc9375a5b73b003a05132a4c608ede23fb964c383608290c122e880965b00",
-    "tests/test_smart_money_backup_retention_safety.py": "6d6345f459b43c1d61975d913d785f754abfcdd00d0ebe7e8c4e0e2be6fa0a56",
+    "tests/test_smart_money_backup_retention_safety.py": "63681bbf13be0c9c0a38a0f3e3fd9506b7f80d4bb8645a07ee33bf0af5a72638",
+    "tests/test_smart_money_backup_retention_bounded_adversarial.py": "bcfa2c1534d2b1aacb6146ff3d96ad80d85effedfd71cbe98f01fbae3cd3439f",
     "tests/test_rq10_manifest_authority_negative_cases.py": "a2e36908703d125f44067812e594f487de00aeda56a50024b0d2f589067423e9",
     "tests/test_smart_money_provenance.py": "3b9896cb38c09283235ed372bf185cea9180968d39e7b816d496db19f6b2bc04",
-    "tests/test_smart_money_two_issuer_trial.py": "814e603c2bed553423d8a117aeaf05d288d2c2afc8e58f511e7eccc156aee0b0",
+    "tests/test_smart_money_two_issuer_trial.py": "187a3e60deb99660f260db04a8b1a8cc074c4fe37d4c5a94e2cef5efeaa2bfe5",
     "tests/test_sm_act_020_continuous_authorization.py": "4d4d85eb4420f629aaa30648bb21eea7a3cbe115ba3aed974ac392d5d9504dd9",
-    "tests/test_smart_money_worker_lifecycle_and_fencing.py": "d1515ea74413c3548b0faab616cc9ddea82ae39d519b17fbd756ce4bbc23e810"
+    "tests/test_smart_money_worker_lifecycle_and_fencing.py": "d1515ea74413c3548b0faab616cc9ddea82ae39d519b17fbd756ce4bbc23e810",
+    "tests/test_sec_disclosure_postgres_integration.py": "f74cc353f27fe791f1fa8a91adccaadd0111b84f863fc94a4130edec49b29f74",
+    "tests/test_sec_disclosure_view.py": "d83bb8a22199984c0999220a49da39c178cb432f2d2574c22bca11dee79f6c8f",
+    "tests/test_fred_sec_presentation_integrity.py": "2c2d9d7db91487383e05c9d5c0ef3e8c0583b6d4b11d1f8663db940f7998b589"
   },
-  "errors": [],
+  "errors": [
+    "Pytest suite failed with returncode 1, 4 failures."
+  ],
   "metadata": {
-    "pytest_passed": 199,
-    "pytest_failed": 0,
-    "pytest_duration": 20.836230039596558,
+    "pytest_passed": 340,
+    "pytest_failed": 4,
+    "pytest_duration": 42.533427000045776,
     "policy_version": "2.2.0-D074A4"
   },
-  "receipt_digest": "ecfe00bf6323ec444b67731e98782acfc16615fee5b0c205e1517224e5787cf8"
+  "receipt_digest": "a92ad6e1a951e3f75a6fa5f6fccadfd61870dda4f3b168f72294d696b0bed5e4"
 }
