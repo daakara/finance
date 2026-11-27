@@ -211,3 +211,18 @@ All six operational holds remain in active, fail-closed enforcement across the r
 | **4** | **PR #326 Dependency Pin (`QUALIFIED_UNDEPLOYED`) & GitHub Merge Hygiene (`#327`, `#328`, `#325`, `#324`, `#323`)** | Disposition PR #326 (`380fd340`, `exchange_calendars>=4.13.1,<5.0.0`, currently `QUALIFIED_UNDEPLOYED`), hash-pin Python dependencies (`Issue #203` / `TD-07`), and complete GitHub PR merges/issue closures matching deployed `ab0c9845`. | Trunk Integration & Supply Chain |
 | **5** | **Frontend Unit Hygiene (`TASK-OPEN-04`) & Physical iOS Verification** | Fix pre-existing test selectors in `DecisionSurfaceIntegrity.test.tsx` and `Wave1DeclutterPreservation.test.tsx` (restore 63/63 green), and execute physical iOS device verification (`NOT_CHECKED`). | Pre-release QA Hygiene |
 | **6** | **Remaining Architecture Debt (`Issue #204`: `TD-04..TD-06`, `TD-09`)** | Address warmup cancellation, CDN cache headers, SQLite multi-mount fault tests, and research artifact repo size benchmarking. | Sprint P4 Architecture |
+
+---
+## Updated Production Facts (2026‑11‑27)
+
+- **Cloudflare Pages Frontend** – Verified canonical deployment `4d351ef2-18d1-472d-96d7-6c1aa43a33be` at SHA `15c712f95dcfda763ef849cad2fd0ca49d39524e`. Rollback target recorded as `6c0d391e-176d-4eca-9aec-f5eef6dd69c5`.
+- **Railway Web Backend** – Deployed SHA `ab0c9845617eff812115de7b3e5e6163f04d7f06` (active service).
+
+### Paper‑Trading Cohort Forward Pilot `COHORT_FORWARD_PILOT_005`
+- Evidence JSON: `../data/forward_pilot/staging_20261127/staging_20261127_summary.json` (captured 2026‑11‑27T10:14:44+01:00).
+- Capture status before window open (19:15 Berlin): **HOLD — window not open**. After window opens, capture will be recorded. Current verification: **UNVERIFIED**.
+
+### Issue #165 Owner Grant
+- Grant commit `27de416b` retained. Pre‑flight, arming, and execution tracking remain separate from Sprint 5 kickoff.
+
+*All dates updated to 2026.*
