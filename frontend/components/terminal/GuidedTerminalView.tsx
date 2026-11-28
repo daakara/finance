@@ -298,7 +298,7 @@ export default function GuidedTerminalView({
                 onClick={onOpenWhy}
                 className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer min-h-[44px]"
               >
-                Wait for Trigger
+                Inspect Trigger & Milestone Criteria
               </button>
             )}
           </div>
