@@ -1,0 +1,50 @@
+{
+  "sessionDate": "2026-11-27",
+  "cohortId": "COHORT_FORWARD_PILOT_005",
+  "stagedAtUtc": "2026-11-28T04:41:00.863845+00:00",
+  "totalRequestBudget": 12,
+  "symbols": {
+    "VOO": {
+      "rawPath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/VOO_765c26e749c87f14.raw",
+      "rawResponseSha256": "765c26e749c87f14fa59f8687006c70f11310295020a026dd77c95303a608b43"
+    },
+    "QQQM": {
+      "rawPath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/QQQM_3caac5c6d5233b10.raw",
+      "rawResponseSha256": "3caac5c6d5233b10aee081a4cdff74c4421bd8cb55626e6e269a2ecb893edb51"
+    },
+    "IWM": {
+      "rawPath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/IWM_ba249c198c4fa9ef.raw",
+      "rawResponseSha256": "ba249c198c4fa9efd54f392a46de4f6d9f572beb04ce819e871e78bfb662f61d"
+    },
+    "XLE": {
+      "rawPath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/XLE_6809eea75d9af5ed.raw",
+      "rawResponseSha256": "6809eea75d9af5ed748c53c33e060751c90a040dd18d762ef540bb0864e9e89c"
+    },
+    "XLK": {
+      "rawPath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/XLK_a278440a4a7bce0c.raw",
+      "rawResponseSha256": "a278440a4a7bce0c9119ad5dfcece15de7eb638f0c42aa7eb7e021be21566528"
+    },
+    "AAPL": {
+      "rawPath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/AAPL_0a040fd9100aff9c.raw",
+      "rawResponseSha256": "0a040fd9100aff9cc17bd0d5bbc39bfcb36bb0ff0cf45cd80a771850be581866"
+    },
+    "MSFT": {
+      "rawPath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/MSFT_6c779f95e2780b75.raw",
+      "rawResponseSha256": "6c779f95e2780b7588289c8e4df8c0f2d0cf6d68d16ba6317666eb7b552d9371"
+    },
+    "NVDA": {
+      "rawPath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/NVDA_be544e608410b67c.raw",
+      "rawResponseSha256": "be544e608410b67c4a6d96e8f8e54724385ee75c4826d72f52fd215f0bc13034"
+    },
+    "AMZN": {
+      "rawPath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/AMZN_629e993518b698f9.raw",
+      "rawResponseSha256": "629e993518b698f99a801a1ab7aa8c20fc81a2a20aac2ca75e235e077ea3895e"
+    },
+    "GOOGL": {
+      "rawPath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/GOOGL_80e53d1dbdd80372.raw",
+      "rawResponseSha256": "80e53d1dbdd80372871a9c7693bb2b8b82988dd1b55fa6707ec002b2478da5c5"
+    }
+  },
+  "totalRequestsUsed": 10,
+  "requestAttemptsLedger": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/request_attempts_ledger.jsonl"
+}

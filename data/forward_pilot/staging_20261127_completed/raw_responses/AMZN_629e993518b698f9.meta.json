@@ -1,0 +1,9 @@
+{
+  "symbol": "AMZN",
+  "targetUrl": "https://query1.finance.yahoo.com/v8/finance/chart/AMZN?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+  "timestampUtc": "2026-11-28T04:41:05.923964+00:00",
+  "sha256": "629e993518b698f99a801a1ab7aa8c20fc81a2a20aac2ca75e235e077ea3895e",
+  "byteLength": 14983,
+  "rawFilePath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/AMZN_629e993518b698f9.raw",
+  "receiptType": "SHA-256 integrity receipt"
+}

@@ -1,0 +1,9 @@
+{
+  "symbol": "MSFT",
+  "targetUrl": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+  "timestampUtc": "2026-11-28T04:41:04.837930+00:00",
+  "sha256": "6c779f95e2780b7588289c8e4df8c0f2d0cf6d68d16ba6317666eb7b552d9371",
+  "byteLength": 14890,
+  "rawFilePath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/MSFT_6c779f95e2780b75.raw",
+  "receiptType": "SHA-256 integrity receipt"
+}

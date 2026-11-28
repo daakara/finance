@@ -1,0 +1,208 @@
+name: Forward Paper-Trading Session Capture
+
+on:
+  # Automated recurring cron is DISABLED BY DEFAULT in accordance with operational holds (HOLD_EXEC_001, HOLD_SCAN_001).
+  # Uncomment the schedule triggers only upon formal Owner decree and persistent volume unfreeze.
+  # schedule:
+  #   - cron: '15 18 * * 1-5'  # 18:15 UTC: Post-market window for early-close sessions (13:00 EST / 19:00 CET)
+  #   - cron: '15 21 * * 1-5'  # 21:15 UTC: Post-market window for regular sessions (16:00 EST / 22:00 CET)
+
+  workflow_dispatch:
+    inputs:
+      session_date:
+        description: 'Completed XNYS session date (YYYY-MM-DD); leave empty for current exchange date'
+        required: false
+        default: ''
+      cohort_id:
+        description: 'Forward cohort namespace'
+        required: true
+        default: 'COHORT_FORWARD_PILOT_005'
+      start_session:
+        description: 'First forward capture session date (YYYY-MM-DD)'
+        required: true
+        default: '2026-11-27'
+      initialize:
+        description: 'Initialize cohort if not yet created'
+        required: true
+        type: boolean
+        default: true
+      dry_run:
+        description: 'Perform window and calendar pre-check only'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: paper-trading-forward-capture-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  capture_forward_session:
+    name: Evaluate & Capture Forward Session
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Exchange Calendar, DST & Window Pre-Check
+        id: gatekeeper
+        run: |
+          python3 -c "
+          import os, sys, json
+          from datetime import datetime, timezone
+          from zoneinfo import ZoneInfo
+          import exchange_calendars as xcals
+          from analyst_dashboard.governance.forward_capture import session_window
+
+          cal = xcals.get_calendar('XNYS')
+          input_date = '${{ github.event.inputs.session_date }}'.strip()
+          now = datetime.now(timezone.utc)
+          ny_now = now.astimezone(ZoneInfo('America/New_York'))
+
+          session_date = input_date if input_date else ny_now.date().isoformat()
+          start_session = '${{ github.event.inputs.start_session }}'.strip()
+
+          if not cal.is_session(session_date):
+              print(f'Session {session_date} is NOT an active XNYS session (Holiday/Weekend).')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('should_run=false\nreason=MARKET_CLOSED\nsession_date=' + session_date + '\n')
+              sys.exit(0)
+
+          close_dt = cal.session_close(session_date).to_pydatetime()
+          if now < close_dt:
+              print(f'Session {session_date} has not yet closed (close at {close_dt.isoformat()}).')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('should_run=false\nreason=NOT_YET_DUE\nsession_date=' + session_date + '\n')
+              sys.exit(0)
+
+          try:
+              close, next_open, ordinal = session_window(session_date, start_session, now)
+              print(f'Window valid: Session {session_date}, Ordinal {ordinal}, Next Open {next_open.isoformat()}')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('should_run=true\nsession_date=' + session_date + '\nordinal=' + str(ordinal) + '\nnext_open=' + next_open.isoformat() + '\n')
+          except ValueError as e:
+              print(f'Window check failed: {e}')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('should_run=false\nreason=WINDOW_CLOSED\nerror=' + str(e) + '\nsession_date=' + session_date + '\n')
+              if '${{ github.event.inputs.dry_run }}' != 'true':
+                  sys.exit(1)
+          "
+
+      - name: Durable Session Claim & Partial Failure Recovery
+        if: steps.gatekeeper.outputs.should_run == 'true' && github.event.inputs.dry_run != 'true'
+        id: claim
+        run: |
+          python3 -c "
+          import os, json, sys
+          from datetime import datetime, timezone, timedelta
+          from pathlib import Path
+
+          cohort_id = '${{ github.event.inputs.cohort_id }}'
+          session_date = '${{ steps.gatekeeper.outputs.session_date }}'
+          claims_dir = Path('data/forward_pilot/.session_claims')
+          claims_dir.mkdir(parents=True, exist_ok=True)
+          claim_file = claims_dir / f'{cohort_id}_{session_date}.claim'
+
+          now = datetime.now(timezone.utc)
+
+          if claim_file.is_file():
+              claim_data = json.loads(claim_file.read_text())
+              status = claim_data.get('status')
+              claimed_at = datetime.fromisoformat(claim_data['claimedAtUtc'])
+
+              if status == 'COMPLETED':
+                  print(f'Session {session_date} already marked COMPLETED in durable claim file.')
+                  with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                      f.write('claim_status=ALREADY_COMPLETED\n')
+                  sys.exit(0)
+
+              if status == 'CLAIMED' and now - claimed_at < timedelta(minutes=45):
+                  print(f'Active claim exists by run {claim_data.get(\"runId\")} within 45m. Exiting.')
+                  sys.exit(1)
+
+              print(f'Reclaiming stale or failed claim (prior status: {status}, age: {now - claimed_at}).')
+
+          claim_record = {
+              'cohortId': cohort_id,
+              'sessionDate': session_date,
+              'runId': os.getenv('GITHUB_RUN_ID', 'local'),
+              'runAttempt': os.getenv('GITHUB_RUN_ATTEMPT', '1'),
+              'claimedAtUtc': now.isoformat(),
+              'status': 'CLAIMED'
+          }
+          claim_file.write_text(json.dumps(claim_record, indent=2))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('claim_status=ACQUIRED\nclaim_path=' + str(claim_file) + '\n')
+          "
+
+      - name: Execute Bounded Acquisition and Capture
+        if: steps.gatekeeper.outputs.should_run == 'true' && steps.claim.outputs.claim_status == 'ACQUIRED' && github.event.inputs.dry_run != 'true'
+        run: |
+          python3 scripts/acquire_and_capture_forward_session.py \
+            --session-date "${{ steps.gatekeeper.outputs.session_date }}" \
+            --cohort-id "${{ github.event.inputs.cohort_id }}" \
+            --start-session "${{ github.event.inputs.start_session }}" \
+            --forward-root "data/forward_pilot" \
+            --request-budget 12 \
+            ${{ github.event.inputs.initialize == 'true' && '--initialize' || '' }}
+
+      - name: Mark Durable Claim Completed
+        if: success() && steps.claim.outputs.claim_status == 'ACQUIRED' && github.event.inputs.dry_run != 'true'
+        run: |
+          python3 -c "
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          claim_file = Path('${{ steps.claim.outputs.claim_path }}')
+          if claim_file.is_file():
+              data = json.loads(claim_file.read_text())
+              data['status'] = 'COMPLETED'
+              data['completedAtUtc'] = datetime.now(timezone.utc).isoformat()
+              claim_file.write_text(json.dumps(data, indent=2))
+          "
+
+      - name: Mark Durable Claim Failed
+        if: failure() && steps.claim.outputs.claim_status == 'ACQUIRED' && github.event.inputs.dry_run != 'true'
+        run: |
+          python3 -c "
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          claim_file = Path('${{ steps.claim.outputs.claim_path }}')
+          if claim_file.is_file():
+              data = json.loads(claim_file.read_text())
+              data['status'] = 'FAILED'
+              data['failedAtUtc'] = datetime.now(timezone.utc).isoformat()
+              claim_file.write_text(json.dumps(data, indent=2))
+          "
+
+      - name: Upload Durable Forward Evidence Artifact
+        if: always() && steps.gatekeeper.outputs.should_run == 'true' && github.event.inputs.dry_run != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: forward-pilot-evidence-${{ steps.gatekeeper.outputs.session_date }}-${{ github.run_id }}
+          path: |
+            data/forward_pilot/${{ github.event.inputs.cohort_id }}
+            data/forward_pilot/staging_${{ steps.gatekeeper.outputs.session_date }}_completed
+            data/forward_pilot/.session_claims
+          retention-days: 90

@@ -1,0 +1,9 @@
+{
+  "symbol": "AAPL",
+  "targetUrl": "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+  "timestampUtc": "2026-11-28T04:41:04.287417+00:00",
+  "sha256": "0a040fd9100aff9cc17bd0d5bbc39bfcb36bb0ff0cf45cd80a771850be581866",
+  "byteLength": 14909,
+  "rawFilePath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/AAPL_0a040fd9100aff9c.raw",
+  "receiptType": "SHA-256 integrity receipt"
+}

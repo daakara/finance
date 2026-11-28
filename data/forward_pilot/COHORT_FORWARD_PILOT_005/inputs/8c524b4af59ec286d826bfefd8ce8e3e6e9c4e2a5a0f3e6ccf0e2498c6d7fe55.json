@@ -1,0 +1,119 @@
+{
+  "schemaVersion": "1.0",
+  "samplingMode": "SYSTEMATIC",
+  "sessionDate": "2026-11-27",
+  "engineSha": "05fb5a320501b7bdd32630bc3d18c3a719cef626",
+  "evaluations": {
+    "VOO": {
+      "decisionState": "VALID_SETUP",
+      "evaluationStatus": "RECORDED",
+      "sourceTimestampUtc": "2026-11-27T18:00:00+00:00",
+      "observedAtUtc": "2026-11-27T18:00:00+00:00",
+      "plan": {
+        "spot": 669.79,
+        "corridorMin": 668.65,
+        "corridorMax": 684.26,
+        "stopLoss": 627.34,
+        "takeProfit1": 752.31,
+        "confluenceScore": 30.0
+      },
+      "executionStatus": "IN_BUY_ZONE",
+      "setupPattern": "Stage 4 Correction / Base Building Required"
+    },
+    "QQQM": {
+      "decisionState": "INSUFFICIENT_DATA",
+      "evaluationStatus": "RECORDED",
+      "sourceTimestampUtc": "2026-11-27T18:00:00+00:00",
+      "observedAtUtc": "2026-11-27T18:00:00+00:00",
+      "plan": null,
+      "executionStatus": "WAITING_PULLBACK",
+      "reason": "Non-actionable execution status: WAITING_PULLBACK"
+    },
+    "IWM": {
+      "decisionState": "VALID_SETUP",
+      "evaluationStatus": "RECORDED",
+      "sourceTimestampUtc": "2026-11-27T18:00:00+00:00",
+      "observedAtUtc": "2026-11-27T18:00:00+00:00",
+      "plan": {
+        "spot": 273.79,
+        "corridorMin": 269.13,
+        "corridorMax": 275.42,
+        "stopLoss": 254.75,
+        "takeProfit1": 309.02,
+        "confluenceScore": 50.0
+      },
+      "executionStatus": "IN_BUY_ZONE",
+      "setupPattern": "Minervini VCP (Volatility Contraction Pattern)"
+    },
+    "XLE": {
+      "decisionState": "INSUFFICIENT_DATA",
+      "evaluationStatus": "RECORDED",
+      "sourceTimestampUtc": "2026-11-27T18:00:00+00:00",
+      "observedAtUtc": "2026-11-27T18:00:00+00:00",
+      "plan": null,
+      "executionStatus": "WAITING_PULLBACK",
+      "reason": "Non-actionable execution status: WAITING_PULLBACK"
+    },
+    "XLK": {
+      "decisionState": "INSUFFICIENT_DATA",
+      "evaluationStatus": "RECORDED",
+      "sourceTimestampUtc": "2026-11-27T18:00:00+00:00",
+      "observedAtUtc": "2026-11-27T18:00:00+00:00",
+      "plan": null,
+      "executionStatus": "WAITING_PULLBACK",
+      "reason": "Non-actionable execution status: WAITING_PULLBACK"
+    },
+    "AAPL": {
+      "decisionState": "INSUFFICIENT_DATA",
+      "evaluationStatus": "RECORDED",
+      "sourceTimestampUtc": "2026-11-27T18:00:00+00:00",
+      "observedAtUtc": "2026-11-27T18:00:00+00:00",
+      "plan": null,
+      "executionStatus": "EXTENDED_ABOVE_BUY_ZONE",
+      "reason": "Non-actionable execution status: EXTENDED_ABOVE_BUY_ZONE"
+    },
+    "MSFT": {
+      "decisionState": "INSUFFICIENT_DATA",
+      "evaluationStatus": "RECORDED",
+      "sourceTimestampUtc": "2026-11-27T18:00:00+00:00",
+      "observedAtUtc": "2026-11-27T18:00:00+00:00",
+      "plan": null,
+      "executionStatus": "WAITING_PULLBACK",
+      "reason": "Non-actionable execution status: WAITING_PULLBACK"
+    },
+    "NVDA": {
+      "decisionState": "INSUFFICIENT_DATA",
+      "evaluationStatus": "RECORDED",
+      "sourceTimestampUtc": "2026-11-27T18:00:00+00:00",
+      "observedAtUtc": "2026-11-27T18:00:00+00:00",
+      "plan": null,
+      "executionStatus": "WAITING_PULLBACK",
+      "reason": "Non-actionable execution status: WAITING_PULLBACK"
+    },
+    "AMZN": {
+      "decisionState": "VALID_SETUP",
+      "evaluationStatus": "RECORDED",
+      "sourceTimestampUtc": "2026-11-27T18:00:00+00:00",
+      "observedAtUtc": "2026-11-27T18:00:00+00:00",
+      "plan": {
+        "spot": 254.12,
+        "corridorMin": 250.72,
+        "corridorMax": 261.55,
+        "stopLoss": 234.42,
+        "takeProfit1": 290.57,
+        "confluenceScore": 21.2
+      },
+      "executionStatus": "IN_BUY_ZONE",
+      "setupPattern": "Minervini VCP (Volatility Contraction Pattern)"
+    },
+    "GOOGL": {
+      "decisionState": "INSUFFICIENT_DATA",
+      "evaluationStatus": "RECORDED",
+      "sourceTimestampUtc": "2026-11-27T18:00:00+00:00",
+      "observedAtUtc": "2026-11-27T18:00:00+00:00",
+      "plan": null,
+      "executionStatus": "WAITING_PULLBACK",
+      "reason": "Non-actionable execution status: WAITING_PULLBACK"
+    }
+  }
+}

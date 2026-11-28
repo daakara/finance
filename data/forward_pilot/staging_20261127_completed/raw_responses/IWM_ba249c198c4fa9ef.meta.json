@@ -1,0 +1,9 @@
+{
+  "symbol": "IWM",
+  "targetUrl": "https://query1.finance.yahoo.com/v8/finance/chart/IWM?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+  "timestampUtc": "2026-11-28T04:41:02.556681+00:00",
+  "sha256": "ba249c198c4fa9efd54f392a46de4f6d9f572beb04ce819e871e78bfb662f61d",
+  "byteLength": 15167,
+  "rawFilePath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/IWM_ba249c198c4fa9ef.raw",
+  "receiptType": "SHA-256 integrity receipt"
+}

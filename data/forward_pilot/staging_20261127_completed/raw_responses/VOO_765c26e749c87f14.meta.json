@@ -1,0 +1,9 @@
+{
+  "symbol": "VOO",
+  "targetUrl": "https://query1.finance.yahoo.com/v8/finance/chart/VOO?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+  "timestampUtc": "2026-11-28T04:41:01.435826+00:00",
+  "sha256": "765c26e749c87f14fa59f8687006c70f11310295020a026dd77c95303a608b43",
+  "byteLength": 14599,
+  "rawFilePath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/VOO_765c26e749c87f14.raw",
+  "receiptType": "SHA-256 integrity receipt"
+}
