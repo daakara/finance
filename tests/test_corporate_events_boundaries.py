@@ -95,14 +95,29 @@ class TestCorporateEventsBoundaries:
         assert not any("HIGH BINARY GAP RISK" in w for w in res["warnings"])
 
     def test_boundary_more_than_seven_days(self, engine):
-        """More than seven days (> 7.0): clean runway, PASS, zero penalty."""
+        """More than seven days (> 7.0): clean runway, PASS, zero penalty for confirmed events."""
         now = datetime(2026, 10, 23, 12, 0, tzinfo=timezone.utc)
         ts_7_01 = int((now + timedelta(days=7, hours=1)).timestamp())
-        ev = normalize_corporate_event("RUNWAY_CO", info={"earningsTimestamp": ts_7_01}, now_utc=now)
+        ev = normalize_corporate_event("RUNWAY_CO", info={"earningsTimestamp": ts_7_01, "confirmation_status": "CONFIRMED", "isEarningsDateEstimate": False}, now_utc=now)
         assert ev["days_to_earnings"] > 7.0
         assert ev["preflight_state"] == "PASS"
         assert ev["risk_tier"] == "NORMAL_RUNWAY"
         assert ev["has_imminent_earnings"] is False
+
+        # DEF-POL-CHK4-001: Distant estimate alone (>7.0d) cannot produce PASS; fails closed to UNAVAILABLE
+        ev_estimate = normalize_corporate_event("RUNWAY_EST", info={"earningsTimestamp": ts_7_01, "isEarningsDateEstimate": True}, now_utc=now)
+        assert ev_estimate["days_to_earnings"] > 7.0
+        assert ev_estimate["confirmation_status"] == "ESTIMATED"
+        assert ev_estimate["preflight_state"] == "UNAVAILABLE"
+        assert ev_estimate["risk_tier"] == "UNVERIFIED_RISK"
+
+        # Estimated imminent event (<= 7.0d) retains non-clearing hazard warning (WARN)
+        ts_3_0d = int((now + timedelta(days=3)).timestamp())
+        ev_est_imminent = normalize_corporate_event("IMMINENT_EST", info={"earningsTimestamp": ts_3_0d, "isEarningsDateEstimate": True}, now_utc=now)
+        assert ev_est_imminent["days_to_earnings"] <= 7.0
+        assert ev_est_imminent["confirmation_status"] == "ESTIMATED"
+        assert ev_est_imminent["preflight_state"] == "WARN"
+        assert ev_est_imminent["has_imminent_earnings"] is True
 
         base_res = engine.calculate_confluence(symbol="RUNWAY_CO", technical_data={"current_price": 100.0}, catalyst_data=None)
         runway_res = engine.calculate_confluence(symbol="RUNWAY_CO", technical_data={"current_price": 100.0}, catalyst_data={"days_to_earnings": ev["days_to_earnings"]})

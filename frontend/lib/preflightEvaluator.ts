@@ -735,7 +735,19 @@ export function evaluatePreFlightChecks(
         if (dte < 0.0) return "UNAVAILABLE";
         if (dte <= 7.0) return "WARN";
 
-        const validStatuses = new Set(["CONFIRMED_UPCOMING", "ESTIMATED_UPCOMING", "COVERED"]);
+        // DEF-POL-CHK4-001: An estimated earnings date alone cannot produce Check #4 PASS.
+        // Unconfirmed distant estimates must return UNAVAILABLE.
+        const isEstimated =
+          !isEtf &&
+          (catalystEvidence.confirmationStatus === "ESTIMATED" ||
+           catalystEvidence.isEstimate === true ||
+           catalystEvidence.coverageStatus === "ESTIMATED_UPCOMING");
+
+        if (isEstimated) {
+          return "UNAVAILABLE";
+        }
+
+        const validStatuses = new Set(["CONFIRMED_UPCOMING", "COVERED"]);
         const isCoverageValid = Boolean(catalystEvidence.coverageStatus && validStatuses.has(catalystEvidence.coverageStatus));
         const isFresh = catalystEvidence.freshnessStatus === "LIVE" || catalystEvidence.freshnessStatus === "CACHED_FRESH";
 
@@ -743,7 +755,7 @@ export function evaluatePreFlightChecks(
           return "UNAVAILABLE";
         }
 
-        if (catalystEvidence.riskTier && catalystEvidence.riskTier !== "NORMAL_RUNWAY") {
+        if (catalystEvidence.riskTier && catalystEvidence.riskTier !== "NORMAL_RUNWAY" && catalystEvidence.riskTier !== "NO_EARNINGS_HAZARD") {
           return "WARN";
         }
 
@@ -769,14 +781,22 @@ export function evaluatePreFlightChecks(
     ? "ERROR"
     : "UNAVAILABLE";
 
+  const isEstimateDistant =
+    !isEtf &&
+    (catalystEvidence?.confirmationStatus === "ESTIMATED" ||
+     catalystEvidence?.isEstimate === true ||
+     catalystEvidence?.coverageStatus === "ESTIMATED_UPCOMING") &&
+    typeof catalystEvidence?.daysToEarnings === "number" &&
+    catalystEvidence.daysToEarnings > 7.0;
+
   const chk4Summary = isEtf
     ? "ETF: Earnings N/A"
     : resolvedCatalystState === "PASS"
-    ? (isCatalystConfirmed
-        ? `Runway > 7d (${catalystEvidence?.daysToEarnings?.toFixed(1) || ">7"}d)`
-        : `Runway > 7d (Unconfirmed)`)
+    ? `Runway > 7d (${catalystEvidence?.daysToEarnings?.toFixed(1) || ">7"}d)`
     : resolvedCatalystState === "WARN"
     ? "Imminent Earnings Event"
+    : isEstimateDistant
+    ? "Unconfirmed Earnings Estimate"
     : "Coverage Unavailable";
 
   const releaseTimeDetail = catalystEvidence?.resultsReleaseTimeEt
@@ -790,15 +810,17 @@ export function evaluatePreFlightChecks(
         ? "Exchange-Traded Fund (ETF): Does not report single-stock corporate earnings. Event runway clear."
         : "Asset Class ETF: Pooled vehicle exempt from single-issuer corporate earnings calendar hazard.")
     : resolvedCatalystState === "PASS"
-    ? (isCatalystConfirmed
-        ? `Clean runway verified (>7 days to confirmed binary earnings event${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}).`
-        : `Clean runway indicated (>7 days to estimated earnings${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}), but event confirmation is unverified by primary source.`)
+    ? `Clean runway verified (>7 days to confirmed binary earnings event${catalystEvidence?.daysToEarnings ? `, ${catalystEvidence.daysToEarnings.toFixed(1)}d DTE` : ""}).`
     : resolvedCatalystState === "WARN"
     ? `Scheduled earnings announcement within 7-day risk window${catalystEvidence?.eventDate ? ` (${catalystEvidence.eventDate}${releaseTimeDetail ? ` · ${releaseTimeDetail.trim()}` : ""})` : ""}. Position sizing restricted.`
     : resolvedCatalystState === "ERROR"
     ? "Technical error retrieving corporate earnings schedule."
     : catalystEvidence?.daysToEarnings !== undefined && catalystEvidence?.daysToEarnings !== null && catalystEvidence.daysToEarnings < 0
     ? `Prior earnings reported (${catalystEvidence.eventDate || "historical"}): event elapsed (Historical Event Elapsed). Forward 7-day calendar unverified (not an imminent hazard); runway uncertified.`
+    : isEstimateDistant
+    ? (isPlain
+        ? `Corporate earnings date is estimated (${catalystEvidence?.daysToEarnings ? `${catalystEvidence.daysToEarnings.toFixed(1)} days, ` : ""}${catalystEvidence?.eventDate || "unconfirmed"}) and unverified by primary source. Cannot certify forward runway.`
+        : `Forward Catalyst Unconfirmed: Estimated date (${catalystEvidence?.daysToEarnings ? `${catalystEvidence.daysToEarnings.toFixed(1)} days` : "unconfirmed"}) unverified by issuer. Runway cannot be certified.`)
     : "Earnings calendar coverage unavailable: Event runway cannot be certified.";
 
   const chk4Item: PreFlightCheckItem = {
@@ -1010,6 +1032,7 @@ export function evaluatePreFlightChecks(
     if (resolvedCatalystState === "WARN") allBlockers.push("IMMINENT EARNINGS HAZARD (<= 7 DAYS)");
     else if (resolvedCatalystState === "ERROR") allBlockers.push("CATALYST EVALUATION ERROR");
     else if (catalystEvidence?.freshnessStatus && catalystEvidence.freshnessStatus !== "LIVE") allBlockers.push("STALE CATALYST COVERAGE");
+    else if (isEstimateDistant) allBlockers.push("UNCONFIRMED EARNINGS ESTIMATE");
     else allBlockers.push("CATALYST COVERAGE UNAVAILABLE");
   }
   if (!isMacroPassed) {

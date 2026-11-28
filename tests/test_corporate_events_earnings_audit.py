@@ -236,9 +236,13 @@ class TestCorporateEventsAndEarningsAudit:
         ev_warn = normalize_corporate_event("WARN_CO", info={"earningsTimestamp": int((now + timedelta(hours=12)).timestamp())}, now_utc=now)
         assert ev_warn["preflight_state"] == "WARN"
 
-        # Event in 10 days -> PASS
-        ev_pass = normalize_corporate_event("PASS_CO", info={"earningsTimestamp": int((now + timedelta(days=10)).timestamp())}, now_utc=now)
+        # Confirmed event in 10 days -> PASS
+        ev_pass = normalize_corporate_event("PASS_CO", info={"earningsTimestamp": int((now + timedelta(days=10)).timestamp()), "confirmation_status": "CONFIRMED", "isEarningsDateEstimate": False}, now_utc=now)
         assert ev_pass["preflight_state"] == "PASS"
+
+        # DEF-POL-CHK4-001: Estimated distant event in 10 days -> UNAVAILABLE
+        ev_est_distant = normalize_corporate_event("EST_CO", info={"earningsTimestamp": int((now + timedelta(days=10)).timestamp()), "isEarningsDateEstimate": True}, now_utc=now)
+        assert ev_est_distant["preflight_state"] == "UNAVAILABLE"
 
         # Missing -> UNAVAILABLE
         ev_unavail = normalize_corporate_event("UNAVAIL_CO", info={}, now_utc=now)
