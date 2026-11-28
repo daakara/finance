@@ -1,0 +1,152 @@
+name: Forward Paper-Trading Session Capture
+
+on:
+  # Automated recurring cron is DISABLED BY DEFAULT in accordance with operational holds (HOLD_EXEC_001, HOLD_SCAN_001).
+  # Uncomment the schedule triggers only upon formal Owner decree and persistent volume unfreeze.
+  # schedule:
+  #   - cron: '15 18 * * 1-5'  # 18:15 UTC: Post-market window for early-close sessions (13:00 EST / 19:00 CET)
+  #   - cron: '15 21 * * 1-5'  # 21:15 UTC: Post-market window for regular sessions (16:00 EST / 22:00 CET)
+
+  workflow_dispatch:
+    inputs:
+      session_date:
+        description: 'Completed XNYS session date (YYYY-MM-DD); defaults to next eligible session 2026-11-30'
+        required: false
+        default: '2026-11-30'
+      cohort_id:
+        description: 'Forward cohort namespace'
+        required: true
+        default: 'COHORT_FORWARD_PILOT_005'
+      start_session:
+        description: 'First forward capture session date (YYYY-MM-DD)'
+        required: true
+        default: '2026-11-27'
+      initialize:
+        description: 'Initialize cohort if not yet created'
+        required: true
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Perform window and calendar pre-check only'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: paper-trading-forward-capture-${{ inputs.cohort_id || 'COHORT_FORWARD_PILOT_005' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  capture_forward_session:
+    name: Evaluate & Capture Forward Session
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Exchange Calendar, DST & Window Pre-Check
+        id: gatekeeper
+        run: |
+          python3 -c "
+          import os, sys, json
+          from datetime import datetime, timezone
+          from zoneinfo import ZoneInfo
+          import exchange_calendars as xcals
+          from analyst_dashboard.governance.forward_capture import session_window
+
+          cal = xcals.get_calendar('XNYS')
+          input_date = '${{ github.event.inputs.session_date }}'.strip()
+          now = datetime.now(timezone.utc)
+          ny_now = now.astimezone(ZoneInfo('America/New_York'))
+
+          session_date = input_date if input_date else ny_now.date().isoformat()
+          start_session = '${{ github.event.inputs.start_session }}'.strip()
+
+          if not cal.is_session(session_date):
+              print(f'Session {session_date} is NOT an active XNYS session (Holiday/Weekend).')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('should_run=false\nreason=MARKET_CLOSED\nsession_date=' + session_date + '\n')
+              sys.exit(0)
+
+          close_dt = cal.session_close(session_date).to_pydatetime()
+          if now < close_dt:
+              print(f'Session {session_date} has not yet closed (close at {close_dt.isoformat()}).')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('should_run=false\nreason=NOT_YET_DUE\nsession_date=' + session_date + '\n')
+              sys.exit(0)
+
+          try:
+              close, next_open, ordinal = session_window(session_date, start_session, now)
+              print(f'Window valid: Session {session_date}, Ordinal {ordinal}, Next Open {next_open.isoformat()}')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('should_run=true\nsession_date=' + session_date + '\nordinal=' + str(ordinal) + '\nnext_open=' + next_open.isoformat() + '\n')
+          except ValueError as e:
+              print(f'Window check failed: {e}')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('should_run=false\nreason=WINDOW_CLOSED\nerror=' + str(e) + '\nsession_date=' + session_date + '\n')
+              if '${{ github.event.inputs.dry_run }}' != 'true':
+                  sys.exit(1)
+          "
+
+      - name: Execute Bounded Acquisition and Capture under Coordination Store
+        if: steps.gatekeeper.outputs.should_run == 'true' && github.event.inputs.dry_run != 'true'
+        id: capture
+        run: |
+          python3 scripts/acquire_and_capture_forward_session.py \
+            --session-date "${{ steps.gatekeeper.outputs.session_date }}" \
+            --cohort-id "${{ github.event.inputs.cohort_id }}" \
+            --start-session "${{ github.event.inputs.start_session }}" \
+            --forward-root "data/forward_pilot" \
+            --request-budget 12 \
+            --runner-id "gha-${{ github.run_id }}-attempt-${{ github.run_attempt }}" \
+            ${{ github.event.inputs.initialize == 'true' && '--initialize' || '' }}
+
+      - name: Report Failure Notification
+        if: failure() && steps.gatekeeper.outputs.should_run == 'true' && github.event.inputs.dry_run != 'true'
+        run: |
+          echo "::error title=Forward Capture Failed::Run ${{ github.run_id }} failed for session ${{ steps.gatekeeper.outputs.session_date }} in cohort ${{ github.event.inputs.cohort_id }}."
+          echo "### Forward Capture Failure" >> $GITHUB_STEP_SUMMARY
+          echo "- **Session Date:** ${{ steps.gatekeeper.outputs.session_date }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cohort:** ${{ github.event.inputs.cohort_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run ID:** ${{ github.run_id }} (Attempt ${{ github.run_attempt }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp UTC:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** FAILED (Check step logs and request ledger)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Generate Session Execution Summary
+        if: always() && steps.gatekeeper.outputs.should_run == 'true' && github.event.inputs.dry_run != 'true'
+        run: |
+          echo "### ARX Paper-Trading Session Execution Report" >> $GITHUB_STEP_SUMMARY
+          echo "- **Session Date:** ${{ steps.gatekeeper.outputs.session_date }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cohort ID:** ${{ github.event.inputs.cohort_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Start Session:** ${{ github.event.inputs.start_session }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runner:** gha-${{ github.run_id }}-attempt-${{ github.run_attempt }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Outcome:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Durable Forward Evidence Artifact
+        if: always() && steps.gatekeeper.outputs.should_run == 'true' && github.event.inputs.dry_run != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: forward-pilot-evidence-${{ steps.gatekeeper.outputs.session_date }}-${{ github.run_id }}
+          path: |
+            data/forward_pilot/${{ github.event.inputs.cohort_id }}
+            data/forward_pilot/staging_${{ steps.gatekeeper.outputs.session_date }}*
+            data/forward_pilot/.paper_trading_coordination.db*
+          retention-days: 90

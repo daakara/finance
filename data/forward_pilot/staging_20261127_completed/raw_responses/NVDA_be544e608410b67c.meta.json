@@ -1,0 +1,9 @@
+{
+  "symbol": "NVDA",
+  "targetUrl": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+  "timestampUtc": "2026-11-28T04:41:05.385321+00:00",
+  "sha256": "be544e608410b67c4a6d96e8f8e54724385ee75c4826d72f52fd215f0bc13034",
+  "byteLength": 15324,
+  "rawFilePath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/NVDA_be544e608410b67c.raw",
+  "receiptType": "SHA-256 integrity receipt"
+}

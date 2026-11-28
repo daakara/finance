@@ -1,49 +1,233 @@
 {
-  "release_candidate_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-  "base_anchor_commit": "978123f7217e871ed6097da08a2feb9db7bec8b2",
-  "total_files": 5,
+  "release_candidate_commit": "4ccaf7b29e11b51110e13684f332dbeecaba77d7",
+  "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
+  "total_files": 28,
   "qualification_policy_version": "2.2.0-D074A4",
-  "directive": "ARX-SM-ACT-020-RETENTION-BOUNDED",
+  "directive": "ARX-PAPER-TRADING-322",
   "files": {
-    "analyst_dashboard/smart_money/continuous_pipeline.py": {
-      "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: defer remote retention entirely during two-issuer trial cycles; propagate deadlines for other retention calls",
-      "sha256": "0bb10186e1a9e04004f1be9bd3dbd65cb5c60b9906d648a11983c2c167baf0d2",
-      "size_bytes": 105626
-    },
-    "analyst_dashboard/smart_money/storage/backup/retention.py": {
-      "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: bound retention verification & pruning by monotonic deadline, eliminate unbounded fallback, enforce legacy manifest contract",
-      "sha256": "adeca9fec2d06d7af301fd82c7a995195af4b938508e27d9e58626d4b28fb7b8",
-      "size_bytes": 19567
-    },
-    "analyst_dashboard/smart_money/storage/backup/storage_adapter.py": {
-      "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: enforce single total SDK attempt, remaining-budget socket timeouts and metadata deadline checks; close streamed responses",
-      "sha256": "9aa52186639c7305c6eac2321e0721af5c66baec056278847c16f19a549ff1c7",
-      "size_bytes": 23391
-    },
-    "tests/test_smart_money_backup_retention_bounded_adversarial.py": {
+    ".github/workflows/paper-trading-offline.yml": {
       "operation": "A",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: adversarial offline suite for 55+ backup catalog, slow storage, deadline exhaustion, and zero abandoned work",
-      "sha256": "bcfa2c1534d2b1aacb6146ff3d96ad80d85effedfd71cbe98f01fbae3cd3439f",
-      "size_bytes": 29007
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "d61e87c7573615e1a6a5c22eb0cd836fb3b82373836d8382c4372f1bc2bd2642",
+      "size_bytes": 1398
     },
-    "tests/test_smart_money_backup_retention_safety.py": {
+    ".gitignore": {
       "operation": "M",
-      "originating_pr_number": 315,
-      "originating_commit": "fd95b11a8b8e8e97d1bec94848fd0bb932863207",
-      "governing_requirement": "Issue #165: safe pruning invariants and legacy manifest contract test coverage",
-      "sha256": "63681bbf13be0c9c0a38a0f3e3fd9506b7f80d4bb8645a07ee33bf0af5a72638",
-      "size_bytes": 6480
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "d106c964f9505784727433f4ec00ee0952ae0dd2aad1f773adf7a2304bdc08a2",
+      "size_bytes": 1025
+    },
+    "README.md": {
+      "operation": "M",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "a86997c4f7cc0c445c4aeaaf4aa87e720b91d623b6b647a988887a99c613d4e9",
+      "size_bytes": 18327
+    },
+    "analyst_dashboard/governance/forward_capture.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "111f1547ddd47e2899e07a9dbb1c0c39839e6dcf3871a2ef332dc1964d1d6669",
+      "size_bytes": 14050
+    },
+    "analyst_dashboard/governance/forward_evaluator_adapter.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "4ccaf7b29e11b51110e13684f332dbeecaba77d7",
+      "governing_requirement": "PR #322: isolated point-in-time forward evaluator adapter and qualification suite",
+      "sha256": "626f2ff94151c117d4f5384a96eb625704a492a7ee2179e73f6cf111a8f90ff1",
+      "size_bytes": 16630
+    },
+    "analyst_dashboard/governance/forward_settlement.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "2809639235271ab52d77c2818c717973560ba44549554a770a674b76abad4264",
+      "size_bytes": 23363
+    },
+    "analyst_dashboard/governance/market_data_adapter.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "94d1deb93ab5ecbc9877a55078b93658240d76ae",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "bc9976a80133800cbce4f6c81bad8e123f3faafa1956bfc53235616d331b5525",
+      "size_bytes": 23270
+    },
+    "analyst_dashboard/governance/storage.py": {
+      "operation": "M",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "f01fe721e09ce757ae20b1d99fe5aac075542b64709f04fedf32c0217baef402",
+      "size_bytes": 26217
+    },
+    "data/forward_pilot/README.md": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "dbd5358325673837d2382f30231485b903f05a636ffe7f78f88989058dba247b",
+      "size_bytes": 16016
+    },
+    "docs/ARX_STATUS_ADDENDUM_2026_11_23.md": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "f1fab7cbef227daffa4914dd1c64b8584a3355339f1ebc4aac60f7a87d159d28",
+      "size_bytes": 7596
+    },
+    "docs/governance/ARX_BOUNDED_OFFLINE_OUTCOME_PILOT_RECEIPT.json": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "e73f9b073a458f358aed3288c377f6b2ff4a515ee384c735900543f47db49c60",
+      "size_bytes": 46568
+    },
+    "docs/governance/ARX_BOUNDED_OFFLINE_OUTCOME_PILOT_REPORT.md": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "d5135b58fc19f79a2f4640b8f177bd8422b6d4d1bde94324aca6725be1f0ea50",
+      "size_bytes": 16764
+    },
+    "docs/governance/ARX_FORWARD_PILOT_UNIVERSE_V1.json": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "e7a04942ec49c555a52bba96cc07b0d3b8838e3164ff582df40ef2323c826ecc",
+      "size_bytes": 308
+    },
+    "docs/governance/ARX_PAPER_TRADING_READINESS_AUDIT_REPORT.md": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "84be78d2be945167b9ee1538b63a257a29aa009a199b1dce4f278bbf887f746d",
+      "size_bytes": 13916
+    },
+    "docs/planning/ARX_ACTIVE_WORK_REGISTER_2026_11_17.md": {
+      "operation": "M",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "6c1e4a9618f8b514d64e3dcd8203eb10d769d6cae99e2a2485ace2b4411c8ad7",
+      "size_bytes": 18967
+    },
+    "docs/planning/ARX_PAPER_TRADING_ROADMAP.md": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "36d1fd846edbef2bc40e2a7c7c6c27f41abf45fd7be3c7bb64420be82ea85f48",
+      "size_bytes": 27703
+    },
+    "requirements.txt": {
+      "operation": "M",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "1dd26f2b6432ddd8acc2a2c24b776cc1d16f1f42bef7702e3798d12f068559f6",
+      "size_bytes": 551
+    },
+    "scripts/capture_forward_candidates.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "9b9463622a673d150bf36135b031c33acded9d665aa6a70c148b8052a89a2e50",
+      "size_bytes": 1445
+    },
+    "scripts/evaluate_forward_session.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "4ccaf7b29e11b51110e13684f332dbeecaba77d7",
+      "governing_requirement": "PR #322: isolated point-in-time forward evaluator adapter and qualification suite",
+      "sha256": "391a0bb9d8c0bb96eebab31d04bef2310d2b5a880061f38feb91fb8e8001d36c",
+      "size_bytes": 2406
+    },
+    "scripts/settle_forward_cohort.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "e190581c9cd13288a19ef8e124c2049cda330b183aa07f619eb50c292025bf61",
+      "size_bytes": 1147
+    },
+    "tests/fixtures/paper_trading_baseline_price_bars.json": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "0d6fc874103b79b9f9670409e327d0ccc3414f70e8da229f19dcdf293bcc76b4",
+      "size_bytes": 121257
+    },
+    "tests/test_forward_candidate_capture.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "ee653965fa09503662d7f72fe1c8de4befac885d05e52ae64b5c40deba33cb6d",
+      "size_bytes": 10948
+    },
+    "tests/test_forward_evaluator_adapter.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "4ccaf7b29e11b51110e13684f332dbeecaba77d7",
+      "governing_requirement": "PR #322: isolated point-in-time forward evaluator adapter and qualification suite",
+      "sha256": "9d503742c970cdc2313f7aadce1401c7593f221bd9258cbfe6032564f452199e",
+      "size_bytes": 12955
+    },
+    "tests/test_forward_market_data_adapter.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "94d1deb93ab5ecbc9877a55078b93658240d76ae",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "2ca3f600ba2d77316a651b0276b12f2a6580d4034e1efc952c49c531dac8fd96",
+      "size_bytes": 46413
+    },
+    "tests/test_forward_settlement.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "864ba220e8e23edc0352ee273f5dbdb2064b5d2281be949feb121212dea10a93",
+      "size_bytes": 10209
+    },
+    "tests/test_fred_sec_presentation_integrity.py": {
+      "operation": "M",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "fa0c89f834e558679cb113d25b6df63b5eae72b20ff05605f84928883c046feb",
+      "size_bytes": 21566
+    },
+    "tests/test_paper_trading_baseline_determinism.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "ad39b7a3afe8ffc742067cb84cd20e05b9358dd878996de5b994a2875057f337",
+      "size_bytes": 29576
+    },
+    "tools/qualification/paper_trading_offline_support.py": {
+      "operation": "A",
+      "originating_pr_number": 322,
+      "originating_commit": "c7d550ff345927657a89c108b6270a83b40f3207",
+      "governing_requirement": "PR #322: isolated offline paper trading capture, settlement and baseline qualification",
+      "sha256": "c3c5039edc4aa6fdd94a63fdc211dd78eab21a728e9cd5ba06860962eb2c9527",
+      "size_bytes": 663
     }
   },
   "qualification_framework_files": {
@@ -53,8 +237,8 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "sha256": "d668ef5eae9d41ec51fe1b43206df7b60792bfe31103fb827a3c3cc9b3eae8eb",
-      "size_bytes": 58226,
+      "sha256": "42418bb1594c4bab13e2e802f0d1623cd3195b02782135bb39c90d01c515a853",
+      "size_bytes": 58231,
       "description": "Release qualification module: rq02_diff_integrity.py"
     },
     "scripts/release/rq03_backend_regression.py": {

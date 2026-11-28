@@ -1,0 +1,9 @@
+{
+  "symbol": "XLE",
+  "targetUrl": "https://query1.finance.yahoo.com/v8/finance/chart/XLE?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+  "timestampUtc": "2026-11-28T04:41:03.126208+00:00",
+  "sha256": "6809eea75d9af5ed748c53c33e060751c90a040dd18d762ef540bb0864e9e89c",
+  "byteLength": 14960,
+  "rawFilePath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/XLE_6809eea75d9af5ed.raw",
+  "receiptType": "SHA-256 integrity receipt"
+}

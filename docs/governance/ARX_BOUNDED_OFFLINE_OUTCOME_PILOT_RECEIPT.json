@@ -1,0 +1,1314 @@
+{
+  "receiptId": "ARX_BOUNDED_OFFLINE_OUTCOME_PILOT_RECEIPT_001",
+  "timestampUtc": "2026-11-23T00:12:00Z",
+  "status": "FINAL_PILOT_COMPLETE",
+  "provenance": {
+    "governingContract": {
+      "path": "docs/governance/ARX_PAPER_TRADING_OUTCOME_CONTRACT_V1.json",
+      "version": "1.0.1",
+      "sha256": "0f13677667d6755ad97a63de9264bff8e3c77fd37642eca0f80bf3b95166c2c1"
+    },
+    "sourceLedger": {
+      "path": "/root/analyst_dashboard/data/paper_trading_ledger.json",
+      "sha256": "5a3a390e81cfcddf7177609a8a1ae21d299032c35c0d9425047712b51bae3d3b",
+      "sourceTarget": "Production Web Service 56e38249-b78c-4a60-80d7-303ce7451bd8"
+    },
+    "marketDataStore": {
+      "path": "/root/.finance_market_store.db",
+      "sourceTarget": "Production Volume 7867d923-89e9-4619-955a-cc7a43344f73",
+      "sha256": "db050c433939fb2761a9b88db4444730c248402331dc3a9a58b71f5d5e05dce8",
+      "extractedBarsSha256": "ad75bcdc3feffb2d02f00561d1baf51ce30fd0761fdd3af87b72366f0d944221"
+    },
+    "historicalEvidenceManifest": {
+      "path": "docs/governance/ARX_HISTORICAL_OUTCOME_FROZEN_EVIDENCE_V1.json",
+      "sha256": "012643fc53cfc80cc615ba364ab5101d2fb0d791c7361e4b0967c3f8766d3aa0"
+    },
+    "historicalAuditRecord": {
+      "path": "docs/governance/ARX_HISTORICAL_RECOMMENDATION_OUTCOME_AUDIT_V1.json",
+      "sha256": "c1023530e0c95fe7a4897ece44e8c66a8cae10297ac761a78c01f25eb0fdfce0"
+    }
+  },
+  "denominatorCensus": {
+    "pureDailyOhlc": {
+      "D1_total_inventory": 19,
+      "synthetic_quarantined_excluded": 1,
+      "D1_natural_recommendations": 18,
+      "D2_data_eligible": 18,
+      "D3_triggered_entries": 10,
+      "D4_mature_triggered": 10,
+      "D5_resolved_mature": 8,
+      "unresolved_intrabar_collision": 2,
+      "untriggered_expired": 8,
+      "take_profit_1_success": 1,
+      "stop_loss_failure": 1,
+      "horizon_exit_neutral": 6,
+      "blocked_or_missing_data": 0,
+      "average_gross_return_resolved": 1.73,
+      "average_net_return_resolved": 1.48,
+      "average_r_multiple_resolved": 0.45
+    },
+    "intradayBarsResolved": {
+      "D1_total_inventory": 19,
+      "synthetic_quarantined_excluded": 1,
+      "D1_natural_recommendations": 18,
+      "D2_data_eligible": 18,
+      "D3_triggered_entries": 10,
+      "D4_mature_triggered": 10,
+      "D5_resolved_mature": 10,
+      "unresolved_intrabar_collision": 0,
+      "untriggered_expired": 8,
+      "take_profit_1_success": 1,
+      "stop_loss_failure": 3,
+      "horizon_exit_neutral": 6,
+      "blocked_or_missing_data": 0,
+      "average_gross_return_resolved": 0.79,
+      "average_net_return_resolved": 0.54,
+      "average_r_multiple_resolved": 0.16
+    }
+  },
+  "evaluationRecords": [
+    {
+      "index": 1,
+      "symbol": "ANET",
+      "signalDate": "2026-09-04",
+      "cohortId": "HISTORICAL_BASELINE_V2_4_0",
+      "cohortType": "HISTORICAL",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 182.36,
+        "corridorMax": 194.83,
+        "stopLoss": 179.0,
+        "takeProfit1": 218.36,
+        "takeProfit2": 222.01,
+        "confluenceScore": 84.6,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 55,
+      "evaluation": {
+        "symbol": "ANET",
+        "engine_version": "4e36862",
+        "signal_date": "2026-09-04",
+        "entry_state": "ENTRY_TRIGGERED",
+        "entry_date": "2026-09-08",
+        "entry_price": 194.83,
+        "outcome": "NEUTRAL",
+        "exit_date": "2026-10-05",
+        "exit_price": 206.9,
+        "exit_reason": "HORIZON_EXIT",
+        "gross_return_pct": 6.2,
+        "net_simulated_return_pct": 5.95,
+        "r_multiple": 0.76,
+        "mfe": 8.81,
+        "mae": -4.48,
+        "confluence_score": 84.6,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": null
+      }
+    },
+    {
+      "index": 2,
+      "symbol": "CELH",
+      "signalDate": "2026-09-04",
+      "cohortId": "HISTORICAL_BASELINE_V2_4_0",
+      "cohortType": "HISTORICAL",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 30.15,
+        "corridorMax": 32.25,
+        "stopLoss": 29.56,
+        "takeProfit1": 35.98,
+        "takeProfit2": 37.19,
+        "confluenceScore": 84.6,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 51,
+      "evaluation": {
+        "symbol": "CELH",
+        "engine_version": "4e36862",
+        "signal_date": "2026-09-04",
+        "entry_state": "UNRESOLVED_INTRABAR_SEQUENCE",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "UNRESOLVED_INTRABAR_SEQUENCE",
+        "exit_date": "2026-09-08",
+        "exit_price": null,
+        "exit_reason": "INTRABAR_ENTRY_STOP_COLLISION",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 84.6,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": "Daily OHLC touches both entry corridor and stop on T+1; sub-daily sequence unknown."
+      }
+    },
+    {
+      "index": 3,
+      "symbol": "CRSP",
+      "signalDate": "2026-09-04",
+      "cohortId": "HISTORICAL_BASELINE_V2_4_0",
+      "cohortType": "HISTORICAL",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 53.6,
+        "corridorMax": 57.52,
+        "stopLoss": 53.05,
+        "takeProfit1": 65.53,
+        "takeProfit2": 66.97,
+        "confluenceScore": 84.1,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 45,
+      "evaluation": {
+        "symbol": "CRSP",
+        "engine_version": "4e36862",
+        "signal_date": "2026-09-04",
+        "entry_state": "UNRESOLVED_INTRABAR_SEQUENCE",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "UNRESOLVED_INTRABAR_SEQUENCE",
+        "exit_date": "2026-09-08",
+        "exit_price": null,
+        "exit_reason": "INTRABAR_ENTRY_STOP_COLLISION",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 84.1,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": "Daily OHLC touches both entry corridor and stop on T+1; sub-daily sequence unknown."
+      }
+    },
+    {
+      "index": 4,
+      "symbol": "GOOGL",
+      "signalDate": "2026-09-04",
+      "cohortId": "HISTORICAL_BASELINE_V2_4_0",
+      "cohortType": "HISTORICAL",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 340.64,
+        "corridorMax": 347.16,
+        "stopLoss": 330.42,
+        "takeProfit1": 364.8,
+        "takeProfit2": 369.3,
+        "confluenceScore": 84.6,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 50,
+      "evaluation": {
+        "symbol": "GOOGL",
+        "engine_version": "4e36862",
+        "signal_date": "2026-09-04",
+        "entry_state": "ENTRY_NOT_TRIGGERED",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "exit_date": null,
+        "exit_price": null,
+        "exit_reason": "PRE_ENTRY_STOP_INVALIDATION",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 84.6,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": "Price breached stopLoss 330.42 on session 2 (2026-09-09) before entry could occur."
+      }
+    },
+    {
+      "index": 5,
+      "symbol": "LULU",
+      "signalDate": "2026-09-04",
+      "cohortId": "HISTORICAL_BASELINE_V2_4_0",
+      "cohortType": "HISTORICAL",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 117.27,
+        "corridorMax": 122.0,
+        "stopLoss": 113.85,
+        "takeProfit1": 136.61,
+        "takeProfit2": 138.98,
+        "confluenceScore": 84.6,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 55,
+      "evaluation": {
+        "symbol": "LULU",
+        "engine_version": "4e36862",
+        "signal_date": "2026-09-04",
+        "entry_state": "ENTRY_NOT_TRIGGERED",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "exit_date": null,
+        "exit_price": null,
+        "exit_reason": "PRE_ENTRY_STOP_INVALIDATION_GAP_DOWN",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 84.6,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": "T+1 Open <= stopLoss; setup invalidated at market open."
+      }
+    },
+    {
+      "index": 6,
+      "symbol": "MDB",
+      "signalDate": "2026-09-04",
+      "cohortId": "HISTORICAL_BASELINE_V2_4_0",
+      "cohortType": "HISTORICAL",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 371.95,
+        "corridorMax": 422.66,
+        "stopLoss": 360.81,
+        "takeProfit1": 453.19,
+        "takeProfit2": 495.9,
+        "confluenceScore": 87.4,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 51,
+      "evaluation": {
+        "symbol": "MDB",
+        "engine_version": "4e36862",
+        "signal_date": "2026-09-04",
+        "entry_state": "ENTRY_NOT_TRIGGERED",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "exit_date": null,
+        "exit_price": null,
+        "exit_reason": "PRE_ENTRY_STOP_INVALIDATION_GAP_DOWN",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 87.4,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": "T+1 Open <= stopLoss; setup invalidated at market open."
+      }
+    },
+    {
+      "index": 7,
+      "symbol": "NET",
+      "signalDate": "2026-09-04",
+      "cohortId": "HISTORICAL_BASELINE_V2_4_0",
+      "cohortType": "HISTORICAL",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 279.18,
+        "corridorMax": 298.04,
+        "stopLoss": 266.02,
+        "takeProfit1": 319.9,
+        "takeProfit2": 345.08,
+        "confluenceScore": 87.4,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 51,
+      "evaluation": {
+        "symbol": "NET",
+        "engine_version": "4e36862",
+        "signal_date": "2026-09-04",
+        "entry_state": "ENTRY_TRIGGERED",
+        "entry_date": "2026-09-08",
+        "entry_price": 279.18,
+        "outcome": "SUCCESS",
+        "exit_date": "2026-09-14",
+        "exit_price": 319.9,
+        "exit_reason": "TAKE_PROFIT_1",
+        "gross_return_pct": 14.59,
+        "net_simulated_return_pct": 14.34,
+        "r_multiple": 3.09,
+        "mfe": 19.85,
+        "mae": -2.67,
+        "confluence_score": 87.4,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": null
+      }
+    },
+    {
+      "index": 8,
+      "symbol": "SNPS",
+      "signalDate": "2026-09-04",
+      "cohortId": "HISTORICAL_BASELINE_V2_4_0",
+      "cohortType": "HISTORICAL",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 408.3,
+        "corridorMax": 424.02,
+        "stopLoss": 396.04,
+        "takeProfit1": 453.81,
+        "takeProfit2": 471.18,
+        "confluenceScore": 84.6,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 55,
+      "evaluation": {
+        "symbol": "SNPS",
+        "engine_version": "4e36862",
+        "signal_date": "2026-09-04",
+        "entry_state": "ENTRY_NOT_TRIGGERED",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "exit_date": null,
+        "exit_price": null,
+        "exit_reason": "PRE_ENTRY_STOP_INVALIDATION",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 84.6,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": "Price breached stopLoss 396.04 on session 2 (2026-09-09) before entry could occur."
+      }
+    },
+    {
+      "index": 9,
+      "symbol": "TMDX",
+      "signalDate": "2026-09-04",
+      "cohortId": "HISTORICAL_BASELINE_V2_4_0",
+      "cohortType": "HISTORICAL",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 79.89,
+        "corridorMax": 88.83,
+        "stopLoss": 79.46,
+        "takeProfit1": 104.54,
+        "takeProfit2": 106.47,
+        "confluenceScore": 82.5,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 55,
+      "evaluation": {
+        "symbol": "TMDX",
+        "engine_version": "4e36862",
+        "signal_date": "2026-09-04",
+        "entry_state": "ENTRY_TRIGGERED",
+        "entry_date": "2026-09-08",
+        "entry_price": 88.83,
+        "outcome": "FAILURE",
+        "exit_date": "2026-09-11",
+        "exit_price": 79.46,
+        "exit_reason": "STOP_LOSS",
+        "gross_return_pct": -10.55,
+        "net_simulated_return_pct": -10.8,
+        "r_multiple": -1.0,
+        "mfe": 0.81,
+        "mae": -10.81,
+        "confluence_score": 82.5,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": null
+      }
+    },
+    {
+      "index": 10,
+      "symbol": "AAPL",
+      "signalDate": "2026-09-19",
+      "cohortId": "EPOCH_1_CERTIFICATION",
+      "cohortType": "SYNTHETIC_QUARANTINED",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 320.03,
+        "corridorMax": 328.85,
+        "stopLoss": 314.28,
+        "takeProfit1": 383.66,
+        "takeProfit2": 387.52,
+        "confluenceScore": 72.5,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 55,
+      "evaluation": {
+        "symbol": "AAPL",
+        "engine_version": "7ad44595826c147cc77f93cd676af520764c7442",
+        "signal_date": "2026-09-19",
+        "entry_state": "ENTRY_NOT_TRIGGERED",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "exit_date": null,
+        "exit_price": null,
+        "exit_reason": "ENTRY_WINDOW_EXPIRED",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 72.5,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": "5 trading sessions elapsed without satisfying entry corridor criteria."
+      }
+    },
+    {
+      "index": 11,
+      "symbol": "AAPL",
+      "signalDate": "2026-09-24",
+      "cohortId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+      "cohortType": "PROSPECTIVE_CLEAN",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 321.41,
+        "corridorMax": 332.13,
+        "stopLoss": 315.11,
+        "takeProfit1": 383.73,
+        "takeProfit2": 387.34,
+        "confluenceScore": 76.3,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 55,
+      "evaluation": {
+        "symbol": "AAPL",
+        "engine_version": "7ad44595826c147cc77f93cd676af520764c7442",
+        "signal_date": "2026-09-24",
+        "entry_state": "ENTRY_TRIGGERED",
+        "entry_date": "2026-09-29",
+        "entry_price": 332.13,
+        "outcome": "NEUTRAL",
+        "exit_date": "2026-10-26",
+        "exit_price": 343.65,
+        "exit_reason": "HORIZON_EXIT",
+        "gross_return_pct": 3.47,
+        "net_simulated_return_pct": 3.22,
+        "r_multiple": 0.68,
+        "mfe": 5.82,
+        "mae": -1.98,
+        "confluence_score": 76.3,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": null
+      }
+    },
+    {
+      "index": 12,
+      "symbol": "META",
+      "signalDate": "2026-09-24",
+      "cohortId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+      "cohortType": "PROSPECTIVE_CLEAN",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 611.63,
+        "corridorMax": 671.93,
+        "stopLoss": 607.91,
+        "takeProfit1": 996.05,
+        "takeProfit2": 1036.9,
+        "confluenceScore": 73.8,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 51,
+      "evaluation": {
+        "symbol": "META",
+        "engine_version": "7ad44595826c147cc77f93cd676af520764c7442",
+        "signal_date": "2026-09-24",
+        "entry_state": "ENTRY_NOT_TRIGGERED",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "exit_date": null,
+        "exit_price": null,
+        "exit_reason": "ENTRY_WINDOW_EXPIRED",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 73.8,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": "5 trading sessions elapsed without satisfying entry corridor criteria."
+      }
+    },
+    {
+      "index": 13,
+      "symbol": "QQQM",
+      "signalDate": "2026-09-24",
+      "cohortId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+      "cohortType": "PROSPECTIVE_CLEAN",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 292.64,
+        "corridorMax": 298.68,
+        "stopLoss": 285.31,
+        "takeProfit1": 344.5,
+        "takeProfit2": 347.55,
+        "confluenceScore": 63.1,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 24,
+      "evaluation": {
+        "symbol": "QQQM",
+        "engine_version": "7ad44595826c147cc77f93cd676af520764c7442",
+        "signal_date": "2026-09-24",
+        "entry_state": "ENTRY_NOT_TRIGGERED",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "exit_date": null,
+        "exit_price": null,
+        "exit_reason": "ENTRY_WINDOW_EXPIRED",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 63.1,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE_ACQUIRED_MANIFEST_002",
+        "intrabar_resolution_evidence": "5 trading sessions elapsed without satisfying entry corridor criteria."
+      }
+    },
+    {
+      "index": 14,
+      "symbol": "VOO",
+      "signalDate": "2026-09-24",
+      "cohortId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+      "cohortType": "PROSPECTIVE_CLEAN",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 699.14,
+        "corridorMax": 706.19,
+        "stopLoss": 678.16,
+        "takeProfit1": 762.09,
+        "takeProfit2": 769.16,
+        "confluenceScore": 55.0,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 24,
+      "evaluation": {
+        "symbol": "VOO",
+        "engine_version": "7ad44595826c147cc77f93cd676af520764c7442",
+        "signal_date": "2026-09-24",
+        "entry_state": "ENTRY_TRIGGERED",
+        "entry_date": "2026-09-25",
+        "entry_price": 706.19,
+        "outcome": "NEUTRAL",
+        "exit_date": "2026-10-22",
+        "exit_price": 702.3,
+        "exit_reason": "HORIZON_EXIT",
+        "gross_return_pct": -0.55,
+        "net_simulated_return_pct": -0.8,
+        "r_multiple": -0.14,
+        "mfe": 1.74,
+        "mae": -1.23,
+        "confluence_score": 55.0,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE_ACQUIRED_MANIFEST_002",
+        "intrabar_resolution_evidence": null
+      }
+    },
+    {
+      "index": 15,
+      "symbol": "FTXL",
+      "signalDate": "2026-09-24",
+      "cohortId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+      "cohortType": "PROSPECTIVE_CLEAN",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 228.45,
+        "corridorMax": 235.94,
+        "stopLoss": 227.19,
+        "takeProfit1": 309.78,
+        "takeProfit2": 313.52,
+        "confluenceScore": 63.1,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 20,
+      "evaluation": {
+        "symbol": "FTXL",
+        "engine_version": "7ad44595826c147cc77f93cd676af520764c7442",
+        "signal_date": "2026-09-24",
+        "entry_state": "ENTRY_NOT_TRIGGERED",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "exit_date": null,
+        "exit_price": null,
+        "exit_reason": "ENTRY_WINDOW_EXPIRED",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 63.1,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": "5 trading sessions elapsed without satisfying entry corridor criteria."
+      }
+    },
+    {
+      "index": 16,
+      "symbol": "JEPI",
+      "signalDate": "2026-09-24",
+      "cohortId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+      "cohortType": "PROSPECTIVE_CLEAN",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 56.47,
+        "corridorMax": 56.92,
+        "stopLoss": 54.6,
+        "takeProfit1": 60.25,
+        "takeProfit2": 61.38,
+        "confluenceScore": 65.5,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 20,
+      "evaluation": {
+        "symbol": "JEPI",
+        "engine_version": "7ad44595826c147cc77f93cd676af520764c7442",
+        "signal_date": "2026-09-24",
+        "entry_state": "ENTRY_TRIGGERED",
+        "entry_date": "2026-09-25",
+        "entry_price": 56.56,
+        "outcome": "NEUTRAL",
+        "exit_date": "2026-10-22",
+        "exit_price": 57.29,
+        "exit_reason": "HORIZON_EXIT",
+        "gross_return_pct": 1.29,
+        "net_simulated_return_pct": 1.04,
+        "r_multiple": 0.37,
+        "mfe": 1.68,
+        "mae": -1.58,
+        "confluence_score": 65.5,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE_ACQUIRED_MANIFEST_002",
+        "intrabar_resolution_evidence": null
+      }
+    },
+    {
+      "index": 17,
+      "symbol": "QQQI",
+      "signalDate": "2026-09-24",
+      "cohortId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+      "cohortType": "PROSPECTIVE_CLEAN",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 53.44,
+        "corridorMax": 54.52,
+        "stopLoss": 51.94,
+        "takeProfit1": 62.41,
+        "takeProfit2": 62.97,
+        "confluenceScore": 63.1,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 30,
+      "evaluation": {
+        "symbol": "QQQI",
+        "engine_version": "7ad44595826c147cc77f93cd676af520764c7442",
+        "signal_date": "2026-09-24",
+        "entry_state": "ENTRY_NOT_TRIGGERED",
+        "entry_date": null,
+        "entry_price": null,
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "exit_date": null,
+        "exit_price": null,
+        "exit_reason": "ENTRY_WINDOW_EXPIRED",
+        "gross_return_pct": null,
+        "net_simulated_return_pct": null,
+        "r_multiple": null,
+        "mfe": null,
+        "mae": null,
+        "confluence_score": 63.1,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": "5 trading sessions elapsed without satisfying entry corridor criteria."
+      }
+    },
+    {
+      "index": 18,
+      "symbol": "MSFT",
+      "signalDate": "2026-09-24",
+      "cohortId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+      "cohortType": "PROSPECTIVE_CLEAN",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 471.03,
+        "corridorMax": 500.39,
+        "stopLoss": 468.05,
+        "takeProfit1": 581.44,
+        "takeProfit2": 586.84,
+        "confluenceScore": 78.2,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 51,
+      "evaluation": {
+        "symbol": "MSFT",
+        "engine_version": "7ad44595826c147cc77f93cd676af520764c7442",
+        "signal_date": "2026-09-24",
+        "entry_state": "ENTRY_TRIGGERED",
+        "entry_date": "2026-09-25",
+        "entry_price": 499.04,
+        "outcome": "NEUTRAL",
+        "exit_date": "2026-10-22",
+        "exit_price": 521.08,
+        "exit_reason": "HORIZON_EXIT",
+        "gross_return_pct": 4.42,
+        "net_simulated_return_pct": 4.17,
+        "r_multiple": 0.71,
+        "mfe": 10.44,
+        "mae": -0.36,
+        "confluence_score": 78.2,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": null
+      }
+    },
+    {
+      "index": 19,
+      "symbol": "NVDA",
+      "signalDate": "2026-09-24",
+      "cohortId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+      "cohortType": "PROSPECTIVE_CLEAN",
+      "decisionState": "ACTIONABLE_SETUP",
+      "plan": {
+        "corridorMin": 215.19,
+        "corridorMax": 223.41,
+        "stopLoss": 210.85,
+        "takeProfit1": 256.54,
+        "takeProfit2": 259.29,
+        "confluenceScore": 79.7,
+        "marketRegime": null
+      },
+      "barsAvailableCount": 55,
+      "evaluation": {
+        "symbol": "NVDA",
+        "engine_version": "7ad44595826c147cc77f93cd676af520764c7442",
+        "signal_date": "2026-09-24",
+        "entry_state": "ENTRY_TRIGGERED",
+        "entry_date": "2026-09-25",
+        "entry_price": 223.41,
+        "outcome": "NEUTRAL",
+        "exit_date": "2026-10-22",
+        "exit_price": 212.21,
+        "exit_reason": "HORIZON_EXIT",
+        "gross_return_pct": -5.01,
+        "net_simulated_return_pct": -5.26,
+        "r_multiple": -0.89,
+        "mfe": 8.93,
+        "mae": -5.44,
+        "confluence_score": 79.7,
+        "market_regime": "UNKNOWN",
+        "provider": "YAHOO_FINANCE",
+        "intrabar_resolution_evidence": null
+      }
+    }
+  ],
+  "threeSymbolAcquisitionManifest": {
+    "manifestId": "ARX_THREE_SYMBOL_ACQUISITION_MANIFEST_002",
+    "status": "ACQUISITION_COMPLETED",
+    "governingCeiling": {
+      "accountingType": "PERSISTENT_HTTP_REQUEST_COUNTER",
+      "sharedAttemptCeiling": 6,
+      "totalAttemptsReserved": 3,
+      "totalAttemptsCompleted": 3,
+      "attemptAccountingScope": "All HTTP transmissions (including cookie/bootstrap calls, redirects, retries, and errors) counted against six total attempts",
+      "priorCountersReset": false,
+      "reservationProtocol": "Every transmission requires a prior durable on-disk reservation in acquisition_attempt_ledger.json before network transmission",
+      "restartSafety": "Durable on-disk ledger ensures process restart cannot reset attempt counters",
+      "redirectPolicy": "allow_redirects=False. Automatic redirects disabled. A 3xx response consumes 1 reservation; following redirect requires a second reservation.",
+      "retryPolicy": "Automatic retries disabled (retries=0). Retries must be explicitly requested and consume a reservation slot.",
+      "authorizationNotice": "The proposed six-attempt ceiling is NOT acquisition authorization. Budget remains locked pending explicit GO.",
+      "concurrencyAtomicity": "POSIX flock (fcntl.flock) guarantees atomic reservations across concurrent OS processes; concurrent clients cannot transmit request 7",
+      "failClosedContinuation": "Missing or corrupt ledger state during continuation raises LedgerMissingError/LedgerCorruptedError, failing closed without budget reset",
+      "rawCustodyReceiptType": "SHA-256 integrity receipt",
+      "ohlcvProcessingBasis": "SPLIT_ADJUSTED_ONLY (indicators.quote[0]); indicators.adjclose[0] strictly excluded with zero dividend factor application",
+      "remainingBudget": 3,
+      "budgetExhausted": false
+    },
+    "calendarAuthority": {
+      "exchange": "XNYS",
+      "timezone": "America/New_York",
+      "regularTradingHours": "09:30-16:00 ET",
+      "entryWindowSessions": 5,
+      "holdingWindowSessions": 20,
+      "holdingSessionCounting": "Includes entry session as session 1"
+    },
+    "targets": [
+      {
+        "symbol": "VOO",
+        "instrument": "Index ETF",
+        "signalDate": "2026-09-24",
+        "signalTimestampUtc": "2026-09-24T10:12:04.483000+00:00",
+        "dateBoundaries": {
+          "startDate": "2026-09-25",
+          "endDateExclusive": "2026-10-29",
+          "period1Unix": 1790294400,
+          "period2Unix": 1793232000,
+          "xnysTradingSessions": 24
+        },
+        "requestSpecification": {
+          "primaryProvider": "YAHOO_FINANCE",
+          "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/VOO",
+          "exactUrl": "https://query1.finance.yahoo.com/v8/finance/chart/VOO?period1=1790294400&period2=1793232000&interval=1d&events=history&includeAdjustedClose=true",
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          },
+          "adjustmentBasis": "SPLIT_ADJUSTED_ONLY (Non-dividend-adjusted spot OHLCV)",
+          "timezone": "America/New_York (Regular session 09:30-16:00 ET)",
+          "singleProviderContinuity": true
+        },
+        "purpose": "Full evaluation: 5-session entry corridor + up to 20-session holding window"
+      },
+      {
+        "symbol": "QQQM",
+        "instrument": "Broad Index ETF",
+        "signalDate": "2026-09-24",
+        "signalTimestampUtc": "2026-09-24T10:07:27.689000+00:00",
+        "dateBoundaries": {
+          "startDate": "2026-09-25",
+          "endDateExclusive": "2026-10-29",
+          "period1Unix": 1790294400,
+          "period2Unix": 1793232000,
+          "xnysTradingSessions": 24
+        },
+        "requestSpecification": {
+          "primaryProvider": "YAHOO_FINANCE",
+          "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/QQQM",
+          "exactUrl": "https://query1.finance.yahoo.com/v8/finance/chart/QQQM?period1=1790294400&period2=1793232000&interval=1d&events=history&includeAdjustedClose=true",
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          },
+          "adjustmentBasis": "SPLIT_ADJUSTED_ONLY (Non-dividend-adjusted spot OHLCV)",
+          "timezone": "America/New_York (Regular session 09:30-16:00 ET)",
+          "singleProviderContinuity": true
+        },
+        "purpose": "Contiguous series acquisition to resolve entry sessions T+4/T+5 and holding horizon"
+      },
+      {
+        "symbol": "JEPI",
+        "instrument": "Income ETF",
+        "signalDate": "2026-09-24",
+        "signalTimestampUtc": "2026-09-24T14:24:16.639000+00:00",
+        "verifiedEntry": {
+          "entryDate": "2026-09-25",
+          "entryPrice": 56.56,
+          "triggerCondition": "T+1 Open in corridor [56.47, 56.92]"
+        },
+        "dateBoundaries": {
+          "startDate": "2026-09-25",
+          "endDateExclusive": "2026-10-23",
+          "period1Unix": 1790294400,
+          "period2Unix": 1792713600,
+          "xnysTradingSessions": 20
+        },
+        "requestSpecification": {
+          "primaryProvider": "YAHOO_FINANCE",
+          "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/JEPI",
+          "exactUrl": "https://query1.finance.yahoo.com/v8/finance/chart/JEPI?period1=1790294400&period2=1792713600&interval=1d&events=history&includeAdjustedClose=true",
+          "headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          },
+          "adjustmentBasis": "SPLIT_ADJUSTED_ONLY (Non-dividend-adjusted spot OHLCV)",
+          "timezone": "America/New_York (Regular session 09:30-16:00 ET)",
+          "singleProviderContinuity": true
+        },
+        "purpose": "Holding maturity completion: sessions 4 through 20 post-entry"
+      }
+    ],
+    "executedAcquisitions": [
+      {
+        "symbol": "VOO",
+        "reservationId": "RES_001_20261123064455449638",
+        "attemptNumber": 1,
+        "httpStatus": 200,
+        "rawByteLength": 3759,
+        "rawSha256": "e344bc0a1f2c01fa2751dafe721fcc799bb85f7ae7c5f07aab20f6c9989512db",
+        "rawReceiptType": "SHA-256 integrity receipt",
+        "sessionsAcquired": 24,
+        "sessionsExpected": 24,
+        "dateCoverage": "2026-09-25 to 2026-10-28",
+        "validationStatus": "VALIDATED",
+        "splitProvenance": {
+          "splitEventsPresent": false,
+          "splitsCount": 0,
+          "splitsDetail": {},
+          "adjustmentBasis": "SPLIT_ADJUSTED_ONLY (indicators.quote[0])",
+          "dividendAdjustmentApplied": false,
+          "provenanceNote": "Extracted directly from indicators.quote[0]. Splits events examined: None occurred in window"
+        }
+      },
+      {
+        "symbol": "QQQM",
+        "reservationId": "RES_002_20261123064455729181",
+        "attemptNumber": 2,
+        "httpStatus": 200,
+        "rawByteLength": 3796,
+        "rawSha256": "39a2c05b7806433128df6a57895c7c62a05678f2e3dbf8d9564672a481969772",
+        "rawReceiptType": "SHA-256 integrity receipt",
+        "sessionsAcquired": 24,
+        "sessionsExpected": 24,
+        "dateCoverage": "2026-09-25 to 2026-10-28",
+        "validationStatus": "VALIDATED",
+        "splitProvenance": {
+          "splitEventsPresent": false,
+          "splitsCount": 0,
+          "splitsDetail": {},
+          "adjustmentBasis": "SPLIT_ADJUSTED_ONLY (indicators.quote[0])",
+          "dividendAdjustmentApplied": false,
+          "provenanceNote": "Extracted directly from indicators.quote[0]. Splits events examined: None occurred in window"
+        }
+      },
+      {
+        "symbol": "JEPI",
+        "reservationId": "RES_003_20261123064455964558",
+        "attemptNumber": 3,
+        "httpStatus": 200,
+        "rawByteLength": 3373,
+        "rawSha256": "761ceaa809db7530ad31bbff11e93c335f580112da94f10f5068e64b8a8c3ce1",
+        "rawReceiptType": "SHA-256 integrity receipt",
+        "sessionsAcquired": 20,
+        "sessionsExpected": 20,
+        "dateCoverage": "2026-09-25 to 2026-10-22",
+        "validationStatus": "VALIDATED",
+        "splitProvenance": {
+          "splitEventsPresent": false,
+          "splitsCount": 0,
+          "splitsDetail": {},
+          "adjustmentBasis": "SPLIT_ADJUSTED_ONLY (indicators.quote[0])",
+          "dividendAdjustmentApplied": false,
+          "provenanceNote": "Extracted directly from indicators.quote[0]. Splits events examined: None occurred in window"
+        }
+      }
+    ]
+  },
+  "intradaySequencingReconciliation": {
+    "pureDailyEvaluation": {
+      "d1_total": 19,
+      "d2_eligible": 18,
+      "d3_triggered": 7,
+      "d4_mature_triggered": 6,
+      "d5_resolved_mature": 6,
+      "successCount": 1,
+      "failureCount": 1,
+      "neutralCount": 4,
+      "unresolvedIntrabarCount": 2,
+      "untriggeredCount": 8,
+      "dataMissingCount": 1,
+      "unmaturedCount": 2,
+      "avgGrossReturnPct": 2.19,
+      "avgNetReturnPct": 1.94,
+      "avgRMultiple": 0.56
+    },
+    "intradayTickResolvedEvaluation": {
+      "d1_total": 19,
+      "d2_eligible": 18,
+      "d3_triggered": 10,
+      "d4_mature_triggered": 10,
+      "d5_resolved_mature": 10,
+      "successCount": 1,
+      "failureCount": 3,
+      "neutralCount": 6,
+      "unresolvedIntrabarCount": 0,
+      "untriggeredCount": 8,
+      "dataMissingCount": 1,
+      "unmaturedCount": 0,
+      "resolvedSignals": [
+        {
+          "symbol": "NET",
+          "outcome": "SUCCESS",
+          "grossRet": 14.59,
+          "netRet": 14.34,
+          "rMult": 3.09
+        },
+        {
+          "symbol": "ANET",
+          "outcome": "NEUTRAL",
+          "grossRet": 6.2,
+          "netRet": 5.95,
+          "rMult": 0.76
+        },
+        {
+          "symbol": "TMDX",
+          "outcome": "FAILURE",
+          "grossRet": -10.55,
+          "netRet": -10.8,
+          "rMult": -1.0
+        },
+        {
+          "symbol": "CELH",
+          "outcome": "FAILURE",
+          "grossRet": -3.4,
+          "netRet": -3.65,
+          "rMult": -1.0
+        },
+        {
+          "symbol": "CRSP",
+          "outcome": "FAILURE",
+          "grossRet": -2.57,
+          "netRet": -2.82,
+          "rMult": -1.0
+        },
+        {
+          "symbol": "AAPL",
+          "outcome": "NEUTRAL",
+          "grossRet": 3.47,
+          "netRet": 3.22,
+          "rMult": 0.68
+        },
+        {
+          "symbol": "MSFT",
+          "outcome": "NEUTRAL",
+          "grossRet": 4.42,
+          "netRet": 4.17,
+          "rMult": 0.71
+        },
+        {
+          "symbol": "NVDA",
+          "outcome": "NEUTRAL",
+          "grossRet": -5.01,
+          "netRet": -5.26,
+          "rMult": -0.89
+        },
+        {
+          "symbol": "VOO",
+          "outcome": "NEUTRAL",
+          "grossRet": -0.55,
+          "netRet": -0.8,
+          "rMult": -0.14
+        },
+        {
+          "symbol": "JEPI",
+          "outcome": "NEUTRAL",
+          "grossRet": 1.29,
+          "netRet": 1.04,
+          "rMult": 0.37
+        }
+      ],
+      "avgGrossReturnPct": 0.79,
+      "avgNetReturnPct": 0.54,
+      "avgRMultiple": 0.16
+    }
+  },
+  "reconciliationStatus": "ACQUISITION_AND_FINAL_RECONCILIATION_COMPLETE",
+  "reconciledTimestampUtc": "2026-11-23T00:58:30Z",
+  "offlineTestVerification": {
+    "clientPath": "scratch/bounded_acquisition_client.py",
+    "clientSha256": "c16b35962b9e44303bb2c9b44170d581943a38c9fdc5ebd70b6f05147e07533d",
+    "testSuitePath": "scratch/test_bounded_acquisition_client.py",
+    "testSuiteSha256": "109a3a5bd7766a291504ec7b4fde6ed9d01d469c6587aca3997356018930556b",
+    "status": "PASSED_100_PERCENT",
+    "testsPassed": 5,
+    "testsTotal": 5,
+    "durationSeconds": 1.6,
+    "testedScenarios": [
+      "Sequential budget lifecycle & 7th attempt hard-blocking (AttemptCeilingExceededError)",
+      "Urllib redirect & retry prohibition via DisallowRedirectHandler (halts upon 3xx, prevents secondary requests)",
+      "Multi-process concurrency atomicity via POSIX flock (proves concurrent clients cannot transmit request 7)",
+      "Restart preserves consumption and missing/corrupt state during continuation fails closed (LedgerMissingError, LedgerCorruptedError)",
+      "Raw response preservation byte-for-byte with SHA-256 integrity receipt and split-adjusted non-dividend OHLCV parsing"
+    ]
+  },
+  "finalReconciledTimestampUtc": "2026-11-23T06:48:01.310333+00:00",
+  "repeatRunDeterminismSha256": "a9675c9592c474c2b3ad94998922c3c184d4a27305b091e42cdcd9e92eda2895",
+  "cohortBreakdown": {
+    "historicalBaseline": {
+      "totalRecords": 9,
+      "untriggeredCount": 4,
+      "triggeredCount": 5,
+      "takeProfit1Count": 1,
+      "stopLossCount": 3,
+      "horizonExitCount": 1,
+      "unresolvedCount": 0,
+      "averageGrossReturnPct": 0.85,
+      "averageNetReturnPct": 0.6,
+      "averageRMultiple": 0.17,
+      "winRatePct": 20.0,
+      "lossRatePct": 60.0,
+      "neutralRatePct": 20.0
+    },
+    "prospectiveClean": {
+      "totalRecords": 9,
+      "untriggeredCount": 4,
+      "triggeredCount": 5,
+      "takeProfit1Count": 0,
+      "stopLossCount": 0,
+      "horizonExitCount": 5,
+      "unresolvedCount": 0,
+      "averageGrossReturnPct": 0.72,
+      "averageNetReturnPct": 0.47,
+      "averageRMultiple": 0.15,
+      "winRatePct": 0.0,
+      "lossRatePct": 0.0,
+      "neutralRatePct": 100.0
+    }
+  },
+  "reconciliationNotes": {
+    "effectiveDate": "2026-11-23",
+    "status": "RECONCILED",
+    "rMultipleReconciliation": {
+      "authoritativeFormula": "rMultipleRealized = (exitPrice - entryPrice) / (entryPrice - stopLoss) per Contract V1.0.1 (gross dollar gain/loss per share divided by initial dollar risk per share)",
+      "historicalBaseline": {
+        "priorReportedAverageRMultiple": -0.01,
+        "recomputedAverageRMultiple": 0.17,
+        "discrepancyCause": "Transcription error in summary report table where NET (+3.09R) was transcribed as +1.77R and ANET (+0.76R) as +1.18R. The -0.01R receipt value was calculated from those transcribed rows: (1.77 + 1.18 - 3.00) / 5 = -0.01R, which contradicted the underlying evaluation records in this receipt (NET=3.09R, ANET=0.76R). Recomputation directly from evaluated trades under Contract V1.0.1 yields: NET (+3.0942R) + ANET (+0.7625R) + TMDX (-1.0000R) + CELH (-1.0000R) + CRSP (-1.0000R) = +0.8567R / 5 = +0.1713R -> +0.17R.",
+        "tradeBreakdown": [
+          {
+            "symbol": "NET",
+            "entry": 279.18,
+            "exit": 319.9,
+            "stop": 266.02,
+            "rMultiple": 3.09
+          },
+          {
+            "symbol": "ANET",
+            "entry": 194.83,
+            "exit": 206.9,
+            "stop": 179.0,
+            "rMultiple": 0.76
+          },
+          {
+            "symbol": "TMDX",
+            "entry": 88.83,
+            "exit": 79.46,
+            "stop": 79.46,
+            "rMultiple": -1.0
+          },
+          {
+            "symbol": "CELH",
+            "entry": 30.6,
+            "exit": 29.56,
+            "stop": 29.56,
+            "rMultiple": -1.0
+          },
+          {
+            "symbol": "CRSP",
+            "entry": 54.45,
+            "exit": 53.05,
+            "stop": 53.05,
+            "rMultiple": -1.0
+          }
+        ]
+      },
+      "prospectiveClean": {
+        "priorReportedAverageRMultiple": 0.18,
+        "recomputedAverageRMultiple": 0.15,
+        "discrepancyCause": "Transcription error in summary report table where AAPL (+0.68R) was transcribed as +0.47R, MSFT (+0.71R) as +1.03R, and NVDA (-0.89R) as -0.84R. The +0.18R receipt value was calculated from those transcribed rows: (0.47 + 1.03 - 0.84 - 0.14 + 0.37) / 5 = +0.178R -> +0.18R, which contradicted the underlying evaluation records in this receipt (AAPL=0.68R, MSFT=0.71R, NVDA=-0.89R). Recomputation directly from evaluated trades under Contract V1.0.1 yields: AAPL (+0.6769R) + VOO (-0.1388R) + JEPI (+0.3724R) + MSFT (+0.7112R) + NVDA (-0.8917R) = +0.7300R / 5 = +0.1460R -> +0.15R.",
+        "tradeBreakdown": [
+          {
+            "symbol": "AAPL",
+            "entry": 332.13,
+            "exit": 343.65,
+            "stop": 315.11,
+            "rMultiple": 0.68
+          },
+          {
+            "symbol": "VOO",
+            "entry": 706.19,
+            "exit": 702.3,
+            "stop": 678.16,
+            "rMultiple": -0.14
+          },
+          {
+            "symbol": "JEPI",
+            "entry": 56.56,
+            "exit": 57.29,
+            "stop": 54.6,
+            "rMultiple": 0.37
+          },
+          {
+            "symbol": "MSFT",
+            "entry": 499.04,
+            "exit": 521.08,
+            "stop": 468.05,
+            "rMultiple": 0.71
+          },
+          {
+            "symbol": "NVDA",
+            "entry": 223.41,
+            "exit": 212.21,
+            "stop": 210.85,
+            "rMultiple": -0.89
+          }
+        ]
+      },
+      "combinedTotal": {
+        "priorReportedAverageRMultiple": 0.08,
+        "recomputedAverageRMultiple": 0.16,
+        "discrepancyCause": "Propagation of historical (-0.01R) and prospective (+0.18R) transcription errors: (-0.05 + 0.89) / 10 = +0.084R -> +0.08R. First-principles aggregation across all 10 trades yields (0.8567 + 0.7300) / 10 = +0.1587R -> +0.16R."
+      }
+    },
+    "fillPriceAndReturnReconciliation": {
+      "authoritativeFormulas": {
+        "grossReturnPct": "round(((exitPrice - entryPrice) / entryPrice) * 100.0, 2)",
+        "netReturnPct": "round(grossReturnPct - 0.25, 2) [mandatory 25 bps contract friction]",
+        "rMultipleRealized": "round((exitPrice - entryPrice) / (entryPrice - stopLoss), 2) [Contract V1.0.1]"
+      },
+      "celhReconciliation": {
+        "symbol": "CELH",
+        "signalId": "CELH_2026-09-04",
+        "signalDate": "2026-09-04",
+        "entryDate": "2026-09-08",
+        "entryPrice": 30.6,
+        "entryMechanism": "T1_OPEN_IN_CORRIDOR (corridor: 30.15 - 32.25)",
+        "exitDate": "2026-09-08",
+        "exitPrice": 29.56,
+        "exitReason": "STOP_LOSS (stopLoss: 29.56 hit on T+1 intraday)",
+        "recomputedGrossReturnPct": -3.4,
+        "recomputedNetReturnPct": -3.65,
+        "recomputedRMultiple": -1.0,
+        "priorReportedNetReturnPct": -10.38,
+        "discrepancyCause": "Summary report table legacy transcription artifact (-10.13% gross / -10.38% net) contradicted underlying evaluator record and fill prices ((29.56 - 30.60) / 30.60 = -3.40% gross, -3.65% net). The -1.00R multiple was already mathematically correct from fill prices (-1.04 / 1.04 = -1.00R)."
+      },
+      "crspReconciliation": {
+        "symbol": "CRSP",
+        "signalId": "CRSP_2026-09-04",
+        "signalDate": "2026-09-04",
+        "entryDate": "2026-09-08",
+        "entryPrice": 54.45,
+        "entryMechanism": "T1_OPEN_IN_CORRIDOR (corridor: 53.60 - 57.52)",
+        "exitDate": "2026-09-08",
+        "exitPrice": 53.05,
+        "exitReason": "STOP_LOSS (stopLoss: 53.05 hit on T+1 intraday)",
+        "recomputedGrossReturnPct": -2.57,
+        "recomputedNetReturnPct": -2.82,
+        "recomputedRMultiple": -1.0,
+        "priorReportedNetReturnPct": -8.02,
+        "discrepancyCause": "Summary report table legacy transcription artifact (-7.77% gross / -8.02% net) contradicted underlying evaluator record and fill prices ((53.05 - 54.45) / 54.45 = -2.57% gross, -2.82% net). The -1.00R multiple was already mathematically correct from fill prices (-1.40 / 1.40 = -1.00R)."
+      },
+      "aggregateImpact": {
+        "historicalBaseline": {
+          "priorNetReturnPct": -1.78,
+          "recomputedNetReturnPct": 0.6,
+          "recomputedGrossReturnPct": 0.85,
+          "recomputedAverageR": 0.17,
+          "formula": "(14.34 + 5.95 - 10.80 - 3.65 - 2.82) / 5 = +3.02 / 5 = +0.604% -> +0.60%"
+        },
+        "prospectiveClean": {
+          "netReturnPct": 0.47,
+          "grossReturnPct": 0.72,
+          "averageR": 0.15,
+          "formula": "(3.22 + 4.17 - 5.26 - 0.80 + 1.04) / 5 = +2.37 / 5 = +0.474% -> +0.47%"
+        },
+        "combinedNatural": {
+          "priorNetReturnPct": -0.65,
+          "recomputedNetReturnPct": 0.54,
+          "recomputedGrossReturnPct": 0.79,
+          "recomputedAverageR": 0.16,
+          "formula": "(3.0126 + 2.3627) / 10 = +5.3753% / 10 = +0.5375% -> +0.54%"
+        },
+        "pureDailyResolved": {
+          "netReturnPct": 1.48,
+          "grossReturnPct": 1.73,
+          "averageR": 0.45,
+          "formula": "Excludes unsequenced CELH and CRSP (D5=8): 11.8452% / 8 = +1.48%"
+        }
+      }
+    }
+  }
+}

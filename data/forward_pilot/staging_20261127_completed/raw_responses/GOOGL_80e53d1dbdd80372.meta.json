@@ -1,0 +1,9 @@
+{
+  "symbol": "GOOGL",
+  "targetUrl": "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+  "timestampUtc": "2026-11-28T04:41:06.450214+00:00",
+  "sha256": "80e53d1dbdd80372871a9c7693bb2b8b82988dd1b55fa6707ec002b2478da5c5",
+  "byteLength": 14956,
+  "rawFilePath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/GOOGL_80e53d1dbdd80372.raw",
+  "receiptType": "SHA-256 integrity receipt"
+}

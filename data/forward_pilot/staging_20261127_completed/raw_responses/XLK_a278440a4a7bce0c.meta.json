@@ -1,0 +1,9 @@
+{
+  "symbol": "XLK",
+  "targetUrl": "https://query1.finance.yahoo.com/v8/finance/chart/XLK?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+  "timestampUtc": "2026-11-28T04:41:03.692673+00:00",
+  "sha256": "a278440a4a7bce0c9119ad5dfcece15de7eb638f0c42aa7eb7e021be21566528",
+  "byteLength": 15300,
+  "rawFilePath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/XLK_a278440a4a7bce0c.raw",
+  "receiptType": "SHA-256 integrity receipt"
+}

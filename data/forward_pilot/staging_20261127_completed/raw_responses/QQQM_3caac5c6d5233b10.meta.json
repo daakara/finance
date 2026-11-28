@@ -1,0 +1,9 @@
+{
+  "symbol": "QQQM",
+  "targetUrl": "https://query1.finance.yahoo.com/v8/finance/chart/QQQM?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+  "timestampUtc": "2026-11-28T04:41:01.989696+00:00",
+  "sha256": "3caac5c6d5233b10aee081a4cdff74c4421bd8cb55626e6e269a2ecb893edb51",
+  "byteLength": 15001,
+  "rawFilePath": "/Users/iDavid/Projects/finance-paper-trading-322/data/forward_pilot/staging_20261127_completed/raw_responses/QQQM_3caac5c6d5233b10.raw",
+  "receiptType": "SHA-256 integrity receipt"
+}

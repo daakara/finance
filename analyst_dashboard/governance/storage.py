@@ -21,7 +21,7 @@ import uuid
 import stat
 import shutil
 import logging
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, Union
 
 logger = logging.getLogger("arx.governance.storage")
 
@@ -420,3 +420,237 @@ def attest_persistent_storage() -> Dict[str, Any]:
 def is_storage_persistent() -> bool:
     """Quick boolean attestation helper."""
     return attest_persistent_storage().get("isValid", False)
+
+
+# =====================================================================
+# Forward Paper-Trading Pilot Storage Invariants (PR-PT-01)
+# =====================================================================
+
+DEFAULT_FORWARD_PILOT_DIRNAME = "forward_pilot"
+DEFAULT_FORWARD_PILOT_DATA_DIR = os.path.join(REPO_ROOT, "data", DEFAULT_FORWARD_PILOT_DIRNAME)
+APPROVED_FORWARD_COHORT_PREFIX = "COHORT_FORWARD_PILOT_"
+DISALLOWED_COHORT_PREFIXES = (
+    "COHORT_HISTORICAL_",
+    "ARX_PROSPECTIVE_VALIDATION_EPOCH_",
+    "V2_4_0_",
+    "EPOCH_1_",
+    "EPOCH_2_",
+)
+
+
+def resolve_forward_pilot_data_root() -> str:
+    """Resolves the authoritative root directory for the forward paper-trading pilot.
+
+    In production:
+    - Defaults to /root/analyst_dashboard/data/forward_pilot on the persistent volume mount.
+    - Custom override ARX_FORWARD_PILOT_DATA_DIR must reside on the persistent volume.
+    In local development / tests:
+    - Defaults to repository data/forward_pilot or ARX_FORWARD_PILOT_DATA_DIR.
+    """
+    env_dir = os.getenv("ARX_FORWARD_PILOT_DATA_DIR")
+    if env_dir:
+        canonical = os.path.abspath(env_dir)
+        if is_production_runtime():
+            vol_root = resolve_persistent_volume_root()
+            try:
+                rel = os.path.relpath(canonical, vol_root)
+                if rel.startswith("..") or rel == ".":
+                    raise RuntimeError(
+                        f"FAIL_CLOSED: ARX_FORWARD_PILOT_DATA_DIR='{canonical}' must be a subdirectory of "
+                        f"persistent volume mount '{vol_root}' in production."
+                    )
+            except ValueError:
+                raise RuntimeError(
+                    f"FAIL_CLOSED: ARX_FORWARD_PILOT_DATA_DIR='{canonical}' drive mismatch with '{vol_root}'."
+                )
+        return canonical
+
+    if is_production_runtime():
+        return os.path.join(resolve_data_root(), DEFAULT_FORWARD_PILOT_DIRNAME)
+
+    return DEFAULT_FORWARD_PILOT_DATA_DIR
+
+
+def validate_forward_write_path(
+    target_path: str,
+    cohort_id: str,
+    forward_root: Optional[str] = None,
+) -> str:
+    """Validates that a proposed forward pilot write target satisfies storage isolation.
+
+    Enforces:
+    1. Namespace restriction: cohort_id MUST start with 'COHORT_FORWARD_PILOT_'.
+       Historical and epoch validation namespaces are strictly rejected.
+    2. Path confinement: target_path MUST resolve strictly inside forward_root.
+       Path traversals ('..'), absolute escapes, and symlink escapes outside forward_root
+       raise ValueError.
+    3. Historical protection: target_path MUST NOT intersect canonical historical directories
+       (analyst_dashboard/data, docs/governance, tests/fixtures).
+
+    Returns canonical real path of target.
+    """
+    # 1. Namespace validation
+    if not isinstance(cohort_id, str) or not cohort_id.strip():
+        raise ValueError("FAIL_CLOSED: cohort_id must be a non-empty string.")
+
+    cleaned_cohort = cohort_id.strip()
+    for disallowed in DISALLOWED_COHORT_PREFIXES:
+        if cleaned_cohort.startswith(disallowed):
+            raise ValueError(
+                f"FAIL_CLOSED: cohort_id '{cleaned_cohort}' uses protected historical or validation "
+                f"namespace prefix '{disallowed}'. Forward operations cannot mutate historical baselines."
+            )
+
+    if not cleaned_cohort.startswith(APPROVED_FORWARD_COHORT_PREFIX):
+        raise ValueError(
+            f"FAIL_CLOSED: cohort_id '{cleaned_cohort}' does not match approved forward prefix "
+            f"'{APPROVED_FORWARD_COHORT_PREFIX}'."
+        )
+
+    # 2. Forward root resolution
+    root = os.path.realpath(os.path.abspath(forward_root or resolve_forward_pilot_data_root()))
+
+    # 3. Path confinement validation
+    abs_target = os.path.abspath(target_path)
+
+    parent_dir = os.path.dirname(abs_target)
+    if not os.path.exists(parent_dir):
+        try:
+            rel = os.path.relpath(abs_target, root)
+            if rel.startswith("..") or rel == ".":
+                raise ValueError(
+                    f"FAIL_CLOSED: target path '{abs_target}' escapes forward root '{root}'."
+                )
+        except ValueError:
+            raise ValueError(
+                f"FAIL_CLOSED: target path '{abs_target}' drive mismatch with forward root '{root}'."
+            )
+        ancestor = abs_target
+        while ancestor and not os.path.exists(ancestor):
+            ancestor = os.path.dirname(ancestor)
+        real_ancestor = os.path.realpath(ancestor) if ancestor else root
+        try:
+            rel_anc = os.path.relpath(real_ancestor, root)
+            if rel_anc.startswith(".."):
+                raise ValueError(
+                    f"FAIL_CLOSED: target path ancestor '{real_ancestor}' escapes forward root '{root}'."
+                )
+        except ValueError:
+            raise ValueError(
+                f"FAIL_CLOSED: target ancestor drive mismatch with forward root '{root}'."
+            )
+        real_target = os.path.join(root, os.path.relpath(abs_target, root))
+    else:
+        real_parent = os.path.realpath(parent_dir)
+        try:
+            rel_parent = os.path.relpath(real_parent, root)
+            if rel_parent.startswith(".."):
+                raise ValueError(
+                    f"FAIL_CLOSED: target parent directory '{real_parent}' escapes forward root '{root}'."
+                )
+        except ValueError:
+            raise ValueError(
+                f"FAIL_CLOSED: target parent directory drive mismatch with forward root '{root}'."
+            )
+
+        if os.path.lexists(abs_target) or os.path.islink(abs_target):
+            real_target = os.path.realpath(abs_target)
+            try:
+                rel_target = os.path.relpath(real_target, root)
+                if rel_target.startswith("..") or rel_target == ".":
+                    raise ValueError(
+                        f"FAIL_CLOSED: target symlink '{abs_target}' resolves to '{real_target}', "
+                        f"which escapes forward root '{root}'."
+                    )
+            except ValueError:
+                raise ValueError(
+                    f"FAIL_CLOSED: real target drive mismatch with forward root '{root}'."
+                )
+        else:
+            base_name = os.path.basename(abs_target)
+            real_target = os.path.join(real_parent, base_name)
+
+    # realpath also resolves dangling intermediate symlinks. The ancestor walk
+    # above must not treat a missing symlink destination as an ordinary directory.
+    real_target = os.path.realpath(abs_target)
+    if real_target == root:
+        raise ValueError("FAIL_CLOSED: target must be a file strictly inside the forward root.")
+
+    # Double check commonpath containment
+    try:
+        common = os.path.commonpath([root, real_target])
+        if common != root:
+            raise ValueError(
+                f"FAIL_CLOSED: target path '{real_target}' is outside forward root '{root}'."
+            )
+    except ValueError as e:
+        raise ValueError(f"FAIL_CLOSED: path containment failure: {e}")
+
+    # 4. Explicit historical protection
+    historical_protected = [
+        os.path.realpath(os.path.join(REPO_ROOT, "analyst_dashboard", "data")),
+        os.path.realpath(os.path.join(REPO_ROOT, "docs", "governance")),
+        os.path.realpath(os.path.join(REPO_ROOT, "tests", "fixtures")),
+    ]
+    for hp in historical_protected:
+        if os.path.exists(hp):
+            try:
+                protected = os.path.commonpath([hp, real_target]) == hp
+            except ValueError:
+                protected = False  # Different drives cannot intersect.
+            if protected:
+                raise ValueError(
+                    f"FAIL_CLOSED: target path '{real_target}' intersects protected historical "
+                    f"path '{hp}'. Writes to historical directories are strictly prohibited."
+                )
+
+    return real_target
+
+
+def safe_write_forward_pilot_file(
+    target_path: str,
+    cohort_id: str,
+    content: Union[str, bytes],
+    forward_root: Optional[str] = None,
+) -> str:
+    """Atomically writes content to a forward pilot file after strict path validation.
+
+    Guarantees:
+    - Path and namespace are validated prior to any file creation or modification.
+    - If validation fails, zero files or directories are created or modified.
+    - Writes are atomic via temporary file within forward_root followed by atomic rename.
+    - Fsync is issued to ensure physical persistence.
+    - Supports both text (str) and binary (bytes) payloads.
+    """
+    validated_path = validate_forward_write_path(target_path, cohort_id, forward_root=forward_root)
+
+    parent_dir = os.path.dirname(validated_path)
+    os.makedirs(parent_dir, exist_ok=True)
+
+    tmp_id = f".forward_write_{os.getpid()}_{uuid.uuid4().hex[:8]}.tmp"
+    tmp_path = os.path.join(parent_dir, tmp_id)
+    try:
+        if isinstance(content, bytes):
+            with open(tmp_path, "wb") as f:
+                f.write(content)
+                f.flush()
+                os.fsync(f.fileno())
+        else:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                f.write(content)
+                f.flush()
+                os.fsync(f.fileno())
+        os.replace(tmp_path, validated_path)
+        directory_fd = os.open(parent_dir, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+        logger.info(f"Safely wrote forward pilot file at '{validated_path}' for cohort '{cohort_id}'.")
+        return validated_path
+    finally:
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
