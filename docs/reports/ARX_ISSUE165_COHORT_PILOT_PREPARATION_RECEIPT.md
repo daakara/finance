@@ -244,7 +244,7 @@ The proposed pilot window remains provisional for **Monday, 30 November 2026** (
 
 ## 8. Owner Authorization Decree & Pre-Arming Settlement (Monday, 30 November 2026)
 
-On 2026-11-25, following successful completion of Gates 1, 2, and 3, the Owner explicitly issued the binding operational authorization decree for ARX Issue #165 (`ARX-TRIAL-10-ISSUER-001`).
+On 2026-11-28, the Owner formally updated and issued the binding operational authorization decree for ARX Issue #165 (`ARX-TRIAL-10-ISSUER-001`), moving the pilot from Tuesday, 1 December 2026 to Monday, 30 November 2026 (superseding Tuesday's reservation; Tuesday is strictly NOT authorized; both dates must not be left authorized) and authorizing **one supervised natural slot only**.
 
 ### 1. Authoritative Decree Parameters & Deterministic Grant ID
 - **Assigned Grant Identifier:** `c5986d3f8980fed2ef2f153306536b21` (32-hex format `^[a-f0-9]{32}$`)
@@ -264,16 +264,15 @@ On 2026-11-25, following successful completion of Gates 1, 2, and 3, the Owner e
   9. JPM (CIK: `0000019617`)
   10. V (CIK: `0001403161`)
 
-### 2. Operational Validity Window & Dissemination Slots
-The grant is valid strictly on **Monday, 30 November 2026**:
-- **Full Validity Window:** 15:00:00 to 22:41:00 CET (14:00:00 to 21:41:00 UTC) — 27,660 seconds total window ($\le 86,400\text{ s}$, single NY business day).
-- **Slot Schedule (1 Attempt per Slot):**
-  - **Slot 1:** 15:15:00 – 15:25:00 CET (14:15:00 – 14:25:00 UTC)
-  - **Slot 2:** 19:00:00 – 19:10:00 CET (18:00:00 – 18:10:00 UTC)
-  - **Slot 3:** 22:30:00 – 22:40:00 CET (21:30:00 – 21:40:00 UTC)
+### 2. Operational Validity Window & Single Natural Slot Schedule
+The grant is valid strictly on **Monday, 30 November 2026** for one natural slot only (Tuesday, 1 December is superseded and not authorized):
+- **Full Validity Window:** 15:00:00 to 15:35:00 CET (14:00:00 to 14:35:00 UTC) — 2,100 seconds total window ($\le 86,400\text{ s}$, single NY business day).
+- **Single Natural Slot Window (1 Attempt Only):**
+  - **Natural Slot:** 15:15:00 – 15:25:00 CET (14:15:00 – 14:25:00 UTC / 09:15:00 – 09:25:00 EST)
+  - Slots 2 and 3 are removed and not authorized.
 
 ### 3. Rate Limits & Evidence Containment
-- **Transmission Quotas:** Max 4 transmissions/issuer/slot; 40 transmissions/slot upfront reservation charge; 120 total pilot transmissions max.
+- **Transmission Quotas:** Max 4 transmissions/issuer/slot; 40 transmissions upfront reservation charge; 40 total transmissions max across pilot.
 - **Wire Rate Limiting:** Shared rate limiter $\le 5.0$ requests/second.
 - **Evidence Storage:** Ingestion strictly into isolated PostgreSQL 16 DB `finance_smart_money_cohort_001`.
 - **Coordination Lock:** Canonical DB `finance_smart_money` used strictly for session advisory lock `401007311509093371`.
@@ -290,23 +289,24 @@ The grant is valid strictly on **Monday, 30 November 2026**:
   - Frozen snapshot `SNAP_SM_1792939989_48f30db6` and all operational holds (`HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD`, `PHASE_A3_UX_HOLD`) remain intact.
 - **Pre-Arming Execution Sequence (Monday, 30 November 2026):**
   1. **Clock Verification:** Ensure wall-clock time $\ge$ 15:00:00 CET (14:00:00 UTC). Prior to this timestamp, `continuous_authorization.py` raises `CONTINUOUS_AUTH_NOT_YET_VALID`.
-  2. **Fresh Off-Host Backup:** Create and verify a fresh baseline backup in R2 under `cohort-pilot/ARX-TRIAL-10-ISSUER-001` immediately prior to arming.
-  3. **Same-Day Preflight:** Re-verify zero advisory locks, dual DB reachability, frozen snapshot integrity, and operational holds.
-  4. **Supervision Confirmation:** Confirm operator active supervision through expiry (22:41 CET).
-  5. **Arming Transition:**
+  2. **Fresh Scoped Off-Host Backup ($\le 12\text{ h}$ old):** Create and verify a fresh baseline backup in R2 under `cohort-pilot/ARX-TRIAL-10-ISSUER-001` with verified disposable restore rehearsal no older than 12 hours prior to arming.
+  3. **Same-Day Preflight Gates:** Verify qualified deployed SHA (`1063a10f`), database isolation (`finance_smart_money_cohort_001`), clean queue (0 active/retryable rows), zero held advisory locks, and active operator supervision.
+  4. **Fail-Closed Gate Rule:** If ANY gate fails, remain disarmed and report **`NO-GO`**. No manual dispatch, backfill, extra slots, or automatic Tuesday retry.
+  5. **Supervision Confirmation:** Confirm operator active supervision (`daakara`) continuously through slot execution and expiry (15:35 CET).
+  6. **Arming Transition:**
      ```bash
      railway variable set \
        ARX_CONTINUOUS_AUTH_ID=c5986d3f8980fed2ef2f153306536b21 \
        ARX_CONTINUOUS_AUTH_ISSUED_AT=2026-11-30T14:00:00Z \
-       ARX_CONTINUOUS_AUTH_EXPIRES_AT=2026-11-30T21:41:00Z \
+       ARX_CONTINUOUS_AUTH_EXPIRES_AT=2026-11-30T14:35:00Z \
        ARX_CONTINUOUS_INGESTION_AUTHORIZED=true \
        ARX_SEC_EGRESS_ROLE=OWNER \
        -p a339a92a-7236-4ac0-9a3a-d7ad440f9690 \
        -e 11cad5e1-358e-430e-84fc-189953cff48a \
        -s 380acddd-8f0b-49cf-99db-59ecbf1a7aae
      ```
-  6. **Execution Observation:** Monitor Slots 1, 2, and 3; enforce caps; record telemetry.
-  7. **Post-Pilot Teardown:** At 22:41 CET (21:41 UTC) or early stop, revert worker to `ARX_SEC_EGRESS_ROLE=DISABLED` and `ARX_CONTINUOUS_INGESTION_AUTHORIZED=false`. Verify advisory lock release and zero post-cutoff wire traffic.
-  8. **Closeout:** Reconcile all three slots into the Issue #165 closeout receipt.
-  9. **Date Modification Stipulation:** If the pilot date changes, operator must return to the Owner for a new bounded grant decree.
+  7. **Execution Observation:** Monitor the single natural slot (15:15–15:25 CET); enforce caps; record telemetry.
+  8. **Post-Slot / Expiry Teardown:** At slot completion (15:25 CET / 14:25 UTC) or grant expiry (15:35 CET / 14:35 UTC) or early stop, revert worker immediately to `ARX_SEC_EGRESS_ROLE=DISABLED` and `ARX_CONTINUOUS_INGESTION_AUTHORIZED=false`. Verify advisory lock release, zero post-cutoff wire traffic, and zero active queue rows.
+  9. **Closeout:** Reconcile the single slot into the Issue #165 closeout receipt.
+  10. **Date Modification Stipulation:** If the pilot date changes, operator must return to the Owner for a new bounded grant decree. Tuesday, 1 December 2026 remains superseded and unauthorized.
 
