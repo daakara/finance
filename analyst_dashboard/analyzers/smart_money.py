@@ -3651,7 +3651,7 @@ class SmartMoneyEngine:
         return {
             "domain_id": "congressional_stock_act",
             "status": SmartMoneyDomainStatus.PIPELINE_HELD.value,
-            "status_label": "Pipeline Pending (HOLD_SEC_001)",
+            "status_label": "Pipeline Unprovisioned",
             "available": False,
             "is_live": False,
             "observation_count": 0,
@@ -3659,7 +3659,7 @@ class SmartMoneyEngine:
             "directional_bias": SmartMoneyDirection.UNASSESSED.value,
             "net_value_usd": 0.0,
             "provenance": "House & Senate Official STOCK Act Portals",
-            "disclosure": "Congressional STOCK Act continuous sync paused under governed operational hold (HOLD_SEC_001).",
+            "disclosure": "Congressional STOCK Act automated continuous ingestion is not provisioned in this deployment.",
             "records": [],
         }
 
