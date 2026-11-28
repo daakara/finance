@@ -12,6 +12,7 @@ Verifies:
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sqlite3
@@ -474,3 +475,143 @@ def test_outside_corridor_tracked_separately_without_altering_contract(temp_env)
     assert claim["outside_corridor_count"] == 1
     assert claim["waiting_pullback_count"] == 6
     assert claim["records_count"] == 10
+
+
+def test_session_window_opening_closing_and_premature(temp_env):
+    """Quality Gate 9: Verify window boundaries, premature NOT_YET_OPEN rejection, closing at 2026-12-01T02:30:00Z, and cutoff MISSED."""
+    cohort_id = "COHORT_FORWARD_PILOT_TEST"
+    session_date = "2026-11-30"
+    start_session = "2026-11-27"
+    auth_expiry = datetime.fromisoformat("2026-12-01T02:30:00+00:00")
+
+    # 1. Premature invocation (before 2026-11-30T21:15:00Z)
+    now_premature = datetime.fromisoformat("2026-11-30T21:14:59+00:00")
+    res_premature = run_acquire_and_capture(
+        session_date=session_date,
+        cohort_id=cohort_id,
+        start_session=start_session,
+        forward_root=temp_env["root"],
+        staging_dir=temp_env["staging"],
+        coordination_db_path=temp_env["db"],
+        now=now_premature,
+        auth_expiry_utc=auth_expiry,
+    )
+    assert res_premature["status"] == "CAPTURE_WINDOW_NOT_YET_OPEN"
+    assert res_premature["verdict"] == "NOT_YET_OPEN"
+    assert res_premature["windowOpenUtc"] == "2026-11-30T21:15:00+00:00"
+    assert res_premature["windowCloseUtc"] == "2026-12-01T02:30:00+00:00"
+
+    # 2. Premature invocation from current date (e.g. 2026-11-28)
+    now_today = datetime.fromisoformat("2026-11-28T07:45:00+00:00")
+    res_today = run_acquire_and_capture(
+        session_date=session_date,
+        cohort_id=cohort_id,
+        start_session=start_session,
+        forward_root=temp_env["root"],
+        staging_dir=temp_env["staging"],
+        coordination_db_path=temp_env["db"],
+        now=now_today,
+        auth_expiry_utc=auth_expiry,
+    )
+    assert res_today["status"] == "CAPTURE_WINDOW_NOT_YET_OPEN"
+    assert res_today["verdict"] == "NOT_YET_OPEN"
+
+    # 3. Exactly at opening (2026-11-30T21:15:00Z)
+    now_opening = datetime.fromisoformat("2026-11-30T21:15:00+00:00")
+    offline_dir = temp_env["staging"] / "empty_fixtures"
+    offline_dir.mkdir(parents=True, exist_ok=True)
+    res_opening = run_acquire_and_capture(
+        session_date=session_date,
+        cohort_id=cohort_id,
+        start_session=start_session,
+        forward_root=temp_env["root"],
+        staging_dir=temp_env["staging"],
+        coordination_db_path=temp_env["db"],
+        offline_fixture_dir=offline_dir,
+        now=now_opening,
+        auth_expiry_utc=auth_expiry,
+        initialize=True,
+    )
+    assert res_opening.get("verdict") not in ("NOT_YET_OPEN", "MISSED")
+
+    # 4. Past cutoff (2026-12-01T02:30:01Z) -> strictly MISSED
+    now_past_cutoff = datetime.fromisoformat("2026-12-01T02:30:01+00:00")
+    res_past = run_acquire_and_capture(
+        session_date=session_date,
+        cohort_id=cohort_id,
+        start_session=start_session,
+        forward_root=temp_env["root"],
+        staging_dir=temp_env["staging"],
+        coordination_db_path=temp_env["db"],
+        now=now_past_cutoff,
+        auth_expiry_utc=auth_expiry,
+    )
+    assert res_past["status"] == "CAPTURE_WINDOW_EXPIRED_OR_INVALID"
+    assert res_past["verdict"] == "MISSED"
+
+
+def test_restart_near_cutoff_recovery(temp_env, tmp_path):
+    """Quality Gate 10: Verify restart recovery near cutoff preserves consumed budget and halts after cutoff."""
+    store = PaperTradingCoordinationStore(db_path=temp_env["db"])
+    cohort_id = "COHORT_FORWARD_PILOT_TEST"
+    session_date = "2026-11-30"
+    start_session = "2026-11-27"
+    auth_expiry = datetime.fromisoformat("2026-12-01T02:30:00+00:00")
+
+    raw_bytes = b'{"mock": "chart"}'
+    digest = hashlib.sha256(raw_bytes).hexdigest()
+
+    # Pre-claim and consume 4 attempts at 2026-11-30T22:00:00Z
+    store.claim_session(
+        cohort_id=cohort_id,
+        session_date=session_date,
+        claimed_by="runner-initial",
+        invocation_time_utc="2026-11-30T22:00:00Z",
+        source_cutoff_time_utc="2026-11-30T21:00:00Z",
+        max_budget=12,
+        now_utc=datetime.fromisoformat("2026-11-30T22:00:00+00:00"),
+    )
+    for i in range(1, 5):
+        idx = store.reserve_http_attempt(
+            cohort_id=cohort_id,
+            session_date=session_date,
+            symbol=f"SYM_{i}",
+            target_url="http://mock",
+            max_budget=12,
+        )
+        store.finalize_http_attempt(
+            cohort_id=cohort_id,
+            session_date=session_date,
+            attempt_index=idx,
+            status="SUCCESS",
+            http_code=200,
+            duration_ms=10.0,
+            byte_length=len(raw_bytes),
+            sha256=digest,
+        )
+
+    assert store.get_consumed_budget(cohort_id, session_date) == 4
+
+    # Case A: Restart 10 seconds before cutoff (2026-12-01T02:29:50Z)
+    recovery = store.get_session_recovery_state(cohort_id, session_date)
+    assert recovery["totalAttemptsConsumed"] == 4
+    assert len(recovery["completedSymbols"]) == 4
+    assert recovery["claim"]["claim_status"] == "CLAIMED"
+
+    # Case B: Restart 10 seconds after cutoff (2026-12-01T02:30:10Z) -> window check immediately halts with MISSED
+    now_after_cutoff = datetime.fromisoformat("2026-12-01T02:30:10+00:00")
+    res_halt = run_acquire_and_capture(
+        session_date=session_date,
+        cohort_id=cohort_id,
+        start_session=start_session,
+        forward_root=temp_env["root"],
+        staging_dir=temp_env["staging"],
+        coordination_db_path=temp_env["db"],
+        now=now_after_cutoff,
+        auth_expiry_utc=auth_expiry,
+    )
+    assert res_halt["status"] == "CAPTURE_WINDOW_EXPIRED_OR_INVALID"
+    assert res_halt["verdict"] == "MISSED"
+    # Zero additional requests were consumed
+    assert store.get_consumed_budget(cohort_id, session_date) == 4
+

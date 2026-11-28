@@ -31,7 +31,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
@@ -452,20 +452,64 @@ def run_acquire_and_capture(
 
     active_runner = derive_runner_identity(runner_id)
 
-    # 1. Optional explicit bounded authorization expiry check
-    if auth_expiry_utc is not None:
-        if now_dt >= auth_expiry_utc:
-            logger.error(
-                f"AUTHORIZATION_EXPIRED: Current time {now_dt.isoformat()} >= expiry {auth_expiry_utc.isoformat()}"
-            )
-            return {
-                "status": "CAPTURE_WINDOW_EXPIRED_OR_INVALID",
-                "sessionDate": session_date,
-                "reason": f"Authorization strictly expired at {auth_expiry_utc.isoformat()}",
-                "verdict": "MISSED",
-            }
+    # 1. Authoritative Exchange Calendar & Window Calculation
+    cal = None
+    try:
+        import exchange_calendars as xcals
+        cal = xcals.get_calendar("XNYS")
+    except Exception as e:
+        logger.error(f"Cannot initialize XNYS exchange calendar: {e}")
+        return {
+            "status": "CALENDAR_INITIALIZATION_ERROR",
+            "sessionDate": session_date,
+            "reason": str(e),
+            "verdict": "BLOCKED",
+        }
 
-    # 2. Authoritative Exchange Calendar & Window Check at runtime
+    if not cal.is_session(session_date):
+        return {
+            "status": "CAPTURE_WINDOW_EXPIRED_OR_INVALID",
+            "sessionDate": session_date,
+            "reason": f"Date {session_date} is not a valid XNYS trading session",
+            "verdict": "REJECTED",
+        }
+
+    close_dt = cal.session_close(session_date).to_pydatetime()
+    next_open_dt = cal.session_open(cal.next_session(session_date)).to_pydatetime()
+    window_open_dt = close_dt + timedelta(minutes=15)
+    window_close_dt = next_open_dt - timedelta(hours=12)
+    effective_close_dt = min(window_close_dt, auth_expiry_utc) if auth_expiry_utc else window_close_dt
+
+    # 2. Premature Invocation Guard (NOT_YET_OPEN)
+    if now_dt < window_open_dt:
+        logger.warning(
+            f"PREMATURE_INVOCATION: Current time {now_dt.isoformat()} < window open {window_open_dt.isoformat()}"
+        )
+        return {
+            "status": "CAPTURE_WINDOW_NOT_YET_OPEN",
+            "sessionDate": session_date,
+            "windowOpenUtc": window_open_dt.isoformat(),
+            "windowCloseUtc": effective_close_dt.isoformat(),
+            "currentUtc": now_dt.isoformat(),
+            "reason": f"Session {session_date} capture window opens at {window_open_dt.isoformat()} (15m post-close); current time is premature",
+            "verdict": "NOT_YET_OPEN",
+        }
+
+    # 3. Expired / Cutoff Guard (MISSED)
+    if now_dt > effective_close_dt or (auth_expiry_utc is not None and now_dt >= auth_expiry_utc):
+        logger.error(
+            f"CAPTURE_WINDOW_EXPIRED: Current time {now_dt.isoformat()} > cutoff {effective_close_dt.isoformat()}"
+        )
+        return {
+            "status": "CAPTURE_WINDOW_EXPIRED_OR_INVALID",
+            "sessionDate": session_date,
+            "windowCloseUtc": effective_close_dt.isoformat(),
+            "currentUtc": now_dt.isoformat(),
+            "reason": f"Capture window strictly expired at {effective_close_dt.isoformat()}",
+            "verdict": "MISSED",
+        }
+
+    # 4. Authoritative window check & ordinal derivation
     try:
         close_dt, next_open_dt, ordinal = session_window(session_date, start_session, now_dt)
         source_cutoff_iso = close_dt.isoformat()
@@ -475,7 +519,7 @@ def run_acquire_and_capture(
             "status": "CAPTURE_WINDOW_EXPIRED_OR_INVALID",
             "sessionDate": session_date,
             "reason": str(e),
-            "verdict": "MISSED" if "Historical/future" in str(e) or "boundary" in str(e) else "REJECTED",
+            "verdict": "MISSED" if "boundary" in str(e) or "Historical/future" in str(e) else "REJECTED",
         }
 
     # 3. Persistent Coordination Store Initialization (Fail-Closed)
