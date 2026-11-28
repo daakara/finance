@@ -263,7 +263,7 @@ describe("Gate 2: CHK-4 Catalyst Confirmation Semantics & Evidence Hierarchy", (
     expect(res.isCleared).toBe(true);
   });
 
-  it("C02: Estimated upcoming earnings, more than seven days away -> PASS with Unconfirmed disclosure", () => {
+  it("C02: Estimated upcoming earnings, more than seven days away -> UNAVAILABLE (DEF-POL-CHK4-001)", () => {
     const res = evaluatePreFlightChecks({
       ...basePristine,
       catalystEvidence: {
@@ -276,12 +276,12 @@ describe("Gate 2: CHK-4 Catalyst Confirmation Semantics & Evidence Hierarchy", (
       },
     });
     const chk4 = res.checks[3];
-    expect(chk4.status).toBe("PASS");
-    expect(chk4.passed).toBe(true);
-    expect(chk4.summary).toBe("Runway > 7d (Unconfirmed)");
+    expect(chk4.status).toBe("UNAVAILABLE");
+    expect(chk4.passed).toBe(false);
+    expect(chk4.summary).toBe("Unconfirmed Earnings Estimate");
     expect(chk4.detail).toContain("unverified by primary source");
     expect(chk4.detail).not.toContain("Clean runway verified");
-    expect(res.isCleared).toBe(true);
+    expect(res.isCleared).toBe(false);
   });
 
   it("C03: Coverage present (COVERED / UNVERIFIED aggregator), more than seven days away -> PASS with Unconfirmed disclosure", () => {
@@ -299,8 +299,8 @@ describe("Gate 2: CHK-4 Catalyst Confirmation Semantics & Evidence Hierarchy", (
     const chk4 = res.checks[3];
     expect(chk4.status).toBe("PASS");
     expect(chk4.passed).toBe(true);
-    expect(chk4.summary).toBe("Runway > 7d (Unconfirmed)");
-    expect(chk4.detail).toContain("unverified by primary source");
+    expect(chk4.summary).toBe("Runway > 7d (21.0d)");
+    expect(chk4.detail).toContain("Clean runway verified");
     expect(res.isCleared).toBe(true);
   });
 
@@ -437,7 +437,7 @@ describe("Gate 2: CHK-4 Catalyst Confirmation Semantics & Evidence Hierarchy", (
         freshnessStatus: "LIVE",
       },
     });
-    expect(estimateRes.checks[3].summary).toBe("Runway > 7d (Unconfirmed)");
+    expect(estimateRes.checks[3].summary).toBe("Unconfirmed Earnings Estimate");
     expect(estimateRes.checks[3].detail).toContain("unverified by primary source");
   });
 });

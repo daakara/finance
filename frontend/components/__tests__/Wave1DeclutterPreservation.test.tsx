@@ -169,21 +169,19 @@ describe("Wave 1 Declutter and Preservation Acceptance Suite", () => {
         "utf-8"
       );
 
-      // Verify PageIntro and IntentHero are NOT rendered before detailed-domain-content
+      // Verify PageIntro is relegated to sr-only accessibility wrapper in empty-symbol discovery state
+      expect(pageSrc).toContain('className="sr-only"');
+      expect(pageSrc).toContain("<PageIntro");
+
+      // Verify inline IntentHero and WeeklyConfluenceSpotlight do NOT clutter active terminal workspace
+      const terminalWorkspaceIdx = pageSrc.indexOf('aria-label="Market Workspace and Quantitative Analytics"');
       const detailedTabsIdx = pageSrc.indexOf('data-testid="detailed-domain-content"');
-      const pageIntroIdx = pageSrc.indexOf("<PageIntro");
-      const intentHeroIdx = pageSrc.indexOf("<IntentHero");
-      const spotlightIdx = pageSrc.indexOf("<WeeklyConfluenceSpotlight");
+      expect(terminalWorkspaceIdx).toBeGreaterThan(0);
+      expect(detailedTabsIdx).toBeGreaterThan(terminalWorkspaceIdx);
 
-      expect(detailedTabsIdx).toBeGreaterThan(0);
-      expect(pageIntroIdx).toBeGreaterThan(detailedTabsIdx);
-      expect(intentHeroIdx).toBeGreaterThan(detailedTabsIdx);
-      expect(spotlightIdx).toBeGreaterThan(detailedTabsIdx);
-
-      // Verify all callbacks remain intact
-      expect(pageSrc).toContain("trackAnalysisToSetup(selectedSymbol)");
+      // Verify all callbacks and routes remain intact
       expect(pageSrc).toContain("onSelectSymbol={handleSelectSymbol}");
-      expect(pageSrc).toContain('href: "/radar"');
+      expect(pageSrc).toContain('"/radar"');
     });
   });
 

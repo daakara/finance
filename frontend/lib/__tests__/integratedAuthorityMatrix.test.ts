@@ -96,11 +96,11 @@ describe("Gate 3: Integrated Authority & Preflight Cross-Component Regression Ma
       },
     });
 
-    expect(pfRes.checks[3].status).toBe("PASS");
-    expect(pfRes.checks[3].passed).toBe(true);
-    expect(pfRes.checks[3].summary).toBe("Runway > 7d (Unconfirmed)");
+    expect(pfRes.checks[3].status).toBe("UNAVAILABLE");
+    expect(pfRes.checks[3].passed).toBe(false);
+    expect(pfRes.checks[3].summary).toBe("Unconfirmed Earnings Estimate");
     expect(pfRes.checks[3].detail).toContain("unverified by primary source");
-    expect(pfRes.isCleared).toBe(true);
+    expect(pfRes.isCleared).toBe(false);
   });
 
   it("Scenario 6: Stale market data (stale tape in assessment engine blocks sizing)", () => {
