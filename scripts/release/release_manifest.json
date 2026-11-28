@@ -789,9 +789,9 @@
       "description": "Release qualification module: rq01_candidate_identity.py"
     },
     "scripts/release/rq02_diff_integrity.py": {
-      "description": "Hardened diff integrity validation with approved PR list including PR #327 and PR #328",
-      "sha256": "6cf87b6dfcf738ced37d75dc167a39fb05e2cf990bd6744f6fab42f789498738",
-      "size_bytes": 58261
+      "description": "Hardened diff integrity validation with approved PR list including PR #332 and PR #333",
+      "sha256": "28fc310c5d915a3eda95cda868324a1659af4ba08c2990d25da67808b5aa50a8",
+      "size_bytes": 58271
     },
     "scripts/release/rq03_backend_regression.py": {
       "description": "Backend regression runner including Cornish-Fisher and Radar behavioral test suites (ccxt-dependent contract test run on hosted CI only)",
