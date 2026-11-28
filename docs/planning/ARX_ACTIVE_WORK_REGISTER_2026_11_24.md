@@ -213,16 +213,59 @@ All six operational holds remain in active, fail-closed enforcement across the r
 | **6** | **Remaining Architecture Debt (`Issue #204`: `TD-04..TD-06`, `TD-09`)** | Address warmup cancellation, CDN cache headers, SQLite multi-mount fault tests, and research artifact repo size benchmarking. | Sprint P4 Architecture |
 
 ---
-## Updated Production Facts (2026‑11‑27)
 
-- **Cloudflare Pages Frontend** – Verified canonical deployment `4d351ef2-18d1-472d-96d7-6c1aa43a33be` at SHA `15c712f95dcfda763ef849cad2fd0ca49d39524e`. Rollback target recorded as `6c0d391e-176d-4eca-9aec-f5eef6dd69c5`.
-- **Railway Web Backend** – Deployed SHA `ab0c9845617eff812115de7b3e5e6163f04d7f06` (active service).
+## Updated Production Facts & Paper-Trading Forward Capture (2026-11-27 Session)
 
-### Paper‑Trading Cohort Forward Pilot `COHORT_FORWARD_PILOT_005`
-- Evidence JSON: `../data/forward_pilot/staging_20261127/staging_20261127_summary.json` (captured 2026‑11‑27T10:14:44+01:00).
-- Capture status before window open (19:15 Berlin): **HOLD — window not open**. After window opens, capture will be recorded. Current verification: **UNVERIFIED**.
+### 1. Authoritative Production Baselines
+- **Cloudflare Pages Frontend (`finance`):** Verified canonical deployment `4d351ef2-18d1-472d-96d7-6c1aa43a33be` at SHA `15c712f95dcfda763ef849cad2fd0ca49d39524e` (confirmed through canonical Pages API). Rollback target: `6c0d391e-176d-4eca-9aec-f5eef6dd69c5` (`ab0c9845617eff812115de7b3e5e6163f04d7f06`).
+- **Railway Web Backend (`web`):** Deployed runtime revision `ab0c9845617eff812115de7b3e5e6163f04d7f06` (deployment `ea3ccfba-658b-4993-8d70-931ca63a131a`, service `56e38249-b78c-4a60-80d7-303ce7451bd8`).
+- **Evaluator Engine:** Candidate revision `05fb5a320501b7bdd32630bc3d18c3a719cef626` (used for offline forward-pilot candidate evaluation, distinct from deployed production web API `ab0c9845617eff812115de7b3e5e6163f04d7f06`).
 
-### Issue #165 Owner Grant
-- Grant commit `27de416b` retained. Pre‑flight, arming, and execution tracking remain separate from Sprint 5 kickoff.
+### 2. ARX Paper-Trading Forward Pilot: Cohort `COHORT_FORWARD_PILOT_005` (Session: 2026-11-27)
+- **Terminal Status:** **`EXECUTED` (Manual Batch Capture)**
+- **Cycle / Run ID:** `CYC_FORWARD_MANUAL_BATCH_20261127T180000Z_ca46ddcc` (recorded in [`capture_stream.jsonl`](https://github.com/daakara/finance/blob/5aa4eaf021d5462e354243dfebbf339d83fc4609/data/forward_pilot/COHORT_FORWARD_PILOT_005/capture_stream.jsonl); distinct from staging manifest filename).
+- **Evaluator Engine SHA:** `05fb5a320501b7bdd32630bc3d18c3a719cef626` (separate from production Web API `ab0c9845617eff812115de7b3e5e6163f04d7f06`).
+- **Execution & Observation Timestamps:**
+  - *Source Cutoff / Observation Timestamp:* `2026-11-27T18:00:00Z` (XNYS Black Friday holiday early-close at 13:00 ET / 19:00 Berlin / 18:00 UTC).
+  - *Manual Acquisition Invocation Window:* `2026-11-28T04:41:01.080Z` to `2026-11-28T04:41:06.450Z` (~5.37s duration; 10 requests, 10 HTTP 200 responses, budget 12, used 10, 0 failures; recorded in [`request_attempts_ledger.jsonl`](https://github.com/daakara/finance/blob/5aa4eaf021d5462e354243dfebbf339d83fc4609/data/forward_pilot/staging_20261127_completed/request_attempts_ledger.jsonl)).
+  - *Completed Capture Timestamp:* `2026-11-28T04:41:00.863845Z` (`capturedAtUtc`).
+- **Retained Evidence Commit:** Pinned to commit [`5aa4eaf021d5462e354243dfebbf339d83fc4609`](https://github.com/daakara/finance/commit/5aa4eaf021d5462e354243dfebbf339d83fc4609) on branch `feat/arx-paper-trading-pilot` (PR #322).
+- **Commit-Pinned Evidence Artifacts:**
+  - Cohort Specification: [`cohort.json`](https://github.com/daakara/finance/blob/5aa4eaf021d5462e354243dfebbf339d83fc4609/data/forward_pilot/COHORT_FORWARD_PILOT_005/cohort.json)
+  - Decision Stream (10 decisions): [`capture_stream.jsonl`](https://github.com/daakara/finance/blob/5aa4eaf021d5462e354243dfebbf339d83fc4609/data/forward_pilot/COHORT_FORWARD_PILOT_005/capture_stream.jsonl)
+  - Evaluator Input Envelope: [`evaluator_inputs/10912d8cfe9ddb3e2b9ce1ff16d955ec7737fa6127a556eb230d850011840d00.json`](https://github.com/daakara/finance/blob/5aa4eaf021d5462e354243dfebbf339d83fc4609/data/forward_pilot/COHORT_FORWARD_PILOT_005/evaluator_inputs/10912d8cfe9ddb3e2b9ce1ff16d955ec7737fa6127a556eb230d850011840d00.json)
+  - Normalized Candidate Input Payload: [`inputs/8c524b4af59ec286d826bfefd8ce8e3e6e9c4e2a5a0f3e6ccf0e2498c6d7fe55.json`](https://github.com/daakara/finance/blob/5aa4eaf021d5462e354243dfebbf339d83fc4609/data/forward_pilot/COHORT_FORWARD_PILOT_005/inputs/8c524b4af59ec286d826bfefd8ce8e3e6e9c4e2a5a0f3e6ccf0e2498c6d7fe55.json)
+  - Completed Staging Manifest: [`manifest_2026-11-27.json`](https://github.com/daakara/finance/blob/5aa4eaf021d5462e354243dfebbf339d83fc4609/data/forward_pilot/staging_20261127_completed/manifest_2026-11-27.json)
+  - Request Attempts Ledger: [`request_attempts_ledger.jsonl`](https://github.com/daakara/finance/blob/5aa4eaf021d5462e354243dfebbf339d83fc4609/data/forward_pilot/staging_20261127_completed/request_attempts_ledger.jsonl)
+  - CLI Acquisition & Capture Harness: [`scripts/acquire_and_capture_forward_session.py`](https://github.com/daakara/finance/blob/5aa4eaf021d5462e354243dfebbf339d83fc4609/scripts/acquire_and_capture_forward_session.py)
+  - Forward Capture Test Suite: [`tests/test_forward_acquisition_and_capture.py`](https://github.com/daakara/finance/blob/5aa4eaf021d5462e354243dfebbf339d83fc4609/tests/test_forward_acquisition_and_capture.py)
+- **Decision Breakdown & Cryptographic Parity:**
+  - Evaluated universe $N=10$ (`UB-US-EQUITIES-20261025-001`, SHA `12f04e98dac0b81b9f85ff7cef987bd691fc37b6f4f2a3122c2f7340fd863491`; Contract SHA `0f13677667d6755ad97a63de9264bff8e3c77fd37642eca0f80bf3b95166c2c1`; Input SHA `8c524b4af59ec286d826bfefd8ce8e3e6e9c4e2a5a0f3e6ccf0e2498c6d7fe55`).
+  - Cryptographic verification: All 10 raw payload SHA-256 hashes in `manifest_2026-11-27.json` match `request_attempts_ledger.jsonl` byte-for-byte.
+  - 10 unique decision IDs emitted:
+    1. `VOO` (`DEC_959d6e7f21ad7204`): `VALID_SETUP` | Confluence 30.0 | Spot 669.79 | Corridor [668.65, 684.26] | Stop 627.34 | Target 1 752.31
+    2. `QQQM` (`DEC_ac224654203bb88e`): `INSUFFICIENT_DATA` | Plan `null`
+    3. `IWM` (`DEC_a1a1a241b0f99b86`): `VALID_SETUP` | Confluence 50.0 | Spot 273.79 | Corridor [269.13, 275.42] | Stop 254.75 | Target 1 309.02
+    4. `XLE` (`DEC_b559fafb97ceb014`): `INSUFFICIENT_DATA` | Plan `null`
+    5. `XLK` (`DEC_7d8e37bcae40cf03`): `INSUFFICIENT_DATA` | Plan `null`
+    6. `AAPL` (`DEC_b88715284027a827`): `INSUFFICIENT_DATA` | Plan `null`
+    7. `MSFT` (`DEC_e5fe0beb9fa396af`): `INSUFFICIENT_DATA` | Plan `null`
+    8. `NVDA` (`DEC_b07eeef48e2a076e`): `INSUFFICIENT_DATA` | Plan `null`
+    9. `AMZN` (`DEC_27495f869548ac85`): `VALID_SETUP` | Confluence 21.2 | Spot 254.12 | Corridor [250.72, 261.55] | Stop 234.42 | Target 1 290.57
+    10. `GOOGL` (`DEC_90e48f991d66859d`): `INSUFFICIENT_DATA` | Plan `null`
+- **Prospective Eligibility & Lifecycle Invariants:**
+  - *Prospective Simulation Eligibility:* The 3 `VALID_SETUP` candidates target prospective execution / simulation eligibility at next session open: Monday, 2026-11-30 at 14:30 UTC (09:30 ET / 15:30 Berlin; `nextSessionOpenUtc="2026-11-30T14:30:00+00:00"`).
+  - *Opportunity Ineligibility:* All 10 decisions record `eligibleForOpportunityCapture: false` because these represent systematically sampled inputs imported via offline batch, not an autonomous market-wide scanner capture.
+  - *No Simulated Fills or Settlement Performed:* `simulationStatus` remains `NOT_STARTED` and `outcome: null`. No virtual fills or settlement occurred.
+- **Strict Architectural & Operational Distinctions:**
+  1. *Preliminary Lookback Staging (2026-11-26):* Historical lookback data preparation through completed session 2026-11-25 (`stagedAtUtc: 2026-11-26T10:36:42Z`, `staging_20261127_summary.json` - local uncommitted scratch).
+  2. *Manual Acquisition & Committed Forward Capture (2026-11-28 04:41 UTC):* Deliberate post-session data acquisition and atomic decision evaluation for the 2026-11-27 early-close session, durably committed in `5aa4eaf0`.
+  3. *Automated Scheduling Disabled:* Automated forward scheduling was not enabled (`.github/workflows/paper-trading-forward-capture.yml` is disabled by default; no cron/daemon active; mode is `MANUAL_BATCH`).
+  4. *Simulated Fills & Settlement Not Performed:* Execution and settlement remain unexecuted under `HOLD_EXEC_001` and `PHASE_3_HOLD`.
+  5. *Independent Subsystem Governance:* Paper-trading forward capture is an isolated evaluation harness. It does **not** depend on or require lifting SEC holds (`HOLD_SEC_001`, Issue #165) or enabling the VCP market radar scheduler (`HOLD_SCAN_001` / `VCP_NATURAL_SCHEDULER_ENABLED=0`, Issue #166). These are strictly independent subsystems with separate governance lifecycles.
 
-*All dates updated to 2026.*
+### 3. Issue #165 Owner Grant & Operational Verification Status
+- Grant commit `27de416b` retained. Form 4 cohort pilot arming, same-day pre-flight, and execution tracking remain strictly separate from Sprint 5 kickoff authorization.
+- Physical iOS Safari verification remains `NOT_CHECKED`.
+- All six operational holds (`HOLD_SEC_001`, `HOLD_SCAN_001`, `HOLD_EXEC_001`, `PHASE_3_HOLD`, `ARX_CONFLUENCE_INTEGRITY_HOLD`, `PHASE_A3_UX_HOLD`) remain active and fail-closed.
+
