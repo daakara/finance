@@ -19,6 +19,7 @@ import {
   DecisionReadinessResult,
   validateCanonicalActionable,
 } from "./decisionReadiness";
+import { sanitizeDisqualificationReason } from "./decisionHierarchyUtils";
 
 export interface PresentationBadgeStyle {
   bg: string;
@@ -64,6 +65,7 @@ export function resolvePresentationState(params: PresentationResolverParams): Fo
   } = params;
 
   const actionable = validateCanonicalActionable(isActionable);
+  const sanitizedDisqualificationReason = sanitizeDisqualificationReason(disqualificationReason);
   const statusUpper = (executionStatus || "").toUpperCase().trim();
   const stateUpper = (decisionState || "").toUpperCase().trim();
 
@@ -110,7 +112,7 @@ export function resolvePresentationState(params: PresentationResolverParams): Fo
     icon: "—",
   };
   let summaryExplanation =
-    disqualificationReason ||
+    sanitizedDisqualificationReason ||
     readinessResult?.nextRequiredCondition ||
     "Setup evaluation is pending verification.";
 
@@ -131,7 +133,7 @@ export function resolvePresentationState(params: PresentationResolverParams): Fo
       border: "border-slate-700/50",
       icon: "📋",
     };
-    summaryExplanation = disqualificationReason || "Statutory regulatory filing incomplete or pending verification.";
+    summaryExplanation = sanitizedDisqualificationReason || "Statutory regulatory filing incomplete or pending verification.";
   } else if (stateUpper === "INSUFFICIENT_DATA" || statusUpper === "INSUFFICIENT_HISTORY") {
     badgeLabel = "INSUFFICIENT HISTORY";
     badgeStyle = {
@@ -140,7 +142,7 @@ export function resolvePresentationState(params: PresentationResolverParams): Fo
       border: "border-slate-700/50",
       icon: "⏳",
     };
-    summaryExplanation = disqualificationReason || "Minimum 50 daily trading sessions required for trend validation.";
+    summaryExplanation = sanitizedDisqualificationReason || "Minimum 50 daily trading sessions required for trend validation.";
   } else if (stateUpper === "STALE_DATA" || statusUpper === "STALE_MARKET_DATA") {
     badgeLabel = "STALE TAPE";
     badgeStyle = {

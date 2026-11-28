@@ -175,16 +175,38 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
 }
 
 /**
+ * Sanitizes backend disqualification reasons in the presentation layer.
+ * Reconciles regulatory accounting disclosures without mutating frozen engine files.
+ */
+export function sanitizeDisqualificationReason(reason?: string | null): string {
+  if (!reason) return "";
+  let sanitized = reason;
+  if (sanitized.includes("audited SEC regulatory filing lineage")) {
+    sanitized = sanitized.replace(
+      "Lacks audited SEC regulatory filing lineage.",
+      "Lacks Form 10-K/10-Q financial statement lineage."
+    );
+  }
+  if (sanitized.includes("Audited SEC regulatory filings required")) {
+    sanitized = sanitized.replace(
+      "Unverified fundamental disclosures: Audited SEC regulatory filings required.",
+      "Unverified fundamental accounting disclosures: Form 10-K (annual audited) or Form 10-Q (quarterly unaudited) financial statements required. (Form 4 insider transactions do not supply balance sheet or solvency metrics)."
+    );
+  }
+  return sanitized;
+}
+
+/**
  * Returns primary decision reason deterministically.
  */
 export function deriveDecisionReason(insight: QuantitativeInsight): string {
   if (insight.terminalState?.headlineExplanation) {
-    return insight.terminalState.headlineExplanation;
+    return sanitizeDisqualificationReason(insight.terminalState.headlineExplanation);
   }
   if (insight.standard?.bottomLine) {
-    return insight.standard.bottomLine;
+    return sanitizeDisqualificationReason(insight.standard.bottomLine);
   }
-  return insight.human?.assessmentDescription || "Analytical assessment derived from multi-pillar quantitative evaluation.";
+  return sanitizeDisqualificationReason(insight.human?.assessmentDescription) || "Analytical assessment derived from multi-pillar quantitative evaluation.";
 }
 
 /**

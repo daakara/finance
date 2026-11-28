@@ -22,6 +22,7 @@ import {
   FreshnessInfo,
 } from "../types/insight";
 import { evaluateLevelRelation } from "./reclaimSemantics";
+import { sanitizeDisqualificationReason } from "./decisionHierarchyUtils";
 
 export interface AssessmentEngineInput {
   symbol: string;
@@ -256,7 +257,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
         : (canonicalStateLabel?.toLowerCase().includes("actionable") ? "Valid Setup — Awaiting Trigger" : (canonicalStateLabel || "Setup Evaluation Pending"));
       const levelRel = evaluateLevelRelation(safePrice, reclaimMilestonePrice, "50-day SMA", symbol);
       headlineExplanation = (decisionTrace && decisionTrace.disqualificationReason)
-        ? decisionTrace.disqualificationReason
+        ? sanitizeDisqualificationReason(decisionTrace.disqualificationReason)
         : levelRel.status === "UNAVAILABLE"
         ? "Awaiting constructive consolidation and volume confirmation before trigger."
         : levelRel.headlineExplanationWatch;
@@ -341,7 +342,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       uiStateLabel = canonicalStateLabel;
     }
     if (decisionTrace.disqualificationReason && posture !== "ACQUIRE") {
-      headlineExplanation = decisionTrace.disqualificationReason;
+      headlineExplanation = sanitizeDisqualificationReason(decisionTrace.disqualificationReason);
     }
   } else {
     decisionState = "VALID_SETUP";
@@ -389,7 +390,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       label: "Calculate Position Size",
       enabled: canSize,
       reason: !canSize
-        ? (decisionTrace?.disqualificationReason || (posture !== "ACQUIRE" ? uiStateLabel : "Only actionable when in Buy Zone"))
+        ? (sanitizeDisqualificationReason(decisionTrace?.disqualificationReason) || (posture !== "ACQUIRE" ? uiStateLabel : "Only actionable when in Buy Zone"))
         : undefined,
     },
     {

@@ -24,6 +24,12 @@ import {
   SecForm4Transaction,
   SecFilingsResult,
 } from "../lib/institutionalFeeds";
+import {
+  sanitizeDisqualificationReason,
+  deriveDecisionReason,
+} from "../lib/decisionHierarchyUtils";
+import { resolvePresentationState } from "../lib/decisionPresentation";
+import { deriveAssessmentState } from "../lib/assessmentEngine";
 
 console.log("=== ARX-SEC-DISCLOSURE-VIEW-001 Verification Suite ===\n");
 
@@ -542,8 +548,108 @@ async function runTests() {
     }
   }
 
+  // ── Test 6: Presentation Layer Sanitization of Frozen Disqualification Wording ──
+  console.log("Test 6: Presentation layer sanitizes backend disqualification copy without leaking unverified 'audited' claims...");
+  {
+    const legacySynthetic = "Synthetic fundamental factors: Lacks audited SEC regulatory filing lineage.";
+    const legacyUnverified = "Unverified fundamental disclosures: Audited SEC regulatory filings required.";
+
+    const sanitizedSynthetic = sanitizeDisqualificationReason(legacySynthetic);
+    assert.strictEqual(
+      sanitizedSynthetic,
+      "Synthetic fundamental factors: Lacks Form 10-K/10-Q financial statement lineage."
+    );
+    assert.ok(!sanitizedSynthetic.includes("audited SEC regulatory filing lineage"));
+
+    const sanitizedUnverified = sanitizeDisqualificationReason(legacyUnverified);
+    assert.strictEqual(
+      sanitizedUnverified,
+      "Unverified fundamental accounting disclosures: Form 10-K (annual audited) or Form 10-Q (quarterly unaudited) financial statements required. (Form 4 insider transactions do not supply balance sheet or solvency metrics)."
+    );
+    assert.ok(!sanitizedUnverified.includes("Audited SEC regulatory filings required"));
+
+    // Verify resolvePresentationState sanitizes summaryExplanation
+    const presResult = resolvePresentationState({
+      decisionState: "EVIDENCE_INCOMPLETE",
+      decisionStateLabel: "Evidence Incomplete",
+      disqualificationReason: legacySynthetic,
+      isActionable: false,
+    });
+    assert.strictEqual(
+      presResult.summaryExplanation,
+      "Synthetic fundamental factors: Lacks Form 10-K/10-Q financial statement lineage."
+    );
+
+    // Verify deriveDecisionReason sanitizes headlineExplanation
+    const mockInsight: any = {
+      price: 150,
+      terminalState: {
+        headlineExplanation: legacyUnverified,
+      },
+    };
+    const derivedReason = deriveDecisionReason(mockInsight);
+    assert.strictEqual(
+      derivedReason,
+      "Unverified fundamental accounting disclosures: Form 10-K (annual audited) or Form 10-Q (quarterly unaudited) financial statements required. (Form 4 insider transactions do not supply balance sheet or solvency metrics)."
+    );
+
+    // Verify deriveAssessmentState sanitizes headlineExplanation in TerminalViewState
+    const stateInput: any = {
+      symbol: "NVDA",
+      companyName: "NVIDIA Corp",
+      currentPrice: 140,
+      changePct: 1.2,
+      horizon: "SWING",
+      ownershipState: "NOT_OWNED",
+      ownershipSource: "LOCAL",
+      domains: [
+        {
+          domainId: "trend",
+          domainName: "Price Trend",
+          availability: "AVAILABLE",
+          status: "FAVORABLE",
+          pointImpact: 35,
+          importanceLevel: "HIGH",
+          observation: "Trend",
+          modelRule: "Trend rule",
+          evidence: [],
+          whatWouldChangeAssessment: "",
+        },
+        {
+          domainId: "health",
+          domainName: "Company Health",
+          availability: "AVAILABLE",
+          status: "FAVORABLE",
+          pointImpact: 35,
+          importanceLevel: "HIGH",
+          observation: "Health",
+          modelRule: "Health rule",
+          evidence: [],
+          whatWouldChangeAssessment: "",
+        },
+      ],
+      freshness: { status: "LIVE", stalenessDays: 0 },
+      decisionTrace: {
+        decisionState: "EVIDENCE_INCOMPLETE",
+        decisionStateLabel: "Evidence Incomplete",
+        disqualificationReason: legacySynthetic,
+        canSizeTrade: false,
+        isActionable: false,
+      },
+    };
+    const assessmentState = deriveAssessmentState(stateInput);
+    assert.strictEqual(
+      assessmentState.headlineExplanation,
+      "Synthetic fundamental factors: Lacks Form 10-K/10-Q financial statement lineage."
+    );
+    assert.ok(!assessmentState.headlineExplanation.includes("audited SEC regulatory filing lineage"));
+
+    console.log("  ✓ Passed: Presentation layer copy sanitization strictly prevents legacy backend wording leakage.");
+    passedCount++;
+  }
+
   console.log(`\n======================================================`);
-  console.log(`ALL ${passedCount}/5 SEC FORM 4 DISCLOSURE TESTS PASSED`);
+  console.log(`ALL ${passedCount}/6 SEC FORM 4 DISCLOSURE TESTS PASSED`);
   console.log(`======================================================\n`);
 }
 

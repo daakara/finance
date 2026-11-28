@@ -13,6 +13,7 @@ import { deriveAssessmentState, assertDecisionAuthorityConsistency } from "./ass
 import { CandleData, ConfluenceData, OptimalExecutionPlan } from "./api";
 import { evaluateLevelRelation } from "./reclaimSemantics";
 import { MASTER_ASSET_CATALOG, getMasterAsset } from "./masterCatalog";
+import { sanitizeDisqualificationReason } from "./decisionHierarchyUtils";
 
 export function generateQuantitativeInsight(
   symbol: string,
@@ -572,7 +573,7 @@ export function generateQuantitativeInsight(
       terminalState.uiStateLabel = (canonicalStateLabel && !canonicalStateLabel.toLowerCase().includes("actionable"))
         ? canonicalStateLabel
         : "Unverified Asset — Live Tape Required";
-      terminalState.headlineExplanation = decisionTrace.disqualificationReason || (
+      terminalState.headlineExplanation = sanitizeDisqualificationReason(decisionTrace.disqualificationReason) || (
         "Direct market data tape only. Analytical decision authority is unavailable."
       );
       terminalState.primaryAction = {
@@ -588,7 +589,7 @@ export function generateQuantitativeInsight(
       terminalState.uiStateLabel = (canonicalStateLabel && !canonicalStateLabel.toLowerCase().includes("actionable"))
         ? canonicalStateLabel
         : "Valid Setup — Awaiting Trigger";
-      terminalState.headlineExplanation = decisionTrace.disqualificationReason || (
+      terminalState.headlineExplanation = sanitizeDisqualificationReason(decisionTrace.disqualificationReason) || (
         canonicalStateLabel
           ? `Setup state: ${canonicalStateLabel}; awaiting confirmed entry trigger.`
           : "Asset structure is under evaluation; awaiting confirmed entry trigger in buy zone."
@@ -603,7 +604,7 @@ export function generateQuantitativeInsight(
         terminalState.uiStateLabel = canonicalStateLabel;
       }
       if (decisionTrace.disqualificationReason && terminalState.posture !== "ACQUIRE") {
-        terminalState.headlineExplanation = decisionTrace.disqualificationReason;
+        terminalState.headlineExplanation = sanitizeDisqualificationReason(decisionTrace.disqualificationReason);
       }
     }
 
@@ -612,7 +613,7 @@ export function generateQuantitativeInsight(
       if (action.id === "size_trade") {
         action.enabled = Boolean(terminalState.canSizeTrade);
         if (!action.enabled) {
-          action.reason = decisionTrace?.disqualificationReason || action.reason || "Trade sizing disabled until trigger confirmed";
+          action.reason = sanitizeDisqualificationReason(decisionTrace?.disqualificationReason) || action.reason || "Trade sizing disabled until trigger confirmed";
         }
       }
     }
