@@ -42,6 +42,13 @@ htmlcov/
 data/*
 !data/*.py
 !data/__init__.py
+# Unignore SEC coverage evidence packages & diagnostic claims
+!data/sec_coverage_evidence/
+!data/sec_coverage_evidence/**
+# Unignore NVDA Sourced Fundamentals raw evidence & custody manifest
+!data/research/
+data/research/*
+!data/research/nvda_historical_coverage_reconciliation_165.json
 !analyst_dashboard/data/
 !analyst_dashboard/data/paper_trading_ledger.json
 *.csv

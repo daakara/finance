@@ -551,7 +551,7 @@ export function resolveNineEvidenceDomains(context: EvidenceResolutionContext): 
     } else if (isHeld) {
       status = "UNAVAILABLE";
       statusLabel = "Pipeline Pending";
-      explanation = feed?.explanation || sub?.disclosure || "Congressional STOCK Act continuous sync paused under governed operational hold (HOLD_SEC_001).";
+      explanation = feed?.explanation || sub?.disclosure || "Congressional STOCK Act automated continuous ingestion is not provisioned in this deployment.";
     } else if (isUnavailable) {
       status = "UNAVAILABLE";
       statusLabel = "Unavailable";

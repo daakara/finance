@@ -226,6 +226,48 @@ TRIAL_ID_DEFAULT = "ARX-TRIAL-2026-NVDA-AAPL-001"
 TRIAL_START_DATE_DEFAULT = date(2026, 11, 17)
 TRIAL_END_DATE_DEFAULT = date(2026, 11, 30)
 
+class ExpandedIngestionSchedule(SmartMoneyTimezoneScheduler):
+    """Explicit two-date, 09:15–09:20 NY delivery policy; no catch-up."""
+    def __init__(self, phase_id, dates, release_sha):
+        super().__init__(target_hour=9, target_minute=15, window_minutes=5)
+        self.phase_id, self.dates, self.release_sha = phase_id, dates, release_sha
+        last = dates[-1]
+        self.hard_stop = datetime(last.year, last.month, last.day, 9, 21, tzinfo=NY_TZ)
+
+    @classmethod
+    def from_environment(cls, env=None):
+        import re
+        values = os.environ if env is None else env
+        phase = values.get('ARX_INGESTION_PHASE_ID', '')
+        raw = values.get('ARX_INGESTION_DATES', '')
+        release = values.get('ARX_CONTINUOUS_AUTH_RELEASE_SHA', '')
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{7,127}', phase) or not re.fullmatch(r'[a-f0-9]{40}', release):
+            raise RuntimeError('EXPANDED_SCHEDULE_IDENTITY_REQUIRED')
+        try:
+            dates = tuple(date.fromisoformat(item) for item in raw.split(','))
+        except ValueError as exc:
+            raise RuntimeError('EXPANDED_SCHEDULE_DATES_REQUIRED') from exc
+        if (len(dates) != 2 or dates[0] >= dates[1]
+                or any(not is_sec_dissemination_date(d) for d in dates)
+                or dates[0] < date(2026, 11, 25)):
+            raise RuntimeError('EXPANDED_SCHEDULE_DATES_INVALID')
+        return cls(phase, dates, release)
+
+    def evaluate(self, now=None):
+        ny_now = self.get_ny_now(now)
+        if ny_now.date() not in self.dates:
+            return False, 'DATE_NOT_AUTHORIZED'
+        target = datetime(ny_now.year, ny_now.month, ny_now.day, 9, 15, tzinfo=NY_TZ)
+        if not target <= ny_now < target + timedelta(minutes=5):
+            return False, 'OUTSIDE_EXPANDED_DELIVERY_WINDOW'
+        return True, 'EXPANDED_DELIVERY_DUE'
+
+    def subject_for(self, ny_date):
+        import hashlib, json
+        payload = [self.phase_id, [d.isoformat() for d in self.dates], self.release_sha, str(ny_date)]
+        return hashlib.sha256(json.dumps(payload, separators=(',', ':')).encode()).hexdigest()
+
+
 TRIAL_DAILY_SLOTS: Tuple[Tuple[int, int], ...] = (
     (9, 15),
     (13, 0),

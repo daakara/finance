@@ -1,0 +1,82 @@
+{
+  "title": "NVDA Submissions Catalog Diagnostic Acquisition Receipt",
+  "issue_reference": "ARX Issue #165",
+  "auth_id": "AUTH-NVDA-DIAG-20261125-001",
+  "auth_claim_path": "data/sec_coverage_evidence/CIK0001045810/auth_claims/AUTH-NVDA-DIAG-20261125-001.claim",
+  "request_url": "https://data.sec.gov/submissions/CIK0001045810.json",
+  "target_cik": "0001045810",
+  "target_ticker": "NVDA",
+  "target_company": "NVIDIA CORP",
+  "acquisition_timestamp_utc": "2026-11-25T09:21:36.476417+00:00",
+  "attempt_count": 1,
+  "max_requests_allowed": 1,
+  "user_agent_redacted": "ARXTerminal Research ***@gmail.com",
+  "http_status": 200,
+  "byte_count": 160578,
+  "sha256": "7c07b0a81346ce337884f26d353cd752ad7db6b380e980f73f7c60297a51ad63",
+  "raw_artifact_path": "data/sec_coverage_evidence/CIK0001045810/CIK0001045810_submissions_20261125T092136.476417+0000.json",
+  "receipt_path": "data/sec_coverage_evidence/CIK0001045810/acquisition_receipt_20261125T092136.476417+0000.json",
+  "success": true,
+  "error": null,
+  "validation": {
+    "is_valid": true,
+    "issuer_identity_verified": true,
+    "schema_verified": true,
+    "pagination_verified": true,
+    "interval_coverage_verified": true,
+    "contiguous_span": {
+      "earliest": "2020-09-18",
+      "latest": "2026-11-23"
+    },
+    "eligible_accessions_in_interval": [
+      "0001197647-26-000009",
+      "0001197647-26-000011",
+      "0001197647-26-000013",
+      "0001197649-26-000012",
+      "0001199039-26-000012",
+      "0001199039-26-000014",
+      "0001199039-26-000016",
+      "0001243821-26-000007",
+      "0001283854-26-000010",
+      "0001588670-26-000014",
+      "0001696841-26-000010",
+      "0001696841-26-000012",
+      "0001696841-26-000014",
+      "0001696841-26-000016",
+      "0002152188-26-000005",
+      "0002152188-26-000007"
+    ],
+    "missing_accessions": [],
+    "overlapping_pagination_files": [],
+    "error": null
+  },
+  "governance_boundaries": {
+    "verification_status": "INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC",
+    "boundary_notes": "Diagnostic acquisition executes in isolated process with zero database egress; production snapshot and hold enforcement are intended governance boundaries preserved by contract and not independently verified against live production state in this offline run.",
+    "intended_production_coverage_status": "PARTIAL_UNCERTIFIED",
+    "intended_active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+    "intended_operational_holds": [
+      "HOLD_SEC_001",
+      "HOLD_SCAN_001",
+      "HOLD_EXEC_001",
+      "PHASE_3_HOLD",
+      "ARX_CONFLUENCE_INTEGRITY_HOLD"
+    ],
+    "database_writes_performed": 0,
+    "worker_activation": false
+  },
+  "preserved_governance_state": {
+    "verification_status": "INTENDED_BOUNDARY_UNVERIFIED_IN_DIAGNOSTIC",
+    "intended_production_coverage_status": "PARTIAL_UNCERTIFIED",
+    "intended_active_snapshot_id": "SNAP_SM_1792939989_48f30db6",
+    "intended_operational_holds": [
+      "HOLD_SEC_001",
+      "HOLD_SCAN_001",
+      "HOLD_EXEC_001",
+      "PHASE_3_HOLD",
+      "ARX_CONFLUENCE_INTEGRITY_HOLD"
+    ],
+    "database_writes_performed": 0,
+    "worker_activation": false
+  }
+}

@@ -106,8 +106,8 @@ export function resolveDataProvenance(
       if (hasSecFilings && isCataloged) {
         return {
           status: "VERIFIED_REGULATORY",
-          label: "Audited SEC EDGAR 10-K/10-Q",
-          sourceDescription: "Audited quarterly/annual financial statement disclosures.",
+          label: "SEC EDGAR 10-K (Audited) / 10-Q (Unaudited)",
+          sourceDescription: "Annual audited (10-K) and quarterly unaudited (10-Q) financial statement disclosures.",
           badgeColor: "emerald",
           isActionable: true,
         };

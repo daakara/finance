@@ -1,0 +1,9 @@
+{
+  "auth_id": "AUTH-NVDA-DIAG-20261125-001",
+  "claimed_at_utc": "2026-11-25T09:21:36.474778+00:00",
+  "pid": 24518,
+  "status": "CONSUMED_INTENT",
+  "target_url": "https://data.sec.gov/submissions/CIK0001045810.json",
+  "target_cik": "0001045810",
+  "target_ticker": "NVDA"
+}
