@@ -278,9 +278,12 @@ def normalize_corporate_event(
             confirmation_status = primary_verified.get("confirmation_status", "CONFIRMED")
             is_estimate = False
         else:
-            source_name = "Yahoo Finance (Aggregator)"
-            source_url = None
-            if is_estimate_flag:
+            source_name = info_dict.get("source_name") or "Yahoo Finance (Aggregator)"
+            source_url = info_dict.get("source_url")
+            if info_dict.get("confirmation_status") == "CONFIRMED":
+                confirmation_status = "CONFIRMED"
+                is_estimate = False
+            elif is_estimate_flag:
                 confirmation_status = "ESTIMATED"
                 is_estimate = True
             else:
@@ -304,10 +307,14 @@ def normalize_corporate_event(
                 confirmation_status = primary_verified.get("confirmation_status", "CONFIRMED")
                 is_estimate = False
             else:
-                source_name = "Yahoo Finance (Aggregator)"
-                source_url = None
-                confirmation_status = "ESTIMATED"
-                is_estimate = True
+                source_name = info_dict.get("source_name") or "Yahoo Finance (Aggregator)"
+                source_url = info_dict.get("source_url")
+                if info_dict.get("confirmation_status") == "CONFIRMED":
+                    confirmation_status = "CONFIRMED"
+                    is_estimate = False
+                else:
+                    confirmation_status = "ESTIMATED"
+                    is_estimate = True
 
     # No forward event found: check if historical event elapsed
     if event_dt_utc is None:
@@ -396,15 +403,28 @@ def normalize_corporate_event(
         plain_msg = f"Caution: Earnings scheduled within 7-day trade window ({days_to_earnings:.1f} days, {event_date_et})."
         pro_msg = f"Caution: Binary catalyst scheduled within 7-day volatility buffer ({days_to_earnings:.1f} days)."
     else:
-        risk_tier = "NORMAL_RUNWAY"
-        preflight_state = "PASS"
-        has_imminent = False
-        if confirmation_status == "CONFIRMED":
+        # days_to_earnings > 7.0
+        if confirmation_status == "ESTIMATED":
+            # DEF-POL-CHK4-001: An estimated earnings date alone cannot produce Check #4 PASS.
+            # Unconfirmed distant estimates must return UNAVAILABLE.
+            risk_tier = "UNVERIFIED_RISK"
+            preflight_state = "UNAVAILABLE"
+            has_imminent = False
+            plain_msg = f"Corporate earnings date is estimated ({days_to_earnings:.1f} days, {event_date_et}) and unconfirmed by primary source. Cannot certify forward runway."
+            pro_msg = f"Forward Catalyst Unconfirmed: Estimated date ({days_to_earnings:.1f} days) unverified by issuer. Runway cannot be certified."
+        elif confirmation_status == "CONFIRMED":
+            risk_tier = "NORMAL_RUNWAY"
+            preflight_state = "PASS"
+            has_imminent = False
             plain_msg = f"Sufficient time window to manage trade without overnight earnings gap risk ({days_to_earnings:.1f} days to event)."
             pro_msg = f"Catalyst Buffer: Clean window verified ({days_to_earnings:.1f} days to binary catalyst)."
         else:
-            plain_msg = f"Indicative time window (>7 days) without imminent earnings gap risk ({days_to_earnings:.1f} days to estimated event, unconfirmed by primary source)."
-            pro_msg = f"Catalyst Buffer: Clean window indicated ({days_to_earnings:.1f} days to unconfirmed binary catalyst)."
+            # Verified / covered forward interval route
+            risk_tier = "NORMAL_RUNWAY"
+            preflight_state = "PASS"
+            has_imminent = False
+            plain_msg = f"Indicative time window (>7 days) without imminent earnings gap risk ({days_to_earnings:.1f} days to event)."
+            pro_msg = f"Catalyst Buffer: Clean window indicated ({days_to_earnings:.1f} days to binary catalyst)."
 
     return {
         "symbol": clean_sym,
