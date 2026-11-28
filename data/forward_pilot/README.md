@@ -217,3 +217,43 @@ Rather than executing an unnecessary ten-symbol historical price download, the s
   - Zero production database mutations (writes to `/root/analyst_dashboard/data` or `governance.db` are blocked).
   - Zero model retraining or heuristic adjustments.
 - **Activation Blockers:** Activation requires formal unfreeze authorization by Accountable Owner (`daakara`), completion of natural recommendation candidate capture qualification, and full release qualification (RQ-01 through RQ-13).
+
+---
+
+## 5. Forward Paper-Trading Scheduler & Coordination Store
+
+### 1. Shared Persistent Coordination Store (`.paper_trading_coordination.db`)
+To guarantee crash safety, prevent concurrent runner conflicts, and enforce strictly non-resettable request attempt budgets, all forward capture runs synchronize through `analyst_dashboard.governance.paper_trading_coordination.PaperTradingCoordinationStore`:
+- **Location:** Resolved via `resolve_forward_pilot_data_root() / ".paper_trading_coordination.db"` (overridable by `ARX_FORWARD_COORDINATION_DB_PATH`).
+- **Fail-Closed Storage Attestation:** Any failure to connect, open, or initialize SQLite tables raises `CoordinationStoreUnavailableError` immediately, halting execution *before* any external network request is transmitted.
+- **Relational Schema:**
+  - `session_claims`: Records `(cohort_id, session_date)` primary key, runner identity, `claim_status` (`CLAIMED`, `IN_PROGRESS`, `COMPLETED`), lease expiration timestamp, invocation timestamp, source cutoff timestamp, completion timestamp, batch SHA-256, and diagnostic setup counts.
+  - `request_reservations`: Durably reserves each HTTP attempt (`attempt_index`, symbol, target URL, timestamp) with status `RESERVED` *before* transmission begins. Timeouts and network exceptions mark status `TIMEOUT` or `FAILED` while permanently retaining the consumed attempt index.
+  - `session_budgets`: Enforces cumulative session budget caps (`max_budget`, `consumed_budget`). Restarts after partial crashes preserve consumed attempts and resume with remaining capacity only.
+
+### 2. November 27, 2026 Timestamp Semantics Explanatory Note
+For `COHORT_FORWARD_PILOT_005`'s initial session (`2026-11-27`), the scheduler records three distinct temporal milestones:
+1. **Source Cutoff Time (`sourceTimestampUtc` / `observedAtUtc`):** `2026-11-27T18:00:00+00:00` (13:00 EST NYSE Early Close on Black Friday). This represents the strict temporal boundary of the observed price series (129 daily bars ending on 2026-11-27).
+2. **Invocation Time (`invocationTimeUtc`):** `2026-11-28T04:41:01.080124+00:00` (23:41:01 EST on Nov 27 / 05:41:01 CET on Nov 28). When the authorized manual runner started acquisition.
+3. **Completed Capture Time (`completedCaptureTimeUtc`):** `2026-11-28T04:41:06.820000+00:00` (23:41:06 EST on Nov 27 / 05:41:06 CET on Nov 28). When atomic file writes were committed and synchronized to disk.
+
+*Semantic Clarification:* While execution took place at 05:41 CET on Nov 28, the date in America/New_York was strictly `2026-11-27` (23:41 EST), satisfying the post-close capture window well before subsequent trading opened on Monday, Nov 30 (`nextSessionOpenUtc: 2026-11-30T14:30:00+00:00`). Zero look-ahead was introduced. The immutable records in `data/forward_pilot/COHORT_FORWARD_PILOT_005/capture_stream.jsonl` remain 100% untouched.
+
+### 3. Separate Outside-Corridor Classification Tracking
+Under ARX Paper-Trading Outcome Contract V1.0.1, candidate setups where price is outside the actionable buy corridor or waiting for consolidation pullbacks produce no actionable order plan (`plan: null`) and map canonically to `decisionState: "INSUFFICIENT_DATA"` with `evaluationStatus: "RECORDED"`.
+To ensure granular analytical visibility without silently mutating the cohort's decision contract:
+- In `capture_stream.jsonl`: `decisionState` strictly remains `"INSUFFICIENT_DATA"`.
+- In `session_claims` and session manifests: Diagnostic counts are tracked separately:
+  - `valid_setup_count`: Setups meeting all Minervini/VCP criteria (`IN_BUY_ZONE`).
+  - `outside_corridor_count`: Setups rejected specifically due to price extension above corridor (`EXTENDED_ABOVE_BUY_ZONE`, `OUTSIDE_BUY_CORRIDOR`).
+  - `waiting_pullback_count`: Setups waiting for price to test pivot support (`WAITING_PULLBACK`).
+  - `insufficient_data_count`: Total non-actionable decisions.
+
+### 4. Next Eligible Session Configuration (November 30, 2026)
+- **Session Date:** `2026-11-30` (Monday, regular XNYS trading session).
+- **Cohort Namespace:** `COHORT_FORWARD_PILOT_005`.
+- **Start Session:** `2026-11-27` (Session Ordinal 2 of 20).
+- **Earliest Window Open:** `2026-11-30T21:15:00+00:00` (16:15 EST / 22:15 CET).
+- **Latest Window Close:** `2026-12-01T02:30:00+00:00` (21:30 EST / 03:30 CET Dec 1).
+- **Backfill Rule:** Backfilling missed sessions is strictly prohibited. Capture is valid only during the actual post-close window.
+

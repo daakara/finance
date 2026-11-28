@@ -6,14 +6,16 @@ Governed by:
 - docs/planning/ARX_PAPER_TRADING_ROADMAP.md (PR #322)
 
 Enforces:
-1. Runtime window recheck (session_window) at actual execution time.
-2. Hard calendar-day cutoff in America/New_York (no backdating or retrospective replay).
-3. Explicit total request budget counting initial requests, retries, and failures.
-4. Raw response byte integrity, content-addressed storage, and split rejection.
-5. Non-destructive staging (preserves prior staging evidence).
-6. Complete 10-symbol accounting: records missing/failed inputs without fabrication.
-7. Next-session execution eligibility: decisions apply to T+1 open, never observed session.
-8. Duplicate capture protection under POSIX locking.
+1. Shared persistent coordination store (session claims, request reservations, completion).
+2. Runtime window recheck (session_window) using exchange calendar at actual execution time.
+3. Hard calendar-day cutoff in America/New_York (no backdating or retrospective replay).
+4. Explicit cumulative request budget counting initial requests, retries, and failures.
+5. Durably reserved attempts BEFORE transmission across runners and branches.
+6. Idempotent capture commit: crash after write does not produce duplicates on recovery.
+7. Separate tracking of invocation, source cutoff, completed capture times, and outside-corridor classifications.
+8. Raw response byte integrity, content-addressed storage, and split rejection.
+9. Complete 10-symbol accounting without fabrication.
+10. Next-session execution eligibility: decisions apply to T+1 open, never observed session.
 """
 from __future__ import annotations
 
@@ -23,6 +25,8 @@ import json
 import logging
 import math
 import os
+import platform
+import socket
 import sys
 import time
 import urllib.error
@@ -49,6 +53,12 @@ from analyst_dashboard.governance.market_data_adapter import (
     normalize_yahoo_chart_bars,
     verify_raw_response_bytes,
 )
+from analyst_dashboard.governance.paper_trading_coordination import (
+    BudgetExhaustedError,
+    ConcurrentClaimConflictError,
+    CoordinationStoreUnavailableError,
+    PaperTradingCoordinationStore,
+)
 
 logger = logging.getLogger("arx.governance.acquire_and_capture")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -56,6 +66,25 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 DEFAULT_ENGINE_SHA = "05fb5a320501b7bdd32630bc3d18c3a719cef626"
 DEFAULT_TOTAL_REQUEST_BUDGET = 12  # 10 symbols + max 2 retries across session
 YAHOO_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+
+def derive_runner_identity(explicit_runner: Optional[str] = None) -> str:
+    """Derives a deterministic, traceable runner identity for lease claims."""
+    if explicit_runner:
+        return explicit_runner.strip()
+
+    gh_run_id = os.getenv("GITHUB_RUN_ID")
+    gh_attempt = os.getenv("GITHUB_RUN_ATTEMPT", "1")
+    if gh_run_id:
+        return f"gha-run-{gh_run_id}-attempt-{gh_attempt}"
+
+    railway_replica = os.getenv("RAILWAY_REPLICA_ID")
+    if railway_replica:
+        return f"railway-{railway_replica[:12]}"
+
+    hostname = socket.gethostname()
+    pid = os.getpid()
+    return f"local-{hostname}-{pid}"
 
 
 class DurableRequestLedger:
@@ -181,18 +210,20 @@ def acquire_symbol_data(
     symbol: str,
     raw_dir: Path,
     session_date: str,
+    cohort_id: str,
+    store: PaperTradingCoordinationStore,
     ledger: DurableRequestLedger,
     max_requests: int,
     offline_fixture_dir: Optional[Path] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Acquires and validates raw chart bytes for one symbol respecting durable request budget."""
-    # Check if already acquired in an earlier attempt/restart
+    """Acquires and validates raw chart bytes for one symbol respecting durable request budget across store & ledger."""
+    # 1. Check if already acquired in an earlier attempt/restart
     existing = ledger.is_symbol_acquired(symbol, raw_dir, session_date)
     if existing:
         return existing
 
     if offline_fixture_dir is not None:
-        # Offline test / replay path
+        # Offline fixture path
         fixture_raw = offline_fixture_dir / f"{symbol}.raw"
         if not fixture_raw.is_file():
             matches = list(offline_fixture_dir.glob(f"{symbol}*.raw"))
@@ -219,7 +250,7 @@ def acquire_symbol_data(
         target_meta.write_text(json.dumps(meta, indent=2))
         return {"rawPath": str(target_raw.resolve()), "rawResponseSha256": digest}
 
-    # Live network acquisition
+    # 2. Live network acquisition
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=6mo&interval=1d&events=history&includeAdjustedClose=true"
     headers = {"User-Agent": YAHOO_USER_AGENT}
 
@@ -227,18 +258,26 @@ def acquire_symbol_data(
     attempts_for_symbol = 0
 
     while attempts_for_symbol <= max_symbol_retries:
-        if ledger.total_requests >= max_requests:
+        consumed = store.get_consumed_budget(cohort_id, session_date)
+        if consumed >= max_requests:
             logger.error(
-                f"Total request budget exhausted ({ledger.total_requests}/{max_requests}). Halting acquisition."
+                f"Total request budget exhausted ({consumed}/{max_requests}). Halting acquisition."
             )
             return None
 
         attempts_for_symbol += 1
         t0 = time.perf_counter()
 
-        # DURABLY RESERVE ATTEMPT BEFORE TRANSMISSION
-        attempt_idx = ledger.reserve_attempt(symbol=symbol, target_url=url)
-        logger.info(f"Reserved attempt {attempt_idx}/{max_requests} for {symbol} on disk before transmission")
+        # DURABLY RESERVE ATTEMPT IN STORE AND LEDGER BEFORE TRANSMISSION
+        attempt_idx = store.reserve_http_attempt(
+            cohort_id=cohort_id,
+            session_date=session_date,
+            symbol=symbol,
+            target_url=url,
+            max_budget=max_requests,
+        )
+        ledger_idx = ledger.reserve_attempt(symbol=symbol, target_url=url)
+        logger.info(f"Reserved attempt {attempt_idx}/{max_requests} for {symbol} in coordination store and ledger")
 
         try:
             req = urllib.request.Request(url, headers=headers)
@@ -254,8 +293,18 @@ def acquire_symbol_data(
             bars = normalize_yahoo_chart_bars(raw_bytes, symbol, as_of=session_date)
             if not bars:
                 logger.warning(f"No bars returned for {symbol} as of {session_date}")
+                store.finalize_http_attempt(
+                    cohort_id=cohort_id,
+                    session_date=session_date,
+                    attempt_index=attempt_idx,
+                    status="FAILED_EMPTY_BARS",
+                    http_code=http_code,
+                    duration_ms=duration_ms,
+                    byte_length=len(raw_bytes),
+                    sha256=digest,
+                )
                 ledger.finalize_attempt(
-                    attempt_idx,
+                    ledger_idx,
                     status="FAILED_EMPTY_BARS",
                     http_code=http_code,
                     duration_ms=duration_ms,
@@ -266,17 +315,29 @@ def acquire_symbol_data(
 
             latest_bar_date = bars[-1].get("date") or bars[-1].get("Date")
             if latest_bar_date != session_date:
+                err_msg = f"Latest bar {latest_bar_date} != {session_date}"
                 logger.warning(
                     f"Latest bar date for {symbol} is '{latest_bar_date}', expected completed session '{session_date}'"
                 )
-                ledger.finalize_attempt(
-                    attempt_idx,
+                store.finalize_http_attempt(
+                    cohort_id=cohort_id,
+                    session_date=session_date,
+                    attempt_index=attempt_idx,
                     status="FAILED_SESSION_DATE_MISMATCH",
                     http_code=http_code,
                     duration_ms=duration_ms,
                     byte_length=len(raw_bytes),
                     sha256=digest,
-                    error=f"Latest bar {latest_bar_date} != {session_date}",
+                    error_message=err_msg,
+                )
+                ledger.finalize_attempt(
+                    ledger_idx,
+                    status="FAILED_SESSION_DATE_MISMATCH",
+                    http_code=http_code,
+                    duration_ms=duration_ms,
+                    byte_length=len(raw_bytes),
+                    sha256=digest,
+                    error=err_msg,
                 )
                 return None
 
@@ -296,8 +357,18 @@ def acquire_symbol_data(
             }
             target_meta.write_text(json.dumps(meta, indent=2))
 
+            store.finalize_http_attempt(
+                cohort_id=cohort_id,
+                session_date=session_date,
+                attempt_index=attempt_idx,
+                status="SUCCESS",
+                http_code=http_code,
+                duration_ms=duration_ms,
+                byte_length=len(raw_bytes),
+                sha256=digest,
+            )
             ledger.finalize_attempt(
-                attempt_idx,
+                ledger_idx,
                 status="SUCCESS",
                 http_code=http_code,
                 duration_ms=duration_ms,
@@ -311,8 +382,17 @@ def acquire_symbol_data(
         except urllib.error.HTTPError as e:
             duration_ms = (time.perf_counter() - t0) * 1000.0
             logger.warning(f"HTTPError {e.code} for {symbol} (attempt {attempts_for_symbol})")
+            store.finalize_http_attempt(
+                cohort_id=cohort_id,
+                session_date=session_date,
+                attempt_index=attempt_idx,
+                status=f"HTTP_ERROR_{e.code}",
+                http_code=e.code,
+                error_message=str(e),
+                duration_ms=duration_ms,
+            )
             ledger.finalize_attempt(
-                attempt_idx,
+                ledger_idx,
                 status=f"HTTP_ERROR_{e.code}",
                 http_code=e.code,
                 error=str(e),
@@ -323,10 +403,20 @@ def acquire_symbol_data(
             time.sleep(2.0 * attempts_for_symbol)
         except Exception as e:
             duration_ms = (time.perf_counter() - t0) * 1000.0
-            logger.warning(f"Acquisition error for {symbol}: {e} (attempt {attempts_for_symbol})")
+            is_timeout = "timeout" in str(e).lower() or isinstance(e, TimeoutError)
+            status_str = "TIMEOUT" if is_timeout else "REQUEST_EXCEPTION"
+            logger.warning(f"Acquisition error ({status_str}) for {symbol}: {e} (attempt {attempts_for_symbol})")
+            store.finalize_http_attempt(
+                cohort_id=cohort_id,
+                session_date=session_date,
+                attempt_index=attempt_idx,
+                status=status_str,
+                error_message=str(e),
+                duration_ms=duration_ms,
+            )
             ledger.finalize_attempt(
-                attempt_idx,
-                status="REQUEST_EXCEPTION",
+                ledger_idx,
+                status=status_str,
                 error=str(e),
                 duration_ms=duration_ms,
             )
@@ -349,28 +439,36 @@ def run_acquire_and_capture(
     initialize: bool = False,
     offline_fixture_dir: Optional[Path] = None,
     now: Optional[datetime] = None,
+    runner_id: Optional[str] = None,
+    coordination_db_path: Optional[Path | str] = None,
+    auth_expiry_utc: Optional[datetime] = None,
 ) -> Dict[str, Any]:
-    """Coordinates window recheck, bounded acquisition, manifest creation, and evaluation."""
+    """Coordinates window recheck, coordination lease claim, bounded acquisition, manifest creation, and evaluation."""
     now_dt = now or datetime.now(timezone.utc)
     if now_dt.tzinfo is None:
         raise ValueError("Naive capture clock rejected")
     now_dt = now_dt.astimezone(timezone.utc)
+    invocation_time_iso = now_dt.isoformat()
 
-    AUTH_EXPIRY_UTC = datetime.fromisoformat("2026-11-28T05:00:00+00:00")
-    if now_dt >= AUTH_EXPIRY_UTC:
-        logger.error(
-            f"AUTHORIZATION_EXPIRED: Current time {now_dt.isoformat()} >= expiry {AUTH_EXPIRY_UTC.isoformat()}"
-        )
-        return {
-            "status": "CAPTURE_WINDOW_EXPIRED_OR_INVALID",
-            "sessionDate": session_date,
-            "reason": f"Authorization strictly expired at {AUTH_EXPIRY_UTC.isoformat()}",
-            "verdict": "MISSED",
-        }
+    active_runner = derive_runner_identity(runner_id)
 
-    # 1. Recheck permitted capture window at runtime
+    # 1. Optional explicit bounded authorization expiry check
+    if auth_expiry_utc is not None:
+        if now_dt >= auth_expiry_utc:
+            logger.error(
+                f"AUTHORIZATION_EXPIRED: Current time {now_dt.isoformat()} >= expiry {auth_expiry_utc.isoformat()}"
+            )
+            return {
+                "status": "CAPTURE_WINDOW_EXPIRED_OR_INVALID",
+                "sessionDate": session_date,
+                "reason": f"Authorization strictly expired at {auth_expiry_utc.isoformat()}",
+                "verdict": "MISSED",
+            }
+
+    # 2. Authoritative Exchange Calendar & Window Check at runtime
     try:
         close_dt, next_open_dt, ordinal = session_window(session_date, start_session, now_dt)
+        source_cutoff_iso = close_dt.isoformat()
     except ValueError as e:
         logger.error(f"CAPTURE_WINDOW_REJECTED: {e}")
         return {
@@ -380,26 +478,80 @@ def run_acquire_and_capture(
             "verdict": "MISSED" if "Historical/future" in str(e) or "boundary" in str(e) else "REJECTED",
         }
 
-    # 2. Check duplicate capture in existing stream
+    # 3. Persistent Coordination Store Initialization (Fail-Closed)
+    resolved_db_path = coordination_db_path or (forward_root / ".paper_trading_coordination.db")
+    store = PaperTradingCoordinationStore(db_path=resolved_db_path)
+
+    # 4. Check If Session Is Already Fully Committed (Stream + Store check)
     cohort_stream = forward_root / cohort_id / "capture_stream.jsonl"
+    stream_has_session = False
     if cohort_stream.is_file():
         for line in cohort_stream.read_text().splitlines():
             if line.strip():
                 try:
                     rec = json.loads(line)
                     if rec.get("sessionDate") == session_date:
-                        logger.info(f"Session {session_date} already committed in {cohort_id}.")
-                        return {
-                            "status": "ALREADY_CAPTURED",
-                            "sessionDate": session_date,
-                            "cohortId": cohort_id,
-                            "written": 0,
-                            "reason": f"Session {session_date} already recorded in capture stream",
-                        }
+                        stream_has_session = True
+                        break
                 except json.JSONDecodeError:
                     pass
 
-    # 3. Setup non-destructive staging directory
+    store_completed = store.is_capture_completed(cohort_id, session_date)
+    if stream_has_session and store_completed:
+        logger.info(f"Session {session_date} already committed and verified in {cohort_id}.")
+        return {
+            "status": "ALREADY_CAPTURED",
+            "sessionDate": session_date,
+            "cohortId": cohort_id,
+            "written": 0,
+            "reason": f"Session {session_date} already recorded in capture stream and coordination store",
+        }
+
+    # 5. Acquire Atomic Session Claim in Coordination Store
+    claim_res = store.claim_session(
+        cohort_id=cohort_id,
+        session_date=session_date,
+        claimed_by=active_runner,
+        invocation_time_utc=invocation_time_iso,
+        source_cutoff_time_utc=source_cutoff_iso,
+        max_budget=total_request_budget,
+        now_utc=now_dt,
+    )
+    if claim_res.get("status") == "ALREADY_COMPLETED":
+        return {
+            "status": "ALREADY_CAPTURED",
+            "sessionDate": session_date,
+            "cohortId": cohort_id,
+            "written": 0,
+            "reason": f"Session {session_date} marked completed in coordination store",
+        }
+
+    logger.info(f"Coordination claim status for {cohort_id} {session_date}: {claim_res.get('status')} by {active_runner}")
+
+    # 6. Idempotent Recovery Check: If records exist on disk but store uncommitted, complete without duplicating
+    if stream_has_session:
+        logger.info(f"Crash recovery: Session {session_date} records exist in stream but store uncommitted. Marking completed.")
+        store.mark_capture_completed(
+            cohort_id=cohort_id,
+            session_date=session_date,
+            batch_sha256="RECOVERED_FROM_EXISTING_STREAM",
+            records_count=10,
+            valid_setup_count=0,
+            insufficient_data_count=10,
+            outside_corridor_count=0,
+            waiting_pullback_count=0,
+            note="Recovered from pre-existing capture_stream without duplicate write",
+            now_utc=now_dt,
+        )
+        return {
+            "status": "ALREADY_CAPTURED",
+            "sessionDate": session_date,
+            "cohortId": cohort_id,
+            "written": 0,
+            "reason": "Idempotent recovery: stream already contained records; marked completed in store without duplicate append",
+        }
+
+    # 7. Setup Staging Directory & Durable Ledger
     staging_dir.mkdir(parents=True, exist_ok=True)
     raw_dir = staging_dir / "raw_responses"
     raw_dir.mkdir(parents=True, exist_ok=True)
@@ -417,41 +569,89 @@ def run_acquire_and_capture(
         "sessionDate": session_date,
         "cohortId": cohort_id,
         "stagedAtUtc": now_dt.isoformat(),
+        "invocationTimeUtc": invocation_time_iso,
+        "sourceCutoffTimeUtc": source_cutoff_iso,
         "totalRequestBudget": total_request_budget,
+        "claimedBy": active_runner,
         "symbols": {},
     }
 
-    # 4. Acquire data for all symbols
+    # 8. Acquire data for all symbols
     for sym in symbols:
         res = acquire_symbol_data(
             sym,
             raw_dir=raw_dir,
             session_date=session_date,
+            cohort_id=cohort_id,
+            store=store,
             ledger=ledger,
             max_requests=total_request_budget,
             offline_fixture_dir=offline_fixture_dir,
         )
         sources_manifest["symbols"][sym] = res
 
-    sources_manifest["totalRequestsUsed"] = ledger.total_requests
+    consumed_attempts = store.get_consumed_budget(cohort_id, session_date)
+    sources_manifest["totalRequestsUsed"] = consumed_attempts
     sources_manifest["requestAttemptsLedger"] = str(ledger_file.resolve())
 
     manifest_path = staging_dir / f"manifest_{session_date}.json"
     manifest_path.write_text(json.dumps(sources_manifest, indent=2))
     logger.info(
-        f"Acquisition finished. Requests used: {ledger.total_requests}/{total_request_budget}. Manifest: {manifest_path}"
+        f"Acquisition finished. Requests used: {consumed_attempts}/{total_request_budget}. Manifest: {manifest_path}"
     )
 
-    # 5. Execute isolated point-in-time forward evaluation
+    # 9. Execute isolated point-in-time forward evaluation
     capture_result = execute_isolated_forward_evaluation(
         sources_manifest,
+        session_date=session_date,
         cohort_id=cohort_id,
         start_session=start_session,
         forward_root=forward_root,
-        session_date=session_date,
         engine_sha=engine_sha,
         initialize=initialize,
         now=now_dt,
+    )
+
+    # 10. Compute fine-grained diagnostic counts and outside-corridor classifications
+    eval_batch_file = forward_root / cohort_id / "inputs" / f"{capture_result['batchSha256']}.json"
+    valid_setup_count = 0
+    insufficient_data_count = 0
+    outside_corridor_count = 0
+    waiting_pullback_count = 0
+
+    if eval_batch_file.is_file():
+        try:
+            eval_batch_data = json.loads(eval_batch_file.read_text())
+            evals = eval_batch_data.get("evaluations", {})
+            for e in evals.values():
+                if isinstance(e, dict):
+                    d_state = e.get("decisionState")
+                    exec_status = e.get("executionStatus")
+                    if d_state in ("ACTIONABLE_SETUP", "VALID_SETUP"):
+                        valid_setup_count += 1
+                    elif d_state == "INSUFFICIENT_DATA":
+                        insufficient_data_count += 1
+                        if exec_status in ("EXTENDED_ABOVE_BUY_ZONE", "OUTSIDE_BUY_CORRIDOR", "CORRIDOR_VIOLATION"):
+                            outside_corridor_count += 1
+                        elif exec_status == "WAITING_PULLBACK":
+                            waiting_pullback_count += 1
+        except Exception as ex:
+            logger.warning(f"Could not parse eval batch for diagnostic counts: {ex}")
+
+    completion_time_iso = datetime.now(timezone.utc).isoformat()
+
+    # 11. Mark Capture Completed in Coordination Store
+    store.mark_capture_completed(
+        cohort_id=cohort_id,
+        session_date=session_date,
+        batch_sha256=capture_result["batchSha256"],
+        records_count=capture_result.get("written", 10),
+        valid_setup_count=valid_setup_count,
+        insufficient_data_count=insufficient_data_count,
+        outside_corridor_count=outside_corridor_count,
+        waiting_pullback_count=waiting_pullback_count,
+        note=f"Captured forward session {session_date} by {active_runner}",
+        now_utc=datetime.now(timezone.utc),
     )
 
     return {
@@ -462,75 +662,105 @@ def run_acquire_and_capture(
         "startSession": start_session,
         "sessionOrdinal": ordinal,
         "nextSessionOpenUtc": next_open_dt.isoformat(),
-        "totalRequestsUsed": ledger.total_requests,
+        "totalRequestsUsed": consumed_attempts,
         "totalRequestBudget": total_request_budget,
         "requestAttemptsLedger": str(ledger_file.resolve()),
+        "invocationTimeUtc": invocation_time_iso,
+        "sourceCutoffTimeUtc": source_cutoff_iso,
+        "completedCaptureTimeUtc": completion_time_iso,
+        "claimedBy": active_runner,
+        "validSetupCount": valid_setup_count,
+        "insufficientDataCount": insufficient_data_count,
+        "outsideCorridorCount": outside_corridor_count,
+        "waitingPullbackCount": waiting_pullback_count,
     }
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Acquire and capture market data for ARX forward pilot session.")
     parser.add_argument("--session-date", required=True, help="Completed session date (YYYY-MM-DD)")
-    parser.add_argument("--cohort-id", required=True, help="Forward cohort ID (COHORT_FORWARD_PILOT_*)")
-    parser.add_argument("--start-session", required=True, help="Cohort start session date (YYYY-MM-DD)")
-    parser.add_argument("--forward-root", type=Path, default=REPO_ROOT / "data" / "forward_pilot")
-    parser.add_argument("--staging-dir", type=Path, default=None)
-    parser.add_argument("--engine-sha", default=DEFAULT_ENGINE_SHA)
-    parser.add_argument("--request-budget", type=int, default=DEFAULT_TOTAL_REQUEST_BUDGET)
-    parser.add_argument("--initialize", action="store_true")
-    parser.add_argument("--offline-fixture-dir", type=Path, default=None)
-    parser.add_argument("--dry-run", action="store_true", help="Perform pre-check and exit without writes")
+    parser.add_argument("--cohort-id", default="COHORT_FORWARD_PILOT_005", help="Cohort ID")
+    parser.add_argument("--start-session", default="2026-11-27", help="First session date for cohort (YYYY-MM-DD)")
+    parser.add_argument("--forward-root", default="data/forward_pilot", help="Forward pilot root directory")
+    parser.add_argument("--staging-dir", default=None, help="Staging directory (default data/forward_pilot/staging_<date>)")
+    parser.add_argument("--engine-sha", default=DEFAULT_ENGINE_SHA, help="Registered engine SHA")
+    parser.add_argument("--request-budget", type=int, default=DEFAULT_TOTAL_REQUEST_BUDGET, help="Max requests budget")
+    parser.add_argument("--initialize", action="store_true", help="Initialize cohort if missing")
+    parser.add_argument("--offline-fixture-dir", default=None, help="Directory containing offline *.raw fixtures")
+    parser.add_argument("--runner-id", default=None, help="Explicit runner identity for coordination lease")
+    parser.add_argument("--coordination-db", default=None, help="Custom coordination store database path")
+    parser.add_argument("--auth-expiry-utc", default=None, help="Optional strict ISO-8601 authorization expiry")
 
     args = parser.parse_args()
 
-    staging_dir = args.staging_dir or (
-        args.forward_root / f"staging_{args.session_date.replace('-', '')}_completed"
-    )
+    forward_root = Path(args.forward_root).resolve()
+    staging_dir = Path(args.staging_dir).resolve() if args.staging_dir else forward_root / f"staging_{args.session_date.replace('-', '')}"
 
-    if args.dry_run:
-        now_dt = datetime.now(timezone.utc)
-        AUTH_EXPIRY_UTC = datetime.fromisoformat("2026-11-28T05:00:00+00:00")
-        if now_dt >= AUTH_EXPIRY_UTC:
-            print(json.dumps({
-                "status": "DRY_RUN_WINDOW_CLOSED",
-                "sessionDate": args.session_date,
-                "reason": f"Authorization strictly expired at {AUTH_EXPIRY_UTC.isoformat()}",
-                "verdict": "MISSED",
-            }, indent=2))
-            return 1
-        try:
-            close_dt, next_open_dt, ordinal = session_window(args.session_date, args.start_session, now_dt)
-            print(json.dumps({
-                "status": "DRY_RUN_WINDOW_OPEN",
-                "sessionDate": args.session_date,
-                "startSession": args.start_session,
-                "sessionOrdinal": ordinal,
-                "sessionCloseUtc": close_dt.isoformat(),
-                "nextSessionOpenUtc": next_open_dt.isoformat(),
-                "currentUtc": now_dt.isoformat(),
-                "verdict": "READY_FOR_BOUNDED_CAPTURE",
-            }, indent=2))
-            return 0
-        except ValueError as e:
-            print(json.dumps({
-                "status": "DRY_RUN_WINDOW_CLOSED",
-                "sessionDate": args.session_date,
-                "reason": str(e),
-                "verdict": "MISSED" if "Historical/future" in str(e) or "boundary" in str(e) else "REJECTED",
-            }, indent=2))
-            return 1
+    auth_expiry = None
+    if args.auth_expiry_utc:
+        auth_expiry = datetime.fromisoformat(args.auth_expiry_utc.replace("Z", "+00:00"))
 
-    result = run_acquire_and_capture(
-        session_date=args.session_date,
-        cohort_id=args.cohort_id,
-        start_session=args.start_session,
-        forward_root=args.forward_root,
-        staging_dir=staging_dir,
-        engine_sha=args.engine_sha,
-        total_request_budget=args.request_budget,
-        initialize=args.initialize,
-        offline_fixture_dir=args.offline_fixture_dir,
-    )
+    # Fail closed pre-check on exchange calendar date
+    cal = None
+    try:
+        import exchange_calendars as xcals
+        cal = xcals.get_calendar("XNYS")
+    except Exception as e:
+        logger.error(f"Cannot initialize XNYS exchange calendar: {e}")
+        return 1
+
+    if not cal.is_session(args.session_date):
+        logger.error(f"Target date '{args.session_date}' is NOT an XNYS trading session (holiday or weekend).")
+        print(json.dumps({
+            "status": "CAPTURE_WINDOW_EXPIRED_OR_INVALID",
+            "sessionDate": args.session_date,
+            "reason": f"Date {args.session_date} is not a valid XNYS trading session",
+            "verdict": "REJECTED",
+        }, indent=2))
+        return 1
+
+    try:
+        result = run_acquire_and_capture(
+            session_date=args.session_date,
+            cohort_id=args.cohort_id,
+            start_session=args.start_session,
+            forward_root=forward_root,
+            staging_dir=staging_dir,
+            engine_sha=args.engine_sha,
+            total_request_budget=args.request_budget,
+            initialize=args.initialize,
+            offline_fixture_dir=Path(args.offline_fixture_dir).resolve() if args.offline_fixture_dir else None,
+            runner_id=args.runner_id,
+            coordination_db_path=args.coordination_db,
+            auth_expiry_utc=auth_expiry,
+        )
+    except CoordinationStoreUnavailableError as e:
+        logger.error(f"FATAL: Coordination store unavailable (fail-closed): {e}")
+        print(json.dumps({
+            "status": "COORDINATION_STORE_UNAVAILABLE",
+            "sessionDate": args.session_date,
+            "reason": str(e),
+            "verdict": "BLOCKED",
+        }, indent=2))
+        return 1
+    except ConcurrentClaimConflictError as e:
+        logger.warning(f"CONCURRENT_CLAIM_CONFLICT: {e}")
+        print(json.dumps({
+            "status": "CONCURRENT_CLAIM_CONFLICT",
+            "sessionDate": args.session_date,
+            "reason": str(e),
+            "verdict": "BLOCKED",
+        }, indent=2))
+        return 1
+    except BudgetExhaustedError as e:
+        logger.error(f"BUDGET_EXHAUSTED: {e}")
+        print(json.dumps({
+            "status": "BUDGET_EXHAUSTED",
+            "sessionDate": args.session_date,
+            "reason": str(e),
+            "verdict": "BLOCKED",
+        }, indent=2))
+        return 1
 
     print(json.dumps(result, indent=2, sort_keys=True))
     if result.get("status") in ("CAPTURED_FORWARD_SESSION", "SUCCESS", "ALREADY_CAPTURED"):

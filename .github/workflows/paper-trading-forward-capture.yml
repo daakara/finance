@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       session_date:
-        description: 'Completed XNYS session date (YYYY-MM-DD); leave empty for current exchange date'
+        description: 'Completed XNYS session date (YYYY-MM-DD); defaults to next eligible session 2026-11-30'
         required: false
-        default: ''
+        default: '2026-11-30'
       cohort_id:
         description: 'Forward cohort namespace'
         required: true
@@ -25,7 +25,7 @@ on:
         description: 'Initialize cohort if not yet created'
         required: true
         type: boolean
-        default: true
+        default: false
       dry_run:
         description: 'Perform window and calendar pre-check only'
         required: false
@@ -33,7 +33,7 @@ on:
         default: false
 
 concurrency:
-  group: paper-trading-forward-capture-${{ github.ref }}
+  group: paper-trading-forward-capture-${{ inputs.cohort_id || 'COHORT_FORWARD_PILOT_005' }}
   cancel-in-progress: false
 
 permissions:
@@ -106,55 +106,9 @@ jobs:
                   sys.exit(1)
           "
 
-      - name: Durable Session Claim & Partial Failure Recovery
+      - name: Execute Bounded Acquisition and Capture under Coordination Store
         if: steps.gatekeeper.outputs.should_run == 'true' && github.event.inputs.dry_run != 'true'
-        id: claim
-        run: |
-          python3 -c "
-          import os, json, sys
-          from datetime import datetime, timezone, timedelta
-          from pathlib import Path
-
-          cohort_id = '${{ github.event.inputs.cohort_id }}'
-          session_date = '${{ steps.gatekeeper.outputs.session_date }}'
-          claims_dir = Path('data/forward_pilot/.session_claims')
-          claims_dir.mkdir(parents=True, exist_ok=True)
-          claim_file = claims_dir / f'{cohort_id}_{session_date}.claim'
-
-          now = datetime.now(timezone.utc)
-
-          if claim_file.is_file():
-              claim_data = json.loads(claim_file.read_text())
-              status = claim_data.get('status')
-              claimed_at = datetime.fromisoformat(claim_data['claimedAtUtc'])
-
-              if status == 'COMPLETED':
-                  print(f'Session {session_date} already marked COMPLETED in durable claim file.')
-                  with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                      f.write('claim_status=ALREADY_COMPLETED\n')
-                  sys.exit(0)
-
-              if status == 'CLAIMED' and now - claimed_at < timedelta(minutes=45):
-                  print(f'Active claim exists by run {claim_data.get(\"runId\")} within 45m. Exiting.')
-                  sys.exit(1)
-
-              print(f'Reclaiming stale or failed claim (prior status: {status}, age: {now - claimed_at}).')
-
-          claim_record = {
-              'cohortId': cohort_id,
-              'sessionDate': session_date,
-              'runId': os.getenv('GITHUB_RUN_ID', 'local'),
-              'runAttempt': os.getenv('GITHUB_RUN_ATTEMPT', '1'),
-              'claimedAtUtc': now.isoformat(),
-              'status': 'CLAIMED'
-          }
-          claim_file.write_text(json.dumps(claim_record, indent=2))
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write('claim_status=ACQUIRED\nclaim_path=' + str(claim_file) + '\n')
-          "
-
-      - name: Execute Bounded Acquisition and Capture
-        if: steps.gatekeeper.outputs.should_run == 'true' && steps.claim.outputs.claim_status == 'ACQUIRED' && github.event.inputs.dry_run != 'true'
+        id: capture
         run: |
           python3 scripts/acquire_and_capture_forward_session.py \
             --session-date "${{ steps.gatekeeper.outputs.session_date }}" \
@@ -162,39 +116,29 @@ jobs:
             --start-session "${{ github.event.inputs.start_session }}" \
             --forward-root "data/forward_pilot" \
             --request-budget 12 \
+            --runner-id "gha-${{ github.run_id }}-attempt-${{ github.run_attempt }}" \
             ${{ github.event.inputs.initialize == 'true' && '--initialize' || '' }}
 
-      - name: Mark Durable Claim Completed
-        if: success() && steps.claim.outputs.claim_status == 'ACQUIRED' && github.event.inputs.dry_run != 'true'
+      - name: Report Failure Notification
+        if: failure() && steps.gatekeeper.outputs.should_run == 'true' && github.event.inputs.dry_run != 'true'
         run: |
-          python3 -c "
-          import json
-          from datetime import datetime, timezone
-          from pathlib import Path
+          echo "::error title=Forward Capture Failed::Run ${{ github.run_id }} failed for session ${{ steps.gatekeeper.outputs.session_date }} in cohort ${{ github.event.inputs.cohort_id }}."
+          echo "### Forward Capture Failure" >> $GITHUB_STEP_SUMMARY
+          echo "- **Session Date:** ${{ steps.gatekeeper.outputs.session_date }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cohort:** ${{ github.event.inputs.cohort_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run ID:** ${{ github.run_id }} (Attempt ${{ github.run_attempt }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp UTC:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** FAILED (Check step logs and request ledger)" >> $GITHUB_STEP_SUMMARY
 
-          claim_file = Path('${{ steps.claim.outputs.claim_path }}')
-          if claim_file.is_file():
-              data = json.loads(claim_file.read_text())
-              data['status'] = 'COMPLETED'
-              data['completedAtUtc'] = datetime.now(timezone.utc).isoformat()
-              claim_file.write_text(json.dumps(data, indent=2))
-          "
-
-      - name: Mark Durable Claim Failed
-        if: failure() && steps.claim.outputs.claim_status == 'ACQUIRED' && github.event.inputs.dry_run != 'true'
+      - name: Generate Session Execution Summary
+        if: always() && steps.gatekeeper.outputs.should_run == 'true' && github.event.inputs.dry_run != 'true'
         run: |
-          python3 -c "
-          import json
-          from datetime import datetime, timezone
-          from pathlib import Path
-
-          claim_file = Path('${{ steps.claim.outputs.claim_path }}')
-          if claim_file.is_file():
-              data = json.loads(claim_file.read_text())
-              data['status'] = 'FAILED'
-              data['failedAtUtc'] = datetime.now(timezone.utc).isoformat()
-              claim_file.write_text(json.dumps(data, indent=2))
-          "
+          echo "### ARX Paper-Trading Session Execution Report" >> $GITHUB_STEP_SUMMARY
+          echo "- **Session Date:** ${{ steps.gatekeeper.outputs.session_date }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cohort ID:** ${{ github.event.inputs.cohort_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Start Session:** ${{ github.event.inputs.start_session }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runner:** gha-${{ github.run_id }}-attempt-${{ github.run_attempt }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Outcome:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Durable Forward Evidence Artifact
         if: always() && steps.gatekeeper.outputs.should_run == 'true' && github.event.inputs.dry_run != 'true'
@@ -203,6 +147,6 @@ jobs:
           name: forward-pilot-evidence-${{ steps.gatekeeper.outputs.session_date }}-${{ github.run_id }}
           path: |
             data/forward_pilot/${{ github.event.inputs.cohort_id }}
-            data/forward_pilot/staging_${{ steps.gatekeeper.outputs.session_date }}_completed
-            data/forward_pilot/.session_claims
+            data/forward_pilot/staging_${{ steps.gatekeeper.outputs.session_date }}*
+            data/forward_pilot/.paper_trading_coordination.db*
           retention-days: 90
