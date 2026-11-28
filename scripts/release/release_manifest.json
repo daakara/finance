@@ -1,7 +1,7 @@
 {
-  "release_candidate_commit": "a1d40848f998c896547237e789d451b268001df1",
+  "release_candidate_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
   "base_anchor_commit": "2eccc64a2cb3c649ad4d584a942285a6406d1ce0",
-  "total_files": 87,
+  "total_files": 97,
   "qualification_policy_version": "2.2.0-D074A4",
   "directive": "ARX-S4-RADAR-001",
   "files": {
@@ -23,11 +23,11 @@
     },
     "analyst_dashboard/analyzers/smart_money.py": {
       "operation": "M",
-      "originating_pr_number": 319,
-      "originating_commit": "3c7ef0c922fe5ea0c79d5258c6ddbc1ada1eb158",
-      "governing_requirement": "Issue #165 / Sprint P3 #231: Surface stored Form 4 disclosure metadata and counts during held scoring",
-      "sha256": "315068f78fc8d8bd6d5c01cc72676e3c65a6e296cfd4ad05e4ba5cec8f38653d",
-      "size_bytes": 190534
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: SEC Form 4 neutral transaction mapping and disclosure metadata",
+      "sha256": "0b0185a7ce1cc0fd2bf3d3c8097c61434f1124a7ae57cb561ba8133c7d6c9a16",
+      "size_bytes": 190524
     },
     "analyst_dashboard/provenance/evidence_contract.py": {
       "operation": "M",
@@ -143,11 +143,11 @@
     },
     "frontend/components/InstitutionalFeeds.tsx": {
       "operation": "M",
-      "originating_pr_number": 329,
-      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
-      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
-      "sha256": "38e4dc539b595b72b2ed9ab52bafab4043f1a2fd34b82cdec3fdbbe8f5419d13",
-      "size_bytes": 45709
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: Neutral Form 4 transaction display and explicit unprovisioned congressional status",
+      "sha256": "583b90c62d5e12da4ef9636213a83b9046b1ac24192ea8269e742cfee87b5c4a",
+      "size_bytes": 45685
     },
     "frontend/components/UniversalOmniSearch.tsx": {
       "operation": "M",
@@ -223,11 +223,11 @@
     },
     "frontend/lib/evidenceDomains.ts": {
       "operation": "M",
-      "originating_pr_number": 329,
-      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
-      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
-      "sha256": "485dd530de9d5a13d91dadd3434dfed588c55fa382978512c4d613b936dd4068",
-      "size_bytes": 29021
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: SEC Form 4 disclosure copy and unverified domain precision",
+      "sha256": "4a0c3bfa2ecc06fec3a7b04ff18df25945e1417fb49a570d40b4c9f1c264ccc6",
+      "size_bytes": 29020
     },
     "frontend/lib/institutionalFeeds.ts": {
       "operation": "M",
@@ -239,11 +239,11 @@
     },
     "frontend/lib/preflightEvaluator.ts": {
       "operation": "M",
-      "originating_pr_number": 329,
-      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
-      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
-      "sha256": "2ac30a14edcfbd77a6aa7813ecd135e0a8ebd2973013d0f6a578699d33e395ce",
-      "size_bytes": 51815
+      "originating_pr_number": 333,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "DEF-POL-CHK4-001: Fail closed Check #4 on unconfirmed distant earnings estimates and preserve 5-check denominator",
+      "sha256": "f46e8b11ef644a57da37698cb8ec1eddfe689eed3c4e0b9ccaf8efe4e271a42c",
+      "size_bytes": 52970
     },
     "frontend/package.json": {
       "operation": "M",
@@ -383,11 +383,11 @@
     },
     "frontend/lib/insightGenerator.ts": {
       "operation": "M",
-      "originating_pr_number": 329,
-      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
-      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
-      "sha256": "7b654de0930af79ebe79d240e817ecfc16b91e79504ff91b154b2013a1db3d39",
-      "size_bytes": 42812
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: Presentation layer sanitization of regulatory disclosures in headlineExplanation",
+      "sha256": "7aedc973aadc05749f1b41a41f9ac3a3cf72cb1bff7289ebb0a87d6cc8a22f6e",
+      "size_bytes": 43015
     },
     "frontend/lib/__tests__/analyticsUnavailableHandling.test.ts": {
       "operation": "A",
@@ -663,11 +663,11 @@
     },
     "frontend/components/terminal/EvidenceDomainStatusCard.tsx": {
       "operation": "M",
-      "originating_pr_number": 329,
-      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
-      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
-      "sha256": "a37097236cb93af0be2194c1cc1e1f1a29d365e09fd2e6b0e549bcca4a2a1741",
-      "size_bytes": 14126
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: Accurate domain authority status copy and evidence badges",
+      "sha256": "432af81ea889eecf1c2da9f3d816c58c2a2178402de0132b61972bbdff3c3ccd",
+      "size_bytes": 14311
     },
     "frontend/components/terminal/SharedAssetDeck.tsx": {
       "operation": "M",
@@ -687,11 +687,11 @@
     },
     "frontend/lib/decisionHierarchyUtils.ts": {
       "operation": "M",
-      "originating_pr_number": 329,
-      "originating_commit": "a1d40848f998c896547237e789d451b268001df1",
-      "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
-      "sha256": "b70981c1f3366954b0f824132c718867810e6313b07fdb9dfca662c15dd0ccd6",
-      "size_bytes": 7483
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: Pure presentation-layer disqualification copy sanitizer",
+      "sha256": "036642f4f43dabbccbbf91e2ed1c4e4401688a3b649b4897cedf6fb2dc71f144",
+      "size_bytes": 8559
     },
     "frontend/types/insight.ts": {
       "operation": "M",
@@ -700,6 +700,86 @@
       "governing_requirement": "PR #329: NVDA standard analysis truthfulness, planned R:R, and first-screen hierarchy",
       "sha256": "5092fa1eb9c08432d5e830d9b0302ae9916e746acc5876d6920faf820e0e139d",
       "size_bytes": 7482
+    },
+    "analyst_dashboard/corporate_events.py": {
+      "operation": "M",
+      "originating_pr_number": 333,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "DEF-POL-CHK4-001: Fail closed Check #4 on unconfirmed distant earnings estimates",
+      "sha256": "ed03e169f655bd83c4387c9e6eda0389bf4602fca6da6cfd54ec846a7f6e861d",
+      "size_bytes": 22161
+    },
+    "analyst_dashboard/data/sec_edgar_fetcher.py": {
+      "operation": "M",
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: Disambiguate SEC Form 4 regulatory disclosure copy and neutral transaction labels",
+      "sha256": "ef3e558b5783b4f834bd8852323770c79e7bf04324a59f5a34218c65f8116238",
+      "size_bytes": 108796
+    },
+    "frontend/lib/assessmentEngine.ts": {
+      "operation": "M",
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: Sanitize regulatory disclosure wording in presentation layer without mutating frozen engine files",
+      "sha256": "c062d5c6ccd0725904df3a638dc9b09c749e4486815817b2ac63178da0d949b8",
+      "size_bytes": 21386
+    },
+    "frontend/lib/dataProvenance.ts": {
+      "operation": "M",
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: Evidence provenance attribution and unprovisioned congressional sync disclosure",
+      "sha256": "609c68e71e3e94bcfd91b5eaabc4f2301d847abb6b90c2d2f28a4b43d02598c2",
+      "size_bytes": 7542
+    },
+    "frontend/lib/decisionPresentation.ts": {
+      "operation": "M",
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: Sanitize disqualification reasons in shared presentation authority",
+      "sha256": "59da58644608bec9fec99f05ca7948e6f22e266811c4377d5fae129955a68895",
+      "size_bytes": 8847
+    },
+    "frontend/tests/preflightEarningsFailClosed.test.ts": {
+      "operation": "A",
+      "originating_pr_number": 333,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "DEF-POL-CHK4-001: Comprehensive test suite for Check #4 fail-closed behavior across confirmed, estimated, stale, and ETF events",
+      "sha256": "52ad787c17442f076730953e993d2792144c55a26ae507044ba44e5ccf4ab13f",
+      "size_bytes": 12004
+    },
+    "frontend/tests/secDisclosureEvidenceView.test.ts": {
+      "operation": "M",
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: Verify SEC Form 4 multi-transaction mapping, neutral labels, and presentation copy sanitization",
+      "sha256": "075441bff27dfec06e3ed3446616b6fac29754c0ea8f3916e32cdf361c1eae70",
+      "size_bytes": 25872
+    },
+    "tests/test_corporate_events_boundaries.py": {
+      "operation": "M",
+      "originating_pr_number": 333,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "DEF-POL-CHK4-001: Verify corporate events boundary handling and unconfirmed estimate fail-closed gating",
+      "sha256": "bf192000d425849b7331a04b2b758d51a9ac3a6fb231febae03f168fa9db932d",
+      "size_bytes": 9884
+    },
+    "tests/test_corporate_events_earnings_audit.py": {
+      "operation": "M",
+      "originating_pr_number": 333,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "DEF-POL-CHK4-001: Audit earnings runway evaluation and hazard warning persistence",
+      "sha256": "7fc95ed62b19d4224d28ffafb22d8caeac34a0ee5624d9c09ac40f4d3f6cabb8",
+      "size_bytes": 14479
+    },
+    "tests/test_sec_disclosure_view.py": {
+      "operation": "M",
+      "originating_pr_number": 332,
+      "originating_commit": "f32514608a13d1ab46a1243465e5e7c24930b845",
+      "governing_requirement": "PR #332: Backend SEC disclosure view tests for neutral transaction codes and filing attribution",
+      "sha256": "560631f62ca3286da966310fb5721a86d5577024d153ac0006ce35fd0d43394d",
+      "size_bytes": 22012
     }
   },
   "qualification_framework_files": {
@@ -809,6 +889,6 @@
       "size_bytes": 4773
     }
   },
-  "candidate_commit_sha": "a1d40848f998c896547237e789d451b268001df1",
+  "candidate_commit_sha": "f32514608a13d1ab46a1243465e5e7c24930b845",
   "target_commit_sha": "d5ee805abce8029b9c2adf4f1230b8a4de84e486"
 }
