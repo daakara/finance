@@ -71,8 +71,8 @@ def _map_sec_transaction_type(
     c = (code or "").strip().upper()
     ad = (acquired_disposed or "").strip().upper()
     code_map = {
-        "P": "Open Market Purchase (Code P)",
-        "S": "Open Market Sale (Code S)",
+        "P": "Purchase (Code P)",
+        "S": "Sale (Code S)",
         "A": "Grant / Award (Code A)",
         "D": "Disposition to Issuer (Code D)",
         "F": "Tax Withholding / Payment (Code F)",

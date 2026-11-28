@@ -138,8 +138,8 @@ def temp_sec_db():
 
 def test_map_sec_transaction_type_neutrality():
     """Verify that transaction types map accurately without invented sentiment."""
-    assert "Open Market Purchase" in _map_sec_transaction_type("P", "A")
-    assert "Open Market Sale" in _map_sec_transaction_type("S", "D")
+    assert "Purchase (Code P)" in _map_sec_transaction_type("P", "A")
+    assert "Sale (Code S)" in _map_sec_transaction_type("S", "D")
     assert "Bona Fide Gift" in _map_sec_transaction_type("G", "D")
     assert "Option Exercise" in _map_sec_transaction_type("M", "A")
     assert "Grant / Award" in _map_sec_transaction_type("A", "A")
@@ -465,14 +465,14 @@ def test_api_route_get_sec_filings_contract():
                 "is_buy": False,
                 "is_sell": True,
                 "transaction_code": "S",
-                "transaction_type": "Open Market Sale (Code S)",
+                "transaction_type": "Sale (Code S)",
                 "transactions": [
                     {
                         "transaction_id": "tx-1",
                         "accession_number": "0001140361-26-044952",
                         "transaction_date": "2026-11-17",
                         "transaction_code": "S",
-                        "transaction_type": "Open Market Sale (Code S)",
+                        "transaction_type": "Sale (Code S)",
                         "shares": 2398.0,
                         "price_per_share": 352.77,
                         "total_value_usd": 845942.46,

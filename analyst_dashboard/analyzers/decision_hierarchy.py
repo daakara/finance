@@ -205,9 +205,9 @@ class DecisionHierarchyEngine:
             if not has_fundamentals or fund_status_str in ("SYNTHETIC", "UNVERIFIED", "FAILED", "UNAVAILABLE", "STALE"):
                 evidence_incomplete = True
                 if fund_status_str == "SYNTHETIC":
-                    evidence_reason = "Synthetic fundamental factors: Lacks audited SEC regulatory filing lineage."
+                    evidence_reason = "Synthetic fundamental factors: Lacks Form 10-K/10-Q financial statement lineage."
                 elif fund_status_str == "UNVERIFIED":
-                    evidence_reason = "Unverified fundamental disclosures: Audited SEC regulatory filings required."
+                    evidence_reason = "Unverified fundamental accounting disclosures: Form 10-K (annual audited) or Form 10-Q (quarterly unaudited) financial statements required. (Form 4 insider transactions do not supply balance sheet or solvency metrics)."
                 elif fund_status_str == "STALE":
                     evidence_reason = "Stale fundamental filings: Annual reporting update required."
                 else:
