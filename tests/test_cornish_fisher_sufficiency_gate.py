@@ -477,6 +477,43 @@ class TestCornishFisherSufficiencyGate(unittest.TestCase):
         self.assertNotEqual(cleaned["Modified_VaR_95"], 0)
         self.assertEqual(cleaned["cornish_fisher"]["status"], "UNAVAILABLE")
 
+    def test_dependency_declarations_exclude_incompatible_calendars(self):
+        """requirements.txt and pyproject.toml must agree on exchange_calendars>=4.13.1,<5.0.0."""
+        import os
+        import re
+        import exchange_calendars as xcals
+
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        req_path = os.path.join(repo_root, "requirements.txt")
+        pyproject_path = os.path.join(repo_root, "pyproject.toml")
+
+        with open(req_path, "r", encoding="utf-8") as f:
+            req_match = re.search(r"(?m)^exchange_calendars([^\s#]+)", f.read())
+        self.assertIsNotNone(req_match, "requirements.txt must declare exchange_calendars")
+        req_spec = req_match.group(1)
+
+        with open(pyproject_path, "r", encoding="utf-8") as f:
+            py_match = re.search(r'"exchange_calendars([^"]+)"', f.read())
+        self.assertIsNotNone(py_match, "pyproject.toml must declare exchange_calendars")
+        py_spec = py_match.group(1)
+
+        self.assertEqual(req_spec, py_spec)
+        self.assertEqual(req_spec, ">=4.13.1,<5.0.0")
+
+        from packaging.specifiers import SpecifierSet
+        from packaging.version import Version
+        spec = SpecifierSet(req_spec)
+        self.assertNotIn(Version("4.5.0"), spec)
+        self.assertNotIn(Version("4.5.6"), spec)
+        self.assertNotIn(Version("4.5.7"), spec)
+        self.assertIn(Version("4.13.1"), spec)
+        self.assertIn(Version("4.13.3"), spec)
+
+        # Verify all non-crypto canonical calendars in SUPPORTED_EXCHANGE_MAP resolve directly
+        for cal_code in ("XNYS", "XNAS", "ARCX", "BATS"):
+            cal = xcals.get_calendar(cal_code)
+            self.assertIsNotNone(cal)
+
 
 if __name__ == "__main__":
     unittest.main()
