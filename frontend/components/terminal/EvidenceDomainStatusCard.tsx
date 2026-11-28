@@ -164,7 +164,13 @@ export default function EvidenceDomainStatusCard({
                 : "Partial Evidence: Reduced Domain Confidence"}
             </strong>
             <p className="text-[var(--text-2)] text-xs font-sans leading-snug sm:leading-relaxed">
-              {eligibilityNotice.headlineExplanation} Some model inputs (e.g. quarterly SEC filings or options flow) are unavailable. Missing data is treated as unassessed, not negative.
+              {eligibilityNotice.headlineExplanation}
+              {blockingIssues.length > 0 && (
+                <span>
+                  {" "}Unverified required input{blockingIssues.length > 1 ? "s" : ""}: {blockingIssues.map((b) => b.name).join(", ")}.
+                </span>
+              )}
+              {" "}Missing data is treated as unassessed, not negative.
             </p>
           </div>
         </div>

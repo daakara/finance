@@ -81,7 +81,7 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
         bgClass: "bg-emerald-950/30 border-emerald-800/80",
         textClass: "text-emerald-300",
         verb: "Purchased",
-        codeLabel: "Code P (Open Market Purchase)",
+        codeLabel: "Purchase (Code P)",
       };
     }
     if (trade.isSell) {
@@ -91,7 +91,7 @@ export default function InstitutionalFeeds({ activeSymbol }: InstitutionalFeedsP
         bgClass: "bg-rose-950/30 border-rose-800/80",
         textClass: "text-rose-300",
         verb: "Sold",
-        codeLabel: "Code S (Open Market Sale)",
+        codeLabel: "Sale (Code S)",
       };
     }
     if (trade.isGift) {
